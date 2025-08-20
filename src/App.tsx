@@ -26,6 +26,14 @@ import MarketDetailScreen from "./pages/MarketDetailScreen";
 import TradingScreen from "./pages/TradingScreen";
 import OrderConfirmationScreen from "./pages/OrderConfirmationScreen";
 import TradeReceiptScreen from "./pages/TradeReceiptScreen";
+import ProgramsScreen from "./pages/ProgramsScreen";
+import SubscriptionsScreen from "./pages/SubscriptionsScreen";
+import ReferralsScreen from "./pages/ReferralsScreen";
+import StakingScreen from "./pages/StakingScreen";
+import StakingDetailScreen from "./pages/StakingDetailScreen";
+import LuckyDrawScreen from "./pages/LuckyDrawScreen";
+import InsuranceScreen from "./pages/InsuranceScreen";
+import FileClaimScreen from "./pages/FileClaimScreen";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +64,14 @@ const App = () => (
           <Route path="/trading/:pair" element={<TradingScreen />} />
           <Route path="/order-confirmation" element={<OrderConfirmationScreen />} />
           <Route path="/trade-receipt" element={<TradeReceiptScreen />} />
+          <Route path="/programs" element={<ProgramsScreen />} />
+          <Route path="/subscriptions" element={<SubscriptionsScreen />} />
+          <Route path="/referrals" element={<ReferralsScreen />} />
+          <Route path="/staking" element={<StakingScreen />} />
+          <Route path="/staking-detail/:asset" element={<StakingDetailScreen />} />
+          <Route path="/lucky-draw" element={<LuckyDrawScreen />} />
+          <Route path="/insurance" element={<InsuranceScreen />} />
+          <Route path="/file-claim" element={<FileClaimScreen />} />
           <Route path="/dashboard" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
