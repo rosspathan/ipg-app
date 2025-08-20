@@ -3,8 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
 import SplashScreen from "./pages/SplashScreen";
 import WelcomeScreen from "./pages/WelcomeScreen";
 import WelcomeScreen1 from "./pages/WelcomeScreen1";
@@ -14,18 +14,16 @@ import WalletSelectionScreen from "./pages/WalletSelectionScreen";
 import CreateWalletScreen from "./pages/CreateWalletScreen";
 import ImportWalletScreen from "./pages/ImportWalletScreen";
 import SecuritySetupScreen from "./pages/SecuritySetupScreen";
-import AppLockScreen from "./pages/AppLockScreen";
-import WalletHomeScreen from "./pages/WalletHomeScreen";
 import DepositScreen from "./pages/DepositScreen";
 import WithdrawScreen from "./pages/WithdrawScreen";
 import SendScreen from "./pages/SendScreen";
 import TransferScreen from "./pages/TransferScreen";
-import HistoryScreen from "./pages/HistoryScreen";
+import TradingScreen from "./pages/TradingScreen";
+import TradeReceiptScreen from "./pages/TradeReceiptScreen";
+import OrderConfirmationScreen from "./pages/OrderConfirmationScreen";
 import MarketsScreen from "./pages/MarketsScreen";
 import MarketDetailScreen from "./pages/MarketDetailScreen";
-import TradingScreen from "./pages/TradingScreen";
-import OrderConfirmationScreen from "./pages/OrderConfirmationScreen";
-import TradeReceiptScreen from "./pages/TradeReceiptScreen";
+import HistoryScreen from "./pages/HistoryScreen";
 import ProgramsScreen from "./pages/ProgramsScreen";
 import SubscriptionsScreen from "./pages/SubscriptionsScreen";
 import ReferralsScreen from "./pages/ReferralsScreen";
@@ -34,51 +32,60 @@ import StakingDetailScreen from "./pages/StakingDetailScreen";
 import LuckyDrawScreen from "./pages/LuckyDrawScreen";
 import InsuranceScreen from "./pages/InsuranceScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
+import AppLockScreen from "./pages/AppLockScreen";
+import WalletHomeScreen from "./pages/WalletHomeScreen";
+import AdminPanel from "./pages/AdminPanel";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<SplashScreen />} />
-          <Route path="/welcome" element={<WelcomeScreen1 />} />
-          <Route path="/welcome-2" element={<WelcomeScreen2 />} />
-          <Route path="/welcome-3" element={<WelcomeScreen3 />} />
-          <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
-          <Route path="/create-wallet" element={<CreateWalletScreen />} />
-          <Route path="/import-wallet" element={<ImportWalletScreen />} />
-          <Route path="/security-setup" element={<SecuritySetupScreen />} />
-          <Route path="/app-lock" element={<AppLockScreen />} />
-          <Route path="/wallet-home" element={<WalletHomeScreen />} />
-          <Route path="/deposit" element={<DepositScreen />} />
-          <Route path="/withdraw" element={<WithdrawScreen />} />
-          <Route path="/send" element={<SendScreen />} />
-          <Route path="/transfer" element={<TransferScreen />} />
-          <Route path="/history" element={<HistoryScreen />} />
-          <Route path="/markets" element={<MarketsScreen />} />
-          <Route path="/market-detail/:pair" element={<MarketDetailScreen />} />
-          <Route path="/trading/:pair" element={<TradingScreen />} />
-          <Route path="/order-confirmation" element={<OrderConfirmationScreen />} />
-          <Route path="/trade-receipt" element={<TradeReceiptScreen />} />
-          <Route path="/programs" element={<ProgramsScreen />} />
-          <Route path="/subscriptions" element={<SubscriptionsScreen />} />
-          <Route path="/referrals" element={<ReferralsScreen />} />
-          <Route path="/staking" element={<StakingScreen />} />
-          <Route path="/staking-detail/:asset" element={<StakingDetailScreen />} />
-          <Route path="/lucky-draw" element={<LuckyDrawScreen />} />
-          <Route path="/insurance" element={<InsuranceScreen />} />
-          <Route path="/file-claim" element={<FileClaimScreen />} />
-          <Route path="/dashboard" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/splash" element={<SplashScreen />} />
+              <Route path="/welcome" element={<WelcomeScreen />} />
+              <Route path="/welcome1" element={<WelcomeScreen1 />} />
+              <Route path="/welcome2" element={<WelcomeScreen2 />} />
+              <Route path="/welcome3" element={<WelcomeScreen3 />} />
+              <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
+              <Route path="/create-wallet" element={<CreateWalletScreen />} />
+              <Route path="/import-wallet" element={<ImportWalletScreen />} />
+              <Route path="/security-setup" element={<SecuritySetupScreen />} />
+              <Route path="/deposit" element={<DepositScreen />} />
+              <Route path="/withdraw" element={<WithdrawScreen />} />
+              <Route path="/send" element={<SendScreen />} />
+              <Route path="/transfer" element={<TransferScreen />} />
+              <Route path="/trading" element={<TradingScreen />} />
+              <Route path="/trade-receipt" element={<TradeReceiptScreen />} />
+              <Route path="/order-confirmation" element={<OrderConfirmationScreen />} />
+              <Route path="/markets" element={<MarketsScreen />} />
+              <Route path="/market-detail" element={<MarketDetailScreen />} />
+              <Route path="/history" element={<HistoryScreen />} />
+              <Route path="/programs" element={<ProgramsScreen />} />
+              <Route path="/subscriptions" element={<SubscriptionsScreen />} />
+              <Route path="/referrals" element={<ReferralsScreen />} />
+              <Route path="/staking" element={<StakingScreen />} />
+              <Route path="/staking-detail" element={<StakingDetailScreen />} />
+              <Route path="/lucky-draw" element={<LuckyDrawScreen />} />
+              <Route path="/insurance" element={<InsuranceScreen />} />
+              <Route path="/file-claim" element={<FileClaimScreen />} />
+              <Route path="/app-lock" element={<AppLockScreen />} />
+              <Route path="/wallet-home" element={<WalletHomeScreen />} />
+              <Route path="/admin/*" element={<AdminPanel />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

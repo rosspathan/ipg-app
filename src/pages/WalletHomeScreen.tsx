@@ -6,6 +6,7 @@ import { useState } from "react";
 
 const WalletHomeScreen = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [showBalances, setShowBalances] = useState(true);
 
   const assets = [
