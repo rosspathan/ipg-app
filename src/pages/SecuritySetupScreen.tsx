@@ -57,7 +57,7 @@ const SecuritySetupScreen = () => {
     });
 
     setTimeout(() => {
-      navigate("/wallet-home");
+      navigate("/app-lock");
     }, 1500);
   };
 

@@ -45,7 +45,7 @@ const ImportWalletScreen = () => {
 
       // Simulate validation delay
       setTimeout(() => {
-        navigate("/security-setup");
+        navigate("/app-lock");
       }, 1000);
 
     } catch (err) {
