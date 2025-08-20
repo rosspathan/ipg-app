@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SplashScreen from "./pages/SplashScreen";
 import WelcomeScreen from "./pages/WelcomeScreen";
+import WalletSelectionScreen from "./pages/WalletSelectionScreen";
 import CreateWalletScreen from "./pages/CreateWalletScreen";
 import ImportWalletScreen from "./pages/ImportWalletScreen";
 import SecuritySetupScreen from "./pages/SecuritySetupScreen";
@@ -23,6 +24,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<SplashScreen />} />
           <Route path="/welcome" element={<WelcomeScreen />} />
+          <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
           <Route path="/create-wallet" element={<CreateWalletScreen />} />
           <Route path="/import-wallet" element={<ImportWalletScreen />} />
           <Route path="/security-setup" element={<SecuritySetupScreen />} />

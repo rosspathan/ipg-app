@@ -25,7 +25,7 @@ const WelcomeScreen = () => {
   ];
 
   const handleNext = () => {
-    navigate("/create-wallet");
+    navigate("/wallet-selection");
   };
 
   const handleSkip = () => {
