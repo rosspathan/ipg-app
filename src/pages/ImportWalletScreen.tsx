@@ -5,7 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Buffer } from 'buffer';
 import * as bip39 from "bip39";
+
+// Make Buffer available globally for bip39
+(window as any).Buffer = Buffer;
 
 const ImportWalletScreen = () => {
   const navigate = useNavigate();

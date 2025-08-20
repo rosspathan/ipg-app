@@ -4,7 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Copy, Download, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Buffer } from 'buffer';
 import * as bip39 from "bip39";
+
+// Make Buffer available globally for bip39
+(window as any).Buffer = Buffer;
 
 const CreateWalletScreen = () => {
   const navigate = useNavigate();
