@@ -26,7 +26,7 @@ interface FiatWithdrawal {
   profiles?: {
     email: string;
     full_name: string;
-  };
+  } | null;
 }
 
 const AdminFunding = () => {
@@ -46,17 +46,28 @@ const AdminFunding = () => {
     try {
       const { data, error } = await supabase
         .from('fiat_withdrawals')
-        .select(`
-          *,
-          profiles!fiat_withdrawals_user_id_fkey (
-            email,
-            full_name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setFiatWithdrawals(data || []);
+      
+      // Get user emails separately since profiles table may not have the right relationship
+      const withdrawalsWithProfiles = await Promise.all(
+        (data || []).map(async (withdrawal) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('user_id', withdrawal.user_id)
+            .maybeSingle();
+          
+          return {
+            ...withdrawal,
+            profiles: profile
+          };
+        })
+      );
+      
+      setFiatWithdrawals(withdrawalsWithProfiles);
     } catch (error) {
       console.error('Error loading fiat withdrawals:', error);
       toast({

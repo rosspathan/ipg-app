@@ -154,25 +154,25 @@ const AdminUsers = () => {
   );
 
   const getStatusBadge = (status: string, type: 'kyc' | 'account') => {
-    const variants = {
-      kyc: {
-        pending: { variant: "secondary" as const, color: "bg-yellow-100 text-yellow-800" },
-        approved: { variant: "default" as const, color: "bg-green-100 text-green-800" },
-        rejected: { variant: "destructive" as const, color: "bg-red-100 text-red-800" },
-      },
-      account: {
-        active: { variant: "default" as const, color: "bg-green-100 text-green-800" },
-        frozen: { variant: "destructive" as const, color: "bg-red-100 text-red-800" },
-        suspended: { variant: "destructive" as const, color: "bg-red-100 text-red-800" },
-      }
+    const kycVariants = {
+      pending: "bg-yellow-100 text-yellow-800" as const,
+      approved: "bg-green-100 text-green-800" as const,
+      rejected: "bg-red-100 text-red-800" as const,
+    };
+    
+    const accountVariants = {
+      active: "bg-green-100 text-green-800" as const,
+      frozen: "bg-red-100 text-red-800" as const,
+      suspended: "bg-red-100 text-red-800" as const,
     };
 
-    const config = variants[type][status as keyof typeof variants[typeof type]];
-    return (
-      <Badge variant={config?.variant || "secondary"} className={config?.color}>
-        {status}
-      </Badge>
-    );
+    if (type === 'kyc') {
+      const className = kycVariants[status as keyof typeof kycVariants] || "bg-gray-100 text-gray-800";
+      return <Badge variant="secondary" className={className}>{status}</Badge>;
+    } else {
+      const className = accountVariants[status as keyof typeof accountVariants] || "bg-gray-100 text-gray-800";
+      return <Badge variant="secondary" className={className}>{status}</Badge>;
+    }
   };
 
   if (loading) {
