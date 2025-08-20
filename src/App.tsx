@@ -15,6 +15,12 @@ import CreateWalletScreen from "./pages/CreateWalletScreen";
 import ImportWalletScreen from "./pages/ImportWalletScreen";
 import SecuritySetupScreen from "./pages/SecuritySetupScreen";
 import AppLockScreen from "./pages/AppLockScreen";
+import WalletHomeScreen from "./pages/WalletHomeScreen";
+import DepositScreen from "./pages/DepositScreen";
+import WithdrawScreen from "./pages/WithdrawScreen";
+import SendScreen from "./pages/SendScreen";
+import TransferScreen from "./pages/TransferScreen";
+import HistoryScreen from "./pages/HistoryScreen";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +40,12 @@ const App = () => (
           <Route path="/import-wallet" element={<ImportWalletScreen />} />
           <Route path="/security-setup" element={<SecuritySetupScreen />} />
           <Route path="/app-lock" element={<AppLockScreen />} />
+          <Route path="/wallet-home" element={<WalletHomeScreen />} />
+          <Route path="/deposit" element={<DepositScreen />} />
+          <Route path="/withdraw" element={<WithdrawScreen />} />
+          <Route path="/send" element={<SendScreen />} />
+          <Route path="/transfer" element={<TransferScreen />} />
+          <Route path="/history" element={<HistoryScreen />} />
           <Route path="/dashboard" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

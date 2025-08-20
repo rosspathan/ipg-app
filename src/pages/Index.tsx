@@ -27,6 +27,14 @@ const Index = () => {
         
         <div className="space-y-4 pt-6">
           <Button 
+            onClick={() => navigate("/wallet-home")}
+            className="w-full"
+            size="lg"
+          >
+            Go to Wallet
+          </Button>
+          
+          <Button 
             variant="outline" 
             onClick={() => navigate("/app-lock")}
             className="w-full"
