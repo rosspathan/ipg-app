@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useWeb3 } from "@/contexts/Web3Context";
 import { Buffer } from 'buffer';
 import * as bip39 from "bip39";
 
@@ -14,6 +15,7 @@ import * as bip39 from "bip39";
 const ImportWalletScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { importWallet } = useWeb3();
   const [seedPhrase, setSeedPhrase] = useState("");
   const [error, setError] = useState("");
   const [isValidating, setIsValidating] = useState(false);
@@ -38,14 +40,17 @@ const ImportWalletScreen = () => {
         return;
       }
 
+      // Import the wallet using Web3 context
+      await importWallet(cleanPhrase);
+      
       toast({
         title: "Success!",
-        description: "Valid recovery phrase detected",
+        description: "Wallet imported successfully",
       });
 
-      // Simulate validation delay
+      // Navigate to email verification
       setTimeout(() => {
-        navigate("/app-lock");
+        navigate("/email-verification");
       }, 1000);
 
     } catch (err) {

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Copy, Download, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useWeb3 } from "@/contexts/Web3Context";
 import { Buffer } from 'buffer';
 import * as bip39 from "bip39";
 
@@ -13,6 +14,7 @@ import * as bip39 from "bip39";
 const CreateWalletScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { createWallet } = useWeb3();
   const [seedPhrase, setSeedPhrase] = useState<string[]>([]);
 
   useEffect(() => {
@@ -54,8 +56,17 @@ const CreateWalletScreen = () => {
     });
   };
 
-  const handleConfirmPhrase = () => {
-    navigate("/security-setup");
+  const handleConfirmPhrase = async () => {
+    try {
+      await createWallet(seedPhrase.join(" "));
+      navigate("/email-verification");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create wallet",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

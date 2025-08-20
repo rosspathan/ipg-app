@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { Web3Provider } from "@/contexts/Web3Context";
 import Index from "./pages/Index";
 import SplashScreen from "./pages/SplashScreen";
 import WelcomeScreen from "./pages/WelcomeScreen";
@@ -34,6 +35,8 @@ import InsuranceScreen from "./pages/InsuranceScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import AppLockScreen from "./pages/AppLockScreen";
 import WalletHomeScreen from "./pages/WalletHomeScreen";
+import EmailVerificationScreen from "./pages/EmailVerificationScreen";
+import EmailVerifiedScreen from "./pages/EmailVerifiedScreen";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
@@ -43,11 +46,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
+        <Web3Provider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/splash" element={<SplashScreen />} />
               <Route path="/welcome" element={<WelcomeScreen />} />
@@ -56,8 +60,10 @@ function App() {
               <Route path="/welcome3" element={<WelcomeScreen3 />} />
               <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
               <Route path="/create-wallet" element={<CreateWalletScreen />} />
-              <Route path="/import-wallet" element={<ImportWalletScreen />} />
-              <Route path="/security-setup" element={<SecuritySetupScreen />} />
+                <Route path="/import-wallet" element={<ImportWalletScreen />} />
+                <Route path="/email-verification" element={<EmailVerificationScreen />} />
+                <Route path="/email-verified" element={<EmailVerifiedScreen />} />
+                <Route path="/security-setup" element={<SecuritySetupScreen />} />
               <Route path="/deposit" element={<DepositScreen />} />
               <Route path="/withdraw" element={<WithdrawScreen />} />
               <Route path="/send" element={<SendScreen />} />
@@ -80,9 +86,10 @@ function App() {
               <Route path="/wallet-home" element={<WalletHomeScreen />} />
               <Route path="/admin/*" element={<AdminPanel />} />
               <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </Web3Provider>
       </AuthProvider>
     </QueryClientProvider>
   );
