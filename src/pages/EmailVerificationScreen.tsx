@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Mail, Shield, CheckCircle } from "lucide-react";
+import { ChevronLeft, Mail, Shield, CheckCircle, Network } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWeb3 } from "@/contexts/Web3Context";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 const EmailVerificationScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { wallet, signMessage } = useWeb3();
+  const { wallet, signMessage, network } = useWeb3();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
@@ -47,7 +47,7 @@ const EmailVerificationScreen = () => {
     
     try {
       // Create verification message
-      const verificationMessage = `CryptoFlow Email Verification\nWallet: ${wallet.address}\nEmail: ${email}\nTimestamp: ${Date.now()}`;
+      const verificationMessage = `CryptoFlow BSC Wallet Verification\nNetwork: ${network.name} (Chain ID: ${network.chainId})\nWallet: ${wallet.address}\nEmail: ${email}\nTimestamp: ${Date.now()}`;
       
       // Sign the message with the wallet
       const signature = await signMessage(verificationMessage);
@@ -162,23 +162,37 @@ const EmailVerificationScreen = () => {
             Verify Your Email
           </h2>
           <p className="text-sm text-muted-foreground">
-            Link your email address to your wallet for secure access to CryptoFlow
+            Link your email address to your BSC wallet for secure access to CryptoFlow
           </p>
         </div>
 
         <Card className="bg-gradient-card shadow-card border-0">
           <CardHeader>
             <CardTitle className="text-base text-center flex items-center justify-center gap-2">
-              <Shield className="w-4 h-4" />
-              Wallet Connected
+              <Network className="w-4 h-4" />
+              BSC Wallet Connected
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center space-y-2">
-              <p className="text-xs text-muted-foreground">Wallet Address:</p>
-              <p className="font-mono text-sm break-all bg-muted p-2 rounded">
-                {wallet.address}
-              </p>
+            <div className="text-center space-y-3">
+              <div className="flex items-center justify-center gap-2 text-sm font-medium">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                {network.name}
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Wallet Address:</p>
+                <p className="font-mono text-sm break-all bg-muted p-2 rounded">
+                  {wallet.address}
+                </p>
+              </div>
+              {wallet.balance && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Balance:</p>
+                  <p className="text-sm font-medium">
+                    {parseFloat(wallet.balance).toFixed(4)} {network.currency}
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -245,7 +259,7 @@ const EmailVerificationScreen = () => {
 
         <div className="bg-muted/50 border border-border rounded-lg p-4">
           <p className="text-xs text-muted-foreground text-center">
-            🔐 Your wallet signature proves ownership of this address and secures your account.
+            🔐 Your BSC wallet signature proves ownership of this BEP20 address and secures your account.
           </p>
         </div>
       </div>

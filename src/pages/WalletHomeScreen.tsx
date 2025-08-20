@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, ArrowUpCircle, ArrowDownCircle, Send, MoreHorizontal, Repeat, Coins, Gift, TrendingUp, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import BSCWalletInfo from "@/components/BSCWalletInfo";
 
 const WalletHomeScreen = () => {
   const navigate = useNavigate();
@@ -42,6 +43,9 @@ const WalletHomeScreen = () => {
           <p className="text-muted-foreground">Manage your digital assets</p>
         </div>
       </div>
+
+      {/* BSC Wallet Info */}
+      <BSCWalletInfo />
 
       {/* Total Balance Card */}
       <Card className="bg-gradient-to-br from-primary/10 to-secondary/10">
