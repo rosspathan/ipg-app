@@ -453,6 +453,7 @@ export type Database = {
           two_fa_enabled: boolean | null
           updated_at: string | null
           user_id: string
+          wallet_address: string | null
           withdrawal_locked: boolean | null
         }
         Insert: {
@@ -466,6 +467,7 @@ export type Database = {
           two_fa_enabled?: boolean | null
           updated_at?: string | null
           user_id: string
+          wallet_address?: string | null
           withdrawal_locked?: boolean | null
         }
         Update: {
@@ -479,6 +481,7 @@ export type Database = {
           two_fa_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string
+          wallet_address?: string | null
           withdrawal_locked?: boolean | null
         }
         Relationships: []
