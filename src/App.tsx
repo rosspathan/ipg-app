@@ -21,6 +21,11 @@ import WithdrawScreen from "./pages/WithdrawScreen";
 import SendScreen from "./pages/SendScreen";
 import TransferScreen from "./pages/TransferScreen";
 import HistoryScreen from "./pages/HistoryScreen";
+import MarketsScreen from "./pages/MarketsScreen";
+import MarketDetailScreen from "./pages/MarketDetailScreen";
+import TradingScreen from "./pages/TradingScreen";
+import OrderConfirmationScreen from "./pages/OrderConfirmationScreen";
+import TradeReceiptScreen from "./pages/TradeReceiptScreen";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +51,11 @@ const App = () => (
           <Route path="/send" element={<SendScreen />} />
           <Route path="/transfer" element={<TransferScreen />} />
           <Route path="/history" element={<HistoryScreen />} />
+          <Route path="/markets" element={<MarketsScreen />} />
+          <Route path="/market-detail/:pair" element={<MarketDetailScreen />} />
+          <Route path="/trading/:pair" element={<TradingScreen />} />
+          <Route path="/order-confirmation" element={<OrderConfirmationScreen />} />
+          <Route path="/trade-receipt" element={<TradeReceiptScreen />} />
           <Route path="/dashboard" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

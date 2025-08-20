@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, Send, ArrowRightLeft, History, Eye, EyeOff } from "lucide-react";
+import { ArrowDown, ArrowUp, Send, ArrowRightLeft, History, Eye, EyeOff, TrendingUp } from "lucide-react";
 import { useState } from "react";
 
 const WalletHomeScreen = () => {
@@ -22,7 +22,8 @@ const WalletHomeScreen = () => {
     { name: "Withdraw", icon: ArrowUp, color: "text-red-600", route: "/withdraw" },
     { name: "Send", icon: Send, color: "text-blue-600", route: "/send" },
     { name: "Transfer", icon: ArrowRightLeft, color: "text-purple-600", route: "/transfer" },
-    { name: "History", icon: History, color: "text-gray-600", route: "/history" }
+    { name: "History", icon: History, color: "text-gray-600", route: "/history" },
+    { name: "Markets", icon: TrendingUp, color: "text-orange-600", route: "/markets" }
   ];
 
   return (
@@ -48,7 +49,7 @@ const WalletHomeScreen = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-6 gap-2">
           {actions.map((action, index) => (
             <div key={index} className="text-center">
               <Button
