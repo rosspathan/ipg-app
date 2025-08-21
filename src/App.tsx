@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Web3Provider } from "@/contexts/Web3Context";
+import AdminRoute from "@/components/AdminRoute";
+import AuthScreen from "./pages/AuthScreen";
 import Index from "./pages/Index";
 import SplashScreen from "./pages/SplashScreen";
 import WelcomeScreen from "./pages/WelcomeScreen";
@@ -52,40 +54,41 @@ function App() {
             <Sonner />
             <BrowserRouter>
               <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/splash" element={<SplashScreen />} />
-              <Route path="/welcome" element={<WelcomeScreen />} />
-              <Route path="/welcome1" element={<WelcomeScreen1 />} />
-              <Route path="/welcome2" element={<WelcomeScreen2 />} />
-              <Route path="/welcome3" element={<WelcomeScreen3 />} />
-              <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
-              <Route path="/create-wallet" element={<CreateWalletScreen />} />
-                <Route path="/import-wallet" element={<ImportWalletScreen />} />
-                <Route path="/email-verification" element={<EmailVerificationScreen />} />
-                <Route path="/email-verified" element={<EmailVerifiedScreen />} />
-                <Route path="/security-setup" element={<SecuritySetupScreen />} />
-              <Route path="/deposit" element={<DepositScreen />} />
-              <Route path="/withdraw" element={<WithdrawScreen />} />
-              <Route path="/send" element={<SendScreen />} />
-              <Route path="/transfer" element={<TransferScreen />} />
-              <Route path="/trading" element={<TradingScreen />} />
-              <Route path="/trade-receipt" element={<TradeReceiptScreen />} />
-              <Route path="/order-confirmation" element={<OrderConfirmationScreen />} />
-              <Route path="/markets" element={<MarketsScreen />} />
-              <Route path="/market-detail" element={<MarketDetailScreen />} />
-              <Route path="/history" element={<HistoryScreen />} />
-              <Route path="/programs" element={<ProgramsScreen />} />
-              <Route path="/subscriptions" element={<SubscriptionsScreen />} />
-              <Route path="/referrals" element={<ReferralsScreen />} />
-              <Route path="/staking" element={<StakingScreen />} />
-              <Route path="/staking-detail" element={<StakingDetailScreen />} />
-              <Route path="/lucky-draw" element={<LuckyDrawScreen />} />
-              <Route path="/insurance" element={<InsuranceScreen />} />
-              <Route path="/file-claim" element={<FileClaimScreen />} />
-              <Route path="/app-lock" element={<AppLockScreen />} />
-              <Route path="/wallet-home" element={<WalletHomeScreen />} />
-              <Route path="/admin/*" element={<AdminPanel />} />
-              <Route path="*" element={<NotFound />} />
+               <Route path="/" element={<Index />} />
+               <Route path="/auth" element={<AuthScreen />} />
+               <Route path="/splash" element={<SplashScreen />} />
+               <Route path="/welcome" element={<WelcomeScreen />} />
+               <Route path="/welcome1" element={<WelcomeScreen1 />} />
+               <Route path="/welcome2" element={<WelcomeScreen2 />} />
+               <Route path="/welcome3" element={<WelcomeScreen3 />} />
+               <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
+               <Route path="/create-wallet" element={<CreateWalletScreen />} />
+                 <Route path="/import-wallet" element={<ImportWalletScreen />} />
+                 <Route path="/email-verification" element={<EmailVerificationScreen />} />
+                 <Route path="/email-verified" element={<EmailVerifiedScreen />} />
+                 <Route path="/security-setup" element={<SecuritySetupScreen />} />
+               <Route path="/deposit" element={<DepositScreen />} />
+               <Route path="/withdraw" element={<WithdrawScreen />} />
+               <Route path="/send" element={<SendScreen />} />
+               <Route path="/transfer" element={<TransferScreen />} />
+               <Route path="/trading" element={<TradingScreen />} />
+               <Route path="/trade-receipt" element={<TradeReceiptScreen />} />
+               <Route path="/order-confirmation" element={<OrderConfirmationScreen />} />
+               <Route path="/markets" element={<MarketsScreen />} />
+               <Route path="/market-detail" element={<MarketDetailScreen />} />
+               <Route path="/history" element={<HistoryScreen />} />
+               <Route path="/programs" element={<ProgramsScreen />} />
+               <Route path="/subscriptions" element={<SubscriptionsScreen />} />
+               <Route path="/referrals" element={<ReferralsScreen />} />
+               <Route path="/staking" element={<StakingScreen />} />
+               <Route path="/staking-detail" element={<StakingDetailScreen />} />
+               <Route path="/lucky-draw" element={<LuckyDrawScreen />} />
+               <Route path="/insurance" element={<InsuranceScreen />} />
+               <Route path="/file-claim" element={<FileClaimScreen />} />
+               <Route path="/app-lock" element={<AppLockScreen />} />
+               <Route path="/wallet-home" element={<WalletHomeScreen />} />
+               <Route path="/admin/*" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+               <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
           </TooltipProvider>

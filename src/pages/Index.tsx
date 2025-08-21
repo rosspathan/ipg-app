@@ -1,15 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem("cryptoflow_pin");
     localStorage.removeItem("cryptoflow_biometric");
     localStorage.removeItem("cryptoflow_antiphishing");
     localStorage.removeItem("cryptoflow_setup_complete");
-    navigate("/");
+    await signOut();
+    navigate("/auth");
   };
 
   return (
@@ -26,29 +29,49 @@ const Index = () => {
         </p>
         
         <div className="space-y-4 pt-6">
-          <Button 
-            onClick={() => navigate("/wallet-home")}
-            className="w-full"
-            size="lg"
-          >
-            Go to Wallet
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/app-lock")}
-            className="w-full"
-          >
-            Test App Lock
-          </Button>
-          
-          <Button 
-            variant="destructive" 
-            onClick={handleLogout}
-            className="w-full"
-          >
-            Reset App (Logout)
-          </Button>
+          {user ? (
+            <>
+              <Button 
+                onClick={() => navigate("/wallet-home")}
+                className="w-full"
+                size="lg"
+              >
+                Go to Wallet
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/admin")}
+                className="w-full"
+              >
+                Admin Panel
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/app-lock")}
+                className="w-full"
+              >
+                Test App Lock
+              </Button>
+              
+              <Button 
+                variant="destructive" 
+                onClick={handleLogout}
+                className="w-full"
+              >
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <Button 
+              onClick={() => navigate("/auth")}
+              className="w-full"
+              size="lg"
+            >
+              Sign In / Sign Up
+            </Button>
+          )}
         </div>
       </div>
     </div>
