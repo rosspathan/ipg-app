@@ -10,6 +10,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  setIsAdmin: (admin: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,14 +22,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check for Web3 admin status on load
+    const web3AdminStatus = localStorage.getItem('cryptoflow_web3_admin');
+    if (web3AdminStatus === 'true') {
+      setIsAdmin(true);
+    }
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Check if user is admin
+        if (session?.user && web3AdminStatus !== 'true') {
+          // Check if user is admin only if not already web3 admin
           setTimeout(async () => {
             try {
               const { data } = await supabase
@@ -43,7 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setIsAdmin(false);
             }
           }, 0);
-        } else {
+        } else if (!session?.user) {
+          // Clear web3 admin status on logout
+          localStorage.removeItem('cryptoflow_web3_admin');
+          localStorage.removeItem('cryptoflow_admin_wallet');
           setIsAdmin(false);
         }
         
@@ -55,6 +65,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user && web3AdminStatus !== 'true') {
+        // Check admin role for regular users
+        setTimeout(async () => {
+          try {
+            const { data } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .eq('role', 'admin')
+              .single();
+            
+            setIsAdmin(!!data);
+          } catch (error) {
+            setIsAdmin(false);
+          }
+        }, 0);
+      }
       setLoading(false);
     });
 
@@ -83,7 +110,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear Web3 admin status
+    localStorage.removeItem('cryptoflow_web3_admin');
+    localStorage.removeItem('cryptoflow_admin_wallet');
+    setIsAdmin(false);
+    
     await supabase.auth.signOut();
+  };
+
+  const setAdminStatus = (admin: boolean) => {
+    setIsAdmin(admin);
   };
 
   return (
@@ -95,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signUp,
       signOut,
+      setIsAdmin: setAdminStatus,
     }}>
       {children}
     </AuthContext.Provider>

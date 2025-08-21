@@ -1,1 +1,4 @@
 project_id = "ocblgldglqhlrmtnynmu"
+
+[functions.web3-admin-auth]
+verify_jwt = false

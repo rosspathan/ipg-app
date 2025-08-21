@@ -40,6 +40,7 @@ import WalletHomeScreen from "./pages/WalletHomeScreen";
 import EmailVerificationScreen from "./pages/EmailVerificationScreen";
 import EmailVerifiedScreen from "./pages/EmailVerifiedScreen";
 import AdminPanel from "./pages/AdminPanel";
+import AdminLoginScreen from "./pages/AdminLoginScreen";
 import NotFound from "./pages/NotFound";
 import ResetPasswordScreen from "./pages/ResetPasswordScreen";
  
@@ -56,8 +57,9 @@ function App() {
             <BrowserRouter>
               <Routes>
                <Route path="/" element={<Index />} />
-               <Route path="/auth" element={<AuthScreen />} />
-               <Route path="/reset-password" element={<ResetPasswordScreen />} />
+            <Route path="/auth" element={<AuthScreen />} />
+            <Route path="/reset-password" element={<ResetPasswordScreen />} />
+            <Route path="/admin-login" element={<AdminLoginScreen />} />
                <Route path="/splash" element={<SplashScreen />} />
                <Route path="/welcome" element={<WelcomeScreen />} />
                <Route path="/welcome1" element={<WelcomeScreen1 />} />

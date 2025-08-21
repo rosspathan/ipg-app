@@ -39,13 +39,21 @@ const Index = () => {
                 Go to Wallet
               </Button>
               
-            {isAdmin && (
+            {isAdmin ? (
               <Button 
                 variant="outline" 
                 onClick={() => navigate("/admin")}
                 className="w-full"
               >
                 Admin Panel
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/admin-login")}
+                className="w-full"
+              >
+                Web3 Admin Login
               </Button>
             )}
               
