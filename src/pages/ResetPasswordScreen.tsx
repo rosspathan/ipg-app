@@ -13,10 +13,21 @@ const ResetPasswordScreen = () => {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [canReset, setCanReset] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "Reset Password | CryptoFlow";
+    // Detect recovery session from email link
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || !!session) {
+        setCanReset(true);
+      }
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setCanReset(true);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
