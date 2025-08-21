@@ -9,6 +9,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, Calculator, TrendingUp, TrendingDown, Target } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TradingViewWidget from "@/components/TradingViewWidget";
+import OrderHistory from "@/components/OrderHistory";
 
 const TradingScreen = () => {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ const TradingScreen = () => {
     ]
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!amount) {
       toast({
         title: "Invalid Amount",
@@ -87,6 +88,8 @@ const TradingScreen = () => {
     const totalValue = parseFloat(amount) * orderPrice;
     const fee = totalValue * 0.001; // 0.1% fee
 
+    // Here you would integrate with the useOrderHistory hook to create the order
+    // For now, we'll continue with the navigation to order confirmation
     navigate("/order-confirmation", {
       state: {
         orderDetails: {
@@ -343,6 +346,11 @@ const TradingScreen = () => {
             </CardContent>
           </Card>
         </div>
+      </div>
+      
+      {/* Order History Section */}
+      <div className="p-4">
+        <OrderHistory />
       </div>
     </div>
   );
