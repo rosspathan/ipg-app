@@ -1,15 +1,31 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Network, Copy, ExternalLink, RefreshCw } from "lucide-react";
+import { Network, Copy, ExternalLink, RefreshCw, QrCode } from "lucide-react";
 import { useWeb3 } from "@/contexts/Web3Context";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import QRCode from "qrcode";
 
 const BSCWalletInfo = () => {
   const { wallet, network, getBalance, switchNetwork } = useWeb3();
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (wallet?.address) {
+      QRCode.toDataURL(wallet.address, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      }).then(setQrCodeDataUrl).catch(console.error);
+    }
+  }, [wallet?.address]);
 
   if (!wallet) return null;
 
@@ -85,18 +101,42 @@ const BSCWalletInfo = () => {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Address:</span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleCopyAddress}
-              className="h-6 px-2"
-            >
-              <Copy className="w-3 h-3" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowQR(!showQR)}
+                className="h-6 px-2"
+              >
+                <QrCode className="w-3 h-3" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleCopyAddress}
+                className="h-6 px-2"
+              >
+                <Copy className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
           <div className="font-mono text-xs break-all bg-muted p-2 rounded">
             {wallet.address}
           </div>
+          
+          {/* QR Code */}
+          {showQR && qrCodeDataUrl && (
+            <div className="flex justify-center p-4 bg-white rounded-lg">
+              <div className="text-center space-y-2">
+                <img 
+                  src={qrCodeDataUrl} 
+                  alt="Wallet Address QR Code" 
+                  className="w-48 h-48 mx-auto"
+                />
+                <p className="text-xs text-muted-foreground">Scan to get wallet address</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Balance */}
