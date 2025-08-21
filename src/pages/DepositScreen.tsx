@@ -3,34 +3,61 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, QrCode } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useWeb3 } from "@/contexts/Web3Context";
+import QRCode from "qrcode";
 
 const DepositScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedAsset, setSelectedAsset] = useState("BTC");
-  const [selectedNetwork, setSelectedNetwork] = useState("Bitcoin");
+  const { wallet, network } = useWeb3();
+  const [selectedAsset, setSelectedAsset] = useState("BNB");
+  const [selectedNetwork, setSelectedNetwork] = useState("BSC");
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
 
   const assets = [
-    { symbol: "BTC", name: "Bitcoin", networks: ["Bitcoin"] },
-    { symbol: "ETH", name: "Ethereum", networks: ["Ethereum", "BSC"] },
-    { symbol: "USDT", name: "Tether", networks: ["Ethereum", "BSC", "Tron"] },
-    { symbol: "USDC", name: "USD Coin", networks: ["Ethereum", "BSC"] }
+    { symbol: "BNB", name: "Binance Coin", networks: ["BSC"] },
+    { symbol: "ETH", name: "Ethereum", networks: ["BSC"] },
+    { symbol: "USDT", name: "Tether", networks: ["BSC"] },
+    { symbol: "USDC", name: "USD Coin", networks: ["BSC"] },
+    { symbol: "BUSD", name: "Binance USD", networks: ["BSC"] }
   ];
 
+  useEffect(() => {
+    if (wallet?.address) {
+      QRCode.toDataURL(wallet.address, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      }).then(setQrCodeDataUrl).catch(console.error);
+    }
+  }, [wallet?.address]);
+
   const depositInfo = {
-    address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
-    minDeposit: "0.0001 BTC",
-    confirmations: "1",
+    address: wallet?.address || "Connect wallet to see address",
+    minDeposit: selectedAsset === "BNB" ? "0.001 BNB" : "0.01 " + selectedAsset,
+    confirmations: "12",
     fee: "Free"
   };
 
   const copyAddress = () => {
-    navigator.clipboard.writeText(depositInfo.address);
+    if (!wallet?.address) {
+      toast({
+        title: "No Wallet Connected",
+        description: "Please connect your wallet first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    navigator.clipboard.writeText(wallet.address);
     toast({
       title: "Address Copied",
-      description: "Deposit address has been copied to clipboard",
+      description: "Your BSC wallet address has been copied to clipboard",
     });
   };
 
@@ -102,24 +129,47 @@ const DepositScreen = () => {
             <CardTitle className="text-lg">Deposit Address</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* QR Code Placeholder */}
+            {/* QR Code */}
             <div className="flex justify-center">
-              <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center">
-                <QrCode className="w-24 h-24 text-muted-foreground" />
+              <div className="p-4 bg-white rounded-lg">
+                {qrCodeDataUrl && wallet?.address ? (
+                  <div className="text-center space-y-2">
+                    <img 
+                      src={qrCodeDataUrl} 
+                      alt="BSC Wallet Address QR Code" 
+                      className="w-48 h-48 mx-auto"
+                    />
+                    <p className="text-xs text-muted-foreground">Scan to get BSC wallet address</p>
+                  </div>
+                ) : (
+                  <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <QrCode className="w-24 h-24 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Connect wallet to generate QR</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Address */}
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Address</p>
+              <p className="text-sm font-medium text-muted-foreground">BSC Wallet Address</p>
               <div className="flex items-center space-x-2">
                 <div className="flex-1 p-3 bg-muted rounded-lg">
-                  <p className="text-sm font-mono break-all">{depositInfo.address}</p>
+                  <p className="text-sm font-mono break-all">
+                    {wallet?.address || "Connect wallet to see address"}
+                  </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={copyAddress}>
                   <Copy className="w-4 h-4" />
                 </Button>
               </div>
+              {wallet?.address && (
+                <p className="text-xs text-muted-foreground">
+                  Network: {network.name} ({network.chainId})
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -146,11 +196,11 @@ const DepositScreen = () => {
         </Card>
 
         {/* Warning */}
-        <Card className="bg-yellow-50 border-yellow-200">
+        <Card className="bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800">
           <CardContent className="p-4">
-            <p className="text-sm text-yellow-800">
-              Only send {selectedAsset} to this address via {selectedNetwork} network. 
-              Sending other assets or using wrong network may result in permanent loss.
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              Only send BEP20 tokens to this BSC address. Make sure you're using the Binance Smart Chain (BSC) network. 
+              Sending tokens from other networks or wrong addresses may result in permanent loss.
             </p>
           </CardContent>
         </Card>
