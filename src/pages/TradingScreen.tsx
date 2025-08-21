@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,15 +37,51 @@ const TradingScreen = () => {
   const currentPair = tradingPairs.find(p => p.pair === selectedPair) || tradingPairs[0];
   const currentSymbol = tradingType === 'spot' ? currentPair.symbol : currentPair.futures;
 
-  // Mock market data
-  const marketData = {
-    price: "43,250.00",
-    change24h: "+2.45%",
-    high24h: "44,100.00",
-    low24h: "42,800.00",
-    volume24h: "1,234.56M",
-    isPositive: true
+// Live market data via Binance WebSocket
+const [market, setMarket] = useState({
+  price: 0,
+  changePercent: 0,
+  high24h: 0,
+  low24h: 0,
+  volume24h: 0,
+});
+
+useEffect(() => {
+  const wsSymbol = selectedPair.replace('/', '').toLowerCase();
+  const url = tradingType === 'futures'
+    ? `wss://fstream.binance.com/ws/${wsSymbol}@ticker`
+    : `wss://stream.binance.com:9443/ws/${wsSymbol}@ticker`;
+
+  const ws = new WebSocket(url);
+  ws.onmessage = (event) => {
+    try {
+      const d = JSON.parse(event.data);
+      setMarket({
+        price: parseFloat(d.c), // last price
+        changePercent: parseFloat(d.P), // change percent
+        high24h: parseFloat(d.h),
+        low24h: parseFloat(d.l),
+        volume24h: parseFloat(d.v ?? d.V ?? 0),
+      });
+    } catch (err) {
+      console.error('Ticker parse error', err);
+    }
   };
+
+  return () => ws.close();
+}, [selectedPair, tradingType]);
+
+// Formatted display values
+const marketData = {
+  price: market.price ? new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 }).format(market.price) : '--',
+  change24h: Number.isFinite(market.changePercent) ? `${market.changePercent >= 0 ? '+' : ''}${market.changePercent.toFixed(2)}%` : '--',
+  high24h: market.high24h ? new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 }).format(market.high24h) : '--',
+  low24h: market.low24h ? new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 }).format(market.low24h) : '--',
+  volume24h: market.volume24h ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(market.volume24h) : '--',
+  isPositive: market.changePercent >= 0,
+};
+
+const livePrice = market.price || 0;
 
   // Mock order book data
   const orderBook = {
@@ -84,7 +120,7 @@ const TradingScreen = () => {
       return;
     }
 
-    const orderPrice = orderType === 'market' ? parseFloat(marketData.price.replace(',', '')) : parseFloat(price);
+    const orderPrice = orderType === 'market' ? livePrice : parseFloat(price);
     const totalValue = parseFloat(amount) * orderPrice;
     const fee = totalValue * 0.001; // 0.1% fee
 
@@ -328,7 +364,7 @@ const TradingScreen = () => {
                     <span>Total:</span>
                     <span>
                       {orderType === 'market' 
-                        ? (parseFloat(amount) * parseFloat(marketData.price.replace(',', ''))).toLocaleString()
+                        ? (parseFloat(amount) * livePrice).toLocaleString()
                         : price ? (parseFloat(amount) * parseFloat(price)).toLocaleString() : '0'
                       } USDT
                     </span>
