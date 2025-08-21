@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
 
   const handleLogout = async () => {
     localStorage.removeItem("cryptoflow_pin");
@@ -39,6 +39,7 @@ const Index = () => {
                 Go to Wallet
               </Button>
               
+            {isAdmin && (
               <Button 
                 variant="outline" 
                 onClick={() => navigate("/admin")}
@@ -46,6 +47,7 @@ const Index = () => {
               >
                 Admin Panel
               </Button>
+            )}
               
               <Button 
                 variant="outline" 
