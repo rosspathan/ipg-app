@@ -8,12 +8,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const AuthScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
 
@@ -45,6 +47,26 @@ const AuthScreen = () => {
       setError(error.message);
     } else {
       setError("Check your email for verification link!");
+    }
+    setLoading(false);
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError("Please enter your email to reset password.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setInfo("");
+    const redirect = `${window.location.origin}/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirect,
+    });
+    if (error) {
+      setError(error.message);
+    } else {
+      setInfo("Password reset link sent. Please check your email.");
     }
     setLoading(false);
   };
@@ -89,6 +111,15 @@ const AuthScreen = () => {
                     required
                   />
                 </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Signing In..." : "Sign In"}
                 </Button>
@@ -128,6 +159,11 @@ const AuthScreen = () => {
           {error && (
             <Alert className="mt-4">
               <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {info && (
+            <Alert className="mt-4">
+              <AlertDescription>{info}</AlertDescription>
             </Alert>
           )}
         </CardContent>

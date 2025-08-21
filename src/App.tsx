@@ -41,7 +41,8 @@ import EmailVerificationScreen from "./pages/EmailVerificationScreen";
 import EmailVerifiedScreen from "./pages/EmailVerifiedScreen";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
-
+import ResetPasswordScreen from "./pages/ResetPasswordScreen";
+ 
 const queryClient = new QueryClient();
 
 function App() {
@@ -56,6 +57,7 @@ function App() {
               <Routes>
                <Route path="/" element={<Index />} />
                <Route path="/auth" element={<AuthScreen />} />
+               <Route path="/reset-password" element={<ResetPasswordScreen />} />
                <Route path="/splash" element={<SplashScreen />} />
                <Route path="/welcome" element={<WelcomeScreen />} />
                <Route path="/welcome1" element={<WelcomeScreen1 />} />
