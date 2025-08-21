@@ -66,6 +66,8 @@ export type Database = {
           decimals: number | null
           deposit_enabled: boolean | null
           id: string
+          logo_file_name: string | null
+          logo_file_path: string | null
           logo_url: string | null
           max_withdraw_amount: number | null
           min_trade_amount: number | null
@@ -85,6 +87,8 @@ export type Database = {
           decimals?: number | null
           deposit_enabled?: boolean | null
           id?: string
+          logo_file_name?: string | null
+          logo_file_path?: string | null
           logo_url?: string | null
           max_withdraw_amount?: number | null
           min_trade_amount?: number | null
@@ -104,6 +108,8 @@ export type Database = {
           decimals?: number | null
           deposit_enabled?: boolean | null
           id?: string
+          logo_file_name?: string | null
+          logo_file_path?: string | null
           logo_url?: string | null
           max_withdraw_amount?: number | null
           min_trade_amount?: number | null
@@ -801,6 +807,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_asset_logo_url: {
+        Args: { asset_row: Database["public"]["Tables"]["assets"]["Row"] }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
