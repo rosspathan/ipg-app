@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import LogoUpload from "@/components/LogoUpload";
+import { useAssetLogos } from "@/hooks/useAssetLogos";
 
 interface Asset {
   id: string;
@@ -19,6 +21,8 @@ interface Asset {
   contract_address: string;
   decimals: number;
   logo_url: string;
+  logo_file_path: string | null;
+  logo_file_name: string | null;
   network: string;
   deposit_enabled: boolean;
   withdraw_enabled: boolean;
@@ -36,6 +40,7 @@ const AdminAssets = () => {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { toast } = useToast();
+  const { getLogoUrl } = useAssetLogos();
 
   const [formData, setFormData] = useState({
     symbol: '',
@@ -43,6 +48,8 @@ const AdminAssets = () => {
     contract_address: '',
     decimals: 18,
     logo_url: '',
+    logo_file_path: null as string | null,
+    logo_file_name: null as string | null,
     network: 'BEP20',
     deposit_enabled: true,
     withdraw_enabled: true,
@@ -137,6 +144,8 @@ const AdminAssets = () => {
       contract_address: asset.contract_address || '',
       decimals: asset.decimals,
       logo_url: asset.logo_url || '',
+      logo_file_path: asset.logo_file_path,
+      logo_file_name: asset.logo_file_name,
       network: asset.network,
       deposit_enabled: asset.deposit_enabled,
       withdraw_enabled: asset.withdraw_enabled,
@@ -186,6 +195,8 @@ const AdminAssets = () => {
       contract_address: '',
       decimals: 18,
       logo_url: '',
+      logo_file_path: null,
+      logo_file_name: null,
       network: 'BEP20',
       deposit_enabled: true,
       withdraw_enabled: true,
@@ -282,13 +293,26 @@ const AdminAssets = () => {
                 </div>
               </div>
 
+              <LogoUpload
+                assetSymbol={formData.symbol}
+                currentLogo={formData.logo_file_path}
+                onLogoUpdate={(filePath) => {
+                  setFormData({
+                    ...formData,
+                    logo_file_path: filePath,
+                    logo_file_name: filePath ? filePath.split('/').pop() || null : null,
+                  });
+                }}
+                className="mb-4"
+              />
+
               <div>
-                <Label htmlFor="logo_url">Logo URL</Label>
+                <Label htmlFor="logo_url">Legacy Logo URL (fallback)</Label>
                 <Input
                   id="logo_url"
                   value={formData.logo_url}
                   onChange={(e) => setFormData({...formData, logo_url: e.target.value})}
-                  placeholder="https://..."
+                  placeholder="https://... (optional fallback)"
                 />
               </div>
 
@@ -410,9 +434,18 @@ const AdminAssets = () => {
                 <TableRow key={asset.id}>
                   <TableCell>
                     <div className="flex items-center space-x-3">
-                      {asset.logo_url && (
-                        <img src={asset.logo_url} alt={asset.symbol} className="w-6 h-6 rounded-full" />
-                      )}
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                        <img 
+                          src={getLogoUrl(asset.logo_file_path, asset.logo_url)} 
+                          alt={asset.symbol} 
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.parentElement!.innerHTML = asset.symbol.charAt(0);
+                          }}
+                        />
+                      </div>
                       <div>
                         <div className="font-medium">{asset.symbol}</div>
                         <div className="text-sm text-muted-foreground">{asset.name}</div>
