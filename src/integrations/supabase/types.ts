@@ -441,6 +441,104 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          amount: number
+          average_price: number | null
+          cancelled_at: string | null
+          client_order_id: string | null
+          created_at: string
+          execution_reports: Json | null
+          expires_at: string | null
+          fee_asset: string | null
+          fees_paid: number | null
+          filled_amount: number
+          filled_at: string | null
+          id: string
+          leverage: number | null
+          metadata: Json | null
+          order_source: string | null
+          order_type: string
+          price: number | null
+          remaining_amount: number | null
+          side: string
+          status: string
+          stop_price: number | null
+          symbol: string
+          total_value: number | null
+          trading_pair_id: string | null
+          trading_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          average_price?: number | null
+          cancelled_at?: string | null
+          client_order_id?: string | null
+          created_at?: string
+          execution_reports?: Json | null
+          expires_at?: string | null
+          fee_asset?: string | null
+          fees_paid?: number | null
+          filled_amount?: number
+          filled_at?: string | null
+          id?: string
+          leverage?: number | null
+          metadata?: Json | null
+          order_source?: string | null
+          order_type: string
+          price?: number | null
+          remaining_amount?: number | null
+          side: string
+          status?: string
+          stop_price?: number | null
+          symbol: string
+          total_value?: number | null
+          trading_pair_id?: string | null
+          trading_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          average_price?: number | null
+          cancelled_at?: string | null
+          client_order_id?: string | null
+          created_at?: string
+          execution_reports?: Json | null
+          expires_at?: string | null
+          fee_asset?: string | null
+          fees_paid?: number | null
+          filled_amount?: number
+          filled_at?: string | null
+          id?: string
+          leverage?: number | null
+          metadata?: Json | null
+          order_source?: string | null
+          order_type?: string
+          price?: number | null
+          remaining_amount?: number | null
+          side?: string
+          status?: string
+          stop_price?: number | null
+          symbol?: string
+          total_value?: number | null
+          trading_pair_id?: string | null
+          trading_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_trading_pair_id_fkey"
+            columns: ["trading_pair_id"]
+            isOneToOne: false
+            referencedRelation: "trading_pairs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_status: string | null
@@ -535,6 +633,75 @@ export type Database = {
             columns: ["asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trades: {
+        Row: {
+          buy_order_id: string
+          buyer_fee: number
+          buyer_id: string
+          created_at: string
+          fee_asset: string | null
+          id: string
+          price: number
+          quantity: number
+          sell_order_id: string
+          seller_fee: number
+          seller_id: string
+          symbol: string
+          total_value: number
+          trade_time: string
+          trading_type: string
+        }
+        Insert: {
+          buy_order_id: string
+          buyer_fee?: number
+          buyer_id: string
+          created_at?: string
+          fee_asset?: string | null
+          id?: string
+          price: number
+          quantity: number
+          sell_order_id: string
+          seller_fee?: number
+          seller_id: string
+          symbol: string
+          total_value: number
+          trade_time?: string
+          trading_type?: string
+        }
+        Update: {
+          buy_order_id?: string
+          buyer_fee?: number
+          buyer_id?: string
+          created_at?: string
+          fee_asset?: string | null
+          id?: string
+          price?: number
+          quantity?: number
+          sell_order_id?: string
+          seller_fee?: number
+          seller_id?: string
+          symbol?: string
+          total_value?: number
+          trade_time?: string
+          trading_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_buy_order_id_fkey"
+            columns: ["buy_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trades_sell_order_id_fkey"
+            columns: ["sell_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
