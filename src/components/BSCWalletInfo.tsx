@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import QRCode from "qrcode";
 
 const BSCWalletInfo = () => {
-  const { wallet, network, getBalance, switchNetwork } = useWeb3();
+  const { wallet, network, getBalance } = useWeb3();
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -67,11 +67,6 @@ const BSCWalletInfo = () => {
   const handleViewOnExplorer = () => {
     const explorerUrl = `${network.blockExplorerUrl}/address/${wallet.address}`;
     window.open(explorerUrl, '_blank');
-  };
-
-  const handleSwitchNetwork = () => {
-    const isCurrentlyTestnet = network.chainId === 97;
-    switchNetwork(!isCurrentlyTestnet);
   };
 
   return (
@@ -164,18 +159,10 @@ const BSCWalletInfo = () => {
             variant="outline" 
             size="sm" 
             onClick={handleViewOnExplorer}
-            className="flex-1"
+            className="w-full"
           >
             <ExternalLink className="w-3 h-3 mr-1" />
-            Explorer
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSwitchNetwork}
-            className="flex-1"
-          >
-            Switch to {wallet.network === 'mainnet' ? 'Testnet' : 'Mainnet'}
+            View on Explorer
           </Button>
         </div>
 

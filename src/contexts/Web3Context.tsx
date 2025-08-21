@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 
-// BSC Network Configuration
+// BSC Mainnet Configuration
 const BSC_NETWORK = {
   chainId: 56,
   name: 'Binance Smart Chain',
@@ -10,32 +10,23 @@ const BSC_NETWORK = {
   blockExplorerUrl: 'https://bscscan.com',
 };
 
-const BSC_TESTNET = {
-  chainId: 97,
-  name: 'BSC Testnet',
-  currency: 'tBNB',
-  rpcUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
-  blockExplorerUrl: 'https://testnet.bscscan.com',
-};
-
 interface WalletData {
   address: string;
   seedPhrase?: string;
   privateKey: string;
-  network: 'mainnet' | 'testnet';
+  network: 'mainnet';
   balance?: string;
 }
 
 interface Web3ContextType {
   wallet: WalletData | null;
   isConnected: boolean;
-  network: typeof BSC_NETWORK | typeof BSC_TESTNET;
+  network: typeof BSC_NETWORK;
   provider: ethers.JsonRpcProvider | null;
-  createWallet: (seedPhrase: string, useTestnet?: boolean) => Promise<void>;
-  importWallet: (seedPhrase: string, useTestnet?: boolean) => Promise<void>;
+  createWallet: (seedPhrase: string) => Promise<void>;
+  importWallet: (seedPhrase: string) => Promise<void>;
   signMessage: (message: string) => Promise<string>;
   getBalance: () => Promise<string>;
-  switchNetwork: (useTestnet: boolean) => Promise<void>;
   disconnectWallet: () => void;
 }
 
@@ -51,7 +42,7 @@ export const useWeb3 = () => {
 
 export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [wallet, setWallet] = useState<WalletData | null>(null);
-  const [network, setNetwork] = useState<typeof BSC_NETWORK | typeof BSC_TESTNET>(BSC_NETWORK);
+  const [network, setNetwork] = useState<typeof BSC_NETWORK>(BSC_NETWORK);
   const [provider, setProvider] = useState<ethers.JsonRpcProvider | null>(null);
 
   useEffect(() => {
@@ -61,21 +52,14 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Check for stored wallet on initialization
     const storedWallet = localStorage.getItem('cryptoflow_wallet');
-    const storedNetwork = localStorage.getItem('cryptoflow_network');
     
     if (storedWallet) {
       try {
         const parsedWallet = JSON.parse(storedWallet);
         setWallet(parsedWallet);
-        
-        if (storedNetwork) {
-          const isTestnet = JSON.parse(storedNetwork);
-          setNetwork(isTestnet ? BSC_TESTNET : BSC_NETWORK);
-        }
       } catch (error) {
         console.error('Error loading stored wallet:', error);
         localStorage.removeItem('cryptoflow_wallet');
-        localStorage.removeItem('cryptoflow_network');
       }
     }
   }, []);
@@ -86,26 +70,22 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     setProvider(newProvider);
   }, [network]);
 
-  const createWallet = async (seedPhrase: string, useTestnet: boolean = false) => {
+  const createWallet = async (seedPhrase: string) => {
     try {
       // Generate wallet from seed phrase
       const ethersWallet = ethers.Wallet.fromPhrase(seedPhrase);
       
-      // Set network
-      const selectedNetwork = useTestnet ? BSC_TESTNET : BSC_NETWORK;
-      setNetwork(selectedNetwork);
-      
-      // Create wallet data with BSC network info
+      // Create wallet data with BSC mainnet info
       const walletData: WalletData = {
         address: ethersWallet.address, // This is a valid BSC address (same format as Ethereum)
         seedPhrase,
         privateKey: ethersWallet.privateKey,
-        network: useTestnet ? 'testnet' : 'mainnet',
+        network: 'mainnet',
       };
       
       // Get initial balance
       try {
-        const provider = new ethers.JsonRpcProvider(selectedNetwork.rpcUrl);
+        const provider = new ethers.JsonRpcProvider(BSC_NETWORK.rpcUrl);
         const balance = await provider.getBalance(ethersWallet.address);
         walletData.balance = ethers.formatEther(balance);
       } catch (balanceError) {
@@ -115,33 +95,28 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setWallet(walletData);
       localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
-      localStorage.setItem('cryptoflow_network', JSON.stringify(useTestnet));
     } catch (error) {
       console.error('Error creating BSC wallet:', error);
       throw new Error('Failed to create BSC wallet');
     }
   };
 
-  const importWallet = async (seedPhrase: string, useTestnet: boolean = false) => {
+  const importWallet = async (seedPhrase: string) => {
     try {
       // Generate wallet from seed phrase
       const ethersWallet = ethers.Wallet.fromPhrase(seedPhrase);
       
-      // Set network
-      const selectedNetwork = useTestnet ? BSC_TESTNET : BSC_NETWORK;
-      setNetwork(selectedNetwork);
-      
-      // Create wallet data with BSC network info
+      // Create wallet data with BSC mainnet info
       const walletData: WalletData = {
         address: ethersWallet.address, // Valid BSC address
         seedPhrase,
         privateKey: ethersWallet.privateKey,
-        network: useTestnet ? 'testnet' : 'mainnet',
+        network: 'mainnet',
       };
       
       // Get initial balance
       try {
-        const provider = new ethers.JsonRpcProvider(selectedNetwork.rpcUrl);
+        const provider = new ethers.JsonRpcProvider(BSC_NETWORK.rpcUrl);
         const balance = await provider.getBalance(ethersWallet.address);
         walletData.balance = ethers.formatEther(balance);
       } catch (balanceError) {
@@ -151,7 +126,6 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setWallet(walletData);
       localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
-      localStorage.setItem('cryptoflow_network', JSON.stringify(useTestnet));
     } catch (error) {
       console.error('Error importing BSC wallet:', error);
       throw new Error('Failed to import BSC wallet');
@@ -194,28 +168,10 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const switchNetwork = async (useTestnet: boolean) => {
-    const selectedNetwork = useTestnet ? BSC_TESTNET : BSC_NETWORK;
-    const networkType: 'mainnet' | 'testnet' = useTestnet ? 'testnet' : 'mainnet';
-    
-    setNetwork(selectedNetwork);
-    localStorage.setItem('cryptoflow_network', JSON.stringify(useTestnet));
-    
-    if (wallet) {
-      const updatedWallet: WalletData = { 
-        ...wallet, 
-        network: networkType
-      };
-      setWallet(updatedWallet);
-      localStorage.setItem('cryptoflow_wallet', JSON.stringify(updatedWallet));
-    }
-  };
-
   const disconnectWallet = () => {
     setWallet(null);
     setProvider(null);
     localStorage.removeItem('cryptoflow_wallet');
-    localStorage.removeItem('cryptoflow_network');
   };
 
   const value = {
@@ -227,7 +183,6 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     importWallet,
     signMessage,
     getBalance,
-    switchNetwork,
     disconnectWallet,
   };
 
