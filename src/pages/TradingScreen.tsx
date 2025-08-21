@@ -83,23 +83,42 @@ const marketData = {
 
 const livePrice = market.price || 0;
 
-  // Mock order book data
-  const orderBook = {
-    bids: [
-      { price: "43,245.50", amount: "0.125", total: "5,405.69" },
-      { price: "43,240.25", amount: "0.456", total: "19,717.55" },
-      { price: "43,235.00", amount: "0.789", total: "34,116.42" },
-      { price: "43,230.75", amount: "0.234", total: "10,115.96" },
-      { price: "43,225.50", amount: "0.567", total: "24,508.86" },
-    ],
-    asks: [
-      { price: "43,250.50", amount: "0.235", total: "10,163.87" },
-      { price: "43,255.75", amount: "0.678", total: "29,327.40" },
-      { price: "43,260.00", amount: "0.345", total: "14,924.70" },
-      { price: "43,265.25", amount: "0.567", total: "24,511.46" },
-      { price: "43,270.50", amount: "0.123", total: "5,322.27" },
-    ]
+// Live order book via Binance depth stream
+const [orderBook, setOrderBook] = useState<{ bids: [number, number][]; asks: [number, number][] }>({
+  bids: [],
+  asks: [],
+});
+
+useEffect(() => {
+  const wsSymbol = selectedPair.replace('/', '').toLowerCase();
+  const url = tradingType === 'futures'
+    ? `wss://fstream.binance.com/ws/${wsSymbol}@depth20@100ms`
+    : `wss://stream.binance.com:9443/ws/${wsSymbol}@depth20@100ms`;
+
+  const ws = new WebSocket(url);
+  ws.onmessage = (event) => {
+    try {
+      const d = JSON.parse(event.data);
+      const bids: [number, number][] = (d.b || d.bids || []).map((x: any) => [
+        parseFloat(x[0] ?? x.p ?? x.price),
+        parseFloat(x[1] ?? x.q ?? x.qty),
+      ]).filter(([p, q]) => Number.isFinite(p) && Number.isFinite(q));
+      const asks: [number, number][] = (d.a || d.asks || []).map((x: any) => [
+        parseFloat(x[0] ?? x.p ?? x.price),
+        parseFloat(x[1] ?? x.q ?? x.qty),
+      ]).filter(([p, q]) => Number.isFinite(p) && Number.isFinite(q));
+
+      setOrderBook({
+        bids: bids.sort((a, b) => b[0] - a[0]).slice(0, 20),
+        asks: asks.sort((a, b) => a[0] - b[0]).slice(0, 20),
+      });
+    } catch (e) {
+      console.error('Depth parse error', e);
+    }
   };
+
+  return () => ws.close();
+}, [selectedPair, tradingType]);
 
   const handlePlaceOrder = async () => {
     if (!amount) {
@@ -243,13 +262,16 @@ const livePrice = market.price || 0;
               <div className="space-y-1">
                 {/* Asks */}
                 <div className="space-y-1 max-h-32 overflow-hidden">
-                  {orderBook.asks.slice().reverse().map((ask, index) => (
-                    <div key={index} className="flex justify-between text-xs px-3 py-1 hover:bg-red-500/10">
-                      <span className="text-red-500">{ask.price}</span>
-                      <span>{ask.amount}</span>
-                      <span className="text-muted-foreground">{ask.total}</span>
-                    </div>
-                  ))}
+                  {orderBook.asks.slice(0, 10).map(([price, qty], index) => {
+                    const total = price * qty;
+                    return (
+                      <div key={index} className="flex justify-between text-xs px-3 py-1 hover:bg-red-500/10">
+                        <span className="text-red-500">{price.toFixed(2)}</span>
+                        <span>{qty.toFixed(3)}</span>
+                        <span className="text-muted-foreground">{total.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
                 
                 {/* Current Price */}
@@ -261,13 +283,16 @@ const livePrice = market.price || 0;
                 
                 {/* Bids */}
                 <div className="space-y-1 max-h-32 overflow-hidden">
-                  {orderBook.bids.map((bid, index) => (
-                    <div key={index} className="flex justify-between text-xs px-3 py-1 hover:bg-green-500/10">
-                      <span className="text-green-500">{bid.price}</span>
-                      <span>{bid.amount}</span>
-                      <span className="text-muted-foreground">{bid.total}</span>
-                    </div>
-                  ))}
+                  {orderBook.bids.slice(0, 10).map(([price, qty], index) => {
+                    const total = price * qty;
+                    return (
+                      <div key={index} className="flex justify-between text-xs px-3 py-1 hover:bg-green-500/10">
+                        <span className="text-green-500">{price.toFixed(2)}</span>
+                        <span>{qty.toFixed(3)}</span>
+                        <span className="text-muted-foreground">{total.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </CardContent>
