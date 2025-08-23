@@ -7,12 +7,19 @@ const Index = () => {
   const { user, signOut, isAdmin } = useAuth();
 
   const handleLogout = async () => {
-    localStorage.removeItem("cryptoflow_pin");
-    localStorage.removeItem("cryptoflow_biometric");
-    localStorage.removeItem("cryptoflow_antiphishing");
-    localStorage.removeItem("cryptoflow_setup_complete");
-    await signOut();
-    navigate("/auth");
+    try {
+      console.log('Starting logout process...');
+      localStorage.removeItem("cryptoflow_pin");
+      localStorage.removeItem("cryptoflow_biometric");
+      localStorage.removeItem("cryptoflow_antiphishing");
+      localStorage.removeItem("cryptoflow_setup_complete");
+      console.log('Calling signOut...');
+      await signOut();
+      console.log('SignOut completed, navigating to auth...');
+      navigate("/auth");
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
