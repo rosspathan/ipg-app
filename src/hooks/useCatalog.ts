@@ -1,7 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from './use-toast';
-import { fetchWithTimeout, getErrorMessage } from '@/utils/fetchWithTimeout';
 
 interface Asset {
   id: string;
@@ -40,7 +38,7 @@ interface Market {
   quote_asset?: Asset;
 }
 
-type CatalogStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'error';
+type CatalogStatus = 'loading' | 'ready' | 'empty' | 'error';
 
 interface CatalogData {
   status: CatalogStatus;
@@ -57,13 +55,10 @@ interface CatalogData {
 }
 
 export const useCatalog = (): CatalogData => {
-  const [status, setStatus] = useState<CatalogStatus>('idle');
+  const [status, setStatus] = useState<CatalogStatus>('loading');
   const [assets, setAssets] = useState<Asset[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
-  const channelRef = useRef<any>(null);
-  const initialFetchDone = useRef(false);
 
   // Helper function to get logo URL
   const getAssetLogoUrl = (asset: Asset): string => {
@@ -79,43 +74,41 @@ export const useCatalog = (): CatalogData => {
     logo_url: getAssetLogoUrl(asset),
   });
 
-  // Simplified assets fetch for debugging
-  const fetchAssets = async (): Promise<Asset[]> => {
-    console.log('🟡 Starting assets fetch...');
-    console.log('🟡 Supabase client:', !!supabase);
-    console.log('🟡 Current time:', new Date().toISOString());
-
+  // Simple data loading function
+  const loadData = async () => {
     try {
-      const { data, error } = await supabase
+      console.log('🔄 Loading assets...');
+      setStatus('loading');
+      setError(null);
+
+      // Fetch assets
+      const { data: assetsData, error: assetsError } = await supabase
         .from('assets')
         .select('*')
         .eq('is_active', true)
-        .order('symbol')
-        .limit(5); // Reduced limit for testing
+        .order('symbol');
 
-      console.log('🟡 Raw response - data:', data);
-      console.log('🟡 Raw response - error:', error);
-
-      if (error) {
-        console.error('🔴 Assets fetch error:', error);
-        throw error;
+      if (assetsError) {
+        console.error('❌ Assets error:', assetsError);
+        setError(assetsError.message);
+        setStatus('error');
+        return;
       }
 
-      const enhancedData = (data || []).map(enhanceAsset);
-      console.log('🟢 Assets fetch successful:', enhancedData.length, 'records');
-      console.log('🟢 First asset:', enhancedData[0]);
-      
-      return enhancedData;
-    } catch (err: any) {
-      console.error('🔴 Fetch assets error:', err);
-      throw err;
-    }
-  };
+      if (!assetsData || assetsData.length === 0) {
+        console.log('📭 No assets found');
+        setStatus('empty');
+        setAssets([]);
+        setMarkets([]);
+        return;
+      }
 
-  // Fetch markets (non-blocking for wallet home)
-  const fetchMarkets = async (): Promise<Market[]> => {
-    try {
-      const { data, error } = await supabase
+      const enhancedAssets = assetsData.map(enhanceAsset);
+      console.log('✅ Assets loaded:', enhancedAssets.length);
+      setAssets(enhancedAssets);
+
+      // Fetch markets
+      const { data: marketsData, error: marketsError } = await supabase
         .from('markets')
         .select(`
           *,
@@ -125,135 +118,58 @@ export const useCatalog = (): CatalogData => {
         .eq('is_active', true)
         .order('created_at');
 
-      if (error) {
-        console.error('Markets fetch error:', error);
-        // Don't throw - markets are non-blocking
-        toast({
-          title: 'Markets Loading Issue',
-          description: 'Markets data unavailable, but assets are ready',
-          variant: 'default',
-        });
-        return [];
+      if (marketsError) {
+        console.error('⚠️ Markets error:', marketsError);
+        // Don't fail on markets error
+      } else {
+        const enhancedMarkets = (marketsData || []).map(market => ({
+          ...market,
+          base_asset: market.base_asset ? enhanceAsset(market.base_asset) : undefined,
+          quote_asset: market.quote_asset ? enhanceAsset(market.quote_asset) : undefined,
+        }));
+        console.log('✅ Markets loaded:', enhancedMarkets.length);
+        setMarkets(enhancedMarkets);
       }
 
-      return (data || []).map(market => ({
-        ...market,
-        base_asset: market.base_asset ? enhanceAsset(market.base_asset) : undefined,
-        quote_asset: market.quote_asset ? enhanceAsset(market.quote_asset) : undefined,
-      }));
-    } catch (err) {
-      console.error('Markets fetch failed:', err);
-      return [];
+      setStatus('ready');
+      
+    } catch (err: any) {
+      console.error('❌ Load error:', err);
+      setError(err.message || 'Failed to load data');
+      setStatus('error');
     }
   };
 
-  // Main data loading function
-  const loadCatalogData = useCallback(async () => {
-    try {
-      setStatus('loading');
-      setError(null);
-      
-      console.log('Loading catalog data...');
-
-      // Fetch assets first - this is critical and blocking
-      console.log('🟡 About to call fetchAssets...');
-      const assetsData = await fetchAssets(); // Remove timeout wrapper for now
-      
-      // Check for empty state
-      if (!assetsData || assetsData.length === 0) {
-        console.log('No active assets found');
-        setAssets([]);
-        setMarkets([]);
-        setStatus('empty');
-        return;
-      }
-
-      console.log(`Loaded ${assetsData.length} assets`);
-      setAssets(assetsData);
-      setStatus('ready');
-
-      // Fetch markets in parallel - non-blocking
-      fetchMarkets().then(marketsData => {
-        console.log(`Loaded ${marketsData.length} markets`);
-        setMarkets(marketsData);
-      });
-
-      initialFetchDone.current = true;
-      
-    } catch (err: any) {
-      console.error('Error loading catalog data:', err);
-      const errorMessage = getErrorMessage(err);
-      setError(errorMessage);
-      setStatus('error');
-      
-      // Don't show toast on initial permission errors - UI will handle it
-      if (!errorMessage.includes('Permission denied')) {
-        toast({
-          title: 'Error Loading Assets',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      }
-    }
-  }, [toast]);
-
-  // Set up realtime subscriptions (only after initial success)
+  // Load data on mount
   useEffect(() => {
-    loadCatalogData();
+    loadData();
+  }, []);
 
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, [loadCatalogData]);
-
-  // Setup realtime after initial fetch succeeds
+  // Set up realtime updates
   useEffect(() => {
-    if (!initialFetchDone.current) return;
+    if (status !== 'ready') return;
 
-    console.log('Setting up realtime subscriptions...');
+    console.log('🔄 Setting up realtime...');
     
     const channel = supabase
-      .channel('catalog-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'assets',
-        },
-        (payload) => {
-          console.log('Assets table change detected:', payload);
-          // Small delay to ensure DB consistency
-          setTimeout(() => loadCatalogData(), 500);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'markets',
-        },
-        (payload) => {
-          console.log('Markets table change detected:', payload);
-          setTimeout(() => loadCatalogData(), 500);
-        }
-      )
+      .channel('catalog-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, () => {
+        console.log('🔄 Assets updated, reloading...');
+        setTimeout(loadData, 100);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'markets' }, () => {
+        console.log('🔄 Markets updated, reloading...');
+        setTimeout(loadData, 100);
+      })
       .subscribe();
 
-    channelRef.current = channel;
-
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
+      console.log('🔄 Cleaning up realtime...');
+      supabase.removeChannel(channel);
     };
-  }, [loadCatalogData]);
+  }, [status]);
 
-  // Computed derived data
+  // Computed data
   const assetsById = assets.reduce((acc, asset) => {
     acc[asset.id] = asset;
     return acc;
@@ -274,7 +190,7 @@ export const useCatalog = (): CatalogData => {
     assetsById,
     pairsBySymbol,
     error,
-    refetch: loadCatalogData,
+    refetch: loadData,
     // Legacy compatibility
     assetsList: assets,
     marketsList: markets,
