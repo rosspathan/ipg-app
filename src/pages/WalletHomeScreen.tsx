@@ -4,22 +4,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, ArrowUpCircle, ArrowDownCircle, Send, MoreHorizontal, Repeat, Coins, Gift, TrendingUp, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useCatalog } from "@/hooks/useCatalog";
 import BSCWalletInfo from "@/components/BSCWalletInfo";
+import AssetLogo from "@/components/AssetLogo";
 
 const WalletHomeScreen = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const [showBalances, setShowBalances] = useState(true);
+  const { assetsList, loading } = useCatalog();
 
-  // Mock asset data
-  const assets = [
-    { symbol: "BTC", name: "Bitcoin", balance: 0.25, fiatValue: 12500.00, icon: "₿" },
-    { symbol: "ETH", name: "Ethereum", balance: 5.75, fiatValue: 10230.50, icon: "Ξ" },
-    { symbol: "USDT", name: "Tether", balance: 2500.00, fiatValue: 2500.00, icon: "₮" },
-    { symbol: "BNB", name: "Binance Coin", balance: 15.3, fiatValue: 4590.00, icon: "Ⓑ" },
-  ];
+  // Mock user balances - in a real app, this would come from user balance data
+  const mockBalances = {
+    BTC: { balance: 0.25, fiatValue: 12500.00 },
+    ETH: { balance: 5.75, fiatValue: 10230.50 },
+    USDT: { balance: 2500.00, fiatValue: 2500.00 },
+    BNB: { balance: 15.3, fiatValue: 4590.00 },
+  };
 
-  const totalBalance = assets.reduce((sum, asset) => sum + asset.fiatValue, 0);
+  // Combine assets with mock balances
+  const userAssets = assetsList.map(asset => ({
+    ...asset,
+    balance: mockBalances[asset.symbol as keyof typeof mockBalances]?.balance || 0,
+    fiatValue: mockBalances[asset.symbol as keyof typeof mockBalances]?.fiatValue || 0,
+  })).filter(asset => asset.balance > 0);
+
+  const totalBalance = userAssets.reduce((sum, asset) => sum + asset.fiatValue, 0);
 
   // Quick actions
   const actions = [
@@ -33,6 +43,19 @@ const WalletHomeScreen = () => {
     ...(isAdmin ? [{ name: "Admin", icon: Shield, color: "text-red-600", route: "/admin" }] : []),
     { name: "More", icon: MoreHorizontal, color: "text-gray-600", route: "/more" },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background p-4 space-y-6">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading your assets...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 space-y-6">
@@ -101,25 +124,32 @@ const WalletHomeScreen = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {assets.map((asset, index) => (
-            <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-              <div className="flex items-center space-x-3">
-                <div className="text-2xl font-bold">{asset.icon}</div>
-                <div>
-                  <div className="font-medium">{asset.symbol}</div>
-                  <div className="text-sm text-muted-foreground">{asset.name}</div>
+          {userAssets.length > 0 ? (
+            userAssets.map((asset) => (
+              <div key={asset.id} className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="flex items-center space-x-3">
+                  <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} />
+                  <div>
+                    <div className="font-medium">{asset.symbol}</div>
+                    <div className="text-sm text-muted-foreground">{asset.name}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-medium">
+                    {showBalances ? asset.balance.toFixed(4) : "****"} {asset.symbol}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {showBalances ? `$${asset.fiatValue.toLocaleString()}` : "****"}
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="font-medium">
-                  {showBalances ? asset.balance.toFixed(4) : "****"} {asset.symbol}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {showBalances ? `$${asset.fiatValue.toLocaleString()}` : "****"}
-                </div>
-              </div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No assets with balance found</p>
+              <p className="text-sm">Your assets will appear here once you have a balance</p>
             </div>
-          ))}
+          )}
         </CardContent>
       </Card>
     </div>

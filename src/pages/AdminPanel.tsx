@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import AdminDashboard from "./AdminDashboard";
 import AdminUsers from "./AdminUsers";
 import AdminAssets from "./AdminAssets";
+import AdminMarkets from "./AdminMarkets";
 import AdminFunding from "./AdminFunding";
 import AdminInsuranceClaims from "./AdminInsuranceClaims";
 import { 
@@ -110,12 +111,7 @@ const AdminPanel = () => {
         </TabsContent>
 
         <TabsContent value="markets">
-          <Card className="m-6">
-            <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Markets & Trading</h2>
-              <p className="text-muted-foreground">Create and manage trading pairs, configure fees, and set price bands.</p>
-            </CardContent>
-          </Card>
+          <AdminMarkets />
         </TabsContent>
 
         <TabsContent value="funding">

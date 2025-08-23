@@ -43,6 +43,7 @@ import AdminPanel from "./pages/AdminPanel";
 import AdminLoginScreen from "./pages/AdminLoginScreen";
 import NotFound from "./pages/NotFound";
 import ResetPasswordScreen from "./pages/ResetPasswordScreen";
+import DebugCatalog from "./pages/DebugCatalog";
  
 const queryClient = new QueryClient();
 
@@ -90,10 +91,11 @@ function App() {
                <Route path="/insurance" element={<InsuranceScreen />} />
                <Route path="/file-claim" element={<FileClaimScreen />} />
                <Route path="/app-lock" element={<AppLockScreen />} />
-               <Route path="/wallet-home" element={<WalletHomeScreen />} />
-                <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
-                <Route path="/admin/*" element={<AdminRoute><AdminPanel /></AdminRoute>} />
-               <Route path="*" element={<NotFound />} />
+                <Route path="/wallet-home" element={<WalletHomeScreen />} />
+                <Route path="/debug/catalog" element={<DebugCatalog />} />
+                 <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+                 <Route path="/admin/*" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
           </TooltipProvider>

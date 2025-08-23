@@ -6,44 +6,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Search, Star, TrendingUp, TrendingDown } from "lucide-react";
 import TradingViewWidget from "@/components/TradingViewWidget";
+import { useCatalog } from "@/hooks/useCatalog";
+import AssetLogo from "@/components/AssetLogo";
 
 const MarketsScreen = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [watchlist, setWatchlist] = useState<string[]>([]);
+  const { marketsList, loading } = useCatalog();
 
-  const cryptoPairs = [
-    {
-      pair: "BTC/USDT",
-      symbol: "BINANCE:BTCUSDT",
-      name: "Bitcoin"
-    },
-    {
-      pair: "ETH/USDT", 
-      symbol: "BINANCE:ETHUSDT",
-      name: "Ethereum"
-    },
-    {
-      pair: "BNB/USDT",
-      symbol: "BINANCE:BNBUSDT",
-      name: "BNB"
-    },
-    {
-      pair: "ADA/USDT",
-      symbol: "BINANCE:ADAUSDT",
-      name: "Cardano"
-    },
-    {
-      pair: "SOL/USDT",
-      symbol: "BINANCE:SOLUSDT",
-      name: "Solana"
-    },
-    {
-      pair: "DOT/USDT",
-      symbol: "BINANCE:DOTUSDT",
-      name: "Polkadot"
+  // Convert markets to trading pairs format for display
+  const cryptoPairs = marketsList.map(market => {
+    if (!market.base_asset || !market.quote_asset) {
+      return null;
     }
-  ];
+    
+    const pair = `${market.base_asset.symbol}/${market.quote_asset.symbol}`;
+    return {
+      pair,
+      symbol: `BINANCE:${market.base_asset.symbol}${market.quote_asset.symbol}`,
+      name: market.base_asset.name,
+      baseAsset: market.base_asset,
+      quoteAsset: market.quote_asset,
+      marketId: market.id,
+    };
+  }).filter(Boolean) as Array<{
+    pair: string;
+    symbol: string;
+    name: string;
+    baseAsset: any;
+    quoteAsset: any;
+    marketId: string;
+  }>;
 
   const filteredPairs = cryptoPairs.filter(crypto =>
     crypto.pair.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -57,6 +51,30 @@ const MarketsScreen = () => {
         : [...prev, pair]
     );
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background px-4 py-6">
+        <div className="flex items-center mb-6">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="mr-2"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="text-xl font-semibold">Live Markets</h1>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading markets...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background px-4 py-6">
@@ -117,48 +135,64 @@ const MarketsScreen = () => {
         </TabsContent>
 
         <TabsContent value="charts" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredPairs.map((crypto) => (
-              <Card 
-                key={crypto.pair} 
-                className="bg-gradient-card shadow-card border-0 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => navigate(`/market-detail/${crypto.pair.replace('/', '-')}`)}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      {crypto.name} ({crypto.pair})
-                    </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleWatchlist(crypto.pair);
-                      }}
-                    >
-                      <Star 
-                        className={`w-4 h-4 ${
-                          watchlist.includes(crypto.pair) 
-                            ? "fill-yellow-400 text-yellow-400" 
-                            : "text-muted-foreground"
-                        }`} 
-                      />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0 pb-4">
-                  <TradingViewWidget 
-                    symbol={crypto.symbol}
-                    widgetType="mini-chart"
-                    height={200}
-                    colorTheme="dark"
-                  />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {cryptoPairs.length === 0 ? (
+            <Card className="bg-gradient-card shadow-card border-0">
+              <CardContent className="p-8 text-center">
+                <TrendingUp className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">No markets available</h3>
+                <p className="text-muted-foreground">
+                  No trading pairs have been configured yet
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredPairs.map((crypto) => (
+                <Card 
+                  key={crypto.marketId} 
+                  className="bg-gradient-card shadow-card border-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => navigate(`/market-detail/${crypto.pair.replace('/', '-')}`)}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <div className="flex -space-x-1">
+                          <AssetLogo symbol={crypto.baseAsset.symbol} logoUrl={crypto.baseAsset.logo_url} size="sm" />
+                          <AssetLogo symbol={crypto.quoteAsset.symbol} logoUrl={crypto.quoteAsset.logo_url} size="sm" />
+                        </div>
+                        {crypto.name} ({crypto.pair})
+                      </CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWatchlist(crypto.pair);
+                        }}
+                      >
+                        <Star 
+                          className={`w-4 h-4 ${
+                            watchlist.includes(crypto.pair) 
+                              ? "fill-yellow-400 text-yellow-400" 
+                              : "text-muted-foreground"
+                          }`} 
+                        />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0 pb-4">
+                    <TradingViewWidget 
+                      symbol={crypto.symbol}
+                      widgetType="mini-chart"
+                      height={200}
+                      colorTheme="dark"
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="watchlist" className="space-y-4">
@@ -178,13 +212,17 @@ const MarketsScreen = () => {
                 .filter(crypto => watchlist.includes(crypto.pair))
                 .map((crypto) => (
                   <Card 
-                    key={crypto.pair} 
+                    key={crypto.marketId} 
                     className="bg-gradient-card shadow-card border-0 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(`/market-detail/${crypto.pair.replace('/', '-')}`)}
                   >
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base flex items-center gap-2">
+                          <div className="flex -space-x-1">
+                            <AssetLogo symbol={crypto.baseAsset.symbol} logoUrl={crypto.baseAsset.logo_url} size="sm" />
+                            <AssetLogo symbol={crypto.quoteAsset.symbol} logoUrl={crypto.quoteAsset.logo_url} size="sm" />
+                          </div>
                           {crypto.name} ({crypto.pair})
                         </CardTitle>
                         <Button
