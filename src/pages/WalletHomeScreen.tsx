@@ -22,14 +22,14 @@ const WalletHomeScreen = () => {
     BNB: { balance: 15.3, fiatValue: 4590.00 },
   };
 
-  // Combine assets with mock balances
+  // Combine assets with mock balances; include all assets (default to 0)
   const userAssets = assets.map(asset => ({
     ...asset,
-    balance: mockBalances[asset.symbol as keyof typeof mockBalances]?.balance || 0,
-    fiatValue: mockBalances[asset.symbol as keyof typeof mockBalances]?.fiatValue || 0,
-  })).filter(asset => asset.balance > 0);
+    balance: mockBalances[asset.symbol as keyof typeof mockBalances]?.balance ?? 0,
+    fiatValue: mockBalances[asset.symbol as keyof typeof mockBalances]?.fiatValue ?? 0,
+  }));
 
-  const totalBalance = userAssets.reduce((sum, asset) => sum + asset.fiatValue, 0);
+  const totalBalance = userAssets.reduce((sum, asset) => sum + (asset.fiatValue || 0), 0);
 
   // Quick actions
   const actions = [
