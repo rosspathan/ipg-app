@@ -83,6 +83,13 @@ const AdminLoginScreen = () => {
       const signature = await signMessage(message);
 
       // Step 4: Verify with server
+      console.log('Sending verification request with:', {
+        action: 'verifySignature',
+        walletAddress: wallet.address,
+        nonce,
+        signatureLength: signature?.length
+      });
+
       const verifyResponse = await supabase.functions.invoke('web3-admin-auth', {
         body: {
           action: 'verifySignature',
@@ -92,8 +99,11 @@ const AdminLoginScreen = () => {
         }
       });
 
+      console.log('Verify response:', verifyResponse);
+
       if (verifyResponse.error) {
-        throw new Error(verifyResponse.error.message);
+        console.error('Verify response error:', verifyResponse.error);
+        throw new Error(verifyResponse.error.message || 'Authentication failed');
       }
 
       const { success: isValid, isAdmin } = verifyResponse.data;

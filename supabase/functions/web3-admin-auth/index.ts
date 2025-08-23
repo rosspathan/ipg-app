@@ -63,7 +63,15 @@ serve(async (req) => {
     if (action === 'verifySignature') {
       const { walletAddress, signature, nonce } = body;
       
+      console.log('Verify signature request received:', {
+        walletAddress,
+        nonce,
+        hasSignature: !!signature,
+        signatureLength: signature?.length
+      });
+      
       if (!walletAddress || !signature || !nonce) {
+        console.error('Missing required fields:', { walletAddress: !!walletAddress, signature: !!signature, nonce: !!nonce });
         return new Response(JSON.stringify({ error: 'Missing required fields' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
