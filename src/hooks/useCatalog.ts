@@ -79,24 +79,43 @@ export const useCatalog = (): CatalogData => {
     logo_url: getAssetLogoUrl(asset),
   });
 
-  // Fetch assets with timeout
+  // Fetch assets with timeout and abort support
   const fetchAssets = async (): Promise<Asset[]> => {
     console.log('Starting assets fetch...');
-    
-    const { data, error } = await supabase
-      .from('assets')
-      .select('*')
-      .eq('is_active', true)
-      .order('symbol')
-      .limit(500);
 
-    if (error) {
-      console.error('Assets fetch error:', error);
-      throw error;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      try {
+        controller.abort();
+      } catch (e) {
+        console.warn('Abort controller not supported in this environment');
+      }
+    }, 10000);
+
+    try {
+      const { data, error } = await supabase
+        .from('assets')
+        .select('*')
+        .eq('is_active', true)
+        .order('symbol')
+        .limit(500)
+        .abortSignal(controller.signal);
+
+      if (error) {
+        console.error('Assets fetch error:', error);
+        throw error;
+      }
+
+      console.log(`Assets fetch successful: ${data?.length || 0} records`);
+      return (data || []).map(enhanceAsset);
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        throw new Error('Timed out fetching assets');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
     }
-
-    console.log(`Assets fetch successful: ${data?.length || 0} records`);
-    return (data || []).map(enhanceAsset);
   };
 
   // Fetch markets (non-blocking for wallet home)
