@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.grant-admin-by-email]
 verify_jwt = false
+
+[functions.admin-password-reset]
+verify_jwt = false

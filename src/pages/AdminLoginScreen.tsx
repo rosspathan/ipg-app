@@ -20,6 +20,8 @@ const AdminLoginScreen = () => {
   const [walletAuthorized, setWalletAuthorized] = useState<boolean | null>(null);
   const [adminEmail, setAdminEmail] = useState("");
   const [grantLoading, setGrantLoading] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // If already an admin, redirect to admin panel
   useEffect(() => {
@@ -163,6 +165,31 @@ const AdminLoginScreen = () => {
     }
   };
 
+  const handleSetPassword = async () => {
+    setError("");
+    setSuccess("");
+    if (!adminPassword || adminPassword.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-password-reset', {
+        body: { 
+          email: 'rosspathan@gmail.com',
+          newPassword: adminPassword 
+        }
+      });
+      if (error) throw error;
+      setSuccess(`Password set successfully for rosspathan@gmail.com. You can now login with this password.`);
+      setAdminPassword(""); // Clear the password field
+    } catch (e: any) {
+      setError(e.message || 'Failed to set password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6">
       <Card className="w-full max-w-md">
@@ -291,6 +318,23 @@ const AdminLoginScreen = () => {
               </div>
               <p className="text-xs text-muted-foreground">
                 After granting, go to Login and sign in with this email, then open the Admin panel.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Set Password for rosspathan@gmail.com</p>
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  placeholder="Enter new password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                />
+                <Button onClick={handleSetPassword} disabled={passwordLoading || !adminPassword}>
+                  {passwordLoading ? "Setting..." : "Set Password"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Set a secure password (minimum 6 characters) to login with rosspathan@gmail.com.
               </p>
             </div>
             <Button 
