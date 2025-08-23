@@ -25,10 +25,15 @@ const AdminLoginScreen = () => {
 
   // If already an admin, redirect to admin panel
   useEffect(() => {
+    console.log('AdminLoginScreen: Checking stored admin state...');
     const isAdminStored = localStorage.getItem('cryptoflow_web3_admin');
+    console.log('AdminLoginScreen: Stored admin state:', isAdminStored);
     if (isAdminStored === 'true') {
+      console.log('AdminLoginScreen: Found stored admin, redirecting to /admin');
       setIsAdmin(true);
       navigate('/admin');
+    } else {
+      console.log('AdminLoginScreen: No stored admin state, showing login form');
     }
   }, [setIsAdmin, navigate]);
 
