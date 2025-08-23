@@ -5,21 +5,14 @@ export const fetchWithTimeout = <T>(
 ): Promise<T> => {
   const timeoutMs = options.ms || 10000; // Default 10 seconds
 
-  return new Promise<T>((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      reject(new Error('Timed out fetching assets'));
-    }, timeoutMs);
-
-    fetchFn()
-      .then(result => {
-        clearTimeout(timeoutId);
-        resolve(result);
-      })
-      .catch(error => {
-        clearTimeout(timeoutId);
-        reject(error);
-      });
-  });
+  return Promise.race([
+    fetchFn(),
+    new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Timed out fetching assets'));
+      }, timeoutMs);
+    })
+  ]);
 };
 
 // Helper to detect RLS permission errors

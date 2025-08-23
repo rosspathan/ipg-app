@@ -81,21 +81,22 @@ export const useCatalog = (): CatalogData => {
 
   // Fetch assets with timeout
   const fetchAssets = async (): Promise<Asset[]> => {
-    return fetchWithTimeout(async () => {
-      const { data, error } = await supabase
-        .from('assets')
-        .select('*')
-        .eq('is_active', true)
-        .order('symbol')
-        .limit(500);
+    console.log('Starting assets fetch...');
+    
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('is_active', true)
+      .order('symbol')
+      .limit(500);
 
-      if (error) {
-        console.error('Assets fetch error:', error);
-        throw error;
-      }
+    if (error) {
+      console.error('Assets fetch error:', error);
+      throw error;
+    }
 
-      return (data || []).map(enhanceAsset);
-    }, { ms: 10000 });
+    console.log(`Assets fetch successful: ${data?.length || 0} records`);
+    return (data || []).map(enhanceAsset);
   };
 
   // Fetch markets (non-blocking for wallet home)
@@ -142,7 +143,7 @@ export const useCatalog = (): CatalogData => {
       console.log('Loading catalog data...');
 
       // Fetch assets first - this is critical and blocking
-      const assetsData = await fetchAssets();
+      const assetsData = await fetchWithTimeout(fetchAssets, { ms: 10000 });
       
       // Check for empty state
       if (!assetsData || assetsData.length === 0) {
