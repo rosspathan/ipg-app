@@ -79,18 +79,11 @@ export const useCatalog = (): CatalogData => {
     logo_url: getAssetLogoUrl(asset),
   });
 
-  // Fetch assets with timeout and abort support
+  // Simplified assets fetch for debugging
   const fetchAssets = async (): Promise<Asset[]> => {
-    console.log('Starting assets fetch...');
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      try {
-        controller.abort();
-      } catch (e) {
-        console.warn('Abort controller not supported in this environment');
-      }
-    }, 10000);
+    console.log('🟡 Starting assets fetch...');
+    console.log('🟡 Supabase client:', !!supabase);
+    console.log('🟡 Current time:', new Date().toISOString());
 
     try {
       const { data, error } = await supabase
@@ -98,23 +91,24 @@ export const useCatalog = (): CatalogData => {
         .select('*')
         .eq('is_active', true)
         .order('symbol')
-        .limit(500)
-        .abortSignal(controller.signal);
+        .limit(5); // Reduced limit for testing
+
+      console.log('🟡 Raw response - data:', data);
+      console.log('🟡 Raw response - error:', error);
 
       if (error) {
-        console.error('Assets fetch error:', error);
+        console.error('🔴 Assets fetch error:', error);
         throw error;
       }
 
-      console.log(`Assets fetch successful: ${data?.length || 0} records`);
-      return (data || []).map(enhanceAsset);
+      const enhancedData = (data || []).map(enhanceAsset);
+      console.log('🟢 Assets fetch successful:', enhancedData.length, 'records');
+      console.log('🟢 First asset:', enhancedData[0]);
+      
+      return enhancedData;
     } catch (err: any) {
-      if (err?.name === 'AbortError') {
-        throw new Error('Timed out fetching assets');
-      }
+      console.error('🔴 Fetch assets error:', err);
       throw err;
-    } finally {
-      clearTimeout(timeout);
     }
   };
 
@@ -162,7 +156,8 @@ export const useCatalog = (): CatalogData => {
       console.log('Loading catalog data...');
 
       // Fetch assets first - this is critical and blocking
-      const assetsData = await fetchWithTimeout(fetchAssets, { ms: 10000 });
+      console.log('🟡 About to call fetchAssets...');
+      const assetsData = await fetchAssets(); // Remove timeout wrapper for now
       
       // Check for empty state
       if (!assetsData || assetsData.length === 0) {
