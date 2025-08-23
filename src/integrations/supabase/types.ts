@@ -66,6 +66,7 @@ export type Database = {
           decimals: number | null
           deposit_enabled: boolean | null
           id: string
+          is_active: boolean | null
           logo_file_name: string | null
           logo_file_path: string | null
           logo_url: string | null
@@ -87,6 +88,7 @@ export type Database = {
           decimals?: number | null
           deposit_enabled?: boolean | null
           id?: string
+          is_active?: boolean | null
           logo_file_name?: string | null
           logo_file_path?: string | null
           logo_url?: string | null
@@ -108,6 +110,7 @@ export type Database = {
           decimals?: number | null
           deposit_enabled?: boolean | null
           id?: string
+          is_active?: boolean | null
           logo_file_name?: string | null
           logo_file_path?: string | null
           logo_url?: string | null
@@ -446,6 +449,57 @@ export type Database = {
           ticket_price?: number
         }
         Relationships: []
+      }
+      markets: {
+        Row: {
+          base_asset_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean
+          lot_size: number
+          min_notional: number
+          quote_asset_id: string
+          tick_size: number
+          updated_at: string | null
+        }
+        Insert: {
+          base_asset_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          lot_size?: number
+          min_notional?: number
+          quote_asset_id: string
+          tick_size?: number
+          updated_at?: string | null
+        }
+        Update: {
+          base_asset_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          lot_size?: number
+          min_notional?: number
+          quote_asset_id?: string
+          tick_size?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "markets_base_asset_id_fkey"
+            columns: ["base_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "markets_quote_asset_id_fkey"
+            columns: ["quote_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orders: {
         Row: {
