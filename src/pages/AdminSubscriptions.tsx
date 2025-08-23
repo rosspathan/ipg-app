@@ -94,13 +94,13 @@ const AdminSubscriptions = () => {
           });
       } else {
         // Create new plan
-        const { data } = await supabase
+        const { data } = await (supabase as any)
           .from('subscriptions_plans')
           .insert(planData)
           .select()
           .single();
 
-        await supabase
+        await (supabase as any)
           .from('admin_audit')
           .insert({
             actor: 'admin',
@@ -131,12 +131,12 @@ const AdminSubscriptions = () => {
 
   const handleToggleActive = async (planId: string, isActive: boolean) => {
     try {
-      await supabase
+      await (supabase as any)
         .from('subscriptions_plans')
         .update({ is_active: isActive })
         .eq('id', planId);
 
-      await supabase
+      await (supabase as any)
         .from('admin_audit')
         .insert({
           actor: 'admin',
@@ -166,12 +166,12 @@ const AdminSubscriptions = () => {
     if (!confirm('Are you sure you want to delete this plan?')) return;
 
     try {
-      await supabase
+      await (supabase as any)
         .from('subscriptions_plans')
         .delete()
         .eq('id', planId);
 
-      await supabase
+      await (supabase as any)
         .from('admin_audit')
         .insert({
           actor: 'admin',

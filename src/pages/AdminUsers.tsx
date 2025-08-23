@@ -45,8 +45,6 @@ const AdminUsers = () => {
           email,
           phone,
           full_name,
-          display_name,
-          account_frozen,
           withdrawal_locked,
           created_at,
           updated_at
@@ -78,8 +76,8 @@ const AdminUsers = () => {
           email: user.email || '',
           phone: user.phone,
           full_name: user.full_name,
-          display_name: user.display_name,
-          account_frozen: user.account_frozen || false,
+          display_name: user.full_name || '', // fallback to full_name
+          account_frozen: false, // default value since column doesn't exist yet
           withdrawal_locked: user.withdrawal_locked || false,
           created_at: user.created_at,
           updated_at: user.updated_at,
@@ -126,13 +124,11 @@ const AdminUsers = () => {
     try {
       const before = users.find(u => u.user_id === editingUser.user_id);
       
-      // Update profiles table
+      // Update profiles table (only fields that exist)
       await supabase
         .from('profiles')
         .update({
-          display_name: editingUser.display_name,
           phone: editingUser.phone,
-          account_frozen: editingUser.account_frozen,
           withdrawal_locked: editingUser.withdrawal_locked,
         })
         .eq('user_id', editingUser.user_id);
@@ -185,7 +181,7 @@ const AdminUsers = () => {
     try {
       const before = users.find(u => u.user_id === userId);
       
-      if (field === 'account_frozen' || field === 'withdrawal_locked') {
+      if (field === 'withdrawal_locked') {
         await supabase
           .from('profiles')
           .update({ [field]: value })
@@ -199,6 +195,14 @@ const AdminUsers = () => {
           }, {
             onConflict: 'user_id'
           });
+      } else if (field === 'account_frozen') {
+        // Skip account_frozen operations since column doesn't exist in current schema
+        toast({
+          title: "Info",
+          description: "Account freeze functionality will be available after database schema update",
+          variant: "default",
+        });
+        return;
       }
 
       await auditAction(`${field}_${value ? 'enabled' : 'disabled'}`, userId, before, { [field]: value });

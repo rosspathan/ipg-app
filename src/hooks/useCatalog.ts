@@ -95,8 +95,9 @@ interface InsurancePlan {
   premium: number;
   coverage_amount: number;
   duration_days: number;
-  scope: string;
-  exclusions: string;
+  coverage_scope: string;
+  type: string;
+  exclusions: string[];
   max_claims: number;
   waiting_period_hours: number;
   active: boolean;
