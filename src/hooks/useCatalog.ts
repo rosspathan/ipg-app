@@ -81,12 +81,24 @@ export const useCatalog = (): CatalogData => {
       setStatus('loading');
       setError(null);
 
+      let didResolve = false;
+      const timer = setTimeout(() => {
+        if (!didResolve) {
+          console.warn('⏳ Assets fetch timed out');
+          setError('Timed out fetching assets');
+          setStatus('error');
+        }
+      }, 10000);
+
       // Fetch assets
       const { data: assetsData, error: assetsError } = await supabase
         .from('assets')
         .select('*')
         .eq('is_active', true)
         .order('symbol');
+
+      didResolve = true;
+      clearTimeout(timer);
 
       if (assetsError) {
         console.error('❌ Assets error:', assetsError);
@@ -106,33 +118,28 @@ export const useCatalog = (): CatalogData => {
       const enhancedAssets = assetsData.map(enhanceAsset);
       console.log('✅ Assets loaded:', enhancedAssets.length);
       setAssets(enhancedAssets);
-
-      // Fetch markets
-      const { data: marketsData, error: marketsError } = await supabase
-        .from('markets')
-        .select(`
-          *,
-          base_asset:assets!markets_base_asset_id_fkey(*),
-          quote_asset:assets!markets_quote_asset_id_fkey(*)
-        `)
-        .eq('is_active', true)
-        .order('created_at');
-
-      if (marketsError) {
-        console.error('⚠️ Markets error:', marketsError);
-        // Don't fail on markets error
-      } else {
-        const enhancedMarkets = (marketsData || []).map(market => ({
-          ...market,
-          base_asset: market.base_asset ? enhanceAsset(market.base_asset) : undefined,
-          quote_asset: market.quote_asset ? enhanceAsset(market.quote_asset) : undefined,
-        }));
-        console.log('✅ Markets loaded:', enhancedMarkets.length);
-        setMarkets(enhancedMarkets);
-      }
-
       setStatus('ready');
-      
+
+      // Kick off markets fetch in background (non-blocking)
+      (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('markets')
+            .select('*')
+            .eq('is_active', true)
+            .order('created_at');
+
+          if (error) {
+            console.warn('⚠️ Markets load skipped:', error.message);
+            return;
+          }
+          const enhancedMarkets = (data || []) as unknown as Market[];
+          console.log('✅ Markets loaded:', enhancedMarkets.length);
+          setMarkets(enhancedMarkets);
+        } catch (e: any) {
+          console.warn('⚠️ Markets load failed:', e?.message || e);
+        }
+      })();
     } catch (err: any) {
       console.error('❌ Load error:', err);
       setError(err.message || 'Failed to load data');
