@@ -2,3 +2,6 @@ project_id = "ocblgldglqhlrmtnynmu"
 
 [functions.web3-admin-auth]
 verify_jwt = false
+
+[functions.grant-admin-by-email]
+verify_jwt = false

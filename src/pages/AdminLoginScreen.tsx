@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Wallet, Shield, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
@@ -17,6 +18,8 @@ const AdminLoginScreen = () => {
   const [success, setSuccess] = useState("");
   const [step, setStep] = useState<'connect' | 'sign' | 'verified'>('connect');
   const [walletAuthorized, setWalletAuthorized] = useState<boolean | null>(null);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [grantLoading, setGrantLoading] = useState(false);
 
   // If already an admin, redirect to admin panel
   useEffect(() => {
@@ -139,6 +142,27 @@ const AdminLoginScreen = () => {
     }
   };
 
+  const handleGrantByEmail = async () => {
+    setError("");
+    setSuccess("");
+    if (!adminEmail) {
+      setError("Please enter admin email.");
+      return;
+    }
+    setGrantLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('grant-admin-by-email', {
+        body: { email: adminEmail }
+      });
+      if (error) throw error;
+      setSuccess(`Admin granted to ${adminEmail}. Now go to Login and sign in with this email, then access the Admin panel.`);
+    } catch (e: any) {
+      setError(e.message || 'Failed to grant admin by email');
+    } finally {
+      setGrantLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6">
       <Card className="w-full max-w-md">
@@ -251,10 +275,27 @@ const AdminLoginScreen = () => {
             </div>
           )}
 
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t space-y-5">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Alternative: Grant Admin by Email</p>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                />
+                <Button onClick={handleGrantByEmail} disabled={grantLoading || !adminEmail}>
+                  {grantLoading ? "Granting..." : "Grant Admin"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                After granting, go to Login and sign in with this email, then open the Admin panel.
+              </p>
+            </div>
             <Button 
               variant="ghost" 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/')} 
               className="w-full"
             >
               Back to Home
