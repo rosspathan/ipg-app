@@ -13,7 +13,18 @@ interface AuthContextType {
   setIsAdmin: (admin: boolean) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const defaultAuthContext: AuthContextType = {
+  user: null,
+  session: null,
+  isAdmin: false,
+  loading: true,
+  signIn: async () => ({ error: null }),
+  signUp: async () => ({ error: null }),
+  signOut: async () => {},
+  setIsAdmin: () => {},
+};
+
+const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -133,17 +144,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAdmin(admin);
   };
 
+  const contextValue = {
+    user,
+    session,
+    isAdmin,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    setIsAdmin: setAdminStatus,
+  };
+
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      isAdmin,
-      loading,
-      signIn,
-      signUp,
-      signOut,
-      setIsAdmin: setAdminStatus,
-    }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
@@ -151,8 +164,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
   return context;
 }
