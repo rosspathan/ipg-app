@@ -92,7 +92,7 @@ function App() {
                <Route path="/file-claim" element={<FileClaimScreen />} />
                <Route path="/app-lock" element={<AppLockScreen />} />
                 <Route path="/wallet-home" element={<WalletHomeScreen />} />
-                <Route path="/debug/catalog" element={<DebugCatalog />} />
+        <Route path="/debug/catalog" element={<DebugCatalog />} />
                  <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
                  <Route path="/admin/*" element={<AdminRoute><AdminPanel /></AdminRoute>} />
                 <Route path="*" element={<NotFound />} />

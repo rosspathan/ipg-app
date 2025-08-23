@@ -12,7 +12,7 @@ const WalletHomeScreen = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const [showBalances, setShowBalances] = useState(true);
-  const { assetsList, loading } = useCatalog();
+  const { status, assets, error, refetch } = useCatalog();
 
   // Mock user balances - in a real app, this would come from user balance data
   const mockBalances = {
@@ -23,7 +23,7 @@ const WalletHomeScreen = () => {
   };
 
   // Combine assets with mock balances
-  const userAssets = assetsList.map(asset => ({
+  const userAssets = assets.map(asset => ({
     ...asset,
     balance: mockBalances[asset.symbol as keyof typeof mockBalances]?.balance || 0,
     fiatValue: mockBalances[asset.symbol as keyof typeof mockBalances]?.fiatValue || 0,
@@ -44,7 +44,8 @@ const WalletHomeScreen = () => {
     { name: "More", icon: MoreHorizontal, color: "text-gray-600", route: "/more" },
   ];
 
-  if (loading) {
+  // Handle different loading states
+  if (status === 'loading') {
     return (
       <div className="min-h-screen bg-background p-4 space-y-6">
         <div className="flex items-center justify-center min-h-[50vh]">
@@ -52,6 +53,64 @@ const WalletHomeScreen = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading your assets...</p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="min-h-screen bg-background p-4 space-y-6">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Card className="max-w-md w-full">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="text-red-600">
+                  <svg className="h-12 w-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold">Unable to Load Assets</h3>
+                <p className="text-muted-foreground text-sm">{error}</p>
+                {error?.includes('Permission denied') && (
+                  <div className="text-xs text-muted-foreground p-3 bg-muted rounded border-l-4 border-yellow-500">
+                    <strong>Developer note:</strong> Enable a read policy on assets table:<br/>
+                    <code>CREATE POLICY read_assets ON public.assets FOR SELECT USING (is_active = true);</code>
+                  </div>
+                )}
+                <Button onClick={refetch} className="w-full">
+                  Retry
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'empty') {
+    return (
+      <div className="min-h-screen bg-background p-4 space-y-6">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Card className="max-w-md w-full">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="text-muted-foreground">
+                  <Coins className="h-12 w-12 mx-auto" />
+                </div>
+                <h3 className="text-lg font-semibold">No Assets Configured</h3>
+                <p className="text-muted-foreground text-sm">
+                  No assets are available yet. Assets will appear here once they're added to the system.
+                </p>
+                {isAdmin && (
+                  <Button onClick={() => navigate('/admin/assets')} className="w-full">
+                    Add Assets in Admin Panel
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
