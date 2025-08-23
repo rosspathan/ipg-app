@@ -6,23 +6,34 @@ import { ArrowLeft, Copy, QrCode } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useWeb3 } from "@/contexts/Web3Context";
+import { useCatalog } from "@/hooks/useCatalog";
+import AssetLogo from "@/components/AssetLogo";
 import QRCode from "qrcode";
 
 const DepositScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { wallet, network } = useWeb3();
-  const [selectedAsset, setSelectedAsset] = useState("BNB");
-  const [selectedNetwork, setSelectedNetwork] = useState("BSC");
+  const { assetsList, loading } = useCatalog();
+  const [selectedAsset, setSelectedAsset] = useState("");
+  const [selectedNetwork, setSelectedNetwork] = useState("");
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
 
-  const assets = [
-    { symbol: "BNB", name: "Binance Coin", networks: ["BSC"] },
-    { symbol: "ETH", name: "Ethereum", networks: ["BSC"] },
-    { symbol: "USDT", name: "Tether", networks: ["BSC"] },
-    { symbol: "USDC", name: "USD Coin", networks: ["BSC"] },
-    { symbol: "BUSD", name: "Binance USD", networks: ["BSC"] }
-  ];
+  // Filter assets that have deposit enabled
+  const depositableAssets = assetsList.filter(asset => 
+    asset.deposit_enabled && asset.is_active
+  );
+
+  // Set default selections when assets load
+  useEffect(() => {
+    if (depositableAssets.length > 0 && !selectedAsset) {
+      const defaultAsset = depositableAssets.find(a => a.symbol === "USDT") || depositableAssets[0];
+      setSelectedAsset(defaultAsset.symbol);
+      setSelectedNetwork(defaultAsset.network);
+    }
+  }, [depositableAssets, selectedAsset]);
+
+  const currentAsset = depositableAssets.find(asset => asset.symbol === selectedAsset);
 
   useEffect(() => {
     if (wallet?.address) {
@@ -39,10 +50,31 @@ const DepositScreen = () => {
 
   const depositInfo = {
     address: wallet?.address || "Connect wallet to see address",
-    minDeposit: selectedAsset === "BNB" ? "0.001 BNB" : "0.01 " + selectedAsset,
+    minDeposit: currentAsset ? `${currentAsset.min_withdraw_amount} ${currentAsset.symbol}` : "N/A",
     confirmations: "12",
-    fee: "Free"
+    fee: currentAsset ? `${currentAsset.withdraw_fee} ${currentAsset.symbol}` : "Free"
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background px-6 py-8">
+        <div className="max-w-sm mx-auto w-full space-y-6">
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/wallet-home")} className="p-2">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-2xl font-bold text-foreground">Deposit</h1>
+          </div>
+          <div className="flex justify-center items-center min-h-[200px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading assets...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const copyAddress = () => {
     if (!wallet?.address) {
@@ -92,9 +124,12 @@ const DepositScreen = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {assets.map((asset) => (
+                  {depositableAssets.map((asset) => (
                     <SelectItem key={asset.symbol} value={asset.symbol}>
-                      {asset.symbol} - {asset.name}
+                      <div className="flex items-center gap-2">
+                        <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} size="sm" />
+                        {asset.symbol} - {asset.name}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -110,13 +145,9 @@ const DepositScreen = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {assets
-                    .find(a => a.symbol === selectedAsset)
-                    ?.networks.map((network) => (
-                      <SelectItem key={network} value={network}>
-                        {network}
-                      </SelectItem>
-                    ))}
+                  <SelectItem key={currentAsset?.network || "BSC"} value={currentAsset?.network || "BSC"}>
+                    {currentAsset?.network || "BSC"}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

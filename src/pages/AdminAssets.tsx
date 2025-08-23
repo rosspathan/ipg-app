@@ -62,27 +62,18 @@ const AdminAssets = () => {
   });
 
   useEffect(() => {
-    console.log('AdminAssets useEffect triggered, loading assets...');
     loadAssets();
   }, []);
 
   const loadAssets = async () => {
-    console.log('loadAssets function called, starting query...');
     try {
-      console.log('Making supabase query to assets table...');
       const { data, error } = await supabase
         .from('assets')
         .select('*')
         .order('symbol');
 
-      console.log('Supabase query completed:', { data, error, dataLength: data?.length });
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-      console.log('Setting assets data...');
+      if (error) throw error;
       setAssets(data || []);
-      console.log('Assets set successfully, setting loading to false');
     } catch (error) {
       console.error('Error loading assets:', error);
       toast({
@@ -91,7 +82,6 @@ const AdminAssets = () => {
         variant: "destructive",
       });
     } finally {
-      console.log('Finally block: setting loading to false');
       setLoading(false);
     }
   };
@@ -219,8 +209,6 @@ const AdminAssets = () => {
     });
   };
 
-  console.log('AdminAssets render - loading state:', loading, 'assets count:', assets.length);
-  
   if (loading) {
     return <div className="p-6">Loading assets...</div>;
   }
