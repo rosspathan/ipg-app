@@ -3,19 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Wallet, Shield, CheckCircle, AlertCircle } from "lucide-react";
+import { Wallet, Shield, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { useWeb3 } from "@/contexts/Web3Context";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 const AdminLoginScreen = () => {
   const navigate = useNavigate();
-  const { wallet, isConnected, createWallet, signMessage } = useWeb3();
+  const { wallet, isConnected, connectMetaMask, signMessage, disconnectWallet } = useWeb3();
   const { setIsAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [step, setStep] = useState<'connect' | 'sign' | 'verified'>('connect');
+  const [walletAuthorized, setWalletAuthorized] = useState<boolean | null>(null);
 
   // If already an admin, redirect to admin panel
   useEffect(() => {
@@ -29,21 +30,25 @@ const AdminLoginScreen = () => {
   const handleConnectWallet = async () => {
     setLoading(true);
     setError("");
+    setWalletAuthorized(null);
     
     try {
-      if (!isConnected) {
-        // Generate a new seed phrase for the wallet
-        const { generateMnemonic } = await import('bip39');
-        const seedPhrase = generateMnemonic();
-        await createWallet(seedPhrase);
-      }
+      await connectMetaMask();
       setStep('sign');
-    } catch (error) {
-      setError("Failed to connect wallet. Please try again.");
+    } catch (error: any) {
+      setError(error.message || "Failed to connect wallet. Please install MetaMask and try again.");
       console.error("Wallet connection error:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSwitchWallet = async () => {
+    disconnectWallet();
+    setStep('connect');
+    setError("");
+    setSuccess("");
+    setWalletAuthorized(null);
   };
 
   const handleSignMessage = async () => {
@@ -94,19 +99,26 @@ const AdminLoginScreen = () => {
         localStorage.setItem('cryptoflow_web3_admin', 'true');
         localStorage.setItem('cryptoflow_admin_wallet', wallet.address);
         setIsAdmin(true);
-        setSuccess("Admin authentication successful!");
+        setWalletAuthorized(true);
+        setSuccess(`Welcome Admin ${wallet.address}`);
         setStep('verified');
         
-        // Redirect to admin panel after a short delay
+        // Redirect to admin panel after showing success message
         setTimeout(() => {
           navigate('/admin');
-        }, 2000);
+        }, 2500);
       } else {
-        setError("Authentication failed. Your wallet is not authorized for admin access.");
+        setWalletAuthorized(false);
+        setError("This wallet is not authorized for admin access. Please switch to your admin wallet in MetaMask and reconnect.");
       }
 
     } catch (error: any) {
-      setError(error.message || "Authentication failed. Please try again.");
+      if (error.message.includes('not authorized') || error.message.includes('Wallet not authorized')) {
+        setWalletAuthorized(false);
+        setError("This wallet is not authorized for admin access. Please switch to your admin wallet in MetaMask and reconnect.");
+      } else {
+        setError(error.message || "Authentication failed. Please try again.");
+      }
       console.error("Admin auth error:", error);
     } finally {
       setLoading(false);
@@ -146,7 +158,7 @@ const AdminLoginScreen = () => {
               <div className="text-center">
                 <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
-                  Connect your BSC wallet to begin admin authentication
+                  Connect your MetaMask wallet to begin admin authentication
                 </p>
               </div>
               
@@ -156,7 +168,7 @@ const AdminLoginScreen = () => {
                 className="w-full"
                 size="lg"
               >
-                {loading ? "Connecting..." : "Connect Wallet"}
+                {loading ? "Connecting..." : "Connect MetaMask"}
               </Button>
             </div>
           )}
@@ -167,25 +179,41 @@ const AdminLoginScreen = () => {
               <div className="text-center">
                 <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
                 <p className="text-sm font-medium">Wallet Connected</p>
-                <p className="text-xs text-muted-foreground break-all">
-                  {wallet.address}
-                </p>
+                <div className="bg-muted p-3 rounded-lg mt-2">
+                  <p className="text-xs font-mono text-muted-foreground break-all">
+                    {wallet.address}
+                  </p>
+                </div>
               </div>
               
               <div className="bg-muted p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">
-                  Sign the authentication message to verify your admin privileges:
+                <p className="text-sm text-muted-foreground">
+                  Sign the authentication message to verify your admin privileges. This will open MetaMask for signature.
                 </p>
               </div>
 
-              <Button 
-                onClick={handleSignMessage}
-                disabled={loading}
-                className="w-full"
-                size="lg"
-              >
-                {loading ? "Signing..." : "Sign Message"}
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  onClick={handleSignMessage}
+                  disabled={loading}
+                  className="w-full"
+                  size="lg"
+                >
+                  {loading ? "Signing..." : "Sign Message"}
+                </Button>
+
+                {walletAuthorized === false && (
+                  <Button 
+                    onClick={handleSwitchWallet}
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Switch Wallet
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
@@ -194,10 +222,17 @@ const AdminLoginScreen = () => {
             <div className="text-center space-y-4">
               <CheckCircle className="h-16 w-16 mx-auto text-green-500" />
               <div>
-                <h3 className="text-lg font-semibold text-green-700">Authenticated!</h3>
-                <p className="text-sm text-muted-foreground">
-                  Redirecting to admin panel...
+                <h3 className="text-lg font-semibold text-green-700">Admin Access Granted!</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Redirecting to admin dashboard...
                 </p>
+                {wallet && (
+                  <div className="bg-green-50 p-3 rounded-lg mt-3">
+                    <p className="text-xs font-mono text-green-700 break-all">
+                      {wallet.address}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 
+// Extend Window interface for MetaMask
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: any[] }) => Promise<any>;
+      on: (event: string, handler: (...args: any[]) => void) => void;
+      removeListener: (event: string, handler: (...args: any[]) => void) => void;
+    };
+  }
+}
+
 // BSC Mainnet Configuration
 const BSC_NETWORK = {
   chainId: 56,
@@ -25,6 +36,7 @@ interface Web3ContextType {
   provider: ethers.JsonRpcProvider | null;
   createWallet: (seedPhrase: string) => Promise<void>;
   importWallet: (seedPhrase: string) => Promise<void>;
+  connectMetaMask: () => Promise<void>;
   signMessage: (message: string) => Promise<string>;
   getBalance: () => Promise<string>;
   disconnectWallet: () => void;
@@ -52,8 +64,17 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Check for stored wallet on initialization
     const storedWallet = localStorage.getItem('cryptoflow_wallet');
+    const storedMetaMaskWallet = localStorage.getItem('cryptoflow_metamask_wallet');
     
-    if (storedWallet) {
+    if (storedMetaMaskWallet) {
+      try {
+        const parsedWallet = JSON.parse(storedMetaMaskWallet);
+        setWallet(parsedWallet);
+      } catch (error) {
+        console.error('Error loading stored MetaMask wallet:', error);
+        localStorage.removeItem('cryptoflow_metamask_wallet');
+      }
+    } else if (storedWallet) {
       try {
         const parsedWallet = JSON.parse(storedWallet);
         setWallet(parsedWallet);
@@ -134,16 +155,26 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signMessage = async (message: string): Promise<string> => {
     if (!wallet) {
-      throw new Error('No BSC wallet connected');
+      throw new Error('No wallet connected');
     }
     
     try {
-      const ethersWallet = new ethers.Wallet(wallet.privateKey);
-      const signature = await ethersWallet.signMessage(message);
-      return signature;
-    } catch (error) {
-      console.error('Error signing message with BSC wallet:', error);
-      throw new Error('Failed to sign message with BSC wallet');
+      // Check if using MetaMask
+      if (typeof window.ethereum !== 'undefined' && !wallet.privateKey) {
+        const signature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [message, wallet.address],
+        });
+        return signature;
+      } else {
+        // Use internal wallet
+        const ethersWallet = new ethers.Wallet(wallet.privateKey);
+        const signature = await ethersWallet.signMessage(message);
+        return signature;
+      }
+    } catch (error: any) {
+      console.error('Error signing message:', error);
+      throw new Error(error.message || 'Failed to sign message');
     }
   };
 
@@ -168,10 +199,80 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const connectMetaMask = async () => {
+    if (typeof window.ethereum === 'undefined') {
+      throw new Error('MetaMask is not installed. Please install MetaMask to continue.');
+    }
+
+    try {
+      // Request account access
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts',
+      });
+
+      if (accounts.length === 0) {
+        throw new Error('No accounts found. Please connect your MetaMask wallet.');
+      }
+
+      // Switch to BSC network if needed
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x38' }], // BSC Mainnet
+        });
+      } catch (switchError: any) {
+        // If network doesn't exist, add it
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x38',
+              chainName: 'Binance Smart Chain',
+              nativeCurrency: {
+                name: 'BNB',
+                symbol: 'BNB',
+                decimals: 18,
+              },
+              rpcUrls: ['https://bsc-dataseed1.binance.org/'],
+              blockExplorerUrls: ['https://bscscan.com/'],
+            }],
+          });
+        } else {
+          throw switchError;
+        }
+      }
+
+      const address = accounts[0];
+      
+      // Create wallet data for MetaMask
+      const walletData: WalletData = {
+        address,
+        privateKey: '', // MetaMask handles private key
+        network: 'mainnet',
+      };
+
+      // Get balance
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const balance = await provider.getBalance(address);
+        walletData.balance = ethers.formatEther(balance);
+      } catch (balanceError) {
+        console.warn('Could not fetch balance:', balanceError);
+        walletData.balance = '0';
+      }
+
+      setWallet(walletData);
+      localStorage.setItem('cryptoflow_metamask_wallet', JSON.stringify(walletData));
+    } catch (error: any) {
+      console.error('MetaMask connection error:', error);
+      throw new Error(error.message || 'Failed to connect to MetaMask');
+    }
+  };
+
   const disconnectWallet = () => {
     setWallet(null);
-    setProvider(null);
     localStorage.removeItem('cryptoflow_wallet');
+    localStorage.removeItem('cryptoflow_metamask_wallet');
   };
 
   const value = {
@@ -181,6 +282,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     provider,
     createWallet,
     importWallet,
+    connectMetaMask,
     signMessage,
     getBalance,
     disconnectWallet,
