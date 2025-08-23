@@ -98,17 +98,36 @@ serve(async (req) => {
       }
 
       // Get admin wallets from secrets
-      const adminWallets = Deno.env.get('ADMIN_WALLETS');
-      if (!adminWallets) {
-        console.error('ADMIN_WALLETS secret not configured');
+      const adminWalletsRaw = Deno.env.get('ADMIN_WALLETS')?.trim();
+      if (!adminWalletsRaw) {
+        console.error('ADMIN_WALLETS secret not configured or empty');
         return new Response(JSON.stringify({ error: 'Server configuration error' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Parse admin wallets (expected format: comma-separated addresses)
-      const allowedWallets = adminWallets.toLowerCase().split(',').map(addr => addr.trim());
+      // Parse admin wallets robustly (supports: single address, comma/space/newline separated, or JSON array)
+      let parsedList: string[] = [];
+      try {
+        if (adminWalletsRaw.startsWith('[')) {
+          const arr = JSON.parse(adminWalletsRaw);
+          if (Array.isArray(arr)) parsedList = arr as string[];
+        }
+      } catch (_) {
+        // ignore JSON parse errors, will fall back to regex split
+      }
+      if (parsedList.length === 0) {
+        const cleaned = adminWalletsRaw.replace(/[\[\]"']/g, ' ');
+        parsedList = cleaned.split(/[\s,]+/);
+      }
+
+      const allowedWallets = parsedList
+        .map((addr) => addr?.trim().toLowerCase())
+        .filter((addr) => !!addr && addr.startsWith('0x') && addr.length === 42);
+
+      console.log('Admin allowlist loaded (count):', allowedWallets.length);
+
       const isAllowed = allowedWallets.includes(walletAddress.toLowerCase());
 
       if (!isAllowed) {
@@ -133,7 +152,7 @@ serve(async (req) => {
       }
 
       // Mark nonce as used only after successful verification
-      nonceData.used = true;
+      if (nonceData) nonceData.used = true;
 
       console.log(`Admin login successful for wallet: ${walletAddress}`);
 
