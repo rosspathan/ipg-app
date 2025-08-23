@@ -16,14 +16,21 @@ const AuthScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      // Check if user is admin and redirect appropriately
+      if (isAdmin) {
+        console.log('Admin user detected, redirecting to admin panel');
+        navigate("/admin");
+      } else {
+        console.log('Regular user detected, redirecting to home');
+        navigate("/");
+      }
     }
-  }, [user, navigate]);
+  }, [user, isAdmin, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -21,6 +21,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const checkAdminRole = async (userId: string) => {
+    try {
+      console.log('Checking admin role for user:', userId);
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Admin role check error:', error);
+        return false;
+      }
+      
+      const isUserAdmin = !!data;
+      console.log('Admin role check result:', isUserAdmin);
+      setIsAdmin(isUserAdmin);
+      return isUserAdmin;
+    } catch (error) {
+      console.error('Admin role check failed:', error);
+      setIsAdmin(false);
+      return false;
+    }
+  };
+
   useEffect(() => {
     // Check for Web3 admin status on load
     const web3AdminStatus = localStorage.getItem('cryptoflow_web3_admin');
@@ -31,27 +57,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && web3AdminStatus !== 'true') {
-          // Check if user is admin only if not already web3 admin
-          setTimeout(async () => {
-            try {
-              const { data } = await supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', session.user.id)
-                .eq('role', 'admin')
-                .single();
-              
-              setIsAdmin(!!data);
-            } catch (error) {
-              setIsAdmin(false);
-            }
-          }, 0);
-        } else if (!session?.user) {
-          // Clear web3 admin status on logout
+        if (session?.user) {
+          // Always check admin role for authenticated users (unless already web3 admin)
+          if (web3AdminStatus !== 'true') {
+            await checkAdminRole(session.user.id);
+          }
+        } else {
+          // Clear admin status on logout
           localStorage.removeItem('cryptoflow_web3_admin');
           localStorage.removeItem('cryptoflow_admin_wallet');
           setIsAdmin(false);
@@ -62,26 +78,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
+      
       if (session?.user && web3AdminStatus !== 'true') {
-        // Check admin role for regular users
-        setTimeout(async () => {
-          try {
-            const { data } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id)
-              .eq('role', 'admin')
-              .single();
-            
-            setIsAdmin(!!data);
-          } catch (error) {
-            setIsAdmin(false);
-          }
-        }, 0);
+        await checkAdminRole(session.user.id);
       }
+      
       setLoading(false);
     });
 
