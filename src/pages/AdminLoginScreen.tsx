@@ -61,16 +61,20 @@ const AdminLoginScreen = () => {
     setError("");
 
     try {
-      // Step 1: Get nonce from server
+      console.log('Starting admin authentication for wallet:', wallet.address);
+      
+      // Step 1: Get fresh nonce from server
       const nonceResponse = await supabase.functions.invoke('web3-admin-auth', {
         body: { action: 'getNonce' }
       });
 
       if (nonceResponse.error) {
+        console.error('Nonce generation error:', nonceResponse.error);
         throw new Error(nonceResponse.error.message);
       }
 
       const { nonce, timestamp } = nonceResponse.data;
+      console.log('Received nonce:', nonce);
 
       // Step 2: Create message to sign
       const message = `CryptoFlow Admin Login\nNonce: ${nonce}\nWallet: ${wallet.address}\nTimestamp: ${timestamp}`;
