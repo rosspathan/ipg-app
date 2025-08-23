@@ -62,26 +62,99 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     const newProvider = new ethers.JsonRpcProvider(network.rpcUrl);
     setProvider(newProvider);
     
-    // Check for stored wallet on initialization
-    const storedWallet = localStorage.getItem('cryptoflow_wallet');
-    const storedMetaMaskWallet = localStorage.getItem('cryptoflow_metamask_wallet');
-    
-    if (storedMetaMaskWallet) {
-      try {
-        const parsedWallet = JSON.parse(storedMetaMaskWallet);
-        setWallet(parsedWallet);
-      } catch (error) {
-        console.error('Error loading stored MetaMask wallet:', error);
-        localStorage.removeItem('cryptoflow_metamask_wallet');
+    // Check for MetaMask connection first
+    const checkMetaMaskConnection = async () => {
+      if (typeof window.ethereum !== 'undefined') {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            // MetaMask is connected, use current account
+            const address = accounts[0];
+            const walletData: WalletData = {
+              address,
+              privateKey: '', // MetaMask handles private key
+              network: 'mainnet',
+            };
+
+            // Get balance
+            try {
+              const provider = new ethers.BrowserProvider(window.ethereum);
+              const balance = await provider.getBalance(address);
+              walletData.balance = ethers.formatEther(balance);
+            } catch (balanceError) {
+              console.warn('Could not fetch balance:', balanceError);
+              walletData.balance = '0';
+            }
+
+            setWallet(walletData);
+            localStorage.setItem('cryptoflow_metamask_wallet', JSON.stringify(walletData));
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking MetaMask connection:', error);
+        }
       }
-    } else if (storedWallet) {
-      try {
-        const parsedWallet = JSON.parse(storedWallet);
-        setWallet(parsedWallet);
-      } catch (error) {
-        console.error('Error loading stored wallet:', error);
-        localStorage.removeItem('cryptoflow_wallet');
+
+      // Fallback to stored wallet if MetaMask not connected
+      const storedWallet = localStorage.getItem('cryptoflow_wallet');
+      const storedMetaMaskWallet = localStorage.getItem('cryptoflow_metamask_wallet');
+      
+      if (storedMetaMaskWallet) {
+        try {
+          const parsedWallet = JSON.parse(storedMetaMaskWallet);
+          setWallet(parsedWallet);
+        } catch (error) {
+          console.error('Error loading stored MetaMask wallet:', error);
+          localStorage.removeItem('cryptoflow_metamask_wallet');
+        }
+      } else if (storedWallet) {
+        try {
+          const parsedWallet = JSON.parse(storedWallet);
+          setWallet(parsedWallet);
+        } catch (error) {
+          console.error('Error loading stored wallet:', error);
+          localStorage.removeItem('cryptoflow_wallet');
+        }
       }
+    };
+
+    checkMetaMaskConnection();
+
+    // Listen for account changes in MetaMask
+    if (typeof window.ethereum !== 'undefined') {
+      const handleAccountsChanged = async (accounts: string[]) => {
+        if (accounts.length > 0) {
+          const address = accounts[0];
+          const walletData: WalletData = {
+            address,
+            privateKey: '',
+            network: 'mainnet',
+          };
+
+          try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const balance = await provider.getBalance(address);
+            walletData.balance = ethers.formatEther(balance);
+          } catch (error) {
+            walletData.balance = '0';
+          }
+
+          setWallet(walletData);
+          localStorage.setItem('cryptoflow_metamask_wallet', JSON.stringify(walletData));
+        } else {
+          // User disconnected
+          setWallet(null);
+          localStorage.removeItem('cryptoflow_metamask_wallet');
+        }
+      };
+
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      
+      return () => {
+        if (window.ethereum?.removeListener) {
+          window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        }
+      };
     }
   }, []);
 

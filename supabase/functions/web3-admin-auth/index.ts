@@ -89,9 +89,6 @@ serve(async (req) => {
         });
       }
 
-      // Mark nonce as used
-      nonceData.used = true;
-
       // Get admin wallets from secrets
       const adminWallets = Deno.env.get('ADMIN_WALLETS');
       if (!adminWallets) {
@@ -125,6 +122,9 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+
+      // Mark nonce as used only after successful verification
+      nonceData.used = true;
 
       console.log(`Admin login successful for wallet: ${walletAddress}`);
 
