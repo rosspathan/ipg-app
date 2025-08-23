@@ -67,16 +67,13 @@ const AdminAssets = () => {
 
   const loadAssets = async () => {
     try {
-      console.log('Starting to load assets...');
       const { data, error } = await supabase
         .from('assets')
         .select('*')
         .order('symbol');
 
-      console.log('Assets query result:', { data, error });
       if (error) throw error;
       setAssets(data || []);
-      console.log('Assets loaded successfully:', data?.length || 0, 'assets');
     } catch (error) {
       console.error('Error loading assets:', error);
       toast({
