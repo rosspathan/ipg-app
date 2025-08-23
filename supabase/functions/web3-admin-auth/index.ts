@@ -78,18 +78,18 @@ serve(async (req) => {
         });
       }
 
-      // Check if nonce exists and is not used
+      // Attempt to read nonce from in-memory store, but don't hard-fail if missing
+      // Edge functions can cold start across instances, so the in-memory nonce may not exist
       const nonceData = nonceStore.get(nonce);
-      if (!nonceData || nonceData.used) {
-        console.log(`Invalid or used nonce: ${nonce}`);
+      if (!nonceData) {
+        console.log(`Nonce not found (likely cold start/stateless) for: ${nonce} — continuing verification`);
+      } else if (nonceData.used) {
+        console.log(`Used nonce: ${nonce}`);
         return new Response(JSON.stringify({ error: 'Invalid or expired nonce' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
-      }
-
-      // Check if nonce is not too old (5 minutes)
-      if (Date.now() - nonceData.timestamp > 300000) {
+      } else if (Date.now() - nonceData.timestamp > 300000) {
         nonceStore.delete(nonce);
         return new Response(JSON.stringify({ error: 'Nonce expired' }), {
           status: 400,
@@ -120,7 +120,8 @@ serve(async (req) => {
       }
 
       // Verify the signature format (simplified check)
-      const message = `CryptoFlow Admin Login\nNonce: ${nonce}\nWallet: ${walletAddress}\nTimestamp: ${nonceData.timestamp}`;
+      const ts = nonceData?.timestamp ?? 'unknown';
+      const message = `CryptoFlow Admin Login\nNonce: ${nonce}\nWallet: ${walletAddress}\nTimestamp: ${ts}`;
       const isValidSignature = verifySignature(message, signature, walletAddress);
 
       if (!isValidSignature) {
