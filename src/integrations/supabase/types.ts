@@ -644,6 +644,54 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_configs: {
+        Row: {
+          bonus_currency: string | null
+          commission_rates: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          levels: number
+          max_referrals_per_level: number | null
+          min_deposit_required: number | null
+          name: string
+          referee_bonus: number | null
+          referrer_bonus: number | null
+          updated_at: string
+        }
+        Insert: {
+          bonus_currency?: string | null
+          commission_rates?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          levels?: number
+          max_referrals_per_level?: number | null
+          min_deposit_required?: number | null
+          name: string
+          referee_bonus?: number | null
+          referrer_bonus?: number | null
+          updated_at?: string
+        }
+        Update: {
+          bonus_currency?: string | null
+          commission_rates?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          levels?: number
+          max_referrals_per_level?: number | null
+          min_deposit_required?: number | null
+          name?: string
+          referee_bonus?: number | null
+          referrer_bonus?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       staking_pools: {
         Row: {
           active: boolean | null

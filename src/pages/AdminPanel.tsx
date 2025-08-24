@@ -8,6 +8,7 @@ import AdminMarkets from "./AdminMarkets";
 import AdminFunding from "./AdminFunding";
 import AdminInsuranceClaims from "./AdminInsuranceClaims";
 import { AdminSubscriptions } from "@/components/AdminSubscriptions";
+import { AdminReferrals } from "@/components/AdminReferrals";
 import { 
   LayoutDashboard, 
   Users, 
@@ -123,13 +124,8 @@ const AdminPanel = () => {
           <AdminSubscriptions />
         </TabsContent>
 
-        <TabsContent value="referrals">
-          <Card className="m-6">
-            <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Referrals Configuration</h2>
-              <p className="text-muted-foreground">Configure multi-level referral structure and commission rates.</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="referrals" className="m-6">
+          <AdminReferrals />
         </TabsContent>
 
         <TabsContent value="staking">
