@@ -9,6 +9,7 @@ import AdminFunding from "./AdminFunding";
 import AdminInsuranceClaims from "./AdminInsuranceClaims";
 import { AdminSubscriptions } from "@/components/AdminSubscriptions";
 import { AdminReferrals } from "@/components/AdminReferrals";
+import { AdminStaking } from "@/components/AdminStaking";
 import { 
   LayoutDashboard, 
   Users, 
@@ -128,13 +129,8 @@ const AdminPanel = () => {
           <AdminReferrals />
         </TabsContent>
 
-        <TabsContent value="staking">
-          <Card className="m-6">
-            <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Staking Pools Management</h2>
-              <p className="text-muted-foreground">Create and manage staking pools with APY and lock periods.</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="staking" className="m-6">
+          <AdminStaking />
         </TabsContent>
 
         <TabsContent value="lucky-draw">
