@@ -13,6 +13,7 @@ import { AdminStaking } from "@/components/AdminStaking";
 import { AdminLuckyDraw } from "@/components/AdminLuckyDraw";
 import { AdminInsurance } from "@/components/AdminInsurance";
 import { AdminAds } from "@/components/AdminAds";
+import { AdminFees } from "@/components/AdminFees";
 import { 
   LayoutDashboard, 
   Users, 
@@ -148,13 +149,8 @@ const AdminPanel = () => {
           <AdminAds />
         </TabsContent>
 
-        <TabsContent value="fees">
-          <Card className="m-6">
-            <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Fees & Revenue</h2>
-              <p className="text-muted-foreground">Configure platform fee structures and revenue settings.</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="fees" className="m-6">
+          <AdminFees />
         </TabsContent>
 
         <TabsContent value="transfers">
