@@ -7,6 +7,7 @@ import AdminAssets from "./AdminAssets";
 import AdminMarkets from "./AdminMarkets";
 import AdminFunding from "./AdminFunding";
 import AdminInsuranceClaims from "./AdminInsuranceClaims";
+import { AdminSubscriptions } from "@/components/AdminSubscriptions";
 import { 
   LayoutDashboard, 
   Users, 
@@ -118,13 +119,8 @@ const AdminPanel = () => {
           <AdminFunding />
         </TabsContent>
 
-        <TabsContent value="subscriptions">
-          <Card className="m-6">
-            <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Subscriptions Management</h2>
-              <p className="text-muted-foreground">Create and manage subscription plans, configure bonuses and multipliers.</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="subscriptions" className="m-6">
+          <AdminSubscriptions />
         </TabsContent>
 
         <TabsContent value="referrals">
