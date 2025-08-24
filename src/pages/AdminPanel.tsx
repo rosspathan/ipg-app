@@ -10,6 +10,7 @@ import AdminInsuranceClaims from "./AdminInsuranceClaims";
 import { AdminSubscriptions } from "@/components/AdminSubscriptions";
 import { AdminReferrals } from "@/components/AdminReferrals";
 import { AdminStaking } from "@/components/AdminStaking";
+import { AdminLuckyDraw } from "@/components/AdminLuckyDraw";
 import { 
   LayoutDashboard, 
   Users, 
@@ -133,13 +134,8 @@ const AdminPanel = () => {
           <AdminStaking />
         </TabsContent>
 
-        <TabsContent value="lucky-draw">
-          <Card className="m-6">
-            <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Lucky Draw Configuration</h2>
-              <p className="text-muted-foreground">Configure lottery draws, prizes, and schedules.</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="lucky-draw" className="m-6">
+          <AdminLuckyDraw />
         </TabsContent>
 
         <TabsContent value="insurance">
