@@ -11,6 +11,7 @@ import { AdminSubscriptions } from "@/components/AdminSubscriptions";
 import { AdminReferrals } from "@/components/AdminReferrals";
 import { AdminStaking } from "@/components/AdminStaking";
 import { AdminLuckyDraw } from "@/components/AdminLuckyDraw";
+import { AdminInsurance } from "@/components/AdminInsurance";
 import { 
   LayoutDashboard, 
   Users, 
@@ -138,8 +139,8 @@ const AdminPanel = () => {
           <AdminLuckyDraw />
         </TabsContent>
 
-        <TabsContent value="insurance">
-          <AdminInsuranceClaims />
+        <TabsContent value="insurance" className="m-6">
+          <AdminInsurance />
         </TabsContent>
 
         <TabsContent value="ads">
