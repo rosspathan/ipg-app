@@ -12,6 +12,7 @@ import { AdminReferrals } from "@/components/AdminReferrals";
 import { AdminStaking } from "@/components/AdminStaking";
 import { AdminLuckyDraw } from "@/components/AdminLuckyDraw";
 import { AdminInsurance } from "@/components/AdminInsurance";
+import { AdminAds } from "@/components/AdminAds";
 import { 
   LayoutDashboard, 
   Users, 
@@ -143,13 +144,8 @@ const AdminPanel = () => {
           <AdminInsurance />
         </TabsContent>
 
-        <TabsContent value="ads">
-          <Card className="m-6">
-            <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Ads & CMS</h2>
-              <p className="text-muted-foreground">Manage banners, carousels, and promotional content.</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="ads" className="m-6">
+          <AdminAds />
         </TabsContent>
 
         <TabsContent value="fees">
