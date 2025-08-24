@@ -45,6 +45,8 @@ import NotFound from "./pages/NotFound";
 import ResetPasswordScreen from "./pages/ResetPasswordScreen";
 import DebugCatalog from "./pages/DebugCatalog";
 import TestUsers from "./pages/TestUsers";
+import UserDashboard from "./pages/UserDashboard";
+import RealUserCreation from "./pages/RealUserCreation";
  
 const queryClient = new QueryClient();
 
@@ -95,6 +97,8 @@ function App() {
                 <Route path="/wallet-home" element={<WalletHomeScreen />} />
         <Route path="/debug/catalog" element={<DebugCatalog />} />
         <Route path="/test-users" element={<TestUsers />} />
+        <Route path="/create-real-user" element={<RealUserCreation />} />
+        <Route path="/user-dashboard" element={<UserDashboard />} />
                  <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
                  <Route path="/admin/*" element={<AdminRoute><AdminPanel /></AdminRoute>} />
                 <Route path="*" element={<NotFound />} />
