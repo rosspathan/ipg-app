@@ -72,6 +72,16 @@ const Index = () => {
                 Test App Lock
               </Button>
               
+              {isAdmin && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate("/test-users")}
+                  className="w-full"
+                >
+                  Create Test Users
+                </Button>
+              )}
+              
               <Button 
                 variant="destructive" 
                 onClick={handleLogout}
