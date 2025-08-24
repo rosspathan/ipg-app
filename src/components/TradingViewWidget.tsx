@@ -22,9 +22,10 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
   const { pairsList } = useCatalog();
 
   useEffect(() => {
-    // Clear any existing content
+    // Clear and mark container to avoid StrictMode double-initialization artifacts
     if (containerRef.current) {
       containerRef.current.innerHTML = '';
+      containerRef.current.setAttribute('data-tv-embed-initialized', 'true');
     }
 
     const script = document.createElement('script');
@@ -35,7 +36,7 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
 
     switch (widgetType) {
       case 'market-overview':
-        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js';
+        script.src = 'https://www.tradingview.com/external-embedding/embed-widget-market-overview.js';
         config = {
           "colorTheme": colorTheme,
           "dateRange": "12M",
@@ -70,7 +71,7 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
         break;
 
       case 'ticker':
-        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
+        script.src = 'https://www.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
         config = {
           "symbols": pairsList.slice(0, 8).map(pair => ({
             "proName": pair.tradingview_symbol || `BINANCE:${pair.base_symbol}${pair.quote_symbol}`,
@@ -85,7 +86,7 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
         break;
 
       case 'mini-chart':
-        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+        script.src = 'https://www.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
         config = {
           "symbol": symbol,
           "width": width,
@@ -100,7 +101,7 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
         break;
 
       default: // advanced-chart
-        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+        script.src = 'https://www.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
         config = {
           "autosize": false,
           "symbol": symbol,
@@ -153,7 +154,9 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
         width: typeof width === 'number' ? `${width}px` : width,
         height: typeof height === 'number' ? `${height}px` : height
       }}
-    />
+    >
+      <div className="tradingview-widget-container__widget" />
+    </div>
   );
 };
 
