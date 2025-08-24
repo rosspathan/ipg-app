@@ -131,6 +131,22 @@ interface FeesConfig {
 
 type CatalogStatus = 'loading' | 'ready' | 'empty' | 'error';
 
+interface MarketPair {
+  id: string;
+  pair: string;
+  base_symbol: string;
+  quote_symbol: string;
+  base_logo: string;
+  quote_logo: string;
+  base_decimals: number;
+  quote_decimals: number;
+  tick_size: number;
+  lot_size: number;
+  min_notional: number;
+  is_active: boolean;
+  tradingview_symbol?: string;
+}
+
 interface CatalogData {
   status: CatalogStatus;
   assets: Asset[];
@@ -143,10 +159,12 @@ interface CatalogData {
   ads: Ad[];
   feesConfig: FeesConfig | null;
   assetsById: Record<string, Asset>;
-  pairsBySymbol: Record<string, Market>;
+  pairsBySymbol: Record<string, MarketPair>;
+  pairsList: MarketPair[];
   error: string | null;
   refetch: () => void;
   lastUpdated: Record<string, string>;
+  lastRealtimeEvent: string | null;
   // Legacy compatibility
   assetsList: Asset[];
   marketsList: Market[];
@@ -166,6 +184,7 @@ export const useCatalog = (): CatalogData => {
   const [feesConfig, setFeesConfig] = useState<FeesConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Record<string, string>>({});
+  const [lastRealtimeEvent, setLastRealtimeEvent] = useState<string | null>(null);
 
   // Helper function to get logo URL
   const getAssetLogoUrl = (asset: Asset): string => {
@@ -210,7 +229,11 @@ export const useCatalog = (): CatalogData => {
         feesConfigResult
       ] = await Promise.allSettled([
         supabase.from('assets').select('*').eq('is_active', true).order('symbol'),
-        supabase.from('markets').select('*').eq('is_active', true).order('created_at'),
+        supabase.from('markets').select(`
+          *,
+          base_asset:assets!base_asset_id(id, symbol, logo_url, logo_file_path, decimals, is_active),
+          quote_asset:assets!quote_asset_id(id, symbol, logo_url, logo_file_path, decimals, is_active)
+        `).eq('is_active', true).eq('base_asset.is_active', true).eq('quote_asset.is_active', true),
         (supabase as any).from('subscriptions_plans').select('*').eq('is_active', true).order('created_at'),
         (supabase as any).from('referrals_config').select('*').order('updated_at', { ascending: false }).limit(1).single(),
         supabase.from('staking_pools').select('*').eq('active', true).order('created_at'),
@@ -243,8 +266,13 @@ export const useCatalog = (): CatalogData => {
 
       // Process markets
       if (marketsResult.status === 'fulfilled' && !marketsResult.value.error) {
-        setMarkets(marketsResult.value.data || []);
-        console.log('✅ Markets loaded:', marketsResult.value.data?.length || 0);
+        const marketsData = (marketsResult.value.data || []).map((market: any) => ({
+          ...market,
+          base_asset: market.base_asset?.[0] || market.base_asset,
+          quote_asset: market.quote_asset?.[0] || market.quote_asset,
+        }));
+        setMarkets(marketsData);
+        console.log('✅ Markets loaded:', marketsData.length);
       }
 
       // Process subscription plans
@@ -328,11 +356,13 @@ export const useCatalog = (): CatalogData => {
       .channel('catalog-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, (payload) => {
         console.log('🔄 Assets updated:', payload.eventType);
+        setLastRealtimeEvent(`${new Date().toISOString()}: Assets ${payload.eventType}`);
         setLastUpdated(prev => ({ ...prev, assets: new Date().toISOString() }));
         setTimeout(loadData, 100);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'markets' }, (payload) => {
         console.log('🔄 Markets updated:', payload.eventType);
+        setLastRealtimeEvent(`${new Date().toISOString()}: Markets ${payload.eventType}`);
         setLastUpdated(prev => ({ ...prev, markets: new Date().toISOString() }));
         setTimeout(loadData, 100);
       })
@@ -385,13 +415,35 @@ export const useCatalog = (): CatalogData => {
     return acc;
   }, {} as Record<string, Asset>);
 
-  const pairsBySymbol = markets.reduce((acc, market) => {
-    if (market.base_asset && market.quote_asset) {
-      const symbol = `${market.base_asset.symbol}/${market.quote_asset.symbol}`;
-      acc[symbol] = market;
-    }
+  // Build trading pairs list with all required data
+  const pairsList: MarketPair[] = markets
+    .filter(market => market.base_asset && market.quote_asset)
+    .map(market => {
+      const baseAsset = market.base_asset!;
+      const quoteAsset = market.quote_asset!;
+      const pair = `${baseAsset.symbol}/${quoteAsset.symbol}`;
+      
+      return {
+        id: market.id,
+        pair,
+        base_symbol: baseAsset.symbol,
+        quote_symbol: quoteAsset.symbol,
+        base_logo: getAssetLogoUrl(baseAsset),
+        quote_logo: getAssetLogoUrl(quoteAsset),
+        base_decimals: baseAsset.decimals,
+        quote_decimals: quoteAsset.decimals,
+        tick_size: market.tick_size,
+        lot_size: market.lot_size,
+        min_notional: market.min_notional,
+        is_active: market.is_active,
+        tradingview_symbol: `BINANCE:${baseAsset.symbol}${quoteAsset.symbol}`,
+      };
+    });
+
+  const pairsBySymbol = pairsList.reduce((acc, pair) => {
+    acc[pair.pair] = pair;
     return acc;
-  }, {} as Record<string, Market>);
+  }, {} as Record<string, MarketPair>);
 
   return {
     status,
@@ -406,9 +458,11 @@ export const useCatalog = (): CatalogData => {
     feesConfig,
     assetsById,
     pairsBySymbol,
+    pairsList,
     error,
     refetch: loadData,
     lastUpdated,
+    lastRealtimeEvent,
     // Legacy compatibility
     assetsList: assets,
     marketsList: markets,

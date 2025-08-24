@@ -10,7 +10,7 @@ const TradeReceiptScreen = () => {
   const { toast } = useToast();
 
   const orderDetails = location.state?.orderDetails || {
-    orderId: "ORD-1234567890",
+    orderId: "ORD-1234567890", 
     pair: "BTC/USDT",
     type: "buy",
     orderMethod: "market",

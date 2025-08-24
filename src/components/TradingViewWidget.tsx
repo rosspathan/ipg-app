@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useCatalog } from '@/hooks/useCatalog';
 
 interface TradingViewWidgetProps {
   symbol?: string;
@@ -18,6 +19,7 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
   className = ''
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { pairsList } = useCatalog();
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -53,14 +55,10 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
           "tabs": [
             {
               "title": "Crypto",
-              "symbols": [
-                { "s": "BINANCE:BTCUSDT", "d": "Bitcoin" },
-                { "s": "BINANCE:ETHUSDT", "d": "Ethereum" },
-                { "s": "BINANCE:BNBUSDT", "d": "BNB" },
-                { "s": "BINANCE:ADAUSDT", "d": "Cardano" },
-                { "s": "BINANCE:SOLUSDT", "d": "Solana" },
-                { "s": "BINANCE:DOTUSDT", "d": "Polkadot" }
-              ],
+              "symbols": pairsList.slice(0, 10).map(pair => ({
+                "s": pair.tradingview_symbol || `BINANCE:${pair.base_symbol}${pair.quote_symbol}`,
+                "d": pair.pair
+              })),
               "originalTitle": "Crypto"
             }
           ]
@@ -70,13 +68,10 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
       case 'ticker':
         script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
         config = {
-          "symbols": [
-            { "proName": "BINANCE:BTCUSDT", "title": "Bitcoin" },
-            { "proName": "BINANCE:ETHUSDT", "title": "Ethereum" },
-            { "proName": "BINANCE:BNBUSDT", "title": "BNB" },
-            { "proName": "BINANCE:ADAUSDT", "title": "Cardano" },
-            { "proName": "BINANCE:SOLUSDT", "title": "Solana" }
-          ],
+          "symbols": pairsList.slice(0, 8).map(pair => ({
+            "proName": pair.tradingview_symbol || `BINANCE:${pair.base_symbol}${pair.quote_symbol}`,
+            "title": pair.pair
+          })),
           "showSymbolLogo": true,
           "colorTheme": colorTheme,
           "isTransparent": true,
@@ -138,7 +133,7 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
         containerRef.current.innerHTML = '';
       }
     };
-  }, [symbol, width, height, colorTheme, widgetType]);
+  }, [symbol, width, height, colorTheme, widgetType, pairsList]);
 
   return (
     <div 

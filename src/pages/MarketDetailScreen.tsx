@@ -4,12 +4,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { useCatalog } from "@/hooks/useCatalog";
+import AssetLogo from "@/components/AssetLogo";
 
 const MarketDetailScreen = () => {
   const navigate = useNavigate();
   const { pair } = useParams<{ pair: string }>();
   const marketPair = pair?.replace('-', '/') || 'BTC/USDT';
-
+  const { pairsBySymbol, status } = useCatalog();
+  
+  const marketInfo = pairsBySymbol[marketPair];
+  
   // Mock data - in real app, fetch based on pair
   const marketData = {
     pair: marketPair,
@@ -54,7 +59,15 @@ const MarketDetailScreen = () => {
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-semibold">{marketData.pair}</h1>
+          <div className="flex items-center gap-3">
+            {marketInfo && (
+              <div className="flex items-center gap-1">
+                <AssetLogo symbol={marketInfo.base_symbol} logoUrl={marketInfo.base_logo} size="sm" />
+                <AssetLogo symbol={marketInfo.quote_symbol} logoUrl={marketInfo.quote_logo} size="sm" />
+              </div>
+            )}
+            <h1 className="text-xl font-semibold">{marketData.pair}</h1>
+          </div>
         </div>
         <Button 
           variant="default"

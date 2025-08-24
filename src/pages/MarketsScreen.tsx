@@ -13,31 +13,20 @@ const MarketsScreen = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [watchlist, setWatchlist] = useState<string[]>([]);
-  const { marketsList, loading } = useCatalog();
+  const { pairsList, status } = useCatalog();
+  const loading = status === 'loading';
 
-  // Convert markets to trading pairs format for display
-  const cryptoPairs = marketsList.map(market => {
-    if (!market.base_asset || !market.quote_asset) {
-      return null;
-    }
-    
-    const pair = `${market.base_asset.symbol}/${market.quote_asset.symbol}`;
-    return {
-      pair,
-      symbol: `BINANCE:${market.base_asset.symbol}${market.quote_asset.symbol}`,
-      name: market.base_asset.name,
-      baseAsset: market.base_asset,
-      quoteAsset: market.quote_asset,
-      marketId: market.id,
-    };
-  }).filter(Boolean) as Array<{
-    pair: string;
-    symbol: string;
-    name: string;
-    baseAsset: any;
-    quoteAsset: any;
-    marketId: string;
-  }>;
+  // Use the enhanced pairs list directly
+  const cryptoPairs = pairsList.map(pair => ({
+    pair: pair.pair,
+    name: `${pair.base_symbol} / ${pair.quote_symbol}`,
+    marketId: pair.id,
+    baseSymbol: pair.base_symbol,
+    quoteSymbol: pair.quote_symbol,
+    baseLogo: pair.base_logo,
+    quoteLogo: pair.quote_logo,
+    symbol: pair.tradingview_symbol || `BINANCE:${pair.base_symbol}${pair.quote_symbol}`,
+  }));
 
   const filteredPairs = cryptoPairs.filter(crypto =>
     crypto.pair.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -157,8 +146,8 @@ const MarketsScreen = () => {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base flex items-center gap-2">
                         <div className="flex -space-x-1">
-                          <AssetLogo symbol={crypto.baseAsset.symbol} logoUrl={crypto.baseAsset.logo_url} size="sm" />
-                          <AssetLogo symbol={crypto.quoteAsset.symbol} logoUrl={crypto.quoteAsset.logo_url} size="sm" />
+                          <AssetLogo symbol={crypto.baseSymbol} logoUrl={crypto.baseLogo} size="sm" />
+                          <AssetLogo symbol={crypto.quoteSymbol} logoUrl={crypto.quoteLogo} size="sm" />
                         </div>
                         {crypto.name} ({crypto.pair})
                       </CardTitle>
@@ -220,8 +209,8 @@ const MarketsScreen = () => {
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base flex items-center gap-2">
                           <div className="flex -space-x-1">
-                            <AssetLogo symbol={crypto.baseAsset.symbol} logoUrl={crypto.baseAsset.logo_url} size="sm" />
-                            <AssetLogo symbol={crypto.quoteAsset.symbol} logoUrl={crypto.quoteAsset.logo_url} size="sm" />
+                            <AssetLogo symbol={crypto.baseSymbol} logoUrl={crypto.baseLogo} size="sm" />
+                            <AssetLogo symbol={crypto.quoteSymbol} logoUrl={crypto.quoteLogo} size="sm" />
                           </div>
                           {crypto.name} ({crypto.pair})
                         </CardTitle>

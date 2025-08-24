@@ -43,7 +43,7 @@ import AdminPanel from "./pages/AdminPanel";
 import AdminLoginScreen from "./pages/AdminLoginScreen";
 import NotFound from "./pages/NotFound";
 import ResetPasswordScreen from "./pages/ResetPasswordScreen";
-import DebugCatalog from "./pages/DebugCatalog";
+import DebugCatalogScreen from "./pages/DebugCatalogScreen";
 import TestUsers from "./pages/TestUsers";
 import UserDashboard from "./pages/UserDashboard";
 import RealUserCreation from "./pages/RealUserCreation";
@@ -83,7 +83,7 @@ function App() {
                <Route path="/trade-receipt" element={<TradeReceiptScreen />} />
                <Route path="/order-confirmation" element={<OrderConfirmationScreen />} />
                <Route path="/markets" element={<MarketsScreen />} />
-               <Route path="/market-detail" element={<MarketDetailScreen />} />
+               <Route path="/market-detail/:pair" element={<MarketDetailScreen />} />
                <Route path="/history" element={<HistoryScreen />} />
                <Route path="/programs" element={<ProgramsScreen />} />
                <Route path="/subscriptions" element={<SubscriptionsScreen />} />
@@ -95,7 +95,7 @@ function App() {
                <Route path="/file-claim" element={<FileClaimScreen />} />
                <Route path="/app-lock" element={<AppLockScreen />} />
                 <Route path="/wallet-home" element={<WalletHomeScreen />} />
-        <Route path="/debug/catalog" element={<DebugCatalog />} />
+        <Route path="/debug/catalog" element={<DebugCatalogScreen />} />
         <Route path="/test-users" element={<TestUsers />} />
         <Route path="/create-real-user" element={<RealUserCreation />} />
         <Route path="/user-dashboard" element={<UserDashboard />} />

@@ -10,6 +10,8 @@ import { ChevronLeft, Calculator, TrendingUp, TrendingDown, Target } from "lucid
 import { useToast } from "@/hooks/use-toast";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import OrderHistory from "@/components/OrderHistory";
+import { useCatalog } from "@/hooks/useCatalog";
+import AssetLogo from "@/components/AssetLogo";
 
 const TradingScreen = () => {
   const navigate = useNavigate();
@@ -26,16 +28,12 @@ const TradingScreen = () => {
   const [leverage, setLeverage] = useState("1");
   const [selectedPair, setSelectedPair] = useState(marketPair);
 
-  const tradingPairs = [
-    { pair: "BTC/USDT", symbol: "BINANCE:BTCUSDT", futures: "BINANCE:BTCUSDTPERP" },
-    { pair: "ETH/USDT", symbol: "BINANCE:ETHUSDT", futures: "BINANCE:ETHUSDTPERP" },
-    { pair: "BNB/USDT", symbol: "BINANCE:BNBUSDT", futures: "BINANCE:BNBUSDTPERP" },
-    { pair: "ADA/USDT", symbol: "BINANCE:ADAUSDT", futures: "BINANCE:ADAUSDTPERP" },
-    { pair: "SOL/USDT", symbol: "BINANCE:SOLUSDT", futures: "BINANCE:SOLUSDTPERP" },
-  ];
-
-  const currentPair = tradingPairs.find(p => p.pair === selectedPair) || tradingPairs[0];
-  const currentSymbol = tradingType === 'spot' ? currentPair.symbol : currentPair.futures;
+  const { pairsList, pairsBySymbol, status } = useCatalog();
+  
+  const currentPair = pairsBySymbol[selectedPair] || pairsList[0];
+  const tradingViewSymbol = currentPair?.tradingview_symbol || 'BINANCE:BTCUSDT';
+  const futuresSymbol = tradingViewSymbol.replace('USDT', 'USDTPERP');
+  
 
 // Live market data via Binance WebSocket
 const [market, setMarket] = useState({
@@ -180,9 +178,13 @@ useEffect(() => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {tradingPairs.map(pair => (
+              {pairsList.map(pair => (
                 <SelectItem key={pair.pair} value={pair.pair}>
-                  {pair.pair}
+                  <div className="flex items-center gap-2">
+                    <AssetLogo symbol={pair.base_symbol} logoUrl={pair.base_logo} size="sm" />
+                    <AssetLogo symbol={pair.quote_symbol} logoUrl={pair.quote_logo} size="sm" />
+                    {pair.pair}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -242,7 +244,7 @@ useEffect(() => {
             </CardHeader>
             <CardContent className="p-0 h-[500px]">
               <TradingViewWidget 
-                symbol={currentSymbol}
+                symbol={tradingType === 'spot' ? tradingViewSymbol : futuresSymbol}
                 widgetType="advanced-chart"
                 height={500}
                 colorTheme="dark"
