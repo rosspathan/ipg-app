@@ -22,8 +22,12 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
   const { pairsList } = useCatalog();
 
   useEffect(() => {
+    // Clear any existing content
+    if (containerRef.current) {
+      containerRef.current.innerHTML = '';
+    }
+
     const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
     script.type = 'text/javascript';
     script.async = true;
 
@@ -96,8 +100,9 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
         break;
 
       default: // advanced-chart
+        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
         config = {
-          "autosize": true,
+          "autosize": false,
           "symbol": symbol,
           "interval": "D",
           "timezone": "Etc/UTC",
@@ -106,7 +111,6 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
           "locale": "en",
           "enable_publishing": false,
           "allow_symbol_change": true,
-          "container_id": "tradingview_widget",
           "width": width,
           "height": height,
           "hide_top_toolbar": false,
@@ -115,20 +119,26 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
           "backgroundColor": "rgba(0, 0, 0, 0)",
           "gridColor": "rgba(240, 243, 250, 0.06)",
           "hide_volume": false,
-          "support_host": "https://www.tradingview.com"
+          "support_host": "https://www.tradingview.com",
+          "details": true,
+          "hotlist": true,
+          "calendar": false
         };
     }
 
-    script.innerHTML = `
-      ${JSON.stringify(config)}
-    `;
+    script.innerHTML = JSON.stringify(config);
 
     if (containerRef.current) {
-      containerRef.current.innerHTML = '';
       containerRef.current.appendChild(script);
     }
 
+    // Add a small delay to ensure script loads
+    const timeout = setTimeout(() => {
+      console.log('TradingView widget loading for symbol:', symbol);
+    }, 100);
+
     return () => {
+      clearTimeout(timeout);
       if (containerRef.current) {
         containerRef.current.innerHTML = '';
       }
