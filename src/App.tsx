@@ -37,6 +37,8 @@ import InsuranceScreen from "./pages/InsuranceScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import AppLockScreen from "./pages/AppLockScreen";
 import WalletHomeScreen from "./pages/WalletHomeScreen";
+import SwapScreen from "./pages/SwapScreen";
+import INRDepositScreen from "./pages/INRDepositScreen";
 import EmailVerificationScreen from "./pages/EmailVerificationScreen";
 import EmailVerifiedScreen from "./pages/EmailVerifiedScreen";
 import AdminPanel from "./pages/AdminPanel";
@@ -94,7 +96,9 @@ function App() {
                <Route path="/insurance" element={<InsuranceScreen />} />
                <Route path="/file-claim" element={<FileClaimScreen />} />
                <Route path="/app-lock" element={<AppLockScreen />} />
-                <Route path="/wallet-home" element={<WalletHomeScreen />} />
+          <Route path="/swap" element={<SwapScreen />} />
+          <Route path="/inr-deposit" element={<INRDepositScreen />} />
+          <Route path="/wallet-home" element={<WalletHomeScreen />} />
         <Route path="/debug/catalog" element={<DebugCatalogScreen />} />
         <Route path="/test-users" element={<TestUsers />} />
         <Route path="/create-real-user" element={<RealUserCreation />} />
