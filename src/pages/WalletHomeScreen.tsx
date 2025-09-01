@@ -5,43 +5,51 @@ import { Eye, EyeOff, ArrowUpCircle, ArrowDownCircle, Send, MoreHorizontal, Repe
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCatalog } from "@/hooks/useCatalog";
+import { useFX } from "@/hooks/useFX";
 import BSCWalletInfo from "@/components/BSCWalletInfo";
 import AssetLogo from "@/components/AssetLogo";
+import CurrencyPicker from "@/components/CurrencyPicker";
 
 const WalletHomeScreen = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const [showBalances, setShowBalances] = useState(true);
   const { status, assets, error, refetch } = useCatalog();
+  const { convert, formatCurrency, displayCurrency } = useFX();
 
   // Mock user balances - in a real app, this would come from user balance data
   const mockBalances = {
-    BTC: { balance: 0.25, fiatValue: 12500.00 },
-    ETH: { balance: 5.75, fiatValue: 10230.50 },
-    USDT: { balance: 2500.00, fiatValue: 2500.00 },
-    BNB: { balance: 15.3, fiatValue: 4590.00 },
+    BTC: { balance: 0.25 },
+    ETH: { balance: 5.75 },
+    USDT: { balance: 2500.00 },
+    BNB: { balance: 15.3 },
+    INR: { balance: 50000 },
   };
 
-  // Combine assets with mock balances; include all assets (default to 0)
-  const userAssets = assets.map(asset => ({
-    ...asset,
-    balance: mockBalances[asset.symbol as keyof typeof mockBalances]?.balance ?? 0,
-    fiatValue: mockBalances[asset.symbol as keyof typeof mockBalances]?.fiatValue ?? 0,
-  }));
+  // Combine assets with mock balances and convert to display currency
+  const userAssets = assets.map(asset => {
+    const balance = mockBalances[asset.symbol as keyof typeof mockBalances]?.balance ?? 0;
+    const valueInDisplayCurrency = convert(balance, asset.symbol, displayCurrency);
+    
+    return {
+      ...asset,
+      balance,
+      displayValue: valueInDisplayCurrency,
+    };
+  });
 
-  const totalBalance = userAssets.reduce((sum, asset) => sum + (asset.fiatValue || 0), 0);
+  const totalBalance = userAssets.reduce((sum, asset) => sum + (asset.displayValue || 0), 0);
 
-  // Quick actions
+  // Quick actions with swap included
   const actions = [
     { name: "Deposit", icon: ArrowDownCircle, color: "text-green-600", route: "/deposit" },
     { name: "Withdraw", icon: ArrowUpCircle, color: "text-red-600", route: "/withdraw" },
-    { name: "Send", icon: Send, color: "text-blue-600", route: "/send" },
-    { name: "Transfer", icon: Repeat, color: "text-orange-600", route: "/transfer" },
+    { name: "Swap", icon: Repeat, color: "text-blue-600", route: "/swap" },
+    { name: "Send", icon: Send, color: "text-orange-600", route: "/send" },
     { name: "Trade", icon: TrendingUp, color: "text-indigo-600", route: "/trading" },
     { name: "Staking", icon: Coins, color: "text-yellow-600", route: "/staking" },
     { name: "Programs", icon: Gift, color: "text-purple-600", route: "/programs" },
     ...(isAdmin ? [{ name: "Admin", icon: Shield, color: "text-red-600", route: "/admin" }] : []),
-    { name: "More", icon: MoreHorizontal, color: "text-gray-600", route: "/more" },
   ];
 
   // Show loading only for the first few seconds, then show content regardless
@@ -83,6 +91,7 @@ const WalletHomeScreen = () => {
           <h1 className="text-2xl font-bold">My Wallet</h1>
           <p className="text-muted-foreground">Manage your digital assets</p>
         </div>
+        <CurrencyPicker />
       </div>
 
       {/* BSC Wallet Info */}
@@ -104,10 +113,10 @@ const WalletHomeScreen = () => {
         </CardHeader>
         <CardContent>
           <div className="text-3xl font-bold">
-            {showBalances ? `$${totalBalance.toLocaleString()}` : "****"}
+            {showBalances ? formatCurrency(totalBalance) : "****"}
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            ≈ {showBalances ? `$${totalBalance.toLocaleString()}` : "****"} USD
+            Total Portfolio Value in {displayCurrency}
           </p>
         </CardContent>
       </Card>
@@ -157,7 +166,7 @@ const WalletHomeScreen = () => {
                     {showBalances ? asset.balance.toFixed(4) : "****"} {asset.symbol}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {showBalances ? `$${asset.fiatValue.toLocaleString()}` : "****"}
+                    {showBalances ? formatCurrency(asset.displayValue) : "****"}
                   </div>
                 </div>
               </div>

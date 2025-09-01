@@ -2,10 +2,53 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowDown, ArrowUp, Send, ArrowRightLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ArrowDown, ArrowUp, Send, ArrowRightLeft, ExternalLink, Repeat } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const HistoryScreen = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [swaps, setSwaps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadSwaps();
+    }
+  }, [user]);
+
+  const loadSwaps = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('swaps')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      if (data) {
+        setSwaps(data.map(swap => ({
+          date: new Date(swap.created_at).toLocaleDateString(),
+          fromAsset: swap.from_asset,
+          toAsset: swap.to_asset,
+          fromAmount: swap.from_amount.toString(),
+          toAmount: swap.to_amount.toString(),
+          route: swap.route_type,
+          fee: `${swap.total_fees.toFixed(4)} ${swap.from_asset}`,
+          status: swap.status === 'completed' ? 'Completed' : 
+                  swap.status === 'failed' ? 'Failed' : 'Processing',
+          txId: swap.id
+        })));
+      }
+    } catch (error) {
+      console.error('Error loading swaps:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const deposits = [
     {
@@ -102,6 +145,51 @@ const HistoryScreen = () => {
     }
   };
 
+  const SwapCard = ({ swap }: { swap: any }) => (
+    <Card className="bg-gradient-card shadow-card border-0 mb-3">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <Repeat className="w-4 h-4 text-blue-600" />
+            <span className="font-semibold">{swap.fromAsset} → {swap.toAsset}</span>
+          </div>
+          <span className={`text-sm font-medium ${getStatusColor(swap.status)}`}>
+            {swap.status}
+          </span>
+        </div>
+        
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Date</span>
+            <span>{swap.date}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">From</span>
+            <span className="font-medium">{swap.fromAmount} {swap.fromAsset}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">To</span>
+            <span className="font-medium">{swap.toAmount} {swap.toAsset}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Route</span>
+            <span className="capitalize">{swap.route}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Fee</span>
+            <span>{swap.fee}</span>
+          </div>
+          
+          <div className="flex justify-between items-center pt-2 border-t">
+            <span className="text-muted-foreground">Swap ID</span>
+            <div className="flex items-center space-x-1">
+              <span className="font-mono text-xs">{swap.txId.slice(0, 8)}...{swap.txId.slice(-8)}</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
   const TransactionCard = ({ transaction, type }: { transaction: any; type: string }) => (
     <Card className="bg-gradient-card shadow-card border-0 mb-3">
       <CardContent className="p-4">
@@ -176,10 +264,11 @@ const HistoryScreen = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="deposits" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="deposits">Deposits</TabsTrigger>
             <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
             <TabsTrigger value="sends">Sends</TabsTrigger>
+            <TabsTrigger value="swaps">Swaps</TabsTrigger>
             <TabsTrigger value="transfers">Transfers</TabsTrigger>
           </TabsList>
           
@@ -204,6 +293,22 @@ const HistoryScreen = () => {
               {sends.map((transaction, index) => (
                 <TransactionCard key={index} transaction={transaction} type="send" />
               ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="swaps" className="mt-6">
+            <div className="space-y-3">
+              {loading ? (
+                <div className="text-center py-4">Loading swaps...</div>
+              ) : swaps.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  No swaps yet
+                </div>
+              ) : (
+                swaps.map((swap, index) => (
+                  <SwapCard key={index} swap={swap} />
+                ))
+              )}
             </div>
           </TabsContent>
           
