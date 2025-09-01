@@ -224,6 +224,105 @@ export type Database = {
           },
         ]
       }
+      fiat_deposits: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          fee: number | null
+          id: string
+          method: string
+          net_credit: number | null
+          proof_url: string | null
+          reference: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          fee?: number | null
+          id?: string
+          method: string
+          net_credit?: number | null
+          proof_url?: string | null
+          reference?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          fee?: number | null
+          id?: string
+          method?: string
+          net_credit?: number | null
+          proof_url?: string | null
+          reference?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fiat_settings_inr: {
+        Row: {
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_name: string | null
+          created_at: string
+          enabled: boolean
+          fee_fixed: number | null
+          fee_percent: number | null
+          id: string
+          ifsc: string | null
+          min_deposit: number | null
+          notes: string | null
+          updated_at: string
+          upi_id: string | null
+          upi_name: string | null
+        }
+        Insert: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          created_at?: string
+          enabled?: boolean
+          fee_fixed?: number | null
+          fee_percent?: number | null
+          id?: string
+          ifsc?: string | null
+          min_deposit?: number | null
+          notes?: string | null
+          updated_at?: string
+          upi_id?: string | null
+          upi_name?: string | null
+        }
+        Update: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          created_at?: string
+          enabled?: boolean
+          fee_fixed?: number | null
+          fee_percent?: number | null
+          id?: string
+          ifsc?: string | null
+          min_deposit?: number | null
+          notes?: string | null
+          updated_at?: string
+          upi_id?: string | null
+          upi_name?: string | null
+        }
+        Relationships: []
+      }
       fiat_withdrawals: {
         Row: {
           admin_notes: string | null
@@ -266,6 +365,33 @@ export type Database = {
           reference_id?: string | null
           status?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      fx_rates: {
+        Row: {
+          base: string
+          created_at: string
+          id: string
+          quote: string
+          rate: number
+          updated_at: string
+        }
+        Insert: {
+          base: string
+          created_at?: string
+          id?: string
+          quote: string
+          rate: number
+          updated_at?: string
+        }
+        Update: {
+          base?: string
+          created_at?: string
+          id?: string
+          quote?: string
+          rate?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -790,6 +916,72 @@ export type Database = {
         }
         Relationships: []
       }
+      swaps: {
+        Row: {
+          actual_rate: number | null
+          completed_at: string | null
+          created_at: string
+          estimated_rate: number
+          from_amount: number
+          from_asset: string
+          id: string
+          intermediate_asset: string | null
+          min_receive: number
+          order_ids: string[] | null
+          platform_fee: number | null
+          route_type: string
+          slippage_percent: number | null
+          status: string
+          to_amount: number
+          to_asset: string
+          total_fees: number | null
+          trading_fees: number | null
+          user_id: string
+        }
+        Insert: {
+          actual_rate?: number | null
+          completed_at?: string | null
+          created_at?: string
+          estimated_rate: number
+          from_amount: number
+          from_asset: string
+          id?: string
+          intermediate_asset?: string | null
+          min_receive: number
+          order_ids?: string[] | null
+          platform_fee?: number | null
+          route_type: string
+          slippage_percent?: number | null
+          status?: string
+          to_amount: number
+          to_asset: string
+          total_fees?: number | null
+          trading_fees?: number | null
+          user_id: string
+        }
+        Update: {
+          actual_rate?: number | null
+          completed_at?: string | null
+          created_at?: string
+          estimated_rate?: number
+          from_amount?: number
+          from_asset?: string
+          id?: string
+          intermediate_asset?: string | null
+          min_receive?: number
+          order_ids?: string[] | null
+          platform_fee?: number | null
+          route_type?: string
+          slippage_percent?: number | null
+          status?: string
+          to_amount?: number
+          to_asset?: string
+          total_fees?: number | null
+          trading_fees?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       trades: {
         Row: {
           buy_order_id: string
@@ -945,6 +1137,30 @@ export type Database = {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          display_currency: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_currency?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_currency?: string
+          id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
