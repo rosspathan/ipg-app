@@ -958,6 +958,15 @@ export type Database = {
         Args: { asset_row: Database["public"]["Tables"]["assets"]["Row"] }
         Returns: string
       }
+      get_masked_profile_data: {
+        Args: {
+          p_email?: string
+          p_phone?: string
+          p_user_id: string
+          p_wallet_address?: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
