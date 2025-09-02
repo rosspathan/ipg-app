@@ -61,11 +61,13 @@ export type Database = {
       }
       assets: {
         Row: {
+          asset_type: string | null
           contract_address: string | null
           created_at: string | null
           decimals: number | null
           deposit_enabled: boolean | null
           id: string
+          initial_price: number | null
           is_active: boolean | null
           logo_file_name: string | null
           logo_file_path: string | null
@@ -75,6 +77,7 @@ export type Database = {
           min_withdraw_amount: number | null
           name: string
           network: string | null
+          price_currency: string | null
           risk_label: string | null
           symbol: string
           trading_enabled: boolean | null
@@ -83,11 +86,13 @@ export type Database = {
           withdraw_fee: number | null
         }
         Insert: {
+          asset_type?: string | null
           contract_address?: string | null
           created_at?: string | null
           decimals?: number | null
           deposit_enabled?: boolean | null
           id?: string
+          initial_price?: number | null
           is_active?: boolean | null
           logo_file_name?: string | null
           logo_file_path?: string | null
@@ -97,6 +102,7 @@ export type Database = {
           min_withdraw_amount?: number | null
           name: string
           network?: string | null
+          price_currency?: string | null
           risk_label?: string | null
           symbol: string
           trading_enabled?: boolean | null
@@ -105,11 +111,13 @@ export type Database = {
           withdraw_fee?: number | null
         }
         Update: {
+          asset_type?: string | null
           contract_address?: string | null
           created_at?: string | null
           decimals?: number | null
           deposit_enabled?: boolean | null
           id?: string
+          initial_price?: number | null
           is_active?: boolean | null
           logo_file_name?: string | null
           logo_file_path?: string | null
@@ -119,6 +127,7 @@ export type Database = {
           min_withdraw_amount?: number | null
           name?: string
           network?: string | null
+          price_currency?: string | null
           risk_label?: string | null
           symbol?: string
           trading_enabled?: boolean | null

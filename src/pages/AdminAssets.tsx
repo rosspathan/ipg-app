@@ -32,6 +32,9 @@ interface Asset {
   max_withdraw_amount: number;
   withdraw_fee: number;
   risk_label: string;
+  asset_type: string;
+  initial_price: number | null;
+  price_currency: string;
 }
 
 const AdminAssets = () => {
@@ -59,6 +62,9 @@ const AdminAssets = () => {
     max_withdraw_amount: 999999999,
     withdraw_fee: 0,
     risk_label: 'low',
+    asset_type: 'crypto',
+    initial_price: null as number | null,
+    price_currency: 'USD',
   });
 
   useEffect(() => {
@@ -155,6 +161,9 @@ const AdminAssets = () => {
       max_withdraw_amount: asset.max_withdraw_amount,
       withdraw_fee: asset.withdraw_fee,
       risk_label: asset.risk_label,
+      asset_type: asset.asset_type || 'crypto',
+      initial_price: asset.initial_price,
+      price_currency: asset.price_currency || 'USD',
     });
     setShowAddDialog(true);
   };
@@ -206,6 +215,9 @@ const AdminAssets = () => {
       max_withdraw_amount: 999999999,
       withdraw_fee: 0,
       risk_label: 'low',
+      asset_type: 'crypto',
+      initial_price: null,
+      price_currency: 'USD',
     });
   };
 
@@ -257,14 +269,69 @@ const AdminAssets = () => {
               </div>
 
               <div>
-                <Label htmlFor="contract_address">Contract Address</Label>
-                <Input
-                  id="contract_address"
-                  value={formData.contract_address}
-                  onChange={(e) => setFormData({...formData, contract_address: e.target.value})}
-                  placeholder="0x..."
-                />
+                <Label htmlFor="asset_type">Asset Type</Label>
+                <Select value={formData.asset_type} onValueChange={(value) => {
+                  setFormData({
+                    ...formData, 
+                    asset_type: value,
+                    // Reset network and decimals when switching types
+                    network: value === 'fiat' ? 'FIAT' : 'BEP20',
+                    decimals: value === 'fiat' ? 2 : 18,
+                    contract_address: value === 'fiat' ? '' : formData.contract_address
+                  });
+                }}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="crypto">Cryptocurrency</SelectItem>
+                    <SelectItem value="fiat">Fiat Currency</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
+              {formData.asset_type === 'fiat' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="initial_price">Initial Price</Label>
+                    <Input
+                      id="initial_price"
+                      type="number"
+                      step="0.01"
+                      value={formData.initial_price || ''}
+                      onChange={(e) => setFormData({...formData, initial_price: parseFloat(e.target.value) || null})}
+                      placeholder="e.g., 1.00"
+                      required={formData.asset_type === 'fiat'}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="price_currency">Price Base Currency</Label>
+                    <Select value={formData.price_currency} onValueChange={(value) => setFormData({...formData, price_currency: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="BTC">BTC</SelectItem>
+                        <SelectItem value="USDT">USDT</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {formData.asset_type === 'crypto' && (
+                <div>
+                  <Label htmlFor="contract_address">Contract Address</Label>
+                  <Input
+                    id="contract_address"
+                    value={formData.contract_address}
+                    onChange={(e) => setFormData({...formData, contract_address: e.target.value})}
+                    placeholder="0x..."
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -284,10 +351,22 @@ const AdminAssets = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="BEP20">BEP20</SelectItem>
-                      <SelectItem value="ERC20">ERC20</SelectItem>
-                      <SelectItem value="Bitcoin">Bitcoin</SelectItem>
-                      <SelectItem value="Ethereum">Ethereum</SelectItem>
+                      {formData.asset_type === 'crypto' ? (
+                        <>
+                          <SelectItem value="BEP20">BEP20</SelectItem>
+                          <SelectItem value="ERC20">ERC20</SelectItem>
+                          <SelectItem value="Bitcoin">Bitcoin</SelectItem>
+                          <SelectItem value="Ethereum">Ethereum</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="FIAT">FIAT</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="INR">INR</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -422,6 +501,7 @@ const AdminAssets = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Asset</TableHead>
+                <TableHead>Type & Price</TableHead>
                 <TableHead>Network</TableHead>
                 <TableHead>Features</TableHead>
                 <TableHead>Limits</TableHead>
@@ -450,6 +530,18 @@ const AdminAssets = () => {
                         <div className="font-medium">{asset.symbol}</div>
                         <div className="text-sm text-muted-foreground">{asset.name}</div>
                       </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <Badge variant={asset.asset_type === 'fiat' ? 'default' : 'secondary'} className="text-xs">
+                        {asset.asset_type === 'fiat' ? 'Fiat' : 'Crypto'}
+                      </Badge>
+                      {asset.asset_type === 'fiat' && asset.initial_price && (
+                        <div className="text-sm text-muted-foreground">
+                          {asset.initial_price} {asset.price_currency}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
