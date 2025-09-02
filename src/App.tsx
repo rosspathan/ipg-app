@@ -93,6 +93,10 @@ function App() {
               <Route path="/onboarding/security" element={<SecuritySetupScreen />} />
               <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
 
+              {/* Legacy Onboarding Redirects */}
+              <Route path="/create-wallet" element={<Navigate to="/onboarding/create-wallet" replace />} />
+              <Route path="/import-wallet" element={<Navigate to="/onboarding/import-wallet" replace />} />
+
               {/* User Authentication */}
               <Route path="/auth/login" element={
                 <AuthProviderUser>
