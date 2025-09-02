@@ -80,7 +80,7 @@ const SendScreen = () => {
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => navigate("/history")} 
+              onClick={() => navigate("/app/wallet/history")} 
               className="w-full" 
               size="lg"
             >

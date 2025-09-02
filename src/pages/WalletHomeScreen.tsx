@@ -42,13 +42,13 @@ const WalletHomeScreen = () => {
 
   // Quick actions with swap included
   const actions = [
-    { name: "Deposit", icon: ArrowDownCircle, color: "text-green-600", route: "/deposit" },
-    { name: "Withdraw", icon: ArrowUpCircle, color: "text-red-600", route: "/withdraw" },
-    { name: "Swap", icon: Repeat, color: "text-blue-600", route: "/swap" },
-    { name: "Send", icon: Send, color: "text-orange-600", route: "/send" },
-    { name: "Trade", icon: TrendingUp, color: "text-indigo-600", route: "/trading" },
-    { name: "Staking", icon: Coins, color: "text-yellow-600", route: "/staking" },
-    { name: "Programs", icon: Gift, color: "text-purple-600", route: "/programs" },
+    { name: "Deposit", icon: ArrowDownCircle, color: "text-green-600", route: "/app/wallet/deposit" },
+    { name: "Withdraw", icon: ArrowUpCircle, color: "text-red-600", route: "/app/wallet/withdraw" },
+    { name: "Swap", icon: Repeat, color: "text-blue-600", route: "/app/swap" },
+    { name: "Send", icon: Send, color: "text-orange-600", route: "/app/wallet/send" },
+    { name: "Trade", icon: TrendingUp, color: "text-indigo-600", route: "/app/trade" },
+    { name: "Staking", icon: Coins, color: "text-yellow-600", route: "/app/programs/staking" },
+    { name: "Programs", icon: Gift, color: "text-purple-600", route: "/app/programs" },
     ...(isAdmin ? [{ name: "Admin", icon: Shield, color: "text-red-600", route: "/admin" }] : []),
   ];
 

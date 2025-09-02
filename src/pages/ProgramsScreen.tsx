@@ -26,7 +26,7 @@ const ProgramsScreen = () => {
       description: "Stake your crypto and earn rewards",
       icon: PiggyBank,
       color: "text-green-500",
-      route: "/staking"
+      route: "/app/programs/staking"
     },
     {
       title: "Lucky Draw",

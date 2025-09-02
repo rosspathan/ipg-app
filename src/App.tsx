@@ -188,6 +188,24 @@ function App() {
               {/* Legacy auth route redirect */}
               <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
 
+              {/* Legacy user path redirects for deep links */}
+              <Route path="/wallet-home" element={<Navigate to="/app/wallet" replace />} />
+              <Route path="/wallet" element={<Navigate to="/app/wallet" replace />} />
+              <Route path="/deposit" element={<Navigate to="/app/wallet/deposit" replace />} />
+              <Route path="/withdraw" element={<Navigate to="/app/wallet/withdraw" replace />} />
+              <Route path="/send" element={<Navigate to="/app/wallet/send" replace />} />
+              <Route path="/transfer" element={<Navigate to="/app/wallet/transfer" replace />} />
+              <Route path="/history" element={<Navigate to="/app/wallet/history" replace />} />
+              <Route path="/markets" element={<Navigate to="/app/markets" replace />} />
+              <Route path="/trading" element={<Navigate to="/app/trade" replace />} />
+              <Route path="/swap" element={<Navigate to="/app/swap" replace />} />
+              <Route path="/programs" element={<Navigate to="/app/programs" replace />} />
+              <Route path="/staking" element={<Navigate to="/app/programs/staking" replace />} />
+              <Route path="/referrals" element={<Navigate to="/app/programs/referrals" replace />} />
+              <Route path="/subscriptions" element={<Navigate to="/app/programs/subscriptions" replace />} />
+              <Route path="/insurance" element={<Navigate to="/app/programs/insurance" replace />} />
+              <Route path="/lucky-draw" element={<Navigate to="/app/programs/lucky" replace />} />
+
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>

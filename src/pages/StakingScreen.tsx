@@ -231,7 +231,7 @@ const StakingScreen = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Start staking to earn passive rewards on your crypto assets
                 </p>
-                <Button onClick={() => navigate("/staking")}>
+                <Button onClick={() => navigate("/app/programs/staking")}>
                   Explore Staking Pools
                 </Button>
               </CardContent>

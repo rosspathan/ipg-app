@@ -86,7 +86,7 @@ const UserDashboard = () => {
             <CardContent>
               <div className="space-y-2">
                 <Button 
-                  onClick={() => navigate("/trading")}
+                  onClick={() => navigate("/app/trade")}
                   className="w-full"
                 >
                   Start Trading
@@ -118,7 +118,7 @@ const UserDashboard = () => {
             <CardContent>
               <Button 
                 variant="outline"
-                onClick={() => navigate("/history")}
+                onClick={() => navigate("/app/wallet/history")}
                 className="w-full"
               >
                 View History
@@ -143,7 +143,7 @@ const UserDashboard = () => {
               <div className="space-y-2">
                 <Button 
                   variant="outline"
-                  onClick={() => navigate("/staking")}
+                  onClick={() => navigate("/app/programs/staking")}
                   className="w-full"
                 >
                   Staking
