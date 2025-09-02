@@ -59,6 +59,66 @@ export type Database = {
         }
         Relationships: []
       }
+      allowlist_addresses: {
+        Row: {
+          address: string
+          chain: string
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          label: string | null
+          user_id: string
+        }
+        Insert: {
+          address: string
+          chain: string
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          label?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          chain?: string
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          label?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      api_keys: {
+        Row: {
+          created_at: string | null
+          id: string
+          key_preview: string
+          label: string
+          last_used: string | null
+          revoked: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key_preview: string
+          label: string
+          last_used?: string | null
+          revoked?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key_preview?: string
+          label?: string
+          last_used?: string | null
+          revoked?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           asset_type: string | null
@@ -172,6 +232,102 @@ export type Database = {
           resource_id?: string | null
           resource_type?: string
           user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      banking_inr: {
+        Row: {
+          account_name: string | null
+          account_number: string | null
+          bank_name: string | null
+          created_at: string | null
+          id: string
+          ifsc: string | null
+          upi_id: string | null
+          user_id: string
+          verified: boolean | null
+        }
+        Insert: {
+          account_name?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          created_at?: string | null
+          id?: string
+          ifsc?: string | null
+          upi_id?: string | null
+          user_id: string
+          verified?: boolean | null
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          created_at?: string | null
+          id?: string
+          ifsc?: string | null
+          upi_id?: string | null
+          user_id?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
+      beneficiaries: {
+        Row: {
+          address: string
+          chain: string
+          created_at: string | null
+          id: string
+          name: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          address: string
+          chain: string
+          created_at?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          chain?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      devices: {
+        Row: {
+          created_at: string | null
+          device_name: string | null
+          id: string
+          last_ip: string | null
+          last_seen: string | null
+          trusted: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_name?: string | null
+          id?: string
+          last_ip?: string | null
+          last_seen?: string | null
+          trusted?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_name?: string | null
+          id?: string
+          last_ip?: string | null
+          last_seen?: string | null
+          trusted?: boolean | null
           user_id?: string
         }
         Relationships: []
@@ -555,6 +711,81 @@ export type Database = {
           },
         ]
       }
+      kyc_profiles: {
+        Row: {
+          created_at: string | null
+          first_name: string | null
+          id_back_url: string | null
+          id_front_url: string | null
+          id_number: string | null
+          id_type: string | null
+          last_name: string | null
+          notes: string | null
+          reviewed_at: string | null
+          selfie_url: string | null
+          status: string | null
+          submitted_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          first_name?: string | null
+          id_back_url?: string | null
+          id_front_url?: string | null
+          id_number?: string | null
+          id_type?: string | null
+          last_name?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          selfie_url?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          first_name?: string | null
+          id_back_url?: string | null
+          id_front_url?: string | null
+          id_number?: string | null
+          id_type?: string | null
+          last_name?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          selfie_url?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      login_audit: {
+        Row: {
+          agent: string | null
+          created_at: string | null
+          event: string
+          id: string
+          ip: string | null
+          user_id: string
+        }
+        Insert: {
+          agent?: string | null
+          created_at?: string | null
+          event: string
+          id?: string
+          ip?: string | null
+          user_id: string
+        }
+        Update: {
+          agent?: string | null
+          created_at?: string | null
+          event?: string
+          id?: string
+          ip?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       lucky_draw_configs: {
         Row: {
           created_at: string | null
@@ -635,6 +866,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications_prefs: {
+        Row: {
+          created_at: string | null
+          email_marketing: boolean | null
+          email_tx: boolean | null
+          marketing_push: boolean | null
+          tx_push: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_marketing?: boolean | null
+          email_tx?: boolean | null
+          marketing_push?: boolean | null
+          tx_push?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_marketing?: boolean | null
+          email_tx?: boolean | null
+          marketing_push?: boolean | null
+          tx_push?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
       }
       orders: {
         Row: {
@@ -824,6 +1082,66 @@ export type Database = {
           referee_bonus?: number | null
           referrer_bonus?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      security: {
+        Row: {
+          anti_phishing_code: string | null
+          created_at: string | null
+          has_2fa: boolean | null
+          pin_set: boolean | null
+          spend_daily_limit: number | null
+          user_id: string
+          withdraw_whitelist_only: boolean | null
+        }
+        Insert: {
+          anti_phishing_code?: string | null
+          created_at?: string | null
+          has_2fa?: boolean | null
+          pin_set?: boolean | null
+          spend_daily_limit?: number | null
+          user_id: string
+          withdraw_whitelist_only?: boolean | null
+        }
+        Update: {
+          anti_phishing_code?: string | null
+          created_at?: string | null
+          has_2fa?: boolean | null
+          pin_set?: boolean | null
+          spend_daily_limit?: number | null
+          user_id?: string
+          withdraw_whitelist_only?: boolean | null
+        }
+        Relationships: []
+      }
+      settings_user: {
+        Row: {
+          created_at: string | null
+          display_currency: string | null
+          language: string | null
+          session_lock_minutes: number | null
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_currency?: string | null
+          language?: string | null
+          session_lock_minutes?: number | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_currency?: string | null
+          language?: string | null
+          session_lock_minutes?: number | null
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1170,6 +1488,72 @@ export type Database = {
           display_currency?: string
           id?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      users_app: {
+        Row: {
+          account_frozen: boolean | null
+          country: string | null
+          created_at: string | null
+          display_name: string | null
+          dob: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          user_id: string
+        }
+        Insert: {
+          account_frozen?: boolean | null
+          country?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          dob?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          user_id: string
+        }
+        Update: {
+          account_frozen?: boolean | null
+          country?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          dob?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallets_user: {
+        Row: {
+          address: string
+          chain: string
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          label: string | null
+          user_id: string
+        }
+        Insert: {
+          address: string
+          chain: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          label?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          chain?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          label?: string | null
           user_id?: string
         }
         Relationships: []
