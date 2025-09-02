@@ -55,6 +55,7 @@ import InsuranceScreen from "./pages/InsuranceScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import HistoryScreen from "./pages/HistoryScreen";
 import INRDepositScreen from "./pages/INRDepositScreen";
+import ProfileScreen from "./pages/ProfileScreen";
 
 // Admin Pages
 import AdminLoginScreen from "./pages/AdminLoginScreen";
@@ -141,7 +142,7 @@ function App() {
                 <Route path="programs/insurance" element={<InsuranceScreen />} />
                 <Route path="programs/insurance/claim" element={<FileClaimScreen />} />
                 <Route path="deposit/inr" element={<INRDepositScreen />} />
-                <Route path="profile" element={<div className="p-6"><h1 className="text-2xl font-bold">Profile Settings</h1><p>Profile management coming soon</p></div>} />
+                <Route path="profile" element={<ProfileScreen />} />
                 <Route path="support" element={<div className="p-6"><h1 className="text-2xl font-bold">Support</h1><p>Support center coming soon</p></div>} />
                 <Route path="notifications" element={<div className="p-6"><h1 className="text-2xl font-bold">Notifications</h1><p>Notification center coming soon</p></div>} />
               </Route>
