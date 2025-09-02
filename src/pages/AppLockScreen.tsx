@@ -36,7 +36,7 @@ const AppLockScreen = () => {
         title: "Welcome back!",
         description: "Access granted",
       });
-      navigate("/wallet-home");
+      navigate("/app/wallet");
     } else {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
@@ -68,7 +68,7 @@ const AppLockScreen = () => {
     
     // In real implementation, use biometric APIs
     setTimeout(() => {
-      navigate("/wallet-home");
+      navigate("/app/wallet");
     }, 1000);
   };
 
@@ -84,7 +84,7 @@ const AppLockScreen = () => {
               title: "Welcome back!",
               description: "Access granted",
             });
-            navigate("/wallet-home");
+            navigate("/app/wallet");
           } else {
             const newAttempts = attempts + 1;
             setAttempts(newAttempts);

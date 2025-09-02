@@ -50,7 +50,7 @@ const Index = () => {
             <>
               {!isAdmin && (
                 <Button 
-                  onClick={() => navigate("/wallet-home")}
+                  onClick={() => navigate("/app/wallet")}
                   className="w-full"
                   size="lg"
                 >

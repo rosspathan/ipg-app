@@ -62,7 +62,7 @@ const UserDashboard = () => {
             </CardHeader>
             <CardContent>
               <Button 
-                onClick={() => navigate("/wallet-home")}
+                onClick={() => navigate("/app/wallet")}
                 className="w-full"
               >
                 Open Wallet

@@ -137,7 +137,7 @@ const TradeReceiptScreen = () => {
           
           <Button 
             variant="ghost"
-            onClick={() => navigate("/wallet-home")}
+            onClick={() => navigate("/app/wallet")}
             className="w-full flex items-center justify-center"
           >
             <Home className="w-4 h-4 mr-2" />

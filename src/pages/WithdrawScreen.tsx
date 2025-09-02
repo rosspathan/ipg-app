@@ -50,7 +50,7 @@ const WithdrawScreen = () => {
       title: "Withdrawal Submitted",
       description: "Your withdrawal request has been submitted successfully",
     });
-    navigate("/wallet-home");
+    navigate("/app/wallet");
   };
 
   if (showConfirmation) {
@@ -118,7 +118,7 @@ const WithdrawScreen = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/wallet-home")}
+            onClick={() => navigate("/app/wallet")}
             className="p-2"
           >
             <ArrowLeft className="w-5 h-5" />

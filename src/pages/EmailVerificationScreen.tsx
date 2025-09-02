@@ -116,7 +116,7 @@ const EmailVerificationScreen = () => {
           title: "Email Verified!",
           description: "Welcome to CryptoFlow",
         });
-        navigate("/wallet-home");
+        navigate("/app/wallet");
       } else {
         toast({
           title: "Not Verified Yet",

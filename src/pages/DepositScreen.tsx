@@ -60,7 +60,7 @@ const DepositScreen = () => {
       <div className="min-h-screen bg-background px-6 py-8">
         <div className="max-w-sm mx-auto w-full space-y-6">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/wallet-home")} className="p-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/app/wallet")} className="p-2">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <h1 className="text-2xl font-bold text-foreground">Deposit</h1>
@@ -101,7 +101,7 @@ const DepositScreen = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/wallet-home")}
+            onClick={() => navigate("/app/wallet")}
             className="p-2"
           >
             <ArrowLeft className="w-5 h-5" />

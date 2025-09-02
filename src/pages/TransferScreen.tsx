@@ -86,7 +86,7 @@ const TransferScreen = () => {
           </Card>
 
           <div className="space-y-3">
-            <Button onClick={() => navigate("/wallet-home")} className="w-full" size="lg">
+            <Button onClick={() => navigate("/app/wallet")} className="w-full" size="lg">
               Back to Wallet
             </Button>
             <Button 
@@ -111,7 +111,7 @@ const TransferScreen = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/wallet-home")}
+            onClick={() => navigate("/app/wallet")}
             className="p-2"
           >
             <ArrowLeft className="w-5 h-5" />

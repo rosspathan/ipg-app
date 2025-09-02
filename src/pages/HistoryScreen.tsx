@@ -254,7 +254,7 @@ const HistoryScreen = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/wallet-home")}
+            onClick={() => navigate("/app/wallet")}
             className="p-2"
           >
             <ArrowLeft className="w-5 h-5" />

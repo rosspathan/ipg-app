@@ -65,7 +65,7 @@ const EmailVerifiedScreen = () => {
   }, [wallet, toast]);
 
   const handleContinue = () => {
-    navigate("/wallet-home");
+    navigate("/app/wallet");
   };
 
   return (
