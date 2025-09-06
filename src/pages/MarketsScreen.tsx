@@ -79,17 +79,8 @@ const MarketsScreen = () => {
         <h1 className="text-xl font-semibold">Live Markets</h1>
       </div>
 
-      {/* TradingView Ticker */}
-      <div className="mb-6 rounded-lg overflow-hidden">
-        <TradingViewWidget 
-          widgetType="ticker" 
-          height={60}
-          colorTheme="dark"
-        />
-      </div>
-
       {/* Search Bar */}
-      <div className="relative mb-6">
+      <div className="relative mb-4">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search crypto pairs..."
@@ -100,7 +91,7 @@ const MarketsScreen = () => {
       </div>
 
       {/* Tabs for different views */}
-      <Tabs defaultValue="overview" className="flex-1">
+      <Tabs defaultValue="overview" className="flex-1 mt-0">
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="overview">Market Overview</TabsTrigger>
           <TabsTrigger value="charts">Live Charts</TabsTrigger>
