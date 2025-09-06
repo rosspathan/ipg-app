@@ -389,6 +389,45 @@ export type Database = {
           },
         ]
       }
+      fiat_bank_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_name: string
+          created_at: string | null
+          id: string
+          ifsc: string
+          is_active: boolean | null
+          is_default: boolean | null
+          label: string
+          notes: string | null
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          bank_name: string
+          created_at?: string | null
+          id?: string
+          ifsc: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          label: string
+          notes?: string | null
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string | null
+          id?: string
+          ifsc?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          label?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
       fiat_deposits: {
         Row: {
           admin_notes: string | null
@@ -402,6 +441,7 @@ export type Database = {
           net_credit: number | null
           proof_url: string | null
           reference: string | null
+          route_id: string | null
           status: string
           user_id: string
         }
@@ -417,6 +457,7 @@ export type Database = {
           net_credit?: number | null
           proof_url?: string | null
           reference?: string | null
+          route_id?: string | null
           status?: string
           user_id: string
         }
@@ -432,6 +473,7 @@ export type Database = {
           net_credit?: number | null
           proof_url?: string | null
           reference?: string | null
+          route_id?: string | null
           status?: string
           user_id?: string
         }
@@ -485,6 +527,39 @@ export type Database = {
           updated_at?: string
           upi_id?: string | null
           upi_name?: string | null
+        }
+        Relationships: []
+      }
+      fiat_upi_accounts: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          label: string
+          notes: string | null
+          upi_id: string
+          upi_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          label: string
+          notes?: string | null
+          upi_id: string
+          upi_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          label?: string
+          notes?: string | null
+          upi_id?: string
+          upi_name?: string
         }
         Relationships: []
       }

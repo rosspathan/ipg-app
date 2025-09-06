@@ -3,11 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Upload, X, Eye, AlertCircle } from "lucide-react";
+import { Upload, Copy, QrCode, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,13 +15,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface FiatSettings {
   id: string;
   enabled: boolean;
-  bank_account_name?: string;
-  bank_account_number?: string;
-  ifsc?: string;
-  bank_name?: string;
-  upi_id?: string;
-  upi_name?: string;
-  notes?: string;
   min_deposit?: number;
   fee_percent?: number;
   fee_fixed?: number;
@@ -29,41 +22,66 @@ interface FiatSettings {
   updated_at: string;
 }
 
+interface BankAccount {
+  id: string;
+  label: string;
+  bank_name: string;
+  account_name: string;
+  account_number: string;
+  ifsc: string;
+  notes?: string;
+  is_active: boolean;
+  is_default: boolean;
+  created_at: string;
+}
+
+interface UpiAccount {
+  id: string;
+  label: string;
+  upi_id: string;
+  upi_name: string;
+  notes?: string;
+  is_active: boolean;
+  is_default: boolean;
+  created_at: string;
+}
+
 interface FiatDeposit {
   id: string;
   user_id: string;
   method: string;
+  route_id?: string;
   amount: number;
-  fee?: number;
-  net_credit?: number;
+  fee: number;
+  net_credit: number;
+  currency?: string;
   reference?: string;
   proof_url?: string;
   status: string;
   admin_notes?: string;
-  decided_by?: string;
-  decided_at?: string;
   created_at: string;
 }
 
 interface DepositFormProps {
   method: 'BANK' | 'UPI';
   settings: FiatSettings;
+  selectedAccount: BankAccount | UpiAccount | null;
   onSubmit: (data: { amount: number; reference: string; proofFile?: File }) => Promise<void>;
   loading: boolean;
 }
 
-const DepositForm = ({ method, settings, onSubmit, loading }: DepositFormProps) => {
+const DepositForm = ({ method, settings, selectedAccount, onSubmit, loading }: DepositFormProps) => {
   const [amount, setAmount] = useState('');
   const [reference, setReference] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
 
-      const calculatedFee = amount ? 
-        (parseFloat(amount) * (settings.fee_percent || 0) / 100) + (settings.fee_fixed || 0) : 0;
+  const calculatedFee = amount ? 
+    (parseFloat(amount) * (settings.fee_percent || 0) / 100) + (settings.fee_fixed || 0) : 0;
   const netCredit = amount ? parseFloat(amount) - calculatedFee : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !reference || parseFloat(amount) < settings.min_deposit) {
+    if (!amount || !reference || parseFloat(amount) < (settings.min_deposit || 0) || !selectedAccount) {
       return;
     }
     await onSubmit({ amount: parseFloat(amount), reference, proofFile: proofFile || undefined });
@@ -72,7 +90,7 @@ const DepositForm = ({ method, settings, onSubmit, loading }: DepositFormProps) 
     setProofFile(null);
   };
 
-  const isValid = amount && reference && parseFloat(amount) >= settings.min_deposit && proofFile;
+  const isValid = amount && reference && parseFloat(amount) >= (settings.min_deposit || 0) && selectedAccount && proofFile;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,9 +106,9 @@ const DepositForm = ({ method, settings, onSubmit, loading }: DepositFormProps) 
           min={settings.min_deposit || 0}
           required
         />
-        {amount && parseFloat(amount) < settings.min_deposit && (
+        {amount && parseFloat(amount) < (settings.min_deposit || 0) && (
           <p className="text-sm text-destructive mt-1">
-            Amount must be at least ₹{settings.min_deposit}
+            Amount must be at least ₹{settings.min_deposit?.toLocaleString()}
           </p>
         )}
       </div>
@@ -107,7 +125,7 @@ const DepositForm = ({ method, settings, onSubmit, loading }: DepositFormProps) 
       </div>
 
       <div>
-        <Label>Payment Proof</Label>
+        <Label>Payment Proof (Required)</Label>
         <div className="mt-2">
           <input
             type="file"
@@ -122,7 +140,7 @@ const DepositForm = ({ method, settings, onSubmit, loading }: DepositFormProps) 
           >
             {proofFile ? (
               <div className="text-center">
-                <Upload className="w-8 h-8 mx-auto mb-2 text-primary" />
+                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-600" />
                 <p className="text-sm">{proofFile.name}</p>
               </div>
             ) : (
@@ -135,7 +153,7 @@ const DepositForm = ({ method, settings, onSubmit, loading }: DepositFormProps) 
         </div>
       </div>
 
-      {amount && (
+      {amount && selectedAccount && (
         <Card className="bg-muted/50">
           <CardContent className="p-4 space-y-2">
             <div className="flex justify-between">
@@ -163,16 +181,19 @@ const DepositForm = ({ method, settings, onSubmit, loading }: DepositFormProps) 
 
 const INRDepositScreen = () => {
   const [settings, setSettings] = useState<FiatSettings | null>(null);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [upiAccounts, setUpiAccounts] = useState<UpiAccount[]>([]);
   const [deposits, setDeposits] = useState<FiatDeposit[]>([]);
+  const [selectedBankId, setSelectedBankId] = useState<string>('');
+  const [selectedUpiId, setSelectedUpiId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('new');
   const { toast } = useToast();
 
   useEffect(() => {
-    loadSettings();
-    loadDeposits();
-
+    loadData();
+    
     // Set up realtime listeners
     const settingsChannel = supabase
       .channel('fiat_settings_changes')
@@ -180,6 +201,24 @@ const INRDepositScreen = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'fiat_settings_inr' },
         () => loadSettings()
+      )
+      .subscribe();
+
+    const bankChannel = supabase
+      .channel('fiat_bank_accounts_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'fiat_bank_accounts' },
+        () => loadBankAccounts()
+      )
+      .subscribe();
+
+    const upiChannel = supabase
+      .channel('fiat_upi_accounts_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'fiat_upi_accounts' },
+        () => loadUpiAccounts()
       )
       .subscribe();
 
@@ -194,9 +233,16 @@ const INRDepositScreen = () => {
 
     return () => {
       supabase.removeChannel(settingsChannel);
+      supabase.removeChannel(bankChannel);
+      supabase.removeChannel(upiChannel);
       supabase.removeChannel(depositsChannel);
     };
   }, []);
+
+  const loadData = async () => {
+    await Promise.all([loadSettings(), loadBankAccounts(), loadUpiAccounts(), loadDeposits()]);
+    setLoading(false);
+  };
 
   const loadSettings = async () => {
     try {
@@ -209,13 +255,48 @@ const INRDepositScreen = () => {
       setSettings(data);
     } catch (error) {
       console.error('Error loading settings:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load INR deposit settings",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const loadBankAccounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fiat_bank_accounts')
+        .select('*')
+        .eq('is_active', true)
+        .order('is_default', { ascending: false });
+
+      if (error) throw error;
+      setBankAccounts(data || []);
+      
+      // Auto-select default bank account
+      const defaultBank = data?.find(bank => bank.is_default);
+      if (defaultBank && !selectedBankId) {
+        setSelectedBankId(defaultBank.id);
+      }
+    } catch (error) {
+      console.error('Error loading bank accounts:', error);
+    }
+  };
+
+  const loadUpiAccounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fiat_upi_accounts')
+        .select('*')
+        .eq('is_active', true)
+        .order('is_default', { ascending: false });
+
+      if (error) throw error;
+      setUpiAccounts(data || []);
+      
+      // Auto-select default UPI account
+      const defaultUpi = data?.find(upi => upi.is_default);
+      if (defaultUpi && !selectedUpiId) {
+        setSelectedUpiId(defaultUpi.id);
+      }
+    } catch (error) {
+      console.error('Error loading UPI accounts:', error);
     }
   };
 
@@ -254,6 +335,16 @@ const INRDepositScreen = () => {
   const handleDeposit = async (method: 'BANK' | 'UPI', depositData: { amount: number; reference: string; proofFile?: File }) => {
     if (!settings) return;
     
+    const routeId = method === 'BANK' ? selectedBankId : selectedUpiId;
+    if (!routeId) {
+      toast({
+        title: "Error",
+        description: `Please select a ${method === 'BANK' ? 'bank account' : 'UPI account'}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSubmitting(true);
     try {
       let proofUrl = '';
@@ -261,7 +352,7 @@ const INRDepositScreen = () => {
         proofUrl = await uploadProof(depositData.proofFile);
       }
 
-      const fee = (depositData.amount * settings.fee_percent / 100) + settings.fee_fixed;
+      const fee = (depositData.amount * (settings.fee_percent || 0) / 100) + (settings.fee_fixed || 0);
       const netCredit = depositData.amount - fee;
 
       const { error } = await supabase
@@ -269,6 +360,7 @@ const INRDepositScreen = () => {
         .insert({
           user_id: (await supabase.auth.getUser()).data.user?.id,
           method,
+          route_id: routeId,
           amount: depositData.amount,
           fee,
           net_credit: netCredit,
@@ -294,6 +386,14 @@ const INRDepositScreen = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied",
+      description: "Copied to clipboard",
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -324,12 +424,15 @@ const INRDepositScreen = () => {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            INR deposits are currently unavailable. {settings?.notes}
+            INR deposits are currently unavailable. Please contact support for more information.
           </AlertDescription>
         </Alert>
       </div>
     );
   }
+
+  const selectedBank = bankAccounts.find(bank => bank.id === selectedBankId);
+  const selectedUpi = upiAccounts.find(upi => upi.id === selectedUpiId);
 
   return (
     <div className="p-6 space-y-6">
@@ -349,92 +452,208 @@ const INRDepositScreen = () => {
             </TabsList>
 
             <TabsContent value="bank" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Bank Transfer Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <Label className="font-semibold">Bank Name:</Label>
-                      <p>{settings.bank_name}</p>
-                    </div>
-                    <div>
-                      <Label className="font-semibold">Account Name:</Label>
-                      <p>{settings.bank_account_name}</p>
-                    </div>
-                    <div>
-                      <Label className="font-semibold">Account Number:</Label>
-                      <p className="font-mono">{settings.bank_account_number}</p>
-                    </div>
-                    <div>
-                      <Label className="font-semibold">IFSC Code:</Label>
-                      <p className="font-mono">{settings.ifsc}</p>
-                    </div>
-                  </div>
-                  <div className="border-t pt-3">
-                    <p className="text-sm text-muted-foreground">
-                      Min Deposit: ₹{settings.min_deposit?.toLocaleString()} | Fee: {settings.fee_percent}% + ₹{settings.fee_fixed}
-                    </p>
-                    {settings.notes && (
-                      <p className="text-sm text-muted-foreground mt-1">{settings.notes}</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              {bankAccounts.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    No bank accounts are currently available for deposits.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Select Bank Account</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Select value={selectedBankId} onValueChange={setSelectedBankId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose bank account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bankAccounts.map((bank) => (
+                            <SelectItem key={bank.id} value={bank.id}>
+                              {bank.label} - {bank.bank_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </CardContent>
+                  </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Submit Bank Deposit</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DepositForm
-                    method="BANK"
-                    settings={settings}
-                    onSubmit={(data) => handleDeposit('BANK', data)}
-                    loading={submitting}
-                  />
-                </CardContent>
-              </Card>
+                  {selectedBank && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Bank Transfer Details</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <Label className="font-semibold">Bank Name:</Label>
+                            <div className="flex items-center gap-2">
+                              <p>{selectedBank.bank_name}</p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyToClipboard(selectedBank.bank_name)}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="font-semibold">Account Name:</Label>
+                            <div className="flex items-center gap-2">
+                              <p>{selectedBank.account_name}</p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyToClipboard(selectedBank.account_name)}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="font-semibold">Account Number:</Label>
+                            <div className="flex items-center gap-2">
+                              <p className="font-mono">{selectedBank.account_number}</p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyToClipboard(selectedBank.account_number)}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="font-semibold">IFSC Code:</Label>
+                            <div className="flex items-center gap-2">
+                              <p className="font-mono">{selectedBank.ifsc}</p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyToClipboard(selectedBank.ifsc)}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="border-t pt-3">
+                          <p className="text-sm text-muted-foreground">
+                            Min Deposit: ₹{settings.min_deposit?.toLocaleString()} | Fee: {settings.fee_percent}% + ₹{settings.fee_fixed}
+                          </p>
+                          {selectedBank.notes && (
+                            <p className="text-sm text-muted-foreground mt-1">{selectedBank.notes}</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Submit Bank Deposit</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <DepositForm
+                        method="BANK"
+                        settings={settings}
+                        selectedAccount={selectedBank || null}
+                        onSubmit={(data) => handleDeposit('BANK', data)}
+                        loading={submitting}
+                      />
+                    </CardContent>
+                  </Card>
+                </>
+              )}
             </TabsContent>
 
             <TabsContent value="upi" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>UPI Payment Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="text-center space-y-2">
-                    <div>
-                      <Label className="font-semibold">UPI ID:</Label>
-                      <p className="font-mono text-lg">{settings.upi_id}</p>
-                    </div>
-                    <div>
-                      <Label className="font-semibold">Name:</Label>
-                      <p>{settings.upi_name}</p>
-                    </div>
-                  </div>
-                  <div className="border-t pt-3 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Min Deposit: ₹{settings.min_deposit?.toLocaleString()} | Fee: {settings.fee_percent}% + ₹{settings.fee_fixed}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              {upiAccounts.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    No UPI accounts are currently available for deposits.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Select UPI Account</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Select value={selectedUpiId} onValueChange={setSelectedUpiId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose UPI account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {upiAccounts.map((upi) => (
+                            <SelectItem key={upi.id} value={upi.id}>
+                              {upi.label} - {upi.upi_id}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </CardContent>
+                  </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Submit UPI Deposit</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DepositForm
-                    method="UPI"
-                    settings={settings}
-                    onSubmit={(data) => handleDeposit('UPI', data)}
-                    loading={submitting}
-                  />
-                </CardContent>
-              </Card>
+                  {selectedUpi && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>UPI Payment Details</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="text-center space-y-2">
+                          <div>
+                            <Label className="font-semibold">UPI ID:</Label>
+                            <div className="flex items-center justify-center gap-2">
+                              <p className="font-mono text-lg">{selectedUpi.upi_id}</p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyToClipboard(selectedUpi.upi_id)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="font-semibold">Name:</Label>
+                            <p>{selectedUpi.upi_name}</p>
+                          </div>
+                        </div>
+                        <div className="border-t pt-3 text-center">
+                          <p className="text-sm text-muted-foreground">
+                            Min Deposit: ₹{settings.min_deposit?.toLocaleString()} | Fee: {settings.fee_percent}% + ₹{settings.fee_fixed}
+                          </p>
+                          {selectedUpi.notes && (
+                            <p className="text-sm text-muted-foreground mt-1">{selectedUpi.notes}</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Submit UPI Deposit</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <DepositForm
+                        method="UPI"
+                        settings={settings}
+                        selectedAccount={selectedUpi || null}
+                        onSubmit={(data) => handleDeposit('UPI', data)}
+                        loading={submitting}
+                      />
+                    </CardContent>
+                  </Card>
+                </>
+              )}
             </TabsContent>
           </Tabs>
         </TabsContent>

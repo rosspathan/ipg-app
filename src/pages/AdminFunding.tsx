@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check, X, Download, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import AdminINRAccounts from "@/components/AdminINRAccounts";
+import AdminINRDeposits from "@/components/AdminINRDeposits";
 
 interface FiatWithdrawal {
   id: string;
@@ -184,7 +186,7 @@ const AdminFunding = () => {
       <Tabs defaultValue="crypto" className="w-full">
         <TabsList>
           <TabsTrigger value="crypto">Crypto Deposits/Withdrawals</TabsTrigger>
-          <TabsTrigger value="inr-settings">INR Settings</TabsTrigger>
+          <TabsTrigger value="inr-accounts">INR Accounts</TabsTrigger>
           <TabsTrigger value="inr-deposits">INR Deposits</TabsTrigger>
           <TabsTrigger value="inr-withdrawals">INR Withdrawals</TabsTrigger>
           <TabsTrigger value="reconciliation">Daily Reconciliation</TabsTrigger>
@@ -204,32 +206,12 @@ const AdminFunding = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="inr-settings">
-          <Card>
-            <CardHeader>
-              <CardTitle>INR Settings Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Configure INR deposit and withdrawal settings</p>
-                <p>This will be handled by the AdminINRSettings component</p>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="inr-accounts">
+          <AdminINRAccounts />
         </TabsContent>
 
         <TabsContent value="inr-deposits">
-          <Card>
-            <CardHeader>
-              <CardTitle>INR Deposit Requests</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Review and approve INR deposit requests</p>
-                <p>This will be handled by the AdminINRDeposits component</p>
-              </div>
-            </CardContent>
-          </Card>
+          <AdminINRDeposits />
         </TabsContent>
 
         <TabsContent value="inr-withdrawals">
