@@ -131,11 +131,11 @@ const AppLockScreen = () => {
         <div className="flex flex-col items-center space-y-4">
           <img 
             src={cryptoLogo} 
-            alt="CryptoFlow Logo" 
+            alt="IPG i-SMART Logo" 
             className="w-16 h-16 rounded-xl shadow-card"
           />
           <h1 className="text-2xl font-bold text-foreground">
-            CryptoFlow
+            IPG i-SMART
           </h1>
           <p className="text-muted-foreground text-center text-sm">
             Enter your PIN to continue

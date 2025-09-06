@@ -28,7 +28,7 @@ const UserDashboard = () => {
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              CryptoFlow
+              IPG i-SMART
             </h1>
             <Badge variant="outline">User Dashboard</Badge>
           </div>

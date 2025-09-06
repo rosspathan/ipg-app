@@ -83,7 +83,7 @@ const AuthScreen = () => {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center bg-gradient-primary bg-clip-text text-transparent">
-            CryptoFlow
+            IPG i-SMART
           </CardTitle>
           <CardDescription className="text-center">
             Sign in to access your account

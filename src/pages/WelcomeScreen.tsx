@@ -37,7 +37,7 @@ const WelcomeScreen = () => {
       <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold text-foreground">
-            Welcome to CryptoFlow
+            Welcome to IPG i-SMART
           </h1>
           <p className="text-muted-foreground text-sm">
             Everything you need to manage your crypto portfolio

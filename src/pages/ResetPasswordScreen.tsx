@@ -17,7 +17,7 @@ const ResetPasswordScreen = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Reset Password | CryptoFlow";
+    document.title = "Reset Password | IPG i-SMART";
     // Detect recovery session from email link
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || !!session) {

@@ -120,11 +120,11 @@ const EmailVerifiedScreen = () => {
         {verificationSuccess && (
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle className="text-base text-center">Welcome to CryptoFlow!</CardTitle>
+              <CardTitle className="text-base text-center">Welcome to IPG i-SMART!</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <p className="text-sm text-muted-foreground">
-                Your wallet is now connected and verified. You can start using all CryptoFlow features.
+                Your wallet is now connected and verified. You can start using all IPG i-SMART features.
               </p>
               
               <Button 

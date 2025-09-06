@@ -36,7 +36,7 @@ const Index = () => {
           {isAdmin ? 'Admin Dashboard' : 'Dashboard'}
         </h1>
         <p className="text-xl text-muted-foreground">
-          {isAdmin ? 'Welcome to the Admin Control Panel' : 'Welcome to your CryptoFlow wallet!'}
+          {isAdmin ? 'Welcome to the Admin Control Panel' : 'Welcome to your IPG i-SMART wallet!'}
         </p>
         <p className="text-sm text-muted-foreground">
           {isAdmin 

@@ -39,12 +39,12 @@ const CreateWalletScreen = () => {
   };
 
   const handleDownload = () => {
-    const content = `CryptoFlow Wallet Seed Phrase\n\nCreated: ${new Date().toLocaleDateString()}\n\nSeed Phrase:\n${seedPhrase.join(" ")}\n\nIMPORTANT: Store this phrase in a secure location. Never share it with anyone.`;
+    const content = `IPG i-SMART Wallet Seed Phrase\n\nCreated: ${new Date().toLocaleDateString()}\n\nSeed Phrase:\n${seedPhrase.join(" ")}\n\nIMPORTANT: Store this phrase in a secure location. Never share it with anyone.`;
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "cryptoflow-seed-phrase.txt";
+    a.download = "ipg-ismart-seed-phrase.txt";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

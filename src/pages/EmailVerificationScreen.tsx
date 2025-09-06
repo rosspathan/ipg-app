@@ -47,7 +47,7 @@ const EmailVerificationScreen = () => {
     
     try {
       // Create verification message
-      const verificationMessage = `CryptoFlow BSC Wallet Verification\nNetwork: ${network.name} (Chain ID: ${network.chainId})\nWallet: ${wallet.address}\nEmail: ${email}\nTimestamp: ${Date.now()}`;
+      const verificationMessage = `IPG i-SMART BSC Wallet Verification\nNetwork: ${network.name} (Chain ID: ${network.chainId})\nWallet: ${wallet.address}\nEmail: ${email}\nTimestamp: ${Date.now()}`;
       
       // Sign the message with the wallet
       const signature = await signMessage(verificationMessage);
@@ -114,7 +114,7 @@ const EmailVerificationScreen = () => {
       if (user && user.email_confirmed_at) {
         toast({
           title: "Email Verified!",
-          description: "Welcome to CryptoFlow",
+          description: "Welcome to IPG i-SMART",
         });
         navigate("/app/wallet");
       } else {
@@ -162,7 +162,7 @@ const EmailVerificationScreen = () => {
             Verify Your Email
           </h2>
           <p className="text-sm text-muted-foreground">
-            Link your email address to your BSC wallet for secure access to CryptoFlow
+            Link your email address to your BSC wallet for secure access to IPG i-SMART
           </p>
         </div>
 

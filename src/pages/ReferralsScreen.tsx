@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 const ReferralsScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [referralLink] = useState("https://cryptoflow.app/ref/ABC123XYZ");
+  const [referralLink] = useState("https://ipg-ismart.app/ref/ABC123XYZ");
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink);

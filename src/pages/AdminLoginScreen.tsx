@@ -93,7 +93,7 @@ const AdminLoginScreen = () => {
       console.log('Received nonce:', nonce);
 
       // Step 2: Create message to sign
-      const message = `CryptoFlow Admin Login\nNonce: ${nonce}\nWallet: ${wallet.address}\nTimestamp: ${timestamp}`;
+      const message = `IPG i-SMART Admin Login\nNonce: ${nonce}\nWallet: ${wallet.address}\nTimestamp: ${timestamp}`;
 
       // Step 3: Sign the message
       const signature = await signMessage(message);
