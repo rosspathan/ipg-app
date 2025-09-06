@@ -1,241 +1,317 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, CreditCard, Smartphone, AlertTriangle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Upload, X, Eye, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FiatSettings {
   id: string;
   enabled: boolean;
-  bank_account_name: string | null;
-  bank_account_number: string | null;
-  ifsc: string | null;
-  bank_name: string | null;
-  upi_id: string | null;
-  upi_name: string | null;
-  notes: string | null;
-  min_deposit: number;
-  fee_percent: number;
-  fee_fixed: number;
+  bank_account_name?: string;
+  bank_account_number?: string;
+  ifsc?: string;
+  bank_name?: string;
+  upi_id?: string;
+  upi_name?: string;
+  notes?: string;
+  min_deposit?: number;
+  fee_percent?: number;
+  fee_fixed?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface FiatDeposit {
   id: string;
-  method: 'BANK' | 'UPI';
+  user_id: string;
+  method: string;
   amount: number;
-  fee: number;
-  net_credit: number;
-  reference: string | null;
-  status: 'pending' | 'approved' | 'rejected' | 'canceled';
+  fee?: number;
+  net_credit?: number;
+  reference?: string;
+  proof_url?: string;
+  status: string;
+  admin_notes?: string;
+  decided_by?: string;
+  decided_at?: string;
   created_at: string;
 }
 
-export default function INRDepositScreen() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+interface DepositFormProps {
+  method: 'BANK' | 'UPI';
+  settings: FiatSettings;
+  onSubmit: (data: { amount: number; reference: string; proofFile?: File }) => Promise<void>;
+  loading: boolean;
+}
+
+const DepositForm = ({ method, settings, onSubmit, loading }: DepositFormProps) => {
+  const [amount, setAmount] = useState('');
+  const [reference, setReference] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+
+      const calculatedFee = amount ? 
+        (parseFloat(amount) * (settings.fee_percent || 0) / 100) + (settings.fee_fixed || 0) : 0;
+  const netCredit = amount ? parseFloat(amount) - calculatedFee : 0;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!amount || !reference || parseFloat(amount) < settings.min_deposit) {
+      return;
+    }
+    await onSubmit({ amount: parseFloat(amount), reference, proofFile: proofFile || undefined });
+    setAmount('');
+    setReference('');
+    setProofFile(null);
+  };
+
+  const isValid = amount && reference && parseFloat(amount) >= settings.min_deposit && proofFile;
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="amount">Amount (INR)</Label>
+        <Input
+          id="amount"
+          type="number"
+          step="0.01"
+          placeholder={`Minimum ${settings.min_deposit}`}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          min={settings.min_deposit || 0}
+          required
+        />
+        {amount && parseFloat(amount) < settings.min_deposit && (
+          <p className="text-sm text-destructive mt-1">
+            Amount must be at least ₹{settings.min_deposit}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="reference">{method === 'BANK' ? 'UTR/Reference Number' : 'Transaction ID'}</Label>
+        <Input
+          id="reference"
+          placeholder={method === 'BANK' ? 'Enter UTR number' : 'Enter UPI transaction ID'}
+          value={reference}
+          onChange={(e) => setReference(e.target.value)}
+          required
+        />
+      </div>
+
+      <div>
+        <Label>Payment Proof</Label>
+        <div className="mt-2">
+          <input
+            type="file"
+            accept="image/*,.pdf"
+            onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+            className="hidden"
+            id="proof-upload"
+          />
+          <label
+            htmlFor="proof-upload"
+            className="flex items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50"
+          >
+            {proofFile ? (
+              <div className="text-center">
+                <Upload className="w-8 h-8 mx-auto mb-2 text-primary" />
+                <p className="text-sm">{proofFile.name}</p>
+              </div>
+            ) : (
+              <div className="text-center">
+                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Click to upload screenshot or receipt</p>
+              </div>
+            )}
+          </label>
+        </div>
+      </div>
+
+      {amount && (
+        <Card className="bg-muted/50">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex justify-between">
+              <span>Deposit Amount:</span>
+              <span>₹{parseFloat(amount).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Fee ({settings.fee_percent}% + ₹{settings.fee_fixed}):</span>
+              <span>₹{calculatedFee.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between font-semibold border-t pt-2">
+              <span>Net Credit:</span>
+              <span>₹{netCredit.toLocaleString()}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Button type="submit" className="w-full" disabled={!isValid || loading}>
+        {loading ? 'Processing...' : `Submit ${method} Deposit`}
+      </Button>
+    </form>
+  );
+};
+
+const INRDepositScreen = () => {
   const [settings, setSettings] = useState<FiatSettings | null>(null);
   const [deposits, setDeposits] = useState<FiatDeposit[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Form states
-  const [amount, setAmount] = useState<string>('');
-  const [reference, setReference] = useState<string>('');
-  const [proofFile, setProofFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('new');
+  const { toast } = useToast();
 
   useEffect(() => {
-    loadData();
-    
-    // Set up realtime listener for settings updates
-    const channel = supabase
-      .channel('fiat-settings-changes')
-      .on('postgres_changes', 
+    loadSettings();
+    loadDeposits();
+
+    // Set up realtime listeners
+    const settingsChannel = supabase
+      .channel('fiat_settings_changes')
+      .on(
+        'postgres_changes',
         { event: '*', schema: 'public', table: 'fiat_settings_inr' },
-        () => loadData()
+        () => loadSettings()
       )
-      .on('postgres_changes',
+      .subscribe();
+
+    const depositsChannel = supabase
+      .channel('fiat_deposits_changes')
+      .on(
+        'postgres_changes',
         { event: '*', schema: 'public', table: 'fiat_deposits' },
         () => loadDeposits()
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(settingsChannel);
+      supabase.removeChannel(depositsChannel);
     };
   }, []);
 
-  const loadData = async () => {
+  const loadSettings = async () => {
     try {
-      // Load settings
-      const { data: settingsData } = await supabase
+      const { data, error } = await supabase
         .from('fiat_settings_inr')
         .select('*')
-        .single();
+        .maybeSingle();
 
-      if (settingsData) {
-        setSettings(settingsData);
-      }
-
-      await loadDeposits();
+      if (error) throw error;
+      setSettings(data);
     } catch (error) {
-      console.error('Error loading INR deposit data:', error);
+      console.error('Error loading settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load INR deposit settings",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const loadDeposits = async () => {
-    if (!user) return;
-
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('fiat_deposits')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (data) {
-        setDeposits(data as FiatDeposit[]);
-      }
+      if (error) throw error;
+      setDeposits(data || []);
     } catch (error) {
       console.error('Error loading deposits:', error);
     }
   };
 
-  const calculateFees = (depositAmount: number) => {
-    if (!settings) return { fee: 0, netCredit: depositAmount };
+  const uploadProof = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `deposit-proofs/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('support')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('support')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
+  const handleDeposit = async (method: 'BANK' | 'UPI', depositData: { amount: number; reference: string; proofFile?: File }) => {
+    if (!settings) return;
     
-    const percentFee = (depositAmount * settings.fee_percent) / 100;
-    const totalFee = percentFee + settings.fee_fixed;
-    const netCredit = depositAmount - totalFee;
-    
-    return { fee: totalFee, netCredit };
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast({
-          title: "File too large",
-          description: "Please select a file smaller than 5MB",
-          variant: "destructive"
-        });
-        return;
-      }
-      setProofFile(file);
-    }
-  };
-
-  const uploadProof = async (file: File): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
-      
-      const { data, error } = await supabase.storage
-        .from('crypto-logos') // Reusing existing bucket
-        .upload(`deposit-proofs/${fileName}`, file);
-
-      if (error) throw error;
-      
-      return data.path;
-    } catch (error) {
-      console.error('Error uploading proof:', error);
-      return null;
-    }
-  };
-
-  const handleSubmit = async (method: 'BANK' | 'UPI') => {
-    if (!user || !amount || !reference || !proofFile) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill all fields and attach proof",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const depositAmount = parseFloat(amount);
-    if (depositAmount < (settings?.min_deposit || 0)) {
-      toast({
-        title: "Amount Too Low",
-        description: `Minimum deposit is ₹${settings?.min_deposit}`,
-        variant: "destructive"
-      });
-      return;
-    }
-
     setSubmitting(true);
-
     try {
-      // Upload proof
-      const proofUrl = await uploadProof(proofFile);
-      if (!proofUrl) {
-        throw new Error('Failed to upload proof');
+      let proofUrl = '';
+      if (depositData.proofFile) {
+        proofUrl = await uploadProof(depositData.proofFile);
       }
 
-      const { fee, netCredit } = calculateFees(depositAmount);
+      const fee = (depositData.amount * settings.fee_percent / 100) + settings.fee_fixed;
+      const netCredit = depositData.amount - fee;
 
-      // Create deposit record
       const { error } = await supabase
         .from('fiat_deposits')
         .insert({
-          user_id: user.id,
+          user_id: (await supabase.auth.getUser()).data.user?.id,
           method,
-          amount: depositAmount,
+          amount: depositData.amount,
           fee,
           net_credit: netCredit,
-          reference,
-          proof_url: proofUrl
+          reference: depositData.reference,
+          proof_url: proofUrl,
         });
 
       if (error) throw error;
 
       toast({
-        title: "Deposit Request Submitted",
-        description: "Your deposit request has been submitted for review",
+        title: "Deposit Submitted",
+        description: "Your INR deposit request has been submitted for review",
       });
 
-      // Reset form
-      setAmount('');
-      setReference('');
-      setProofFile(null);
-      
-      await loadDeposits();
-      
+      setActiveTab('history');
     } catch (error) {
       console.error('Error submitting deposit:', error);
       toast({
-        title: "Submission Failed",
-        description: "Failed to submit deposit request. Please try again.",
-        variant: "destructive"
+        title: "Error",
+        description: "Failed to submit deposit request",
+        variant: "destructive",
       });
     } finally {
       setSubmitting(false);
     }
   };
 
+  const getStatusColor = (status: string) => {
+    const colors = {
+      pending: "bg-yellow-100 text-yellow-800",
+      approved: "bg-green-100 text-green-800",
+      rejected: "bg-red-100 text-red-800",
+      canceled: "bg-gray-100 text-gray-800"
+    };
+    return colors[status as keyof typeof colors] || colors.pending;
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
-            <h1 className="text-xl font-semibold">INR Deposits</h1>
-            <div className="w-10" />
-          </div>
-          <div className="text-center py-8">Loading...</div>
+      <div className="p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/3"></div>
+          <div className="h-32 bg-muted rounded"></div>
         </div>
       </div>
     );
@@ -243,327 +319,180 @@ export default function INRDepositScreen() {
 
   if (!settings?.enabled) {
     return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
-            <h1 className="text-xl font-semibold">INR Deposits</h1>
-            <div className="w-10" />
-          </div>
-          
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              INR deposits are currently unavailable. Please check back later.
-            </AlertDescription>
-          </Alert>
-        </div>
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold">INR Deposits</h1>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            INR deposits are currently unavailable. {settings?.notes}
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
-  const { fee, netCredit } = calculateFees(parseFloat(amount) || 0);
-
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-md mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
-          <h1 className="text-xl font-semibold">INR Deposits</h1>
-          <div className="w-10" />
-        </div>
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">INR Deposits</h1>
 
-        <Tabs defaultValue="deposit" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="deposit">New Deposit</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="new">New Deposit</TabsTrigger>
+          <TabsTrigger value="history">History ({deposits.length})</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="deposit" className="space-y-4">
-            <Tabs defaultValue="bank" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="bank" className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Bank Transfer
-                </TabsTrigger>
-                <TabsTrigger value="upi" className="flex items-center gap-2">
-                  <Smartphone className="h-4 w-4" />
-                  UPI
-                </TabsTrigger>
-              </TabsList>
+        <TabsContent value="new" className="space-y-6">
+          <Tabs defaultValue="bank" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="bank">Bank Transfer</TabsTrigger>
+              <TabsTrigger value="upi">UPI</TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="bank">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Bank Transfer Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Bank Name</Label>
-                      <div className="p-3 bg-muted rounded-md">
-                        {settings.bank_name}
-                      </div>
+            <TabsContent value="bank" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Bank Transfer Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <Label className="font-semibold">Bank Name:</Label>
+                      <p>{settings.bank_name}</p>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label>Account Name</Label>
-                      <div className="p-3 bg-muted rounded-md">
-                        {settings.bank_account_name}
-                      </div>
+                    <div>
+                      <Label className="font-semibold">Account Name:</Label>
+                      <p>{settings.bank_account_name}</p>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label>Account Number</Label>
-                      <div className="p-3 bg-muted rounded-md font-mono">
-                        {settings.bank_account_number}
-                      </div>
+                    <div>
+                      <Label className="font-semibold">Account Number:</Label>
+                      <p className="font-mono">{settings.bank_account_number}</p>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label>IFSC Code</Label>
-                      <div className="p-3 bg-muted rounded-md font-mono">
-                        {settings.ifsc}
-                      </div>
+                    <div>
+                      <Label className="font-semibold">IFSC Code:</Label>
+                      <p className="font-mono">{settings.ifsc}</p>
                     </div>
-
+                  </div>
+                  <div className="border-t pt-3">
+                    <p className="text-sm text-muted-foreground">
+                      Min Deposit: ₹{settings.min_deposit?.toLocaleString()} | Fee: {settings.fee_percent}% + ₹{settings.fee_fixed}
+                    </p>
                     {settings.notes && (
-                      <Alert>
-                        <AlertDescription>{settings.notes}</AlertDescription>
-                      </Alert>
+                      <p className="text-sm text-muted-foreground mt-1">{settings.notes}</p>
                     )}
+                  </div>
+                </CardContent>
+              </Card>
 
-                    <DepositForm
-                      onSubmit={() => handleSubmit('BANK')}
-                      amount={amount}
-                      setAmount={setAmount}
-                      reference={reference}
-                      setReference={setReference}
-                      proofFile={proofFile}
-                      onFileUpload={handleFileUpload}
-                      fee={fee}
-                      netCredit={netCredit}
-                      minDeposit={settings.min_deposit}
-                      submitting={submitting}
-                      referenceLabel="UTR Number"
-                      referenceHint="Enter the UTR number from your bank transfer"
-                    />
-                  </CardContent>
-                </Card>
-              </TabsContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Submit Bank Deposit</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DepositForm
+                    method="BANK"
+                    settings={settings}
+                    onSubmit={(data) => handleDeposit('BANK', data)}
+                    loading={submitting}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              <TabsContent value="upi">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>UPI Payment Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>UPI ID</Label>
-                      <div className="p-3 bg-muted rounded-md font-mono">
-                        {settings.upi_id}
-                      </div>
+            <TabsContent value="upi" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>UPI Payment Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="text-center space-y-2">
+                    <div>
+                      <Label className="font-semibold">UPI ID:</Label>
+                      <p className="font-mono text-lg">{settings.upi_id}</p>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label>Name</Label>
-                      <div className="p-3 bg-muted rounded-md">
-                        {settings.upi_name}
-                      </div>
+                    <div>
+                      <Label className="font-semibold">Name:</Label>
+                      <p>{settings.upi_name}</p>
                     </div>
+                  </div>
+                  <div className="border-t pt-3 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Min Deposit: ₹{settings.min_deposit?.toLocaleString()} | Fee: {settings.fee_percent}% + ₹{settings.fee_fixed}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
 
-                    {settings.notes && (
-                      <Alert>
-                        <AlertDescription>{settings.notes}</AlertDescription>
-                      </Alert>
-                    )}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Submit UPI Deposit</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DepositForm
+                    method="UPI"
+                    settings={settings}
+                    onSubmit={(data) => handleDeposit('UPI', data)}
+                    loading={submitting}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
 
-                    <DepositForm
-                      onSubmit={() => handleSubmit('UPI')}
-                      amount={amount}
-                      setAmount={setAmount}
-                      reference={reference}
-                      setReference={setReference}
-                      proofFile={proofFile}
-                      onFileUpload={handleFileUpload}
-                      fee={fee}
-                      netCredit={netCredit}
-                      minDeposit={settings.min_deposit}
-                      submitting={submitting}
-                      referenceLabel="Transaction ID"
-                      referenceHint="Enter the UPI transaction ID"
-                    />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </TabsContent>
-
-          <TabsContent value="history">
-            <Card>
-              <CardHeader>
-                <CardTitle>Deposit History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {deposits.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-4">
-                    No deposits yet
-                  </p>
-                ) : (
-                  <div className="space-y-4">
+        <TabsContent value="history">
+          <Card>
+            <CardHeader>
+              <CardTitle>My INR Deposits</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {deposits.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No deposits yet</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Fee</TableHead>
+                      <TableHead>Net Credit</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Reference</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {deposits.map((deposit) => (
-                      <div key={deposit.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <div className="font-medium">₹{deposit.amount.toLocaleString()}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {deposit.method} • {new Date(deposit.created_at).toLocaleDateString()}
-                            </div>
-                          </div>
-                          <Badge
-                            variant={
-                              deposit.status === 'approved' ? 'default' :
-                              deposit.status === 'rejected' ? 'destructive' :
-                              'secondary'
-                            }
-                          >
+                      <TableRow key={deposit.id}>
+                        <TableCell>
+                          {new Date(deposit.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{deposit.method}</Badge>
+                        </TableCell>
+                        <TableCell>₹{deposit.amount.toLocaleString()}</TableCell>
+                        <TableCell>₹{deposit.fee.toLocaleString()}</TableCell>
+                        <TableCell>₹{deposit.net_credit.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(deposit.status)}>
                             {deposit.status}
                           </Badge>
-                        </div>
-                        
-                        <div className="text-sm space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Fee:</span>
-                            <span>₹{deposit.fee.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Net Credit:</span>
-                            <span>₹{deposit.net_credit.toFixed(2)}</span>
-                          </div>
-                          {deposit.reference && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Reference:</span>
-                              <span className="font-mono text-xs">{deposit.reference}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {deposit.reference}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
-}
+};
 
-interface DepositFormProps {
-  onSubmit: () => void;
-  amount: string;
-  setAmount: (value: string) => void;
-  reference: string;
-  setReference: (value: string) => void;
-  proofFile: File | null;
-  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  fee: number;
-  netCredit: number;
-  minDeposit: number;
-  submitting: boolean;
-  referenceLabel: string;
-  referenceHint: string;
-}
-
-function DepositForm({
-  onSubmit,
-  amount,
-  setAmount,
-  reference,
-  setReference,
-  proofFile,
-  onFileUpload,
-  fee,
-  netCredit,
-  minDeposit,
-  submitting,
-  referenceLabel,
-  referenceHint
-}: DepositFormProps) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Amount (INR)</Label>
-        <Input
-          type="number"
-          placeholder={`Minimum ₹${minDeposit}`}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          min={minDeposit}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>{referenceLabel}</Label>
-        <Input
-          placeholder={referenceHint}
-          value={reference}
-          onChange={(e) => setReference(e.target.value)}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Payment Proof</Label>
-        <div className="border-2 border-dashed rounded-lg p-4 text-center">
-          <input
-            type="file"
-            accept="image/*,.pdf"
-            onChange={onFileUpload}
-            className="hidden"
-            id="proof-upload"
-          />
-          <label htmlFor="proof-upload" className="cursor-pointer">
-            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              {proofFile ? proofFile.name : 'Click to upload screenshot or receipt'}
-            </p>
-          </label>
-        </div>
-      </div>
-
-      {parseFloat(amount) > 0 && (
-        <Card>
-          <CardContent className="pt-4">
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Amount:</span>
-                <span>₹{parseFloat(amount).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Fee:</span>
-                <span>₹{fee.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between font-medium">
-                <span>You will receive:</span>
-                <span>₹{netCredit.toFixed(2)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Button
-        className="w-full"
-        onClick={onSubmit}
-        disabled={!amount || !reference || !proofFile || submitting || parseFloat(amount) < minDeposit}
-      >
-        {submitting ? 'Submitting...' : 'Submit Deposit Request'}
-      </Button>
-    </div>
-  );
-}
+export default INRDepositScreen;

@@ -184,7 +184,9 @@ const AdminFunding = () => {
       <Tabs defaultValue="crypto" className="w-full">
         <TabsList>
           <TabsTrigger value="crypto">Crypto Deposits/Withdrawals</TabsTrigger>
-          <TabsTrigger value="fiat">Fiat Withdrawals</TabsTrigger>
+          <TabsTrigger value="inr-settings">INR Settings</TabsTrigger>
+          <TabsTrigger value="inr-deposits">INR Deposits</TabsTrigger>
+          <TabsTrigger value="inr-withdrawals">INR Withdrawals</TabsTrigger>
           <TabsTrigger value="reconciliation">Daily Reconciliation</TabsTrigger>
         </TabsList>
 
@@ -202,10 +204,38 @@ const AdminFunding = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="fiat">
+        <TabsContent value="inr-settings">
           <Card>
             <CardHeader>
-              <CardTitle>Fiat Withdrawal Requests</CardTitle>
+              <CardTitle>INR Settings Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Configure INR deposit and withdrawal settings</p>
+                <p>This will be handled by the AdminINRSettings component</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="inr-deposits">
+          <Card>
+            <CardHeader>
+              <CardTitle>INR Deposit Requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Review and approve INR deposit requests</p>
+                <p>This will be handled by the AdminINRDeposits component</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="inr-withdrawals">
+          <Card>
+            <CardHeader>
+              <CardTitle>INR Withdrawal Requests</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>

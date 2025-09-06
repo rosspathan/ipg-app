@@ -2,10 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Shield } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import INRWithdrawScreen from "./INRWithdrawScreen";
 
 const WithdrawScreen = () => {
   const navigate = useNavigate();
@@ -126,6 +128,15 @@ const WithdrawScreen = () => {
           <h1 className="text-2xl font-bold text-foreground">Withdraw</h1>
         </div>
 
+        {/* Tabs for Crypto and INR */}
+        <Tabs defaultValue="crypto" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="crypto">Crypto</TabsTrigger>
+            <TabsTrigger value="inr">INR (Bank/UPI)</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="crypto" className="space-y-6">
+
         {/* Asset Selection */}
         <Card className="bg-gradient-card shadow-card border-0">
           <CardHeader>
@@ -242,6 +253,12 @@ const WithdrawScreen = () => {
         <Button onClick={handleWithdraw} className="w-full" size="lg">
           Withdraw
         </Button>
+          </TabsContent>
+
+          <TabsContent value="inr">
+            <INRWithdrawScreen />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

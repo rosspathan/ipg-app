@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, QrCode } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -9,6 +10,7 @@ import { useWeb3 } from "@/contexts/Web3Context";
 import { useCatalog } from "@/hooks/useCatalog";
 import AssetLogo from "@/components/AssetLogo";
 import QRCode from "qrcode";
+import INRDepositScreen from "./INRDepositScreen";
 
 const DepositScreen = () => {
   const navigate = useNavigate();
@@ -108,6 +110,15 @@ const DepositScreen = () => {
           </Button>
           <h1 className="text-2xl font-bold text-foreground">Deposit</h1>
         </div>
+
+        {/* Tabs for Crypto and INR */}
+        <Tabs defaultValue="crypto" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="crypto">Crypto</TabsTrigger>
+            <TabsTrigger value="inr">INR (Bank/UPI)</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="crypto" className="space-y-6">
 
         {/* Asset Selection */}
         <Card className="bg-gradient-card shadow-card border-0">
@@ -235,6 +246,12 @@ const DepositScreen = () => {
             </p>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="inr">
+            <INRDepositScreen />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
