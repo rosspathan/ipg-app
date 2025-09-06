@@ -72,7 +72,7 @@ import { AdminSupportScreen } from "@/pages/AdminSupportScreen";
 import { AdminSupportTicketScreen } from "@/pages/AdminSupportTicketScreen";
 import { AdminNotificationsScreen } from "@/pages/AdminNotificationsScreen";
 import { NotificationsScreen } from "@/pages/NotificationsScreen";
-import NotFound from "./pages/NotFound";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
