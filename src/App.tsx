@@ -59,7 +59,18 @@ import ProfileScreen from "./pages/ProfileScreen";
 
 // Admin Pages
 import AdminLoginScreen from "./pages/AdminLoginScreen";
-import AdminPanel from "./pages/AdminPanel";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
+import AdminAssets from "./pages/AdminAssets";
+import AdminMarkets from "./pages/AdminMarkets";
+import AdminFunding from "./pages/AdminFunding";
+import { AdminSubscriptions } from "./components/AdminSubscriptions";
+import { AdminReferrals } from "./components/AdminReferrals";
+import { AdminStaking } from "./components/AdminStaking";
+import { AdminLuckyDraw } from "./components/AdminLuckyDraw";
+import { AdminInsurance } from "./components/AdminInsurance";
+import { AdminAds } from "./components/AdminAds";
+import { AdminFees } from "./components/AdminFees";
 
 // Utility Pages
 import EmailVerificationScreen from "./pages/EmailVerificationScreen";
@@ -169,18 +180,18 @@ function App() {
                   </AdminRouteNew>
                 </AuthProviderAdmin>
               }>
-                <Route index element={<AdminPanel />} />
-                <Route path="users" element={<div className="p-6"><h1 className="text-2xl font-bold">User Management</h1></div>} />
-                <Route path="assets" element={<div className="p-6"><h1 className="text-2xl font-bold">Asset Management</h1></div>} />
-                <Route path="markets" element={<div className="p-6"><h1 className="text-2xl font-bold">Market Management</h1></div>} />
-                <Route path="funding" element={<div className="p-6"><h1 className="text-2xl font-bold">Funding Management</h1></div>} />
-                <Route path="subscriptions" element={<div className="p-6"><h1 className="text-2xl font-bold">Subscription Management</h1></div>} />
-                <Route path="referrals" element={<div className="p-6"><h1 className="text-2xl font-bold">Referral Management</h1></div>} />
-                <Route path="staking" element={<div className="p-6"><h1 className="text-2xl font-bold">Staking Management</h1></div>} />
-                <Route path="lucky" element={<div className="p-6"><h1 className="text-2xl font-bold">Lucky Draw Management</h1></div>} />
-                <Route path="insurance" element={<div className="p-6"><h1 className="text-2xl font-bold">Insurance Management</h1></div>} />
-                <Route path="ads" element={<div className="p-6"><h1 className="text-2xl font-bold">Ads Management</h1></div>} />
-                <Route path="fees" element={<div className="p-6"><h1 className="text-2xl font-bold">Fee Management</h1></div>} />
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="assets" element={<AdminAssets />} />
+                <Route path="markets" element={<AdminMarkets />} />
+                <Route path="funding" element={<AdminFunding />} />
+                <Route path="subscriptions" element={<AdminSubscriptions />} />
+                <Route path="referrals" element={<AdminReferrals />} />
+                <Route path="staking" element={<AdminStaking />} />
+                <Route path="lucky" element={<AdminLuckyDraw />} />
+                <Route path="insurance" element={<AdminInsurance />} />
+                <Route path="ads" element={<AdminAds />} />
+                <Route path="fees" element={<AdminFees />} />
                 <Route path="transfers" element={<div className="p-6"><h1 className="text-2xl font-bold">Transfer Management</h1></div>} />
                 <Route path="compliance" element={<div className="p-6"><h1 className="text-2xl font-bold">Compliance</h1></div>} />
                 <Route path="reports" element={<div className="p-6"><h1 className="text-2xl font-bold">Reports</h1></div>} />

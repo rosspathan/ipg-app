@@ -45,8 +45,8 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
+      {/* IMPORTANT: Do not render AdminHeader in child pages - this is the single admin header */}
+      <div className="sticky top-0 z-40 border-b bg-card">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
