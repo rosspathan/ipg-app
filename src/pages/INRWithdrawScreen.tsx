@@ -26,8 +26,12 @@ interface FiatSettings {
   upi_name?: string;
   notes?: string;
   min_deposit?: number;
+  min_withdraw?: number;
   fee_percent?: number;
   fee_fixed?: number;
+  withdraw_fee_percent?: number;
+  withdraw_fee_fixed?: number;
+  processing_hours?: string;
   created_at: string;
   updated_at: string;
 }
@@ -509,19 +513,21 @@ const INRWithdrawScreen = () => {
                         <TableCell>
                           {new Date(withdrawal.created_at).toLocaleDateString()}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{withdrawal.method}</Badge>
+                       <TableCell>
+                          <Badge variant="outline">
+                            {withdrawal.bank_details?.upi_id ? 'UPI' : 'BANK'}
+                          </Badge>
                         </TableCell>
                         <TableCell>₹{withdrawal.amount.toLocaleString()}</TableCell>
-                        <TableCell>₹{withdrawal.fee.toLocaleString()}</TableCell>
-                        <TableCell>₹{withdrawal.net_payout.toLocaleString()}</TableCell>
+                        <TableCell>₹{(withdrawal.amount * 0.01).toLocaleString()}</TableCell>
+                        <TableCell>₹{(withdrawal.amount * 0.99).toLocaleString()}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(withdrawal.status)}>
                             {withdrawal.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-mono text-sm">
-                          {withdrawal.payout_ref || '-'}
+                          {withdrawal.reference_id || '-'}
                         </TableCell>
                       </TableRow>
                     ))}
