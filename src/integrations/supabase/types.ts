@@ -867,6 +867,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          link_url: string | null
+          meta: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          meta?: Json | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          meta?: Json | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications_prefs: {
         Row: {
           created_at: string | null
@@ -893,6 +926,32 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      notifications_read: {
+        Row: {
+          notification_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          notification_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          notification_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_read_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orders: {
         Row: {
@@ -1034,6 +1093,27 @@ export type Database = {
           user_id?: string
           wallet_address?: string | null
           withdrawal_locked?: boolean | null
+        }
+        Relationships: []
+      }
+      push_tokens: {
+        Row: {
+          created_at: string
+          device_id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          token?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1240,6 +1320,80 @@ export type Database = {
           price?: number
           stripe_price_id?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          attachment_url: string | null
+          body: string
+          created_at: string
+          id: string
+          sender_id: string
+          sender_type: string
+          ticket_id: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          sender_type: string
+          ticket_id: string
+        }
+        Update: {
+          attachment_url?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          sender_type?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          last_msg_at: string
+          meta: Json | null
+          priority: string
+          status: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          last_msg_at?: string
+          meta?: Json | null
+          priority?: string
+          status?: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          last_msg_at?: string
+          meta?: Json | null
+          priority?: string
+          status?: string
+          subject?: string
+          user_id?: string
         }
         Relationships: []
       }
