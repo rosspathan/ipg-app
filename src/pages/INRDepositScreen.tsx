@@ -11,39 +11,15 @@ import { Upload, Copy, QrCode, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useINRFunding } from "@/hooks/useINRFunding";
 
+// Types for component props
 interface FiatSettings {
   id: string;
   enabled: boolean;
-  min_deposit?: number;
-  fee_percent?: number;
-  fee_fixed?: number;
-  created_at: string;
-  updated_at: string;
-}
-
-interface BankAccount {
-  id: string;
-  label: string;
-  bank_name: string;
-  account_name: string;
-  account_number: string;
-  ifsc: string;
-  notes?: string;
-  is_active: boolean;
-  is_default: boolean;
-  created_at: string;
-}
-
-interface UpiAccount {
-  id: string;
-  label: string;
-  upi_id: string;
-  upi_name: string;
-  notes?: string;
-  is_active: boolean;
-  is_default: boolean;
-  created_at: string;
+  min_deposit: number;
+  fee_percent: number;
+  fee_fixed: number;
 }
 
 interface FiatDeposit {
@@ -65,7 +41,7 @@ interface FiatDeposit {
 interface DepositFormProps {
   method: 'BANK' | 'UPI';
   settings: FiatSettings;
-  selectedAccount: BankAccount | UpiAccount | null;
+  selectedAccount: any; // Will be from useINRFunding hook
   onSubmit: (data: { amount: number; reference: string; proofFile?: File }) => Promise<void>;
   loading: boolean;
 }
@@ -76,12 +52,12 @@ const DepositForm = ({ method, settings, selectedAccount, onSubmit, loading }: D
   const [proofFile, setProofFile] = useState<File | null>(null);
 
   const calculatedFee = amount ? 
-    (parseFloat(amount) * (settings.fee_percent || 0) / 100) + (settings.fee_fixed || 0) : 0;
+    (parseFloat(amount) * settings.fee_percent / 100) + settings.fee_fixed : 0;
   const netCredit = amount ? parseFloat(amount) - calculatedFee : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !reference || parseFloat(amount) < (settings.min_deposit || 0) || !selectedAccount) {
+    if (!amount || !reference || parseFloat(amount) < settings.min_deposit || !selectedAccount) {
       return;
     }
     await onSubmit({ amount: parseFloat(amount), reference, proofFile: proofFile || undefined });
@@ -90,7 +66,7 @@ const DepositForm = ({ method, settings, selectedAccount, onSubmit, loading }: D
     setProofFile(null);
   };
 
-  const isValid = amount && reference && parseFloat(amount) >= (settings.min_deposit || 0) && selectedAccount && proofFile;
+  const isValid = amount && reference && parseFloat(amount) >= settings.min_deposit && selectedAccount && proofFile;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -103,12 +79,12 @@ const DepositForm = ({ method, settings, selectedAccount, onSubmit, loading }: D
           placeholder={`Minimum ${settings.min_deposit}`}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          min={settings.min_deposit || 0}
+          min={settings.min_deposit}
           required
         />
-        {amount && parseFloat(amount) < (settings.min_deposit || 0) && (
+        {amount && parseFloat(amount) < settings.min_deposit && (
           <p className="text-sm text-destructive mt-1">
-            Amount must be at least ₹{settings.min_deposit?.toLocaleString()}
+            Amount must be at least ₹{settings.min_deposit.toLocaleString()}
           </p>
         )}
       </div>
@@ -180,48 +156,36 @@ const DepositForm = ({ method, settings, selectedAccount, onSubmit, loading }: D
 };
 
 const INRDepositScreen = () => {
-  const [settings, setSettings] = useState<FiatSettings | null>(null);
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
-  const [upiAccounts, setUpiAccounts] = useState<UpiAccount[]>([]);
+  const { status, settings, banks, upis, error } = useINRFunding();
   const [deposits, setDeposits] = useState<FiatDeposit[]>([]);
   const [selectedBankId, setSelectedBankId] = useState<string>('');
   const [selectedUpiId, setSelectedUpiId] = useState<string>('');
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('new');
   const { toast } = useToast();
 
+  // Auto-select default accounts when data loads
   useEffect(() => {
-    loadData();
+    if (banks.length > 0 && !selectedBankId) {
+      const defaultBank = banks.find(bank => bank.is_default);
+      if (defaultBank) {
+        setSelectedBankId(defaultBank.id);
+      }
+    }
     
-    // Set up realtime listeners
-    const settingsChannel = supabase
-      .channel('fiat_settings_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'fiat_settings_inr' },
-        () => loadSettings()
-      )
-      .subscribe();
+    if (upis.length > 0 && !selectedUpiId) {
+      const defaultUpi = upis.find(upi => upi.is_default);
+      if (defaultUpi) {
+        setSelectedUpiId(defaultUpi.id);
+      }
+    }
+  }, [banks, upis, selectedBankId, selectedUpiId]);
 
-    const bankChannel = supabase
-      .channel('fiat_bank_accounts_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'fiat_bank_accounts' },
-        () => loadBankAccounts()
-      )
-      .subscribe();
+  // Load deposits separately since it's not in the hook
+  useEffect(() => {
+    loadDeposits();
 
-    const upiChannel = supabase
-      .channel('fiat_upi_accounts_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'fiat_upi_accounts' },
-        () => loadUpiAccounts()
-      )
-      .subscribe();
-
+    // Set up realtime listener for deposits
     const depositsChannel = supabase
       .channel('fiat_deposits_changes')
       .on(
@@ -232,73 +196,9 @@ const INRDepositScreen = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(settingsChannel);
-      supabase.removeChannel(bankChannel);
-      supabase.removeChannel(upiChannel);
       supabase.removeChannel(depositsChannel);
     };
   }, []);
-
-  const loadData = async () => {
-    await Promise.all([loadSettings(), loadBankAccounts(), loadUpiAccounts(), loadDeposits()]);
-    setLoading(false);
-  };
-
-  const loadSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('fiat_settings_inr')
-        .select('*')
-        .maybeSingle();
-
-      if (error) throw error;
-      setSettings(data);
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  };
-
-  const loadBankAccounts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('fiat_bank_accounts')
-        .select('*')
-        .eq('is_active', true)
-        .order('is_default', { ascending: false });
-
-      if (error) throw error;
-      setBankAccounts(data || []);
-      
-      // Auto-select default bank account
-      const defaultBank = data?.find(bank => bank.is_default);
-      if (defaultBank && !selectedBankId) {
-        setSelectedBankId(defaultBank.id);
-      }
-    } catch (error) {
-      console.error('Error loading bank accounts:', error);
-    }
-  };
-
-  const loadUpiAccounts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('fiat_upi_accounts')
-        .select('*')
-        .eq('is_active', true)
-        .order('is_default', { ascending: false });
-
-      if (error) throw error;
-      setUpiAccounts(data || []);
-      
-      // Auto-select default UPI account
-      const defaultUpi = data?.find(upi => upi.is_default);
-      if (defaultUpi && !selectedUpiId) {
-        setSelectedUpiId(defaultUpi.id);
-      }
-    } catch (error) {
-      console.error('Error loading UPI accounts:', error);
-    }
-  };
 
   const loadDeposits = async () => {
     try {
@@ -333,7 +233,14 @@ const INRDepositScreen = () => {
   };
 
   const handleDeposit = async (method: 'BANK' | 'UPI', depositData: { amount: number; reference: string; proofFile?: File }) => {
-    if (!settings) return;
+      if (!settings) {
+        toast({
+          title: "Error",
+          description: "Settings not loaded",
+          variant: "destructive",
+        });
+        return;
+      }
     
     const routeId = method === 'BANK' ? selectedBankId : selectedUpiId;
     if (!routeId) {
@@ -352,7 +259,7 @@ const INRDepositScreen = () => {
         proofUrl = await uploadProof(depositData.proofFile);
       }
 
-      const fee = (depositData.amount * (settings.fee_percent || 0) / 100) + (settings.fee_fixed || 0);
+      const fee = (depositData.amount * settings.fee_percent / 100) + settings.fee_fixed;
       const netCredit = depositData.amount - fee;
 
       const { error } = await supabase
@@ -406,7 +313,7 @@ const INRDepositScreen = () => {
     return colors[status as keyof typeof colors] || colors.pending;
   };
 
-  if (loading) {
+  if (status === 'loading') {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">
@@ -417,22 +324,50 @@ const INRDepositScreen = () => {
     );
   }
 
-  if (!settings?.enabled) {
+  if (status === 'error') {
     return (
       <div className="p-6 space-y-4">
         <h1 className="text-2xl font-bold">INR Deposits</h1>
-        <Alert>
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            INR deposits are currently unavailable. Please contact support for more information.
+            {error || 'Failed to load INR deposit settings. Please try again.'}
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  const selectedBank = bankAccounts.find(bank => bank.id === selectedBankId);
-  const selectedUpi = upiAccounts.find(upi => upi.id === selectedUpiId);
+  if (status === 'disabled') {
+    return (
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold">INR Deposits</h1>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            INR deposits are currently disabled. Please contact support for more information.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (status === 'empty') {
+    return (
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold">INR Deposits</h1>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Admin hasn't added any INR routes yet. Please contact support.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const selectedBank = banks.find(bank => bank.id === selectedBankId);
+  const selectedUpi = upis.find(upi => upi.id === selectedUpiId);
 
   return (
     <div className="p-6 space-y-6">
@@ -452,11 +387,11 @@ const INRDepositScreen = () => {
             </TabsList>
 
             <TabsContent value="bank" className="space-y-4">
-              {bankAccounts.length === 0 ? (
+              {banks.length === 0 ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    No bank accounts are currently available for deposits.
+                    No bank accounts yet. Admin needs to add bank accounts.
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -471,7 +406,7 @@ const INRDepositScreen = () => {
                           <SelectValue placeholder="Choose bank account" />
                         </SelectTrigger>
                         <SelectContent>
-                          {bankAccounts.map((bank) => (
+                          {banks.map((bank) => (
                             <SelectItem key={bank.id} value={bank.id}>
                               {bank.label} - {bank.bank_name}
                             </SelectItem>
@@ -543,7 +478,7 @@ const INRDepositScreen = () => {
                         </div>
                         <div className="border-t pt-3">
                           <p className="text-sm text-muted-foreground">
-                            Min Deposit: ₹{settings.min_deposit?.toLocaleString()} | Fee: {settings.fee_percent}% + ₹{settings.fee_fixed}
+                            Min Deposit: ₹{settings.min_deposit.toLocaleString()} | Fee: {settings.fee_percent}% + ₹{settings.fee_fixed}
                           </p>
                           {selectedBank.notes && (
                             <p className="text-sm text-muted-foreground mt-1">{selectedBank.notes}</p>
@@ -572,11 +507,11 @@ const INRDepositScreen = () => {
             </TabsContent>
 
             <TabsContent value="upi" className="space-y-4">
-              {upiAccounts.length === 0 ? (
+              {upis.length === 0 ? (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    No UPI accounts are currently available for deposits.
+                    No UPI accounts yet. Admin needs to add UPI accounts.
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -591,7 +526,7 @@ const INRDepositScreen = () => {
                           <SelectValue placeholder="Choose UPI account" />
                         </SelectTrigger>
                         <SelectContent>
-                          {upiAccounts.map((upi) => (
+                          {upis.map((upi) => (
                             <SelectItem key={upi.id} value={upi.id}>
                               {upi.label} - {upi.upi_id}
                             </SelectItem>
@@ -628,7 +563,7 @@ const INRDepositScreen = () => {
                         </div>
                         <div className="border-t pt-3 text-center">
                           <p className="text-sm text-muted-foreground">
-                            Min Deposit: ₹{settings.min_deposit?.toLocaleString()} | Fee: {settings.fee_percent}% + ₹{settings.fee_fixed}
+                            Min Deposit: ₹{settings.min_deposit.toLocaleString()} | Fee: {settings.fee_percent}% + ₹{settings.fee_fixed}
                           </p>
                           {selectedUpi.notes && (
                             <p className="text-sm text-muted-foreground mt-1">{selectedUpi.notes}</p>

@@ -84,6 +84,7 @@ import { AdminSupportTicketScreen } from "@/pages/AdminSupportTicketScreen";
 import { AdminNotificationsScreen } from "@/pages/AdminNotificationsScreen";
 import { NotificationsScreen } from "@/pages/NotificationsScreen";
 import NotFound from "@/pages/NotFound";
+import DebugFunding from "@/pages/DebugFunding";
 
 const queryClient = new QueryClient();
 
@@ -206,6 +207,7 @@ function App() {
               <Route path="/email-verified" element={<EmailVerifiedScreen />} />
               <Route path="/reset-password" element={<ResetPasswordScreen />} />
               <Route path="/debug/catalog" element={<DebugCatalogScreen />} />
+              <Route path="/debug/funding" element={<DebugFunding />} />
 
               {/* Legacy auth route redirect */}
               <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
