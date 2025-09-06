@@ -65,12 +65,7 @@ export const AdminSupportScreen = () => {
       
       let query = supabase
         .from('support_tickets')
-        .select(`
-          *,
-          profiles:user_id (
-            email
-          )
-        `)
+        .select('*')
         .order('last_msg_at', { ascending: false });
 
       if (statusFilter !== "all") {
@@ -89,13 +84,23 @@ export const AdminSupportScreen = () => {
 
       if (error) throw error;
 
-      // Transform data to include user email
-      const transformedData = (data || []).map((ticket: any) => ({
-        ...ticket,
-        user_email: ticket.profiles?.email || 'Unknown',
-      }));
+      // Get user emails separately for each ticket
+      const ticketsWithEmails = await Promise.all(
+        (data || []).map(async (ticket: any) => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('user_id', ticket.user_id)
+            .single();
 
-      setTickets(transformedData);
+          return {
+            ...ticket,
+            user_email: profileData?.email || 'Unknown',
+          };
+        })
+      );
+
+      setTickets(ticketsWithEmails);
     } catch (error: any) {
       toast({
         title: "Error loading tickets",

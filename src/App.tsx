@@ -66,6 +66,12 @@ import EmailVerificationScreen from "./pages/EmailVerificationScreen";
 import EmailVerifiedScreen from "./pages/EmailVerifiedScreen";
 import ResetPasswordScreen from "./pages/ResetPasswordScreen";
 import DebugCatalogScreen from "./pages/DebugCatalogScreen";
+import { SupportScreen } from "@/pages/SupportScreen";
+import { SupportTicketScreen } from "@/pages/SupportTicketScreen";
+import { AdminSupportScreen } from "@/pages/AdminSupportScreen";
+import { AdminSupportTicketScreen } from "@/pages/AdminSupportTicketScreen";
+import { AdminNotificationsScreen } from "@/pages/AdminNotificationsScreen";
+import { NotificationsScreen } from "@/pages/NotificationsScreen";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -143,8 +149,9 @@ function App() {
                 <Route path="programs/insurance/claim" element={<FileClaimScreen />} />
                 <Route path="deposit/inr" element={<INRDepositScreen />} />
                 <Route path="profile" element={<ProfileScreen />} />
-                <Route path="support" element={<div className="p-6"><h1 className="text-2xl font-bold">Support</h1><p>Support center coming soon</p></div>} />
-                <Route path="notifications" element={<div className="p-6"><h1 className="text-2xl font-bold">Notifications</h1><p>Notification center coming soon</p></div>} />
+                <Route path="support" element={<SupportScreen />} />
+                <Route path="support/t/:id" element={<SupportTicketScreen />} />
+                <Route path="notifications" element={<NotificationsScreen />} />
               </Route>
 
               {/* Admin Authentication */}
@@ -177,6 +184,9 @@ function App() {
                 <Route path="transfers" element={<div className="p-6"><h1 className="text-2xl font-bold">Transfer Management</h1></div>} />
                 <Route path="compliance" element={<div className="p-6"><h1 className="text-2xl font-bold">Compliance</h1></div>} />
                 <Route path="reports" element={<div className="p-6"><h1 className="text-2xl font-bold">Reports</h1></div>} />
+                <Route path="support" element={<AdminSupportScreen />} />
+                <Route path="support/t/:id" element={<AdminSupportTicketScreen />} />
+                <Route path="notifications" element={<AdminNotificationsScreen />} />
                 <Route path="system" element={<div className="p-6"><h1 className="text-2xl font-bold">System Settings</h1></div>} />
               </Route>
 

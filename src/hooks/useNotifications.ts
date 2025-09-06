@@ -6,7 +6,7 @@ import { fetchWithTimeout, getErrorMessage } from "@/utils/fetchWithTimeout";
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'system' | 'security' | 'funding' | 'trade' | 'programs' | 'marketing';
+  type: string;
   title: string;
   body: string;
   meta?: any;
@@ -44,10 +44,7 @@ export const useNotifications = () => {
         }
       }
 
-      const { data, error } = await fetchWithTimeout(
-        () => query,
-        { ms: 10000 }
-      );
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -164,37 +161,41 @@ export const useNotifications = () => {
 
   // Realtime subscription for new notifications
   useEffect(() => {
-    const { data: user } = supabase.auth.getUser();
-    
-    if (!user) return;
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
 
-    const channel = supabase
-      .channel('user_notifications')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${user}`,
-      }, (payload) => {
-        const newNotification = {
-          ...payload.new,
-          is_read: false,
-        } as Notification;
+      const channel = supabase
+        .channel('user_notifications')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        }, (payload) => {
+          const newNotification = {
+            ...payload.new,
+            is_read: false,
+          } as Notification;
 
-        setNotifications(prev => [newNotification, ...prev]);
-        setUnreadCount(prev => prev + 1);
+          setNotifications(prev => [newNotification, ...prev]);
+          setUnreadCount(prev => prev + 1);
 
-        // Show toast for new notification
-        toast({
-          title: newNotification.title,
-          description: newNotification.body,
-        });
-      })
-      .subscribe();
+          // Show toast for new notification
+          toast({
+            title: newNotification.title,
+            description: newNotification.body,
+          });
+        })
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
+      return () => {
+        supabase.removeChannel(channel);
+      };
     };
+
+    setupRealtime();
   }, [toast]);
 
   return {

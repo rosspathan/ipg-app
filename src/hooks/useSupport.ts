@@ -7,9 +7,9 @@ export interface SupportTicket {
   id: string;
   user_id: string;
   subject: string;
-  category: 'account' | 'kyc' | 'funding' | 'trade' | 'technical' | 'other';
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  status: 'open' | 'pending_user' | 'pending_admin' | 'resolved' | 'closed';
+  category: string;
+  priority: string;
+  status: string;
   last_msg_at: string;
   created_at: string;
   meta?: any;
@@ -18,7 +18,7 @@ export interface SupportTicket {
 export interface SupportMessage {
   id: string;
   ticket_id: string;
-  sender_type: 'user' | 'admin';
+  sender_type: string;
   sender_id: string;
   body: string;
   attachment_url?: string;
@@ -45,10 +45,7 @@ export const useSupport = () => {
         query = query.ilike('subject', `%${search}%`);
       }
 
-      const { data, error } = await fetchWithTimeout(
-        () => query.then(res => res),
-        { ms: 10000 }
-      );
+      const { data, error } = await query;
 
       if (error) throw error;
       setTickets(data || []);
@@ -65,15 +62,11 @@ export const useSupport = () => {
 
   const loadMessages = useCallback(async (ticketId: string) => {
     try {
-      const { data, error } = await fetchWithTimeout(
-        () => supabase
-          .from('support_messages')
-          .select('*')
-          .eq('ticket_id', ticketId)
-          .order('created_at', { ascending: true })
-          .then(res => res),
-        { ms: 10000 }
-      );
+      const { data, error } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
       setMessages(data || []);

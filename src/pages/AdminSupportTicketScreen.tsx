@@ -28,7 +28,7 @@ interface AdminSupportTicket {
 interface SupportMessage {
   id: string;
   ticket_id: string;
-  sender_type: 'user' | 'admin';
+  sender_type: string;
   sender_id: string;
   body: string;
   attachment_url?: string;
@@ -72,22 +72,25 @@ export const AdminSupportTicketScreen = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      // First get the ticket
+      const { data: ticketData, error: ticketError } = await supabase
         .from('support_tickets')
-        .select(`
-          *,
-          profiles:user_id (
-            email
-          )
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      if (ticketError) throw ticketError;
+
+      // Then get the user profile separately
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('user_id', ticketData.user_id)
+        .single();
 
       setTicket({
-        ...data,
-        user_email: data.profiles?.email || 'Unknown',
+        ...ticketData,
+        user_email: profileData?.email || 'Unknown',
       });
     } catch (error: any) {
       toast({
