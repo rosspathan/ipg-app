@@ -23,21 +23,30 @@ const SecuritySetupScreen = () => {
   const [antiPhishingCode, setAntiPhishingCode] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
 
+  const clean = (v: string) => v.replace(/\s+/g, '');
+  const isSixDigit = (v: string) => /^\d{6}$/.test(v);
+  const pinValid = isSixDigit(pin);
+  const confirmStarted = confirmPin.length > 0;
+  const confirmMatches = confirmPin === pin;
+
   useEffect(() => {
     checkBiometricAvailability().then(setBiometricAvailable);
   }, [checkBiometricAvailability]);
 
   const handleComplete = async () => {
-    if (pin.length !== 6) {
+    const cleanPin = clean(pin);
+    const cleanConfirm = clean(confirmPin);
+
+    if (!isSixDigit(cleanPin)) {
       toast({
         title: "Invalid PIN",
-        description: "PIN must be 6 digits",
+        description: "Enter exactly 6 digits (0-9)",
         variant: "destructive",
       });
       return;
     }
 
-    if (pin !== confirmPin) {
+    if (cleanPin !== cleanConfirm) {
       toast({
         title: "PIN Mismatch",
         description: "PINs do not match",
@@ -56,13 +65,13 @@ const SecuritySetupScreen = () => {
     }
 
     try {
-      // Set PIN securely
-      const pinSuccess = await setPin(pin);
+      // Set PIN securely (client-side hashed in hook)
+      const pinSuccess = await setPin(cleanPin);
       if (!pinSuccess) return;
 
       // Update security settings
       await updateSecurity({
-        anti_phishing_code: antiPhishingCode
+        anti_phishing_code: antiPhishingCode.trim()
       });
 
       // Save biometric preference to lock state
@@ -71,13 +80,13 @@ const SecuritySetupScreen = () => {
       });
 
       toast({
-        title: "Security Setup Complete!",
+        title: "Security set up",
         description: "Your wallet is now secure",
       });
 
       setTimeout(() => {
-        navigate("/auth/lock");
-      }, 1500);
+        navigate("/app/home");
+      }, 800);
     } catch (error) {
       console.error('Security setup failed:', error);
       toast({
@@ -88,16 +97,15 @@ const SecuritySetupScreen = () => {
     }
   };
 
+
   const handlePinChange = (value: string) => {
-    if (value.length <= 6 && /^\d*$/.test(value)) {
-      setPinInput(value);
-    }
+    const cleaned = clean(value).replace(/[^0-9]/g, '').slice(0, 6);
+    setPinInput(cleaned);
   };
 
   const handleConfirmPinChange = (value: string) => {
-    if (value.length <= 6 && /^\d*$/.test(value)) {
-      setConfirmPin(value);
-    }
+    const cleaned = clean(value).replace(/[^0-9]/g, '').slice(0, 6);
+    setConfirmPin(cleaned);
   };
 
   return (
@@ -136,10 +144,14 @@ const SecuritySetupScreen = () => {
                 <Input
                   id="pin"
                   type={showPin ? "text" : "password"}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]*"
                   value={pin}
                   onChange={(e) => handlePinChange(e.target.value)}
                   placeholder="••••••"
                   className="pr-10 text-center text-lg tracking-widest"
+                  aria-invalid={pin.length > 0 && !pinValid}
                 />
                 <Button
                   type="button"
@@ -151,6 +163,9 @@ const SecuritySetupScreen = () => {
                   {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
               </div>
+              {pin.length > 0 && !pinValid && (
+                <p className="text-xs text-destructive">Enter 6 digits</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -158,11 +173,18 @@ const SecuritySetupScreen = () => {
               <Input
                 id="confirmPin"
                 type={showPin ? "text" : "password"}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]*"
                 value={confirmPin}
                 onChange={(e) => handleConfirmPinChange(e.target.value)}
                 placeholder="••••••"
                 className="text-center text-lg tracking-widest"
+                aria-invalid={confirmStarted && !confirmMatches}
               />
+              {confirmStarted && !confirmMatches && (
+                <p className="text-xs text-destructive">PINs do not match</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -215,7 +237,7 @@ const SecuritySetupScreen = () => {
           size="lg" 
           onClick={handleComplete}
           className="w-full"
-          disabled={!pin || !confirmPin || !antiPhishingCode.trim()}
+          disabled={!pinValid || !confirmMatches || !antiPhishingCode.trim()}
         >
           Complete Setup
         </Button>

@@ -127,10 +127,18 @@ export const useAuthLock = () => {
 
   // Set PIN (for initial setup or change)
   const setPin = useCallback(async (pin: string): Promise<boolean> => {
-    if (!user || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+    if (!/^\d{6}$/.test(pin)) {
       toast({
         title: "Invalid PIN",
         description: "PIN must be exactly 6 digits",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!user) {
+      toast({
+        title: "Not signed in",
+        description: "Please log in to set your PIN",
         variant: "destructive"
       });
       return false;
