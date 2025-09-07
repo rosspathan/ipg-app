@@ -117,13 +117,17 @@ const SecuritySetupScreen = () => {
         title: "Security configured",
         description: session?.user?.id 
           ? "Your wallet is now secure" 
-          : "Your PIN is saved locally and will sync after login",
+          : "Your PIN is saved. Please log in to access your dashboard.",
       });
 
       setPhase('done');
       
-      // Navigate to home
-      navigate('/app/home', { replace: true });
+      // Navigate based on authentication status
+      if (session?.user?.id) {
+        navigate('/app/home', { replace: true });
+      } else {
+        navigate('/auth/login', { replace: true });
+      }
       
     } catch (error) {
       console.error('Security setup failed:', error);
