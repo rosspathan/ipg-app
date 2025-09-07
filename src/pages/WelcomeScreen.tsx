@@ -25,7 +25,7 @@ const WelcomeScreen = () => {
   ];
 
   const handleNext = () => {
-    navigate("/wallet-selection");
+    navigate("/welcome-1");
   };
 
   const handleSkip = () => {
