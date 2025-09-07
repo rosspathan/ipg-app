@@ -6,6 +6,9 @@ import { Shield, Fingerprint } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import cryptoLogo from "@/assets/crypto-logo.jpg";
+import { verifyLocalPin, hasLocalSecurity } from "@/utils/localSecurityStorage";
+import { supabase } from "@/integrations/supabase/client";
+import * as bcrypt from 'bcryptjs';
 
 const AppLockScreen = () => {
   const navigate = useNavigate();
@@ -14,61 +17,155 @@ const AppLockScreen = () => {
   const { user } = useAuthUser();
   
   const [pin, setPin] = useState("");
-  const [storedPin, setStoredPin] = useState("");
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [shakeError, setShakeError] = useState(false);
+  const [hasSecurityConfigured, setHasSecurityConfigured] = useState(false);
   const maxAttempts = 5;
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth/login');
-      return;
-    }
+    const checkSecurity = async () => {
+      if (!user) {
+        navigate('/auth/login');
+        return;
+      }
 
-    const savedPin = localStorage.getItem("cryptoflow_pin");
-    const savedBiometric = localStorage.getItem("cryptoflow_biometric") === "true";
-    
-    if (!savedPin) {
-      navigate("/onboarding/security");
-      return;
-    }
-    
-    setStoredPin(savedPin);
-    setBiometricEnabled(savedBiometric);
+      try {
+        let hasPinConfigured = false;
+        let biometricSetting = false;
+
+        // Check database security if user is logged in
+        if (user) {
+          const { data: security } = await supabase
+            .from('security')
+            .select('pin_set, biometric_enabled')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          hasPinConfigured = security?.pin_set === true;
+          biometricSetting = security?.biometric_enabled === true;
+        }
+
+        // Also check local security
+        if (!hasPinConfigured) {
+          hasPinConfigured = hasLocalSecurity();
+          // Get biometric setting from local storage if no DB config
+          biometricSetting = localStorage.getItem("cryptoflow_biometric") === "true";
+        }
+
+        if (!hasPinConfigured) {
+          navigate("/onboarding/security");
+          return;
+        }
+        
+        setHasSecurityConfigured(true);
+        setBiometricEnabled(biometricSetting);
+      } catch (error) {
+        console.error('Error checking security:', error);
+        // Fallback to local security check
+        if (!hasLocalSecurity()) {
+          navigate("/onboarding/security");
+        } else {
+          setHasSecurityConfigured(true);
+          setBiometricEnabled(localStorage.getItem("cryptoflow_biometric") === "true");
+        }
+      }
+    };
+
+    checkSecurity();
   }, [user, navigate]);
 
   const handlePinSubmit = async () => {
     if (pin.length !== 6) return;
 
-    if (pin === storedPin) {
-      localStorage.setItem('cryptoflow_unlocked', 'true');
-      toast({
-        title: "Welcome back!",
-        description: "Access granted",
-      });
-      const returnTo = (location.state as any)?.from || '/app/home';
-      navigate(returnTo, { replace: true });
-    } else {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      setPin("");
-      setShakeError(true);
-      setTimeout(() => setShakeError(false), 600);
-      
-      if (newAttempts >= maxAttempts) {
-        toast({
-          title: "Too many attempts",
-          description: "Please try again later or reset your PIN",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Incorrect PIN",
-          description: `${maxAttempts - newAttempts} attempts remaining`,
-          variant: "destructive",
-        });
+    try {
+      let isValid = false;
+
+      // Try database verification first if user is logged in
+      if (user) {
+        try {
+          const { data: security } = await supabase
+            .from('security')
+            .select('pin_hash')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (security?.pin_hash) {
+            isValid = await bcrypt.compare(pin, security.pin_hash);
+          }
+        } catch (error) {
+          console.warn('Database PIN verification failed:', error);
+        }
       }
+
+      // If no database PIN or failed, try local verification
+      if (!isValid) {
+        isValid = await verifyLocalPin(pin);
+      }
+
+      if (isValid) {
+        localStorage.setItem('cryptoflow_unlocked', 'true');
+        toast({
+          title: "Welcome back!",
+          description: "Access granted",
+        });
+
+        // Log successful unlock if user is logged in
+        if (user) {
+          try {
+            await supabase.from('login_audit').insert({
+              user_id: user.id,
+              event: 'unlock_success',
+              device_info: { userAgent: navigator.userAgent }
+            });
+          } catch (error) {
+            console.warn('Failed to log unlock event:', error);
+          }
+        }
+
+        const returnTo = (location.state as any)?.from || '/app/home';
+        navigate(returnTo, { replace: true });
+      } else {
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        setPin("");
+        setShakeError(true);
+        setTimeout(() => setShakeError(false), 600);
+
+        // Log failed attempt if user is logged in
+        if (user) {
+          try {
+            await supabase.from('login_audit').insert({
+              user_id: user.id,
+              event: 'unlock_failed',
+              device_info: { userAgent: navigator.userAgent }
+            });
+          } catch (error) {
+            console.warn('Failed to log unlock attempt:', error);
+          }
+        }
+        
+        if (newAttempts >= maxAttempts) {
+          toast({
+            title: "Too many attempts",
+            description: "Please try again later or reset your PIN",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Incorrect PIN",
+            description: `${maxAttempts - newAttempts} attempts remaining`,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('PIN verification error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to verify PIN. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

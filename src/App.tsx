@@ -7,6 +7,7 @@ import { AuthProviderUser } from "@/hooks/useAuthUser";
 import { AuthProviderAdmin } from "@/hooks/useAuthAdmin";
 import { Web3Provider } from "@/contexts/Web3Context";
 import { UnlockGate } from "@/components/UnlockGate";
+import { useSecuritySync } from "@/hooks/useSecuritySync";
 
 // Layouts
 import UserLayout from "@/layouts/UserLayout";
@@ -91,6 +92,9 @@ import DebugFunding from "@/pages/DebugFunding";
 const queryClient = new QueryClient();
 
 function App() {
+  // Initialize security sync hook
+  useSecuritySync();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <Web3Provider>

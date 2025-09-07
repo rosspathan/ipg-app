@@ -135,13 +135,11 @@ export const useAuthLock = () => {
       });
       return false;
     }
+
+    // Allow PIN setting even without session for onboarding
     if (!user) {
-      toast({
-        title: "Not signed in",
-        description: "Please log in to set your PIN",
-        variant: "destructive"
-      });
-      return false;
+      console.log('Setting PIN without session - will be synced after login');
+      return true; // Allow local storage handling
     }
 
     try {
@@ -182,7 +180,7 @@ export const useAuthLock = () => {
     }
   }, [user, hashPin, toast]);
 
-  // Unlock with PIN
+  // Unlock with PIN (supports both database and local verification)
   const unlockWithPin = useCallback(async (pin: string): Promise<boolean> => {
     if (!user || lockState.lockedUntil && Date.now() < lockState.lockedUntil) {
       const remainingTime = Math.ceil((lockState.lockedUntil! - Date.now()) / 1000);
@@ -195,23 +193,26 @@ export const useAuthLock = () => {
     }
 
     try {
-      const { data: security } = await supabase
-        .from('security')
-        .select('pin_hash')
-        .eq('user_id', user.id)
-        .single();
+      let isValid = false;
 
-      if (!security?.pin_hash) {
-        toast({
-          title: "No PIN Set",
-          description: "Please set up your PIN first",
-          variant: "destructive"
-        });
-        navigate('/onboarding/security');
-        return false;
+      // First try database verification
+      if (user) {
+        const { data: security } = await supabase
+          .from('security')
+          .select('pin_hash')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (security?.pin_hash) {
+          isValid = await verifyPin(pin, security.pin_hash);
+        }
       }
 
-      const isValid = await verifyPin(pin, security.pin_hash);
+      // If no database PIN or failed, try local verification
+      if (!isValid) {
+        const { verifyLocalPin } = await import('@/utils/localSecurityStorage');
+        isValid = await verifyLocalPin(pin);
+      }
 
       if (isValid) {
         await saveLockState({
@@ -221,12 +222,14 @@ export const useAuthLock = () => {
           lockedUntil: null
         });
 
-        // Log successful unlock
-        await supabase.from('login_audit').insert({
-          user_id: user.id,
-          event: 'pin_success',
-          device_info: { userAgent: navigator.userAgent }
-        });
+        // Log successful unlock if user is logged in
+        if (user) {
+          await supabase.from('login_audit').insert({
+            user_id: user.id,
+            event: 'pin_success',
+            device_info: { userAgent: navigator.userAgent }
+          });
+        }
 
         return true;
       } else {
@@ -242,12 +245,14 @@ export const useAuthLock = () => {
           lockedUntil
         });
 
-        // Log failed attempt
-        await supabase.from('login_audit').insert({
-          user_id: user.id,
-          event: 'pin_failed',
-          device_info: { userAgent: navigator.userAgent }
-        });
+        // Log failed attempt if user is logged in
+        if (user) {
+          await supabase.from('login_audit').insert({
+            user_id: user.id,
+            event: 'pin_failed',
+            device_info: { userAgent: navigator.userAgent }
+          });
+        }
 
         if (newFailedAttempts >= SECURITY_FAILURE_THRESHOLD) {
           toast({

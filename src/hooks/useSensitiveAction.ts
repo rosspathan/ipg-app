@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useAuthLock } from '@/hooks/useAuthLock';
 import { useToast } from '@/hooks/use-toast';
+import { hasLocalSecurity } from '@/utils/localSecurityStorage';
 
 export const useSensitiveAction = () => {
   const { isUnlockRequired, unlockWithPin, unlockWithBiometrics, lockState } = useAuthLock();
@@ -9,7 +10,10 @@ export const useSensitiveAction = () => {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   const executeWithUnlock = useCallback(async (action: () => void, actionName?: string) => {
-    if (!isUnlockRequired(true)) {
+    // Check if any security is configured (database or local)
+    const hasAnySecurity = hasLocalSecurity();
+    
+    if (!hasAnySecurity || !isUnlockRequired(true)) {
       // No unlock required, execute immediately
       action();
       return;

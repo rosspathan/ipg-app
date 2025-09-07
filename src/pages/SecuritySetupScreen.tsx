@@ -5,16 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Eye, EyeOff, Shield } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, Shield, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthLock } from "@/hooks/useAuthLock";
 import { useSecurity } from "@/hooks/useSecurity";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { saveLocalSecurityData } from "@/utils/localSecurityStorage";
 
 const SecuritySetupScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { setPin, checkBiometricAvailability, saveLockState } = useAuthLock();
   const { updateSecurity } = useSecurity();
+  const { session, userId, status } = useAuthSession();
   
   const [pin, setPinInput] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
@@ -65,23 +68,35 @@ const SecuritySetupScreen = () => {
     }
 
     try {
-      // Set PIN securely (client-side hashed in hook)
-      const pinSuccess = await setPin(cleanPin);
-      if (!pinSuccess) return;
+      // If user is logged in, save to database
+      if (userId) {
+        // Set PIN securely (client-side hashed in hook)
+        const pinSuccess = await setPin(cleanPin);
+        if (!pinSuccess) return;
 
-      // Update security settings
-      await updateSecurity({
-        anti_phishing_code: antiPhishingCode.trim()
-      });
+        // Update security settings
+        await updateSecurity({
+          anti_phishing_code: antiPhishingCode.trim()
+        });
 
-      // Save biometric preference to lock state
-      await saveLockState({
-        biometricEnabled: biometricEnabled && biometricAvailable
-      });
+        // Save biometric preference to lock state
+        await saveLockState({
+          biometricEnabled: biometricEnabled && biometricAvailable
+        });
+      } else {
+        // Save locally and sync later
+        await saveLocalSecurityData({
+          pin: cleanPin,
+          biometric_enabled: biometricEnabled && biometricAvailable,
+          anti_phishing_code: antiPhishingCode.trim()
+        });
+      }
 
       toast({
         title: "Security set up",
-        description: "Your wallet is now secure",
+        description: userId 
+          ? "Your wallet is now secure" 
+          : "Your PIN is saved locally and will sync after login",
       });
 
       setTimeout(() => {
@@ -131,6 +146,15 @@ const SecuritySetupScreen = () => {
           <p className="text-sm text-muted-foreground">
             Set up additional security measures to protect your assets.
           </p>
+          
+          {!userId && status === 'ready' && (
+            <div className="mt-4 p-3 bg-muted rounded-lg flex items-start gap-2">
+              <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-muted-foreground text-left">
+                You're not signed in yet. Your PIN will be saved locally and synced after login.
+              </p>
+            </div>
+          )}
         </div>
 
         <Card className="bg-gradient-card shadow-card border-0">

@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { supabase } from '@/integrations/supabase/client';
+import { hasLocalSecurity } from '@/utils/localSecurityStorage';
 
 interface UnlockGateProps {
   children: React.ReactNode;
@@ -12,44 +14,66 @@ export const UnlockGate = ({ children }: UnlockGateProps) => {
   const location = useLocation();
 
   useEffect(() => {
-    if (!user) return;
+    const checkSecurity = async () => {
+      if (!user) return;
 
-    // Skip for auth and onboarding routes
-    if (location.pathname.startsWith('/auth') || 
-        location.pathname.startsWith('/onboarding') ||
-        location.pathname === '/recovery/verify') {
-      return;
-    }
+      // Skip for auth and onboarding routes
+      if (location.pathname.startsWith('/auth') || 
+          location.pathname.startsWith('/onboarding') ||
+          location.pathname === '/recovery/verify') {
+        return;
+      }
 
-    // For now, just check if user has completed security setup
-    const hasCompletedSetup = localStorage.getItem('cryptoflow_setup_complete');
-    
-    if (!hasCompletedSetup) {
-      navigate('/onboarding/security', { 
-        state: { from: location.pathname },
-        replace: true 
-      });
-      return;
-    }
+      try {
+        // Check both database and local security
+        let hasPinConfigured = false;
 
-    // Simple PIN check - if no PIN is set, redirect to setup
-    const hasPinSet = localStorage.getItem('cryptoflow_pin');
-    if (!hasPinSet) {
-      navigate('/onboarding/security', { 
-        state: { from: location.pathname },
-        replace: true 
-      });
-      return;
-    }
+        // Check database security if user is logged in
+        if (user) {
+          const { data: security } = await supabase
+            .from('security')
+            .select('pin_set')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-    // Check if we need to show lock screen
-    const isUnlocked = localStorage.getItem('cryptoflow_unlocked') === 'true';
-    if (!isUnlocked) {
-      navigate('/auth/lock', { 
-        state: { from: location.pathname },
-        replace: true 
-      });
-    }
+          hasPinConfigured = security?.pin_set === true;
+        }
+
+        // Also check local security
+        if (!hasPinConfigured) {
+          hasPinConfigured = hasLocalSecurity();
+        }
+
+        // If no PIN is configured, redirect to security setup
+        if (!hasPinConfigured) {
+          navigate('/onboarding/security', { 
+            state: { from: location.pathname },
+            replace: true 
+          });
+          return;
+        }
+
+        // Check if we need to show lock screen
+        const isUnlocked = localStorage.getItem('cryptoflow_unlocked') === 'true';
+        if (!isUnlocked) {
+          navigate('/auth/lock', { 
+            state: { from: location.pathname },
+            replace: true 
+          });
+        }
+      } catch (error) {
+        console.error('Error checking security status:', error);
+        // Fallback to local security check
+        if (!hasLocalSecurity()) {
+          navigate('/onboarding/security', { 
+            state: { from: location.pathname },
+            replace: true 
+          });
+        }
+      }
+    };
+
+    checkSecurity();
   }, [user, navigate, location]);
 
   return <>{children}</>;
