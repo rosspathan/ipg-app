@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,17 +7,27 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Eye, EyeOff, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthLock } from "@/hooks/useAuthLock";
+import { useSecurity } from "@/hooks/useSecurity";
 
 const SecuritySetupScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [pin, setPin] = useState("");
+  const { setPin, checkBiometricAvailability, saveLockState } = useAuthLock();
+  const { updateSecurity } = useSecurity();
+  
+  const [pin, setPinInput] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [showPin, setShowPin] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [antiPhishingCode, setAntiPhishingCode] = useState("");
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
 
-  const handleComplete = () => {
+  useEffect(() => {
+    checkBiometricAvailability().then(setBiometricAvailable);
+  }, [checkBiometricAvailability]);
+
+  const handleComplete = async () => {
     if (pin.length !== 6) {
       toast({
         title: "Invalid PIN",
@@ -45,25 +55,42 @@ const SecuritySetupScreen = () => {
       return;
     }
 
-    // Save security settings
-    localStorage.setItem("cryptoflow_pin", pin);
-    localStorage.setItem("cryptoflow_biometric", biometricEnabled.toString());
-    localStorage.setItem("cryptoflow_antiphishing", antiPhishingCode);
-    localStorage.setItem("cryptoflow_setup_complete", "true");
+    try {
+      // Set PIN securely
+      const pinSuccess = await setPin(pin);
+      if (!pinSuccess) return;
 
-    toast({
-      title: "Security Setup Complete!",
-      description: "Your wallet is now secure",
-    });
+      // Update security settings
+      await updateSecurity({
+        anti_phishing_code: antiPhishingCode
+      });
 
-    setTimeout(() => {
-      navigate("/app-lock");
-    }, 1500);
+      // Save biometric preference to lock state
+      await saveLockState({
+        biometricEnabled: biometricEnabled && biometricAvailable
+      });
+
+      toast({
+        title: "Security Setup Complete!",
+        description: "Your wallet is now secure",
+      });
+
+      setTimeout(() => {
+        navigate("/auth/lock");
+      }, 1500);
+    } catch (error) {
+      console.error('Security setup failed:', error);
+      toast({
+        title: "Setup Failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePinChange = (value: string) => {
     if (value.length <= 6 && /^\d*$/.test(value)) {
-      setPin(value);
+      setPinInput(value);
     }
   };
 
@@ -146,13 +173,17 @@ const SecuritySetupScreen = () => {
               <div className="space-y-1">
                 <Label htmlFor="biometric">Enable Biometric Auth</Label>
                 <p className="text-xs text-muted-foreground">
-                  Use FaceID/Fingerprint for quick access
+                  {biometricAvailable 
+                    ? "Use FaceID/Fingerprint for quick access"
+                    : "Biometric authentication not available on this device"
+                  }
                 </p>
               </div>
               <Switch
                 id="biometric"
                 checked={biometricEnabled}
                 onCheckedChange={setBiometricEnabled}
+                disabled={!biometricAvailable}
               />
             </div>
           </CardContent>

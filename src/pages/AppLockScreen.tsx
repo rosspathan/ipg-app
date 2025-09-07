@@ -1,75 +1,59 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router-dom";
-import { Shield, Fingerprint } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Shield, Fingerprint, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthLock } from "@/hooks/useAuthLock";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import cryptoLogo from "@/assets/crypto-logo.jpg";
 
 const AppLockScreen = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const { user } = useAuthUser();
+  const { 
+    lockState, 
+    unlockWithPin, 
+    unlockWithBiometrics, 
+    checkBiometricAvailability 
+  } = useAuthLock();
+  
   const [pin, setPin] = useState("");
-  const [storedPin, setStoredPin] = useState("");
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const maxAttempts = 3;
+  const [shakeError, setShakeError] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
 
   useEffect(() => {
-    const savedPin = localStorage.getItem("cryptoflow_pin");
-    const savedBiometric = localStorage.getItem("cryptoflow_biometric") === "true";
-    
-    if (!savedPin) {
-      // No PIN set, redirect to setup
-      navigate("/security-setup");
+    if (!user) {
+      navigate('/auth/login');
       return;
     }
-    
-    setStoredPin(savedPin);
-    setBiometricEnabled(savedBiometric);
-  }, [navigate]);
 
-  const handlePinSubmit = () => {
-    if (pin === storedPin) {
-      toast({
-        title: "Welcome back!",
-        description: "Access granted",
-      });
-      navigate("/app/wallet");
+    // Check biometric availability
+    checkBiometricAvailability().then(setBiometricAvailable);
+  }, [user, navigate, checkBiometricAvailability]);
+
+  const handlePinSubmit = async () => {
+    if (pin.length !== 6) return;
+
+    const success = await unlockWithPin(pin);
+    if (success) {
+      const returnTo = (location.state as any)?.from || '/app/home';
+      navigate(returnTo, { replace: true });
     } else {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
       setPin("");
-      
-      if (newAttempts >= maxAttempts) {
-        toast({
-          title: "Too many attempts",
-          description: "Please try again later",
-          variant: "destructive",
-        });
-        // In a real app, implement lockout logic
-      } else {
-        toast({
-          title: "Incorrect PIN",
-          description: `${maxAttempts - newAttempts} attempts remaining`,
-          variant: "destructive",
-        });
-      }
+      setShakeError(true);
+      setTimeout(() => setShakeError(false), 600);
     }
   };
 
-  const handleBiometricAuth = () => {
-    // Simulate biometric authentication
-    toast({
-      title: "Biometric authentication",
-      description: "Feature not available in demo",
-    });
-    
-    // In real implementation, use biometric APIs
-    setTimeout(() => {
-      navigate("/app/wallet");
-    }, 1000);
+  const handleBiometricAuth = async () => {
+    const success = await unlockWithBiometrics();
+    if (success) {
+      const returnTo = (location.state as any)?.from || '/app/home';
+      navigate(returnTo, { replace: true });
+    }
   };
 
   const handlePinChange = (value: string) => {
@@ -78,48 +62,47 @@ const AppLockScreen = () => {
       
       // Auto-submit when 6 digits entered
       if (value.length === 6) {
-        setTimeout(() => {
-          if (value === storedPin) {
-            toast({
-              title: "Welcome back!",
-              description: "Access granted",
-            });
-            navigate("/app/wallet");
-          } else {
-            const newAttempts = attempts + 1;
-            setAttempts(newAttempts);
-            setPin("");
-            
-            if (newAttempts >= maxAttempts) {
-              toast({
-                title: "Too many attempts",
-                description: "Please try again later",
-                variant: "destructive",
-              });
-            } else {
-              toast({
-                title: "Incorrect PIN",
-                description: `${maxAttempts - newAttempts} attempts remaining`,
-                variant: "destructive",
-              });
-            }
-          }
-        }, 100);
+        setTimeout(handlePinSubmit, 100);
       }
     }
   };
 
-  if (attempts >= maxAttempts) {
+  const handleKeypadPress = (value: string | number) => {
+    if (value === "⌫") {
+      setPin(pin.slice(0, -1));
+    } else if (typeof value === "number" && pin.length < 6) {
+      const newPin = pin + value.toString();
+      setPin(newPin);
+      
+      if (newPin.length === 6) {
+        setTimeout(handlePinSubmit, 100);
+      }
+    }
+  };
+
+  // Show cooldown if locked
+  if (lockState.lockedUntil && Date.now() < lockState.lockedUntil) {
+    const remainingTime = Math.ceil((lockState.lockedUntil - Date.now()) / 1000);
+    
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
         <div className="text-center space-y-4 max-w-sm">
           <Shield className="w-16 h-16 text-destructive mx-auto" />
           <h1 className="text-xl font-semibold text-foreground">
-            Account Locked
+            Account Temporarily Locked
           </h1>
           <p className="text-sm text-muted-foreground">
-            Too many incorrect attempts. Please try again later.
+            Too many incorrect attempts. Please wait {remainingTime} seconds.
           </p>
+          {lockState.failedAttempts >= 10 && (
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/recovery/verify')}
+              className="mt-4"
+            >
+              Reset PIN with Recovery Phrase
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -142,18 +125,18 @@ const AppLockScreen = () => {
           </p>
         </div>
 
-        <Card className="w-full bg-gradient-card shadow-card border-0">
+        <Card className={`w-full bg-gradient-card shadow-card border-0 ${shakeError ? 'animate-pulse' : ''}`}>
           <CardContent className="p-6 space-y-6">
             <div className="space-y-4">
               <div className="text-center">
                 <h2 className="text-lg font-semibold mb-2">Enter PIN</h2>
-                <div className="flex justify-center space-x-2 mb-4">
+                <div className={`flex justify-center space-x-3 mb-4 transition-transform duration-150 ${shakeError ? 'animate-bounce' : ''}`}>
                   {Array.from({ length: 6 }, (_, i) => (
                     <div
                       key={i}
-                      className={`w-3 h-3 rounded-full border-2 ${
+                      className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
                         i < pin.length 
-                          ? "bg-primary border-primary" 
+                          ? "bg-primary border-primary scale-110" 
                           : "border-muted-foreground/30"
                       }`}
                     />
@@ -161,30 +144,17 @@ const AppLockScreen = () => {
                 </div>
               </div>
 
-              <Input
-                type="password"
-                value={pin}
-                onChange={(e) => handlePinChange(e.target.value)}
-                className="text-center text-2xl tracking-widest opacity-0 absolute -left-full"
-                autoFocus
-                maxLength={6}
-              />
-
-              {/* Number pad could be implemented here for better mobile UX */}
+              {/* Number pad */}
               <div className="grid grid-cols-3 gap-3">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, "", 0, "⌫"].map((num, i) => (
                   <Button
                     key={i}
                     variant={num === "" ? "ghost" : "outline"}
-                    className="h-12 text-lg"
+                    className={`h-12 text-lg transition-all duration-150 ${
+                      num === "" ? "cursor-default" : "hover:scale-105 active:scale-95"
+                    }`}
                     disabled={num === ""}
-                    onClick={() => {
-                      if (num === "⌫") {
-                        setPin(pin.slice(0, -1));
-                      } else if (typeof num === "number" && pin.length < 6) {
-                        setPin(pin + num.toString());
-                      }
-                    }}
+                    onClick={() => handleKeypadPress(num)}
                   >
                     {num}
                   </Button>
@@ -192,7 +162,7 @@ const AppLockScreen = () => {
               </div>
             </div>
 
-            {biometricEnabled && (
+            {lockState.biometricEnabled && biometricAvailable && (
               <div className="pt-4 border-t border-border">
                 <Button
                   variant="outline"
@@ -205,14 +175,30 @@ const AppLockScreen = () => {
                 </Button>
               </div>
             )}
+
+            <div className="pt-2 text-center">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/recovery/verify')}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Forgot PIN?
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {attempts > 0 && (
+        {lockState.failedAttempts > 0 && !lockState.lockedUntil && (
           <div className="text-center">
             <p className="text-sm text-destructive">
-              {attempts}/{maxAttempts} incorrect attempts
+              {lockState.failedAttempts}/5 incorrect attempts
             </p>
+            {lockState.failedAttempts >= 3 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Account will be temporarily locked after 5 failed attempts
+              </p>
+            )}
           </div>
         )}
       </div>

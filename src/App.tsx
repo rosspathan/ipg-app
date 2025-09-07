@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProviderUser } from "@/hooks/useAuthUser";
 import { AuthProviderAdmin } from "@/hooks/useAuthAdmin";
 import { Web3Provider } from "@/contexts/Web3Context";
+import { UnlockGate } from "@/components/UnlockGate";
 
 // Layouts
 import UserLayout from "@/layouts/UserLayout";
@@ -31,6 +32,7 @@ import WalletSelectionScreen from "./pages/WalletSelectionScreen";
 import CreateWalletScreen from "./pages/CreateWalletScreen";
 import ImportWalletScreen from "./pages/ImportWalletScreen";
 import SecuritySetupScreen from "./pages/SecuritySetupScreen";
+import RecoveryVerifyScreen from "./pages/RecoveryVerifyScreen";
 
 // User App Pages
 import AppHomeScreen from "./pages/AppHomeScreen";
@@ -96,7 +98,8 @@ function App() {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
+            <UnlockGate>
+              <Routes>
               {/* Landing & Splash */}
               <Route path="/" element={<Navigate to="/splash" replace />} />
               <Route path="/splash" element={<SplashScreen />} />
@@ -111,6 +114,7 @@ function App() {
               <Route path="/onboarding/import-wallet" element={<ImportWalletScreen />} />
               <Route path="/onboarding/security" element={<SecuritySetupScreen />} />
               <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
+              <Route path="/recovery/verify" element={<RecoveryVerifyScreen />} />
 
               {/* Legacy Onboarding Redirects */}
               <Route path="/create-wallet" element={<Navigate to="/onboarding/create-wallet" replace />} />
@@ -233,6 +237,7 @@ function App() {
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </UnlockGate>
           </BrowserRouter>
         </TooltipProvider>
       </Web3Provider>

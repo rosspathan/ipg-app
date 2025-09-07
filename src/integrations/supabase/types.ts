@@ -838,6 +838,7 @@ export type Database = {
         Row: {
           agent: string | null
           created_at: string | null
+          device_info: Json | null
           event: string
           id: string
           ip: string | null
@@ -846,6 +847,7 @@ export type Database = {
         Insert: {
           agent?: string | null
           created_at?: string | null
+          device_info?: Json | null
           event: string
           id?: string
           ip?: string | null
@@ -854,6 +856,7 @@ export type Database = {
         Update: {
           agent?: string | null
           created_at?: string | null
+          device_info?: Json | null
           event?: string
           id?: string
           ip?: string | null
@@ -1243,8 +1246,14 @@ export type Database = {
       security: {
         Row: {
           anti_phishing_code: string | null
+          biometric_enabled: boolean | null
           created_at: string | null
+          failed_attempts: number | null
           has_2fa: boolean | null
+          last_unlock_at: string | null
+          locked_until: string | null
+          pin_hash: string | null
+          pin_salt: string | null
           pin_set: boolean | null
           spend_daily_limit: number | null
           user_id: string
@@ -1252,8 +1261,14 @@ export type Database = {
         }
         Insert: {
           anti_phishing_code?: string | null
+          biometric_enabled?: boolean | null
           created_at?: string | null
+          failed_attempts?: number | null
           has_2fa?: boolean | null
+          last_unlock_at?: string | null
+          locked_until?: string | null
+          pin_hash?: string | null
+          pin_salt?: string | null
           pin_set?: boolean | null
           spend_daily_limit?: number | null
           user_id: string
@@ -1261,8 +1276,14 @@ export type Database = {
         }
         Update: {
           anti_phishing_code?: string | null
+          biometric_enabled?: boolean | null
           created_at?: string | null
+          failed_attempts?: number | null
           has_2fa?: boolean | null
+          last_unlock_at?: string | null
+          locked_until?: string | null
+          pin_hash?: string | null
+          pin_salt?: string | null
           pin_set?: boolean | null
           spend_daily_limit?: number | null
           user_id?: string
@@ -1275,6 +1296,7 @@ export type Database = {
           created_at: string | null
           display_currency: string | null
           language: string | null
+          require_unlock_on_actions: boolean | null
           session_lock_minutes: number | null
           theme: string | null
           updated_at: string | null
@@ -1284,6 +1306,7 @@ export type Database = {
           created_at?: string | null
           display_currency?: string | null
           language?: string | null
+          require_unlock_on_actions?: boolean | null
           session_lock_minutes?: number | null
           theme?: string | null
           updated_at?: string | null
@@ -1293,6 +1316,7 @@ export type Database = {
           created_at?: string | null
           display_currency?: string | null
           language?: string | null
+          require_unlock_on_actions?: boolean | null
           session_lock_minutes?: number | null
           theme?: string | null
           updated_at?: string | null

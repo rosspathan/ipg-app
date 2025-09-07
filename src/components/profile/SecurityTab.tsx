@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, Shield, Smartphone, Eye, Clock } from "lucide-react";
 import { useSecurity } from "@/hooks/useSecurity";
+import { useAuthLock } from "@/hooks/useAuthLock";
 import { useToast } from "@/hooks/use-toast";
 
 export const SecurityTab = () => {
