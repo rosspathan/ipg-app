@@ -52,41 +52,58 @@ const EmailVerificationScreen = () => {
       // Sign the message with the wallet
       const signature = await signMessage(verificationMessage);
       
+      // Use a consistent password based on wallet address
+      const walletPassword = `wallet_${wallet.address.toLowerCase()}`;
+      
       // Send verification email via Supabase Auth
       const { error } = await supabase.auth.signUp({
         email: email,
-        password: `wallet_${wallet.address}_${Date.now()}`, // Generate a secure password
+        password: walletPassword,
         options: {
           emailRedirectTo: `${window.location.origin}/email-verified`,
           data: {
             wallet_address: wallet.address,
             signature: signature,
             verification_message: verificationMessage,
+            full_name: `Wallet User ${wallet.address.slice(-6)}`
           }
         }
       });
 
       if (error) {
         if (error.message.includes('already registered')) {
-          // Try to sign in instead
-          const { error: signInError } = await supabase.auth.signInWithPassword({
+          // If user exists, try to resend confirmation
+          const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
             email: email,
-            password: `wallet_${wallet.address}_${Date.now()}`,
+            options: {
+              emailRedirectTo: `${window.location.origin}/email-verified`
+            }
           });
           
-          if (signInError) {
-            throw new Error('Email already registered with different wallet');
+          if (resendError) {
+            console.error('Resend error:', resendError);
+            toast({
+              title: "Account Exists",
+              description: "This email is already registered. Please check your email for the verification link.",
+            });
+          } else {
+            toast({
+              title: "Verification Resent!",
+              description: "Check your email for the verification link",
+            });
           }
         } else {
           throw error;
         }
+      } else {
+        toast({
+          title: "Verification Sent!",
+          description: "Check your email for the verification link",
+        });
       }
 
       setVerificationSent(true);
-      toast({
-        title: "Verification Sent!",
-        description: "Check your email for the verification link",
-      });
 
     } catch (error: any) {
       console.error('Verification error:', error);
@@ -109,6 +126,19 @@ const EmailVerificationScreen = () => {
     setIsVerifying(true);
     
     try {
+      // First check current session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user && session.user.email_confirmed_at) {
+        toast({
+          title: "Email Verified!",
+          description: "Welcome to IPG i-SMART",
+        });
+        navigate("/email-verified");
+        return;
+      }
+
+      // If no confirmed session, try to get user info
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user && user.email_confirmed_at) {
@@ -116,7 +146,7 @@ const EmailVerificationScreen = () => {
           title: "Email Verified!",
           description: "Welcome to IPG i-SMART",
         });
-        navigate("/app/wallet");
+        navigate("/email-verified");
       } else {
         toast({
           title: "Not Verified Yet",
@@ -125,6 +155,7 @@ const EmailVerificationScreen = () => {
         });
       }
     } catch (error) {
+      console.error('Verification check error:', error);
       toast({
         title: "Error",
         description: "Failed to check verification status",
@@ -242,7 +273,7 @@ const EmailVerificationScreen = () => {
                 disabled={isVerifying}
                 className="w-full"
               >
-                {isVerifying ? "Checking..." : "I've Verified My Email"}
+                {isVerifying ? "Checking..." : "I've Clicked the Email Link"}
               </Button>
               
               <Button 
@@ -253,6 +284,12 @@ const EmailVerificationScreen = () => {
               >
                 Resend Verification Email
               </Button>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-800 text-center">
+                  ℹ️ You must click the verification link in your email first, then come back and click "I've Clicked the Email Link"
+                </p>
+              </div>
             </div>
           </div>
         )}
