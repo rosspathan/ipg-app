@@ -112,6 +112,10 @@ const SecuritySetupScreen = () => {
         requireOnActions: true,
         sessionLockMinutes: 5
       }));
+      // Mark session unlocked flag used by UnlockGate
+      localStorage.setItem('cryptoflow_unlocked', 'true');
+      // Persist biometric preference locally for lock screen usage
+      localStorage.setItem('cryptoflow_biometric', (biometricEnabled && biometricAvailable) ? 'true' : 'false');
 
       toast({
         title: "Security configured",

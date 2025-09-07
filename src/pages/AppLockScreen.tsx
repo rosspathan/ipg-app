@@ -25,11 +25,6 @@ const AppLockScreen = () => {
 
   useEffect(() => {
     const checkSecurity = async () => {
-      if (!user) {
-        navigate('/auth/login');
-        return;
-      }
-
       try {
         let hasPinConfigured = false;
         let biometricSetting = false;
