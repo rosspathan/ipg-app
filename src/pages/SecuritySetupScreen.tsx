@@ -5,121 +5,145 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Eye, EyeOff, Shield, Info } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, Shield, Info, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuthLock } from "@/hooks/useAuthLock";
-import { useSecurity } from "@/hooks/useSecurity";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { saveLocalSecurityData } from "@/utils/localSecurityStorage";
+import { supabase } from "@/integrations/supabase/client";
+import * as bcrypt from 'bcryptjs';
+
+type Phase = 'idle' | 'valid' | 'submitting' | 'done' | 'error';
 
 const SecuritySetupScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { setPin, checkBiometricAvailability, saveLockState } = useAuthLock();
-  const { updateSecurity } = useSecurity();
   const { session, userId, status } = useAuthSession();
   
-  const [pin, setPinInput] = useState("");
+  const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [showPin, setShowPin] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [antiPhishingCode, setAntiPhishingCode] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
 
-  const clean = (v: string) => v.replace(/\s+/g, '');
-  const isSixDigit = (v: string) => /^\d{6}$/.test(v);
-  const pinValid = isSixDigit(pin);
+  const isSixDigit = /^\d{6}$/.test(pin);
   const confirmStarted = confirmPin.length > 0;
   const confirmMatches = confirmPin === pin;
+  const isValid = isSixDigit && confirmMatches && antiPhishingCode.trim().length > 0;
 
+  // Check biometric availability
   useEffect(() => {
-    checkBiometricAvailability().then(setBiometricAvailable);
-  }, [checkBiometricAvailability]);
-
-  const handleComplete = async () => {
-    const cleanPin = clean(pin);
-    const cleanConfirm = clean(confirmPin);
-
-    if (!isSixDigit(cleanPin)) {
-      toast({
-        title: "Invalid PIN",
-        description: "Enter exactly 6 digits (0-9)",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (cleanPin !== cleanConfirm) {
-      toast({
-        title: "PIN Mismatch",
-        description: "PINs do not match",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!antiPhishingCode.trim()) {
-      toast({
-        title: "Anti-Phishing Code Required",
-        description: "Please enter an anti-phishing code",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      // If user is logged in, save to database
-      if (userId) {
-        // Set PIN securely (client-side hashed in hook)
-        const pinSuccess = await setPin(cleanPin);
-        if (!pinSuccess) return;
-
-        // Update security settings
-        await updateSecurity({
-          anti_phishing_code: antiPhishingCode.trim()
-        });
-
-        // Save biometric preference to lock state
-        await saveLockState({
-          biometricEnabled: biometricEnabled && biometricAvailable
-        });
+    const checkBiometrics = async () => {
+      if (typeof window !== 'undefined' && window.PublicKeyCredential) {
+        try {
+          const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+          setBiometricAvailable(available);
+        } catch (error) {
+          setBiometricAvailable(false);
+        }
       } else {
-        // Save locally and sync later
+        setBiometricAvailable(false);
+      }
+    };
+    checkBiometrics();
+  }, []);
+
+  // Update phase based on form validity
+  useEffect(() => {
+    if (phase === 'submitting' || phase === 'done') return;
+    setPhase(isValid ? 'valid' : 'idle');
+  }, [pin, confirmPin, antiPhishingCode, isValid, phase]);
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault?.();
+    if (!isValid || phase === 'submitting') return;
+    
+    setPhase('submitting');
+    
+    try {
+      // Hash the PIN client-side
+      const salt = await bcrypt.genSalt(12);
+      const hash = await bcrypt.hash(pin, salt);
+      
+      // Check if user has session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user?.id) {
+        // DB path - save to security table
+        const { error: securityError } = await supabase
+          .from('security')
+          .upsert({
+            user_id: session.user.id,
+            pin_hash: hash,
+            pin_salt: salt,
+            pin_set: true,
+            biometric_enabled: biometricEnabled && biometricAvailable,
+            anti_phishing_code: antiPhishingCode.trim() || null,
+          }, { onConflict: 'user_id' });
+
+        if (securityError) throw securityError;
+
+        // Ensure base profile exists
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: session.user.id,
+            email: session.user.email,
+          }, { onConflict: 'user_id' });
+
+        if (profileError) console.warn('Profile upsert failed:', profileError);
+      } else {
+        // Local-only path - save locally and sync later
         await saveLocalSecurityData({
-          pin: cleanPin,
+          pin,
           biometric_enabled: biometricEnabled && biometricAvailable,
           anti_phishing_code: antiPhishingCode.trim()
         });
       }
 
+      // Mark app as unlocked
+      localStorage.setItem('cryptoflow_lock_state', JSON.stringify({
+        isUnlocked: true,
+        lastUnlockAt: Date.now(),
+        failedAttempts: 0,
+        lockedUntil: null,
+        biometricEnabled: biometricEnabled && biometricAvailable,
+        requireOnActions: true,
+        sessionLockMinutes: 5
+      }));
+
       toast({
-        title: "Security set up",
-        description: userId 
+        title: "Security configured",
+        description: session?.user?.id 
           ? "Your wallet is now secure" 
           : "Your PIN is saved locally and will sync after login",
       });
 
-      setTimeout(() => {
-        navigate("/app/home");
-      }, 800);
+      setPhase('done');
+      
+      // Navigate to home
+      navigate('/app/home', { replace: true });
+      
     } catch (error) {
       console.error('Security setup failed:', error);
       toast({
-        title: "Setup Failed",
-        description: "Please try again",
+        title: "Setup Failed", 
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
+      setPhase('error');
     }
   };
 
 
   const handlePinChange = (value: string) => {
-    const cleaned = clean(value).replace(/[^0-9]/g, '').slice(0, 6);
-    setPinInput(cleaned);
+    const cleaned = value.replace(/\D/g, '').slice(0, 6);
+    setPin(cleaned);
   };
 
   const handleConfirmPinChange = (value: string) => {
-    const cleaned = clean(value).replace(/[^0-9]/g, '').slice(0, 6);
+    const cleaned = value.replace(/\D/g, '').slice(0, 6);
     setConfirmPin(cleaned);
   };
 
@@ -175,7 +199,7 @@ const SecuritySetupScreen = () => {
                   onChange={(e) => handlePinChange(e.target.value)}
                   placeholder="••••••"
                   className="pr-10 text-center text-lg tracking-widest"
-                  aria-invalid={pin.length > 0 && !pinValid}
+                  aria-invalid={pin.length > 0 && !isSixDigit}
                 />
                 <Button
                   type="button"
@@ -187,7 +211,7 @@ const SecuritySetupScreen = () => {
                   {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
               </div>
-              {pin.length > 0 && !pinValid && (
+              {pin.length > 0 && !isSixDigit && (
                 <p className="text-xs text-destructive">Enter 6 digits</p>
               )}
             </div>
@@ -259,11 +283,12 @@ const SecuritySetupScreen = () => {
         <Button 
           variant="default" 
           size="lg" 
-          onClick={handleComplete}
+          onClick={handleSubmit}
           className="w-full"
-          disabled={!pinValid || !confirmMatches || !antiPhishingCode.trim()}
+          disabled={phase !== 'valid'}
         >
-          Complete Setup
+          {phase === 'submitting' && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {phase === 'submitting' ? 'Saving...' : 'Complete Setup'}
         </Button>
       </div>
     </div>
