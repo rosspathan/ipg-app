@@ -115,19 +115,13 @@ const SecuritySetupScreen = () => {
 
       toast({
         title: "Security configured",
-        description: session?.user?.id 
-          ? "Your wallet is now secure" 
-          : "Your PIN is saved. Please log in to access your dashboard.",
+        description: "Your wallet is now secure. Welcome to the dashboard!",
       });
 
       setPhase('done');
       
-      // Navigate based on authentication status
-      if (session?.user?.id) {
-        navigate('/app/home', { replace: true });
-      } else {
-        navigate('/auth/login', { replace: true });
-      }
+      // Always navigate to dashboard for web3 onboarding
+      navigate('/app/home', { replace: true });
       
     } catch (error) {
       console.error('Security setup failed:', error);
