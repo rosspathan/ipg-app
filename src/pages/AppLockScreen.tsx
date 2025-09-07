@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Shield, Fingerprint, Eye } from "lucide-react";
+import { Shield, Fingerprint } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuthLock } from "@/hooks/useAuthLock";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import cryptoLogo from "@/assets/crypto-logo.jpg";
 
@@ -13,16 +12,13 @@ const AppLockScreen = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuthUser();
-  const { 
-    lockState, 
-    unlockWithPin, 
-    unlockWithBiometrics, 
-    checkBiometricAvailability 
-  } = useAuthLock();
   
   const [pin, setPin] = useState("");
+  const [storedPin, setStoredPin] = useState("");
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [attempts, setAttempts] = useState(0);
   const [shakeError, setShakeError] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const maxAttempts = 5;
 
   useEffect(() => {
     if (!user) {
@@ -30,30 +26,63 @@ const AppLockScreen = () => {
       return;
     }
 
-    // Check biometric availability
-    checkBiometricAvailability().then(setBiometricAvailable);
-  }, [user, navigate, checkBiometricAvailability]);
+    const savedPin = localStorage.getItem("cryptoflow_pin");
+    const savedBiometric = localStorage.getItem("cryptoflow_biometric") === "true";
+    
+    if (!savedPin) {
+      navigate("/onboarding/security");
+      return;
+    }
+    
+    setStoredPin(savedPin);
+    setBiometricEnabled(savedBiometric);
+  }, [user, navigate]);
 
   const handlePinSubmit = async () => {
     if (pin.length !== 6) return;
 
-    const success = await unlockWithPin(pin);
-    if (success) {
+    if (pin === storedPin) {
+      localStorage.setItem('cryptoflow_unlocked', 'true');
+      toast({
+        title: "Welcome back!",
+        description: "Access granted",
+      });
       const returnTo = (location.state as any)?.from || '/app/home';
       navigate(returnTo, { replace: true });
     } else {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
       setPin("");
       setShakeError(true);
       setTimeout(() => setShakeError(false), 600);
+      
+      if (newAttempts >= maxAttempts) {
+        toast({
+          title: "Too many attempts",
+          description: "Please try again later or reset your PIN",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Incorrect PIN",
+          description: `${maxAttempts - newAttempts} attempts remaining`,
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const handleBiometricAuth = async () => {
-    const success = await unlockWithBiometrics();
-    if (success) {
+    toast({
+      title: "Biometric authentication",
+      description: "Feature simulated for web preview",
+    });
+    
+    setTimeout(() => {
+      localStorage.setItem('cryptoflow_unlocked', 'true');
       const returnTo = (location.state as any)?.from || '/app/home';
       navigate(returnTo, { replace: true });
-    }
+    }, 1000);
   };
 
   const handlePinChange = (value: string) => {
@@ -80,10 +109,8 @@ const AppLockScreen = () => {
     }
   };
 
-  // Show cooldown if locked
-  if (lockState.lockedUntil && Date.now() < lockState.lockedUntil) {
-    const remainingTime = Math.ceil((lockState.lockedUntil - Date.now()) / 1000);
-    
+  // Show cooldown if too many attempts
+  if (attempts >= maxAttempts) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">
         <div className="text-center space-y-4 max-w-sm">
@@ -92,17 +119,15 @@ const AppLockScreen = () => {
             Account Temporarily Locked
           </h1>
           <p className="text-sm text-muted-foreground">
-            Too many incorrect attempts. Please wait {remainingTime} seconds.
+            Too many incorrect attempts. Please wait or reset your PIN.
           </p>
-          {lockState.failedAttempts >= 10 && (
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/recovery/verify')}
-              className="mt-4"
-            >
-              Reset PIN with Recovery Phrase
-            </Button>
-          )}
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/recovery/verify')}
+            className="mt-4"
+          >
+            Reset PIN with Recovery Phrase
+          </Button>
         </div>
       </div>
     );
@@ -162,7 +187,7 @@ const AppLockScreen = () => {
               </div>
             </div>
 
-            {lockState.biometricEnabled && biometricAvailable && (
+            {biometricEnabled && (
               <div className="pt-4 border-t border-border">
                 <Button
                   variant="outline"
@@ -189,12 +214,12 @@ const AppLockScreen = () => {
           </CardContent>
         </Card>
 
-        {lockState.failedAttempts > 0 && !lockState.lockedUntil && (
+        {attempts > 0 && attempts < maxAttempts && (
           <div className="text-center">
             <p className="text-sm text-destructive">
-              {lockState.failedAttempts}/5 incorrect attempts
+              {attempts}/5 incorrect attempts
             </p>
-            {lockState.failedAttempts >= 3 && (
+            {attempts >= 3 && (
               <p className="text-xs text-muted-foreground mt-1">
                 Account will be temporarily locked after 5 failed attempts
               </p>

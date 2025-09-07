@@ -98,8 +98,7 @@ function App() {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <UnlockGate>
-              <Routes>
+            <Routes>
               {/* Landing & Splash */}
               <Route path="/" element={<Navigate to="/splash" replace />} />
               <Route path="/splash" element={<SplashScreen />} />
@@ -137,7 +136,9 @@ function App() {
               <Route path="/app/*" element={
                 <AuthProviderUser>
                   <UserRoute>
-                    <UserLayout />
+                    <UnlockGate>
+                      <UserLayout />
+                    </UnlockGate>
                   </UserRoute>
                 </AuthProviderUser>
               }>
@@ -237,7 +238,6 @@ function App() {
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            </UnlockGate>
           </BrowserRouter>
         </TooltipProvider>
       </Web3Provider>

@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuthLock } from '@/hooks/useAuthLock';
 import { useAuthUser } from '@/hooks/useAuthUser';
 
 interface UnlockGateProps {
@@ -9,7 +8,6 @@ interface UnlockGateProps {
 
 export const UnlockGate = ({ children }: UnlockGateProps) => {
   const { user } = useAuthUser();
-  const { lockState, isUnlockRequired } = useAuthLock();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,27 +21,36 @@ export const UnlockGate = ({ children }: UnlockGateProps) => {
       return;
     }
 
-    // Check if unlock is required
-    if (isUnlockRequired()) {
+    // For now, just check if user has completed security setup
+    const hasCompletedSetup = localStorage.getItem('cryptoflow_setup_complete');
+    
+    if (!hasCompletedSetup) {
+      navigate('/onboarding/security', { 
+        state: { from: location.pathname },
+        replace: true 
+      });
+      return;
+    }
+
+    // Simple PIN check - if no PIN is set, redirect to setup
+    const hasPinSet = localStorage.getItem('cryptoflow_pin');
+    if (!hasPinSet) {
+      navigate('/onboarding/security', { 
+        state: { from: location.pathname },
+        replace: true 
+      });
+      return;
+    }
+
+    // Check if we need to show lock screen
+    const isUnlocked = localStorage.getItem('cryptoflow_unlocked') === 'true';
+    if (!isUnlocked) {
       navigate('/auth/lock', { 
         state: { from: location.pathname },
         replace: true 
       });
     }
-  }, [user, lockState, isUnlockRequired, navigate, location]);
-
-  // If not authenticated or on exempt routes, render children
-  if (!user || 
-      location.pathname.startsWith('/auth') || 
-      location.pathname.startsWith('/onboarding') ||
-      location.pathname === '/recovery/verify') {
-    return <>{children}</>;
-  }
-
-  // If unlock is required, don't render children (will redirect)
-  if (isUnlockRequired()) {
-    return null;
-  }
+  }, [user, navigate, location]);
 
   return <>{children}</>;
 };

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
 interface LockState {
   isUnlocked: boolean;
