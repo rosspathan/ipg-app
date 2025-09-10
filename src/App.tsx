@@ -54,6 +54,8 @@ import ReferralsScreen from "./pages/ReferralsScreen";
 import StakingScreen from "./pages/StakingScreen";
 import StakingDetailScreen from "./pages/StakingDetailScreen";
 import LuckyDrawScreen from "./pages/LuckyDrawScreen";
+import SpinWheelScreen from "./pages/SpinWheelScreen";
+import SpinHistoryScreen from "./pages/SpinHistoryScreen";
 import InsuranceScreen from "./pages/InsuranceScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import HistoryScreen from "./pages/HistoryScreen";
@@ -74,6 +76,7 @@ import { AdminLuckyDraw } from "./components/AdminLuckyDraw";
 import { AdminInsurance } from "./components/AdminInsurance";
 import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
+import AdminSpinScreen from "./pages/AdminSpinScreen";
 
 // Utility Pages
 import EmailVerificationScreen from "./pages/EmailVerificationScreen";
@@ -161,6 +164,8 @@ function App() {
                 <Route path="trade/confirmation" element={<OrderConfirmationScreen />} />
                 <Route path="swap" element={<SwapScreen />} />
                 <Route path="programs" element={<ProgramsScreen />} />
+                <Route path="programs/spin" element={<SpinWheelScreen />} />
+                <Route path="programs/spin/history" element={<SpinHistoryScreen />} />
                 <Route path="programs/subscriptions" element={<SubscriptionsScreen />} />
                 <Route path="programs/referrals" element={<ReferralsScreen />} />
                 <Route path="programs/staking" element={<StakingScreen />} />
@@ -199,6 +204,7 @@ function App() {
                 <Route path="referrals" element={<AdminReferrals />} />
                 <Route path="staking" element={<AdminStaking />} />
                 <Route path="lucky" element={<AdminLuckyDraw />} />
+                <Route path="lucky/spin" element={<AdminSpinScreen />} />
                 <Route path="insurance" element={<AdminInsurance />} />
                 <Route path="ads" element={<AdminAds />} />
                 <Route path="fees" element={<AdminFees />} />

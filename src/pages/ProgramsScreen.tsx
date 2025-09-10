@@ -8,6 +8,13 @@ const ProgramsScreen = () => {
 
   const programs = [
     {
+      title: "Lucky Spin Wheel",
+      description: "Spin the wheel to win tokens, bonuses and prizes",
+      icon: Gift,
+      color: "text-purple-500",
+      route: "/app/programs/spin"
+    },
+    {
       title: "Subscriptions",
       description: "Get premium benefits with our subscription plans",
       icon: Star,
@@ -32,7 +39,7 @@ const ProgramsScreen = () => {
       title: "Lucky Draw",
       description: "Buy tickets and win amazing prizes",
       icon: Gift,
-      color: "text-purple-500",
+      color: "text-orange-500",
       route: "/lucky-draw"
     },
     {

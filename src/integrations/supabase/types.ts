@@ -1324,6 +1324,228 @@ export type Database = {
         }
         Relationships: []
       }
+      spin_grants: {
+        Row: {
+          created_at: string | null
+          id: string
+          meta: Json | null
+          run_id: string | null
+          token: string | null
+          type: string
+          user_id: string
+          value: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          meta?: Json | null
+          run_id?: string | null
+          token?: string | null
+          type: string
+          user_id: string
+          value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          meta?: Json | null
+          run_id?: string | null
+          token?: string | null
+          type?: string
+          user_id?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin_grants_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "spin_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spin_runs: {
+        Row: {
+          created_at: string | null
+          id: string
+          outcome: Json | null
+          segment_id: string | null
+          status: string | null
+          ticket_cost: number | null
+          ticket_currency: string | null
+          user_id: string
+          wheel_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          outcome?: Json | null
+          segment_id?: string | null
+          status?: string | null
+          ticket_cost?: number | null
+          ticket_currency?: string | null
+          user_id: string
+          wheel_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          outcome?: Json | null
+          segment_id?: string | null
+          status?: string | null
+          ticket_cost?: number | null
+          ticket_currency?: string | null
+          user_id?: string
+          wheel_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin_runs_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "spin_segments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spin_runs_wheel_id_fkey"
+            columns: ["wheel_id"]
+            isOneToOne: false
+            referencedRelation: "spin_wheels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spin_segments: {
+        Row: {
+          color: string | null
+          id: string
+          is_enabled: boolean | null
+          label: string
+          max_per_day: number | null
+          max_total: number | null
+          reward_token: string | null
+          reward_type: string | null
+          reward_value: number | null
+          weight: number
+          wheel_id: string | null
+        }
+        Insert: {
+          color?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          label: string
+          max_per_day?: number | null
+          max_total?: number | null
+          reward_token?: string | null
+          reward_type?: string | null
+          reward_value?: number | null
+          weight: number
+          wheel_id?: string | null
+        }
+        Update: {
+          color?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          label?: string
+          max_per_day?: number | null
+          max_total?: number | null
+          reward_token?: string | null
+          reward_type?: string | null
+          reward_value?: number | null
+          weight?: number
+          wheel_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin_segments_wheel_id_fkey"
+            columns: ["wheel_id"]
+            isOneToOne: false
+            referencedRelation: "spin_wheels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spin_user_limits: {
+        Row: {
+          day: string | null
+          id: string
+          spins_today: number | null
+          user_id: string
+          wheel_id: string | null
+        }
+        Insert: {
+          day?: string | null
+          id?: string
+          spins_today?: number | null
+          user_id: string
+          wheel_id?: string | null
+        }
+        Update: {
+          day?: string | null
+          id?: string
+          spins_today?: number | null
+          user_id?: string
+          wheel_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin_user_limits_wheel_id_fkey"
+            columns: ["wheel_id"]
+            isOneToOne: false
+            referencedRelation: "spin_wheels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spin_wheels: {
+        Row: {
+          cooldown_seconds: number | null
+          created_at: string | null
+          end_at: string | null
+          free_spins_daily: number | null
+          id: string
+          is_active: boolean | null
+          max_spins_per_user: number | null
+          name: string
+          seed: string | null
+          start_at: string | null
+          ticket_currency: string | null
+          ticket_price: number | null
+          vip_multiplier: number | null
+        }
+        Insert: {
+          cooldown_seconds?: number | null
+          created_at?: string | null
+          end_at?: string | null
+          free_spins_daily?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_spins_per_user?: number | null
+          name: string
+          seed?: string | null
+          start_at?: string | null
+          ticket_currency?: string | null
+          ticket_price?: number | null
+          vip_multiplier?: number | null
+        }
+        Update: {
+          cooldown_seconds?: number | null
+          created_at?: string | null
+          end_at?: string | null
+          free_spins_daily?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_spins_per_user?: number | null
+          name?: string
+          seed?: string | null
+          start_at?: string | null
+          ticket_currency?: string | null
+          ticket_price?: number | null
+          vip_multiplier?: number | null
+        }
+        Relationships: []
+      }
       staking_pools: {
         Row: {
           active: boolean | null
