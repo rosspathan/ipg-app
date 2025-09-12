@@ -203,8 +203,8 @@ function App() {
                 <Route path="subscriptions" element={<AdminSubscriptions />} />
                 <Route path="referrals" element={<AdminReferrals />} />
                 <Route path="staking" element={<AdminStaking />} />
-                <Route path="lucky" element={<AdminLuckyDraw />} />
-                <Route path="lucky/spin" element={<AdminSpinScreen />} />
+                <Route path="lucky" element={<AdminSpinScreen />} />
+                <Route path="lucky/draw" element={<AdminLuckyDraw />} />
                 <Route path="insurance" element={<AdminInsurance />} />
                 <Route path="ads" element={<AdminAds />} />
                 <Route path="fees" element={<AdminFees />} />
