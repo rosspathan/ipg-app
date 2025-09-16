@@ -148,11 +148,39 @@ const EmailVerificationScreen = () => {
         });
         navigate("/email-verified");
       } else {
+        // Token likely expired, automatically resend
         toast({
-          title: "Not Verified Yet",
-          description: "Please check your email and click the verification link",
+          title: "Verification Link Expired",
+          description: "Sending a new verification email...",
           variant: "destructive",
         });
+        
+        // Auto-resend verification email
+        setTimeout(async () => {
+          try {
+            const { error: resendError } = await supabase.auth.resend({
+              type: 'signup',
+              email: email,
+              options: {
+                emailRedirectTo: `${window.location.origin}/email-verified`
+              }
+            });
+            
+            if (!resendError) {
+              toast({
+                title: "New Verification Sent!",
+                description: "Check your email for a fresh verification link",
+              });
+            } else {
+              // If resend fails, try complete re-signup
+              await handleSendVerification();
+            }
+          } catch (error) {
+            console.error('Auto-resend error:', error);
+            // Fall back to full re-signup
+            await handleSendVerification();
+          }
+        }, 1000);
       }
     } catch (error) {
       console.error('Verification check error:', error);
