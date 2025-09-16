@@ -8,7 +8,7 @@ import { AlertTriangle } from "lucide-react";
 
 // Profile tab components
 import { AccountTab } from "@/components/profile/AccountTab";
-import { SecurityTab } from "@/components/profile/SecurityTab";
+import SecurityTab from "@/components/profile/SecurityTab";
 import { KYCTab } from "@/components/profile/KYCTab";
 import { PreferencesTab } from "@/components/profile/PreferencesTab";
 import { NotificationsTab } from "@/components/profile/NotificationsTab";
