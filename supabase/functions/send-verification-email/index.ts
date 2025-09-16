@@ -1,89 +1,104 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 interface EmailRequest {
   email: string;
-  userId?: string;
-  verificationUrl: string;
+  confirmationUrl: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  if (req.method === 'OPTIONS') {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Get SMTP settings from database
-    const { data: smtpSettings } = await supabaseClient
-      .from('system_settings')
-      .select('key, value')
-      .in('key', ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from_email', 'smtp_from_name']);
-
-    const settings = smtpSettings?.reduce((acc: any, setting: any) => {
-      acc[setting.key] = setting.value;
-      return acc;
-    }, {});
-
-    // For now, use Resend as default (admin can configure SMTP later)
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY") || "your-resend-key");
-
-    const { email, verificationUrl }: EmailRequest = await req.json();
+    const { email, confirmationUrl }: EmailRequest = await req.json();
 
     console.log('Sending verification email to:', email);
 
     const emailResponse = await resend.emails.send({
-      from: settings?.smtp_from_email || "IPG i-SMART <onboarding@resend.dev>",
+      from: "IPG i-SMART <onboarding@resend.dev>",
       to: [email],
-      subject: "Verify your email - IPG i-SMART",
+      subject: "Verify Your Email - IPG i-SMART",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2563eb; margin: 0;">IPG i-SMART</h1>
-            <p style="color: #666; margin: 5px 0;">Crypto Trading Platform</p>
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Email Verification</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">Welcome to IPG i-SMART</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Your Digital Wallet & Trading Platform</p>
           </div>
           
-          <div style="background: #f8fafc; padding: 30px; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #1e293b; margin: 0 0 20px 0;">Verify Your Email Address</h2>
-            <p style="color: #475569; line-height: 1.6; margin: 0 0 25px 0;">
-              Welcome to IPG i-SMART! Please click the button below to verify your email address and complete your registration.
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #333; margin-bottom: 20px;">Verify Your Email Address</h2>
+            
+            <p style="margin-bottom: 25px; font-size: 16px;">
+              Thank you for signing up! Please verify your email address to complete your registration and access all features.
             </p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${verificationUrl}" style="background: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+              <a href="${confirmationUrl}" 
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; 
+                        padding: 15px 30px; 
+                        text-decoration: none; 
+                        border-radius: 8px; 
+                        font-size: 16px; 
+                        font-weight: bold; 
+                        display: inline-block;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
                 Verify Email Address
               </a>
             </div>
             
-            <p style="color: #64748b; font-size: 14px; margin: 20px 0 0 0;">
-              If the button doesn't work, copy and paste this link into your browser:
+            <div style="background: #e9ecef; padding: 20px; border-radius: 8px; margin: 25px 0;">
+              <p style="margin: 0; font-size: 14px; color: #666;">
+                <strong>Security Note:</strong> This verification link will expire in 24 hours. 
+                If you didn't create an account, you can safely ignore this email.
+              </p>
+            </div>
+            
+            <p style="font-size: 14px; color: #666; margin-top: 25px;">
+              If the button doesn't work, copy and paste this link into your browser:<br>
+              <a href="${confirmationUrl}" style="color: #667eea; word-break: break-all;">${confirmationUrl}</a>
             </p>
-            <p style="color: #2563eb; font-size: 14px; word-break: break-all; margin: 5px 0;">
-              ${verificationUrl}
-            </p>
+            
+            <hr style="border: none; border-top: 1px solid #dee2e6; margin: 30px 0;">
+            
+            <div style="text-align: center;">
+              <p style="color: #666; font-size: 14px; margin: 0;">
+                Need help? Contact us at 
+                <a href="mailto:support@ipg-app.com" style="color: #667eea;">support@ipg-app.com</a>
+              </p>
+              <p style="color: #999; font-size: 12px; margin: 10px 0 0 0;">
+                © 2024 IPG i-SMART. All rights reserved.
+              </p>
+            </div>
           </div>
-          
-          <div style="text-align: center; color: #94a3b8; font-size: 12px;">
-            <p>This link will expire in 24 hours for security reasons.</p>
-            <p>If you didn't create an account with IPG i-SMART, you can safely ignore this email.</p>
-          </div>
-        </div>
+        </body>
+        </html>
       `,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Verification email sent successfully:", emailResponse);
 
-    return new Response(JSON.stringify({ success: true, emailResponse }), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: "Verification email sent successfully" 
+    }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -93,7 +108,10 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error sending verification email:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: error.message || "Failed to send verification email" 
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

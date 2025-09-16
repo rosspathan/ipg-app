@@ -1,333 +1,175 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Mail, Shield, CheckCircle, Network } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useWeb3 } from "@/contexts/Web3Context";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Mail, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const EmailVerificationScreen = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { wallet, signMessage, network } = useWeb3();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
-    if (!wallet) {
-      navigate("/wallet-selection");
-      return;
-    }
-  }, [wallet, navigate]);
-
-  const handleSendVerification = async () => {
-    if (!email.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter your email address",
-        variant: "destructive",
-      });
-      return;
+    // Try to get email from URL params or session
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setEmail(emailParam);
     }
 
-    if (!wallet) {
-      toast({
-        title: "Error",
-        description: "No wallet connected",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      // Create verification message
-      const verificationMessage = `IPG i-SMART BSC Wallet Verification\nNetwork: ${network.name} (Chain ID: ${network.chainId})\nWallet: ${wallet.address}\nEmail: ${email}\nTimestamp: ${Date.now()}`;
-      
-      // Sign the message with the wallet
-      const signature = await signMessage(verificationMessage);
-      
-      // Use a consistent password based on wallet address
-      const walletPassword = `wallet_${wallet.address.toLowerCase()}`;
-      
-      // Send verification email via Supabase Auth
-      const { error } = await supabase.auth.signUp({
-        email: email,
-        password: walletPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/email-verified`,
-          data: {
-            wallet_address: wallet.address,
-            signature: signature,
-            verification_message: verificationMessage,
-            full_name: `Wallet User ${wallet.address.slice(-6)}`
-          }
-        }
-      });
-
-      if (error) {
-        if (error.message.includes('already registered')) {
-          // If user exists, try to resend confirmation
-          const { error: resendError } = await supabase.auth.resend({
-            type: 'signup',
-            email: email,
-            options: {
-              emailRedirectTo: `${window.location.origin}/email-verified`
-            }
-          });
-          
-          if (resendError) {
-            console.error('Resend error:', resendError);
-            toast({
-              title: "Account Exists",
-              description: "This email is already registered. Please check your email for the verification link.",
-            });
-          } else {
-            toast({
-              title: "Verification Resent!",
-              description: "Check your email for the verification link",
-            });
-          }
-        } else {
-          throw error;
-        }
-      } else {
-        toast({
-          title: "Verification Sent!",
-          description: "Check your email for the verification link",
-        });
-      }
-
-      setVerificationSent(true);
-
-    } catch (error: any) {
-      console.error('Verification error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send verification email",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendVerification = () => {
-    setVerificationSent(false);
-    handleSendVerification();
-  };
-
-  const checkEmailVerification = async () => {
-    setIsVerifying(true);
-    
-    try {
-      // First check current session
+    // Check if user just signed up and is pending verification
+    const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user && session.user.email_confirmed_at) {
-        toast({
-          title: "Email Verified!",
-          description: "Welcome to IPG i-SMART",
-        });
-        navigate("/email-verified");
-        return;
-      }
-
-      // If no confirmed session, try to get user info
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user && user.email_confirmed_at) {
-        toast({
-          title: "Email Verified!",
-          description: "Welcome to IPG i-SMART",
-        });
-        navigate("/email-verified");
-      } else {
-        // Token likely expired, automatically resend
-        toast({
-          title: "Verification Link Expired",
-          description: "Sending a new verification email...",
-          variant: "destructive",
-        });
+      if (session?.user) {
+        setEmail(session.user.email || '');
         
-        // Auto-resend verification email
-        setTimeout(async () => {
-          try {
-            const { error: resendError } = await supabase.auth.resend({
-              type: 'signup',
-              email: email,
-              options: {
-                emailRedirectTo: `${window.location.origin}/email-verified`
-              }
-            });
-            
-            if (!resendError) {
-              toast({
-                title: "New Verification Sent!",
-                description: "Check your email for a fresh verification link",
-              });
-            } else {
-              // If resend fails, try complete re-signup
-              await handleSendVerification();
-            }
-          } catch (error) {
-            console.error('Auto-resend error:', error);
-            // Fall back to full re-signup
-            await handleSendVerification();
-          }
-        }, 1000);
+        // If user is already verified, redirect to home
+        if (session.user.email_confirmed_at) {
+          navigate('/');
+          return;
+        }
       }
-    } catch (error) {
-      console.error('Verification check error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to check verification status",
-        variant: "destructive",
+    };
+    
+    checkSession();
+  }, [searchParams, navigate]);
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError("No email address found. Please try signing up again.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/email-verified`
+        }
       });
+
+      if (error) throw error;
+
+      toast({
+        title: "Verification Email Sent",
+        description: "Please check your email for the verification link.",
+      });
+
+      setSuccess(true);
+    } catch (error: any) {
+      setError(error.message || "Failed to resend verification email");
     } finally {
-      setIsVerifying(false);
+      setLoading(false);
     }
   };
 
-  if (!wallet) {
-    return null;
-  }
+  const handleBackToLogin = () => {
+    navigate('/auth');
+  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background px-6 py-8">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="mr-2"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <h1 className="text-xl font-semibold">Email Verification</h1>
-      </div>
-
-      <div className="flex-1 flex flex-col max-w-sm mx-auto w-full space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Mail className="w-8 h-8 text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-background px-6">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <Mail className="h-12 w-12 text-primary" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground">
-            Verify Your Email
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Link your email address to your BSC wallet for secure access to IPG i-SMART
-          </p>
-        </div>
+          <CardTitle className="text-2xl">Check Your Email</CardTitle>
+          <CardDescription>
+            We've sent a verification link to your email address
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        <Card className="bg-gradient-card shadow-card border-0">
-          <CardHeader>
-            <CardTitle className="text-base text-center flex items-center justify-center gap-2">
-              <Network className="w-4 h-4" />
-              BSC Wallet Connected
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center space-y-3">
-              <div className="flex items-center justify-center gap-2 text-sm font-medium">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                {network.name}
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Wallet Address:</p>
-                <p className="font-mono text-sm break-all bg-muted p-2 rounded">
-                  {wallet.address}
-                </p>
-              </div>
-              {wallet.balance && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Balance:</p>
-                  <p className="text-sm font-medium">
-                    {parseFloat(wallet.balance).toFixed(4)} {network.currency}
-                  </p>
-                </div>
-              )}
+          {success && (
+            <Alert className="border-green-200 bg-green-50 text-green-800">
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                Verification email sent! Please check your inbox and spam folder.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="text-center space-y-4">
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                We sent a verification email to:
+              </p>
+              <p className="font-semibold text-foreground mt-1 break-all">
+                {email || "your email address"}
+              </p>
             </div>
-          </CardContent>
-        </Card>
-
-        {!verificationSent ? (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email Address</label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="w-full"
-              />
-            </div>
-
-            <Button 
-              variant="default" 
-              size="lg" 
-              onClick={handleSendVerification}
-              disabled={isLoading || !email.trim()}
-              className="w-full"
-            >
-              {isLoading ? "Sending..." : "Send Verification Email"}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <Card className="bg-green-50 border-green-200">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2 text-green-800">
-                  <CheckCircle className="w-5 h-5" />
-                  <div>
-                    <p className="font-medium">Verification Sent!</p>
-                    <p className="text-sm">Check your email: {email}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             <div className="space-y-3">
-              <Button 
-                variant="default" 
-                size="lg" 
-                onClick={checkEmailVerification}
-                disabled={isVerifying}
-                className="w-full"
-              >
-                {isVerifying ? "Checking..." : "I've Clicked the Email Link"}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="lg" 
-                onClick={handleResendVerification}
-                className="w-full"
-              >
-                Resend Verification Email
-              </Button>
-              
+              <p className="text-sm text-muted-foreground">
+                Click the link in the email to verify your account. 
+                You cannot log in until your email is verified.
+              </p>
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-xs text-blue-800 text-center">
-                  ℹ️ You must click the verification link in your email first, then come back and click "I've Clicked the Email Link"
+                <p className="text-xs text-blue-700">
+                  <strong>Don't see the email?</strong> Check your spam folder or click "Resend" below.
+                  The verification link expires in 24 hours.
                 </p>
               </div>
             </div>
           </div>
-        )}
 
-        <div className="bg-muted/50 border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground text-center">
-            🔐 Your BSC wallet signature proves ownership of this BEP20 address and secures your account.
-          </p>
-        </div>
-      </div>
+          <div className="space-y-3">
+            <Button 
+              onClick={handleResendVerification}
+              disabled={loading || !email}
+              className="w-full"
+              variant="outline"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Resend Verification Email
+                </>
+              )}
+            </Button>
+
+            <Button 
+              onClick={handleBackToLogin}
+              variant="ghost"
+              className="w-full"
+            >
+              Back to Login
+            </Button>
+          </div>
+
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">
+              Need help? Contact us at{" "}
+              <a href="mailto:support@ipg-app.com" className="text-primary hover:underline">
+                support@ipg-app.com
+              </a>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

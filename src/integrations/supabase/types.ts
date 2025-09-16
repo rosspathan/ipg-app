@@ -2152,6 +2152,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_default_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_asset_logo_url: {
         Args: { asset_row: Database["public"]["Tables"]["assets"]["Row"] }
         Returns: string

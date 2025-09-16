@@ -78,6 +78,7 @@ import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
 import AdminSpinScreen from "./pages/AdminSpinScreen";
 import AdminINRFundingScreen from "./pages/AdminINRFundingScreen";
+import AdminCredentialsTest from "./pages/AdminCredentialsTest";
 import AdminSystemScreen from "./pages/AdminSystemScreen";
 
 // Utility Pages
@@ -223,10 +224,12 @@ function App() {
               {/* Utility Routes */}
             <Route path="/email-verification" element={<EmailVerificationScreen />} />
             <Route path="/email-verified" element={<EmailVerifiedScreen />} />
+            <Route path="/email-verified" element={<EmailVerifiedScreen />} />
               <Route path="/email-verified" element={<EmailVerifiedScreen />} />
               <Route path="/reset-password" element={<ResetPasswordScreen />} />
               <Route path="/debug/catalog" element={<DebugCatalogScreen />} />
               <Route path="/debug/funding" element={<DebugFunding />} />
+              <Route path="/debug/admin-test" element={<AdminCredentialsTest />} />
 
               {/* Legacy auth route redirect */}
               <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
