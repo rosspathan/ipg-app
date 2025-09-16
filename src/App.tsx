@@ -77,6 +77,8 @@ import { AdminInsurance } from "./components/AdminInsurance";
 import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
 import AdminSpinScreen from "./pages/AdminSpinScreen";
+import AdminINRFundingScreen from "./pages/AdminINRFundingScreen";
+import AdminSystemScreen from "./pages/AdminSystemScreen";
 
 // Utility Pages
 import EmailVerificationScreen from "./pages/EmailVerificationScreen";
@@ -200,6 +202,7 @@ function App() {
                 <Route path="assets" element={<AdminAssets />} />
                 <Route path="markets" element={<AdminMarkets />} />
                 <Route path="funding" element={<AdminFunding />} />
+                <Route path="funding/inr" element={<AdminINRFundingScreen />} />
                 <Route path="subscriptions" element={<AdminSubscriptions />} />
                 <Route path="referrals" element={<AdminReferrals />} />
                 <Route path="staking" element={<AdminStaking />} />
@@ -214,7 +217,7 @@ function App() {
                 <Route path="support" element={<AdminSupportScreen />} />
                 <Route path="support/t/:id" element={<AdminSupportTicketScreen />} />
                 <Route path="notifications" element={<AdminNotificationsScreen />} />
-                <Route path="system" element={<div className="p-6"><h1 className="text-2xl font-bold">System Settings</h1></div>} />
+                <Route path="system" element={<AdminSystemScreen />} />
               </Route>
 
               {/* Utility Routes */}

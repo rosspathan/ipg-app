@@ -635,6 +635,69 @@ export type Database = {
         }
         Relationships: []
       }
+      inr_funding_routes: {
+        Row: {
+          account_name: string | null
+          account_number: string | null
+          bank_name: string | null
+          created_at: string | null
+          fee_fixed: number | null
+          fee_percent: number | null
+          id: string
+          ifsc_code: string | null
+          is_active: boolean | null
+          is_default: boolean | null
+          max_amount: number | null
+          min_amount: number | null
+          notes: string | null
+          priority: number | null
+          route_type: string
+          updated_at: string | null
+          upi_id: string | null
+          upi_name: string | null
+        }
+        Insert: {
+          account_name?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          created_at?: string | null
+          fee_fixed?: number | null
+          fee_percent?: number | null
+          id?: string
+          ifsc_code?: string | null
+          is_active?: boolean | null
+          is_default?: boolean | null
+          max_amount?: number | null
+          min_amount?: number | null
+          notes?: string | null
+          priority?: number | null
+          route_type: string
+          updated_at?: string | null
+          upi_id?: string | null
+          upi_name?: string | null
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          created_at?: string | null
+          fee_fixed?: number | null
+          fee_percent?: number | null
+          id?: string
+          ifsc_code?: string | null
+          is_active?: boolean | null
+          is_default?: boolean | null
+          max_amount?: number | null
+          min_amount?: number | null
+          notes?: string | null
+          priority?: number | null
+          route_type?: string
+          updated_at?: string | null
+          upi_id?: string | null
+          upi_name?: string | null
+        }
+        Relationships: []
+      }
       insurance_claims: {
         Row: {
           attachments: string[] | null
@@ -1682,6 +1745,30 @@ export type Database = {
           },
         ]
       }
+      support_ticket_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           category: string
@@ -1781,6 +1868,33 @@ export type Database = {
           total_fees?: number | null
           trading_fees?: number | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: string
         }
         Relationships: []
       }
