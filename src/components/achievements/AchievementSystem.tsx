@@ -155,8 +155,8 @@ export const AchievementSystem = () => {
   const loadAchievements = async () => {
     try {
       // Load user's achievement progress from database
-      const { data: userAchievements } = await supabase
-        .from('user_achievements')
+      const { data: userAchievements }: any = await (supabase as any)
+        .from('user_achievements' as any)
         .select('*')
         .eq('user_id', user?.id);
 
@@ -293,7 +293,7 @@ export const AchievementSystem = () => {
     // Save new achievements to database and show notifications
     for (const achievement of newUnlocks) {
       try {
-        await supabase.from('user_achievements').insert({
+        await (supabase as any).from('user_achievements' as any).insert({
           user_id: user?.id,
           achievement_type: achievement.title,
           unlocked: true,

@@ -66,8 +66,8 @@ export const DailyRewards = () => {
       setLoading(true);
       
       // Load user's daily reward history
-      const { data: rewardHistory } = await supabase
-        .from('daily_rewards')
+      const { data: rewardHistory }: any = await (supabase as any)
+        .from('daily_rewards' as any)
         .select('*')
         .eq('user_id', user?.id)
         .order('claimed_at', { ascending: false });
@@ -167,8 +167,8 @@ export const DailyRewards = () => {
       const newStreakDay = userStreak.currentStreak + 1;
 
       // Save claim to database
-      const { error } = await supabase
-        .from('daily_rewards')
+      const { error }: any = await (supabase as any)
+        .from('daily_rewards' as any)
         .insert({
           user_id: user?.id,
           day_in_cycle: nextDay,
@@ -236,7 +236,7 @@ export const DailyRewards = () => {
     }
   };
 
-  const getRewardText = (reward: DailyReward) => {
+  const getRewardText = (reward: { type: DailyReward['type']; amount: number }) => {
     switch (reward.type) {
       case 'tokens': return `${reward.amount} Tokens`;
       case 'spin_tickets': return `${reward.amount} Spin Ticket${reward.amount > 1 ? 's' : ''}`;
