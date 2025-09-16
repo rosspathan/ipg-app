@@ -253,11 +253,22 @@ const WithdrawScreen = () => {
         <Button onClick={handleWithdraw} className="w-full" size="lg">
           Withdraw
         </Button>
-          </TabsContent>
+              </TabsContent>
 
-          <TabsContent value="inr">
-            <INRWithdrawScreen />
-          </TabsContent>
+              <TabsContent value="inr">
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold mb-4">INR Withdrawals</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Withdraw your funds directly to your Indian bank account or UPI.
+                  </p>
+                  <Button 
+                    onClick={() => navigate('/app/withdraw/inr')}
+                    className="w-full"
+                  >
+                    Start INR Withdrawal
+                  </Button>
+                </div>
+              </TabsContent>
         </Tabs>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { QuickINRActions } from "@/components/QuickINRActions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -86,27 +87,31 @@ const AppHomeScreen = () => {
         </div>
 
         {/* Quick Stats */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Quick Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-primary">$0.00</div>
-                <div className="text-sm text-muted-foreground">Total Balance</div>
+        <div className="grid gap-6 mb-8 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary">$0.00</div>
+                  <div className="text-sm text-muted-foreground">Total Balance</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary">0</div>
+                  <div className="text-sm text-muted-foreground">Open Orders</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary">+0%</div>
+                  <div className="text-sm text-muted-foreground">24h Change</div>
+                </div>
               </div>
-              <div className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-primary">0</div>
-                <div className="text-sm text-muted-foreground">Open Orders</div>
-              </div>
-              <div className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-primary">+0%</div>
-                <div className="text-sm text-muted-foreground">24h Change</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+          
+          <QuickINRActions />
+        </div>
 
         {/* Feature Tiles */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

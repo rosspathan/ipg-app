@@ -199,21 +199,26 @@ export const BankingTab = () => {
           <CardTitle>INR Deposits & Withdrawals</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              {isVerified ? (
-                <>
-                  Your banking details are verified. You can now make INR deposits and withdrawals.
-                  <Link to="/app/deposit/inr" className="ml-2 text-primary hover:underline">
-                    Make a deposit →
-                  </Link>
-                </>
-              ) : (
-                "Complete and verify your banking details to enable INR deposits and withdrawals."
-              )}
-            </AlertDescription>
-          </Alert>
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                {isVerified ? (
+                  <div className="space-y-2">
+                    <p>Your banking details are verified. You can now make INR deposits and withdrawals.</p>
+                    <div className="flex gap-2">
+                      <Link to="/app/deposit/inr" className="text-primary hover:underline">
+                        Make a Deposit →
+                      </Link>
+                      <Link to="/app/withdraw/inr" className="text-primary hover:underline">
+                        Make a Withdrawal →
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  "Complete and verify your banking details to enable INR deposits and withdrawals."
+                )}
+              </AlertDescription>
+            </Alert>
 
           <div className="space-y-2">
             <h4 className="font-medium">Supported Payment Methods:</h4>

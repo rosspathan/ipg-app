@@ -60,6 +60,7 @@ import InsuranceScreen from "./pages/InsuranceScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import HistoryScreen from "./pages/HistoryScreen";
 import INRDepositScreen from "./pages/INRDepositScreen";
+import INRWithdrawScreen from "./pages/INRWithdrawScreen";
 import ProfileScreen from "./pages/ProfileScreen";
 
 // Admin Pages
@@ -177,6 +178,7 @@ function App() {
                 <Route path="programs/insurance" element={<InsuranceScreen />} />
                 <Route path="programs/insurance/claim" element={<FileClaimScreen />} />
                 <Route path="deposit/inr" element={<INRDepositScreen />} />
+                <Route path="withdraw/inr" element={<INRWithdrawScreen />} />
                 <Route path="profile" element={<ProfileScreen />} />
                 <Route path="support" element={<SupportScreen />} />
                 <Route path="support/t/:id" element={<SupportTicketScreen />} />
