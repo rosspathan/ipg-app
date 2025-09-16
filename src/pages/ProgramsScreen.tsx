@@ -36,11 +36,11 @@ const ProgramsScreen = () => {
       route: "/app/programs/staking"
     },
     {
-      title: "Lucky Draw",
-      description: "Buy tickets and win amazing prizes",
-      icon: Gift,
-      color: "text-orange-500",
-      route: "/lucky-draw"
+      title: "Achievements",
+      description: "Track progress and unlock rewards",
+      icon: Trophy,
+      color: "text-yellow-500",
+      route: "/app/programs/achievements"
     },
     {
       title: "Insurance",

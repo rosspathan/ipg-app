@@ -302,6 +302,36 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_rewards: {
+        Row: {
+          claimed_at: string
+          day_in_cycle: number
+          id: string
+          reward_amount: number
+          reward_type: string
+          streak_day: number
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          day_in_cycle: number
+          id?: string
+          reward_amount: number
+          reward_type: string
+          streak_day: number
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          day_in_cycle?: number
+          id?: string
+          reward_amount?: number
+          reward_type?: string
+          streak_day?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       devices: {
         Row: {
           created_at: string | null
@@ -2029,6 +2059,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_achievements: {
+        Row: {
+          achievement_type: string
+          created_at: string
+          id: string
+          points_earned: number
+          unlocked: boolean
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_type: string
+          created_at?: string
+          id?: string
+          points_earned?: number
+          unlocked?: boolean
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_type?: string
+          created_at?: string
+          id?: string
+          points_earned?: number
+          unlocked?: boolean
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_gamification_stats: {
+        Row: {
+          created_at: string
+          current_login_streak: number
+          id: string
+          last_daily_reward_claim: string | null
+          level: number
+          longest_login_streak: number
+          total_achievements_unlocked: number
+          total_rewards_claimed: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_login_streak?: number
+          id?: string
+          last_daily_reward_claim?: string | null
+          level?: number
+          longest_login_streak?: number
+          total_achievements_unlocked?: number
+          total_rewards_claimed?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_login_streak?: number
+          id?: string
+          last_daily_reward_claim?: string | null
+          level?: number
+          longest_login_streak?: number
+          total_achievements_unlocked?: number
+          total_rewards_claimed?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

@@ -59,6 +59,7 @@ import SpinHistoryScreen from "./pages/SpinHistoryScreen";
 import InsuranceScreen from "./pages/InsuranceScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import HistoryScreen from "./pages/HistoryScreen";
+import GamificationScreen from "./pages/GamificationScreen";
 import INRDepositScreen from "./pages/INRDepositScreen";
 import INRWithdrawScreen from "./pages/INRWithdrawScreen";
 import ProfileScreen from "./pages/ProfileScreen";
@@ -177,6 +178,7 @@ function App() {
                 <Route path="programs/lucky" element={<LuckyDrawScreen />} />
                 <Route path="programs/insurance" element={<InsuranceScreen />} />
                 <Route path="programs/insurance/claim" element={<FileClaimScreen />} />
+                <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="deposit/inr" element={<INRDepositScreen />} />
                 <Route path="withdraw/inr" element={<INRWithdrawScreen />} />
                 <Route path="profile" element={<ProfileScreen />} />

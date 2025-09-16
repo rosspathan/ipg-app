@@ -44,14 +44,15 @@ export const DailyRewards = () => {
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
 
-  const REWARD_CYCLE: Omit<DailyReward, 'claimed'>[] = [
-    { day: 1, type: 'tokens', amount: 10 },
-    { day: 2, type: 'tokens', amount: 15 },
-    { day: 3, type: 'spin_tickets', amount: 1 },
-    { day: 4, type: 'tokens', amount: 25 },
-    { day: 5, type: 'multiplier', amount: 1.5 },
-    { day: 6, type: 'tokens', amount: 40 },
-    { day: 7, type: 'bonus', amount: 100, special: true }
+  // Define the 7-day reward cycle
+  const REWARD_CYCLE = [
+    { day: 1, type: 'tokens' as const, amount: 10, claimed: false },
+    { day: 2, type: 'tokens' as const, amount: 15, claimed: false },
+    { day: 3, type: 'spin_tickets' as const, amount: 1, claimed: false },
+    { day: 4, type: 'tokens' as const, amount: 25, claimed: false },
+    { day: 5, type: 'multiplier' as const, amount: 1.5, claimed: false },
+    { day: 6, type: 'tokens' as const, amount: 40, claimed: false },
+    { day: 7, type: 'bonus' as const, amount: 100, special: true, claimed: false }
   ];
 
   useEffect(() => {
@@ -65,8 +66,8 @@ export const DailyRewards = () => {
       setLoading(true);
       
       // Load user's daily reward history
-      const { data: rewardHistory }: any = await (supabase as any)
-        .from('daily_rewards' as any)
+      const { data: rewardHistory } = await supabase
+        .from('daily_rewards')
         .select('*')
         .eq('user_id', user?.id)
         .order('claimed_at', { ascending: false });
@@ -166,8 +167,8 @@ export const DailyRewards = () => {
       const newStreakDay = userStreak.currentStreak + 1;
 
       // Save claim to database
-      const { error }: any = await (supabase as any)
-        .from('daily_rewards' as any)
+      const { error } = await supabase
+        .from('daily_rewards')
         .insert({
           user_id: user?.id,
           day_in_cycle: nextDay,
@@ -235,7 +236,7 @@ export const DailyRewards = () => {
     }
   };
 
-  const getRewardText = (reward: { type: DailyReward['type']; amount: number }) => {
+  const getRewardText = (reward: DailyReward) => {
     switch (reward.type) {
       case 'tokens': return `${reward.amount} Tokens`;
       case 'spin_tickets': return `${reward.amount} Spin Ticket${reward.amount > 1 ? 's' : ''}`;
