@@ -221,7 +221,8 @@ function App() {
               </Route>
 
               {/* Utility Routes */}
-              <Route path="/email-verification" element={<EmailVerificationScreen />} />
+            <Route path="/email-verification" element={<EmailVerificationScreen />} />
+            <Route path="/email-verified" element={<EmailVerifiedScreen />} />
               <Route path="/email-verified" element={<EmailVerifiedScreen />} />
               <Route path="/reset-password" element={<ResetPasswordScreen />} />
               <Route path="/debug/catalog" element={<DebugCatalogScreen />} />
