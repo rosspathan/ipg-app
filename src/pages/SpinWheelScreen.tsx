@@ -48,27 +48,47 @@ export default function SpinWheelScreen() {
 
   useEffect(() => {
     loadWheelData();
+    
+    // Set up realtime subscription for spin_runs
+    const channel = supabase
+      .channel('spin-runs-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'spin_runs'
+        },
+        (payload) => {
+          console.log('New spin run:', payload);
+          loadWheelData(); // Refresh data when new runs are added
+        }
+      )
+      .subscribe();
+    
     const interval = setInterval(() => {
       setCooldownRemaining(prev => Math.max(0, prev - 1));
     }, 1000);
-    return () => clearInterval(interval);
+    
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadWheelData = async () => {
     try {
-      // Load active wheel
+      // Load active wheel with time window check
       const { data: wheels } = await supabase
         .from("spin_wheels")
         .select("*")
         .eq("is_active", true)
+        .or(`start_at.is.null,start_at.lte.${new Date().toISOString()}`)
+        .or(`end_at.is.null,end_at.gte.${new Date().toISOString()}`)
         .limit(1);
 
       if (!wheels || wheels.length === 0) {
-        toast({
-          title: "No Active Wheel",
-          description: "No spin wheels are currently active",
-          variant: "destructive"
-        });
+        console.log("No active wheels found, might need to seed demo data");
         return;
       }
 
@@ -192,7 +212,33 @@ export default function SpinWheelScreen() {
   const canSpin = wheel && !isSpinning && cooldownRemaining === 0;
   const spinCost = freeSpinsLeft > 0 ? 0 : wheel?.ticket_price || 0;
 
-  return (
+    // Show loading state if no wheel is loaded yet
+    if (!wheel) {
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="container mx-auto px-4 py-6 max-w-4xl">
+            <div className="flex items-center gap-4 mb-6">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/app/programs")}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">Lucky Spin Wheel</h1>
+                <p className="text-muted-foreground">Loading wheel data...</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Header */}
@@ -206,8 +252,10 @@ export default function SpinWheelScreen() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Lucky Spin Wheel</h1>
-            {wheel && (
+            {wheel ? (
               <p className="text-muted-foreground">{wheel.name}</p>
+            ) : (
+              <p className="text-muted-foreground">Loading...</p>
             )}
           </div>
         </div>
