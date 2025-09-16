@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Star, Users, PiggyBank, Gift, Shield } from "lucide-react";
+import { ChevronLeft, Star, Users, PiggyBank, Gift, Shield, Trophy } from "lucide-react";
 
 const ProgramsScreen = () => {
   const navigate = useNavigate();
