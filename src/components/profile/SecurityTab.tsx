@@ -1,177 +1,394 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Shield, Smartphone, Eye, Clock } from "lucide-react";
-import { useSecurity } from "@/hooks/useSecurity";
+import { 
+  Shield, 
+  Clock, 
+  Key, 
+  Eye, 
+  EyeOff, 
+  Fingerprint,
+  CheckCircle,
+  AlertCircle,
+  Loader2
+} from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useAuthLock } from "@/hooks/useAuthLock";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-export const SecurityTab = () => {
-  const { security, loginHistory, loading, updateSecurity, setPin, enable2FA, disable2FA } = useSecurity();
+const SecurityTab = () => {
+  const { user } = useAuth();
+  const { 
+    lockState, 
+    setPin, 
+    checkBiometricAvailability, 
+    saveLockState 
+  } = useAuthLock();
   const { toast } = useToast();
-  const [pinDialog, setPinDialog] = useState(false);
-  const [pinValue, setPinValue] = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
-  const [antiPhishing, setAntiPhishing] = useState(security?.anti_phishing_code || "");
-  const [spendLimit, setSpendLimit] = useState(security?.spend_daily_limit?.toString() || "0");
 
-  const handleSetPin = async () => {
-    if (pinValue.length !== 6) {
-      toast({
-        title: "Error",
-        description: "PIN must be 6 digits",
-        variant: "destructive"
-      });
-      return;
-    }
+  const [loading, setLoading] = useState(false);
+  const [changingPin, setChangingPin] = useState(false);
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmNewPin, setConfirmNewPin] = useState("");
+  const [showPins, setShowPins] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [settings, setSettings] = useState({
+    biometricEnabled: false,
+    requireOnActions: true,
+    sessionLockMinutes: 5,
+    antiPhishingCode: ""
+  });
 
-    if (pinValue !== confirmPin) {
-      toast({
-        title: "Error",
-        description: "PINs do not match",
-        variant: "destructive"
-      });
-      return;
-    }
+  const isPinValid = /^\d{6}$/.test(newPin);
+  const pinsMatch = newPin === confirmNewPin;
+  const canUpdatePin = isPinValid && pinsMatch && currentPin.length === 6;
 
+  // Load security settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!user) return;
+
+      setLoading(true);
+      try {
+        const [securityResult, settingsResult, biometricCheck] = await Promise.all([
+          supabase.from('security').select('*').eq('user_id', user.id).maybeSingle(),
+          supabase.from('settings_user').select('*').eq('user_id', user.id).maybeSingle(),
+          checkBiometricAvailability()
+        ]);
+
+        setBiometricAvailable(biometricCheck);
+
+        setSettings({
+          biometricEnabled: securityResult.data?.biometric_enabled || false,
+          requireOnActions: settingsResult.data?.require_unlock_on_actions ?? true,
+          sessionLockMinutes: settingsResult.data?.session_lock_minutes || 5,
+          antiPhishingCode: securityResult.data?.anti_phishing_code || ""
+        });
+      } catch (error) {
+        console.error('Failed to load security settings:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load security settings",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, [user, checkBiometricAvailability, toast]);
+
+  const updateSetting = async (key: keyof typeof settings, value: any) => {
+    if (!user) return;
+
+    setLoading(true);
     try {
-      await setPin(pinValue);
-      setPinDialog(false);
-      setPinValue("");
-      setConfirmPin("");
+      const newSettings = { ...settings, [key]: value };
+      setSettings(newSettings);
+
+      // Update database
+      if (key === 'biometricEnabled' || key === 'antiPhishingCode') {
+        await supabase
+          .from('security')
+          .upsert({
+            user_id: user.id,
+            biometric_enabled: key === 'biometricEnabled' ? value : settings.biometricEnabled,
+            anti_phishing_code: key === 'antiPhishingCode' ? value : settings.antiPhishingCode
+          }, { onConflict: 'user_id' });
+      } else {
+        await supabase
+          .from('settings_user')
+          .upsert({
+            user_id: user.id,
+            require_unlock_on_actions: key === 'requireOnActions' ? value : settings.requireOnActions,
+            session_lock_minutes: key === 'sessionLockMinutes' ? value : settings.sessionLockMinutes
+          }, { onConflict: 'user_id' });
+      }
+
+      // Update lock state
+      await saveLockState({
+        biometricEnabled: newSettings.biometricEnabled,
+        requireOnActions: newSettings.requireOnActions,
+        sessionLockMinutes: newSettings.sessionLockMinutes
+      });
+
+      toast({
+        title: "Settings Updated",
+        description: "Security settings have been saved",
+      });
     } catch (error) {
-      // Error handled in hook
+      console.error('Failed to update setting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update security setting",
+        variant: "destructive"
+      });
+      // Revert local change
+      setSettings(settings);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handle2FAToggle = async (enabled: boolean) => {
+  const handlePinChange = async () => {
+    if (!canUpdatePin) return;
+
+    setLoading(true);
     try {
-      if (enabled) {
-        await enable2FA();
-      } else {
-        await disable2FA();
+      // Verify current PIN first
+      const { data: security } = await supabase
+        .from('security')
+        .select('pin_hash')
+        .eq('user_id', user.id)
+        .single();
+
+      if (security?.pin_hash) {
+        const bcrypt = await import('bcryptjs');
+        const isValid = await bcrypt.compare(currentPin, security.pin_hash);
+        
+        if (!isValid) {
+          toast({
+            title: "Incorrect PIN",
+            description: "Current PIN is incorrect",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Set new PIN
+      const success = await setPin(newPin);
+      if (success) {
+        setChangingPin(false);
+        setCurrentPin("");
+        setNewPin("");
+        setConfirmNewPin("");
       }
     } catch (error) {
-      // Error handled in hook
+      console.error('Failed to change PIN:', error);
+      toast({
+        title: "Error",
+        description: "Failed to change PIN",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSaveAntiPhishing = async () => {
-    try {
-      await updateSecurity({ anti_phishing_code: antiPhishing });
-    } catch (error) {
-      // Error handled in hook
-    }
-  };
-
-  const handleSaveSpendLimit = async () => {
-    try {
-      await updateSecurity({ spend_daily_limit: parseFloat(spendLimit) || 0 });
-    } catch (error) {
-      // Error handled in hook
-    }
-  };
-
-  if (loading) {
+  if (loading && !settings.antiPhishingCode) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin" />
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* PIN & Biometrics */}
+      {/* PIN Management */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Authentication
+            <Key className="h-5 w-5" />
+            PIN Management
           </CardTitle>
+          <CardDescription>
+            Manage your 6-digit PIN for app security
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>PIN Code</Label>
-              <p className="text-sm text-muted-foreground">6-digit PIN for secure access</p>
+          {!changingPin ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">PIN Protection</p>
+                <p className="text-sm text-muted-foreground">
+                  Your PIN is set and active
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => setChangingPin(true)}
+              >
+                Change PIN
+              </Button>
             </div>
-            <div className="flex items-center gap-2">
-              {security?.pin_set && <Badge variant="secondary">Set</Badge>}
-              <Dialog open={pinDialog} onOpenChange={setPinDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    {security?.pin_set ? "Change PIN" : "Set PIN"}
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="current-pin">Current PIN</Label>
+                <div className="relative">
+                  <Input
+                    id="current-pin"
+                    type={showPins ? "text" : "password"}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={currentPin}
+                    onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="••••••"
+                    className="pr-10 text-center"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
+                    onClick={() => setShowPins(!showPins)}
+                  >
+                    {showPins ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Set PIN Code</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Enter 6-digit PIN</Label>
-                      <Input
-                        type="password"
-                        maxLength={6}
-                        value={pinValue}
-                        onChange={(e) => setPinValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Confirm PIN</Label>
-                      <Input
-                        type="password"
-                        maxLength={6}
-                        value={confirmPin}
-                        onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      />
-                    </div>
-                    <Button onClick={handleSetPin} className="w-full">
-                      Set PIN
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
+                </div>
+              </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Biometric Authentication</Label>
-              <p className="text-sm text-muted-foreground">Use fingerprint or face recognition</p>
+              <div className="space-y-2">
+                <Label htmlFor="new-pin">New PIN</Label>
+                <Input
+                  id="new-pin"
+                  type={showPins ? "text" : "password"}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="••••••"
+                  className="text-center"
+                />
+                {newPin.length > 0 && !isPinValid && (
+                  <p className="text-xs text-destructive">PIN must be exactly 6 digits</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-new-pin">Confirm New PIN</Label>
+                <Input
+                  id="confirm-new-pin"
+                  type={showPins ? "text" : "password"}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={confirmNewPin}
+                  onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="••••••"
+                  className="text-center"
+                />
+                {confirmNewPin.length > 0 && !pinsMatch && (
+                  <p className="text-xs text-destructive">PINs do not match</p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setChangingPin(false);
+                    setCurrentPin("");
+                    setNewPin("");
+                    setConfirmNewPin("");
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handlePinChange}
+                  disabled={!canUpdatePin || loading}
+                  className="flex-1"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Update PIN
+                </Button>
+              </div>
             </div>
-            <Switch />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Biometric Authentication */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Fingerprint className="h-5 w-5" />
+            Biometric Authentication
+          </CardTitle>
+          <CardDescription>
+            Use your fingerprint or face ID for quick access
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <p className="font-medium">Biometric Unlock</p>
+                {!biometricAvailable && (
+                  <Badge variant="secondary">Not Available</Badge>
+                )}
+                {biometricAvailable && settings.biometricEnabled && (
+                  <Badge variant="default">Active</Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {biometricAvailable 
+                  ? "Quick unlock with your fingerprint or face"
+                  : "Biometric authentication not available on this device"
+                }
+              </p>
+            </div>
+            <Switch
+              checked={settings.biometricEnabled}
+              onCheckedChange={(checked) => updateSetting('biometricEnabled', checked)}
+              disabled={!biometricAvailable || loading}
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Two-Factor Authentication */}
+      {/* Session Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Smartphone className="h-5 w-5" />
-            Two-Factor Authentication
+            <Clock className="h-5 w-5" />
+            Session Security
           </CardTitle>
+          <CardDescription>
+            Control when and how your app locks automatically
+          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <Label>TOTP 2FA</Label>
+              <p className="font-medium">Require PIN for Sensitive Actions</p>
               <p className="text-sm text-muted-foreground">
-                {security?.has_2fa ? "2FA is enabled" : "Enable 2FA for extra security"}
+                Ask for PIN when sending funds or changing settings
               </p>
             </div>
             <Switch
-              checked={security?.has_2fa || false}
-              onCheckedChange={handle2FAToggle}
+              checked={settings.requireOnActions}
+              onCheckedChange={(checked) => updateSetting('requireOnActions', checked)}
+              disabled={loading}
             />
+          </div>
+
+          <div className="space-y-3">
+            <Label htmlFor="session-timeout">Auto-lock timeout (minutes)</Label>
+            <Input
+              id="session-timeout"
+              type="number"
+              min="1"
+              max="60"
+              value={settings.sessionLockMinutes}
+              onChange={(e) => updateSetting('sessionLockMinutes', parseInt(e.target.value) || 5)}
+              className="max-w-[120px]"
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground">
+              App will lock automatically after this time of inactivity
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -180,93 +397,83 @@ export const SecurityTab = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            Anti-Phishing Code
+            <Shield className="h-5 w-5" />
+            Anti-Phishing Protection
           </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <Label>Anti-Phishing Code</Label>
-              <p className="text-sm text-muted-foreground">
-                This code will appear in all genuine emails from us
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={antiPhishing}
-                onChange={(e) => setAntiPhishing(e.target.value)}
-                placeholder="Enter your code"
-                maxLength={20}
-              />
-              <Button onClick={handleSaveAntiPhishing}>Save</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Withdrawal Protection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Withdrawal Protection</CardTitle>
+          <CardDescription>
+            Verify authentic emails with your personal security code
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Whitelist Only</Label>
-              <p className="text-sm text-muted-foreground">Only allow withdrawals to approved addresses</p>
-            </div>
-            <Switch
-              checked={security?.withdraw_whitelist_only || false}
-              onCheckedChange={(checked) => updateSecurity({ withdraw_whitelist_only: checked })}
+          <div className="space-y-2">
+            <Label htmlFor="phishing-code">Your Security Code</Label>
+            <Input
+              id="phishing-code"
+              value={settings.antiPhishingCode}
+              onChange={(e) => updateSetting('antiPhishingCode', e.target.value)}
+              placeholder="Enter a memorable phrase"
+              disabled={loading}
             />
+            <p className="text-xs text-muted-foreground">
+              This code will appear in official emails from IPG i-SMART to verify authenticity
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Daily Spend Limit (USD)</Label>
-            <p className="text-sm text-muted-foreground">0 = no limit</p>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                value={spendLimit}
-                onChange={(e) => setSpendLimit(e.target.value)}
-                placeholder="0"
-              />
-              <Button onClick={handleSaveSpendLimit}>Save</Button>
-            </div>
-          </div>
+          {settings.antiPhishingCode && (
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Your security code:</strong> {settings.antiPhishingCode}
+                <br />
+                <span className="text-xs">
+                  Always verify this code appears in official emails before taking any action.
+                </span>
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
-      {/* Login History */}
+      {/* Security Status */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Login History
+            <Shield className="h-5 w-5" />
+            Security Status
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Event</TableHead>
-                <TableHead>IP Address</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loginHistory.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell>{log.event}</TableCell>
-                  <TableCell>{log.ip || 'N/A'}</TableCell>
-                  <TableCell>{new Date(log.created_at).toLocaleString()}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm">PIN Protection</span>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Biometric Authentication</span>
+            {settings.biometricEnabled ? (
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Anti-Phishing Code</span>
+            {settings.antiPhishingCode ? (
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-yellow-500" />
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Session Auto-lock</span>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 };
+
+export default SecurityTab;
