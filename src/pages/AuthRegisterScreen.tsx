@@ -46,7 +46,7 @@ const AuthRegisterScreen = () => {
       } else {
         setSuccess("Account created successfully! Please check your email for verification.");
         setTimeout(() => {
-          navigate("/app/home");
+          navigate(`/email-verification?email=${encodeURIComponent(email)}`);
         }, 2000);
       }
     } catch (err) {

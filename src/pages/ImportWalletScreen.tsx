@@ -48,9 +48,9 @@ const ImportWalletScreen = () => {
         description: "Wallet imported successfully",
       });
 
-      // Navigate to email verification
+      // Navigate to security setup
       setTimeout(() => {
-        navigate("/email-verification");
+        navigate("/onboarding/security");
       }, 1000);
 
     } catch (err) {
