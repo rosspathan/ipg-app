@@ -78,7 +78,12 @@ export default {
 			},
 			boxShadow: {
 				'card': 'var(--shadow-card)',
-				'button': 'var(--shadow-button)'
+				'button': 'var(--shadow-button)',
+				'elevated': 'var(--shadow-elevated)'
+			},
+			spacing: {
+				'18': '4.5rem',
+				'22': '5.5rem'
 			},
 			keyframes: {
 				'accordion-down': {

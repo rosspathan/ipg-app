@@ -8,44 +8,51 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 220 25% 97%;
-    --foreground: 220 25% 15%;
+    /* Material Design inspired colors for Android mobile look */
+    --background: 210 20% 98%;
+    --foreground: 210 15% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 15%;
+    --card-foreground: 210 15% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 15%;
+    --popover-foreground: 210 15% 12%;
 
-    --primary: 210 85% 45%;
+    /* Material Blue primary color */
+    --primary: 211 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 25% 92%;
-    --secondary-foreground: 220 25% 15%;
+    --secondary: 210 25% 95%;
+    --secondary-foreground: 210 15% 12%;
 
-    --muted: 210 20% 94%;
-    --muted-foreground: 220 15% 45%;
+    --muted: 210 15% 96%;
+    --muted-foreground: 210 10% 55%;
 
-    --accent: 180 75% 50%;
+    /* Material Design accent color */
+    --accent: 259 100% 65%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 75% 55%;
+    --destructive: 4 90% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 88%;
-    --input: 210 20% 88%;
-    --ring: 210 85% 45%;
+    --border: 210 15% 92%;
+    --input: 210 15% 96%;
+    --ring: 211 100% 50%;
 
-    --success: 142 76% 36%;
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(210 85% 45%), hsl(180 75% 50%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 25% 97%));
+    /* Material Design gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(211 100% 50%), hsl(259 100% 65%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 20% 98%));
     
-    --shadow-card: 0 4px 6px -1px hsl(220 25% 15% / 0.1);
-    --shadow-button: 0 2px 4px -1px hsl(210 85% 45% / 0.3);
+    /* Material Design elevation shadows */
+    --shadow-card: 0 2px 4px hsl(210 15% 12% / 0.08), 0 1px 2px hsl(210 15% 12% / 0.16);
+    --shadow-button: 0 2px 4px hsl(211 100% 50% / 0.24);
+    --shadow-elevated: 0 8px 16px hsl(210 15% 12% / 0.12), 0 4px 8px hsl(210 15% 12% / 0.08);
 
-    --radius: 0.5rem;
+    /* Android style radius - more rounded */
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -65,42 +72,48 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 30% 8%;
-    --foreground: 210 40% 98%;
+    /* Material Design Dark Theme colors */
+    --background: 210 20% 7%;
+    --foreground: 210 20% 95%;
 
-    --card: 220 25% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 210 20% 10%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 220 25% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 20% 10%;
+    --popover-foreground: 210 20% 95%;
 
-    --primary: 210 85% 55%;
-    --primary-foreground: 0 0% 100%;
+    /* Material Blue in dark mode */
+    --primary: 211 100% 60%;
+    --primary-foreground: 210 20% 7%;
 
-    --secondary: 220 20% 18%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 210 15% 15%;
+    --secondary-foreground: 210 20% 95%;
 
-    --muted: 220 20% 16%;
-    --muted-foreground: 220 15% 65%;
+    --muted: 210 15% 12%;
+    --muted-foreground: 210 10% 65%;
 
-    --accent: 180 75% 60%;
-    --accent-foreground: 0 0% 100%;
+    /* Material Design accent in dark mode */
+    --accent: 259 100% 70%;
+    --accent-foreground: 210 20% 7%;
 
-    --destructive: 0 75% 65%;
+    --destructive: 4 90% 65%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 18%;
-    --input: 220 20% 18%;
-    --ring: 210 85% 55%;
+    --border: 210 15% 18%;
+    --input: 210 15% 15%;
+    --ring: 211 100% 60%;
 
-    --success: 142 76% 46%;
-    --success-foreground: 0 0% 100%;
+    --success: 142 71% 55%;
+    --success-foreground: 210 20% 7%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(210 85% 55%), hsl(180 75% 60%));
-    --gradient-card: linear-gradient(145deg, hsl(220 25% 12%), hsl(220 30% 8%));
+    /* Material Design dark gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(211 100% 60%), hsl(259 100% 70%));
+    --gradient-card: linear-gradient(145deg, hsl(210 20% 10%), hsl(210 20% 7%));
     
-    --shadow-card: 0 4px 6px -1px hsl(0 0% 0% / 0.3);
-    --shadow-button: 0 2px 4px -1px hsl(210 85% 55% / 0.4);
+    /* Material Design dark elevation shadows */
+    --shadow-card: 0 2px 4px hsl(0 0% 0% / 0.24), 0 1px 2px hsl(0 0% 0% / 0.32);
+    --shadow-button: 0 2px 4px hsl(211 100% 60% / 0.32);
+    --shadow-elevated: 0 8px 16px hsl(0 0% 0% / 0.32), 0 4px 8px hsl(0 0% 0% / 0.24);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -119,5 +132,58 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    /* Android mobile optimizations */
+    @apply antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  /* Mobile-first container optimization */
+  #root {
+    @apply min-h-screen w-full;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Android style scrollbars */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/30;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  /* Material Design ripple effect */
+  .ripple {
+    position: relative;
+    overflow: hidden;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .ripple:before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+    opacity: 0.1;
+    pointer-events: none;
+  }
+
+  .ripple:active:before {
+    width: 300px;
+    height: 300px;
   }
 }
