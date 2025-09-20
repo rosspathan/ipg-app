@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import bgOption1 from "@/assets/bg-option-1.png";
 import bgOption2 from "@/assets/bg-option-2.png";
 import bgOption5 from "@/assets/bg-option-5.png";
+import bgOption6 from "@/assets/bg-option-6.png";
 
 const AppHomeScreen = () => {
   const navigate = useNavigate();
@@ -96,7 +97,7 @@ const AppHomeScreen = () => {
     <div 
       className="min-h-screen w-full animate-slide-in-right relative"
       style={{
-        backgroundImage: `url(${bgOption5})`,
+        backgroundImage: `url(${bgOption6})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
