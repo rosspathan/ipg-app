@@ -103,12 +103,13 @@ const AppHomeScreen = () => {
       style={{
         backgroundImage: `url(${bgHolographicCircuit})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
+        backgroundPosition: 'center top',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed'
       }}
     >
-      {/* Overlay for better content readability */}
-      <div className="absolute inset-0 bg-background/50 backdrop-blur-[2px]"></div>
+      {/* Mobile-optimized overlay for better content readability */}
+      <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] md:bg-background/50 md:backdrop-blur-[2px]"></div>
       
       {/* Content */}
       <div className="relative z-10">
@@ -136,7 +137,7 @@ const AppHomeScreen = () => {
           }
         />
 
-      <div className="p-4 space-y-6">
+      <div className="p-3 space-y-4 md:p-4 md:space-y-6">
         {/* Balance Display */}
         <BalanceDisplay
           balance={totalBalance}
