@@ -239,7 +239,7 @@ export const useCatalog = (): CatalogData => {
         supabase.from('staking_pools').select('*').eq('active', true).order('created_at'),
         (supabase as any).from('lucky_draw_plans').select('*').eq('is_active', true).order('created_at'),
         supabase.from('insurance_plans').select('*').eq('active', true).order('created_at'),
-        (supabase as any).from('ads').select('*').eq('is_active', true).order('created_at'),
+        (supabase as any).from('ads').select('*').eq('status', 'active').order('created_at'),
         (supabase as any).from('fees_config').select('*').order('updated_at', { ascending: false }).limit(1).single()
       ]);
 

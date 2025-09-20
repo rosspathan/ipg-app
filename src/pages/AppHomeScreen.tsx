@@ -8,6 +8,7 @@ import { NeonIconTile } from "@/components/ui/neon-icon-tile";
 import BalanceDisplay from "@/components/BalanceDisplay";
 import QuickActionGrid from "@/components/QuickActionGrid";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
+import { AdCarousel } from "@/components/AdCarousel";
 import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -155,6 +156,12 @@ const AppHomeScreen = () => {
           style={{ animationDelay: "250ms", animationFillMode: "both" }}
         />
 
+        {/* Top Ad Banner */}
+        <AdCarousel 
+          placement="home_top" 
+          className="animate-fade-in-scale" 
+        />
+
         {/* Quick Actions Grid - Cyberpunk Style */}
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-foreground tracking-tight">Quick Access</h3>
@@ -179,6 +186,12 @@ const AppHomeScreen = () => {
             ))}
           </div>
         </div>
+
+        {/* Mid Ad Banner */}
+        <AdCarousel 
+          placement="home_mid" 
+          className="animate-fade-in-scale" 
+        />
 
         {/* Featured Programs - Enhanced Cyberpunk Cards */}
         <div className="space-y-4">
