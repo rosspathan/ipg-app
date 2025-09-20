@@ -78,6 +78,7 @@ export const useReferralProgram = () => {
   // Fetch bonus assets
   const fetchBonusAssets = async () => {
     try {
+      console.log('🔄 Fetching bonus assets...');
       const { data, error } = await supabase
         .from('bonus_assets')
         .select('*')
@@ -85,8 +86,9 @@ export const useReferralProgram = () => {
       
       if (error) throw error;
       setBonusAssets(data || []);
+      console.log('✅ Bonus assets loaded:', data?.length || 0);
     } catch (error) {
-      console.error('Error fetching bonus assets:', error);
+      console.error('❌ Error fetching bonus assets:', error);
       toast({
         title: "Error",
         description: "Failed to fetch bonus assets",
@@ -98,6 +100,7 @@ export const useReferralProgram = () => {
   // Fetch bonus prices
   const fetchBonusPrices = async () => {
     try {
+      console.log('🔄 Fetching bonus prices...');
       const { data, error } = await supabase
         .from('bonus_prices')
         .select('*')
@@ -105,14 +108,16 @@ export const useReferralProgram = () => {
       
       if (error) throw error;
       setBonusPrices(data || []);
+      console.log('✅ Bonus prices loaded:', data?.length || 0);
     } catch (error) {
-      console.error('Error fetching bonus prices:', error);
+      console.error('❌ Error fetching bonus prices:', error);
     }
   };
 
   // Fetch referral settings
   const fetchReferralSettings = async () => {
     try {
+      console.log('🔄 Fetching referral settings...');
       const { data, error } = await supabase
         .from('referral_settings')
         .select('*')
@@ -121,14 +126,16 @@ export const useReferralProgram = () => {
       
       if (error && error.code !== 'PGRST116') throw error;
       setReferralSettings(data);
+      console.log('✅ Referral settings loaded:', data ? 'found' : 'not found');
     } catch (error) {
-      console.error('Error fetching referral settings:', error);
+      console.error('❌ Error fetching referral settings:', error);
     }
   };
 
   // Fetch referral events
   const fetchReferralEvents = async () => {
     try {
+      console.log('🔄 Fetching referral events...');
       const { data, error } = await supabase
         .from('referral_events')
         .select('*')
@@ -136,36 +143,41 @@ export const useReferralProgram = () => {
       
       if (error) throw error;
       setReferralEvents(data || []);
+      console.log('✅ Referral events loaded:', data?.length || 0);
     } catch (error) {
-      console.error('Error fetching referral events:', error);
+      console.error('❌ Error fetching referral events:', error);
     }
   };
 
   // Fetch bonus balances
   const fetchBonusBalances = async () => {
     try {
+      console.log('🔄 Fetching bonus balances...');
       const { data, error } = await supabase
         .from('wallet_bonus_balances')
         .select('*');
       
       if (error) throw error;
       setBonusBalances(data || []);
+      console.log('✅ Bonus balances loaded:', data?.length || 0);
     } catch (error) {
-      console.error('Error fetching bonus balances:', error);
+      console.error('❌ Error fetching bonus balances:', error);
     }
   };
 
   // Fetch referral relationships
   const fetchReferralRelationships = async () => {
     try {
+      console.log('🔄 Fetching referral relationships...');
       const { data, error } = await supabase
         .from('referral_relationships')
         .select('*');
       
       if (error) throw error;
       setReferralRelationships(data || []);
+      console.log('✅ Referral relationships loaded:', data?.length || 0);
     } catch (error) {
-      console.error('Error fetching referral relationships:', error);
+      console.error('❌ Error fetching referral relationships:', error);
     }
   };
 
@@ -331,16 +343,23 @@ export const useReferralProgram = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      console.log('🔄 Starting referral program data load...');
       setLoading(true);
-      await Promise.all([
-        fetchBonusAssets(),
-        fetchBonusPrices(),
-        fetchReferralSettings(),
-        fetchReferralEvents(),
-        fetchBonusBalances(),
-        fetchReferralRelationships()
-      ]);
-      setLoading(false);
+      try {
+        await Promise.all([
+          fetchBonusAssets(),
+          fetchBonusPrices(),
+          fetchReferralSettings(),
+          fetchReferralEvents(),
+          fetchBonusBalances(),
+          fetchReferralRelationships()
+        ]);
+        console.log('✅ All referral program data loaded successfully');
+      } catch (error) {
+        console.error('❌ Error loading referral program data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadData();

@@ -37,10 +37,14 @@ const ReferralsScreen = () => {
   };
 
   if (loading || !user) {
+    console.log('ReferralsScreen loading state:', { loading, user: !!user });
     return (
       <div className="min-h-screen flex flex-col bg-background px-6 py-8">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="ml-4 text-muted-foreground">
+            {!user ? 'Loading user...' : 'Loading referral data...'}
+          </p>
         </div>
       </div>
     );
