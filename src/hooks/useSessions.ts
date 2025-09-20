@@ -42,7 +42,10 @@ export const useSessions = () => {
   };
 
   const fetchDevices = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
