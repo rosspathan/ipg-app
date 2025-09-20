@@ -57,9 +57,8 @@ const SecurityTab = () => {
 
       setLoading(true);
       try {
-        const [securityResult, settingsResult, biometricCheck] = await Promise.all([
+        const [securityResult, biometricCheck] = await Promise.all([
           supabase.from('security').select('*').eq('user_id', user.id).maybeSingle(),
-          supabase.from('settings_user').select('*').eq('user_id', user.id).maybeSingle(),
           checkBiometricAvailability()
         ]);
 
@@ -67,8 +66,8 @@ const SecurityTab = () => {
 
         setSettings({
           biometricEnabled: securityResult.data?.biometric_enabled || false,
-          requireOnActions: settingsResult.data?.require_unlock_on_actions ?? true,
-          sessionLockMinutes: settingsResult.data?.session_lock_minutes || 5,
+          requireOnActions: true, // Default value
+          sessionLockMinutes: 5, // Default value
           antiPhishingCode: securityResult.data?.anti_phishing_code || ""
         });
       } catch (error) {
@@ -104,13 +103,8 @@ const SecurityTab = () => {
             anti_phishing_code: key === 'antiPhishingCode' ? value : settings.antiPhishingCode
           }, { onConflict: 'user_id' });
       } else {
-        await supabase
-          .from('settings_user')
-          .upsert({
-            user_id: user.id,
-            require_unlock_on_actions: key === 'requireOnActions' ? value : settings.requireOnActions,
-            session_lock_minutes: key === 'sessionLockMinutes' ? value : settings.sessionLockMinutes
-          }, { onConflict: 'user_id' });
+        // For settings not stored in security table, just update local state
+        setSettings(newSettings);
       }
 
       // Update lock state

@@ -121,7 +121,7 @@ const ProfileScreen = () => {
           </div>
           
           <div className="w-10 flex justify-center">
-            {userApp?.account_frozen && (
+            {userApp?.account_status === 'frozen' && (
               <Badge variant="destructive" className="text-xs px-2 py-0.5">
                 Frozen
               </Badge>
@@ -133,7 +133,7 @@ const ProfileScreen = () => {
       {/* Content */}
       <div className="max-w-md mx-auto px-4 py-4 space-y-4">
         {/* Account Frozen Alert */}
-        {userApp?.account_frozen && (
+        {userApp?.account_status === 'frozen' && (
           <Alert variant="destructive" className="mb-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-sm">

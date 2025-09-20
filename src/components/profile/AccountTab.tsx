@@ -14,8 +14,6 @@ interface AccountFormData {
   display_name: string;
   email: string;
   phone: string;
-  country: string;
-  dob: string;
 }
 
 export const AccountTab = () => {
@@ -25,18 +23,19 @@ export const AccountTab = () => {
   
   const { register, handleSubmit, formState: { errors } } = useForm<AccountFormData>({
     defaultValues: {
-      display_name: userApp?.display_name || '',
+      display_name: userApp?.full_name || '',
       email: userApp?.email || '',
       phone: userApp?.phone || '',
-      country: userApp?.country || '',
-      dob: userApp?.dob || '',
     }
   });
 
   const onSubmit = async (data: AccountFormData) => {
     try {
       setSaving(true);
-      await updateUserApp(data);
+      await updateUserApp({ 
+        full_name: data.display_name,
+        phone: data.phone,
+      });
     } catch (error) {
       // Error handled in hook
     } finally {
@@ -101,30 +100,6 @@ export const AccountTab = () => {
                   type="tel"
                   {...register("phone")}
                   placeholder="+1234567890"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="us">United States</SelectItem>
-                    <SelectItem value="in">India</SelectItem>
-                    <SelectItem value="uk">United Kingdom</SelectItem>
-                    <SelectItem value="ca">Canada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dob">Date of Birth</Label>
-                <Input
-                  id="dob"
-                  type="date"
-                  {...register("dob")}
                 />
               </div>
             </div>

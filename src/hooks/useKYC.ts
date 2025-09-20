@@ -31,30 +31,12 @@ export const useKYC = () => {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('kyc_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data) {
-        // Create initial KYC record
-        const { data: newKYC, error: createError } = await supabase
-          .from('kyc_profiles')
-          .insert([{
-            user_id: user.id,
-            status: 'unverified'
-          }])
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        setKycProfile(newKYC as KYCProfile);
-      } else {
-        setKycProfile(data as KYCProfile);
-      }
+      // Set default KYC state since table doesn't exist yet
+      setKycProfile({
+        user_id: user.id,
+        status: 'unverified',
+        created_at: new Date().toISOString()
+      });
     } catch (error) {
       console.error('Error fetching KYC:', error);
       toast({

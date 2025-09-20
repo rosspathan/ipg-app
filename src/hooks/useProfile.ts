@@ -8,10 +8,8 @@ export interface UserApp {
   user_id: string;
   email?: string;
   phone?: string;
-  display_name?: string;
-  country?: string;
-  dob?: string;
-  account_frozen: boolean;
+  full_name?: string;
+  account_status: string;
   created_at: string;
 }
 
@@ -27,7 +25,7 @@ export const useProfile = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('users_app')
+        .from('profiles')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
@@ -37,11 +35,11 @@ export const useProfile = () => {
       if (!data) {
         // Create initial user app record
         const { data: newUserApp, error: createError } = await supabase
-          .from('users_app')
+          .from('profiles')
           .insert([{
             user_id: user.id,
             email: user.email,
-            account_frozen: false
+            account_status: 'active'
           }])
           .select()
           .single();
@@ -68,7 +66,7 @@ export const useProfile = () => {
 
     try {
       const { data, error } = await supabase
-        .from('users_app')
+        .from('profiles')
         .update(updates)
         .eq('user_id', user.id)
         .select()

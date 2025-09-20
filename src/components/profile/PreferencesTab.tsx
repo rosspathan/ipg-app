@@ -21,39 +21,6 @@ export const PreferencesTab = () => {
     }
   };
 
-  const handleLanguageChange = async (language: string) => {
-    try {
-      setSaving(true);
-      await updateSettings({ language });
-    } catch (error) {
-      // Error handled in hook
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleThemeChange = async (theme: string) => {
-    try {
-      setSaving(true);
-      await updateSettings({ theme });
-    } catch (error) {
-      // Error handled in hook
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSessionLockChange = async (minutes: string) => {
-    try {
-      setSaving(true);
-      await updateSettings({ session_lock_minutes: parseInt(minutes) });
-    } catch (error) {
-      // Error handled in hook
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -103,93 +70,18 @@ export const PreferencesTab = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
-            Language & Region
+            Additional Settings
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <Label>Interface Language</Label>
-            <Select 
-              value={settings?.language || 'en'} 
-              onValueChange={handleLanguageChange}
-              disabled={saving}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="hi">हिंदी (Hindi)</SelectItem>
-                <SelectItem value="es">Español (Spanish)</SelectItem>
-                <SelectItem value="fr">Français (French)</SelectItem>
-                <SelectItem value="de">Deutsch (German)</SelectItem>
-                <SelectItem value="zh">中文 (Chinese)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            Appearance
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label>Theme</Label>
-            <p className="text-sm text-muted-foreground">
-              Choose your preferred color scheme
-            </p>
-            <Select 
-              value={settings?.theme || 'system'} 
-              onValueChange={handleThemeChange}
-              disabled={saving}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="system">System (Auto)</SelectItem>
-                <SelectItem value="light">Light Mode</SelectItem>
-                <SelectItem value="dark">Dark Mode</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Security Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label>Auto-Lock Timeout</Label>
-            <p className="text-sm text-muted-foreground">
-              Automatically lock the app after inactivity
-            </p>
-            <Select 
-              value={settings?.session_lock_minutes?.toString() || '5'} 
-              onValueChange={handleSessionLockChange}
-              disabled={saving}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">1 minute</SelectItem>
-                <SelectItem value="5">5 minutes</SelectItem>
-                <SelectItem value="10">10 minutes</SelectItem>
-                <SelectItem value="30">30 minutes</SelectItem>
-                <SelectItem value="0">Never</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="text-sm text-muted-foreground">
+            <p>More preference options will be available soon, including:</p>
+            <ul className="mt-2 space-y-1">
+              <li>• Language selection</li>
+              <li>• Dark/Light theme</li>
+              <li>• Auto-lock settings</li>
+              <li>• Regional formats</li>
+            </ul>
           </div>
         </CardContent>
       </Card>
