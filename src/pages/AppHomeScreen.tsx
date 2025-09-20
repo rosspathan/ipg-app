@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import bgOption1 from "@/assets/bg-option-1.png";
 import bgOption2 from "@/assets/bg-option-2.png";
+import bgOption3 from "@/assets/bg-option-3.png";
 
 const AppHomeScreen = () => {
   const navigate = useNavigate();
@@ -95,7 +96,7 @@ const AppHomeScreen = () => {
     <div 
       className="min-h-screen w-full animate-slide-in-right relative"
       style={{
-        backgroundImage: `url(${bgOption2})`,
+        backgroundImage: `url(${bgOption3})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
