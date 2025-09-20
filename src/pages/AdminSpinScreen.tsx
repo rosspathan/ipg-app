@@ -270,14 +270,14 @@ export default function AdminSpinScreen() {
   const resetSegmentForm = () => {
     setSegmentForm({
       label: "",
-      weight: 10,
-      reward_type: "nothing",
-      reward_value: 0,
-      reward_token: "",
+      weight: 25,
+      reward_type: "token",
+      reward_value: 5,
+      reward_token: "BSK",
       max_per_day: 0,
       max_total: 0,
       is_enabled: true,
-      color: ""
+      color: "#00ff88"
     });
   };
 

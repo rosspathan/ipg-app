@@ -8,10 +8,10 @@ const ProgramsScreen = () => {
 
   const programs = [
     {
-      title: "Lucky Spin Wheel",
-      description: "Spin the wheel to win tokens, bonuses and prizes",
+      title: "BSK Fortune Wheel",
+      description: "Spin to win or lose BSK Coins! Futuristic wheel with premium design",
       icon: Gift,
-      color: "text-purple-500",
+      color: "text-green-500",
       route: "/app/programs/spin"
     },
     {

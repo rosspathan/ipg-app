@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, Gift, Coins } from "lucide-react";
+import { ArrowLeft, History, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { FuturisticSpinWheel } from "@/components/gamification/FuturisticSpinWheel";
+import BonusBalanceCard from "@/components/BonusBalanceCard";
 
 interface SpinWheel {
   id: string;
@@ -45,6 +47,7 @@ export default function SpinWheelScreen() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [winningResult, setWinningResult] = useState<any>(null);
+  const [bonusBalanceKey, setBonusBalanceKey] = useState(0);
 
   useEffect(() => {
     loadWheelData();
@@ -62,6 +65,7 @@ export default function SpinWheelScreen() {
         (payload) => {
           console.log('New spin run:', payload);
           loadWheelData(); // Refresh data when new runs are added
+          setBonusBalanceKey(prev => prev + 1); // Force bonus balance update
         }
       )
       .subscribe();
@@ -78,24 +82,28 @@ export default function SpinWheelScreen() {
 
   const loadWheelData = async () => {
     try {
-      // Load active wheel with time window check
+      // Load the BSK Fortune Wheel specifically
       const { data: wheels } = await supabase
         .from("spin_wheels")
         .select("*")
+        .eq("name", "BSK Fortune Wheel")
         .eq("is_active", true)
-        .or(`start_at.is.null,start_at.lte.${new Date().toISOString()}`)
-        .or(`end_at.is.null,end_at.gte.${new Date().toISOString()}`)
         .limit(1);
 
       if (!wheels || wheels.length === 0) {
-        console.log("No active wheels found, might need to seed demo data");
+        console.log("BSK Fortune Wheel not found");
+        toast({
+          title: "Wheel Unavailable",
+          description: "The BSK Fortune Wheel is currently unavailable",
+          variant: "destructive"
+        });
         return;
       }
 
       const activeWheel = wheels[0];
       setWheel(activeWheel);
 
-      // Load segments
+      // Load segments (should be exactly 4)
       const { data: segmentsData } = await supabase
         .from("spin_segments")
         .select("*")
@@ -154,6 +162,9 @@ export default function SpinWheelScreen() {
     setIsSpinning(true);
     setWinningResult(null);
 
+    // Add some delay for dramatic effect
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     try {
       const { data, error } = await supabase.functions.invoke("spin-execute", {
         body: { wheel_id: wheel.id }
@@ -170,12 +181,15 @@ export default function SpinWheelScreen() {
           setCooldownRemaining(wheel.cooldown_seconds);
         }
 
-        // Refresh recent runs
-        loadWheelData();
+        // Force bonus balance update
+        setBonusBalanceKey(prev => prev + 1);
 
+        // Show appropriate toast
+        const isWin = data.reward?.value > 0;
         toast({
-          title: "Congratulations! 🎉",
-          description: `You won: ${data.label}`,
+          title: isWin ? "🎉 Congratulations!" : "😢 Better luck next time!",
+          description: `${data.label}: ${data.reward?.value > 0 ? '+' : ''}${data.reward?.value} BSK`,
+          variant: isWin ? "default" : "destructive"
         });
       } else {
         throw new Error(data.error || "Spin failed");
@@ -192,247 +206,202 @@ export default function SpinWheelScreen() {
     }
   };
 
-  const getTotalWeight = () => segments.reduce((sum, s) => sum + s.weight, 0);
-  
-  const getSegmentProbability = (weight: number) => {
-    const total = getTotalWeight();
-    return total > 0 ? ((weight / total) * 100).toFixed(1) : "0";
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
   };
 
-  const formatCooldown = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    if (hours > 0) return `${hours}h ${minutes}m ${secs}s`;
-    if (minutes > 0) return `${minutes}m ${secs}s`;
-    return `${secs}s`;
+  const groupRunsByDate = (runs: SpinRun[]) => {
+    const groups: { [key: string]: SpinRun[] } = {};
+    runs.forEach(run => {
+      const date = new Date(run.created_at).toLocaleDateString();
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(run);
+    });
+    return groups;
   };
 
-  const canSpin = wheel && !isSpinning && cooldownRemaining === 0;
-  const spinCost = freeSpinsLeft > 0 ? 0 : wheel?.ticket_price || 0;
-
-    // Show loading state if no wheel is loaded yet
-    if (!wheel) {
-      return (
-        <div className="min-h-screen bg-background">
-          <div className="container mx-auto px-4 py-6 max-w-4xl">
-            <div className="flex items-center gap-4 mb-6">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/app/programs")}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">Lucky Spin Wheel</h1>
-                <p className="text-muted-foreground">Loading wheel data...</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  if (!wheel) {
+    return (
+      <div className="min-h-screen bg-background relative overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,136,0.1)_0%,transparent_50%)] animate-pulse" />
+        
+        <div className="container mx-auto px-4 py-6 max-w-4xl relative z-10">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/app/programs")}
+              className="hover:bg-primary/10"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                BSK Fortune Wheel
+              </h1>
+              <p className="text-muted-foreground">Loading wheel data...</p>
             </div>
           </div>
+          <div className="flex items-center justify-center py-12">
+            <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+  const groupedRuns = groupRunsByDate(recentRuns);
+
+  return (
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Animated background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5" />
+      <div className="absolute inset-0">
+        <div className="h-full w-full bg-[linear-gradient(90deg,transparent_79px,rgba(0,255,136,0.03)_81px,rgba(0,255,136,0.03)_82px,transparent_84px)] bg-[length:84px_84px]" />
+        <div className="h-full w-full bg-[linear-gradient(0deg,transparent_79px,rgba(255,0,102,0.03)_81px,rgba(255,0,102,0.03)_82px,transparent_84px)] bg-[length:84px_84px]" />
+      </div>
+      
+      <div className="container mx-auto px-4 py-6 max-w-6xl relative z-10">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-8">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate("/app/programs")}
+            className="hover:bg-primary/10"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Lucky Spin Wheel</h1>
-            {wheel ? (
-              <p className="text-muted-foreground">{wheel.name}</p>
-            ) : (
-              <p className="text-muted-foreground">Loading...</p>
-            )}
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              BSK Fortune Wheel
+            </h1>
+            <p className="text-muted-foreground flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Spin to win or lose BSK Coins
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/app/programs/spin/history")}
+            className="hidden md:flex items-center gap-2"
+          >
+            <History className="h-4 w-4" />
+            View History
+          </Button>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Spin Wheel */}
+          <div className="lg:col-span-2 space-y-8">
+            <FuturisticSpinWheel
+              segments={segments}
+              onSpin={handleSpin}
+              isSpinning={isSpinning}
+              winningSegment={winningResult}
+              disabled={false}
+              freeSpinsLeft={freeSpinsLeft}
+              cooldownRemaining={cooldownRemaining}
+            />
+          </div>
+
+          {/* Right Column - Info Cards */}
+          <div className="space-y-6">
+            {/* Bonus Balance Card */}
+            <BonusBalanceCard key={bonusBalanceKey} className="animate-fade-in" />
+
+            {/* Segment Details */}
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Prize Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {segments.map((segment) => (
+                    <div 
+                      key={segment.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: segment.color || (segment.label.includes('WIN') ? '#00ff88' : '#ff0066') }}
+                        />
+                        <div>
+                          <div className="font-medium">{segment.label}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {segment.reward_value > 0 ? '+' : ''}{segment.reward_value} BSK
+                          </div>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">
+                        25%
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Spins */}
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">Recent Spins</CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate("/app/programs/spin/history")}
+                  className="md:hidden"
+                >
+                  View All
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {recentRuns.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-4xl mb-2">🎰</div>
+                    <p>No spins yet.</p>
+                    <p className="text-sm">Try your luck!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {Object.entries(groupedRuns).slice(0, 3).map(([date, runs]) => (
+                      <div key={date}>
+                        <div className="text-xs font-medium text-muted-foreground mb-2">{date}</div>
+                        {runs.slice(0, 3).map((run) => {
+                          const isWin = run.outcome?.reward_value > 0;
+                          return (
+                            <div key={run.id} className="flex justify-between items-center p-2 rounded border border-border/30">
+                              <div>
+                                <div className="font-medium text-sm">{run.outcome?.label}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(run.created_at).toLocaleTimeString()}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className={`text-sm font-medium ${isWin ? 'text-green-400' : 'text-red-400'}`}>
+                                  {run.outcome?.reward_value > 0 ? '+' : ''}{run.outcome?.reward_value} BSK
+                                </div>
+                                <Badge variant={isWin ? "secondary" : "destructive"} className="text-xs">
+                                  {isWin ? 'WIN' : 'LOSE'}
+                                </Badge>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
-
-        {/* Status Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Gift className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <div className="text-2xl font-bold">{freeSpinsLeft}</div>
-              <div className="text-sm text-muted-foreground">Free Spins Left</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Coins className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <div className="text-2xl font-bold">
-                {spinCost > 0 ? `${spinCost}` : "FREE"}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {spinCost > 0 ? wheel?.ticket_currency : "Next Spin"}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <div className="text-2xl font-bold">
-                {cooldownRemaining > 0 ? formatCooldown(cooldownRemaining) : "Ready"}
-              </div>
-              <div className="text-sm text-muted-foreground">Cooldown</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold">{recentRuns.length}</div>
-              <div className="text-sm text-muted-foreground">Total Spins</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Wheel Segments */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Wheel Segments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3">
-              {segments.map((segment) => (
-                <div 
-                  key={segment.id}
-                  className={`p-3 rounded-lg border-2 transition-all ${
-                    winningResult?.segment_id === segment.id 
-                      ? "border-primary bg-primary/10 animate-pulse" 
-                      : "border-border"
-                  }`}
-                  style={{ backgroundColor: segment.color ? `${segment.color}20` : undefined }}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="font-medium">{segment.label}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {segment.reward_type !== "nothing" && (
-                          <>
-                            Reward: {segment.reward_value} {segment.reward_token || segment.reward_type}
-                          </>
-                        )}
-                        {segment.reward_type === "nothing" && "No reward"}
-                      </div>
-                    </div>
-                    <Badge variant="secondary">
-                      {getSegmentProbability(segment.weight)}%
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Spin Button */}
-        <Card className="mb-6">
-          <CardContent className="p-6 text-center">
-            <Button
-              size="lg"
-              onClick={handleSpin}
-              disabled={!canSpin}
-              className="w-full max-w-xs mx-auto h-16 text-lg"
-            >
-              {isSpinning ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Spinning...
-                </div>
-              ) : cooldownRemaining > 0 ? (
-                `Wait ${formatCooldown(cooldownRemaining)}`
-              ) : (
-                `SPIN ${spinCost > 0 ? `(${spinCost} ${wheel?.ticket_currency})` : "(FREE)"}`
-              )}
-            </Button>
-            
-            {!canSpin && cooldownRemaining === 0 && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Wheel not available
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Winning Result */}
-        {winningResult && (
-          <Card className="mb-6 border-primary">
-            <CardHeader>
-              <CardTitle className="text-center">🎉 Congratulations!</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <div className="text-xl font-bold mb-2">{winningResult.label}</div>
-              {winningResult.reward.type !== "nothing" && (
-                <div className="text-lg text-primary">
-                  You won: {winningResult.reward.value} {winningResult.reward.token || winningResult.reward.type}
-                </div>
-              )}
-              {winningResult.reward.type === "nothing" && (
-                <div className="text-muted-foreground">Better luck next time!</div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Recent Spins */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Spins</CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate("/app/programs/spin/history")}
-            >
-              View All
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {recentRuns.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">
-                No spins yet. Try your luck!
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {recentRuns.slice(0, 5).map((run) => (
-                  <div key={run.id} className="flex justify-between items-center p-2 rounded border">
-                    <div>
-                      <div className="font-medium">{run.outcome?.label}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(run.created_at).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      {run.outcome?.reward_type !== "nothing" ? (
-                        <div className="text-sm text-primary">
-                          +{run.outcome?.reward_value} {run.outcome?.reward_token}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-muted-foreground">No reward</div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        Cost: {run.ticket_cost || 0}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

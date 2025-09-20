@@ -191,8 +191,9 @@ serve(async (req) => {
       throw new Error(`Failed to create spin run: ${runError.message}`);
     }
 
-    // 6. Grant rewards
-    if (winningSegment.reward_type !== "nothing" && winningSegment.reward_value && winningSegment.reward_value > 0) {
+    // 6. Grant rewards and update BSK balance
+    if (winningSegment.reward_type === "token" && winningSegment.reward_token === "BSK" && winningSegment.reward_value !== null) {
+      // Create grant record
       const { error: grantError } = await supabaseService
         .from("spin_grants")
         .insert({
@@ -207,7 +208,54 @@ serve(async (req) => {
       if (grantError) {
         console.error("Failed to create grant:", grantError);
       } else {
-        console.log(`Granted ${winningSegment.reward_value} ${winningSegment.reward_token || winningSegment.reward_type}`);
+        console.log(`Granted ${winningSegment.reward_value} ${winningSegment.reward_token}`);
+        
+        // Update BSK bonus balance
+        try {
+          // Get BSK asset ID
+          const { data: bskAsset } = await supabaseService
+            .from("bonus_assets")
+            .select("id")
+            .eq("symbol", "BSK")
+            .single();
+          
+          if (bskAsset) {
+            // Get current balance or create new record
+            const { data: currentBalance } = await supabaseService
+              .from("wallet_bonus_balances")
+              .select("balance")
+              .eq("user_id", user.id)
+              .eq("asset_id", bskAsset.id)
+              .single();
+            
+            const newBalance = (currentBalance?.balance || 0) + winningSegment.reward_value;
+            
+            if (currentBalance) {
+              // Update existing balance
+              await supabaseService
+                .from("wallet_bonus_balances")
+                .update({ 
+                  balance: newBalance,
+                  updated_at: new Date().toISOString()
+                })
+                .eq("user_id", user.id)
+                .eq("asset_id", bskAsset.id);
+            } else {
+              // Create new balance record
+              await supabaseService
+                .from("wallet_bonus_balances")
+                .insert({
+                  user_id: user.id,
+                  asset_id: bskAsset.id,
+                  balance: newBalance
+                });
+            }
+            
+            console.log(`Updated BSK balance: ${newBalance} (${winningSegment.reward_value > 0 ? '+' : ''}${winningSegment.reward_value})`);
+          }
+        } catch (balanceError) {
+          console.error("Failed to update BSK balance:", balanceError);
+        }
       }
     }
 
