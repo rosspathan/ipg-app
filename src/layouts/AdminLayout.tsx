@@ -61,7 +61,7 @@ const AdminLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background">
       {/* Top Header */}
       <div className="sticky top-0 z-40 border-b bg-card">
         <div className="flex h-14 md:h-16 items-center justify-between px-3 md:px-6">

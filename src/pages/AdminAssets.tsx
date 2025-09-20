@@ -244,7 +244,7 @@ const AdminAssets = () => {
               <DialogTitle>{editingAsset ? 'Edit Asset' : 'Add New Asset'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="symbol">Symbol</Label>
                   <Input
@@ -288,7 +288,7 @@ const AdminAssets = () => {
               </div>
 
               {formData.asset_type === 'fiat' && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="initial_price">Initial Price</Label>
                     <Input
@@ -296,14 +296,17 @@ const AdminAssets = () => {
                       type="number"
                       step="0.01"
                       value={formData.initial_price || ''}
-                      onChange={(e) => setFormData({...formData, initial_price: parseFloat(e.target.value) || null})}
+                      onChange={(e) => setFormData({ ...formData, initial_price: parseFloat(e.target.value) || null })}
                       placeholder="e.g., 1.00"
                       required={formData.asset_type === 'fiat'}
                     />
                   </div>
                   <div>
                     <Label htmlFor="price_currency">Price Base Currency</Label>
-                    <Select value={formData.price_currency} onValueChange={(value) => setFormData({...formData, price_currency: value})}>
+                    <Select
+                      value={formData.price_currency}
+                      onValueChange={(value) => setFormData({ ...formData, price_currency: value })}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -324,26 +327,29 @@ const AdminAssets = () => {
                   <Input
                     id="contract_address"
                     value={formData.contract_address}
-                    onChange={(e) => setFormData({...formData, contract_address: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contract_address: e.target.value })}
                     placeholder="0x..."
                   />
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="decimals">Decimals</Label>
                   <Input
                     id="decimals"
                     type="number"
                     value={formData.decimals}
-                    onChange={(e) => setFormData({...formData, decimals: parseInt(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, decimals: parseInt(e.target.value) })}
                     required
                   />
                 </div>
                 <div>
                   <Label htmlFor="network">Network</Label>
-                  <Select value={formData.network} onValueChange={(value) => setFormData({...formData, network: value})}>
+                  <Select
+                    value={formData.network}
+                    onValueChange={(value) => setFormData({ ...formData, network: value })}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

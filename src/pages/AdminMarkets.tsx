@@ -237,7 +237,7 @@ const AdminMarkets = () => {
               <DialogTitle>{editingMarket ? 'Edit Market' : 'Add New Market'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Base Asset</Label>
                   <Select
@@ -283,7 +283,7 @@ const AdminMarkets = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Tick Size</Label>
                   <Input
