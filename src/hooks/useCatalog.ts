@@ -91,16 +91,13 @@ interface LuckyDrawPlan {
 
 interface InsurancePlan {
   id: string;
-  name: string;
-  premium: number;
-  coverage_amount: number;
-  duration_days: number;
-  coverage_scope: string;
-  type: string;
-  exclusions: string[];
-  max_claims: number;
-  waiting_period_hours: number;
-  active: boolean;
+  plan_name: string;
+  premium_amount: number;
+  coverage_ratio: number;
+  max_coverage_per_claim: number;
+  min_loss_threshold: number;
+  is_active: boolean;
+  notes: string;
   created_at: string;
   updated_at: string;
 }
@@ -238,7 +235,7 @@ export const useCatalog = (): CatalogData => {
         (supabase as any).from('referrals_config').select('*').order('updated_at', { ascending: false }).limit(1).single(),
         supabase.from('staking_pools').select('*').eq('active', true).order('created_at'),
         (supabase as any).from('lucky_draw_plans').select('*').eq('is_active', true).order('created_at'),
-        supabase.from('insurance_plans').select('*').eq('active', true).order('created_at'),
+        supabase.from('insurance_plans').select('*').eq('is_active', true).order('created_at'),
         (supabase as any).from('ads').select('*').eq('status', 'active').order('created_at'),
         (supabase as any).from('fees_config').select('*').order('updated_at', { ascending: false }).limit(1).single()
       ]);

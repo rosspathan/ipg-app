@@ -75,7 +75,7 @@ import { AdminSubscriptions } from "./components/AdminSubscriptions";
 import AdminReferralProgram from "./pages/AdminReferralProgram";
 import { AdminStaking } from "./components/AdminStaking";
 import { AdminLuckyDraw } from "./components/AdminLuckyDraw";
-import { AdminInsurance } from "./components/AdminInsurance";
+import AdminInsurance from "./components/AdminInsurance";
 import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
 import AdminSpinScreen from "./pages/AdminSpinScreen";
