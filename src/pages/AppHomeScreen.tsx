@@ -16,6 +16,7 @@ import bgOption5 from "@/assets/bg-option-5.png";
 import bgOption6 from "@/assets/bg-option-6.png";
 import bgIpgLogo from "@/assets/bg-ipg-logo.png";
 import bgCryptoBlockchain from "@/assets/bg-crypto-blockchain.png";
+import bgHolographicCircuit from "@/assets/bg-holographic-circuit.png";
 import ipgLogo3D from "@/assets/ipg-logo-3d.png";
 
 const AppHomeScreen = () => {
@@ -100,7 +101,7 @@ const AppHomeScreen = () => {
     <div 
       className="min-h-screen w-full animate-slide-in-right relative"
       style={{
-        backgroundImage: `url(${bgCryptoBlockchain})`,
+        backgroundImage: `url(${bgHolographicCircuit})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
