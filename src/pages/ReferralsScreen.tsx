@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,35 +24,33 @@ const ReferralsScreen = () => {
     loading
   } = useReferralProgram();
 
-  const [referralLink] = useState(
-    user ? `${window.location.origin}/auth/register?ref=${user.id}` : ""
-  );
+  const referralLink = user ? `${window.location.origin}/auth/register?ref=${user.id}` : "";
 
   const handleCopyLink = () => {
+    if (!referralLink) {
+      toast({ title: "Sign in required", description: "Login to get your personal referral link" });
+      return;
+    }
     navigator.clipboard.writeText(referralLink);
-    toast({
-      title: "Link Copied!",
-      description: "Referral link copied to clipboard",
-    });
+    toast({ title: "Link Copied!", description: "Referral link copied to clipboard" });
   };
 
-  if (loading || !user) {
-    console.log('ReferralsScreen loading state:', { loading, user: !!user });
+  if (loading) {
+    console.log('ReferralsScreen loading state:', { loading, userPresent: !!user });
     return (
       <div className="min-h-screen flex flex-col bg-background px-6 py-8">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="ml-4 text-muted-foreground">
-            {!user ? 'Loading user...' : 'Loading referral data...'}
-          </p>
+          <p className="ml-4 text-muted-foreground">Loading referral data...</p>
         </div>
       </div>
     );
   }
 
-  const userReferralEvents = referralEvents.filter(event => event.referrer_id === user.id);
-  const userBonusBalances = bonusBalances.filter(balance => balance.user_id === user.id);
-  const userReferees = referralRelationships.filter(rel => rel.referrer_id === user.id);
+  const userId = user?.id;
+  const userReferralEvents = userId ? referralEvents.filter(event => event.referrer_id === userId) : [];
+  const userBonusBalances = userId ? bonusBalances.filter(balance => balance.user_id === userId) : [];
+  const userReferees = userId ? referralRelationships.filter(rel => rel.referrer_id === userId) : [];
   
   const bskAsset = bonusAssets.find(asset => asset.symbol === 'BSK');
   const bskBalance = userBonusBalances.find(balance => 
@@ -73,9 +71,9 @@ const ReferralsScreen = () => {
   };
 
   // Create referral tree from actual data
-  const referralTree = userReferees.map(referral => {
+  const referralTree = userId ? userReferees.map(referral => {
     const referralEventsForUser = referralEvents.filter(event => 
-      event.referrer_id === user.id && event.user_id === referral.referee_id
+      event.referrer_id === userId && event.user_id === referral.referee_id
     );
     const totalBSKFromReferral = referralEventsForUser.reduce((sum, event) => sum + event.amount_bonus, 0);
     const referralLevel = referralEventsForUser.length > 0 ? referralEventsForUser[0].level : 1;
@@ -87,7 +85,7 @@ const ReferralsScreen = () => {
       value: `$${(totalBSKFromReferral * bskPrice).toFixed(2)}`,
       status: "Active" // Simplified
     };
-  });
+  }) : [];
 
   const levels = (referralSettings?.levels as any) || [];
 
@@ -143,7 +141,7 @@ const ReferralsScreen = () => {
               readOnly
               className="flex-1"
             />
-            <Button onClick={handleCopyLink} size="icon">
+            <Button onClick={handleCopyLink} size="icon" disabled={!referralLink}>
               <Copy className="w-4 h-4" />
             </Button>
           </div>
