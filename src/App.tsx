@@ -78,7 +78,7 @@ import { AdminLuckyDraw } from "./components/AdminLuckyDraw";
 import AdminInsurance from "./components/AdminInsurance";
 import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
-import { AdminTradingFees } from "./components/AdminTradingFees";
+import { AdminTradingFeesSimple } from "./components/AdminTradingFeesSimple";
 import AdminSpinScreen from "./pages/AdminSpinScreen";
 import AdminINRFundingScreen from "./pages/AdminINRFundingScreen";
 import AdminCredentialsTest from "./pages/AdminCredentialsTest";
@@ -217,7 +217,7 @@ function App() {
                 <Route path="insurance" element={<AdminInsurance />} />
                 <Route path="ads" element={<AdminAds />} />
                 <Route path="fees" element={<AdminFees />} />
-                <Route path="trading-fees" element={<AdminTradingFees />} />
+                <Route path="trading-fees" element={<AdminTradingFeesSimple />} />
                 <Route path="transfers" element={<div className="p-6"><h1 className="text-2xl font-bold">Transfer Management</h1></div>} />
                 <Route path="compliance" element={<div className="p-6"><h1 className="text-2xl font-bold">Compliance</h1></div>} />
                 <Route path="reports" element={<div className="p-6"><h1 className="text-2xl font-bold">Reports</h1></div>} />

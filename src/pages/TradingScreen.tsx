@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import OrderHistory from "@/components/OrderHistory";
 import { useCatalog } from "@/hooks/useCatalog";
-import { useTrading } from "@/hooks/useTrading";
+import { useTradingSimple } from "@/hooks/useTradingSimple";
 import AssetLogo from "@/components/AssetLogo";
 
 const TradingScreen = () => {
@@ -30,13 +30,20 @@ const TradingScreen = () => {
   const [selectedPair, setSelectedPair] = useState(marketPair);
 
   const { pairsList, pairsBySymbol, status } = useCatalog();
-  // Simplified for now - will use full trading system after migration
-  const livePrice = market.price || 0;
+  const {
+    orderBook: liveOrderBook,
+    recentTrades: liveTrades,
+    ticker: liveTicker,
+    balances,
+    hasBalance,
+    placeOrder: submitOrder,
+    getOrderFeePreview,
+    loading: tradingLoading
+  } = useTradingSimple(selectedPair);
   
   const currentPair = pairsBySymbol[selectedPair] || pairsList[0];
   const tradingViewSymbol = currentPair?.tradingview_symbol || 'BINANCE:BTCUSDT';
   const futuresSymbol = tradingViewSymbol.replace('USDT', 'USDTPERP');
-  
 
 // Live market data via Binance WebSocket
 const [market, setMarket] = useState({
@@ -121,10 +128,31 @@ useEffect(() => {
   return () => ws.close();
 }, [selectedPair, tradingType]);
 
+  const [feePreview, setFeePreview] = useState<{ maker_fee: number; taker_fee: number; fee_asset: string }>({ 
+    maker_fee: 0, 
+    taker_fee: 0, 
+    fee_asset: 'USDT' 
+  });
+
+  // Update fee preview when order parameters change
+  useEffect(() => {
+    const updateFeePreview = async () => {
+      if (amount && (orderType === 'market' || price)) {
+        const orderPrice = orderType === 'market' ? liveTicker?.last_price || 0 : parseFloat(price || '0');
+        if (orderPrice > 0) {
+          const preview = await getOrderFeePreview(selectedPair, parseFloat(amount), orderPrice, orderSide);
+          setFeePreview(preview);
+        }
+      }
+    };
+
+    updateFeePreview();
+  }, [amount, price, orderType, orderSide, selectedPair, liveTicker?.last_price, getOrderFeePreview]);
+
   const handlePlaceOrder = async () => {
     if (!amount) {
       toast({
-        title: "Invalid Amount", 
+        title: "Invalid Amount",
         description: "Please enter an amount",
         variant: "destructive",
       });
@@ -134,20 +162,44 @@ useEffect(() => {
     if (orderType !== 'market' && !price) {
       toast({
         title: "Invalid Price",
-        description: "Please enter a price for limit orders", 
+        description: "Please enter a price for limit orders",
         variant: "destructive",
       });
       return;
     }
 
-    const orderPrice = orderType === 'market' ? livePrice : parseFloat(price);
-    const totalValue = parseFloat(amount) * orderPrice;
-    const fee = totalValue * 0.001; // 0.1% fee
+    // Check balance before placing order
+    const [baseAsset, quoteAsset] = selectedPair.split('/');
+    const requiredAsset = orderSide === 'buy' ? quoteAsset : baseAsset;
+    const orderPrice = orderType === 'market' ? liveTicker?.last_price || 0 : parseFloat(price);
+    const requiredAmount = orderSide === 'buy' 
+      ? parseFloat(amount) * orderPrice 
+      : parseFloat(amount);
 
-    toast({
-      title: "Order Placed",
-      description: `${orderSide.toUpperCase()} order simulation - full trading engine available after migration approval`,
+    if (!hasBalance(requiredAsset, requiredAmount)) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You need at least ${requiredAmount.toFixed(8)} ${requiredAsset}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Place order using the trading system
+    const result = await submitOrder({
+      market_symbol: selectedPair,
+      side: orderSide,
+      type: orderType as 'market' | 'limit' | 'stop_limit',
+      quantity: parseFloat(amount),
+      price: orderType !== 'market' ? parseFloat(price) : undefined,
+      time_in_force: 'GTC'
     });
+
+    // Clear form if successful
+    if (result.success) {
+      setAmount("");
+      setPrice("");
+    }
   };
 
   return (
@@ -182,11 +234,11 @@ useEffect(() => {
 
           <div className="flex items-center gap-2">
             <div className="text-lg font-bold">
-              {marketData.price}
+              {liveTicker?.last_price?.toLocaleString() || marketData.price}
             </div>
-            <div className={`flex items-center text-sm ${marketData.isPositive ? 'text-green-500' : 'text-red-500'}`}>
-              {marketData.isPositive ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
-              {marketData.change24h}
+            <div className={`flex items-center text-sm ${(liveTicker?.change_24h || market.changePercent) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {(liveTicker?.change_24h || market.changePercent) >= 0 ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+              {liveTicker?.change_24h ? `${liveTicker.change_24h >= 0 ? '+' : ''}${liveTicker.change_24h.toFixed(2)}%` : marketData.change24h}
             </div>
           </div>
         </div>
@@ -254,7 +306,7 @@ useEffect(() => {
               <div className="space-y-1">
                 {/* Asks */}
                 <div className="space-y-1 max-h-32 overflow-hidden">
-                  {orderBook.asks.slice(0, 10).map(([price, qty], index) => {
+                  {(liveOrderBook?.asks || orderBook.asks).slice(0, 10).map(([price, qty], index) => {
                     const total = price * qty;
                     return (
                       <div key={index} className="flex justify-between text-xs px-3 py-1 hover:bg-red-500/10">
@@ -268,14 +320,14 @@ useEffect(() => {
                 
                 {/* Current Price */}
                 <div className="flex justify-center py-2 border-y border-border">
-                  <span className={`font-medium ${marketData.isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                    {marketData.price}
+                  <span className={`font-medium ${(liveTicker?.change_24h || market.changePercent) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {liveTicker?.last_price?.toLocaleString() || marketData.price}
                   </span>
                 </div>
                 
                 {/* Bids */}
                 <div className="space-y-1 max-h-32 overflow-hidden">
-                  {orderBook.bids.slice(0, 10).map(([price, qty], index) => {
+                  {(liveOrderBook?.bids || orderBook.bids).slice(0, 10).map(([price, qty], index) => {
                     const total = price * qty;
                     return (
                       <div key={index} className="flex justify-between text-xs px-3 py-1 hover:bg-green-500/10">
@@ -362,6 +414,18 @@ useEffect(() => {
                 </div>
               )}
 
+              {/* Balance Display */}
+              <div className="text-xs p-2 bg-muted/50 rounded mb-2">
+                <div className="flex justify-between mb-1">
+                  <span>Available Balance:</span>
+                  <span>
+                    {orderSide === 'buy' ? '1,000.00 USDT' : '0.1000 BTC'}
+                  </span>
+                </div>
+                <div className="text-muted-foreground text-xs">
+                  Mock balances - real balances available after migration
+                </div>
+              </div>
               {/* Amount */}
               <div className="space-y-2">
                 <Label className="text-xs">Amount ({selectedPair.split('/')[0]})</Label>
@@ -374,17 +438,21 @@ useEffect(() => {
                 />
               </div>
 
-              {/* Total */}
+              {/* Total and Fee Preview */}
               {amount && (
-                <div className="text-xs text-muted-foreground p-2 bg-muted/50 rounded">
+                <div className="text-xs space-y-1 p-2 bg-muted/50 rounded">
                   <div className="flex justify-between">
-                    <span>Total:</span>
+                    <span>Est. Total:</span>
                     <span>
                       {orderType === 'market' 
-                        ? (parseFloat(amount) * livePrice).toLocaleString()
+                        ? (parseFloat(amount) * (liveTicker?.last_price || market.price || 0)).toLocaleString()
                         : price ? (parseFloat(amount) * parseFloat(price)).toLocaleString() : '0'
                       } USDT
                     </span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Est. Fee:</span>
+                    <span>{feePreview.taker_fee.toFixed(4)} {feePreview.fee_asset}</span>
                   </div>
                 </div>
               )}
