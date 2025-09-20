@@ -13,7 +13,6 @@ import {
   FileCheck, 
   Bell, 
   Wallet, 
-  Users, 
   Lock, 
   Monitor,
   Banknote
@@ -26,7 +25,6 @@ import { KYCTab } from "@/components/profile/KYCTab";
 import { PreferencesTab } from "@/components/profile/PreferencesTab";
 import { NotificationsTab } from "@/components/profile/NotificationsTab";
 import { WalletsTab } from "@/components/profile/WalletsTab";
-import { BeneficiariesTab } from "@/components/profile/BeneficiariesTab";
 import { BankingTab } from "@/components/profile/BankingTab";
 import { ApiKeysTab } from "@/components/profile/ApiKeysTab";
 import { PrivacyTab } from "@/components/profile/PrivacyTab";
@@ -79,13 +77,6 @@ const ProfileScreen = () => {
       description: "Cryptocurrency wallet addresses",
       icon: Wallet,
       component: <WalletsTab />
-    },
-    {
-      id: "beneficiaries",
-      title: "Beneficiaries",
-      description: "IMPS/UPI withdrawal addresses",
-      icon: Users,
-      component: <BeneficiariesTab />
     },
     {
       id: "banking",
