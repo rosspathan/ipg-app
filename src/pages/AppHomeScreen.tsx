@@ -14,6 +14,7 @@ import bgOption1 from "@/assets/bg-option-1.png";
 import bgOption2 from "@/assets/bg-option-2.png";
 import bgOption5 from "@/assets/bg-option-5.png";
 import bgOption6 from "@/assets/bg-option-6.png";
+import bgIpgLogo from "@/assets/bg-ipg-logo.png";
 import ipgLogo3D from "@/assets/ipg-logo-3d.png";
 
 const AppHomeScreen = () => {
@@ -98,7 +99,7 @@ const AppHomeScreen = () => {
     <div 
       className="min-h-screen w-full animate-slide-in-right relative"
       style={{
-        backgroundImage: `url(${bgOption6})`,
+        backgroundImage: `url(${bgIpgLogo})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
