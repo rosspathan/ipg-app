@@ -48,6 +48,7 @@ export const BankingTab = () => {
     bankingDetails.account_number || 
     bankingDetails.upi_id
   );
+  const isLocked = !!hasDetails; // Lock once details are saved
 
   if (loading) {
     return (
@@ -97,11 +98,11 @@ export const BankingTab = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="account_name">Account Holder Name</Label>
-                <Input
-                  id="account_name"
-                  {...register("account_name", { required: "Account name is required" })}
-                  disabled={isVerified}
-                />
+                  <Input
+                    id="account_name"
+                    {...register("account_name", { required: "Account name is required" })}
+                    disabled={isLocked}
+                  />
                 {errors.account_name && (
                   <p className="text-sm text-destructive">{errors.account_name.message}</p>
                 )}
@@ -109,17 +110,17 @@ export const BankingTab = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="account_number">Account Number</Label>
-                <Input
-                  id="account_number"
-                  {...register("account_number", { 
-                    required: "Account number is required",
-                    pattern: {
-                      value: /^\d{9,18}$/,
-                      message: "Invalid account number format"
-                    }
-                  })}
-                  disabled={isVerified}
-                />
+                  <Input
+                    id="account_number"
+                    {...register("account_number", { 
+                      required: "Account number is required",
+                      pattern: {
+                        value: /^\d{9,18}$/,
+                        message: "Invalid account number format"
+                      }
+                    })}
+                    disabled={isLocked}
+                  />
                 {errors.account_number && (
                   <p className="text-sm text-destructive">{errors.account_number.message}</p>
                 )}
@@ -127,18 +128,18 @@ export const BankingTab = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="ifsc">IFSC Code</Label>
-                <Input
-                  id="ifsc"
-                  {...register("ifsc", { 
-                    required: "IFSC code is required",
-                    pattern: {
-                      value: /^[A-Z]{4}0[A-Z0-9]{6}$/,
-                      message: "Invalid IFSC code format"
-                    }
-                  })}
-                  placeholder="e.g., SBIN0001234"
-                  disabled={isVerified}
-                />
+                  <Input
+                    id="ifsc"
+                    {...register("ifsc", { 
+                      required: "IFSC code is required",
+                      pattern: {
+                        value: /^[A-Z]{4}0[A-Z0-9]{6}$/,
+                        message: "Invalid IFSC code format"
+                      }
+                    })}
+                    placeholder="e.g., SBIN0001234"
+                    disabled={isLocked}
+                  />
                 {errors.ifsc && (
                   <p className="text-sm text-destructive">{errors.ifsc.message}</p>
                 )}
@@ -146,12 +147,12 @@ export const BankingTab = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="bank_name">Bank Name</Label>
-                <Input
-                  id="bank_name"
-                  {...register("bank_name", { required: "Bank name is required" })}
-                  placeholder="e.g., State Bank of India"
-                  disabled={isVerified}
-                />
+                  <Input
+                    id="bank_name"
+                    {...register("bank_name", { required: "Bank name is required" })}
+                    placeholder="e.g., State Bank of India"
+                    disabled={isLocked}
+                  />
                 {errors.bank_name && (
                   <p className="text-sm text-destructive">{errors.bank_name.message}</p>
                 )}
@@ -159,35 +160,35 @@ export const BankingTab = () => {
 
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="upi_id">UPI ID (Optional)</Label>
-                <Input
-                  id="upi_id"
-                  {...register("upi_id", {
-                    pattern: {
-                      value: /^[\w.-]+@[\w.-]+$/,
-                      message: "Invalid UPI ID format"
-                    }
-                  })}
-                  placeholder="e.g., yourname@paytm"
-                  disabled={isVerified}
-                />
+                  <Input
+                    id="upi_id"
+                    {...register("upi_id", {
+                      pattern: {
+                        value: /^[\w.-]+@[\w.-]+$/,
+                        message: "Invalid UPI ID format"
+                      }
+                    })}
+                    placeholder="e.g., yourname@paytm"
+                    disabled={isLocked}
+                  />
                 {errors.upi_id && (
                   <p className="text-sm text-destructive">{errors.upi_id.message}</p>
                 )}
               </div>
             </div>
 
-            {!isVerified && (
+            {!hasDetails && (
               <Button type="submit" disabled={saving}>
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {hasDetails ? 'Update Details' : 'Save Banking Details'}
+                Save Banking Details
               </Button>
             )}
           </form>
 
-          {isVerified && (
+          {hasDetails && (
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <p className="text-sm text-muted-foreground">
-                Your banking details are locked after verification. Contact support if you need to make changes.
+                Banking details cannot be modified once saved for security reasons. Contact support if you need to make changes.
               </p>
             </div>
           )}
