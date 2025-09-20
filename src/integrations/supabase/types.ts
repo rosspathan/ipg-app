@@ -1555,6 +1555,107 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_bonus_events: {
+        Row: {
+          base_filled: number
+          base_symbol: string
+          bonus_amount: number
+          bonus_symbol: string
+          created_at: string
+          id: string
+          order_id: string | null
+          rule_id: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          base_filled: number
+          base_symbol: string
+          bonus_amount: number
+          bonus_symbol: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          rule_id?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          base_filled?: number
+          base_symbol?: string
+          bonus_amount?: number
+          bonus_symbol?: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          rule_id?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_bonus_events_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_bonus_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_bonus_rules: {
+        Row: {
+          base_symbol: string
+          bonus_symbol: string
+          created_at: string
+          end_at: string | null
+          id: string
+          is_active: boolean | null
+          max_bonus_per_day_user: number | null
+          max_bonus_per_order: number | null
+          min_fill_amount: number | null
+          notes: string | null
+          ratio_base_per_bonus: number
+          rounding_mode: string | null
+          start_at: string | null
+          subscriber_tier_multipliers: Json | null
+          updated_at: string
+        }
+        Insert: {
+          base_symbol: string
+          bonus_symbol?: string
+          created_at?: string
+          end_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_bonus_per_day_user?: number | null
+          max_bonus_per_order?: number | null
+          min_fill_amount?: number | null
+          notes?: string | null
+          ratio_base_per_bonus: number
+          rounding_mode?: string | null
+          start_at?: string | null
+          subscriber_tier_multipliers?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          base_symbol?: string
+          bonus_symbol?: string
+          created_at?: string
+          end_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_bonus_per_day_user?: number | null
+          max_bonus_per_order?: number | null
+          min_fill_amount?: number | null
+          notes?: string | null
+          ratio_base_per_bonus?: number
+          rounding_mode?: string | null
+          start_at?: string | null
+          subscriber_tier_multipliers?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       push_tokens: {
         Row: {
           created_at: string
