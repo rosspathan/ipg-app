@@ -1,10 +1,23 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { 
+  AlertTriangle, 
+  ArrowLeft, 
+  User, 
+  Shield, 
+  FileCheck, 
+  Bell, 
+  Wallet, 
+  Users, 
+  Lock, 
+  Monitor,
+  Banknote
+} from "lucide-react";
 
 // Profile tab components
 import { AccountTab } from "@/components/profile/AccountTab";
@@ -23,116 +36,162 @@ import { SessionsTab } from "@/components/profile/SessionsTab";
 import { useProfile } from "@/hooks/useProfile";
 
 const ProfileScreen = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "account";
+  const navigate = useNavigate();
   const { userApp } = useProfile();
+  const [openSections, setOpenSections] = useState<string[]>(["account"]);
 
-  const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+  const handleBack = () => {
+    navigate(-1);
   };
 
-  const tabs = [
-    { value: "account", label: "Account" },
-    { value: "security", label: "Security" },
-    { value: "kyc", label: "KYC" },
-    { value: "preferences", label: "Preferences" },
-    { value: "notifications", label: "Notifications" },
-    { value: "wallets", label: "Wallets" },
-    { value: "beneficiaries", label: "Beneficiaries" },
-    { value: "banking", label: "Banking (INR)" },
-    { value: "api-keys", label: "API Keys" },
-    { value: "privacy", label: "Privacy & Data" },
-    { value: "sessions", label: "Sessions" }
+  const profileSections = [
+    {
+      id: "account",
+      title: "Account",
+      description: "Personal information and preferences",
+      icon: User,
+      component: <AccountTab />
+    },
+    {
+      id: "security",
+      title: "Security",
+      description: "PIN, biometrics, and authentication",
+      icon: Shield,
+      component: <SecurityTab />
+    },
+    {
+      id: "kyc",
+      title: "KYC Verification",
+      description: "Identity verification status",
+      icon: FileCheck,
+      component: <KYCTab />
+    },
+    {
+      id: "notifications",
+      title: "Notifications",
+      description: "Push and email preferences",
+      icon: Bell,
+      component: <NotificationsTab />
+    },
+    {
+      id: "wallets",
+      title: "Wallets",
+      description: "Cryptocurrency wallet addresses",
+      icon: Wallet,
+      component: <WalletsTab />
+    },
+    {
+      id: "beneficiaries",
+      title: "Beneficiaries",
+      description: "IMPS/UPI withdrawal addresses",
+      icon: Users,
+      component: <BeneficiariesTab />
+    },
+    {
+      id: "banking",
+      title: "Banking (INR)",
+      description: "Bank account details for deposits",
+      icon: Banknote,
+      component: <BankingTab />
+    },
+    {
+      id: "privacy",
+      title: "Privacy & Data",
+      description: "Data export and account deletion",
+      icon: Lock,
+      component: <PrivacyTab />
+    },
+    {
+      id: "sessions",
+      title: "Active Sessions",
+      description: "Manage device sessions",
+      icon: Monitor,
+      component: <SessionsTab />
+    }
   ];
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Profile Settings</h1>
-          <p className="text-muted-foreground">Manage your account and security settings</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {userApp?.account_frozen && (
-            <Badge variant="destructive">Account Frozen</Badge>
-          )}
+    <div className="min-h-screen bg-background">
+      {/* Sticky Mobile Header */}
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/40">
+        <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleBack}
+            className="h-10 w-10 hover:bg-accent"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          
+          <div className="flex-1 text-center">
+            <h1 className="text-lg font-semibold leading-tight">Profile Settings</h1>
+            <p className="text-xs text-muted-foreground">Manage your account</p>
+          </div>
+          
+          <div className="w-10 flex justify-center">
+            {userApp?.account_frozen && (
+              <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                Frozen
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
 
-      {userApp?.account_frozen && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Your account is currently frozen. Some features may be limited. Contact support for assistance.
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Content */}
+      <div className="max-w-md mx-auto px-4 py-4 space-y-4">
+        {/* Account Frozen Alert */}
+        {userApp?.account_frozen && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              Account frozen. Some features may be limited. Contact support for assistance.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      <Card>
-        <CardContent className="p-0">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <CardHeader className="pb-0">
-              <TabsList className="grid grid-cols-6 lg:grid-cols-11 w-full h-auto gap-1">
-                {tabs.map((tab) => (
-                  <TabsTrigger
-                    key={tab.value}
-                    value={tab.value}
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground whitespace-nowrap text-xs px-2 py-1"
-                  >
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </CardHeader>
+        {/* Profile Sections Accordion */}
+        <Accordion 
+          type="multiple" 
+          value={openSections} 
+          onValueChange={setOpenSections}
+          className="space-y-3"
+        >
+          {profileSections.map((section) => {
+            const IconComponent = section.icon;
+            return (
+              <AccordionItem
+                key={section.id}
+                value={section.id}
+                className="border border-border/50 rounded-xl bg-card/50 backdrop-blur-sm overflow-hidden"
+              >
+                <AccordionTrigger className="px-4 py-4 hover:no-underline hover:bg-accent/20 transition-colors">
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <IconComponent className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-base leading-tight">{section.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-tight mt-0.5">
+                        {section.description}
+                      </p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4 pt-0">
+                  <div className="mt-3 border-t border-border/30 pt-4">
+                    {section.component}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
 
-            <div className="p-6">
-              <TabsContent value="account" className="mt-0">
-                <AccountTab />
-              </TabsContent>
-
-              <TabsContent value="security" className="mt-0">
-                <SecurityTab />
-              </TabsContent>
-
-              <TabsContent value="kyc" className="mt-0">
-                <KYCTab />
-              </TabsContent>
-
-              <TabsContent value="preferences" className="mt-0">
-                <PreferencesTab />
-              </TabsContent>
-
-              <TabsContent value="notifications" className="mt-0">
-                <NotificationsTab />
-              </TabsContent>
-
-              <TabsContent value="wallets" className="mt-0">
-                <WalletsTab />
-              </TabsContent>
-
-              <TabsContent value="beneficiaries" className="mt-0">
-                <BeneficiariesTab />
-              </TabsContent>
-
-              <TabsContent value="banking" className="mt-0">
-                <BankingTab />
-              </TabsContent>
-
-              <TabsContent value="api-keys" className="mt-0">
-                <ApiKeysTab />
-              </TabsContent>
-
-              <TabsContent value="privacy" className="mt-0">
-                <PrivacyTab />
-              </TabsContent>
-
-              <TabsContent value="sessions" className="mt-0">
-                <SessionsTab />
-              </TabsContent>
-            </div>
-          </Tabs>
-        </CardContent>
-      </Card>
+        {/* Bottom Safe Area */}
+        <div className="h-8" />
+      </div>
     </div>
   );
 };
