@@ -11,6 +11,7 @@ import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } f
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import bgOption1 from "@/assets/bg-option-1.png";
+import bgOption2 from "@/assets/bg-option-2.png";
 
 const AppHomeScreen = () => {
   const navigate = useNavigate();
@@ -94,7 +95,7 @@ const AppHomeScreen = () => {
     <div 
       className="min-h-screen w-full animate-slide-in-right relative"
       style={{
-        backgroundImage: `url(${bgOption1})`,
+        backgroundImage: `url(${bgOption2})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
