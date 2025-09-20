@@ -12,6 +12,7 @@ import BSCWalletInfo from "@/components/BSCWalletInfo";
 import AssetLogo from "@/components/AssetLogo";
 import CurrencyPicker from "@/components/CurrencyPicker";
 import BalanceDisplay from "@/components/BalanceDisplay";
+import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { cn } from "@/lib/utils";
 
 const WalletHomeScreen = () => {
@@ -118,6 +119,12 @@ const WalletHomeScreen = () => {
           onAddFunds={() => navigate("/app/wallet/deposit")}
           className="animate-fade-in-scale"
           style={{ animationDelay: "200ms", animationFillMode: "both" }}
+        />
+
+        {/* Bonus Balance Card */}
+        <BonusBalanceCard 
+          className="animate-fade-in-scale"
+          style={{ animationDelay: "300ms", animationFillMode: "both" }}
         />
 
         {/* Quick Actions - Cyberpunk Grid */}
