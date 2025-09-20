@@ -58,7 +58,8 @@ export const AdCarousel: React.FC<AdCarouselProps> = ({ placement, className }) 
   const loadUserLimits = async () => {
     try {
       const { data: user } = await supabase.auth.getUser();
-      if (!user?.user) return;
+      // If not authenticated, default to 'free' tier and allow viewing
+      const uid = user?.user?.id || null;
 
       // Get user's subscription tier (defaulting to 'free')
       // TODO: Implement proper subscription tier detection
@@ -78,16 +79,20 @@ export const AdCarousel: React.FC<AdCarouselProps> = ({ placement, className }) 
 
       // Get today's clicks count
       const today = new Date().toISOString().split('T')[0];
-      const { data: clicksData, error: clicksError } = await supabase
-        .from('ad_clicks')
-        .select('id')
-        .eq('user_id', user.user.id)
-        .eq('rewarded', true)
-        .gte('started_at', `${today}T00:00:00.000Z`)
-        .lt('started_at', `${today}T23:59:59.999Z`);
+      if (uid) {
+        const { data: clicksData, error: clicksError } = await supabase
+          .from('ad_clicks')
+          .select('id')
+          .eq('user_id', uid)
+          .eq('rewarded', true)
+          .gte('started_at', `${today}T00:00:00.000Z`)
+          .lt('started_at', `${today}T23:59:59.999Z`);
 
-      if (!clicksError) {
-        setDailyClicks(clicksData?.length || 0);
+        if (!clicksError) {
+          setDailyClicks(clicksData?.length || 0);
+        }
+      } else {
+        setDailyClicks(0);
       }
     } catch (error) {
       console.error('Error loading user limits:', error);

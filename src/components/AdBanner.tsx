@@ -60,6 +60,11 @@ export const AdBanner: React.FC<AdBannerProps> = ({
             imageLoaded ? "opacity-100" : "opacity-0"
           )}
           onLoad={() => setImageLoaded(true)}
+          onError={(e) => {
+            const img = e.currentTarget as HTMLImageElement;
+            img.src = '/placeholder-crypto.svg';
+            setImageLoaded(true);
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       </div>
