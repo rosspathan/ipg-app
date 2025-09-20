@@ -53,11 +53,19 @@ export default {
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))',
-					glass: 'hsl(var(--card-glass))'
+					glass: 'var(--card-glass)'
 				},
 				success: {
 					DEFAULT: 'hsl(var(--success))',
 					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
+				danger: {
+					DEFAULT: 'hsl(var(--danger))',
+					foreground: 'hsl(var(--danger-foreground))'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
@@ -75,22 +83,26 @@ export default {
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
 			},
-			backgroundImage: {
-				'gradient-primary': 'var(--gradient-primary)',
-				'gradient-card': 'var(--gradient-card)',
-				'gradient-neon': 'var(--gradient-neon)',
-				'gradient-glow': 'var(--gradient-glow)'
-			},
+		backgroundImage: {
+			'gradient-primary': 'var(--gradient-primary)',
+			'gradient-card': 'var(--gradient-card)',
+			'gradient-neon': 'var(--gradient-neon)',
+			'gradient-glow': 'var(--gradient-glow)',
+			'gradient-ring': 'var(--gradient-ring)'
+		},
 			backdropBlur: {
 				'glass': 'var(--card-blur)'
 			},
-			boxShadow: {
-				'card': 'var(--shadow-card)',
-				'button': 'var(--shadow-button)',
-				'elevated': 'var(--shadow-elevated)',
-				'neon': 'var(--shadow-neon)',
-				'fab': 'var(--shadow-fab)'
-			},
+		boxShadow: {
+			'card': 'var(--shadow-card)',
+			'button': 'var(--shadow-button)',
+			'elevated': 'var(--shadow-elevated)',
+			'neon': 'var(--shadow-neon)',
+			'fab': 'var(--shadow-fab)',
+			'cyber': '0 0 20px hsl(var(--primary) / 0.3), inset 0 1px 0 hsl(255 255 255 / 0.1)',
+			'glow-primary': '0 8px 32px hsl(var(--primary) / 0.4)',
+			'glow-secondary': '0 8px 32px hsl(var(--secondary) / 0.4)'
+		},
 			spacing: {
 				'18': '4.5rem',
 				'22': '5.5rem',
@@ -137,6 +149,24 @@ export default {
 				'glow-pulse': {
 					'0%, 100%': { boxShadow: 'var(--shadow-neon)' },
 					'50%': { boxShadow: 'var(--shadow-fab)' }
+				},
+				'cyber-glow': {
+					'0%, 100%': { 
+						boxShadow: '0 0 20px hsl(var(--primary) / 0.3)',
+						borderColor: 'hsl(var(--primary) / 0.3)' 
+					},
+					'50%': { 
+						boxShadow: '0 0 40px hsl(var(--primary) / 0.6)',
+						borderColor: 'hsl(var(--primary) / 0.6)' 
+					}
+				},
+				'neon-pulse': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.8' }
+				},
+				'slide-up-stagger': {
+					'0%': { opacity: '0', transform: 'translateY(40px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
 				}
 			},
 			animation: {
@@ -146,7 +176,10 @@ export default {
 				'slide-in-left': 'slide-in-left var(--duration-normal) ease-out',
 				'fade-in-scale': 'fade-in-scale var(--duration-normal) ease-out',
 				'count-up': 'count-up var(--duration-normal) ease-out',
-				'glow-pulse': 'glow-pulse 2s ease-in-out infinite'
+				'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
+				'cyber-glow': 'cyber-glow 3s ease-in-out infinite',
+				'neon-pulse': 'neon-pulse 2s ease-in-out infinite',
+				'slide-up-stagger': 'slide-up-stagger var(--duration-normal) ease-out'
 			}
 		}
 	},

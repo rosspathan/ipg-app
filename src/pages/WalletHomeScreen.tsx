@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
-import { Eye, EyeOff, ArrowUpCircle, ArrowDownCircle, Send, MoreHorizontal, Repeat, Coins, Gift, TrendingUp, Shield } from "lucide-react";
+import { CyberCard, CyberCardContent, CyberCardHeader, CyberCardTitle } from "@/components/ui/cyber-card";
+import { CyberHeader } from "@/components/ui/cyber-header";
+import { NeonIconTile } from "@/components/ui/neon-icon-tile";
+import { Eye, EyeOff, ArrowUpCircle, ArrowDownCircle, Send, Repeat, Coins, Gift, TrendingUp, Shield, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCatalog } from "@/hooks/useCatalog";
@@ -42,16 +44,22 @@ const WalletHomeScreen = () => {
 
   const totalBalance = userAssets.reduce((sum, asset) => sum + (asset.displayValue || 0), 0);
 
-  // Quick actions with swap included
+  // Quick actions with cyberpunk styling
   const actions = [
-    { name: "Deposit", icon: ArrowDownCircle, color: "text-green-400", route: "/app/wallet/deposit" },
-    { name: "Withdraw", icon: ArrowUpCircle, color: "text-red-400", route: "/app/wallet/withdraw" },
-    { name: "Swap", icon: Repeat, color: "text-blue-400", route: "/app/swap" },
-    { name: "Send", icon: Send, color: "text-orange-400", route: "/app/wallet/send" },
-    { name: "Trade", icon: TrendingUp, color: "text-indigo-400", route: "/app/trade" },
-    { name: "Staking", icon: Coins, color: "text-yellow-400", route: "/app/programs/staking" },
-    { name: "Programs", icon: Gift, color: "text-purple-400", route: "/app/programs" },
-    ...(isAdmin ? [{ name: "Admin", icon: Shield, color: "text-red-400", route: "/admin" }] : []),
+    { name: "Deposit", icon: ArrowDownCircle, color: "text-success", route: "/app/wallet/deposit", glow: "strong" as const },
+    { name: "Withdraw", icon: ArrowUpCircle, color: "text-danger", route: "/app/wallet/withdraw" },
+    { name: "Swap", icon: Repeat, color: "text-secondary", route: "/app/swap" },
+    { name: "Send", icon: Send, color: "text-warning", route: "/app/wallet/send" },
+    { name: "Trade", icon: TrendingUp, color: "text-primary", route: "/app/trade" },
+    { name: "Staking", icon: Coins, color: "text-accent", route: "/app/programs/staking" },
+    { name: "Programs", icon: Gift, color: "text-primary", route: "/app/programs" },
+    ...(isAdmin ? [{ name: "Admin", icon: Shield, color: "text-danger", route: "/admin" }] : []),
+  ];
+
+  const kpis = [
+    { label: "24h P&L", value: "+5.67%", delta: 5.67, variant: "success" as const },
+    { label: "Assets", value: userAssets.length },
+    { label: "Network", value: "BSC" },
   ];
 
   // Show loading only for the first few seconds, then show content regardless
@@ -59,159 +67,170 @@ const WalletHomeScreen = () => {
   const showError = status === 'error';
 
   return (
-    <div className="min-h-screen bg-background p-4 space-y-6 animate-slide-in-right">
+    <div className="min-h-screen bg-background w-full animate-slide-in-right">
       {/* Loading Overlay */}
       {showLoading && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <GlassCard className="p-8">
+          <CyberCard variant="glow" className="p-8">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
               <p className="text-muted-foreground">Loading your assets...</p>
             </div>
-          </GlassCard>
+          </CyberCard>
         </div>
       )}
 
       {/* Error Banner */}
       {showError && (
-        <GlassCard variant="destructive" className="border-destructive/30">
-          <GlassCardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-destructive-foreground">Unable to Load Assets</h4>
-                <p className="text-sm text-destructive-foreground/80">{error}</p>
+        <div className="p-4">
+          <CyberCard className="border-danger/30 bg-danger/5">
+            <CyberCardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-danger">Unable to Load Assets</h4>
+                  <p className="text-sm text-danger/80">{error}</p>
+                </div>
+                <Button onClick={refetch} size="sm" variant="outline">
+                  Retry
+                </Button>
               </div>
-              <Button onClick={refetch} size="sm" variant="outline">
-                Retry
-              </Button>
-            </div>
-          </GlassCardContent>
-        </GlassCard>
+            </CyberCardContent>
+          </CyberCard>
+        </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between pt-2">
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-neon bg-clip-text text-transparent">My Wallet</h1>
-          <p className="text-muted-foreground">Manage your digital assets</p>
-        </div>
-        <CurrencyPicker />
-      </div>
-
-      {/* BSC Wallet Info */}
-      <BSCWalletInfo />
-
-      {/* Total Balance Card */}
-      <BalanceDisplay
-        balance={totalBalance}
-        change24h={2.4}
-        onAddFunds={() => navigate("/app/wallet/deposit")}
-        className="animate-fade-in-scale"
-        style={{ animationDelay: "200ms", animationFillMode: "both" }}
+      {/* Cyber Header */}
+      <CyberHeader
+        title="My Wallet"
+        subtitle="Manage your digital assets"
+        kpis={kpis}
+        actions={<CurrencyPicker />}
       />
 
-      {/* Quick Actions */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground/90">Quick Actions</h3>
-        <div className="grid grid-cols-4 gap-3">
-          {actions.map((action, index) => (
-            <GlassCard
-              key={action.name}
-              hover="glow"
-              className={cn(
-                "p-0 cursor-pointer border-border/30",
-                "animate-fade-in-scale"
-              )}
-              style={{ 
-                animationDelay: `${400 + index * 50}ms`,
-                animationFillMode: "both"
-              }}
-              onClick={() => navigate(action.route)}
-            >
-              <GlassCardContent className="p-4 flex flex-col items-center gap-2">
-                <div className="ripple rounded-full p-3 bg-background/20 border border-border/30">
-                  <action.icon className={cn("h-5 w-5", action.color)} />
-                </div>
-                <span className="text-xs font-medium text-center text-foreground/80 leading-tight">
-                  {action.name}
-                </span>
-              </GlassCardContent>
-            </GlassCard>
-          ))}
-        </div>
-      </div>
+      <div className="p-4 space-y-6">
+        {/* BSC Wallet Info */}
+        <BSCWalletInfo />
 
-      {/* Assets List */}
-      <GlassCard className="animate-fade-in-scale border-border/30" style={{ animationDelay: "800ms", animationFillMode: "both" }}>
-        <GlassCardHeader>
-          <div className="flex items-center justify-between">
-            <GlassCardTitle className="text-lg">My Assets</GlassCardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowBalances(!showBalances)}
-              className="hover:bg-background/20"
-            >
-              {showBalances ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
-          </div>
-        </GlassCardHeader>
-        <GlassCardContent className="space-y-4">
-          {userAssets.length > 0 ? (
-            userAssets.map((asset, index) => (
-              <div 
-                key={asset.id} 
+        {/* Total Balance Card */}
+        <BalanceDisplay
+          balance={totalBalance}
+          change24h={2.4}
+          onAddFunds={() => navigate("/app/wallet/deposit")}
+          className="animate-fade-in-scale"
+          style={{ animationDelay: "200ms", animationFillMode: "both" }}
+        />
+
+        {/* Quick Actions - Cyberpunk Grid */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-foreground tracking-tight">Quick Actions</h3>
+          <div className="grid grid-cols-4 gap-3">
+            {actions.map((action, index) => (
+              <NeonIconTile
+                key={action.name}
+                icon={action.icon}
+                label={action.name}
+                variant={index === 0 ? "primary" : "default"}
+                glow={action.glow || "none"}
+                onClick={() => navigate(action.route)}
                 className={cn(
-                  "flex items-center justify-between p-4 rounded-lg",
-                  "bg-background/20 border border-border/30",
-                  "hover:bg-background/30 transition-all duration-normal",
-                  "animate-fade-in-scale"
+                  "animate-slide-up-stagger",
+                  action.color
                 )}
                 style={{ 
-                  animationDelay: `${1000 + index * 100}ms`,
+                  animationDelay: `${400 + index * 50}ms`,
                   animationFillMode: "both"
                 }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Assets List */}
+        <CyberCard variant="elevated" className="animate-fade-in-scale" style={{ animationDelay: "800ms", animationFillMode: "both" }}>
+          <CyberCardHeader>
+            <div className="flex items-center justify-between">
+              <CyberCardTitle className="text-lg flex items-center gap-2">
+                <Activity className="w-5 h-5 text-primary" />
+                My Assets
+              </CyberCardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowBalances(!showBalances)}
+                className="hover:bg-primary/10 hover:text-primary"
               >
-                <div className="flex items-center space-x-3">
-                  <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} />
-                  <div>
-                    <div className="font-medium text-foreground">{asset.symbol}</div>
-                    <div className="text-sm text-muted-foreground">{asset.name}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium text-foreground">
-                    {showBalances ? asset.balance.toFixed(4) : "****"} {asset.symbol}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {showBalances ? formatCurrency(asset.displayValue) : "****"}
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : assets.length === 0 && status === 'ready' ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Coins className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="font-medium">No Assets Available</p>
-              <p className="text-sm">Assets will appear here once configured</p>
-              {isAdmin && (
-                <Button 
-                  onClick={() => navigate('/admin/assets')} 
-                  className="mt-4"
-                  variant="outline"
+                {showBalances ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
+          </CyberCardHeader>
+          <CyberCardContent className="space-y-3">
+            {userAssets.length > 0 ? (
+              userAssets.map((asset, index) => (
+                <div 
+                  key={asset.id} 
+                  className={cn(
+                    "flex items-center justify-between p-4 rounded-xl",
+                    "bg-card-glass backdrop-blur-[14px] border border-white/10",
+                    "hover:bg-card-glass hover:border-primary/30 hover:shadow-glow-primary",
+                    "transition-all duration-normal cursor-pointer",
+                    "animate-slide-up-stagger group"
+                  )}
+                  style={{ 
+                    animationDelay: `${1000 + index * 100}ms`,
+                    animationFillMode: "both"
+                  }}
                 >
-                  Add Assets in Admin
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No assets with balance found</p>
-              <p className="text-sm">Your assets will appear here once you have a balance</p>
-            </div>
-          )}
-        </GlassCardContent>
-      </GlassCard>
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} />
+                      <div className="absolute -inset-1 bg-gradient-ring rounded-full opacity-0 group-hover:opacity-30 transition-opacity" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-foreground">{asset.symbol}</div>
+                      <div className="text-sm text-muted-foreground">{asset.name}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-foreground tabular-nums">
+                      {showBalances ? asset.balance.toFixed(4) : "••••"} {asset.symbol}
+                    </div>
+                    <div className="text-sm text-muted-foreground tabular-nums">
+                      {showBalances ? formatCurrency(asset.displayValue) : "••••"}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : assets.length === 0 && status === 'ready' ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <div className="relative">
+                  <Coins className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <div className="absolute inset-0 bg-gradient-ring blur-xl opacity-20" />
+                </div>
+                <p className="font-bold text-lg mb-2">No Assets Available</p>
+                <p className="text-sm mb-4">Assets will appear here once configured</p>
+                {isAdmin && (
+                  <Button 
+                    onClick={() => navigate('/admin/assets')} 
+                    className="mt-4 bg-gradient-primary border-0"
+                    variant="outline"
+                  >
+                    Add Assets in Admin
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <div className="relative">
+                  <Coins className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <div className="absolute inset-0 bg-gradient-ring blur-xl opacity-20" />
+                </div>
+                <p className="font-bold text-lg mb-2">No Balance Found</p>
+                <p className="text-sm">Your assets will appear here once you have a balance</p>
+              </div>
+            )}
+          </CyberCardContent>
+        </CyberCard>
+      </div>
     </div>
   );
 };

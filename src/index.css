@@ -8,57 +8,63 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Neon-first design system with glassmorphism */
-    --background: 230 35% 7%;
+    /* Ultra-futuristic cyberpunk design system - Dark cosmic base */
+    --background: 228 38% 7%;
     --foreground: 220 30% 98%;
 
-    /* Glassmorphism cards */
-    --card: 230 35% 10%;
+    /* Glassmorphism cards with enhanced blur */
+    --card: 228 35% 12%;
     --card-foreground: 220 30% 98%;
-    --card-glass: 230 35% 15% / 0.8;
+    --card-glass: 255 255 255 / 0.06;
     --card-blur: blur(16px);
 
-    --popover: 230 35% 10%;
+    --popover: 228 35% 12%;
     --popover-foreground: 220 30% 98%;
 
-    /* Neon gradient primary: Indigo → Violet → Fuchsia */
-    --primary: 260 85% 65%;
+    /* Neon gradient primary: Violet → Magenta → Cyan */
+    --primary: 271 91% 65%;
     --primary-foreground: 220 30% 98%;
-    --primary-glow: 260 85% 75%;
+    --primary-glow: 271 91% 75%;
 
-    --secondary: 230 25% 20%;
-    --secondary-foreground: 220 30% 98%;
+    --secondary: 190 100% 56%;
+    --secondary-foreground: 228 38% 7%;
 
-    --muted: 230 25% 15%;
+    --muted: 228 25% 18%;
     --muted-foreground: 220 15% 65%;
 
-    /* Neon accents */
-    --accent: 290 95% 70%;
+    /* Cyberpunk neon accents */
+    --accent: 271 91% 65%;
     --accent-foreground: 220 30% 98%;
-    --accent-glow: 290 95% 80%;
+    --accent-glow: 190 100% 56%;
 
-    --destructive: 0 85% 65%;
+    --destructive: 340 85% 65%;
     --destructive-foreground: 220 30% 98%;
 
-    --border: 230 25% 25%;
-    --input: 230 25% 15%;
-    --ring: 260 85% 65%;
+    --border: 228 25% 25%;
+    --input: 228 25% 18%;
+    --ring: 271 91% 65%;
 
-    --success: 142 71% 55%;
-    --success-foreground: 220 30% 98%;
+    /* Status colors - cyberpunk palette */
+    --success: 158 64% 52%;
+    --success-foreground: 228 38% 7%;
+    --warning: 45 93% 58%;
+    --warning-foreground: 228 38% 7%;
+    --danger: 340 85% 65%;
+    --danger-foreground: 220 30% 98%;
 
-    /* Neon gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(260 85% 65%), hsl(280 90% 70%), hsl(315 95% 75%));
-    --gradient-card: linear-gradient(145deg, hsl(230 35% 15% / 0.8), hsl(230 35% 10% / 0.6));
-    --gradient-neon: linear-gradient(90deg, hsl(260 85% 65%), hsl(290 95% 70%), hsl(315 95% 75%));
-    --gradient-glow: radial-gradient(ellipse at center, hsl(260 85% 65% / 0.3), transparent 70%);
+    /* Neon gradients - violet to magenta to cyan */
+    --gradient-primary: linear-gradient(135deg, hsl(271 91% 65%), hsl(320 85% 70%), hsl(190 100% 56%));
+    --gradient-card: linear-gradient(145deg, hsl(255 255 255 / 0.08), hsl(255 255 255 / 0.04));
+    --gradient-neon: linear-gradient(90deg, hsl(271 91% 65%), hsl(190 100% 56%));
+    --gradient-glow: radial-gradient(ellipse at center, hsl(271 91% 65% / 0.15), transparent 70%);
+    --gradient-ring: linear-gradient(90deg, hsl(271 91% 65%), hsl(190 100% 56%));
     
-    /* Glassmorphism shadows and glows */
-    --shadow-card: 0 8px 32px hsl(260 85% 15% / 0.3), 0 4px 16px hsl(260 85% 15% / 0.2);
-    --shadow-button: 0 4px 20px hsl(260 85% 65% / 0.4);
-    --shadow-elevated: 0 16px 48px hsl(260 85% 15% / 0.4), 0 8px 24px hsl(260 85% 15% / 0.3);
-    --shadow-neon: 0 0 20px hsl(260 85% 65% / 0.5), 0 0 40px hsl(260 85% 65% / 0.3);
-    --shadow-fab: 0 8px 32px hsl(260 85% 65% / 0.6), 0 4px 16px hsl(260 85% 65% / 0.4);
+    /* Enhanced cyberpunk shadows and glows */
+    --shadow-card: 0 8px 32px hsl(271 91% 15% / 0.4), inset 0 1px 0 hsl(255 255 255 / 0.1);
+    --shadow-button: 0 4px 20px hsl(271 91% 65% / 0.5);
+    --shadow-elevated: 0 16px 48px hsl(271 91% 15% / 0.5), 0 8px 24px hsl(271 91% 65% / 0.2);
+    --shadow-neon: 0 8px 28px hsl(271 91% 65% / 0.35), 0 0 20px hsl(271 91% 65% / 0.2);
+    --shadow-fab: 0 12px 40px hsl(271 91% 65% / 0.6), 0 6px 20px hsl(271 91% 65% / 0.4);
 
     /* Modern radius */
     --radius: 1rem;
@@ -145,11 +151,15 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     user-select: none;
-    background: hsl(var(--background));
-    background-image: var(--gradient-glow);
+    background: #090B14;
+    background-image: 
+      radial-gradient(ellipse at top, hsl(271 91% 65% / 0.05), transparent 50%),
+      radial-gradient(ellipse at bottom, hsl(190 100% 56% / 0.05), transparent 50%);
     background-attachment: fixed;
   }
 
@@ -200,12 +210,29 @@ All colors MUST be HSL.
     height: 300px;
   }
 
-  /* Glassmorphism utilities */
+  /* Enhanced glassmorphism utilities */
   .glass-card {
-    background: hsl(var(--card-glass));
-    backdrop-filter: var(--card-blur);
-    -webkit-backdrop-filter: var(--card-blur);
-    border: 1px solid hsl(var(--border) / 0.3);
+    background: var(--card-glass);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid hsl(255 255 255 / 0.1);
+    position: relative;
+  }
+
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--gradient-ring);
+    opacity: 0;
+    transition: opacity var(--duration-normal);
+    z-index: -1;
+    margin: -1px;
+  }
+
+  .glass-card:hover::before {
+    opacity: 0.3;
   }
 
   .glow-primary {
