@@ -320,4 +320,14 @@ All colors MUST be HSL.
   .animate-fade-in-scale {
     animation: fadeInScale var(--duration-normal) ease-out;
   }
+
+  /* Hide scrollbar utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

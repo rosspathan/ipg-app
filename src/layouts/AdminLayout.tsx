@@ -48,40 +48,47 @@ const AdminLayout = () => {
     <div className="min-h-screen bg-background">
       {/* IMPORTANT: Do not render AdminHeader in child pages - this is the single admin header */}
       <div className="sticky top-0 z-40 border-b bg-card">
-        <div className="flex h-16 items-center justify-between px-6">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+        <div className="flex h-16 items-center justify-between px-3 md:px-6">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <h1 className="text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               I-SMART Admin
             </h1>
-            <Badge variant="outline">Admin Console</Badge>
+            <Badge variant="outline" className="hidden sm:inline-flex">Admin Console</Badge>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">
+          <div className="flex items-center space-x-1 md:space-x-4">
+            <span className="text-xs md:text-sm text-muted-foreground hidden md:block">
               {user?.email}
             </span>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => navigate("/")}
+              className="text-xs md:text-sm px-2 md:px-3"
             >
-              Switch to User App
+              <span className="hidden sm:inline">Switch to User App</span>
+              <span className="sm:hidden">User App</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleLogout}
+              className="text-xs md:text-sm px-2 md:px-3"
+            >
               Sign Out
             </Button>
           </div>
         </div>
 
         {/* Navigation */}
-        <div className="px-6">
-          <div className="flex space-x-1 overflow-x-auto pb-2">
+        <div className="px-3 md:px-6">
+          <div className="flex space-x-1 overflow-x-auto pb-2 scrollbar-hide">
             {navItems.map((item) => (
               <Button
                 key={item.path}
                 variant={isActive(item.path) ? "default" : "ghost"}
                 size="sm"
                 onClick={() => navigate(item.path)}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3 min-w-fit"
               >
                 {item.label}
               </Button>
@@ -91,7 +98,7 @@ const AdminLayout = () => {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-3 md:px-6 py-4 md:py-8">
         <Outlet />
       </div>
     </div>

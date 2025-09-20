@@ -61,66 +61,66 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Admin Dashboard</h1>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">Active Users</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeUsers.toLocaleString()}</div>
+            <div className="text-xl md:text-2xl font-bold">{stats.activeUsers.toLocaleString()}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">24h Volume</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">24h Volume</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.volume24h.toLocaleString()}</div>
+            <div className="text-xl md:text-2xl font-bold">${stats.volume24h.toLocaleString()}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Deposits</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">Deposits</CardTitle>
             <ArrowDownCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.deposits.toLocaleString()}</div>
+            <div className="text-xl md:text-2xl font-bold">${stats.deposits.toLocaleString()}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Withdrawals</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">Withdrawals</CardTitle>
             <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.withdrawals.toLocaleString()}</div>
+            <div className="text-xl md:text-2xl font-bold">${stats.withdrawals.toLocaleString()}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fee Revenue</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium">Fee Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.feeRevenue.toLocaleString()}</div>
+            <div className="text-xl md:text-2xl font-bold">${stats.feeRevenue.toLocaleString()}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Queues */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Pending Queues</CardTitle>
