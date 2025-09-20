@@ -21,6 +21,7 @@ import {
   BarChart3,
   Settings,
 } from "lucide-react";
+import MobileAdminMenu from "@/components/admin/MobileAdminMenu";
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -65,6 +66,7 @@ const AdminLayout = () => {
       <div className="sticky top-0 z-40 border-b bg-card">
         <div className="flex h-14 md:h-16 items-center justify-between px-3 md:px-6">
           <div className="flex items-center gap-2 md:gap-4">
+            <MobileAdminMenu className="md:hidden" />
             <h1 className="text-lg md:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               I-SMART Admin
             </h1>
