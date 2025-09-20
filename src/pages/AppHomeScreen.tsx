@@ -32,6 +32,10 @@ const AppHomeScreen = () => {
     { name: "Staking", icon: Coins, variant: "accent" as const, route: "/app/programs/staking" },
     { name: "Trading", icon: TrendingUp, variant: "secondary" as const, route: "/app/markets" },
     { name: "Games", icon: Gamepad2, variant: "default" as const, route: "/app/spin", badge: "NEW" },
+    { name: "Profile", icon: Users, variant: "default" as const, route: "/app/profile" },
+    { name: "History", icon: Activity, variant: "default" as const, route: "/app/history" },
+    { name: "Support", icon: Bell, variant: "default" as const, route: "/app/support" },
+    { name: "More+", icon: Star, variant: "default" as const, route: "/app/programs" },
   ];
 
   const featuredPrograms = [
@@ -125,14 +129,14 @@ const AppHomeScreen = () => {
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-foreground tracking-tight">Quick Access</h3>
           <div className="grid grid-cols-4 gap-3">
-            {quickActions.map((action, index) => (
+            {quickActions.slice(0, 8).map((action, index) => (
               <NeonIconTile
                 key={action.name}
                 icon={action.icon}
                 label={action.name}
                 variant={action.variant}
                 badge={action.badge}
-                glow={index === 0 ? "strong" : "subtle"}
+                glow={index === 0 ? "strong" : index < 4 ? "subtle" : "none"}
                 onClick={() => navigate(action.route)}
                 className={cn(
                   "animate-slide-up-stagger"
