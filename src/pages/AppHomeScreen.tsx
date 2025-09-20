@@ -103,10 +103,10 @@ const AppHomeScreen = () => {
       className="min-h-screen w-full animate-slide-in-right relative"
       style={{
         backgroundImage: `url(${bgCryptoMobile})`,
-        backgroundSize: 'contain',
+        backgroundSize: '100% 100%',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        backgroundColor: '#0a0a0a'
+        backgroundAttachment: 'fixed'
       }}
     >
       {/* Mobile-optimized overlay for better content readability */}
