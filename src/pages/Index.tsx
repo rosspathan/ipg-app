@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import UserDashboard from "./UserDashboard";
+import { useEffect } from "react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -23,10 +23,13 @@ const Index = () => {
     }
   };
 
-  // If user is logged in and not admin, show user dashboard
-  if (user && !isAdmin) {
-    return <UserDashboard />;
-  }
+  // Redirect authenticated users to the proper app routes
+  useEffect(() => {
+    if (user && !isAdmin) {
+      navigate("/app/home");
+      return;
+    }
+  }, [user, isAdmin, navigate]);
 
   // Admin dashboard (current interface)
   return (
