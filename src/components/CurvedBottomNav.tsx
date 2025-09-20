@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
 import { Home, Wallet, TrendingUp, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ismartLogo from "@/assets/ismart-logo.png";
+import ipgLogo from "@/assets/ipg-logo.jpg";
 
 interface NavItem {
   path: string;
@@ -100,9 +100,9 @@ const CurvedBottomNav: React.FC = () => {
             className="animate-glow-pulse"
           >
             <img 
-              src={ismartLogo}
-              alt="I-SMART Logo"
-              className="w-8 h-8 object-contain filter brightness-0 invert"
+              src={ipgLogo}
+              alt="IPG I-SMART Logo"
+              className="w-10 h-10 object-contain rounded-full"
             />
           </FloatingActionButton>
         </div>
