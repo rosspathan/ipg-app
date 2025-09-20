@@ -14,6 +14,7 @@ import bgOption1 from "@/assets/bg-option-1.png";
 import bgOption2 from "@/assets/bg-option-2.png";
 import bgOption5 from "@/assets/bg-option-5.png";
 import bgOption6 from "@/assets/bg-option-6.png";
+import ipgLogo3D from "@/assets/ipg-logo-3d.png";
 
 const AppHomeScreen = () => {
   const navigate = useNavigate();
@@ -112,7 +113,7 @@ const AppHomeScreen = () => {
         <CyberHeader
           title="I-SMART"
           subtitle="Welcome back to your digital future"
-          logo="/lovable-uploads/a9cfc5de-7126-4662-923b-cc0348077e3d.png"
+          logo={ipgLogo3D}
           kpis={kpis}
           actions={
             <div className="flex items-center gap-3">
