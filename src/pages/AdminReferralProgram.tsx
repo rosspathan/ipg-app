@@ -38,8 +38,56 @@ const AdminReferralProgram = () => {
   const [selectedAsset, setSelectedAsset] = useState(referralSettings?.default_asset_id || '');
   const [levels, setLevels] = useState(
     (referralSettings?.levels as any) || [
-      { level: 1, percentage: 10 },
-      { level: 2, percentage: 5 }
+      { level: 1, bsk_amount: 5.0 },
+      { level: 2, bsk_amount: 0.5 },
+      { level: 3, bsk_amount: 0.5 },
+      { level: 4, bsk_amount: 0.5 },
+      { level: 5, bsk_amount: 0.5 },
+      { level: 6, bsk_amount: 0.5 },
+      { level: 7, bsk_amount: 0.5 },
+      { level: 8, bsk_amount: 0.5 },
+      { level: 9, bsk_amount: 0.5 },
+      { level: 10, bsk_amount: 0.5 },
+      { level: 11, bsk_amount: 0.4 },
+      { level: 12, bsk_amount: 0.4 },
+      { level: 13, bsk_amount: 0.4 },
+      { level: 14, bsk_amount: 0.4 },
+      { level: 15, bsk_amount: 0.4 },
+      { level: 16, bsk_amount: 0.4 },
+      { level: 17, bsk_amount: 0.4 },
+      { level: 18, bsk_amount: 0.4 },
+      { level: 19, bsk_amount: 0.4 },
+      { level: 20, bsk_amount: 0.4 },
+      { level: 21, bsk_amount: 0.3 },
+      { level: 22, bsk_amount: 0.3 },
+      { level: 23, bsk_amount: 0.3 },
+      { level: 24, bsk_amount: 0.3 },
+      { level: 25, bsk_amount: 0.3 },
+      { level: 26, bsk_amount: 0.3 },
+      { level: 27, bsk_amount: 0.3 },
+      { level: 28, bsk_amount: 0.3 },
+      { level: 29, bsk_amount: 0.3 },
+      { level: 30, bsk_amount: 0.3 },
+      { level: 31, bsk_amount: 0.2 },
+      { level: 32, bsk_amount: 0.2 },
+      { level: 33, bsk_amount: 0.2 },
+      { level: 34, bsk_amount: 0.2 },
+      { level: 35, bsk_amount: 0.2 },
+      { level: 36, bsk_amount: 0.2 },
+      { level: 37, bsk_amount: 0.2 },
+      { level: 38, bsk_amount: 0.2 },
+      { level: 39, bsk_amount: 0.2 },
+      { level: 40, bsk_amount: 0.2 },
+      { level: 41, bsk_amount: 0.1 },
+      { level: 42, bsk_amount: 0.1 },
+      { level: 43, bsk_amount: 0.1 },
+      { level: 44, bsk_amount: 0.1 },
+      { level: 45, bsk_amount: 0.1 },
+      { level: 46, bsk_amount: 0.1 },
+      { level: 47, bsk_amount: 0.1 },
+      { level: 48, bsk_amount: 0.1 },
+      { level: 49, bsk_amount: 0.1 },
+      { level: 50, bsk_amount: 0.1 }
     ]
   );
   const [qualifyingActions, setQualifyingActions] = useState(
@@ -118,7 +166,16 @@ const AdminReferralProgram = () => {
 
   const addLevel = () => {
     const nextLevel = levels.length + 1;
-    setLevels([...levels, { level: nextLevel, percentage: 5 }]);
+    let defaultAmount = 0.1; // Default for levels beyond 50
+    
+    if (nextLevel === 1) defaultAmount = 5.0;
+    else if (nextLevel <= 10) defaultAmount = 0.5;
+    else if (nextLevel <= 20) defaultAmount = 0.4;
+    else if (nextLevel <= 30) defaultAmount = 0.3;
+    else if (nextLevel <= 40) defaultAmount = 0.2;
+    else if (nextLevel <= 50) defaultAmount = 0.1;
+    
+    setLevels([...levels, { level: nextLevel, bsk_amount: defaultAmount }]);
   };
 
   const removeLevel = (index: number) => {
@@ -264,7 +321,7 @@ const AdminReferralProgram = () => {
               {/* Referral Levels */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label>Referral Levels & Percentages</Label>
+                  <Label>Referral Levels & BSK Rewards</Label>
                   <Button size="sm" onClick={addLevel}>
                     <Plus className="w-4 h-4 mr-2" />
                     Add Level
@@ -275,11 +332,12 @@ const AdminReferralProgram = () => {
                     <Label className="w-16">L{level.level}:</Label>
                     <Input
                       type="number"
-                      value={level.percentage}
-                      onChange={(e) => updateLevel(index, 'percentage', parseFloat(e.target.value) || 0)}
+                      step="0.1"
+                      value={level.bsk_amount}
+                      onChange={(e) => updateLevel(index, 'bsk_amount', parseFloat(e.target.value) || 0)}
                       className="w-24"
                     />
-                    <span className="text-sm text-muted-foreground">%</span>
+                    <span className="text-sm text-muted-foreground">BSK</span>
                     <Button size="sm" variant="destructive" onClick={() => removeLevel(index)}>
                       Remove
                     </Button>

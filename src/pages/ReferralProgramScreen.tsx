@@ -6,14 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Copy, Users, Gift, TrendingUp, Share2, Award, Info, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthUser } from '@/hooks/useAuthUser';
 import { useReferralProgram } from '@/hooks/useReferralProgram';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ReferralProgramScreen = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthUser();
   const { toast } = useToast();
   const {
     bonusAssets,
@@ -254,8 +254,8 @@ const ReferralProgramScreen = () => {
         <TabsContent value="structure" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Commission Structure</CardTitle>
-              <CardDescription>Earn different percentages based on referral levels</CardDescription>
+              <CardTitle>Reward Structure</CardTitle>
+              <CardDescription>Earn BSK tokens based on referral levels</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -266,11 +266,19 @@ const ReferralProgramScreen = () => {
                       <span>Level {level.level} Referrals</span>
                     </div>
                     <div className="font-bold text-primary">
-                      {level.percentage}% Commission
+                      {level.bsk_amount || level.percentage || 0} BSK
                     </div>
                   </div>
                 ))}
               </div>
+              
+              {levels.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Award className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No reward structure configured</p>
+                  <p className="text-sm">Contact admin to set up BSK rewards</p>
+                </div>
+              )}
               
               {qualifyingActions.length > 0 && (
                 <div className="mt-6">
