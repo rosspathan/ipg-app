@@ -2,8 +2,9 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
-import { Home, Wallet, TrendingUp, User, Sparkles } from "lucide-react";
+import { Home, Wallet, TrendingUp, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ismartLogo from "@/assets/ismart-logo.png";
 
 interface NavItem {
   path: string;
@@ -98,7 +99,11 @@ const CurvedBottomNav: React.FC = () => {
             onClick={handleFABPress}
             className="animate-glow-pulse"
           >
-            <Sparkles className="h-7 w-7" />
+            <img 
+              src={ismartLogo}
+              alt="I-SMART Logo"
+              className="w-8 h-8 object-contain filter brightness-0 invert"
+            />
           </FloatingActionButton>
         </div>
       </div>

@@ -29,6 +29,7 @@ interface QuickActionGridProps {
   onMarkets: () => void;
   onMore: () => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const QuickActionGrid: React.FC<QuickActionGridProps> = ({
@@ -37,7 +38,8 @@ const QuickActionGrid: React.FC<QuickActionGridProps> = ({
   onCopyAddress,
   onMarkets,
   onMore,
-  className
+  className,
+  style
 }) => {
   const actions: QuickAction[] = [
     {
@@ -83,7 +85,7 @@ const QuickActionGrid: React.FC<QuickActionGridProps> = ({
   ];
 
   return (
-    <div className={cn("grid grid-cols-5 gap-3", className)}>
+    <div className={cn("grid grid-cols-5 gap-3", className)} style={style}>
       {actions.map((action, index) => {
         const Icon = action.icon;
         

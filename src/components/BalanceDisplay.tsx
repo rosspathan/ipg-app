@@ -11,13 +11,15 @@ interface BalanceDisplayProps {
   change24h: number;
   onAddFunds: () => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
   balance,
   change24h,
   onAddFunds,
-  className
+  className,
+  style
 }) => {
   const [showBalance, setShowBalance] = useState(true);
   const [currency, setCurrency] = useState("USD");
@@ -73,6 +75,7 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
       variant="accent" 
       hover="glow"
       className={cn("overflow-hidden", className)}
+      style={style}
     >
       <GlassCardHeader>
         <div className="flex items-center justify-between">

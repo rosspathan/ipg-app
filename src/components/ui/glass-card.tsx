@@ -10,7 +10,8 @@ const glassCardVariants = cva(
         default: "bg-card-glass text-card-foreground",
         primary: "bg-gradient-primary text-primary-foreground border-primary/30",
         accent: "bg-gradient-to-br from-accent/20 to-primary/20 text-foreground border-accent/30",
-        muted: "bg-muted/50 text-muted-foreground border-muted/30"
+        muted: "bg-muted/50 text-muted-foreground border-muted/30",
+        destructive: "bg-gradient-to-br from-destructive/20 to-destructive/10 text-destructive-foreground border-destructive/30"
       },
       hover: {
         none: "",
