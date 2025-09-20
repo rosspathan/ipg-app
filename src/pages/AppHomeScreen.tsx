@@ -7,6 +7,7 @@ import { CyberHeader } from "@/components/ui/cyber-header";
 import { NeonIconTile } from "@/components/ui/neon-icon-tile";
 import BalanceDisplay from "@/components/BalanceDisplay";
 import QuickActionGrid from "@/components/QuickActionGrid";
+import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -146,6 +147,12 @@ const AppHomeScreen = () => {
           onAddFunds={handleAddFunds}
           className="animate-fade-in-scale"
           style={{ animationDelay: "200ms", animationFillMode: "both" }}
+        />
+
+        {/* Bonus Balance Card */}
+        <BonusBalanceCard 
+          className="animate-fade-in-scale"
+          style={{ animationDelay: "250ms", animationFillMode: "both" }}
         />
 
         {/* Quick Actions Grid - Cyberpunk Style */}
