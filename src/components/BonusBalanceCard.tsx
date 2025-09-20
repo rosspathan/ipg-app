@@ -19,12 +19,6 @@ const BonusBalanceCard: React.FC<BonusBalanceCardProps> = ({ className, style })
   const navigate = useNavigate();
   const { formatCurrency } = useFX();
 
-  // Add debugging
-  console.log('BonusBalanceCard - loading:', loading);
-  console.log('BonusBalanceCard - user:', !!user);
-  console.log('BonusBalanceCard - bonusAssets:', bonusAssets);
-  console.log('BonusBalanceCard - bonusBalances:', bonusBalances);
-
   if (loading) {
     return (
       <CyberCard className={className} style={style} variant="glow">
@@ -45,10 +39,6 @@ const BonusBalanceCard: React.FC<BonusBalanceCardProps> = ({ className, style })
   const bskAmount = bskBalance?.balance || 0;
   const bskPrice = bskAsset ? getCurrentPrice(bskAsset.id) : 0;
   const bskValue = bskAmount * bskPrice;
-
-  console.log('BonusBalanceCard - bskAsset:', bskAsset);
-  console.log('BonusBalanceCard - bskAmount:', bskAmount);
-  console.log('BonusBalanceCard - bskPrice:', bskPrice);
 
   const pendingAmount = 0; // TODO: Get from pending rewards when implemented
 

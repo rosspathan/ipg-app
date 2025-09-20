@@ -72,7 +72,7 @@ import AdminAssets from "./pages/AdminAssets";
 import AdminMarkets from "./pages/AdminMarkets";
 import AdminFunding from "./pages/AdminFunding";
 import { AdminSubscriptions } from "./components/AdminSubscriptions";
-import { AdminReferrals } from "./components/AdminReferrals";
+import AdminReferralProgram from "./pages/AdminReferralProgram";
 import { AdminStaking } from "./components/AdminStaking";
 import { AdminLuckyDraw } from "./components/AdminLuckyDraw";
 import { AdminInsurance } from "./components/AdminInsurance";
@@ -209,7 +209,7 @@ function App() {
                 <Route path="funding" element={<AdminFunding />} />
                 <Route path="funding/inr" element={<AdminINRFundingScreen />} />
                 <Route path="subscriptions" element={<AdminSubscriptions />} />
-                <Route path="referrals" element={<AdminReferrals />} />
+                <Route path="referrals" element={<AdminReferralProgram />} />
                 <Route path="staking" element={<AdminStaking />} />
                 <Route path="lucky" element={<AdminSpinScreen />} />
                 <Route path="lucky/draw" element={<AdminLuckyDraw />} />
