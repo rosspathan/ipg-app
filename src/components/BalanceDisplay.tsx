@@ -48,6 +48,14 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
   }, [balance, showBalance]);
 
   const formatBalance = (amount: number) => {
+    // Handle crypto currencies separately as they're not valid ISO currency codes
+    const cryptoCurrencies = ['BTC', 'USDT', 'ETH', 'BNB'];
+    
+    if (cryptoCurrencies.includes(currency)) {
+      return `${amount.toFixed(4)} ${currency}`;
+    }
+    
+    // Use currency formatter for fiat currencies
     const formatted = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
