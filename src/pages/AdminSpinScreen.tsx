@@ -8,9 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Settings, BarChart3, FileText } from "lucide-react";
+import { Plus, Edit, Trash2, Settings, BarChart3, FileText, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SpinWheelQuickSetup } from "@/components/admin/SpinWheelQuickSetup";
 
 interface SpinWheel {
   id: string;
@@ -328,6 +329,7 @@ export default function AdminSpinScreen() {
           <h1 className="text-3xl font-bold">Spin Wheel Management</h1>
           <p className="text-muted-foreground">Configure wheels, segments, and monitor activity</p>
         </div>
+        <SpinWheelQuickSetup onWheelCreated={loadWheels} />
       </div>
 
       <Tabs defaultValue="wheels" className="space-y-6">
@@ -338,9 +340,100 @@ export default function AdminSpinScreen() {
         </TabsList>
 
         <TabsContent value="wheels" className="space-y-6">
+          {/* Quick Setup Templates */}
+          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                Quick Setup Templates
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button
+                  variant="outline"
+                  className="h-auto p-4 flex flex-col items-start"
+                  onClick={() => {
+                    setWheelForm({
+                      name: "BSK Fortune Wheel",
+                      is_active: true,
+                      start_at: "",
+                      end_at: "",
+                      ticket_price: 0,
+                      ticket_currency: "BSK",
+                      free_spins_daily: 5,
+                      vip_multiplier: 1,
+                      cooldown_seconds: 300,
+                      max_spins_per_user: 0,
+                      seed: ""
+                    });
+                    setIsWheelDialogOpen(true);
+                  }}
+                >
+                  <div className="font-medium text-green-600 dark:text-green-400">BSK Rewards Wheel</div>
+                  <div className="text-sm text-muted-foreground text-left mt-1">
+                    5 free spins daily, 5min cooldown, BSK rewards
+                  </div>
+                </Button>
+                
+                <Button
+                  variant="outline" 
+                  className="h-auto p-4 flex flex-col items-start"
+                  onClick={() => {
+                    setWheelForm({
+                      name: "Premium Crypto Wheel",
+                      is_active: true,
+                      start_at: "",
+                      end_at: "",
+                      ticket_price: 1,
+                      ticket_currency: "USDT",
+                      free_spins_daily: 2,
+                      vip_multiplier: 2,
+                      cooldown_seconds: 3600,
+                      max_spins_per_user: 10,
+                      seed: ""
+                    });
+                    setIsWheelDialogOpen(true);
+                  }}
+                >
+                  <div className="font-medium text-blue-600 dark:text-blue-400">Premium Wheel</div>
+                  <div className="text-sm text-muted-foreground text-left mt-1">
+                    1 USDT per spin, 2 free daily, VIP benefits
+                  </div>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-auto p-4 flex flex-col items-start"
+                  onClick={() => {
+                    setWheelForm({
+                      name: "Lucky Draw Wheel",
+                      is_active: true,
+                      start_at: "",
+                      end_at: "",
+                      ticket_price: 0,
+                      ticket_currency: "BSK",
+                      free_spins_daily: 1,
+                      vip_multiplier: 1,
+                      cooldown_seconds: 86400,
+                      max_spins_per_user: 1,
+                      seed: ""
+                    });
+                    setIsWheelDialogOpen(true);
+                  }}
+                >
+                  <div className="font-medium text-purple-600 dark:text-purple-400">Daily Lucky Draw</div>
+                  <div className="text-sm text-muted-foreground text-left mt-1">
+                    1 free spin daily, 24h cooldown, big prizes
+                  </div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Spin Wheels</CardTitle>
+              <CardTitle>Spin Wheels Configuration</CardTitle>
               <Dialog open={isWheelDialogOpen} onOpenChange={setIsWheelDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={() => { resetWheelForm(); setEditingWheel(null); }}>
@@ -532,6 +625,120 @@ export default function AdminSpinScreen() {
         <TabsContent value="segments" className="space-y-6">
           {selectedWheel ? (
             <>
+              {/* Segment Templates */}
+              <Card className="bg-gradient-to-r from-green-50 to-red-50 dark:from-green-950/20 dark:to-red-950/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" />
+                    Segment Templates for {wheels.find(w => w.id === selectedWheel)?.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <Button
+                      variant="outline"
+                      className="h-auto p-4 flex flex-col items-start"
+                      onClick={() => {
+                        setSegmentForm({
+                          label: "WIN 1×",
+                          weight: 25,
+                          reward_type: "token",
+                          reward_value: 5,
+                          reward_token: "BSK",
+                          max_per_day: 0,
+                          max_total: 0,
+                          is_enabled: true,
+                          color: "#00ff88"
+                        });
+                        setIsSegmentDialogOpen(true);
+                      }}
+                    >
+                      <div className="font-medium text-green-600">WIN +5 BSK</div>
+                      <div className="text-xs text-muted-foreground text-left mt-1">
+                        Positive reward segment
+                      </div>
+                    </Button>
+                    
+                    <Button
+                      variant="outline" 
+                      className="h-auto p-4 flex flex-col items-start"
+                      onClick={() => {
+                        setSegmentForm({
+                          label: "LOSE 0",
+                          weight: 25,
+                          reward_type: "token",
+                          reward_value: -5,
+                          reward_token: "BSK",
+                          max_per_day: 0,
+                          max_total: 0,
+                          is_enabled: true,
+                          color: "#ff0066"
+                        });
+                        setIsSegmentDialogOpen(true);
+                      }}
+                    >
+                      <div className="font-medium text-red-600">LOSE -5 BSK</div>
+                      <div className="text-xs text-muted-foreground text-left mt-1">
+                        Negative reward segment
+                      </div>
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      className="h-auto p-4 flex flex-col items-start"
+                      onClick={() => {
+                        setSegmentForm({
+                          label: "JACKPOT",
+                          weight: 5,
+                          reward_type: "token",
+                          reward_value: 100,
+                          reward_token: "BSK",
+                          max_per_day: 1,
+                          max_total: 0,
+                          is_enabled: true,
+                          color: "#ffd700"
+                        });
+                        setIsSegmentDialogOpen(true);
+                      }}
+                    >
+                      <div className="font-medium text-yellow-600">JACKPOT +100</div>
+                      <div className="text-xs text-muted-foreground text-left mt-1">
+                        Rare big reward (5% chance)
+                      </div>
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      className="h-auto p-4 flex flex-col items-start"
+                      onClick={() => {
+                        setSegmentForm({
+                          label: "Nothing",
+                          weight: 45,
+                          reward_type: "nothing",
+                          reward_value: 0,
+                          reward_token: "",
+                          max_per_day: 0,
+                          max_total: 0,
+                          is_enabled: true,
+                          color: "#666666"
+                        });
+                        setIsSegmentDialogOpen(true);
+                      }}
+                    >
+                      <div className="font-medium text-gray-600">NO REWARD</div>
+                      <div className="text-xs text-muted-foreground text-left mt-1">
+                        Nothing won segment
+                      </div>
+                    </Button>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground">
+                    💡 <strong>Admin Control:</strong> You control everything - number of segments, probability (weight), 
+                    coins/tokens to give, daily limits, and segment colors. Weight determines probability: higher weight = higher chance.
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>
@@ -724,23 +931,150 @@ export default function AdminSpinScreen() {
         </TabsContent>
 
         <TabsContent value="runs" className="space-y-6">
+          {/* Admin Control Summary */}
+          <Card className="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-950/20 dark:to-green-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-primary" />
+                Complete Admin Control Panel
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                  <h4 className="font-semibold text-green-600 mb-2">🎡 Wheel Settings</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Free spins per day (0-unlimited)</li>
+                    <li>• Cooldown between spins</li>
+                    <li>• Ticket price & currency</li>
+                    <li>• Max spins per user</li>
+                    <li>• VIP multipliers</li>
+                    <li>• Active/inactive status</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-blue-600 mb-2">🎯 Segment Control</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Add unlimited segments</li>
+                    <li>• Set probability (weight)</li>
+                    <li>• Choose any coin/token</li>
+                    <li>• Positive/negative rewards</li>
+                    <li>• Daily/total limits per segment</li>
+                    <li>• Custom colors & labels</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-purple-600 mb-2">📊 Monitoring</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Real-time spin analytics</li>
+                    <li>• User activity tracking</li>
+                    <li>• Reward distribution</li>
+                    <li>• Revenue/cost analysis</li>
+                    <li>• Export detailed reports</li>
+                    <li>• Fraud detection</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Live Analytics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {wheels.filter(w => w.is_active).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Active Wheels</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {segments.filter(s => s.is_enabled).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Active Segments</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {wheels.reduce((sum, w) => sum + w.free_spins_daily, 0)}
+                </div>
+                <div className="text-sm text-muted-foreground">Daily Free Spins</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-orange-600">
+                  {new Set(segments.map(s => s.reward_token).filter(Boolean)).size}
+                </div>
+                <div className="text-sm text-muted-foreground">Different Tokens</div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
-                Runs & Analytics
+                Spin History & Analytics
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Spin runs analytics and reporting will be displayed here. This includes user activity, 
-                reward distribution, revenue tracking, and detailed spin history.
-              </p>
-              <div className="mt-4">
-                <Button variant="outline">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export Data
-                </Button>
+              <div className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  📈 <strong>Real-time Analytics:</strong> Monitor all spin activity, user behavior, reward distribution, 
+                  and financial impact. Export detailed reports for analysis.
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-2">Popular Rewards</h4>
+                    <div className="space-y-2">
+                      {segments.slice(0, 3).map(segment => (
+                        <div key={segment.id} className="flex justify-between text-sm">
+                          <span>{segment.label}</span>
+                          <span className="font-mono">{getSegmentProbability(segment.weight)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-2">Wheel Status</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Active Wheels:</span>
+                        <span className="font-mono">{wheels.filter(w => w.is_active).length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total Segments:</span>
+                        <span className="font-mono">{segments.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Enabled Segments:</span>
+                        <span className="font-mono">{segments.filter(s => s.is_enabled).length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-x-2">
+                  <Button variant="outline">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export Wheel Config
+                  </Button>
+                  <Button variant="outline">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    View Detailed Analytics
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
