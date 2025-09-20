@@ -1711,6 +1711,51 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_balance_slabs: {
+        Row: {
+          balance_metric: Database["public"]["Enums"]["balance_metric"]
+          base_currency: string
+          created_at: string
+          id: string
+          is_active: boolean
+          max_balance: number | null
+          max_direct_referrals: number
+          min_balance: number
+          name: string
+          notes: string | null
+          unlocked_levels: number
+          updated_at: string
+        }
+        Insert: {
+          balance_metric?: Database["public"]["Enums"]["balance_metric"]
+          base_currency?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_balance?: number | null
+          max_direct_referrals?: number
+          min_balance?: number
+          name: string
+          notes?: string | null
+          unlocked_levels?: number
+          updated_at?: string
+        }
+        Update: {
+          balance_metric?: Database["public"]["Enums"]["balance_metric"]
+          base_currency?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_balance?: number | null
+          max_direct_referrals?: number
+          min_balance?: number
+          name?: string
+          notes?: string | null
+          unlocked_levels?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referral_configs: {
         Row: {
           bonus_currency: string | null
@@ -1809,6 +1854,39 @@ export type Database = {
           },
         ]
       }
+      referral_global_settings: {
+        Row: {
+          base_currency: string
+          created_at: string
+          default_balance_metric: Database["public"]["Enums"]["balance_metric"]
+          id: string
+          invite_policy: Database["public"]["Enums"]["invite_policy"]
+          reevaluate_on_balance_change: boolean
+          reevaluate_threshold_percent: number
+          updated_at: string
+        }
+        Insert: {
+          base_currency?: string
+          created_at?: string
+          default_balance_metric?: Database["public"]["Enums"]["balance_metric"]
+          id?: string
+          invite_policy?: Database["public"]["Enums"]["invite_policy"]
+          reevaluate_on_balance_change?: boolean
+          reevaluate_threshold_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          base_currency?: string
+          created_at?: string
+          default_balance_metric?: Database["public"]["Enums"]["balance_metric"]
+          id?: string
+          invite_policy?: Database["public"]["Enums"]["invite_policy"]
+          reevaluate_on_balance_change?: boolean
+          reevaluate_threshold_percent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referral_relationships: {
         Row: {
           created_at: string
@@ -1873,6 +1951,83 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referral_user_state: {
+        Row: {
+          created_at: string
+          current_balance: number
+          current_slab_id: string | null
+          direct_referral_count: number
+          last_evaluated_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_balance?: number
+          current_slab_id?: string | null
+          direct_referral_count?: number
+          last_evaluated_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_balance?: number
+          current_slab_id?: string | null
+          direct_referral_count?: number
+          last_evaluated_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_user_state_current_slab_id_fkey"
+            columns: ["current_slab_id"]
+            isOneToOne: false
+            referencedRelation: "referral_balance_slabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_waitlist: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          expired_at: string | null
+          id: string
+          notes: string | null
+          prospect_email: string | null
+          prospect_id: string | null
+          prospect_phone: string | null
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          expired_at?: string | null
+          id?: string
+          notes?: string | null
+          prospect_email?: string | null
+          prospect_id?: string | null
+          prospect_phone?: string | null
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          expired_at?: string | null
+          id?: string
+          notes?: string | null
+          prospect_email?: string | null
+          prospect_id?: string | null
+          prospect_phone?: string | null
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: []
       }
       security: {
         Row: {
@@ -2901,6 +3056,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_user_balance: {
+        Args: {
+          p_base_currency?: string
+          p_metric?: Database["public"]["Enums"]["balance_metric"]
+          p_user_id: string
+        }
+        Returns: number
+      }
       create_default_admin: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -2917,6 +3080,10 @@ export type Database = {
           p_wallet_address?: string
         }
         Returns: Json
+      }
+      get_user_slab: {
+        Args: { p_user_id: string }
+        Returns: string
       }
       has_role: {
         Args: {
@@ -2939,9 +3106,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      update_user_referral_state: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "support" | "compliance" | "finance" | "user"
+      balance_metric: "MAIN" | "TOTAL" | "BONUS_INCLUDED"
+      invite_policy: "BLOCK_WHEN_FULL" | "WAITLIST"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3070,6 +3243,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "support", "compliance", "finance", "user"],
+      balance_metric: ["MAIN", "TOTAL", "BONUS_INCLUDED"],
+      invite_policy: ["BLOCK_WHEN_FULL", "WAITLIST"],
     },
   },
 } as const

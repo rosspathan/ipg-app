@@ -8,6 +8,7 @@ import { ArrowLeft, Copy, Users, Gift, TrendingUp, Share2, Award, Info, External
 import { useNavigate } from 'react-router-dom';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useReferralProgram } from '@/hooks/useReferralProgram';
+import { useBalanceSlabs } from "@/hooks/useBalanceSlabs";
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -15,15 +16,24 @@ const ReferralProgramScreen = () => {
   const navigate = useNavigate();
   const { user } = useAuthUser();
   const { toast } = useToast();
-  const {
+  const { 
     bonusAssets,
     referralSettings,
-    referralEvents,
-    bonusBalances,
-    referralRelationships,
-    getCurrentPrice,
-    loading
+    referralEvents, 
+    bonusBalances, 
+    referralRelationships, 
+    getBSKAsset, 
+    getCurrentPrice, 
+    loading 
   } = useReferralProgram();
+  const {
+    currentSlab,
+    userState,
+    getRemainingCapacity,
+    canMakeReferral,
+    getUpgradeHint,
+    loading: slabsLoading
+  } = useBalanceSlabs();
 
   const [referralLink, setReferralLink] = useState(
     user ? `${window.location.origin}/auth/register?ref=${user.id}` : ''
@@ -45,7 +55,7 @@ const ReferralProgramScreen = () => {
     }
   };
 
-  if (loading || !user) {
+  if (loading || slabsLoading || !user) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
@@ -59,7 +69,7 @@ const ReferralProgramScreen = () => {
   const userBonusBalances = bonusBalances.filter(balance => balance.user_id === user.id);
   const userReferees = referralRelationships.filter(rel => rel.referrer_id === user.id);
   
-  const bskAsset = bonusAssets.find(asset => asset.symbol === 'BSK');
+  const bskAsset = getBSKAsset();
   const bskBalance = userBonusBalances.find(balance => 
     bskAsset && balance.asset_id === bskAsset.id
   );
@@ -102,6 +112,47 @@ const ReferralProgramScreen = () => {
             The referral program is currently inactive. Contact support for more information.
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* Current Slab and Referral Capacity */}
+      {currentSlab && (
+        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Badge variant="outline" className="text-primary border-primary">
+                  {currentSlab.name} Tier
+                </Badge>
+                <span className="text-lg">Balance: {userState?.current_balance.toLocaleString() || 0} {currentSlab.base_currency}</span>
+              </span>
+              <div className="text-right">
+                <div className="text-sm text-muted-foreground">Invites Left Today</div>
+                <div className="text-2xl font-bold text-primary">
+                  {getRemainingCapacity()}/{currentSlab.max_direct_referrals}
+                </div>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Current Benefits:</p>
+                <ul className="text-sm space-y-1">
+                  <li>• Max {currentSlab.max_direct_referrals} direct referrals</li>
+                  <li>• Rewards active up to Level {currentSlab.unlocked_levels}</li>
+                  <li>• {currentSlab.balance_metric.replace('_', ' ').toLowerCase()} balance tier</li>
+                </ul>
+              </div>
+              
+              {getUpgradeHint() && (
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <p className="text-sm font-medium text-primary mb-1">Upgrade to unlock more:</p>
+                  <p className="text-xs text-muted-foreground">{getUpgradeHint()}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Stats Cards */}
@@ -149,9 +200,16 @@ const ReferralProgramScreen = () => {
       {/* Referral Link Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Share2 className="w-5 h-5" />
-            <span>Your Referral Link</span>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Share2 className="w-5 h-5" />
+              <span>Your Referral Link</span>
+            </div>
+            {!canMakeReferral() && (
+              <Badge variant="secondary" className="text-xs">
+                Capacity Full
+              </Badge>
+            )}
           </CardTitle>
           <CardDescription>
             Share this link to earn BSK rewards when friends sign up and complete qualifying actions
@@ -164,11 +222,24 @@ const ReferralProgramScreen = () => {
               readOnly
               className="flex-1"
             />
-            <Button onClick={handleCopyLink}>
+            <Button 
+              onClick={handleCopyLink} 
+              disabled={!canMakeReferral()}
+              variant={canMakeReferral() ? "default" : "secondary"}
+            >
               <Copy className="w-4 h-4 mr-2" />
-              Copy
+              {canMakeReferral() ? "Copy" : "Full"}
             </Button>
           </div>
+          {!canMakeReferral() && (
+            <Alert className="mt-4">
+              <Info className="w-4 h-4" />
+              <AlertDescription>
+                You've reached your referral limit for the {currentSlab?.name} tier. 
+                {getUpgradeHint() ? " Upgrade your balance to invite more friends!" : ""}
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 

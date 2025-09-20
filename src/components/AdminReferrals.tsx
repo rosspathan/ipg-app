@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, CheckCircle, XCircle, Users, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash2, CheckCircle, XCircle, Users, DollarSign, Settings, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -42,11 +43,52 @@ interface ConfigFormData {
   is_active: boolean;
 }
 
+interface BalanceSlab {
+  id: string;
+  name: string;
+  balance_metric: 'MAIN' | 'TOTAL' | 'BONUS_INCLUDED';
+  base_currency: string;
+  min_balance: number;
+  max_balance: number | null;
+  max_direct_referrals: number;
+  unlocked_levels: number;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface SlabFormData {
+  name: string;
+  balance_metric: 'MAIN' | 'TOTAL' | 'BONUS_INCLUDED';
+  base_currency: string;
+  min_balance: number;
+  max_balance: number | null;
+  max_direct_referrals: number;
+  unlocked_levels: number;
+  notes: string;
+  is_active: boolean;
+}
+
+interface GlobalSettings {
+  id: string;
+  default_balance_metric: 'MAIN' | 'TOTAL' | 'BONUS_INCLUDED';
+  base_currency: string;
+  invite_policy: 'BLOCK_WHEN_FULL' | 'WAITLIST';
+  reevaluate_on_balance_change: boolean;
+  reevaluate_threshold_percent: number;
+}
+
 export function AdminReferrals() {
   const [configs, setConfigs] = useState<ReferralConfig[]>([]);
+  const [balanceSlabs, setBalanceSlabs] = useState<BalanceSlab[]>([]);
+  const [globalSettings, setGlobalSettings] = useState<GlobalSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSlabDialogOpen, setIsSlabDialogOpen] = useState(false);
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<ReferralConfig | null>(null);
+  const [editingSlab, setEditingSlab] = useState<BalanceSlab | null>(null);
   const [formData, setFormData] = useState<ConfigFormData>({
     name: "",
     description: "",
@@ -59,10 +101,23 @@ export function AdminReferrals() {
     bonus_currency: "USDT",
     is_active: true,
   });
+  const [slabFormData, setSlabFormData] = useState<SlabFormData>({
+    name: "",
+    balance_metric: "TOTAL",
+    base_currency: "USDT",
+    min_balance: 0,
+    max_balance: null,
+    max_direct_referrals: 5,
+    unlocked_levels: 10,
+    notes: "",
+    is_active: true,
+  });
   const { toast } = useToast();
 
   useEffect(() => {
     loadConfigs();
+    loadBalanceSlabs();
+    loadGlobalSettings();
   }, []);
 
   const loadConfigs = async () => {
@@ -79,6 +134,48 @@ export function AdminReferrals() {
       toast({
         title: "Error",
         description: "Failed to load referral configurations",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadBalanceSlabs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("referral_balance_slabs")
+        .select("*")
+        .order("min_balance", { ascending: true });
+
+      if (error) throw error;
+      setBalanceSlabs(data || []);
+    } catch (error) {
+      console.error("Error loading balance slabs:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load balance slabs",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadGlobalSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("referral_global_settings")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      setGlobalSettings(data);
+    } catch (error) {
+      console.error("Error loading global settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load global settings",
         variant: "destructive",
       });
     } finally {
@@ -235,6 +332,167 @@ export function AdminReferrals() {
     resetForm();
   };
 
+  const handleSlabSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (editingSlab) {
+        const { error } = await supabase
+          .from("referral_balance_slabs")
+          .update(slabFormData)
+          .eq("id", editingSlab.id);
+
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Balance slab updated successfully",
+        });
+      } else {
+        const { error } = await supabase
+          .from("referral_balance_slabs")
+          .insert([slabFormData]);
+
+        if (error) throw error;
+        toast({
+          title: "Success",
+          description: "Balance slab created successfully",
+        });
+      }
+
+      setIsSlabDialogOpen(false);
+      setEditingSlab(null);
+      resetSlabForm();
+      loadBalanceSlabs();
+    } catch (error) {
+      console.error("Error saving slab:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save balance slab",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSlabEdit = (slab: BalanceSlab) => {
+    setEditingSlab(slab);
+    setSlabFormData({
+      name: slab.name,
+      balance_metric: slab.balance_metric,
+      base_currency: slab.base_currency,
+      min_balance: slab.min_balance,
+      max_balance: slab.max_balance,
+      max_direct_referrals: slab.max_direct_referrals,
+      unlocked_levels: slab.unlocked_levels,
+      notes: slab.notes || "",
+      is_active: slab.is_active,
+    });
+    setIsSlabDialogOpen(true);
+  };
+
+  const handleSlabDelete = async (slab: BalanceSlab) => {
+    if (!confirm(`Are you sure you want to delete the slab "${slab.name}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("referral_balance_slabs")
+        .delete()
+        .eq("id", slab.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Balance slab deleted successfully",
+      });
+      loadBalanceSlabs();
+    } catch (error) {
+      console.error("Error deleting slab:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete balance slab",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleSlabStatus = async (slab: BalanceSlab) => {
+    try {
+      const { error } = await supabase
+        .from("referral_balance_slabs")
+        .update({ is_active: !slab.is_active })
+        .eq("id", slab.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: `Slab ${!slab.is_active ? 'activated' : 'deactivated'} successfully`,
+      });
+      loadBalanceSlabs();
+    } catch (error) {
+      console.error("Error updating slab status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update slab status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const resetSlabForm = () => {
+    setSlabFormData({
+      name: "",
+      balance_metric: "TOTAL",
+      base_currency: "USDT",
+      min_balance: 0,
+      max_balance: null,
+      max_direct_referrals: 5,
+      unlocked_levels: 10,
+      notes: "",
+      is_active: true,
+    });
+  };
+
+  const handleSlabDialogClose = () => {
+    setIsSlabDialogOpen(false);
+    setEditingSlab(null);
+    resetSlabForm();
+  };
+
+  const updateGlobalSettings = async (settings: Partial<GlobalSettings>) => {
+    try {
+      if (globalSettings?.id) {
+        const { error } = await supabase
+          .from("referral_global_settings")
+          .update(settings)
+          .eq("id", globalSettings.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("referral_global_settings")
+          .insert([settings]);
+
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Global settings updated successfully",
+      });
+      loadGlobalSettings();
+    } catch (error) {
+      console.error("Error updating global settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update global settings",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <div>Loading referral configurations...</div>;
   }
@@ -243,8 +501,8 @@ export function AdminReferrals() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold">Referrals Configuration</h2>
-          <p className="text-muted-foreground">Configure multi-level referral structure and commission rates.</p>
+          <h2 className="text-3xl font-bold">Referrals Management</h2>
+          <p className="text-muted-foreground">Configure referral programs, balance-based limits, and global settings.</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -395,6 +653,151 @@ export function AdminReferrals() {
             </form>
           </DialogContent>
         </Dialog>
+        
+        <Dialog open={isSlabDialogOpen} onOpenChange={setIsSlabDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" onClick={() => handleSlabDialogClose()}>
+              <Layers className="h-4 w-4 mr-2" />
+              Add Balance Slab
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{editingSlab ? 'Edit Balance Slab' : 'Create New Balance Slab'}</DialogTitle>
+              <DialogDescription>
+                {editingSlab ? 'Update the balance slab configuration' : 'Add a new balance slab for referral limits'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSlabSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="slab_name">Slab Name</Label>
+                  <Input
+                    id="slab_name"
+                    value={slabFormData.name}
+                    onChange={(e) => setSlabFormData({ ...slabFormData, name: e.target.value })}
+                    placeholder="e.g., Bronze, Silver, Gold"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="balance_metric">Balance Metric</Label>
+                  <Select value={slabFormData.balance_metric} onValueChange={(value) => setSlabFormData({ ...slabFormData, balance_metric: value as any })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MAIN">Main Wallet Only</SelectItem>
+                      <SelectItem value="TOTAL">Total Portfolio Value</SelectItem>
+                      <SelectItem value="BONUS_INCLUDED">Total + BSK Bonus</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="min_balance">Min Balance</Label>
+                  <Input
+                    id="min_balance"
+                    type="number"
+                    step="0.01"
+                    value={slabFormData.min_balance}
+                    onChange={(e) => setSlabFormData({ ...slabFormData, min_balance: parseFloat(e.target.value) || 0 })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="max_balance">Max Balance</Label>
+                  <Input
+                    id="max_balance"
+                    type="number"
+                    step="0.01"
+                    value={slabFormData.max_balance || ""}
+                    onChange={(e) => setSlabFormData({ ...slabFormData, max_balance: e.target.value ? parseFloat(e.target.value) : null })}
+                    placeholder="No limit"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="base_currency">Base Currency</Label>
+                  <Select value={slabFormData.base_currency} onValueChange={(value) => setSlabFormData({ ...slabFormData, base_currency: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USDT">USDT</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="BTC">BTC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="max_direct_referrals">Max Direct Referrals</Label>
+                  <Input
+                    id="max_direct_referrals"
+                    type="number"
+                    value={slabFormData.max_direct_referrals}
+                    onChange={(e) => setSlabFormData({ ...slabFormData, max_direct_referrals: parseInt(e.target.value) || 0 })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="unlocked_levels">Unlocked Levels</Label>
+                  <Input
+                    id="unlocked_levels"
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={slabFormData.unlocked_levels}
+                    onChange={(e) => setSlabFormData({ ...slabFormData, unlocked_levels: parseInt(e.target.value) || 1 })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="slab_notes">Notes</Label>
+                <Textarea
+                  id="slab_notes"
+                  value={slabFormData.notes}
+                  onChange={(e) => setSlabFormData({ ...slabFormData, notes: e.target.value })}
+                  placeholder="Optional notes about this slab..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="slab_is_active"
+                  checked={slabFormData.is_active}
+                  onCheckedChange={(checked) => setSlabFormData({ ...slabFormData, is_active: checked })}
+                />
+                <Label htmlFor="slab_is_active">Active Slab</Label>
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleSlabDialogClose}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingSlab ? 'Update Slab' : 'Create Slab'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Button variant="outline" onClick={() => setIsSettingsDialogOpen(true)}>
+          <Settings className="h-4 w-4 mr-2" />
+          Global Settings
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -434,15 +837,33 @@ export function AdminReferrals() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Balance Slabs</CardTitle>
+            <Layers className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{balanceSlabs.filter(s => s.is_active).length}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Referral Configurations</CardTitle>
-          <CardDescription>
-            Manage your platform's referral program configurations
-          </CardDescription>
-        </CardHeader>
+      <Tabs defaultValue="configs" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="configs">Referral Configs</TabsTrigger>
+          <TabsTrigger value="slabs">Balance Slabs</TabsTrigger>
+          <TabsTrigger value="settings">Global Settings</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="configs">
+          <Card>
+            <CardHeader>
+              <CardTitle>Referral Configurations</CardTitle>
+              <CardDescription>
+                Manage your platform's referral program configurations
+              </CardDescription>
+            </CardHeader>
         <CardContent>
           {configs.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -544,6 +965,170 @@ export function AdminReferrals() {
           )}
         </CardContent>
       </Card>
+    </TabsContent>
+
+    <TabsContent value="slabs">
+      <Card>
+        <CardHeader>
+          <CardTitle>Balance Slabs</CardTitle>
+          <CardDescription>
+            Configure balance-based referral limits and unlock levels
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {balanceSlabs.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No balance slabs found. Create your first slab to get started.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Slab Name</TableHead>
+                  <TableHead>Balance Range</TableHead>
+                  <TableHead>Max Direct Referrals</TableHead>
+                  <TableHead>Unlocked Levels</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {balanceSlabs.map((slab) => (
+                  <TableRow key={slab.id}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <span className="font-medium">{slab.name}</span>
+                        <div className="text-xs text-muted-foreground">
+                          {slab.balance_metric.replace('_', ' ')} • {slab.base_currency}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {slab.min_balance.toLocaleString()} - {slab.max_balance?.toLocaleString() || '∞'} {slab.base_currency}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{slab.max_direct_referrals}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">L{slab.unlocked_levels}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={slab.is_active ? "default" : "secondary"}>
+                        {slab.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="ghost" size="sm" onClick={() => toggleSlabStatus(slab)}>
+                          {slab.is_active ? <XCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleSlabEdit(slab)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleSlabDelete(slab)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
+
+    <TabsContent value="settings">
+      <Card>
+        <CardHeader>
+          <CardTitle>Global Settings</CardTitle>
+          <CardDescription>
+            Configure global referral system settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {globalSettings && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Default Balance Metric</Label>
+                  <Select 
+                    value={globalSettings.default_balance_metric} 
+                    onValueChange={(value) => updateGlobalSettings({ default_balance_metric: value as any })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MAIN">Main Wallet Only</SelectItem>
+                      <SelectItem value="TOTAL">Total Portfolio Value</SelectItem>
+                      <SelectItem value="BONUS_INCLUDED">Total + BSK Bonus</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Invite Policy</Label>
+                  <Select 
+                    value={globalSettings.invite_policy} 
+                    onValueChange={(value) => updateGlobalSettings({ invite_policy: value as any })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BLOCK_WHEN_FULL">Block When Full</SelectItem>
+                      <SelectItem value="WAITLIST">Add to Waitlist</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Base Currency</Label>
+                  <Select 
+                    value={globalSettings.base_currency} 
+                    onValueChange={(value) => updateGlobalSettings({ base_currency: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USDT">USDT</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="BTC">BTC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Reevaluate Threshold (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={globalSettings.reevaluate_threshold_percent}
+                    onChange={(e) => updateGlobalSettings({ reevaluate_threshold_percent: parseFloat(e.target.value) || 5 })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={globalSettings.reevaluate_on_balance_change}
+                  onCheckedChange={(checked) => updateGlobalSettings({ reevaluate_on_balance_change: checked })}
+                />
+                <Label>Auto-reevaluate on balance changes</Label>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
+  </Tabs>
     </div>
   );
 }
