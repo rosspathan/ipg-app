@@ -14,6 +14,148 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_clicks: {
+        Row: {
+          ad_id: string
+          completed_at: string | null
+          device_id: string | null
+          id: string
+          ip_address: unknown | null
+          notes: string | null
+          reward_bsk: number | null
+          rewarded: boolean
+          started_at: string
+          subscription_tier: string | null
+          user_id: string
+        }
+        Insert: {
+          ad_id: string
+          completed_at?: string | null
+          device_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          notes?: string | null
+          reward_bsk?: number | null
+          rewarded?: boolean
+          started_at?: string
+          subscription_tier?: string | null
+          user_id: string
+        }
+        Update: {
+          ad_id?: string
+          completed_at?: string | null
+          device_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          notes?: string | null
+          reward_bsk?: number | null
+          rewarded?: boolean
+          started_at?: string
+          subscription_tier?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_clicks_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_impressions: {
+        Row: {
+          ad_id: string
+          device_id: string | null
+          id: string
+          ip_address: unknown | null
+          placement: string | null
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_id: string
+          device_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          placement?: string | null
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_id?: string
+          device_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          placement?: string | null
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_impressions_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ads: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_at: string | null
+          id: string
+          image_url: string
+          max_impressions_per_user_per_day: number | null
+          placement: string
+          required_view_time: number
+          reward_bsk: number
+          square_image_url: string | null
+          start_at: string | null
+          status: string
+          target_url: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_at?: string | null
+          id?: string
+          image_url: string
+          max_impressions_per_user_per_day?: number | null
+          placement?: string
+          required_view_time?: number
+          reward_bsk?: number
+          square_image_url?: string | null
+          start_at?: string | null
+          status?: string
+          target_url: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_at?: string | null
+          id?: string
+          image_url?: string
+          max_impressions_per_user_per_day?: number | null
+          placement?: string
+          required_view_time?: number
+          reward_bsk?: number
+          square_image_url?: string | null
+          start_at?: string | null
+          status?: string
+          target_url?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ads_banners: {
         Row: {
           active: boolean | null
@@ -341,6 +483,39 @@ export type Database = {
         }
         Relationships: []
       }
+      bonus_ledger: {
+        Row: {
+          amount_bsk: number
+          asset: string
+          created_at: string
+          id: string
+          meta_json: Json | null
+          type: string
+          usd_value: number | null
+          user_id: string
+        }
+        Insert: {
+          amount_bsk: number
+          asset?: string
+          created_at?: string
+          id?: string
+          meta_json?: Json | null
+          type: string
+          usd_value?: number | null
+          user_id: string
+        }
+        Update: {
+          amount_bsk?: number
+          asset?: string
+          created_at?: string
+          id?: string
+          meta_json?: Json | null
+          type?: string
+          usd_value?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bonus_prices: {
         Row: {
           asset_id: string
@@ -375,6 +550,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      conversions: {
+        Row: {
+          amount_from: number
+          amount_to: number
+          created_at: string
+          fee: number | null
+          fee_percent: number | null
+          from_asset: string
+          id: string
+          rate: number
+          to_asset: string
+          user_id: string
+        }
+        Insert: {
+          amount_from: number
+          amount_to: number
+          created_at?: string
+          fee?: number | null
+          fee_percent?: number | null
+          from_asset?: string
+          id?: string
+          rate: number
+          to_asset?: string
+          user_id: string
+        }
+        Update: {
+          amount_from?: number
+          amount_to?: number
+          created_at?: string
+          fee?: number | null
+          fee_percent?: number | null
+          from_asset?: string
+          id?: string
+          rate?: number
+          to_asset?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       daily_rewards: {
         Row: {
@@ -1922,6 +2136,36 @@ export type Database = {
           name?: string
           price?: number
           stripe_price_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscription_tiers: {
+        Row: {
+          cooldown_seconds: number
+          created_at: string
+          daily_rewarded_clicks: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          cooldown_seconds?: number
+          created_at?: string
+          daily_rewarded_clicks?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          cooldown_seconds?: number
+          created_at?: string
+          daily_rewarded_clicks?: number
+          id?: string
+          is_active?: boolean
+          name?: string
           updated_at?: string
         }
         Relationships: []
