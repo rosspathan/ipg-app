@@ -8,120 +8,132 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Material Design inspired colors for Android mobile look */
-    --background: 210 20% 98%;
-    --foreground: 210 15% 12%;
+    /* Neon-first design system with glassmorphism */
+    --background: 230 35% 7%;
+    --foreground: 220 30% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 210 15% 12%;
+    /* Glassmorphism cards */
+    --card: 230 35% 10%;
+    --card-foreground: 220 30% 98%;
+    --card-glass: 230 35% 15% / 0.8;
+    --card-blur: blur(16px);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 15% 12%;
+    --popover: 230 35% 10%;
+    --popover-foreground: 220 30% 98%;
 
-    /* Material Blue primary color */
-    --primary: 211 100% 50%;
-    --primary-foreground: 0 0% 100%;
+    /* Neon gradient primary: Indigo → Violet → Fuchsia */
+    --primary: 260 85% 65%;
+    --primary-foreground: 220 30% 98%;
+    --primary-glow: 260 85% 75%;
 
-    --secondary: 210 25% 95%;
-    --secondary-foreground: 210 15% 12%;
+    --secondary: 230 25% 20%;
+    --secondary-foreground: 220 30% 98%;
 
-    --muted: 210 15% 96%;
-    --muted-foreground: 210 10% 55%;
+    --muted: 230 25% 15%;
+    --muted-foreground: 220 15% 65%;
 
-    /* Material Design accent color */
-    --accent: 259 100% 65%;
-    --accent-foreground: 0 0% 100%;
+    /* Neon accents */
+    --accent: 290 95% 70%;
+    --accent-foreground: 220 30% 98%;
+    --accent-glow: 290 95% 80%;
 
-    --destructive: 4 90% 58%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 85% 65%;
+    --destructive-foreground: 220 30% 98%;
 
-    --border: 210 15% 92%;
-    --input: 210 15% 96%;
-    --ring: 211 100% 50%;
-
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
-
-    /* Material Design gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(211 100% 50%), hsl(259 100% 65%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 20% 98%));
-    
-    /* Material Design elevation shadows */
-    --shadow-card: 0 2px 4px hsl(210 15% 12% / 0.08), 0 1px 2px hsl(210 15% 12% / 0.16);
-    --shadow-button: 0 2px 4px hsl(211 100% 50% / 0.24);
-    --shadow-elevated: 0 8px 16px hsl(210 15% 12% / 0.12), 0 4px 8px hsl(210 15% 12% / 0.08);
-
-    /* Android style radius - more rounded */
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    /* Material Design Dark Theme colors */
-    --background: 210 20% 7%;
-    --foreground: 210 20% 95%;
-
-    --card: 210 20% 10%;
-    --card-foreground: 210 20% 95%;
-
-    --popover: 210 20% 10%;
-    --popover-foreground: 210 20% 95%;
-
-    /* Material Blue in dark mode */
-    --primary: 211 100% 60%;
-    --primary-foreground: 210 20% 7%;
-
-    --secondary: 210 15% 15%;
-    --secondary-foreground: 210 20% 95%;
-
-    --muted: 210 15% 12%;
-    --muted-foreground: 210 10% 65%;
-
-    /* Material Design accent in dark mode */
-    --accent: 259 100% 70%;
-    --accent-foreground: 210 20% 7%;
-
-    --destructive: 4 90% 65%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 210 15% 18%;
-    --input: 210 15% 15%;
-    --ring: 211 100% 60%;
+    --border: 230 25% 25%;
+    --input: 230 25% 15%;
+    --ring: 260 85% 65%;
 
     --success: 142 71% 55%;
-    --success-foreground: 210 20% 7%;
+    --success-foreground: 220 30% 98%;
 
-    /* Material Design dark gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(211 100% 60%), hsl(259 100% 70%));
-    --gradient-card: linear-gradient(145deg, hsl(210 20% 10%), hsl(210 20% 7%));
+    /* Neon gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(260 85% 65%), hsl(280 90% 70%), hsl(315 95% 75%));
+    --gradient-card: linear-gradient(145deg, hsl(230 35% 15% / 0.8), hsl(230 35% 10% / 0.6));
+    --gradient-neon: linear-gradient(90deg, hsl(260 85% 65%), hsl(290 95% 70%), hsl(315 95% 75%));
+    --gradient-glow: radial-gradient(ellipse at center, hsl(260 85% 65% / 0.3), transparent 70%);
     
-    /* Material Design dark elevation shadows */
-    --shadow-card: 0 2px 4px hsl(0 0% 0% / 0.24), 0 1px 2px hsl(0 0% 0% / 0.32);
-    --shadow-button: 0 2px 4px hsl(211 100% 60% / 0.32);
-    --shadow-elevated: 0 8px 16px hsl(0 0% 0% / 0.32), 0 4px 8px hsl(0 0% 0% / 0.24);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Glassmorphism shadows and glows */
+    --shadow-card: 0 8px 32px hsl(260 85% 15% / 0.3), 0 4px 16px hsl(260 85% 15% / 0.2);
+    --shadow-button: 0 4px 20px hsl(260 85% 65% / 0.4);
+    --shadow-elevated: 0 16px 48px hsl(260 85% 15% / 0.4), 0 8px 24px hsl(260 85% 15% / 0.3);
+    --shadow-neon: 0 0 20px hsl(260 85% 65% / 0.5), 0 0 40px hsl(260 85% 65% / 0.3);
+    --shadow-fab: 0 8px 32px hsl(260 85% 65% / 0.6), 0 4px 16px hsl(260 85% 65% / 0.4);
+
+    /* Modern radius */
+    --radius: 1rem;
+    --radius-fab: 50%;
+
+    /* Animation durations */
+    --duration-fast: 180ms;
+    --duration-normal: 240ms;
+    --duration-slow: 320ms;
+
+    /* Sidebar (Admin theme) */
+    --sidebar-background: 230 35% 8%;
+    --sidebar-foreground: 220 30% 90%;
+    --sidebar-primary: 260 85% 65%;
+    --sidebar-primary-foreground: 220 30% 98%;
+    --sidebar-accent: 230 25% 18%;
+    --sidebar-accent-foreground: 220 30% 90%;
+    --sidebar-border: 230 25% 25%;
+    --sidebar-ring: 260 85% 65%;
+  }
+
+  /* Light mode (Admin theme) */
+  .light {
+    --background: 220 20% 98%;
+    --foreground: 230 15% 15%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 230 15% 15%;
+    --card-glass: 0 0% 100% / 0.9;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 15% 15%;
+    
+    --primary: 260 85% 55%;
+    --primary-foreground: 220 30% 98%;
+    --primary-glow: 260 85% 65%;
+    
+    --secondary: 220 15% 95%;
+    --secondary-foreground: 230 15% 15%;
+    
+    --muted: 220 15% 96%;
+    --muted-foreground: 230 10% 45%;
+    
+    --accent: 290 95% 60%;
+    --accent-foreground: 220 30% 98%;
+    --accent-glow: 290 95% 70%;
+    
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 220 30% 98%;
+    
+    --border: 220 15% 88%;
+    --input: 220 15% 96%;
+    --ring: 260 85% 55%;
+    
+    --success: 142 71% 45%;
+    --success-foreground: 220 30% 98%;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(260 85% 55%), hsl(280 90% 60%), hsl(315 95% 65%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 20% 98%));
+    --gradient-neon: linear-gradient(90deg, hsl(260 85% 55%), hsl(290 95% 60%), hsl(315 95% 65%));
+    
+    --shadow-card: 0 2px 8px hsl(230 15% 15% / 0.08), 0 1px 4px hsl(230 15% 15% / 0.12);
+    --shadow-button: 0 2px 8px hsl(260 85% 55% / 0.24);
+    --shadow-elevated: 0 8px 24px hsl(230 15% 15% / 0.12), 0 4px 12px hsl(230 15% 15% / 0.08);
+    --shadow-neon: 0 0 16px hsl(260 85% 55% / 0.4), 0 0 32px hsl(260 85% 55% / 0.2);
+    --shadow-fab: 0 4px 16px hsl(260 85% 55% / 0.4), 0 2px 8px hsl(260 85% 55% / 0.3);
+    
+    --sidebar-background: 220 20% 98%;
+    --sidebar-foreground: 230 15% 15%;
+    --sidebar-primary: 260 85% 55%;
+    --sidebar-primary-foreground: 220 30% 98%;
+    --sidebar-accent: 220 15% 95%;
+    --sidebar-accent-foreground: 230 15% 15%;
+    --sidebar-border: 220 15% 88%;
+    --sidebar-ring: 260 85% 55%;
   }
 }
 
@@ -131,13 +143,14 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
-    /* Android mobile optimizations */
-    @apply antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     user-select: none;
+    background: hsl(var(--background));
+    background-image: var(--gradient-glow);
+    background-attachment: fixed;
   }
 
   /* Mobile-first container optimization */
@@ -160,7 +173,7 @@ All colors MUST be HSL.
     @apply bg-muted-foreground/30 rounded-full;
   }
 
-  /* Material Design ripple effect */
+  /* Neon ripple effect */
   .ripple {
     position: relative;
     overflow: hidden;
@@ -175,15 +188,109 @@ All colors MUST be HSL.
     width: 0;
     height: 0;
     border-radius: 50%;
-    background: currentColor;
+    background: var(--gradient-neon);
     transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-    opacity: 0.1;
+    transition: width var(--duration-normal), height var(--duration-normal);
+    opacity: 0.2;
     pointer-events: none;
   }
 
   .ripple:active:before {
     width: 300px;
     height: 300px;
+  }
+
+  /* Glassmorphism utilities */
+  .glass-card {
+    background: hsl(var(--card-glass));
+    backdrop-filter: var(--card-blur);
+    -webkit-backdrop-filter: var(--card-blur);
+    border: 1px solid hsl(var(--border) / 0.3);
+  }
+
+  .glow-primary {
+    box-shadow: var(--shadow-neon);
+  }
+
+  .glow-hover {
+    transition: all var(--duration-normal) ease-out;
+  }
+
+  .glow-hover:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: var(--shadow-neon);
+  }
+
+  /* Counter animations */
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-count-up {
+    animation: countUp var(--duration-normal) ease-out;
+  }
+
+  /* Floating Action Button */
+  .fab {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    border-radius: var(--radius-fab);
+    background: var(--gradient-primary);
+    box-shadow: var(--shadow-fab);
+    transition: all var(--duration-normal) ease-out;
+  }
+
+  .fab:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: var(--shadow-fab), var(--shadow-neon);
+  }
+
+  .fab:active {
+    transform: scale(0.95);
+  }
+
+  .fab::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: var(--radius-fab);
+    background: var(--gradient-neon);
+    opacity: 0;
+    transition: opacity var(--duration-fast);
+    z-index: -1;
+  }
+
+  .fab:hover::before {
+    opacity: 0.3;
+  }
+
+  /* Slide fade animations */
+  @keyframes slideInFromRight {
+    from { opacity: 0; transform: translateX(100%); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes slideInFromLeft {
+    from { opacity: 0; transform: translateX(-100%); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .animate-slide-in-right {
+    animation: slideInFromRight var(--duration-normal) ease-out;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInFromLeft var(--duration-normal) ease-out;
+  }
+
+  .animate-fade-in-scale {
+    animation: fadeInScale var(--duration-normal) ease-out;
   }
 }
