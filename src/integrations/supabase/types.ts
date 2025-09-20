@@ -1018,143 +1018,125 @@ export type Database = {
       }
       insurance_claims: {
         Row: {
-          attachments: string[] | null
-          claim_amount: number
+          admin_notes: string | null
+          claim_reason: string | null
           created_at: string | null
-          description: string | null
           id: string
-          payout_amount: number | null
-          payout_asset: string | null
-          policy_id: string | null
-          reason: string
-          reference_id: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string | null
+          loss_amount: number
+          plan_id: string | null
+          reimbursed_amount: number | null
+          status: string
+          trade_id: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          attachments?: string[] | null
-          claim_amount: number
+          admin_notes?: string | null
+          claim_reason?: string | null
           created_at?: string | null
-          description?: string | null
           id?: string
-          payout_amount?: number | null
-          payout_asset?: string | null
-          policy_id?: string | null
-          reason: string
-          reference_id?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string | null
+          loss_amount: number
+          plan_id?: string | null
+          reimbursed_amount?: number | null
+          status?: string
+          trade_id?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          attachments?: string[] | null
-          claim_amount?: number
+          admin_notes?: string | null
+          claim_reason?: string | null
           created_at?: string | null
-          description?: string | null
           id?: string
-          payout_amount?: number | null
-          payout_asset?: string | null
-          policy_id?: string | null
-          reason?: string
-          reference_id?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string | null
+          loss_amount?: number
+          plan_id?: string | null
+          reimbursed_amount?: number | null
+          status?: string
+          trade_id?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "insurance_claims_policy_id_fkey"
-            columns: ["policy_id"]
+            foreignKeyName: "insurance_claims_plan_id_fkey"
+            columns: ["plan_id"]
             isOneToOne: false
-            referencedRelation: "insurance_policies"
+            referencedRelation: "insurance_plans"
             referencedColumns: ["id"]
           },
         ]
       }
       insurance_plans: {
         Row: {
-          active: boolean | null
-          coverage_amount: number
-          coverage_scope: string
+          coverage_ratio: number
           created_at: string | null
-          duration_days: number
-          exclusions: string[] | null
           id: string
-          max_claims: number | null
-          name: string
-          premium: number
-          type: string
+          is_active: boolean | null
+          max_coverage_per_claim: number
+          min_loss_threshold: number
+          notes: string | null
+          plan_name: string
+          premium_amount: number
           updated_at: string | null
-          waiting_period_hours: number | null
         }
         Insert: {
-          active?: boolean | null
-          coverage_amount: number
-          coverage_scope: string
+          coverage_ratio?: number
           created_at?: string | null
-          duration_days: number
-          exclusions?: string[] | null
           id?: string
-          max_claims?: number | null
-          name: string
-          premium: number
-          type: string
+          is_active?: boolean | null
+          max_coverage_per_claim?: number
+          min_loss_threshold?: number
+          notes?: string | null
+          plan_name: string
+          premium_amount?: number
           updated_at?: string | null
-          waiting_period_hours?: number | null
         }
         Update: {
-          active?: boolean | null
-          coverage_amount?: number
-          coverage_scope?: string
+          coverage_ratio?: number
           created_at?: string | null
-          duration_days?: number
-          exclusions?: string[] | null
           id?: string
-          max_claims?: number | null
-          name?: string
-          premium?: number
-          type?: string
+          is_active?: boolean | null
+          max_coverage_per_claim?: number
+          min_loss_threshold?: number
+          notes?: string | null
+          plan_name?: string
+          premium_amount?: number
           updated_at?: string | null
-          waiting_period_hours?: number | null
         }
         Relationships: []
       }
       insurance_policies: {
         Row: {
-          coverage_amount: number
           created_at: string | null
-          end_date: string
+          expires_at: string | null
           id: string
           plan_id: string | null
           premium_paid: number
-          start_date: string | null
-          status: string | null
+          status: string
+          subscribed_at: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          coverage_amount: number
           created_at?: string | null
-          end_date: string
-          id?: string
-          plan_id?: string | null
-          premium_paid: number
-          start_date?: string | null
-          status?: string | null
-          user_id: string
-        }
-        Update: {
-          coverage_amount?: number
-          created_at?: string | null
-          end_date?: string
+          expires_at?: string | null
           id?: string
           plan_id?: string | null
           premium_paid?: number
-          start_date?: string | null
-          status?: string | null
+          status?: string
+          subscribed_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          plan_id?: string | null
+          premium_paid?: number
+          status?: string
+          subscribed_at?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
