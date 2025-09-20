@@ -41,8 +41,8 @@ const TradingScreen = () => {
     loading: tradingLoading
   } = useTradingSimple(selectedPair);
   
-  const currentPair = pairsBySymbol[selectedPair] || pairsList[0];
-  const tradingViewSymbol = currentPair?.tradingview_symbol || 'BINANCE:BTCUSDT';
+  const activePair = pairsBySymbol[selectedPair] || pairsList[0];
+  const tradingViewSymbol = activePair?.tradingview_symbol || 'BINANCE:BTCUSDT';
   const futuresSymbol = tradingViewSymbol.replace('USDT', 'USDTPERP');
 
 // Live market data via Binance WebSocket
