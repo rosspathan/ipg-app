@@ -302,6 +302,80 @@ export type Database = {
         }
         Relationships: []
       }
+      bonus_assets: {
+        Row: {
+          contract_address: string | null
+          created_at: string
+          decimals: number
+          description: string | null
+          id: string
+          name: string
+          network: string
+          status: string
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          contract_address?: string | null
+          created_at?: string
+          decimals?: number
+          description?: string | null
+          id?: string
+          name: string
+          network?: string
+          status?: string
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          contract_address?: string | null
+          created_at?: string
+          decimals?: number
+          description?: string | null
+          id?: string
+          name?: string
+          network?: string
+          status?: string
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bonus_prices: {
+        Row: {
+          asset_id: string
+          base_symbol: string
+          id: string
+          price: number
+          recorded_at: string
+          recorded_by: string | null
+        }
+        Insert: {
+          asset_id: string
+          base_symbol?: string
+          id?: string
+          price: number
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          asset_id?: string
+          base_symbol?: string
+          id?: string
+          price?: number
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bonus_prices_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "bonus_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_rewards: {
         Row: {
           claimed_at: string
@@ -1336,6 +1410,121 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_events: {
+        Row: {
+          action: string
+          amount_bonus: number
+          bonus_asset_id: string | null
+          created_at: string
+          id: string
+          level: number
+          notes: string | null
+          referrer_id: string
+          tx_status: string
+          usd_value: number
+          user_id: string
+        }
+        Insert: {
+          action: string
+          amount_bonus?: number
+          bonus_asset_id?: string | null
+          created_at?: string
+          id?: string
+          level: number
+          notes?: string | null
+          referrer_id: string
+          tx_status?: string
+          usd_value?: number
+          user_id: string
+        }
+        Update: {
+          action?: string
+          amount_bonus?: number
+          bonus_asset_id?: string | null
+          created_at?: string
+          id?: string
+          level?: number
+          notes?: string | null
+          referrer_id?: string
+          tx_status?: string
+          usd_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_events_bonus_asset_id_fkey"
+            columns: ["bonus_asset_id"]
+            isOneToOne: false
+            referencedRelation: "bonus_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_relationships: {
+        Row: {
+          created_at: string
+          id: string
+          referee_id: string
+          referrer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referee_id: string
+          referrer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referee_id?: string
+          referrer_id?: string
+        }
+        Relationships: []
+      }
+      referral_settings: {
+        Row: {
+          caps: Json
+          created_at: string
+          default_asset_id: string | null
+          enabled: boolean
+          id: string
+          levels: Json
+          qualifying_actions: Json
+          schedule: string
+          updated_at: string
+        }
+        Insert: {
+          caps?: Json
+          created_at?: string
+          default_asset_id?: string | null
+          enabled?: boolean
+          id?: string
+          levels?: Json
+          qualifying_actions?: Json
+          schedule?: string
+          updated_at?: string
+        }
+        Update: {
+          caps?: Json
+          created_at?: string
+          default_asset_id?: string | null
+          enabled?: boolean
+          id?: string
+          levels?: Json
+          qualifying_actions?: Json
+          schedule?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_settings_default_asset_id_fkey"
+            columns: ["default_asset_id"]
+            isOneToOne: false
+            referencedRelation: "bonus_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security: {
         Row: {
           anti_phishing_code: string | null
@@ -2218,6 +2407,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      wallet_bonus_balances: {
+        Row: {
+          asset_id: string
+          balance: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          balance?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          balance?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_bonus_balances_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "bonus_assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wallets_user: {
         Row: {
