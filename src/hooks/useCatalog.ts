@@ -191,6 +191,7 @@ export const useCatalog = (): CatalogData => {
   const [referralConfig, setReferralConfig] = useState<ReferralConfig | null>(null);
   const [stakingPools, setStakingPools] = useState<StakingPool[]>([]);
   const [luckyDrawPlans, setLuckyDrawPlans] = useState<LuckyDrawPlan[]>([]);
+  const [insurancePlans, setInsurancePlans] = useState<InsurancePlan[]>([]);
   const [insuranceTiers, setInsuranceTiers] = useState<InsuranceSubscriptionTier[]>([]);
   const [ads, setAds] = useState<Ad[]>([]);
   const [feesConfig, setFeesConfig] = useState<FeesConfig | null>(null);
