@@ -12,6 +12,9 @@ import TradingViewWidget from "@/components/TradingViewWidget";
 import OrderHistory from "@/components/OrderHistory";
 import { useCatalog } from "@/hooks/useCatalog";
 import { useTradingSimple } from "@/hooks/useTradingSimple";
+import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
+import { useTradingAPI } from "@/hooks/useTradingAPI";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import AssetLogo from "@/components/AssetLogo";
 
 const TradingScreen = () => {
@@ -30,6 +33,7 @@ const TradingScreen = () => {
   const [selectedPair, setSelectedPair] = useState(marketPair);
 
   const { pairsList, pairsBySymbol, status } = useCatalog();
+  const { user } = useAuthUser();
   const {
     orderBook: liveOrderBook,
     recentTrades: liveTrades,
@@ -41,11 +45,53 @@ const TradingScreen = () => {
     loading: tradingLoading
   } = useTradingSimple(selectedPair);
   
+  // Real-time WebSocket connection
+  const {
+    isConnected,
+    orderBook: wsOrderBook,
+    trades: wsTrades,
+    ticker: wsTicker,
+    userUpdates,
+    subscribeToSymbol,
+    unsubscribeFromSymbol,
+    subscribeToUserUpdates
+  } = useTradingWebSocket();
+
+  // Trading API functions
+  const {
+    loading: apiLoading,
+    placeOrder,
+    cancelOrder,
+    getOrderHistory
+  } = useTradingAPI();
+  
   const activePair = pairsBySymbol[selectedPair] || pairsList[0];
   const tradingViewSymbol = activePair?.tradingview_symbol || 'BINANCE:BTCUSDT';
   const futuresSymbol = tradingViewSymbol.replace('USDT', 'USDTPERP');
 
-// Live market data via Binance WebSocket
+  // Use WebSocket data if available, fallback to simple trading data
+  const currentOrderBook = wsOrderBook[selectedPair] || liveOrderBook || { bids: [], asks: [] };
+  const currentTrades = wsTrades[selectedPair] || liveTrades || [];
+  const currentTicker = wsTicker[selectedPair] || liveTicker;
+
+// WebSocket subscriptions effect
+useEffect(() => {
+  if (selectedPair && isConnected) {
+    // Subscribe to real-time data for the current pair
+    subscribeToSymbol(selectedPair);
+    
+    // Subscribe to user updates if authenticated
+    if (user?.id) {
+      subscribeToUserUpdates(user.id);
+    }
+  }
+
+  return () => {
+    if (selectedPair) {
+      unsubscribeFromSymbol(selectedPair);
+    }
+  };
+}, [selectedPair, isConnected, user?.id, subscribeToSymbol, unsubscribeFromSymbol, subscribeToUserUpdates]);
 const [market, setMarket] = useState({
   price: 0,
   changePercent: 0,
@@ -168,26 +214,9 @@ useEffect(() => {
       return;
     }
 
-    // Check balance before placing order
-    const [baseAsset, quoteAsset] = selectedPair.split('/');
-    const requiredAsset = orderSide === 'buy' ? quoteAsset : baseAsset;
-    const orderPrice = orderType === 'market' ? liveTicker?.last_price || 0 : parseFloat(price);
-    const requiredAmount = orderSide === 'buy' 
-      ? parseFloat(amount) * orderPrice 
-      : parseFloat(amount);
-
-    if (!hasBalance(requiredAsset, requiredAmount)) {
-      toast({
-        title: "Insufficient Balance",
-        description: `You need at least ${requiredAmount.toFixed(8)} ${requiredAsset}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Place order using the trading system
-    const result = await submitOrder({
-      market_symbol: selectedPair,
+    // Place order using the new trading API
+    const result = await placeOrder({
+      symbol: selectedPair,
       side: orderSide,
       type: orderType as 'market' | 'limit' | 'stop_limit',
       quantity: parseFloat(amount),
@@ -306,7 +335,7 @@ useEffect(() => {
               <div className="space-y-1">
                 {/* Asks */}
                 <div className="space-y-1 max-h-32 overflow-hidden">
-                  {(liveOrderBook?.asks || orderBook.asks).slice(0, 10).map(([price, qty], index) => {
+                  {currentOrderBook.asks.slice(0, 10).map(([price, qty], index) => {
                     const total = price * qty;
                     return (
                       <div key={index} className="flex justify-between text-xs px-3 py-1 hover:bg-red-500/10">
@@ -327,7 +356,7 @@ useEffect(() => {
                 
                 {/* Bids */}
                 <div className="space-y-1 max-h-32 overflow-hidden">
-                  {(liveOrderBook?.bids || orderBook.bids).slice(0, 10).map(([price, qty], index) => {
+                  {currentOrderBook.bids.slice(0, 10).map(([price, qty], index) => {
                     const total = price * qty;
                     return (
                       <div key={index} className="flex justify-between text-xs px-3 py-1 hover:bg-green-500/10">

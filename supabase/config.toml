@@ -8,3 +8,15 @@ verify_jwt = false
 
 [functions.admin-password-reset]
 verify_jwt = false
+
+[functions.trading-websocket]
+verify_jwt = false
+
+[functions.place-order]
+verify_jwt = true
+
+[functions.cancel-order]
+verify_jwt = true
+
+[functions.order-history]
+verify_jwt = true
