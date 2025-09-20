@@ -218,19 +218,16 @@ const AdminMarkets = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold">Manage Markets</h1>
           <p className="text-muted-foreground">Configure trading pairs and market settings</p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingMarket(null);
-              resetForm();
-            }}>
+            <Button className="shrink-0" onClick={() => { setEditingMarket(null); resetForm(); }}>
               <Plus className="w-4 h-4 mr-2" />
               Add Market
             </Button>
@@ -352,8 +349,8 @@ const AdminMarkets = () => {
         ) : (
           markets.map((market) => (
             <Card key={market.id}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center space-x-4">
                     {market.base_asset && market.quote_asset && (
                       <div className="flex -space-x-2">

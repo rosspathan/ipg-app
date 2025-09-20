@@ -226,18 +226,15 @@ const AdminAssets = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Assets & Tokens</h1>
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl md:text-3xl font-bold">Assets & Tokens</h1>
         <Dialog open={showAddDialog} onOpenChange={(open) => {
           setShowAddDialog(open);
-          if (!open) {
-            setEditingAsset(null);
-            resetForm();
-          }
+          if (!open) { setEditingAsset(null); resetForm(); }
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="shrink-0">
               <Plus className="mr-2 h-4 w-4" />
               Add Asset
             </Button>
@@ -493,12 +490,12 @@ const AdminAssets = () => {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4 md:p-6 pb-2 md:pb-4">
           <CardTitle>Assets List</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 md:p-6">
           <div className="w-full overflow-x-auto">
-            <Table className="min-w-[800px]">
+            <Table className="min-w-[720px] md:min-w-0">
               <TableHeader>
                 <TableRow>
                   <TableHead>Asset</TableHead>
