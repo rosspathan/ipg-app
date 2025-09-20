@@ -2,8 +2,25 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuthAdmin } from "@/hooks/useAuthAdmin";
 import { Badge } from "@/components/ui/badge";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppAdminSidebar } from "@/components/admin/AppAdminSidebar";
+import {
+  LayoutDashboard,
+  Users,
+  Coins,
+  LineChart,
+  Banknote,
+  BadgePercent,
+  Share2,
+  Layers,
+  Pointer,
+  Gift,
+  ShieldCheck,
+  Megaphone,
+  ReceiptText,
+  ArrowLeftRight,
+  ShieldAlert,
+  BarChart3,
+  Settings,
+} from "lucide-react";
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -11,23 +28,23 @@ const AdminLayout = () => {
   const { user, signOut } = useAuthAdmin();
 
   const navItems = [
-    { path: "/admin", label: "Dashboard" },
-    { path: "/admin/users", label: "Users" },
-    { path: "/admin/assets", label: "Assets" },
-    { path: "/admin/markets", label: "Markets" },
-    { path: "/admin/funding", label: "Funding" },
-    { path: "/admin/subscriptions", label: "Subscriptions" },
-    { path: "/admin/referrals", label: "Referrals" },
-    { path: "/admin/staking", label: "Staking" },
-    { path: "/admin/lucky", label: "Spin Wheel" },
-    { path: "/admin/lucky/draw", label: "Lucky Draw" },
-    { path: "/admin/insurance", label: "Insurance" },
-    { path: "/admin/ads", label: "Ads" },
-    { path: "/admin/fees", label: "Fees" },
-    { path: "/admin/transfers", label: "Transfers" },
-    { path: "/admin/compliance", label: "Compliance" },
-    { path: "/admin/reports", label: "Reports" },
-    { path: "/admin/system", label: "System" },
+    { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/admin/users", label: "Users", icon: Users },
+    { path: "/admin/assets", label: "Assets", icon: Coins },
+    { path: "/admin/markets", label: "Markets", icon: LineChart },
+    { path: "/admin/funding", label: "Funding", icon: Banknote },
+    { path: "/admin/subscriptions", label: "Subscriptions", icon: BadgePercent },
+    { path: "/admin/referrals", label: "Referrals", icon: Share2 },
+    { path: "/admin/staking", label: "Staking", icon: Layers },
+    { path: "/admin/lucky", label: "Spin Wheel", icon: Pointer },
+    { path: "/admin/lucky/draw", label: "Lucky Draw", icon: Gift },
+    { path: "/admin/insurance", label: "Insurance", icon: ShieldCheck },
+    { path: "/admin/ads", label: "Ads", icon: Megaphone },
+    { path: "/admin/fees", label: "Fees", icon: ReceiptText },
+    { path: "/admin/transfers", label: "Transfers", icon: ArrowLeftRight },
+    { path: "/admin/compliance", label: "Compliance", icon: ShieldAlert },
+    { path: "/admin/reports", label: "Reports", icon: BarChart3 },
+    { path: "/admin/system", label: "System", icon: Settings },
   ];
 
   const isActive = (path: string) =>
@@ -41,8 +58,9 @@ const AdminLayout = () => {
       console.error('Admin logout error:', error);
     }
   };
+
   return (
-    <SidebarProvider>
+    <div className="min-h-screen bg-background">
       {/* Top Header */}
       <div className="sticky top-0 z-40 border-b bg-card">
         <div className="flex h-14 md:h-16 items-center justify-between px-3 md:px-6">
@@ -75,7 +93,8 @@ const AdminLayout = () => {
             </Button>
           </div>
         </div>
-        {/* Mobile nav */}
+        
+        {/* Mobile Navigation */}
         <div className="md:hidden px-3 pb-2">
           <div className="flex space-x-1 overflow-x-auto pb-1 scrollbar-hide">
             {navItems.map((item) => (
@@ -84,8 +103,9 @@ const AdminLayout = () => {
                 variant={isActive(item.path) ? "default" : "ghost"}
                 size="sm"
                 onClick={() => navigate(item.path)}
-                className="whitespace-nowrap text-xs px-2 min-w-fit"
+                className="whitespace-nowrap text-xs px-2 min-w-fit flex items-center gap-1"
               >
+                <item.icon className="h-3 w-3" />
                 {item.label}
               </Button>
             ))}
@@ -93,18 +113,34 @@ const AdminLayout = () => {
         </div>
       </div>
 
-      {/* Layout */}
-      <div className="flex min-h-screen w-full">
-        <div className="hidden md:block">
-          <AppAdminSidebar />
+      <div className="flex min-h-screen">
+        {/* Desktop Sidebar */}
+        <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-16 md:border-r md:bg-card">
+          <div className="flex-1 flex flex-col overflow-y-auto">
+            <nav className="flex-1 px-2 py-4 space-y-1">
+              {navItems.map((item) => (
+                <Button
+                  key={item.path}
+                  variant={isActive(item.path) ? "default" : "ghost"}
+                  onClick={() => navigate(item.path)}
+                  className="w-full justify-start text-sm px-3 py-2 h-auto"
+                >
+                  <item.icon className="mr-3 h-4 w-4 flex-shrink-0" />
+                  {item.label}
+                </Button>
+              ))}
+            </nav>
+          </div>
         </div>
-        <main className="flex-1">
+
+        {/* Main Content */}
+        <div className="flex-1 md:ml-64">
           <div className="container mx-auto px-3 md:px-6 py-4 md:py-8">
             <Outlet />
           </div>
-        </main>
+        </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 
