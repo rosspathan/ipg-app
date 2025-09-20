@@ -10,6 +10,7 @@ import QuickActionGrid from "@/components/QuickActionGrid";
 import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import bgOption1 from "@/assets/bg-option-1.png";
 
 const AppHomeScreen = () => {
   const navigate = useNavigate();
@@ -90,30 +91,43 @@ const AppHomeScreen = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background w-full animate-slide-in-right">
-      {/* Cyber Header with KPIs */}
-      <CyberHeader
-        title="I-SMART"
-        subtitle="Welcome back to your digital future"
-        logo="/lovable-uploads/a9cfc5de-7126-4662-923b-cc0348077e3d.png"
-        kpis={kpis}
-        actions={
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="relative p-2 hover:bg-primary/10"
-              onClick={() => navigate("/app/notifications")}
-            >
-              <Bell className="h-5 w-5" />
-              <div className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full animate-neon-pulse" />
-            </Button>
-            <Badge variant="secondary" className="bg-card-glass border-primary/20 text-primary font-bold px-3">
-              {user?.email?.split('@')[0]}
-            </Badge>
-          </div>
-        }
-      />
+    <div 
+      className="min-h-screen w-full animate-slide-in-right relative"
+      style={{
+        backgroundImage: `url(${bgOption1})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Overlay for better content readability */}
+      <div className="absolute inset-0 bg-background/85 backdrop-blur-sm"></div>
+      
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Cyber Header with KPIs */}
+        <CyberHeader
+          title="I-SMART"
+          subtitle="Welcome back to your digital future"
+          logo="/lovable-uploads/a9cfc5de-7126-4662-923b-cc0348077e3d.png"
+          kpis={kpis}
+          actions={
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="relative p-2 hover:bg-primary/10"
+                onClick={() => navigate("/app/notifications")}
+              >
+                <Bell className="h-5 w-5" />
+                <div className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full animate-neon-pulse" />
+              </Button>
+              <Badge variant="secondary" className="bg-card-glass border-primary/20 text-primary font-bold px-3">
+                {user?.email?.split('@')[0]}
+              </Badge>
+            </div>
+          }
+        />
 
       <div className="p-4 space-y-6">
         {/* Balance Display */}
@@ -237,6 +251,7 @@ const AppHomeScreen = () => {
             </div>
           </CyberCardContent>
         </CyberCard>
+      </div>
       </div>
     </div>
   );
