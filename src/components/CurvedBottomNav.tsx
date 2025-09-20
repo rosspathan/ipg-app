@@ -102,7 +102,7 @@ const CurvedBottomNav: React.FC = () => {
             <img 
               src={ipgLogo}
               alt="IPG I-SMART Logo"
-              className="w-10 h-10 object-contain rounded-full"
+              className="w-full h-full object-cover rounded-full"
             />
           </FloatingActionButton>
         </div>
