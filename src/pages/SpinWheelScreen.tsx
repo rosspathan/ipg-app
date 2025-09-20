@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, History, Sparkles } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Zap, Clock, Coins, Home, Wallet, TrendingUp, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FuturisticSpinWheel } from "@/components/gamification/FuturisticSpinWheel";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
+import { cn } from "@/lib/utils";
 
 interface SpinWheel {
   id: string;
@@ -206,201 +206,173 @@ export default function SpinWheelScreen() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+  const formatCooldown = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return minutes > 0 ? `${minutes}:${secs.toString().padStart(2, '0')}` : `${secs}s`;
   };
 
-  const groupRunsByDate = (runs: SpinRun[]) => {
-    const groups: { [key: string]: SpinRun[] } = {};
-    runs.forEach(run => {
-      const date = new Date(run.created_at).toLocaleDateString();
-      if (!groups[date]) groups[date] = [];
-      groups[date].push(run);
-    });
-    return groups;
-  };
+  const canSpin = !isSpinning && cooldownRemaining === 0;
 
   if (!wheel) {
     return (
-      <div className="min-h-screen bg-background relative overflow-hidden">
-        {/* Animated background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,136,0.1)_0%,transparent_50%)] animate-pulse" />
-        
-        <div className="container mx-auto px-4 py-6 max-w-4xl relative z-10">
-          <div className="flex items-center gap-4 mb-6">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/app/programs")}
-              className="hover:bg-primary/10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                BSK Fortune Wheel
-              </h1>
-              <p className="text-muted-foreground">Loading wheel data...</p>
-            </div>
-          </div>
-          <div className="flex items-center justify-center py-12">
-            <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  const groupedRuns = groupRunsByDate(recentRuns);
-
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5" />
-      <div className="absolute inset-0">
-        <div className="h-full w-full bg-[linear-gradient(90deg,transparent_79px,rgba(0,255,136,0.03)_81px,rgba(0,255,136,0.03)_82px,transparent_84px)] bg-[length:84px_84px]" />
-        <div className="h-full w-full bg-[linear-gradient(0deg,transparent_79px,rgba(255,0,102,0.03)_81px,rgba(255,0,102,0.03)_82px,transparent_84px)] bg-[length:84px_84px]" />
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(147,51,234,0.1)_0%,transparent_50%)]" />
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500" />
       
-      <div className="container mx-auto px-4 py-6 max-w-6xl relative z-10">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+      {/* Header */}
+      <div className="relative z-10 flex items-center justify-between p-4 pt-12">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/app/programs")}
+          className="text-white hover:bg-white/10"
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </Button>
+        <div className="text-center">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            BSK Fortune Wheel
+          </h1>
+          <p className="text-sm text-slate-400 flex items-center justify-center gap-1">
+            ✨ Spin to win or lose BSK Coins
+          </p>
+        </div>
+        <div className="w-10" /> {/* Spacer for centering */}
+      </div>
+
+      {/* Main Content */}
+      <div className="px-4 pb-24">
+        {/* Wheel Section */}
+        <div className="mt-8 mb-8">
+          <FuturisticSpinWheel
+            segments={segments}
+            onSpin={handleSpin}
+            isSpinning={isSpinning}
+            winningSegment={winningResult}
+            disabled={false}
+            freeSpinsLeft={freeSpinsLeft}
+            cooldownRemaining={cooldownRemaining}
+          />
+        </div>
+
+        {/* Status Cards */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <Card className="bg-gradient-to-br from-green-500/20 to-green-600/10 border-green-500/30 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <Zap className="h-5 w-5 mx-auto mb-2 text-green-400" />
+              <div className="text-lg font-bold text-green-400">{freeSpinsLeft}</div>
+              <div className="text-xs text-green-300">Free Spins</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border-blue-500/30 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <Clock className="h-5 w-5 mx-auto mb-2 text-blue-400" />
+              <div className="text-lg font-bold text-blue-400">
+                {cooldownRemaining > 0 ? formatCooldown(cooldownRemaining) : "Ready"}
+              </div>
+              <div className="text-xs text-blue-300">Cooldown</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 border-purple-500/30 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <Coins className="h-5 w-5 mx-auto mb-2 text-purple-400" />
+              <div className="text-lg font-bold text-purple-400">±5</div>
+              <div className="text-xs text-purple-300">BSK Reward</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Spin Button */}
+        <div className="mb-6">
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/app/programs")}
-            className="hover:bg-primary/10"
+            size="lg"
+            onClick={handleSpin}
+            disabled={!canSpin}
+            className={cn(
+              "w-full h-14 text-lg font-bold rounded-full relative overflow-hidden",
+              "bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600",
+              "hover:from-purple-500 hover:via-pink-500 hover:to-purple-500",
+              "disabled:from-slate-600 disabled:to-slate-700",
+              "shadow-lg shadow-purple-500/25",
+              canSpin && !isSpinning && "animate-pulse"
+            )}
           >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              BSK Fortune Wheel
-            </h1>
-            <p className="text-muted-foreground flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Spin to win or lose BSK Coins
-            </p>
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/app/programs/spin/history")}
-            className="hidden md:flex items-center gap-2"
-          >
-            <History className="h-4 w-4" />
-            View History
+            {isSpinning ? (
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>SPINNING...</span>
+              </div>
+            ) : cooldownRemaining > 0 ? (
+              <span>WAIT {formatCooldown(cooldownRemaining)}</span>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span>⭐</span>
+                <span>SPIN TO WIN</span>
+                <span>⭐</span>
+              </div>
+            )}
           </Button>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Spin Wheel */}
-          <div className="lg:col-span-2 space-y-8">
-            <FuturisticSpinWheel
-              segments={segments}
-              onSpin={handleSpin}
-              isSpinning={isSpinning}
-              winningSegment={winningResult}
-              disabled={false}
-              freeSpinsLeft={freeSpinsLeft}
-              cooldownRemaining={cooldownRemaining}
-            />
-          </div>
+        {/* Bonus Balance Card */}
+        <div className="mb-6">
+          <BonusBalanceCard key={bonusBalanceKey} className="bg-slate-800/50 backdrop-blur-sm border-slate-700" />
+        </div>
+      </div>
 
-          {/* Right Column - Info Cards */}
-          <div className="space-y-6">
-            {/* Bonus Balance Card */}
-            <BonusBalanceCard key={bonusBalanceKey} className="animate-fade-in" />
-
-            {/* Segment Details */}
-            <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  Prize Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {segments.map((segment) => (
-                    <div 
-                      key={segment.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: segment.color || (segment.label.includes('WIN') ? '#00ff88' : '#ff0066') }}
-                        />
-                        <div>
-                          <div className="font-medium">{segment.label}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {segment.reward_value > 0 ? '+' : ''}{segment.reward_value} BSK
-                          </div>
-                        </div>
-                      </div>
-                      <Badge variant="secondary">
-                        25%
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Spins */}
-            <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">Recent Spins</CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navigate("/app/programs/spin/history")}
-                  className="md:hidden"
-                >
-                  View All
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {recentRuns.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <div className="text-4xl mb-2">🎰</div>
-                    <p>No spins yet.</p>
-                    <p className="text-sm">Try your luck!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {Object.entries(groupedRuns).slice(0, 3).map(([date, runs]) => (
-                      <div key={date}>
-                        <div className="text-xs font-medium text-muted-foreground mb-2">{date}</div>
-                        {runs.slice(0, 3).map((run) => {
-                          const isWin = run.outcome?.reward_value > 0;
-                          return (
-                            <div key={run.id} className="flex justify-between items-center p-2 rounded border border-border/30">
-                              <div>
-                                <div className="font-medium text-sm">{run.outcome?.label}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {new Date(run.created_at).toLocaleTimeString()}
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className={`text-sm font-medium ${isWin ? 'text-green-400' : 'text-red-400'}`}>
-                                  {run.outcome?.reward_value > 0 ? '+' : ''}{run.outcome?.reward_value} BSK
-                                </div>
-                                <Badge variant={isWin ? "secondary" : "destructive"} className="text-xs">
-                                  {isWin ? 'WIN' : 'LOSE'}
-                                </Badge>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-700">
+        <div className="grid grid-cols-4 gap-1 p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/app/home")}
+            className="flex flex-col items-center gap-1 h-16 text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            <Home className="h-5 w-5" />
+            <span className="text-xs">Home</span>
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/app/wallet")}
+            className="flex flex-col items-center gap-1 h-16 text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            <Wallet className="h-5 w-5" />
+            <span className="text-xs">Wallet</span>
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/app/markets")}
+            className="flex flex-col items-center gap-1 h-16 text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            <TrendingUp className="h-5 w-5" />
+            <span className="text-xs">Markets</span>
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/app/profile")}
+            className="flex flex-col items-center gap-1 h-16 text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            <User className="h-5 w-5" />
+            <span className="text-xs">Profile</span>
+          </Button>
         </div>
       </div>
     </div>

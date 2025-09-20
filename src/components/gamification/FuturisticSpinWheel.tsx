@@ -271,200 +271,100 @@ export const FuturisticSpinWheel = ({
   const canSpin = !disabled && !isSpinning && cooldownRemaining === 0;
 
   return (
-    <div className="space-y-6">
-      {/* Custom CSS for animations */}
+    <div className="space-y-4">
+      {/* Custom CSS for mobile animations */}
       <style dangerouslySetInnerHTML={{
         __html: `
-          @keyframes spinWheel {
+          @keyframes spinWheelMobile {
             from { transform: rotate(0deg); }
             to { transform: rotate(var(--final-rotation, 2880deg)); }
           }
           
-          @keyframes neonPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.5), 0 0 40px rgba(0, 255, 136, 0.3); }
-            50% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.8), 0 0 60px rgba(0, 255, 136, 0.5); }
+          @keyframes neonPulseMobile {
+            0%, 100% { box-shadow: 0 0 15px rgba(147, 51, 234, 0.4), 0 0 30px rgba(147, 51, 234, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(147, 51, 234, 0.6), 0 0 50px rgba(147, 51, 234, 0.3); }
           }
           
-          @keyframes glowButton {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 102, 0.5); }
-            50% { box-shadow: 0 0 40px rgba(255, 0, 102, 0.8), 0 0 60px rgba(255, 0, 102, 0.4); }
+          @keyframes glowButtonMobile {
+            0%, 100% { box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.7), 0 0 50px rgba(168, 85, 247, 0.3); }
           }
           
-          @keyframes particleFloat {
-            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
-          }
-          
-          .spin-wheel-container {
+          .mobile-spin-wheel-container {
             position: relative;
-            background: radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, rgba(255, 0, 102, 0.1) 50%, rgba(0, 0, 0, 0.9) 100%);
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.15) 0%, rgba(168, 85, 247, 0.1) 50%, transparent 100%);
             border-radius: 50%;
-            animation: neonPulse 3s ease-in-out infinite;
+            animation: neonPulseMobile 2s ease-in-out infinite;
+            padding: 20px;
           }
           
-          .spin-wheel-canvas {
+          .mobile-spin-wheel-canvas {
             transition: transform 4s cubic-bezier(0.23, 1, 0.32, 1);
-            filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.5));
+            filter: drop-shadow(0 0 15px rgba(147, 51, 234, 0.4));
           }
           
-          .spin-button-glow {
-            animation: glowButton 2s ease-in-out infinite;
-          }
-          
-          .floating-particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-          }
-          
-          .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: linear-gradient(45deg, #00ff88, #ff0066);
-            border-radius: 50%;
-            animation: particleFloat 3s linear infinite;
+          .mobile-spin-button-glow {
+            animation: glowButtonMobile 2s ease-in-out infinite;
           }
         `
       }} />
       
-      {/* Wheel Container */}
-      <Card className="relative overflow-hidden bg-background/5 border-primary/20">
-        <CardContent className="flex justify-center items-center p-8 relative">
-          {/* Background particles */}
-          <div className="floating-particles">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <div
-                key={i}
-                className="particle"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${3 + Math.random() * 2}s`
-                }}
-              />
-            ))}
+      {/* Wheel Container - Mobile Optimized */}
+      <div className="flex justify-center">
+        <div className="mobile-spin-wheel-container">
+          <div 
+            ref={wheelRef}
+            className="mobile-spin-wheel-canvas"
+            style={{ 
+              transform: `rotate(${rotation}deg)`,
+              transformOrigin: 'center'
+            }}
+          >
+            <canvas
+              ref={canvasRef}
+              width={280}
+              height={280}
+              className="drop-shadow-2xl"
+            />
           </div>
-          
-          <div className="spin-wheel-container p-4 rounded-full">
-            <div 
-              ref={wheelRef}
-              className="spin-wheel-canvas"
-              style={{ 
-                transform: `rotate(${rotation}deg)`,
-                transformOrigin: 'center'
-              }}
-            >
-              <canvas
-                ref={canvasRef}
-                width={320}
-                height={320}
-                className="drop-shadow-2xl"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Status Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/30">
-          <CardContent className="p-4 text-center">
-            <Zap className="h-6 w-6 mx-auto mb-2 text-green-400" />
-            <div className="text-lg font-bold text-green-400">{freeSpinsLeft}</div>
-            <div className="text-xs text-muted-foreground">Free Spins</div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/30">
-          <CardContent className="p-4 text-center">
-            <Coins className="h-6 w-6 mx-auto mb-2 text-blue-400" />
-            <div className="text-lg font-bold text-blue-400">
-              {cooldownRemaining > 0 ? formatCooldown(cooldownRemaining) : "Ready"}
-            </div>
-            <div className="text-xs text-muted-foreground">Cooldown</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/30">
-          <CardContent className="p-4 text-center">
-            <Trophy className="h-6 w-6 mx-auto mb-2 text-purple-400" />
-            <div className="text-lg font-bold text-purple-400">±5</div>
-            <div className="text-xs text-muted-foreground">BSK Reward</div>
-          </CardContent>
-        </Card>
+        </div>
       </div>
 
-      {/* Spin Button */}
-      <div className="text-center">
-        <Button
-          size="lg"
-          onClick={handleSpin}
-          disabled={!canSpin}
-          className={cn(
-            "w-64 h-16 text-xl font-bold rounded-full relative overflow-hidden",
-            "bg-gradient-to-r from-primary to-primary/80",
-            "hover:from-primary/90 hover:to-primary/70",
-            "disabled:from-muted disabled:to-muted/80",
-            canSpin && !isSpinning && "spin-button-glow",
-            isSpinning && "animate-pulse"
-          )}
-        >
-          {isSpinning ? (
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>SPINNING...</span>
-            </div>
-          ) : cooldownRemaining > 0 ? (
-            <span>WAIT {formatCooldown(cooldownRemaining)}</span>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Star className="h-5 w-5" />
-              <span>SPIN TO WIN</span>
-              <Star className="h-5 w-5" />
-            </div>
-          )}
-        </Button>
-      </div>
-
-      {/* Result Dialog */}
+      {/* Result Dialog - Mobile Optimized */}
       <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
-        <DialogContent className="max-w-md text-center">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">
+        <DialogContent className="max-w-sm mx-4 rounded-2xl bg-gradient-to-b from-slate-800 to-slate-900 border-purple-500/30 text-white">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-xl">
               {resultData?.reward?.value > 0 ? (
-                <span className="text-green-400">🎉 CONGRATULATIONS! 🎉</span>
+                <span className="text-green-400">🎉 YOU WON! 🎉</span>
               ) : (
-                <span className="text-red-400">😢 BETTER LUCK NEXT TIME</span>
+                <span className="text-red-400">😢 TRY AGAIN</span>
               )}
             </DialogTitle>
           </DialogHeader>
-          <div className="py-6">
-            <div className="text-6xl mb-4">
+          <div className="py-4 text-center">
+            <div className="text-5xl mb-4">
               {resultData?.reward?.value > 0 ? '🏆' : '💫'}
             </div>
-            <div className="text-xl font-bold mb-2">
+            <div className="text-lg font-bold mb-2 text-purple-300">
               {resultData?.label}
             </div>
             <div className={cn(
-              "text-3xl font-bold",
+              "text-2xl font-bold mb-2",
               resultData?.reward?.value > 0 ? "text-green-400" : "text-red-400"
             )}>
               {resultData?.reward?.value > 0 ? '+' : ''}{resultData?.reward?.value} BSK
             </div>
-            <div className="text-sm text-muted-foreground mt-2">
+            <div className="text-sm text-slate-400">
               {resultData?.reward?.value > 0 
-                ? "You won BSK Coins!" 
-                : "You lost BSK Coins!"}
+                ? "BSK added to your bonus balance!" 
+                : "BSK deducted from your bonus balance"}
             </div>
           </div>
-          <Button onClick={() => setShowResultDialog(false)} className="w-full">
+          <Button 
+            onClick={() => setShowResultDialog(false)} 
+            className="w-full bg-purple-600 hover:bg-purple-700"
+          >
             Continue
           </Button>
         </DialogContent>
