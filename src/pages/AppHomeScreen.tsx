@@ -91,6 +91,7 @@ const AppHomeScreen = () => {
       <CyberHeader
         title="I-SMART"
         subtitle="Welcome back to your digital future"
+        logo="/lovable-uploads/a9cfc5de-7126-4662-923b-cc0348077e3d.png"
         kpis={kpis}
         actions={
           <div className="flex items-center gap-3">

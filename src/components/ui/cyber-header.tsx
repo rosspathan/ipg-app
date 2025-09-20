@@ -7,6 +7,7 @@ import { Button } from "./button";
 interface CyberHeaderProps {
   title: string;
   subtitle?: string;
+  logo?: string;
   showBack?: boolean;
   onBack?: () => void;
   kpis?: Array<{
@@ -22,6 +23,7 @@ interface CyberHeaderProps {
 const CyberHeader: React.FC<CyberHeaderProps> = ({
   title,
   subtitle,
+  logo,
   showBack = false,
   onBack,
   kpis = [],
@@ -48,8 +50,20 @@ const CyberHeader: React.FC<CyberHeaderProps> = ({
               <ArrowLeft className="w-5 h-5" />
             </Button>
           )}
+          {logo && (
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full bg-gradient-primary p-0.5">
+                <img 
+                  src={logo}
+                  alt="Logo" 
+                  className="w-full h-full rounded-full object-cover bg-background"
+                />
+              </div>
+              <div className="absolute inset-0 bg-gradient-ring rounded-full opacity-30 animate-neon-pulse" />
+            </div>
+          )}
           <div>
-            <h1 className="text-xl font-bold text-foreground tracking-tight">
+            <h1 className="text-xl font-bold bg-gradient-neon bg-clip-text text-transparent tracking-tight">
               {title}
             </h1>
             {subtitle && (
