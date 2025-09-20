@@ -109,10 +109,11 @@ const ReferralProgramScreen = () => {
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Income</p>
-              <p className="text-2xl font-bold">${referralStats.totalIncome.toFixed(2)}</p>
+              <p className="text-sm font-medium text-muted-foreground">BSK Earned</p>
+              <p className="text-2xl font-bold">{referralStats.bskEarned.toFixed(4)} BSK</p>
+              <p className="text-xs text-muted-foreground">${referralStats.totalIncome.toFixed(2)} value</p>
             </div>
-            <TrendingUp className="w-8 h-8 text-green-600" />
+            <Gift className="w-8 h-8 text-primary" />
           </CardContent>
         </Card>
         <Card>
@@ -127,19 +128,20 @@ const ReferralProgramScreen = () => {
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Active</p>
+              <p className="text-sm font-medium text-muted-foreground">Active Refs</p>
               <p className="text-2xl font-bold">{referralStats.activeReferrals}</p>
             </div>
-            <Users className="w-8 h-8 text-primary" />
+            <Users className="w-8 h-8 text-green-600" />
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center justify-between p-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">BSK Earned</p>
-              <p className="text-2xl font-bold">{referralStats.bskEarned.toFixed(4)}</p>
+              <p className="text-sm font-medium text-muted-foreground">BSK Rate</p>
+              <p className="text-2xl font-bold">${bskPrice.toFixed(4)}</p>
+              <p className="text-xs text-muted-foreground">per BSK</p>
             </div>
-            <Gift className="w-8 h-8 text-orange-600" />
+            <TrendingUp className="w-8 h-8 text-orange-600" />
           </CardContent>
         </Card>
       </div>
@@ -209,7 +211,8 @@ const ReferralProgramScreen = () => {
       <Tabs defaultValue="rewards" className="space-y-4">
         <TabsList>
           <TabsTrigger value="rewards">Reward History</TabsTrigger>
-          <TabsTrigger value="structure">Commission Structure</TabsTrigger>
+          <TabsTrigger value="structure">BSK Rewards</TabsTrigger>
+          <TabsTrigger value="referrals">My Referrals</TabsTrigger>
           <TabsTrigger value="howto">How It Works</TabsTrigger>
         </TabsList>
 
@@ -290,6 +293,56 @@ const ReferralProgramScreen = () => {
                       </Badge>
                     ))}
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="referrals" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Referral Tree</CardTitle>
+              <CardDescription>Your referrals and their BSK contributions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {userReferees.length > 0 ? (
+                <div className="space-y-4">
+                  {userReferees.map((referral, index) => {
+                    const referralEventsForUser = referralEvents.filter(event => 
+                      event.referrer_id === user?.id && event.user_id === referral.referee_id
+                    );
+                    const totalBSKFromReferral = referralEventsForUser.reduce((sum, event) => sum + event.amount_bonus, 0);
+                    const referralLevel = referralEventsForUser.length > 0 ? referralEventsForUser[0].level : 1;
+                    
+                    return (
+                      <div key={referral.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                            <Badge variant="outline" className="text-xs">L{referralLevel}</Badge>
+                          </div>
+                          <div>
+                            <p className="font-medium">User {referral.referee_id.slice(-6)}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Joined {new Date(referral.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-primary">+{totalBSKFromReferral.toFixed(4)} BSK</p>
+                          <p className="text-sm text-muted-foreground">
+                            ${(totalBSKFromReferral * bskPrice).toFixed(2)} value
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No referrals yet</p>
+                  <p className="text-sm">Share your link to start earning BSK!</p>
                 </div>
               )}
             </CardContent>
