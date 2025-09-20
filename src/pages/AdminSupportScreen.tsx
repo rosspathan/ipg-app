@@ -256,21 +256,23 @@ export const AdminSupportScreen = () => {
               <p className="text-muted-foreground">No tickets found</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Update</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTickets.map(renderTicketRow)}
-              </TableBody>
-            </Table>
+            <div className="w-full overflow-x-auto">
+              <Table className="min-w-[720px] md:min-w-0">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Update</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTickets.map(renderTicketRow)}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

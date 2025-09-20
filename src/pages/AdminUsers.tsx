@@ -270,8 +270,8 @@ const AdminUsers = () => {
             </div>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
+          <div className="rounded-md border w-full overflow-x-auto">
+            <Table className="min-w-[900px] md:min-w-0">
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>

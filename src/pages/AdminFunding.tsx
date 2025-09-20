@@ -220,17 +220,18 @@ const AdminFunding = () => {
               <CardTitle>INR Withdrawal Requests</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Bank Details</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="w-full overflow-x-auto">
+                <Table className="min-w-[720px] md:min-w-0">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Bank Details</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {fiatWithdrawals.map((withdrawal) => (
                     <TableRow key={withdrawal.id}>
@@ -341,6 +342,7 @@ const AdminFunding = () => {
                   ))}
                 </TableBody>
               </Table>
+            </div>
             </CardContent>
           </Card>
         </TabsContent>
