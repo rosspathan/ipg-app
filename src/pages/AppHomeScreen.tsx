@@ -101,7 +101,7 @@ const AppHomeScreen = () => {
       }}
     >
       {/* Overlay for better content readability */}
-      <div className="absolute inset-0 bg-background/85 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-background/50 backdrop-blur-[2px]"></div>
       
       {/* Content */}
       <div className="relative z-10">
