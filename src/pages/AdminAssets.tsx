@@ -497,18 +497,19 @@ const AdminAssets = () => {
           <CardTitle>Assets List</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Asset</TableHead>
-                <TableHead>Type & Price</TableHead>
-                <TableHead>Network</TableHead>
-                <TableHead>Features</TableHead>
-                <TableHead>Limits</TableHead>
-                <TableHead>Risk</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+          <div className="w-full overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Asset</TableHead>
+                  <TableHead>Type & Price</TableHead>
+                  <TableHead>Network</TableHead>
+                  <TableHead>Features</TableHead>
+                  <TableHead>Limits</TableHead>
+                  <TableHead>Risk</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {assets.map((asset) => (
                 <TableRow key={asset.id}>
@@ -582,7 +583,8 @@ const AdminAssets = () => {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
