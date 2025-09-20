@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.rosspathan.ipgapp',
+  appId: 'app.lovable.3e2392ce491947528d0d0528c0668ead',
   appName: 'ipg-app',
   webDir: 'dist',
   server: {

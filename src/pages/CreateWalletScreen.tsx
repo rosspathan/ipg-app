@@ -59,7 +59,7 @@ const CreateWalletScreen = () => {
   const handleConfirmPhrase = async () => {
     try {
       await createWallet(seedPhrase.join(" "));
-      navigate("/onboarding/security");
+      navigate("/email-verification");
     } catch (error) {
       toast({
         title: "Error",

@@ -1,20 +1,8 @@
-/* Mobile-first Android app container */
 #root {
-  width: 100%;
-  min-height: 100vh;
-  margin: 0;
-  padding: 0;
-  background: hsl(var(--background));
-  overflow-x: hidden;
-}
-
-/* Mobile app optimizations */
-.app-container {
-  width: 100%;
-  min-height: 100vh;
-  max-width: 100vw;
-  position: relative;
-  background: hsl(var(--background));
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
 }
 
 .logo {
