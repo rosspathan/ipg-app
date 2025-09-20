@@ -3,14 +3,30 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Copy, Users, DollarSign, Info } from "lucide-react";
+import { ChevronLeft, Copy, Users, Gift, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthUser } from '@/hooks/useAuthUser';
+import { useReferralProgram } from '@/hooks/useReferralProgram';
 
 const ReferralsScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [referralLink] = useState("https://ipg-ismart.app/ref/ABC123XYZ");
+  const { user } = useAuthUser();
+  const {
+    bonusAssets,
+    referralSettings,
+    referralEvents,
+    bonusBalances,
+    referralRelationships,
+    getCurrentPrice,
+    loading
+  } = useReferralProgram();
+
+  const [referralLink] = useState(
+    user ? `${window.location.origin}/auth/register?ref=${user.id}` : ""
+  );
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(referralLink);
@@ -20,26 +36,56 @@ const ReferralsScreen = () => {
     });
   };
 
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background px-6 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const userReferralEvents = referralEvents.filter(event => event.referrer_id === user.id);
+  const userBonusBalances = bonusBalances.filter(balance => balance.user_id === user.id);
+  const userReferees = referralRelationships.filter(rel => rel.referrer_id === user.id);
+  
+  const bskAsset = bonusAssets.find(asset => asset.symbol === 'BSK');
+  const bskBalance = userBonusBalances.find(balance => 
+    bskAsset && balance.asset_id === bskAsset.id
+  );
+  const bskPrice = bskAsset ? getCurrentPrice(bskAsset.id) : 0;
+  
+  const totalBSKEarned = userReferralEvents.reduce((sum, event) => sum + event.amount_bonus, 0);
+  const totalValueEarned = userReferralEvents.reduce((sum, event) => sum + event.usd_value, 0);
+  const totalReferrals = userReferees.length;
+  const activeReferrals = userReferees.length; // Simplified - could check for active users
+
   const referralStats = {
-    totalIncome: "$1,247.83",
-    totalReferrals: 23,
-    activeReferrals: 18
+    totalBSK: totalBSKEarned,
+    totalValue: totalValueEarned,
+    totalReferrals: totalReferrals,
+    activeReferrals: activeReferrals
   };
 
-  const referralTree = [
-    { level: "L1", user: "user001", volume: "$5,200", commission: "$52.00", status: "Active" },
-    { level: "L1", user: "user042", volume: "$2,100", commission: "$21.00", status: "Active" },
-    { level: "L1", user: "user089", volume: "$8,900", commission: "$89.00", status: "Active" },
-    { level: "L2", user: "user156", volume: "$1,400", commission: "$7.00", status: "Active" },
-    { level: "L2", user: "user203", volume: "$3,300", commission: "$16.50", status: "Inactive" },
-    { level: "L3", user: "user267", volume: "$900", commission: "$2.70", status: "Active" },
-  ];
+  // Create referral tree from actual data
+  const referralTree = userReferees.map(referral => {
+    const referralEventsForUser = referralEvents.filter(event => 
+      event.referrer_id === user.id && event.user_id === referral.referee_id
+    );
+    const totalBSKFromReferral = referralEventsForUser.reduce((sum, event) => sum + event.amount_bonus, 0);
+    const referralLevel = referralEventsForUser.length > 0 ? referralEventsForUser[0].level : 1;
+    
+    return {
+      level: `L${referralLevel}`,
+      user: referral.referee_id.slice(-6),
+      bsk: totalBSKFromReferral.toFixed(4),
+      value: `$${(totalBSKFromReferral * bskPrice).toFixed(2)}`,
+      status: "Active" // Simplified
+    };
+  });
 
-  const commissionRates = [
-    { level: "Level 1", rate: "1.0%", description: "Direct referrals" },
-    { level: "Level 2", rate: "0.5%", description: "Second level referrals" },
-    { level: "Level 3", rate: "0.3%", description: "Third level referrals" },
-  ];
+  const levels = (referralSettings?.levels as any) || [];
 
   return (
     <div className="min-h-screen flex flex-col bg-background px-6 py-8">
@@ -59,9 +105,10 @@ const ReferralsScreen = () => {
       <div className="grid grid-cols-3 gap-3 mb-6">
         <Card className="bg-gradient-card shadow-card border-0">
           <CardContent className="p-4 text-center">
-            <DollarSign className="w-6 h-6 text-green-500 mx-auto mb-2" />
-            <p className="text-lg font-bold text-foreground">{referralStats.totalIncome}</p>
-            <p className="text-xs text-muted-foreground">Total Income</p>
+            <Gift className="w-6 h-6 text-primary mx-auto mb-2" />
+            <p className="text-lg font-bold text-foreground">{referralStats.totalBSK.toFixed(4)} BSK</p>
+            <p className="text-xs text-muted-foreground">Total Earned</p>
+            <p className="text-xs text-muted-foreground">${referralStats.totalValue.toFixed(2)} value</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-card shadow-card border-0">
@@ -97,7 +144,7 @@ const ReferralsScreen = () => {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Share this link to earn commissions from your referrals' trading activity
+            Share this link to earn BSK rewards from your referrals' activities
           </p>
         </CardContent>
       </Card>
@@ -108,7 +155,7 @@ const ReferralsScreen = () => {
           <div className="flex items-start space-x-2">
             <Info className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> Referral income is only available for subscribed users. 
+              <strong>Note:</strong> Referral BSK rewards are only available for subscribed users. 
               Subscribe to a plan to activate your referral earnings.
             </p>
           </div>
@@ -118,7 +165,7 @@ const ReferralsScreen = () => {
       <Tabs defaultValue="referrals" className="flex-1">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="referrals">My Referrals</TabsTrigger>
-          <TabsTrigger value="rates">Commission Rates</TabsTrigger>
+          <TabsTrigger value="rates">BSK Rewards</TabsTrigger>
         </TabsList>
 
         <TabsContent value="referrals" className="space-y-4">
@@ -131,10 +178,10 @@ const ReferralsScreen = () => {
                 <div className="grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground border-b border-border pb-2">
                   <span>Level</span>
                   <span>User</span>
-                  <span>Volume</span>
-                  <span>Commission</span>
+                  <span>BSK Earned</span>
+                  <span>Value</span>
                 </div>
-                {referralTree.map((referral, index) => (
+                {referralTree.length > 0 ? referralTree.map((referral, index) => (
                   <div key={index} className="grid grid-cols-4 gap-2 text-sm">
                     <span className={`font-medium ${
                       referral.level === 'L1' ? 'text-green-500' :
@@ -143,10 +190,16 @@ const ReferralsScreen = () => {
                       {referral.level}
                     </span>
                     <span className="text-foreground">{referral.user}</span>
-                    <span className="text-foreground">{referral.volume}</span>
-                    <span className="font-medium text-green-600">{referral.commission}</span>
+                    <span className="font-medium text-primary">{referral.bsk} BSK</span>
+                    <span className="font-medium text-green-600">{referral.value}</span>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No referrals yet</p>
+                    <p className="text-sm">Share your link to start earning BSK!</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -155,22 +208,32 @@ const ReferralsScreen = () => {
         <TabsContent value="rates" className="space-y-4">
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle className="text-base">Commission Structure</CardTitle>
+              <CardTitle className="text-base">BSK Reward Structure</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {commissionRates.map((rate, index) => (
+                {levels.map((level: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                    <div>
-                      <p className="font-medium text-foreground">{rate.level}</p>
-                      <p className="text-sm text-muted-foreground">{rate.description}</p>
+                    <div className="flex items-center space-x-3">
+                      <Badge variant="outline">L{level.level}</Badge>
+                      <div>
+                        <p className="font-medium text-foreground">Level {level.level}</p>
+                        <p className="text-sm text-muted-foreground">Per qualifying referral</p>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-primary">{rate.rate}</p>
-                      <p className="text-xs text-muted-foreground">of trading volume</p>
+                      <p className="text-lg font-bold text-primary">{level.bsk_amount || 0} BSK</p>
+                      <p className="text-xs text-muted-foreground">${((level.bsk_amount || 0) * bskPrice).toFixed(4)} value</p>
                     </div>
                   </div>
                 ))}
+                {levels.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Gift className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No reward structure configured</p>
+                    <p className="text-sm">Contact admin to set up BSK rewards</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
