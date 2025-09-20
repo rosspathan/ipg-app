@@ -1026,6 +1026,7 @@ export type Database = {
           plan_id: string | null
           reimbursed_amount: number | null
           status: string
+          tier_id: string | null
           trade_id: string | null
           updated_at: string | null
           user_id: string
@@ -1039,6 +1040,7 @@ export type Database = {
           plan_id?: string | null
           reimbursed_amount?: number | null
           status?: string
+          tier_id?: string | null
           trade_id?: string | null
           updated_at?: string | null
           user_id: string
@@ -1052,6 +1054,7 @@ export type Database = {
           plan_id?: string | null
           reimbursed_amount?: number | null
           status?: string
+          tier_id?: string | null
           trade_id?: string | null
           updated_at?: string | null
           user_id?: string
@@ -1062,6 +1065,13 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "insurance_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claims_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_subscription_tiers"
             referencedColumns: ["id"]
           },
         ]
@@ -1148,6 +1158,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      insurance_subscription_tiers: {
+        Row: {
+          bonus_rewards: number | null
+          coverage_ratio: number
+          created_at: string
+          id: string
+          is_active: boolean | null
+          max_claim_per_trade: number
+          max_claims_per_month: number | null
+          min_loss_threshold: number
+          monthly_fee: number
+          tier_name: string
+          updated_at: string
+        }
+        Insert: {
+          bonus_rewards?: number | null
+          coverage_ratio?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          max_claim_per_trade?: number
+          max_claims_per_month?: number | null
+          min_loss_threshold?: number
+          monthly_fee?: number
+          tier_name: string
+          updated_at?: string
+        }
+        Update: {
+          bonus_rewards?: number | null
+          coverage_ratio?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          max_claim_per_trade?: number
+          max_claims_per_month?: number | null
+          min_loss_threshold?: number
+          monthly_fee?: number
+          tier_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       kyc_profiles: {
         Row: {
@@ -2648,6 +2700,53 @@ export type Database = {
         }
         Relationships: []
       }
+      user_insurance_subscriptions: {
+        Row: {
+          claims_used_this_month: number | null
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean | null
+          last_claim_reset_date: string | null
+          subscribed_at: string
+          tier_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claims_used_this_month?: number | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_active?: boolean | null
+          last_claim_reset_date?: string | null
+          subscribed_at?: string
+          tier_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claims_used_this_month?: number | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_claim_reset_date?: string | null
+          subscribed_at?: string
+          tier_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_insurance_subscriptions_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_subscription_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
@@ -2834,6 +2933,10 @@ export type Database = {
           p_resource_id?: string
           p_resource_type: string
         }
+        Returns: undefined
+      }
+      reset_monthly_claim_counts: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }

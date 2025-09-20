@@ -102,6 +102,20 @@ interface InsurancePlan {
   updated_at: string;
 }
 
+interface InsuranceSubscriptionTier {
+  id: string;
+  tier_name: string;
+  monthly_fee: number;
+  coverage_ratio: number;
+  max_claim_per_trade: number;
+  max_claims_per_month?: number;
+  min_loss_threshold: number;
+  bonus_rewards: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface Ad {
   id: string;
   placement: string;
@@ -153,6 +167,7 @@ interface CatalogData {
   stakingPools: StakingPool[];
   luckyDrawPlans: LuckyDrawPlan[];
   insurancePlans: InsurancePlan[];
+  insuranceTiers: InsuranceSubscriptionTier[];
   ads: Ad[];
   feesConfig: FeesConfig | null;
   assetsById: Record<string, Asset>;
@@ -176,7 +191,7 @@ export const useCatalog = (): CatalogData => {
   const [referralConfig, setReferralConfig] = useState<ReferralConfig | null>(null);
   const [stakingPools, setStakingPools] = useState<StakingPool[]>([]);
   const [luckyDrawPlans, setLuckyDrawPlans] = useState<LuckyDrawPlan[]>([]);
-  const [insurancePlans, setInsurancePlans] = useState<InsurancePlan[]>([]);
+  const [insuranceTiers, setInsuranceTiers] = useState<InsuranceSubscriptionTier[]>([]);
   const [ads, setAds] = useState<Ad[]>([]);
   const [feesConfig, setFeesConfig] = useState<FeesConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -222,6 +237,7 @@ export const useCatalog = (): CatalogData => {
         stakingPoolsResult,
         luckyDrawPlansResult,
         insurancePlansResult,
+        insuranceTiersResult,
         adsResult,
         feesConfigResult
       ] = await Promise.allSettled([
@@ -236,6 +252,7 @@ export const useCatalog = (): CatalogData => {
         supabase.from('staking_pools').select('*').eq('active', true).order('created_at'),
         (supabase as any).from('lucky_draw_plans').select('*').eq('is_active', true).order('created_at'),
         supabase.from('insurance_plans').select('*').eq('is_active', true).order('created_at'),
+        supabase.from('insurance_subscription_tiers').select('*').eq('is_active', true).order('monthly_fee'),
         (supabase as any).from('ads').select('*').eq('status', 'active').order('created_at'),
         (supabase as any).from('fees_config').select('*').order('updated_at', { ascending: false }).limit(1).single()
       ]);
@@ -302,7 +319,11 @@ export const useCatalog = (): CatalogData => {
         console.log('✅ Insurance plans loaded:', insurancePlansResult.value.data?.length || 0);
       }
 
-      // Process ads
+      // Process insurance tiers
+      if (insuranceTiersResult.status === 'fulfilled' && !insuranceTiersResult.value.error) {
+        setInsuranceTiers((insuranceTiersResult.value.data || []) as InsuranceSubscriptionTier[]);
+        console.log('✅ Insurance tiers loaded:', insuranceTiersResult.value.data?.length || 0);
+      }
       if (adsResult.status === 'fulfilled' && !adsResult.value.error) {
         const now = new Date().toISOString();
         const activeAds = ((adsResult.value.data || []) as Ad[]).filter((ad: Ad) => 
@@ -327,6 +348,7 @@ export const useCatalog = (): CatalogData => {
         stakingPools: new Date().toISOString(),
         luckyDrawPlans: new Date().toISOString(),
         insurancePlans: new Date().toISOString(),
+        insuranceTiers: new Date().toISOString(),
         ads: new Date().toISOString(),
         feesConfig: new Date().toISOString(),
       });
@@ -451,6 +473,7 @@ export const useCatalog = (): CatalogData => {
     stakingPools,
     luckyDrawPlans,
     insurancePlans,
+    insuranceTiers,
     ads,
     feesConfig,
     assetsById,
