@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Gift, TrendingUp, Coins, Info, ArrowUpDown, Eye } from 'lucide-react';
 import { useReferralProgram } from '@/hooks/useReferralProgram';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthUser } from '@/hooks/useAuthUser';
 import { useNavigate } from 'react-router-dom';
 import { useFX } from '@/hooks/useFX';
 
@@ -14,7 +14,7 @@ interface BonusBalanceCardProps {
 }
 
 const BonusBalanceCard: React.FC<BonusBalanceCardProps> = ({ className, style }) => {
-  const { user } = useAuth();
+  const { user } = useAuthUser();
   const { bonusAssets, bonusBalances, getCurrentPrice, loading } = useReferralProgram();
   const navigate = useNavigate();
   const { formatCurrency } = useFX();
@@ -25,7 +25,7 @@ const BonusBalanceCard: React.FC<BonusBalanceCardProps> = ({ className, style })
   console.log('BonusBalanceCard - bonusAssets:', bonusAssets);
   console.log('BonusBalanceCard - bonusBalances:', bonusBalances);
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <CyberCard className={className} style={style} variant="glow">
         <CyberCardContent className="flex items-center justify-center h-32">
@@ -35,7 +35,8 @@ const BonusBalanceCard: React.FC<BonusBalanceCardProps> = ({ className, style })
     );
   }
 
-  const userBonusBalances = bonusBalances.filter(balance => balance.user_id === user.id);
+  const userId = user?.id;
+  const userBonusBalances = userId ? bonusBalances.filter(balance => balance.user_id === userId) : [];
   const bskAsset = bonusAssets.find(asset => asset.symbol === 'BSK');
   const bskBalance = userBonusBalances.find(balance => 
     bskAsset && balance.asset_id === bskAsset.id
