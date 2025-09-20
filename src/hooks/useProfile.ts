@@ -20,7 +20,10 @@ export const useProfile = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchUserApp = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);

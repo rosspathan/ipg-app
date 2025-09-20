@@ -27,7 +27,10 @@ export const useKYC = () => {
   const [uploading, setUploading] = useState(false);
 
   const fetchKYC = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);

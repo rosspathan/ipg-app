@@ -7,7 +7,18 @@ import { Loader2, Bell, Mail, Smartphone } from "lucide-react";
 import { usePreferences } from "@/hooks/usePreferences";
 
 export const NotificationsTab = () => {
-  const { notifications, loading, updateNotifications } = usePreferences();
+  const { loading } = usePreferences();
+  // Use local state for notifications since we don't have a notifications table yet
+  const [notifications, setNotifications] = useState({
+    tx_push: true,
+    marketing_push: false,
+    email_tx: true,
+    email_marketing: false
+  });
+  
+  const updateNotifications = async (updates: any) => {
+    setNotifications(prev => ({ ...prev, ...updates }));
+  };
   const [saving, setSaving] = useState(false);
 
   const handleToggle = async (field: keyof typeof notifications, value: boolean) => {

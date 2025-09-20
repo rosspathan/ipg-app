@@ -27,7 +27,10 @@ export const usePreferences = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchPreferences = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
