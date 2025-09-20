@@ -184,12 +184,12 @@ const AdminFunding = () => {
       </div>
 
       <Tabs defaultValue="crypto" className="w-full">
-        <TabsList>
-          <TabsTrigger value="crypto">Crypto Deposits/Withdrawals</TabsTrigger>
-          <TabsTrigger value="inr-accounts">INR Accounts</TabsTrigger>
-          <TabsTrigger value="inr-deposits">INR Deposits</TabsTrigger>
-          <TabsTrigger value="inr-withdrawals">INR Withdrawals</TabsTrigger>
-          <TabsTrigger value="reconciliation">Daily Reconciliation</TabsTrigger>
+        <TabsList className="w-full flex gap-2 overflow-x-auto scrollbar-hide">
+          <TabsTrigger className="shrink-0" value="crypto">Crypto Deposits/Withdrawals</TabsTrigger>
+          <TabsTrigger className="shrink-0" value="inr-accounts">INR Accounts</TabsTrigger>
+          <TabsTrigger className="shrink-0" value="inr-deposits">INR Deposits</TabsTrigger>
+          <TabsTrigger className="shrink-0" value="inr-withdrawals">INR Withdrawals</TabsTrigger>
+          <TabsTrigger className="shrink-0" value="reconciliation">Daily Reconciliation</TabsTrigger>
         </TabsList>
 
         <TabsContent value="crypto">

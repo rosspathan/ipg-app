@@ -96,23 +96,7 @@ const AdminLayout = () => {
           </div>
         </div>
         
-        {/* Mobile Navigation */}
-        <div className="md:hidden px-3 pb-2">
-          <div className="flex space-x-1 overflow-x-auto pb-1 scrollbar-hide">
-            {navItems.map((item) => (
-              <Button
-                key={item.path}
-                variant={isActive(item.path) ? "default" : "ghost"}
-                size="sm"
-                onClick={() => navigate(item.path)}
-                className="whitespace-nowrap text-xs px-2 min-w-fit flex items-center gap-1"
-              >
-                <item.icon className="h-3 w-3" />
-                {item.label}
-              </Button>
-            ))}
-          </div>
-        </div>
+        {/* Mobile Navigation removed in favor of drawer menu */}
       </div>
 
       <div className="flex min-h-screen">
