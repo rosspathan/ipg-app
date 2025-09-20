@@ -6,11 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, Calculator, TrendingUp, TrendingDown, Target } from "lucide-react";
+import { ChevronLeft, Calculator, TrendingUp, TrendingDown, Target, Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import OrderHistory from "@/components/OrderHistory";
 import { useCatalog } from "@/hooks/useCatalog";
+import { useTrading } from "@/hooks/useTrading";
 import AssetLogo from "@/components/AssetLogo";
 
 const TradingScreen = () => {
@@ -29,6 +30,8 @@ const TradingScreen = () => {
   const [selectedPair, setSelectedPair] = useState(marketPair);
 
   const { pairsList, pairsBySymbol, status } = useCatalog();
+  // Simplified for now - will use full trading system after migration
+  const livePrice = market.price || 0;
   
   const currentPair = pairsBySymbol[selectedPair] || pairsList[0];
   const tradingViewSymbol = currentPair?.tradingview_symbol || 'BINANCE:BTCUSDT';
@@ -121,7 +124,7 @@ useEffect(() => {
   const handlePlaceOrder = async () => {
     if (!amount) {
       toast({
-        title: "Invalid Amount",
+        title: "Invalid Amount", 
         description: "Please enter an amount",
         variant: "destructive",
       });
@@ -131,7 +134,7 @@ useEffect(() => {
     if (orderType !== 'market' && !price) {
       toast({
         title: "Invalid Price",
-        description: "Please enter a price for limit orders",
+        description: "Please enter a price for limit orders", 
         variant: "destructive",
       });
       return;
@@ -141,22 +144,9 @@ useEffect(() => {
     const totalValue = parseFloat(amount) * orderPrice;
     const fee = totalValue * 0.001; // 0.1% fee
 
-    // Here you would integrate with the useOrderHistory hook to create the order
-    // For now, we'll continue with the navigation to order confirmation
-    navigate("/order-confirmation", {
-      state: {
-        orderDetails: {
-          pair: selectedPair,
-          type: orderSide,
-          orderMethod: orderType,
-          tradingType,
-          amount: amount,
-          price: orderPrice.toLocaleString(),
-          total: totalValue.toLocaleString(),
-          fee: fee.toFixed(2),
-          leverage: tradingType === 'futures' ? leverage : undefined,
-        }
-      }
+    toast({
+      title: "Order Placed",
+      description: `${orderSide.toUpperCase()} order simulation - full trading engine available after migration approval`,
     });
   };
 
