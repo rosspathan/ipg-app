@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Zap, Clock, Coins, Home, Wallet, TrendingUp, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { FuturisticSpinWheel } from "@/components/gamification/FuturisticSpinWheel";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ interface SpinRun {
 export default function SpinWheelScreen() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, session } = useAuth();
+const { user, session } = useAuthUser();
   const [wheel, setWheel] = useState<SpinWheel | null>(null);
   const [segments, setSegments] = useState<SpinSegment[]>([]);
   const [recentRuns, setRecentRuns] = useState<SpinRun[]>([]);
