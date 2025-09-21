@@ -70,6 +70,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAssets from "./pages/AdminAssets";
 import AdminMarkets from "./pages/AdminMarkets";
+import AdminMarketFeedScreen from "./pages/AdminMarketFeedScreen";
 import AdminFunding from "./pages/AdminFunding";
 import { AdminSubscriptions } from "./components/AdminSubscriptions";
 import AdminReferralProgram from "./pages/AdminReferralProgram";
@@ -226,6 +227,7 @@ function App() {
                 <Route path="support/t/:id" element={<AdminSupportTicketScreen />} />
                 <Route path="notifications" element={<AdminNotificationsScreen />} />
                 <Route path="system" element={<AdminSystemScreen />} />
+                <Route path="market-feed" element={<AdminMarketFeedScreen />} />
               </Route>
 
               {/* Utility Routes */}

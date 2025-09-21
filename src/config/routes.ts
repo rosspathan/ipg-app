@@ -98,6 +98,7 @@ export const ROUTES = {
   ADMIN_INSURANCE: '/admin/insurance',
   ADMIN_INSURANCE_CLAIMS: '/admin/insurance/claims',
   ADMIN_SYSTEM: '/admin/system',
+  ADMIN_MARKET_FEED: '/admin/market-feed',
   ADMIN_CREDENTIALS_TEST: '/admin/test',
   
   // Special routes
@@ -193,6 +194,7 @@ export const ADMIN_STACK_ROUTES = [
   ROUTES.ADMIN_INSURANCE,
   ROUTES.ADMIN_INSURANCE_CLAIMS,
   ROUTES.ADMIN_SYSTEM,
+  ROUTES.ADMIN_MARKET_FEED,
   ROUTES.ADMIN_CREDENTIALS_TEST
 ] as const;
 

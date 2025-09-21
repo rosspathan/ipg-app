@@ -5,16 +5,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, TrendingUp, TrendingDown, Activity, Clock } from "lucide-react";
-import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
+import { ChevronLeft, TrendingUp, TrendingDown, Activity, Clock, Zap } from "lucide-react";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useToast } from "@/hooks/use-toast";
+import { useMarketStore, useMarketTicker, useMarketOrderBook, useMarketTrades, useMarketConnection } from "@/hooks/useMarketStore";
 
 // Enhanced trading components
 import PriceChart from "@/components/trading/PriceChart";
 import EnhancedOrderBook from "@/components/trading/EnhancedOrderBook";
 import TradingOrderForm from "@/components/trading/TradingOrderForm";
 import RecentTrades from "@/components/RecentTrades";
+import MarketDiagnostics from "@/components/trading/MarketDiagnostics";
 
 const TradingScreen = () => {
   const navigate = useNavigate();
@@ -26,28 +27,35 @@ const TradingScreen = () => {
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
 
-  // WebSocket connection for real-time data
-  const {
-    isConnected,
-    orderBook,
-    trades,
-    ticker,
-    subscribeToSymbol,
-    unsubscribeFromSymbol
-  } = useTradingWebSocket();
+  // Market data store
+  const { subscribe, unsubscribe, disconnect } = useMarketStore();
+  const { isConnected, error: connectionError } = useMarketConnection();
+  
+  // Real-time market data for current pair
+  const ticker = useMarketTicker(selectedPair);
+  const orderBook = useMarketOrderBook(selectedPair);
+  const trades = useMarketTrades(selectedPair);
 
   // Trading API
   const { placeOrder, cancelOrder, getOrderHistory, loading } = useTradingAPI();
 
-  // Subscribe to symbol data when component mounts or symbol changes
+  // Subscribe to market data when component mounts or symbol changes
   useEffect(() => {
-    const symbol = selectedPair.replace('/', '');
-    subscribeToSymbol(symbol);
+    console.log(`Subscribing to market data for ${selectedPair}`);
+    subscribe(selectedPair);
     
     return () => {
-      unsubscribeFromSymbol(symbol);
+      console.log(`Unsubscribing from market data for ${selectedPair}`);
+      unsubscribe(selectedPair);
     };
-  }, [selectedPair, subscribeToSymbol, unsubscribeFromSymbol]);
+  }, [selectedPair, subscribe, unsubscribe]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      disconnect();
+    };
+  }, [disconnect]);
 
   // Trading pairs with mock data for now
   const tradingPairs = [
@@ -57,18 +65,31 @@ const TradingScreen = () => {
     { symbol: 'ADA/USDT', price: 0.485, change: 3.21 }
   ];
 
-  // Get current pair data
+  // Get current pair data with real-time updates
   const currentPairData = tradingPairs.find(p => p.symbol === selectedPair) || tradingPairs[0];
-  const symbol = selectedPair.replace('/', '');
   
-  // Real-time data from WebSocket
-  const currentOrderBook = orderBook[symbol] || { bids: [], asks: [] };
-  const currentTrades = trades[symbol] || [];
-  const currentTicker = ticker[symbol];
+  // Use real-time data from Binance WebSocket, fallback to mock data
+  const currentPrice = ticker?.lastPrice || currentPairData.price;
+  const changePercent = ticker?.priceChangePercent24h || currentPairData.change;
+  const volume24h = ticker?.volume24h;
+  const high24h = ticker?.high24h;
+  const low24h = ticker?.low24h;
   
-  // Use real-time data if available, otherwise fallback to mock
-  const currentPrice = currentTicker?.lastPrice || currentPairData.price;
-  const changePercent = currentTicker?.priceChangePercent24h || currentPairData.change;
+  // Format order book data for the component
+  const currentOrderBook = orderBook ? {
+    bids: orderBook.bids.map(bid => [bid.price, bid.quantity] as [number, number]),
+    asks: orderBook.asks.map(ask => [ask.price, ask.quantity] as [number, number])
+  } : { bids: [], asks: [] };
+  
+  // Format trades for the component
+  const currentTrades = trades.map(trade => ({
+    id: trade.id,
+    price: trade.price,
+    quantity: trade.quantity,
+    side: trade.side,
+    timestamp: new Date(trade.timestamp).toISOString(),
+    time: new Date(trade.timestamp).toISOString()
+  }));
 
   // Mock user balances - in real app, this would come from user's wallet
   const availableBalance = {
@@ -151,7 +172,7 @@ const TradingScreen = () => {
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
             <Button 
               variant="ghost" 
               size="icon"
@@ -163,16 +184,30 @@ const TradingScreen = () => {
             <div>
               <h1 className="text-lg font-semibold">Spot Trading</h1>
               <div className="flex items-center gap-2 mt-1">
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                <div className={`w-2 h-2 rounded-full animate-pulse ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
                 <span className="text-xs text-muted-foreground">
-                  {isConnected ? 'Connected' : 'Connecting...'}
+                  {isConnected ? 'Live Feed Active' : connectionError ? 'Connection Error' : 'Connecting...'}
                 </span>
+                {connectionError && (
+                  <span className="text-xs text-red-500 max-w-48 truncate" title={connectionError}>
+                    {connectionError}
+                  </span>
+                )}
               </div>
             </div>
           </div>
           <Badge variant="outline" className="text-xs">
-            <Activity className="w-3 h-3 mr-1" />
-            Live Market
+            {isConnected ? (
+              <>
+                <Zap className="w-3 h-3 mr-1 text-green-500" />
+                LIVE
+              </>
+            ) : (
+              <>
+                <Activity className="w-3 h-3 mr-1" />
+                SYNC
+              </>
+            )}
           </Badge>
         </div>
       </div>
@@ -220,10 +255,26 @@ const TradingScreen = () => {
           </div>
           
           {/* 24h Stats */}
-          <div className="text-right">
-            <div className="text-xs text-muted-foreground">24h Volume</div>
-            <div className="text-sm font-medium">
-              {currentTicker?.volume24h?.toLocaleString() || '12,345,678'} {selectedPair.split('/')[0]}
+          <div className="text-right space-y-1">
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="text-muted-foreground">24h High</span>
+                <div className="font-medium text-green-500">
+                  ${high24h?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '44,200'}
+                </div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">24h Low</span>
+                <div className="font-medium text-red-500">
+                  ${low24h?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '42,100'}
+                </div>
+              </div>
+            </div>
+            <div>
+              <span className="text-muted-foreground">24h Volume</span>
+              <div className="font-medium">
+                {volume24h?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '12,345,678'} {selectedPair.split('/')[0]}
+              </div>
             </div>
           </div>
         </div>
@@ -255,10 +306,7 @@ const TradingScreen = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <RecentTrades trades={currentTrades.slice(0, 15).map(trade => ({
-                ...trade,
-                timestamp: trade.time
-              }))} />
+              <RecentTrades trades={currentTrades.slice(0, 15)} />
             </CardContent>
           </Card>
         </div>
@@ -366,6 +414,9 @@ const TradingScreen = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Market Diagnostics (Dev only) */}
+      <MarketDiagnostics />
     </div>
   );
 };
