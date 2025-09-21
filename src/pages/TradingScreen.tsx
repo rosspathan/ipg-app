@@ -1,84 +1,202 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
+import { ChevronLeft, TrendingUp, TrendingDown, Activity, Clock } from "lucide-react";
+import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
+import { useTradingAPI } from "@/hooks/useTradingAPI";
+import { useToast } from "@/hooks/use-toast";
+
+// Enhanced trading components
+import PriceChart from "@/components/trading/PriceChart";
+import EnhancedOrderBook from "@/components/trading/EnhancedOrderBook";
+import TradingOrderForm from "@/components/trading/TradingOrderForm";
+import RecentTrades from "@/components/RecentTrades";
 
 const TradingScreen = () => {
   const navigate = useNavigate();
   const { pair } = useParams<{ pair: string }>();
+  const { toast } = useToast();
+  
+  // State management
   const [selectedPair, setSelectedPair] = useState(pair?.replace('-', '/') || 'BTC/USDT');
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
-  const [amount, setAmount] = useState('');
-  const [price, setPrice] = useState('');
 
-  // Mock data
-  const tradingPairs = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'ADA/USDT'];
-  const mockPrice = 43250.50;
-  const mockChange = 2.45;
+  // WebSocket connection for real-time data
+  const {
+    isConnected,
+    orderBook,
+    trades,
+    ticker,
+    subscribeToSymbol,
+    unsubscribeFromSymbol
+  } = useTradingWebSocket();
+
+  // Trading API
+  const { placeOrder, cancelOrder, getOrderHistory, loading } = useTradingAPI();
+
+  // Subscribe to symbol data when component mounts or symbol changes
+  useEffect(() => {
+    const symbol = selectedPair.replace('/', '');
+    subscribeToSymbol(symbol);
+    
+    return () => {
+      unsubscribeFromSymbol(symbol);
+    };
+  }, [selectedPair, subscribeToSymbol, unsubscribeFromSymbol]);
+
+  // Trading pairs with mock data for now
+  const tradingPairs = [
+    { symbol: 'BTC/USDT', price: 43250.50, change: 2.45 },
+    { symbol: 'ETH/USDT', price: 2650.25, change: -1.23 },
+    { symbol: 'BNB/USDT', price: 315.80, change: 0.95 },
+    { symbol: 'ADA/USDT', price: 0.485, change: 3.21 }
+  ];
+
+  // Get current pair data
+  const currentPairData = tradingPairs.find(p => p.symbol === selectedPair) || tradingPairs[0];
+  const symbol = selectedPair.replace('/', '');
   
-  const mockOrderBook = {
-    asks: [
-      { price: 43255.50, quantity: 0.125, total: 5406.94 },
-      { price: 43260.00, quantity: 0.087, total: 3763.62 },
-      { price: 43265.25, quantity: 0.205, total: 8864.38 },
-    ],
-    bids: [
-      { price: 43245.75, quantity: 0.098, total: 4238.08 },
-      { price: 43240.00, quantity: 0.156, total: 6745.44 },
-      { price: 43235.50, quantity: 0.234, total: 10117.11 },
-    ]
+  // Real-time data from WebSocket
+  const currentOrderBook = orderBook[symbol] || { bids: [], asks: [] };
+  const currentTrades = trades[symbol] || [];
+  const currentTicker = ticker[symbol];
+  
+  // Use real-time data if available, otherwise fallback to mock
+  const currentPrice = currentTicker?.lastPrice || currentPairData.price;
+  const changePercent = currentTicker?.priceChangePercent24h || currentPairData.change;
+
+  // Mock user balances - in real app, this would come from user's wallet
+  const availableBalance = {
+    buy: 1000.00, // USDT balance for buying
+    sell: 0.1000  // BTC balance for selling
   };
 
-  const mockTrades = [
-    { price: 43250.50, quantity: 0.025, side: 'buy', time: '14:32:15' },
-    { price: 43248.75, quantity: 0.087, side: 'sell', time: '14:32:12' },
-    { price: 43252.00, quantity: 0.045, side: 'buy', time: '14:32:08' },
+  // Mock open orders for demo
+  const mockOpenOrders = [
+    { 
+      id: '1', 
+      pair: 'BTC/USDT', 
+      side: 'buy' as const, 
+      type: 'limit', 
+      amount: '0.025', 
+      price: '43000.00', 
+      status: 'open',
+      created_at: '2024-01-15T10:30:00Z'
+    },
+    { 
+      id: '2', 
+      pair: 'ETH/USDT', 
+      side: 'sell' as const, 
+      type: 'limit', 
+      amount: '0.5', 
+      price: '2650.00', 
+      status: 'open',
+      created_at: '2024-01-15T09:15:00Z'
+    },
   ];
 
-  const mockOpenOrders = [
-    { id: '1', pair: 'BTC/USDT', side: 'buy', type: 'limit', amount: '0.025', price: '43000.00', status: 'open' },
-    { id: '2', pair: 'ETH/USDT', side: 'sell', type: 'limit', amount: '0.5', price: '2650.00', status: 'open' },
-  ];
+  // Handle order placement
+  const handlePlaceOrder = async (orderData: {
+    side: 'buy' | 'sell';
+    type: 'market' | 'limit';
+    amount: number;
+    price?: number;
+  }) => {
+    try {
+      const result = await placeOrder({
+        symbol: selectedPair,
+        side: orderData.side,
+        type: orderData.type,
+        quantity: orderData.amount,
+        price: orderData.price,
+        time_in_force: 'GTC'
+      });
+
+      if (result.success) {
+        toast({
+          title: "Order Placed Successfully",
+          description: `${orderData.side.toUpperCase()} order for ${orderData.amount} ${selectedPair.split('/')[0]}`,
+        });
+      }
+    } catch (error) {
+      console.error('Order placement failed:', error);
+    }
+  };
+
+  // Handle order cancellation
+  const handleCancelOrder = async (orderId: string) => {
+    const result = await cancelOrder(orderId);
+    if (result.success) {
+      toast({
+        title: "Order Cancelled",
+        description: "Order cancelled successfully",
+      });
+    }
+  };
+
+  // Handle price click from order book
+  const handleOrderBookPriceClick = (price: number, side: 'buy' | 'sell') => {
+    setOrderType('limit');
+    setOrderSide(side);
+    // Would set price in the order form
+  };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate(-1)}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-lg font-semibold">Spot Trading</h1>
+      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="hover:bg-muted/50"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-semibold">Spot Trading</h1>
+              <div className="flex items-center gap-2 mt-1">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span className="text-xs text-muted-foreground">
+                  {isConnected ? 'Connected' : 'Connecting...'}
+                </span>
+              </div>
+            </div>
+          </div>
+          <Badge variant="outline" className="text-xs">
+            <Activity className="w-3 h-3 mr-1" />
+            Live Market
+          </Badge>
         </div>
       </div>
 
       {/* Market Selector */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border bg-gradient-to-r from-background to-muted/20">
         <Select value={selectedPair} onValueChange={setSelectedPair}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full bg-card border-border hover:bg-muted/50 transition-colors">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            {tradingPairs.map((pair) => (
-              <SelectItem key={pair} value={pair}>
+          <SelectContent className="bg-card border-border">
+            {tradingPairs.map((pairData) => (
+              <SelectItem key={pairData.symbol} value={pairData.symbol} className="hover:bg-muted/50">
                 <div className="flex items-center justify-between w-full">
-                  <span className="font-medium">{pair}</span>
+                  <span className="font-medium">{pairData.symbol}</span>
                   <div className="text-right ml-4">
                     <div className="text-sm font-semibold">
-                      {pair === selectedPair ? mockPrice.toLocaleString() : (Math.random() * 1000).toFixed(2)}
+                      ${pairData.price.toLocaleString()}
                     </div>
-                    <div className={`text-xs ${mockChange > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {mockChange > 0 ? '+' : ''}{mockChange}%
+                    <div className={`text-xs flex items-center gap-1 ${
+                      pairData.change > 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                      {pairData.change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                      {pairData.change > 0 ? '+' : ''}{pairData.change}%
                     </div>
                   </div>
                 </div>
@@ -87,251 +205,159 @@ const TradingScreen = () => {
           </SelectContent>
         </Select>
         
-        {/* Price Display */}
-        <div className="flex items-center justify-between mt-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold">${mockPrice.toLocaleString()}</span>
-            <div className={`flex items-center gap-1 ${mockChange > 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {mockChange > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-              <span className="text-sm font-medium">{mockChange > 0 ? '+' : ''}{mockChange}%</span>
+        {/* Enhanced Price Display */}
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              ${currentPrice.toLocaleString()}
+            </span>
+            <div className={`flex items-center gap-2 px-2 py-1 rounded-full ${
+              changePercent > 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
+            }`}>
+              {changePercent > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+              <span className="text-sm font-medium">{changePercent > 0 ? '+' : ''}{changePercent.toFixed(2)}%</span>
+            </div>
+          </div>
+          
+          {/* 24h Stats */}
+          <div className="text-right">
+            <div className="text-xs text-muted-foreground">24h Volume</div>
+            <div className="text-sm font-medium">
+              {currentTicker?.volume24h?.toLocaleString() || '12,345,678'} {selectedPair.split('/')[0]}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Chart Placeholder */}
+      {/* Price Chart */}
       <div className="p-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center h-48 bg-muted/50 rounded border-2 border-dashed border-muted-foreground/25">
-              <div className="text-center">
-                <BarChart3 className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Price Chart</p>
-                <p className="text-xs text-muted-foreground/70">TradingView integration coming soon</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <PriceChart symbol={selectedPair} height={280} />
       </div>
 
       {/* Order Book & Recent Trades */}
       <div className="p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Order Book */}
-          <Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <EnhancedOrderBook
+            orderBook={currentOrderBook}
+            currentPrice={currentPrice}
+            changePercent={changePercent}
+            onPriceClick={handleOrderBookPriceClick}
+          />
+          
+          <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Order Book</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Recent Trades
+                <Badge variant="secondary" className="text-xs ml-auto">
+                  {currentTrades.length}
+                </Badge>
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {/* Asks */}
-              <div className="space-y-1">
-                <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground pb-1 border-b">
-                  <span>Price (USDT)</span>
-                  <span className="text-right">Amount (BTC)</span>
-                  <span className="text-right">Total</span>
-                </div>
-                {mockOrderBook.asks.map((ask, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-2 text-xs text-red-500">
-                    <span>{ask.price.toLocaleString()}</span>
-                    <span className="text-right">{ask.quantity}</span>
-                    <span className="text-right">{ask.total.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Current Price */}
-              <div className="py-2 text-center border-y border-border">
-                <span className="text-lg font-bold">${mockPrice.toLocaleString()}</span>
-              </div>
-
-              {/* Bids */}
-              <div className="space-y-1">
-                {mockOrderBook.bids.map((bid, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-2 text-xs text-green-500">
-                    <span>{bid.price.toLocaleString()}</span>
-                    <span className="text-right">{bid.quantity}</span>
-                    <span className="text-right">{bid.total.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Trades */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Recent Trades</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground pb-1 border-b">
-                  <span>Price</span>
-                  <span className="text-right">Amount</span>
-                  <span className="text-right">Time</span>
-                </div>
-                {mockTrades.map((trade, i) => (
-                  <div key={i} className={`grid grid-cols-3 gap-2 text-xs ${trade.side === 'buy' ? 'text-green-500' : 'text-red-500'}`}>
-                    <span>{trade.price.toLocaleString()}</span>
-                    <span className="text-right">{trade.quantity}</span>
-                    <span className="text-right text-muted-foreground">{trade.time}</span>
-                  </div>
-                ))}
-              </div>
+            <CardContent className="p-0">
+              <RecentTrades trades={currentTrades.slice(0, 15).map(trade => ({
+                ...trade,
+                timestamp: trade.time
+              }))} />
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Place Order Form */}
+      {/* Trading Order Form */}
       <div className="p-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Place Order</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Buy/Sell Toggle */}
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={orderSide === 'buy' ? 'default' : 'outline'}
-                onClick={() => setOrderSide('buy')}
-                className={orderSide === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white'}
-              >
-                Buy
-              </Button>
-              <Button
-                variant={orderSide === 'sell' ? 'default' : 'outline'}
-                onClick={() => setOrderSide('sell')}
-                className={orderSide === 'sell' ? 'bg-red-600 hover:bg-red-700' : 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white'}
-              >
-                Sell
-              </Button>
-            </div>
-
-            {/* Order Type */}
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={orderType === 'market' ? 'default' : 'outline'}
-                onClick={() => setOrderType('market')}
-                size="sm"
-              >
-                Market
-              </Button>
-              <Button
-                variant={orderType === 'limit' ? 'default' : 'outline'}
-                onClick={() => setOrderType('limit')}
-                size="sm"
-              >
-                Limit
-              </Button>
-            </div>
-
-            {/* Price (for limit orders) */}
-            {orderType === 'limit' && (
-              <div className="space-y-2">
-                <Label className="text-xs">Price (USDT)</Label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* Amount */}
-            <div className="space-y-2">
-              <Label className="text-xs">Amount (BTC)</Label>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </div>
-
-            {/* Balance Display */}
-            <div className="text-xs p-2 bg-muted/50 rounded">
-              <div className="flex justify-between">
-                <span>Available:</span>
-                <span>{orderSide === 'buy' ? '1,000.00 USDT' : '0.1000 BTC'}</span>
-              </div>
-            </div>
-
-            {/* Total and Fee Preview */}
-            {amount && (
-              <div className="text-xs space-y-1 p-2 bg-muted/50 rounded">
-                <div className="flex justify-between">
-                  <span>Est. Total:</span>
-                  <span>
-                    {orderType === 'market' 
-                      ? (parseFloat(amount) * mockPrice).toLocaleString()
-                      : price ? (parseFloat(amount) * parseFloat(price)).toLocaleString() : '0'
-                    } USDT
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Est. Fee:</span>
-                  <span>0.1% (0.0001 USDT)</span>
-                </div>
-              </div>
-            )}
-
-            <Button 
-              className={`w-full ${orderSide === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
-              disabled={!amount || (orderType === 'limit' && !price)}
-            >
-              {orderSide === 'buy' ? 'Buy' : 'Sell'} {selectedPair.split('/')[0]}
-            </Button>
-          </CardContent>
-        </Card>
+        <TradingOrderForm
+          selectedPair={selectedPair}
+          orderSide={orderSide}
+          onOrderSideChange={setOrderSide}
+          orderType={orderType}
+          onOrderTypeChange={setOrderType}
+          currentPrice={currentPrice}
+          availableBalance={availableBalance}
+          onPlaceOrder={handlePlaceOrder}
+          isLoading={loading}
+        />
       </div>
 
       {/* Open Orders & Trade History */}
-      <div className="p-4">
-        <Card>
+      <div className="p-4 pb-20">
+        <Card className="bg-gradient-card shadow-card border-0">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Open Orders & Trade History</CardTitle>
+            <CardTitle className="text-sm flex items-center justify-between">
+              Orders & History
+              <Badge variant="outline" className="text-xs">
+                {mockOpenOrders.length} active
+              </Badge>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="open" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="open">Open Orders</TabsTrigger>
-                <TabsTrigger value="history">Trade History</TabsTrigger>
+                <TabsTrigger value="open" className="text-xs">
+                  Open Orders ({mockOpenOrders.length})
+                </TabsTrigger>
+                <TabsTrigger value="history" className="text-xs">
+                  Trade History
+                </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="open" className="space-y-2 mt-4">
+              <TabsContent value="open" className="space-y-3 mt-4">
                 {mockOpenOrders.length > 0 ? (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground pb-1 border-b">
-                      <span>Pair</span>
-                      <span>Side</span>
-                      <span>Amount</span>
-                      <span>Price</span>
-                      <span>Action</span>
-                    </div>
+                  <div className="space-y-3">
                     {mockOpenOrders.map((order) => (
-                      <div key={order.id} className="grid grid-cols-5 gap-2 text-xs items-center">
-                        <span>{order.pair}</span>
-                        <span className={order.side === 'buy' ? 'text-green-500' : 'text-red-500'}>
-                          {order.side.toUpperCase()}
-                        </span>
-                        <span>{order.amount}</span>
-                        <span>${order.price}</span>
-                        <Button size="sm" variant="outline" className="h-6 text-xs">
-                          Cancel
-                        </Button>
+                      <div key={order.id} className="p-3 bg-muted/30 rounded-lg border">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant={order.side === 'buy' ? 'default' : 'destructive'}
+                              className="text-xs"
+                            >
+                              {order.side.toUpperCase()}
+                            </Badge>
+                            <span className="text-sm font-medium">{order.pair}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {order.type}
+                            </Badge>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-6 text-xs hover:bg-red-500 hover:text-white transition-colors"
+                            onClick={() => handleCancelOrder(order.id)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Amount:</span>
+                            <div className="font-medium">{order.amount}</div>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Price:</span>
+                            <div className="font-medium">${order.price}</div>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Status:</span>
+                            <div className="font-medium capitalize">{order.status}</div>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No open orders</p>
+                    <p className="text-xs mt-1">Place your first order above</p>
                   </div>
                 )}
               </TabsContent>
               
               <TabsContent value="history" className="mt-4">
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-12 text-muted-foreground">
+                  <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No trade history</p>
                   <p className="text-xs mt-1">Your completed trades will appear here</p>
                 </div>
