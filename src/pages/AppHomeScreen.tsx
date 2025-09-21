@@ -21,7 +21,7 @@ import bgIpgLogo from "@/assets/bg-ipg-logo.png";
 import bgCryptoBlockchain from "@/assets/bg-crypto-blockchain.png";
 import bgHolographicCircuit from "@/assets/bg-holographic-circuit.png";
 import bgCryptoMobile from "@/assets/bg-crypto-mobile.png";
-import ipgLogo3D from "@/assets/ipg-logo-3d.png";
+import ipgLogoPremium from "@/assets/ipg-logo-premium.jpg";
 
 const AppHomeScreen = () => {
   const navigate = useNavigate();
@@ -131,7 +131,7 @@ const AppHomeScreen = () => {
         <CyberHeader
           title="I-SMART"
           subtitle="Welcome back to your digital future"
-          logo={ipgLogo3D}
+          logo={ipgLogoPremium}
           kpis={kpis}
           actions={
             <div className="flex items-center gap-3">

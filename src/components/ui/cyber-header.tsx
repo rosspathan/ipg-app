@@ -51,15 +51,18 @@ const CyberHeader: React.FC<CyberHeaderProps> = ({
             </Button>
           )}
           {logo && (
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-gradient-primary p-0.5">
-                <img 
-                  src={logo}
-                  alt="Logo" 
-                  className="w-full h-full rounded-full object-cover bg-background"
-                />
+            <div className="relative group">
+              <div className="w-12 h-12 rounded-xl bg-gradient-primary p-0.5 shadow-neon">
+                <div className="w-full h-full rounded-xl bg-background/90 backdrop-blur-sm flex items-center justify-center overflow-hidden">
+                  <img 
+                    src={logo}
+                    alt="IPG I-SMART Logo" 
+                    className="w-11 h-11 object-contain filter drop-shadow-lg transition-all duration-300 group-hover:scale-105"
+                  />
+                </div>
               </div>
-              <div className="absolute inset-0 bg-gradient-ring rounded-full opacity-30 animate-neon-pulse" />
+              <div className="absolute inset-0 bg-gradient-ring rounded-xl opacity-0 group-hover:opacity-40 transition-all duration-300 animate-glow-pulse" />
+              <div className="absolute -inset-1 bg-gradient-primary rounded-xl opacity-20 blur-sm animate-neon-pulse" />
             </div>
           )}
           <div>
