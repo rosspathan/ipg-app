@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Zap, Clock, Coins, Home, Wallet, TrendingUp, User } from "lucide-react";
+import { ArrowLeft, Zap, Clock, Coins } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -400,50 +400,6 @@ const { user, session } = useAuthUser();
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-700">
-        <div className="grid grid-cols-4 gap-1 p-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/app/home")}
-            className="flex flex-col items-center gap-1 h-16 text-slate-400 hover:text-white hover:bg-slate-800"
-          >
-            <Home className="h-5 w-5" />
-            <span className="text-xs">Home</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/app/wallet")}
-            className="flex flex-col items-center gap-1 h-16 text-slate-400 hover:text-white hover:bg-slate-800"
-          >
-            <Wallet className="h-5 w-5" />
-            <span className="text-xs">Wallet</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/app/markets")}
-            className="flex flex-col items-center gap-1 h-16 text-slate-400 hover:text-white hover:bg-slate-800"
-          >
-            <TrendingUp className="h-5 w-5" />
-            <span className="text-xs">Markets</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/app/profile")}
-            className="flex flex-col items-center gap-1 h-16 text-slate-400 hover:text-white hover:bg-slate-800"
-          >
-            <User className="h-5 w-5" />
-            <span className="text-xs">Profile</span>
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
