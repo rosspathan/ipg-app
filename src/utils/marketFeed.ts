@@ -186,7 +186,7 @@ class BinanceWebSocketClient {
     const ticker: MarketTicker = {
       symbol,
       lastPrice: parseFloat(data.c || data.lastPrice),
-      priceChange24h: parseFloat(data.P || data.priceChange),
+      priceChange24h: parseFloat(data.p || data.priceChange),
       priceChangePercent24h: parseFloat(data.P || data.priceChangePercent),
       high24h: parseFloat(data.h || data.highPrice),
       low24h: parseFloat(data.l || data.lowPrice),

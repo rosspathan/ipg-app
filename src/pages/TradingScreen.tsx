@@ -219,24 +219,29 @@ const TradingScreen = () => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-card border-border">
-            {tradingPairs.map((pairData) => (
-              <SelectItem key={pairData.symbol} value={pairData.symbol} className="hover:bg-muted/50">
-                <div className="flex items-center justify-between w-full">
-                  <span className="font-medium">{pairData.symbol}</span>
-                  <div className="text-right ml-4">
-                    <div className="text-sm font-semibold">
-                      ${pairData.price.toLocaleString()}
-                    </div>
-                    <div className={`text-xs flex items-center gap-1 ${
-                      pairData.change > 0 ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                      {pairData.change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      {pairData.change > 0 ? '+' : ''}{pairData.change}%
+            {tradingPairs.map((pairData) => {
+              const liveTicker = useMarketStore.getState().tickers[pairData.symbol];
+              const price = liveTicker?.lastPrice ?? pairData.price;
+              const change = liveTicker?.priceChangePercent24h ?? pairData.change;
+              return (
+                <SelectItem key={pairData.symbol} value={pairData.symbol} className="hover:bg-muted/50">
+                  <div className="flex items-center justify-between w-full">
+                    <span className="font-medium">{pairData.symbol}</span>
+                    <div className="text-right ml-4">
+                      <div className="text-sm font-semibold">
+                        ${price.toLocaleString()}
+                      </div>
+                      <div className={`text-xs flex items-center gap-1 ${
+                        (change ?? 0) > 0 ? 'text-green-500' : 'text-red-500'
+                      }`}>
+                        {(change ?? 0) > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {(change ?? 0) > 0 ? '+' : ''}{(change ?? 0).toFixed(2)}%
+                      </div>
                     </div>
                   </div>
-                </div>
-              </SelectItem>
-            ))}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
         
