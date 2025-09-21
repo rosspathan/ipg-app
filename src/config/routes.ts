@@ -213,7 +213,7 @@ export const AUTH_STACK_ROUTES = [
 export const USER_TAB_ROUTES = [
   { route: ROUTES.APP_HOME, label: 'Home', icon: 'Home' },
   { route: ROUTES.APP_WALLET, label: 'Wallet', icon: 'Wallet' },
-  { route: ROUTES.APP_MARKETS, label: 'Markets', icon: 'TrendingUp' },
+  { route: ROUTES.APP_TRADE, label: 'Trading', icon: 'TrendingUp' },
   { route: ROUTES.APP_SWAP, label: 'Swap', icon: 'ArrowUpDown' },
   { route: ROUTES.APP_PROGRAMS, label: 'Programs', icon: 'Gift' },
   { route: ROUTES.APP_PROFILE, label: 'Profile', icon: 'User' }
