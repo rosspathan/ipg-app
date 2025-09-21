@@ -61,8 +61,8 @@ const AppHomeScreen = () => {
       badge: "HOT"
     },
     {
-      title: "Spin & Win",
-      description: "Daily rewards and jackpots await", 
+      title: "BSK Fortune Wheel",
+      description: "Spin to win or lose BSK Coins! Futuristic wheel with premium design", 
       icon: Zap,
       color: "text-primary", 
       action: () => navigate("/app/spin"),
