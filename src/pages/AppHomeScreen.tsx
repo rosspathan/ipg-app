@@ -147,40 +147,9 @@ const AppHomeScreen = () => {
           style={{ animationDelay: "250ms", animationFillMode: "both" }}
         />
 
-        {/* Top Ad Banner */}
+        {/* Ad Banner */}
         <AdCarousel 
           placement="home_top" 
-          className="animate-fade-in-scale" 
-        />
-
-        {/* Quick Actions Grid - Cyberpunk Style */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-foreground tracking-tight">Quick Access</h3>
-          <div className="grid grid-cols-4 gap-3">
-            {quickActions.slice(0, 8).map((action, index) => (
-              <NeonIconTile
-                key={action.name}
-                icon={action.icon}
-                label={action.name}
-                variant={action.variant}
-                badge={action.badge}
-                glow={index === 0 ? "strong" : index < 4 ? "subtle" : "none"}
-                onClick={() => navigate(action.route)}
-                className={cn(
-                  "animate-slide-up-stagger"
-                )}
-                style={{ 
-                  animationDelay: `${300 + index * 60}ms`,
-                  animationFillMode: "both"
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Mid Ad Banner */}
-        <AdCarousel 
-          placement="home_mid" 
           className="animate-fade-in-scale" 
         />
 
