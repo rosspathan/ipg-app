@@ -9,9 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Key, Plus, Trash2, Eye, EyeOff, AlertTriangle, Loader2 } from "lucide-react";
 import { useApiKeys } from "@/hooks/useApiKeys";
+import { useToast } from "@/hooks/use-toast";
+import { copyToClipboard } from "@/utils/clipboard";
 
 export const ApiKeysTab = () => {
   const { apiKeys, loading, createApiKey, revokeApiKey } = useApiKeys();
+  const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newKeyLabel, setNewKeyLabel] = useState("");
   const [createdKey, setCreatedKey] = useState<{ key: string; preview: string } | null>(null);
@@ -110,7 +113,21 @@ export const ApiKeysTab = () => {
                           </Button>
                           <Button
                             variant="outline"
-                            onClick={() => navigator.clipboard.writeText(createdKey.key)}
+                            onClick={async () => {
+                              const success = await copyToClipboard(createdKey.key);
+                              if (success) {
+                                toast({
+                                  title: "Copied!",
+                                  description: "API key copied to clipboard",
+                                });
+                              } else {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to copy API key",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
                           >
                             Copy
                           </Button>

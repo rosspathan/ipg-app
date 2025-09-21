@@ -6,6 +6,7 @@ import { useWeb3 } from "@/contexts/Web3Context";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import QRCode from "qrcode";
+import { copyToClipboard } from "@/utils/clipboard";
 
 const BSCWalletInfo = () => {
   const { wallet, network, getBalance } = useWeb3();
@@ -30,13 +31,14 @@ const BSCWalletInfo = () => {
   if (!wallet) return null;
 
   const handleCopyAddress = async () => {
-    try {
-      await navigator.clipboard.writeText(wallet.address);
+    const success = await copyToClipboard(wallet.address);
+    
+    if (success) {
       toast({
         title: "Copied!",
         description: "Wallet address copied to clipboard",
       });
-    } catch (err) {
+    } else {
       toast({
         title: "Error",
         description: "Failed to copy address",

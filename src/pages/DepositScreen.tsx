@@ -11,6 +11,7 @@ import { useCatalog } from "@/hooks/useCatalog";
 import AssetLogo from "@/components/AssetLogo";
 import QRCode from "qrcode";
 import INRDepositScreen from "./INRDepositScreen";
+import { copyToClipboard } from "@/utils/clipboard";
 
 const DepositScreen = () => {
   const navigate = useNavigate();
@@ -78,7 +79,7 @@ const DepositScreen = () => {
     );
   }
 
-  const copyAddress = () => {
+  const copyAddress = async () => {
     if (!wallet?.address) {
       toast({
         title: "No Wallet Connected",
@@ -88,11 +89,20 @@ const DepositScreen = () => {
       return;
     }
     
-    navigator.clipboard.writeText(wallet.address);
-    toast({
-      title: "Address Copied",
-      description: "Your BSC wallet address has been copied to clipboard",
-    });
+    const success = await copyToClipboard(wallet.address);
+    
+    if (success) {
+      toast({
+        title: "Address Copied",
+        description: "Your BSC wallet address has been copied to clipboard",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to copy address",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Copy, Download, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { copyToClipboard } from "@/utils/clipboard";
 import { useWeb3 } from "@/contexts/Web3Context";
 import { Buffer } from 'buffer';
 import * as bip39 from "bip39";
@@ -23,13 +24,14 @@ const CreateWalletScreen = () => {
   }, []);
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(seedPhrase.join(" "));
+    const success = await copyToClipboard(seedPhrase.join(" "));
+    
+    if (success) {
       toast({
         title: "Copied!",
         description: "Seed phrase copied to clipboard",
       });
-    } catch (err) {
+    } else {
       toast({
         title: "Error",
         description: "Failed to copy seed phrase",

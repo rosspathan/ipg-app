@@ -11,6 +11,7 @@ import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { AdCarousel } from "@/components/AdCarousel";
 import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
 import bgOption1 from "@/assets/bg-option-1.png";
 import bgOption2 from "@/assets/bg-option-2.png";
@@ -91,14 +92,23 @@ const AppHomeScreen = () => {
     navigate("/app/wallet/deposit");
   };
 
-  const handleCopyAddress = () => {
+  const handleCopyAddress = async () => {
     // Mock wallet address
     const address = "0x742d35Cc6135C5C8C91b8f54534d7134E6faE9A2";
-    navigator.clipboard.writeText(address);
-    toast({
-      title: "Address Copied",
-      description: "Wallet address copied to clipboard",
-    });
+    const success = await copyToClipboard(address);
+    
+    if (success) {
+      toast({
+        title: "Address Copied",
+        description: "Wallet address copied to clipboard",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to copy address",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

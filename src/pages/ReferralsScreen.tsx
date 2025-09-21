@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Copy, Users, Gift, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { copyToClipboard } from "@/utils/clipboard";
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useReferralProgram } from '@/hooks/useReferralProgram';
 
@@ -26,13 +27,23 @@ const ReferralsScreen = () => {
 
   const referralLink = user ? `${window.location.origin}/auth/register?ref=${user.id}` : "";
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
     if (!referralLink) {
       toast({ title: "Sign in required", description: "Login to get your personal referral link" });
       return;
     }
-    navigator.clipboard.writeText(referralLink);
-    toast({ title: "Link Copied!", description: "Referral link copied to clipboard" });
+    
+    const success = await copyToClipboard(referralLink);
+    
+    if (success) {
+      toast({ title: "Link Copied!", description: "Referral link copied to clipboard" });
+    } else {
+      toast({ 
+        title: "Error", 
+        description: "Failed to copy referral link",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) {

@@ -10,6 +10,7 @@ import { useAuthUser } from '@/hooks/useAuthUser';
 import { useReferralProgram } from '@/hooks/useReferralProgram';
 import { useBalanceSlabs } from "@/hooks/useBalanceSlabs";
 import { useToast } from '@/hooks/use-toast';
+import { copyToClipboard } from "@/utils/clipboard";
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ReferralProgramScreen = () => {
@@ -40,13 +41,14 @@ const ReferralProgramScreen = () => {
   );
 
   const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(referralLink);
+    const success = await copyToClipboard(referralLink);
+    
+    if (success) {
       toast({
         title: "Copied!",
         description: "Referral link copied to clipboard",
       });
-    } catch (error) {
+    } else {
       toast({
         title: "Error",
         description: "Failed to copy referral link",

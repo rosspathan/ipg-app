@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Upload, Copy, QrCode, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { copyToClipboard as copyTextToClipboard } from "@/utils/clipboard";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useINRFunding } from "@/hooks/useINRFunding";
@@ -295,12 +296,21 @@ const INRDepositScreen = () => {
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied",
-      description: "Copied to clipboard",
-    });
+  const copyToClipboard = async (text: string) => {
+    const success = await copyTextToClipboard(text);
+    
+    if (success) {
+      toast({
+        title: "Copied",
+        description: "Copied to clipboard",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {

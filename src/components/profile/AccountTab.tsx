@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Copy, Loader2 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
+import { copyToClipboard } from "@/utils/clipboard";
 
 interface AccountFormData {
   display_name: string;
@@ -43,13 +44,22 @@ export const AccountTab = () => {
     }
   };
 
-  const copyReferralCode = () => {
+  const copyReferralCode = async () => {
     if (userApp) {
-      navigator.clipboard.writeText(userApp.id);
-      toast({
-        title: "Copied",
-        description: "Referral code copied to clipboard",
-      });
+      const success = await copyToClipboard(userApp.id);
+      
+      if (success) {
+        toast({
+          title: "Copied",
+          description: "Referral code copied to clipboard",
+        });
+      } else {
+        toast({
+          title: "Error", 
+          description: "Failed to copy referral code",
+          variant: "destructive",
+        });
+      }
     }
   };
 
