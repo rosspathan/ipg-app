@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-wallet-address, x-local-auth",
 };
 
 serve(async (req) => {
@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { wheel_id } = await req.json();
+    const { wheel_id, wallet_address, local_auth } = await req.json();
     
     if (!wheel_id) {
       throw new Error("wheel_id is required");
@@ -31,16 +31,50 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Get authenticated user
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user } } = await supabaseAuth.auth.getUser(token);
+    // Determine authentication method and get user ID
+    let userId: string;
+    let authMethod: string;
     
-    if (!user) {
-      throw new Error("Authentication required");
-    }
+    const authHeader = req.headers.get("Authorization");
+    const walletHeader = req.headers.get("x-wallet-address");
+    const localAuthHeader = req.headers.get("x-local-auth");
 
-    console.log(`Spin request from user ${user.id} for wheel ${wheel_id}`);
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      // Supabase authentication
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabaseAuth.auth.getUser(token);
+      
+      if (!user) {
+        throw new Error("Invalid Supabase authentication");
+      }
+      
+      userId = user.id;
+      authMethod = "supabase";
+      console.log(`Spin request from Supabase user ${userId} for wheel ${wheel_id}`);
+      
+    } else if (wallet_address || walletHeader) {
+      // Web3 wallet authentication
+      const address = wallet_address || walletHeader;
+      if (!address) {
+        throw new Error("Wallet address required for Web3 authentication");
+      }
+      
+      // Use wallet address as pseudo user ID (prefixed to avoid conflicts)
+      userId = `wallet_${address.toLowerCase()}`;
+      authMethod = "web3";
+      console.log(`Spin request from Web3 wallet ${address} for wheel ${wheel_id}`);
+      
+    } else if (local_auth === true || localAuthHeader === "true") {
+      // Local security authentication
+      // Use a temporary ID based on request timestamp and IP (for demo purposes)
+      const clientIP = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+      userId = `local_${clientIP}_${Date.now()}`;
+      authMethod = "local";
+      console.log(`Spin request from local auth user ${userId} for wheel ${wheel_id}`);
+      
+    } else {
+      throw new Error("Authentication required - provide Supabase token, wallet address, or local auth");
+    }
 
     // 1. Load active wheel and segments
     const { data: wheel, error: wheelError } = await supabaseService
@@ -81,7 +115,7 @@ serve(async (req) => {
       .from("spin_user_limits")
       .select("*")
       .eq("wheel_id", wheel_id)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("day", today)
       .single();
 
@@ -116,7 +150,7 @@ serve(async (req) => {
         .from("spin_runs")
         .select("*", { count: "exact", head: true })
         .eq("wheel_id", wheel_id)
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
       if (count && count >= wheel.max_spins_per_user) {
         throw new Error("Maximum spins per user reached");
@@ -136,8 +170,14 @@ serve(async (req) => {
       console.log(`Charging ${ticketCost} ${ticketCurrency}`);
       
       if (ticketCost > 0) {
-        // For MVP, we'll just log the charge - implement actual balance checking/deduction later
-        console.log(`TODO: Deduct ${ticketCost} ${ticketCurrency} from user ${user.id}`);
+        // For non-Supabase users, skip balance checking for now (free spins only)
+        if (authMethod !== "supabase") {
+          console.log(`Non-Supabase user - allowing free spin only`);
+          ticketCost = 0; // Override to free for demo
+        } else {
+          // For MVP, we'll just log the charge - implement actual balance checking/deduction later
+          console.log(`TODO: Deduct ${ticketCost} ${ticketCurrency} from user ${userId}`);
+        }
       }
     }
 
@@ -177,7 +217,7 @@ serve(async (req) => {
       .from("spin_runs")
       .insert({
         wheel_id: wheel_id,
-        user_id: user.id,
+        user_id: userId,
         segment_id: winningSegment.id,
         ticket_cost: ticketCost,
         ticket_currency: ticketCurrency,
@@ -191,18 +231,18 @@ serve(async (req) => {
       throw new Error(`Failed to create spin run: ${runError.message}`);
     }
 
-    // 6. Grant rewards and update BSK balance
+    // 6. Grant rewards and update BSK balance (only for Supabase users for now)
     if (winningSegment.reward_type === "token" && winningSegment.reward_token === "BSK" && winningSegment.reward_value !== null) {
       // Create grant record
       const { error: grantError } = await supabaseService
         .from("spin_grants")
         .insert({
           run_id: spinRun.id,
-          user_id: user.id,
+          user_id: userId,
           type: winningSegment.reward_type,
           value: winningSegment.reward_value,
           token: winningSegment.reward_token,
-          meta: { segment_label: winningSegment.label }
+          meta: { segment_label: winningSegment.label, auth_method: authMethod }
         });
 
       if (grantError) {
@@ -210,51 +250,55 @@ serve(async (req) => {
       } else {
         console.log(`Granted ${winningSegment.reward_value} ${winningSegment.reward_token}`);
         
-        // Update BSK bonus balance
-        try {
-          // Get BSK asset ID
-          const { data: bskAsset } = await supabaseService
-            .from("bonus_assets")
-            .select("id")
-            .eq("symbol", "BSK")
-            .single();
-          
-          if (bskAsset) {
-            // Get current balance or create new record
-            const { data: currentBalance } = await supabaseService
-              .from("wallet_bonus_balances")
-              .select("balance")
-              .eq("user_id", user.id)
-              .eq("asset_id", bskAsset.id)
+        // Update BSK bonus balance (only for Supabase authenticated users)
+        if (authMethod === "supabase") {
+          try {
+            // Get BSK asset ID
+            const { data: bskAsset } = await supabaseService
+              .from("bonus_assets")
+              .select("id")
+              .eq("symbol", "BSK")
               .single();
             
-            const newBalance = (currentBalance?.balance || 0) + winningSegment.reward_value;
-            
-            if (currentBalance) {
-              // Update existing balance
-              await supabaseService
+            if (bskAsset) {
+              // Get current balance or create new record
+              const { data: currentBalance } = await supabaseService
                 .from("wallet_bonus_balances")
-                .update({ 
-                  balance: newBalance,
-                  updated_at: new Date().toISOString()
-                })
-                .eq("user_id", user.id)
-                .eq("asset_id", bskAsset.id);
-            } else {
-              // Create new balance record
-              await supabaseService
-                .from("wallet_bonus_balances")
-                .insert({
-                  user_id: user.id,
-                  asset_id: bskAsset.id,
-                  balance: newBalance
-                });
+                .select("balance")
+                .eq("user_id", userId)
+                .eq("asset_id", bskAsset.id)
+                .single();
+              
+              const newBalance = (currentBalance?.balance || 0) + winningSegment.reward_value;
+              
+              if (currentBalance) {
+                // Update existing balance
+                await supabaseService
+                  .from("wallet_bonus_balances")
+                  .update({ 
+                    balance: newBalance,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq("user_id", userId)
+                  .eq("asset_id", bskAsset.id);
+              } else {
+                // Create new balance record
+                await supabaseService
+                  .from("wallet_bonus_balances")
+                  .insert({
+                    user_id: userId,
+                    asset_id: bskAsset.id,
+                    balance: newBalance
+                  });
+              }
+              
+              console.log(`Updated BSK balance: ${newBalance} (${winningSegment.reward_value > 0 ? '+' : ''}${winningSegment.reward_value})`);
             }
-            
-            console.log(`Updated BSK balance: ${newBalance} (${winningSegment.reward_value > 0 ? '+' : ''}${winningSegment.reward_value})`);
+          } catch (balanceError) {
+            console.error("Failed to update BSK balance:", balanceError);
           }
-        } catch (balanceError) {
-          console.error("Failed to update BSK balance:", balanceError);
+        } else {
+          console.log(`Reward granted but balance not updated for non-Supabase user (${authMethod})`);
         }
       }
     }
@@ -276,7 +320,7 @@ serve(async (req) => {
         .from("spin_user_limits")
         .insert({
           wheel_id: wheel_id,
-          user_id: user.id,
+          user_id: userId,
           day: today,
           spins_today: 1
         });

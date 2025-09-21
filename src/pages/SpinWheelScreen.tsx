@@ -6,6 +6,8 @@ import { ArrowLeft, Zap, Clock, Coins } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { useWeb3 } from "@/contexts/Web3Context";
+import { hasLocalSecurity } from "@/utils/localSecurityStorage";
 import { FuturisticSpinWheel } from "@/components/gamification/FuturisticSpinWheel";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { cn } from "@/lib/utils";
@@ -41,7 +43,8 @@ interface SpinRun {
 export default function SpinWheelScreen() {
   const navigate = useNavigate();
   const { toast } = useToast();
-const { user, session } = useAuthUser();
+  const { user, session } = useAuthUser();
+  const { wallet, isConnected } = useWeb3();
   const [wheel, setWheel] = useState<SpinWheel | null>(null);
   const [segments, setSegments] = useState<SpinSegment[]>([]);
   const [recentRuns, setRecentRuns] = useState<SpinRun[]>([]);
@@ -187,20 +190,26 @@ const { user, session } = useAuthUser();
   };
 
   const handleSpin = async () => {
+    // Check if user is authenticated via any method
+    const isAuthenticated = !!(user && session) || isConnected || hasLocalSecurity();
+    
     console.log("🎯 Spin button clicked!", { 
       wheel: !!wheel, 
       isSpinning, 
       cooldownRemaining, 
       session: !!session,
+      isConnected,
+      hasLocalSec: hasLocalSecurity(),
+      isAuthenticated,
       segments: segments.length 
     });
     
-    if (!wheel || isSpinning || cooldownRemaining > 0 || !session) {
+    if (!wheel || isSpinning || cooldownRemaining > 0 || !isAuthenticated) {
       console.log("🎯 Spin blocked:", { 
         noWheel: !wheel, 
         isSpinning, 
         cooldownRemaining, 
-        noSession: !session 
+        noAuth: !isAuthenticated 
       });
       return;
     }
@@ -214,11 +223,27 @@ const { user, session } = useAuthUser();
 
     try {
       console.log("🎯 Calling spin-execute function...");
+      
+      // Prepare authentication headers and body based on auth method
+      let headers: Record<string, string> = {};
+      let body: Record<string, any> = { wheel_id: wheel.id };
+      
+      if (session?.access_token) {
+        // Supabase authentication
+        headers.Authorization = `Bearer ${session.access_token}`;
+      } else if (isConnected && wallet?.address) {
+        // Web3 authentication
+        headers['X-Wallet-Address'] = wallet.address;
+        body.wallet_address = wallet.address;
+      } else if (hasLocalSecurity()) {
+        // Local security authentication
+        headers['X-Local-Auth'] = 'true';
+        body.local_auth = true;
+      }
+      
       const { data, error } = await supabase.functions.invoke("spin-execute", {
-        body: { wheel_id: wheel.id },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
+        body,
+        headers
       });
 
       console.log("🎯 Spin execute response:", { data, error });
@@ -266,15 +291,20 @@ const { user, session } = useAuthUser();
     return minutes > 0 ? `${minutes}:${secs.toString().padStart(2, '0')}` : `${secs}s`;
   };
 
-  const canSpin = !isSpinning && cooldownRemaining === 0 && !!wheel && !!session && segments.length > 0;
+  // Check if user is authenticated via any method
+  const isAuthenticated = !!(user && session) || isConnected || hasLocalSecurity();
+  const canSpin = !isSpinning && cooldownRemaining === 0 && !!wheel && isAuthenticated && segments.length > 0;
 
   console.log("🔍 Spin button state:", {
     isSpinning,
     cooldownRemaining,
     hasWheel: !!wheel,
     hasSession: !!session,
+    isConnected,
+    hasLocalSec: hasLocalSecurity(),
+    isAuthenticated,
     segmentsCount: segments.length,
-    canSpin: !isSpinning && cooldownRemaining === 0 && !!wheel && !!session && segments.length > 0
+    canSpin
   });
 
   if (!wheel) {
@@ -380,7 +410,7 @@ const { user, session } = useAuthUser();
               <span>WAIT {formatCooldown(cooldownRemaining)}</span>
             ) : !canSpin && !wheel ? (
               <span>LOADING WHEEL...</span>
-            ) : !canSpin && !session ? (
+            ) : !canSpin && !isAuthenticated ? (
               <span>NOT AUTHENTICATED</span>
             ) : !canSpin && segments.length === 0 ? (
               <span>LOADING SEGMENTS...</span>
