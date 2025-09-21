@@ -172,6 +172,8 @@ function App() {
                 <Route path="trade/confirmation" element={<OrderConfirmationScreen />} />
                 <Route path="swap" element={<SwapScreen />} />
                 <Route path="programs" element={<ProgramsScreen />} />
+                <Route path="spin" element={<SpinWheelScreen />} />
+                <Route path="spin/history" element={<SpinHistoryScreen />} />
                 <Route path="programs/spin" element={<SpinWheelScreen />} />
                 <Route path="programs/spin/history" element={<SpinHistoryScreen />} />
                 <Route path="programs/subscriptions" element={<SubscriptionsScreen />} />

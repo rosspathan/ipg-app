@@ -84,13 +84,27 @@ export default function SpinWheelScreen() {
 
   const loadWheelData = async () => {
     try {
+      console.log("🎰 Loading wheel data...");
+      
       // Load the BSK Fortune Wheel specifically
-      const { data: wheels } = await supabase
+      const { data: wheels, error: wheelsError } = await supabase
         .from("spin_wheels")
         .select("*")
         .eq("name", "BSK Fortune Wheel")
         .eq("is_active", true)
         .limit(1);
+
+      console.log("🎰 Wheels query result:", { wheels, wheelsError });
+
+      if (wheelsError) {
+        console.error("Error loading wheels:", wheelsError);
+        toast({
+          title: "Error",
+          description: "Failed to load wheel data: " + wheelsError.message,
+          variant: "destructive"
+        });
+        return;
+      }
 
       if (!wheels || wheels.length === 0) {
         console.log("BSK Fortune Wheel not found");
@@ -103,18 +117,32 @@ export default function SpinWheelScreen() {
       }
 
       const activeWheel = wheels[0];
+      console.log("🎰 Active wheel:", activeWheel);
       setWheel(activeWheel);
 
       // Load segments (should be exactly 4)
-      const { data: segmentsData } = await supabase
+      const { data: segmentsData, error: segmentsError } = await supabase
         .from("spin_segments")
         .select("*")
         .eq("wheel_id", activeWheel.id)
         .eq("is_enabled", true)
         .order("weight", { ascending: false });
 
+      console.log("🎰 Segments query result:", { segmentsData, segmentsError });
+
+      if (segmentsError) {
+        console.error("Error loading segments:", segmentsError);
+        toast({
+          title: "Error",
+          description: "Failed to load segments: " + segmentsError.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
       if (segmentsData) {
         setSegments(segmentsData);
+        console.log("🎰 Loaded segments:", segmentsData.length);
       }
 
       // Load user's recent runs
