@@ -1,19 +1,19 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Home, Wallet, TrendingUp, ArrowUpDown, Gift, User } from 'lucide-react';
+import { Home, Wallet, TrendingUp, User } from 'lucide-react';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useLocation } from 'react-router-dom';
-import { ROUTES, USER_TAB_ROUTES } from '@/config/routes';
+import { ROUTES } from '@/config/routes';
+import ipgLogoPremium from '@/assets/ipg-logo-premium.jpg';
 
-const TAB_ICONS = {
-  Home,
-  Wallet,
-  TrendingUp,
-  ArrowUpDown,
-  Gift,
-  User
-} as const;
+// Main navigation tabs (4 tabs around the center logo)
+const MAIN_TABS = [
+  { route: ROUTES.APP_HOME, label: 'Home', icon: Home },
+  { route: ROUTES.APP_WALLET, label: 'Wallet', icon: Wallet },
+  { route: ROUTES.APP_TRADE, label: 'Trading', icon: TrendingUp },
+  { route: ROUTES.APP_PROFILE, label: 'Profile', icon: User },
+];
 
 export const BottomTabBar: React.FC = () => {
   const { navigate, getCurrentStack } = useNavigation();
@@ -40,50 +40,95 @@ export const BottomTabBar: React.FC = () => {
 
   return (
     <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 bg-background/95 backdrop-blur-md border-t border-border">
-      <div className="grid grid-cols-6 gap-0 px-2 py-2">
-        {USER_TAB_ROUTES.map(({ route, label, icon }) => {
-          const IconComponent = TAB_ICONS[icon as keyof typeof TAB_ICONS];
-          const isActive = isActiveTab(route);
-          
-          return (
-            <Button
-              key={route}
-              variant="ghost"
-              size="sm"
-              onClick={() => handleTabPress(route)}
-              className={`flex flex-col items-center gap-1 h-auto py-2 px-1 transition-all duration-200 ${
-                isActive 
-                  ? 'text-primary bg-primary/10' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              }`}
-            >
-              <div className="relative">
-                <IconComponent className={`w-5 h-5 transition-transform duration-200 ${
-                  isActive ? 'scale-110' : ''
-                }`} />
+      <div className="flex items-center justify-between px-4 py-2 relative">
+        {/* Left side tabs */}
+        <div className="flex gap-8">
+          {MAIN_TABS.slice(0, 2).map(({ route, label, icon: IconComponent }) => {
+            const isActive = isActiveTab(route);
+            
+            return (
+              <Button
+                key={route}
+                variant="ghost"
+                size="sm"
+                onClick={() => handleTabPress(route)}
+                className={`flex flex-col items-center gap-1 h-auto py-2 px-3 transition-all duration-200 ${
+                  isActive 
+                    ? 'text-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <div className="relative">
+                  <IconComponent className={`w-6 h-6 transition-transform duration-200 ${
+                    isActive ? 'scale-110 text-primary' : ''
+                  }`} />
+                  
+                  {/* Show notification badge for wallet */}
+                  {route === ROUTES.APP_WALLET && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 w-2 h-2 p-0"
+                    />
+                  )}
+                </div>
                 
-                {/* Show notification badges for specific tabs */}
-                {route === ROUTES.APP_WALLET && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1 -right-1 w-2 h-2 p-0"
-                  />
-                )}
-              </div>
-              
-              <span className={`text-xs transition-all duration-200 ${
-                isActive ? 'font-medium' : 'font-normal'
-              }`}>
-                {label}
-              </span>
-              
-              {/* Active indicator */}
-              {isActive && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary rounded-full" />
-              )}
-            </Button>
-          );
-        })}
+                <span className={`text-xs transition-all duration-200 ${
+                  isActive ? 'font-semibold text-primary' : 'font-normal'
+                }`}>
+                  {label}
+                </span>
+              </Button>
+            );
+          })}
+        </div>
+
+        {/* Center logo */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-dark shadow-lg shadow-primary/30 flex items-center justify-center border-2 border-primary/20 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300">
+              <img 
+                src={ipgLogoPremium} 
+                alt="I-SMART Logo" 
+                className="w-10 h-10 rounded-full object-contain filter brightness-110"
+              />
+            </div>
+            {/* Pulsing ring effect */}
+            <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping opacity-75"></div>
+          </div>
+        </div>
+
+        {/* Right side tabs */}
+        <div className="flex gap-8">
+          {MAIN_TABS.slice(2, 4).map(({ route, label, icon: IconComponent }) => {
+            const isActive = isActiveTab(route);
+            
+            return (
+              <Button
+                key={route}
+                variant="ghost"
+                size="sm"
+                onClick={() => handleTabPress(route)}
+                className={`flex flex-col items-center gap-1 h-auto py-2 px-3 transition-all duration-200 ${
+                  isActive 
+                    ? 'text-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <div className="relative">
+                  <IconComponent className={`w-6 h-6 transition-transform duration-200 ${
+                    isActive ? 'scale-110 text-primary' : ''
+                  }`} />
+                </div>
+                
+                <span className={`text-xs transition-all duration-200 ${
+                  isActive ? 'font-semibold text-primary' : 'font-normal'
+                }`}>
+                  {label}
+                </span>
+              </Button>
+            );
+          })}
+        </div>
       </div>
       
       {/* Safe area padding for devices with home indicator */}
