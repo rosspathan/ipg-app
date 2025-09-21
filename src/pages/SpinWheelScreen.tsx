@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Zap, Clock, Coins, Home, Wallet, TrendingUp, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { FuturisticSpinWheel } from "@/components/gamification/FuturisticSpinWheel";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ interface SpinRun {
 export default function SpinWheelScreen() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, session } = useAuth();
   const [wheel, setWheel] = useState<SpinWheel | null>(null);
   const [segments, setSegments] = useState<SpinSegment[]>([]);
   const [recentRuns, setRecentRuns] = useState<SpinRun[]>([]);
@@ -157,7 +159,7 @@ export default function SpinWheelScreen() {
   };
 
   const handleSpin = async () => {
-    if (!wheel || isSpinning || cooldownRemaining > 0) return;
+    if (!wheel || isSpinning || cooldownRemaining > 0 || !session) return;
 
     setIsSpinning(true);
     setWinningResult(null);
@@ -167,7 +169,10 @@ export default function SpinWheelScreen() {
 
     try {
       const { data, error } = await supabase.functions.invoke("spin-execute", {
-        body: { wheel_id: wheel.id }
+        body: { wheel_id: wheel.id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;
