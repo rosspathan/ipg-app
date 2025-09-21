@@ -268,6 +268,15 @@ export default function SpinWheelScreen() {
 
   const canSpin = !isSpinning && cooldownRemaining === 0 && !!wheel && !!session && segments.length > 0;
 
+  console.log("🔍 Spin button state:", {
+    isSpinning,
+    cooldownRemaining,
+    hasWheel: !!wheel,
+    hasSession: !!session,
+    segmentsCount: segments.length,
+    canSpin: !isSpinning && cooldownRemaining === 0 && !!wheel && !!session && segments.length > 0
+  });
+
   if (!wheel) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-900 to-black flex items-center justify-center">
@@ -369,6 +378,12 @@ export default function SpinWheelScreen() {
               </div>
             ) : cooldownRemaining > 0 ? (
               <span>WAIT {formatCooldown(cooldownRemaining)}</span>
+            ) : !canSpin && !wheel ? (
+              <span>LOADING WHEEL...</span>
+            ) : !canSpin && !session ? (
+              <span>NOT AUTHENTICATED</span>
+            ) : !canSpin && segments.length === 0 ? (
+              <span>LOADING SEGMENTS...</span>
             ) : (
               <div className="flex items-center gap-2">
                 <span>⭐</span>
