@@ -39,7 +39,7 @@ export const BottomTabBar: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border">
+    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 bg-background/95 backdrop-blur-md border-t border-border">
       <div className="grid grid-cols-6 gap-0 px-2 py-2">
         {USER_TAB_ROUTES.map(({ route, label, icon }) => {
           const IconComponent = TAB_ICONS[icon as keyof typeof TAB_ICONS];
