@@ -70,9 +70,15 @@ export const useMarketStore = create<MarketState>()(
           },
           onConnectionChange: (connected) => {
             get().setConnectionStatus(connected);
+            // Clear error on successful connection
+            if (connected) {
+              get().setConnectionError(null);
+            }
           },
           onError: (error) => {
+            console.error('Market feed error:', error);
             get().setConnectionError(error);
+            get().setConnectionStatus(false);
           }
         });
 

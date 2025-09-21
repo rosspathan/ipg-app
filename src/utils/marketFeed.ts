@@ -82,10 +82,11 @@ class BinanceWebSocketClient {
     const binanceSymbol = this.mapSymbolToBinance(symbol);
     const streams = [
       `${binanceSymbol}@ticker`,
-      `${binanceSymbol}@depth20@100ms`,
+      `${binanceSymbol}@depth20@100ms`, 
       `${binanceSymbol}@trade`
     ];
-    return `${this.BASE_URL}${streams.join('/')}`;
+    // Use Binance combined stream format
+    return `wss://stream.binance.com:9443/stream?streams=${streams.join('/')}`;
   }
 
   private setupHeartbeat(connectionKey: string, ws: WebSocket) {
@@ -120,6 +121,13 @@ class BinanceWebSocketClient {
   private reconnect(connectionKey: string, attempt: number = 0) {
     if (this.reconnectTimeouts.has(connectionKey)) {
       clearTimeout(this.reconnectTimeouts.get(connectionKey)!);
+    }
+
+    // Stop reconnecting after max attempts
+    if (attempt >= this.RECONNECT_DELAYS.length) {
+      console.error(`Max reconnection attempts reached for ${connectionKey}`);
+      this.callbacks.onError?.(`Failed to connect to ${connectionKey} after ${attempt} attempts`);
+      return;
     }
 
     const delay = this.RECONNECT_DELAYS[Math.min(attempt, this.RECONNECT_DELAYS.length - 1)];
@@ -246,17 +254,22 @@ class BinanceWebSocketClient {
 
       ws.onclose = (event) => {
         console.log(`WebSocket closed for ${symbol}: ${event.code} ${event.reason}`);
+        this.connections.delete(connectionKey);
         this.callbacks.onConnectionChange?.(false);
         
-        // Only reconnect if we still have subscriptions for this symbol
-        if (this.subscriptions.get(connectionKey)?.size) {
-          this.reconnect(connectionKey, reconnectAttempt);
+        // Don't reconnect on normal close (1000) or going away (1001)
+        if (event.code !== 1000 && event.code !== 1001) {
+          // Only reconnect if we still have subscriptions for this symbol
+          if (this.subscriptions.get(connectionKey)?.size) {
+            this.reconnect(connectionKey, reconnectAttempt);
+          }
         }
       };
 
       ws.onerror = (error) => {
         console.error(`WebSocket error for ${symbol}:`, error);
         this.callbacks.onError?.(`Connection error for ${symbol}`);
+        this.callbacks.onConnectionChange?.(false);
       };
 
       this.connections.set(connectionKey, ws);
@@ -291,9 +304,12 @@ class BinanceWebSocketClient {
     if (this.subscriptions.has(connectionKey)) {
       this.subscriptions.get(connectionKey)!.delete(symbol);
       
-      // If no more subscriptions, close connection
+      // If no more subscriptions, close connection gracefully
       if (this.subscriptions.get(connectionKey)!.size === 0) {
-        this.connections.get(connectionKey)?.close();
+        const ws = this.connections.get(connectionKey);
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.close(1000, 'Unsubscribing'); // Normal close
+        }
         this.connections.delete(connectionKey);
         this.subscriptions.delete(connectionKey);
         
