@@ -41,12 +41,12 @@ const AppHomeScreen = () => {
   const quickActions = [
     { name: "Rewards", icon: Gift, variant: "primary" as const, route: "/app/programs" },
     { name: "Staking", icon: Coins, variant: "accent" as const, route: "/app/programs/staking" },
-    { name: "Trading", icon: TrendingUp, variant: "secondary" as const, route: "/app/markets" },
+    { name: "Trading", icon: TrendingUp, variant: "secondary" as const, route: "/app/trade", badge: "LIVE" },
     { name: "Games", icon: Gamepad2, variant: "default" as const, route: "/app/spin", badge: "NEW" },
     { name: "Profile", icon: Users, variant: "default" as const, route: "/app/profile" },
     { name: "History", icon: Activity, variant: "default" as const, route: "/app/history" },
     { name: "Support", icon: Bell, variant: "default" as const, route: "/app/support" },
-    { name: "More+", icon: Star, variant: "default" as const, route: "/app/programs" },
+    { name: "Markets", icon: Star, variant: "default" as const, route: "/app/markets" },
   ];
 
   const featuredPrograms = [
@@ -73,8 +73,9 @@ const AppHomeScreen = () => {
       description: "Real-time market data & advanced tools",
       icon: Activity,
       color: "text-success",
-      action: () => navigate("/app/markets"),
-      gradient: "from-success/20 to-accent/20"
+      action: () => navigate("/app/trade"),
+      gradient: "from-success/20 to-accent/20",
+      badge: "LIVE"
     },
     {
       title: "Referral Program",
@@ -272,7 +273,7 @@ const AppHomeScreen = () => {
               <p className="font-bold text-lg mb-2">No Activity Yet</p>
               <p className="text-sm">Start trading to see your activity here</p>
               <Button 
-                onClick={() => navigate("/app/markets")}
+                onClick={() => navigate("/app/trade")}
                 className="mt-4 bg-gradient-primary border-0 shadow-glow-primary"
               >
                 Start Trading

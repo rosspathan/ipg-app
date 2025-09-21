@@ -166,6 +166,7 @@ function App() {
                 <Route path="markets" element={<MarketsScreen />} />
                 <Route path="markets/:pair" element={<MarketDetailScreen />} />
                 <Route path="trade" element={<TradingScreen />} />
+                <Route path="trade/:pair" element={<TradingScreen />} />
                 <Route path="trade/receipt" element={<TradeReceiptScreen />} />
                 <Route path="trade/confirmation" element={<OrderConfirmationScreen />} />
                 <Route path="swap" element={<SwapScreen />} />
