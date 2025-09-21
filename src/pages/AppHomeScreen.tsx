@@ -13,14 +13,6 @@ import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } f
 import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
-import bgOption1 from "@/assets/bg-option-1.png";
-import bgOption2 from "@/assets/bg-option-2.png";
-import bgOption5 from "@/assets/bg-option-5.png";
-import bgOption6 from "@/assets/bg-option-6.png";
-import bgIpgLogo from "@/assets/bg-ipg-logo.png";
-import bgCryptoBlockchain from "@/assets/bg-crypto-blockchain.png";
-import bgHolographicCircuit from "@/assets/bg-holographic-circuit.png";
-import bgCryptoMobile from "@/assets/bg-crypto-mobile.png";
 import ipgLogoPremium from "@/assets/ipg-logo-premium.jpg";
 
 const AppHomeScreen = () => {
@@ -112,21 +104,9 @@ const AppHomeScreen = () => {
   };
 
   return (
-    <div 
-      className="min-h-screen w-full animate-slide-in-right relative"
-      style={{
-        backgroundImage: `url(${bgCryptoMobile})`,
-        backgroundSize: '100% 100%',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed'
-      }}
-    >
-      {/* Mobile-optimized overlay for better content readability */}
-      <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] md:bg-background/50 md:backdrop-blur-[2px]"></div>
-      
+    <div className="min-h-screen w-full animate-slide-in-right">
       {/* Content */}
-      <div className="relative z-10">
+      <div>
         {/* Cyber Header with KPIs */}
         <CyberHeader
           title="I-SMART"
