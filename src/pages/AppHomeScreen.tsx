@@ -70,7 +70,7 @@ const AppHomeScreen = () => {
       badge: "DAILY"
     },
     {
-      title: "Live Trading",
+      title: "Trading",
       description: "Real-time market data & advanced tools",
       icon: Activity,
       color: "text-success",
