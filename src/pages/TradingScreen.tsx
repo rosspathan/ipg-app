@@ -68,12 +68,31 @@ const TradingScreen = () => {
   // Get current pair data with real-time updates
   const currentPairData = tradingPairs.find(p => p.symbol === selectedPair) || tradingPairs[0];
   
+  // Price blinking state for visual feedback
+  const [previousPrice, setPreviousPrice] = useState<number | null>(null);
+  const [priceBlinkClass, setPriceBlinkClass] = useState('');
+
   // Use real-time data from Binance WebSocket, fallback to mock data
   const currentPrice = ticker?.lastPrice || currentPairData.price;
   const changePercent = ticker?.priceChangePercent24h || currentPairData.change;
   const volume24h = ticker?.volume24h;
   const high24h = ticker?.high24h;
   const low24h = ticker?.low24h;
+  
+  // Add blinking effect when price changes
+  useEffect(() => {
+    if (previousPrice !== null && currentPrice !== previousPrice) {
+      const isIncrease = currentPrice > previousPrice;
+      setPriceBlinkClass(isIncrease ? 'animate-pulse bg-green-500/20' : 'animate-pulse bg-red-500/20');
+      
+      const timer = setTimeout(() => {
+        setPriceBlinkClass('');
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+    setPreviousPrice(currentPrice);
+  }, [currentPrice, previousPrice]);
   
   // Format order book data for the component
   const currentOrderBook = orderBook ? {
@@ -248,7 +267,7 @@ const TradingScreen = () => {
         {/* Enhanced Price Display */}
         <div className="flex items-center justify-between mt-4">
           <div className="flex items-center gap-3">
-            <span className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            <span className={`text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent rounded-lg px-2 py-1 transition-all duration-300 ${priceBlinkClass}`}>
               ${currentPrice.toLocaleString()}
             </span>
             <div className={`flex items-center gap-2 px-2 py-1 rounded-full ${
