@@ -254,8 +254,19 @@ export const FuturisticSpinWheel = ({
   };
 
   const handleSpin = async () => {
-    if (disabled || isSpinning || cooldownRemaining > 0) return;
+    console.log("🎪 FuturisticSpinWheel: handleSpin called!", { 
+      disabled, 
+      isSpinning, 
+      cooldownRemaining,
+      canSpin: !disabled && !isSpinning && cooldownRemaining === 0
+    });
     
+    if (disabled || isSpinning || cooldownRemaining > 0) {
+      console.log("🎪 FuturisticSpinWheel: Spin blocked");
+      return;
+    }
+    
+    console.log("🎪 FuturisticSpinWheel: Calling onSpin...");
     setIsAnimating(true);
     setShowResultDialog(false);
     setResultData(null);

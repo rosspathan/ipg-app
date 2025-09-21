@@ -187,8 +187,25 @@ export default function SpinWheelScreen() {
   };
 
   const handleSpin = async () => {
-    if (!wheel || isSpinning || cooldownRemaining > 0 || !session) return;
+    console.log("🎯 Spin button clicked!", { 
+      wheel: !!wheel, 
+      isSpinning, 
+      cooldownRemaining, 
+      session: !!session,
+      segments: segments.length 
+    });
+    
+    if (!wheel || isSpinning || cooldownRemaining > 0 || !session) {
+      console.log("🎯 Spin blocked:", { 
+        noWheel: !wheel, 
+        isSpinning, 
+        cooldownRemaining, 
+        noSession: !session 
+      });
+      return;
+    }
 
+    console.log("🎯 Starting spin...");
     setIsSpinning(true);
     setWinningResult(null);
 
@@ -196,6 +213,7 @@ export default function SpinWheelScreen() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
+      console.log("🎯 Calling spin-execute function...");
       const { data, error } = await supabase.functions.invoke("spin-execute", {
         body: { wheel_id: wheel.id },
         headers: {
@@ -203,9 +221,12 @@ export default function SpinWheelScreen() {
         }
       });
 
+      console.log("🎯 Spin execute response:", { data, error });
+
       if (error) throw error;
 
       if (data.success) {
+        console.log("🎯 Spin successful:", data);
         setWinningResult(data);
         setFreeSpinsLeft(data.free_spins_remaining || 0);
         
@@ -245,7 +266,7 @@ export default function SpinWheelScreen() {
     return minutes > 0 ? `${minutes}:${secs.toString().padStart(2, '0')}` : `${secs}s`;
   };
 
-  const canSpin = !isSpinning && cooldownRemaining === 0;
+  const canSpin = !isSpinning && cooldownRemaining === 0 && !!wheel && !!session && segments.length > 0;
 
   if (!wheel) {
     return (
