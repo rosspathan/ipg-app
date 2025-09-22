@@ -3272,8 +3272,16 @@ export type Database = {
         }
         Returns: number
       }
+      count_lucky_draw_tickets: {
+        Args: { p_config_id: string }
+        Returns: number
+      }
       create_default_admin: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      create_lucky_draw_tickets: {
+        Args: { p_config_id: string; p_ticket_count: number; p_user_id: string }
         Returns: Json
       }
       get_asset_logo_url: {
@@ -3288,6 +3296,18 @@ export type Database = {
           p_wallet_address?: string
         }
         Returns: Json
+      }
+      get_user_lucky_draw_tickets: {
+        Args: { p_config_id: string; p_user_id: string }
+        Returns: {
+          config_id: string
+          created_at: string
+          id: string
+          prize_amount: number
+          status: string
+          ticket_number: string
+          user_id: string
+        }[]
       }
       get_user_slab: {
         Args: { p_user_id: string }
