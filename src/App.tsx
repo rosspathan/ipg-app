@@ -57,6 +57,8 @@ import StakingDetailScreen from "./pages/StakingDetailScreen";
 import LuckyDrawScreen from "./pages/LuckyDrawScreen";
 import SpinWheelScreen from "./pages/SpinWheelScreen";
 import SpinHistoryScreen from "./pages/SpinHistoryScreen";
+import AdMiningScreen from "./pages/AdMiningScreen";
+import { AdminAdsScreen } from "./pages/AdminAdsScreen";
 import InsuranceScreen from "./pages/InsuranceScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import HistoryScreen from "./pages/HistoryScreen";
@@ -178,6 +180,7 @@ function App() {
                 <Route path="spin/history" element={<SpinHistoryScreen />} />
                 <Route path="programs/spin" element={<SpinWheelScreen />} />
                 <Route path="programs/spin/history" element={<SpinHistoryScreen />} />
+                <Route path="programs/ads" element={<AdMiningScreen />} />
                 <Route path="programs/subscriptions" element={<SubscriptionsScreen />} />
                 <Route path="programs/referrals" element={<ReferralsScreen />} />
                 <Route path="programs/staking" element={<StakingScreen />} />
@@ -221,7 +224,7 @@ function App() {
                 <Route path="lucky" element={<AdminSpinScreen />} />
                 <Route path="lucky/draw" element={<AdminLuckyDraw />} />
                 <Route path="insurance" element={<AdminInsurance />} />
-                <Route path="ads" element={<AdminAds />} />
+                <Route path="ads" element={<AdminAdsScreen />} />
                 <Route path="fees" element={<AdminFees />} />
                 <Route path="trading-fees" element={<AdminTradingFeesSimple />} />
                 <Route path="transfers" element={<div className="p-6"><h1 className="text-2xl font-bold">Transfer Management</h1></div>} />

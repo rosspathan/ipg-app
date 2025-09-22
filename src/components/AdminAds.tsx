@@ -7,24 +7,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Megaphone, Eye, MousePointer, Calendar, Target, Image as ImageIcon, ExternalLink } from "lucide-react";
+import { Plus, Edit, Trash2, Megaphone, Eye, Target, Image as ImageIcon, ExternalLink } from "lucide-react";
 
 interface AdBanner {
   id: string;
   title: string;
   image_url: string;
-  link_url: string | null;
-  target_audience: string | null;
+  square_image_url?: string;
+  target_url: string;
+  reward_bsk: number;
+  required_view_time: number;
   placement: string;
-  start_date: string | null;
-  end_date: string | null;
-  impressions: number | null;
-  clicks: number | null;
-  active: boolean | null;
+  start_at: string | null;
+  end_at: string | null;
+  max_impressions_per_user_per_day: number;
+  status: string;
   created_at: string | null;
 }
 
@@ -36,12 +35,15 @@ export const AdminAds = () => {
   const [formData, setFormData] = useState({
     title: "",
     image_url: "",
-    link_url: "",
-    target_audience: "all",
-    placement: "",
-    start_date: "",
-    end_date: "",
-    active: true,
+    square_image_url: "",
+    target_url: "",
+    reward_bsk: 0,
+    required_view_time: 5,
+    placement: "home_top",
+    start_at: "",
+    end_at: "",
+    max_impressions_per_user_per_day: 3,
+    status: "active",
   });
   const { toast } = useToast();
 
@@ -50,7 +52,7 @@ export const AdminAds = () => {
       setLoading(true);
       
       const { data, error } = await supabase
-        .from("ads_banners")
+        .from("ads")
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -76,12 +78,15 @@ export const AdminAds = () => {
     setFormData({
       title: "",
       image_url: "",
-      link_url: "",
-      target_audience: "all",
-      placement: "",
-      start_date: "",
-      end_date: "",
-      active: true,
+      square_image_url: "",
+      target_url: "",
+      reward_bsk: 0,
+      required_view_time: 5,
+      placement: "home_top",
+      start_at: "",
+      end_at: "",
+      max_impressions_per_user_per_day: 3,
+      status: "active",
     });
     setEditingAd(null);
   };
@@ -91,12 +96,15 @@ export const AdminAds = () => {
     setFormData({
       title: ad.title,
       image_url: ad.image_url,
-      link_url: ad.link_url || "",
-      target_audience: ad.target_audience || "all",
+      square_image_url: ad.square_image_url || "",
+      target_url: ad.target_url,
+      reward_bsk: ad.reward_bsk,
+      required_view_time: ad.required_view_time,
       placement: ad.placement,
-      start_date: ad.start_date ? new Date(ad.start_date).toISOString().slice(0, 16) : "",
-      end_date: ad.end_date ? new Date(ad.end_date).toISOString().slice(0, 16) : "",
-      active: ad.active ?? true,
+      start_at: ad.start_at ? new Date(ad.start_at).toISOString().slice(0, 16) : "",
+      end_at: ad.end_at ? new Date(ad.end_at).toISOString().slice(0, 16) : "",
+      max_impressions_per_user_per_day: ad.max_impressions_per_user_per_day,
+      status: ad.status,
     });
     setDialogOpen(true);
   };
@@ -106,45 +114,32 @@ export const AdminAds = () => {
       const adData = {
         title: formData.title,
         image_url: formData.image_url,
-        link_url: formData.link_url || null,
-        target_audience: formData.target_audience,
+        square_image_url: formData.square_image_url || null,
+        target_url: formData.target_url,
+        reward_bsk: formData.reward_bsk,
+        required_view_time: formData.required_view_time,
         placement: formData.placement,
-        start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
-        end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
-        active: formData.active,
+        start_at: formData.start_at ? new Date(formData.start_at).toISOString() : null,
+        end_at: formData.end_at ? new Date(formData.end_at).toISOString() : null,
+        max_impressions_per_user_per_day: formData.max_impressions_per_user_per_day,
+        status: formData.status,
       };
 
       let response;
       if (editingAd) {
         response = await supabase
-          .from("ads_banners")
+          .from("ads")
           .update(adData)
           .eq("id", editingAd.id);
-
-        // Log the admin action
-        await supabase.rpc("log_admin_action", {
-          p_action: "update_ad_banner",
-          p_resource_type: "ads_banners",
-          p_resource_id: editingAd.id,
-          p_old_values: JSON.parse(JSON.stringify(editingAd)),
-          p_new_values: JSON.parse(JSON.stringify({ ...editingAd, ...adData })),
-        });
       } else {
-        response = await supabase.from("ads_banners").insert([adData]);
-
-        // Log the admin action
-        await supabase.rpc("log_admin_action", {
-          p_action: "create_ad_banner",
-          p_resource_type: "ads_banners",
-          p_new_values: JSON.parse(JSON.stringify(adData)),
-        });
+        response = await supabase.from("ads").insert([adData]);
       }
 
       if (response.error) throw response.error;
 
       toast({
         title: "Success",
-        description: `Ad banner ${editingAd ? "updated" : "created"} successfully`,
+        description: `Ad ${editingAd ? "updated" : "created"} successfully`,
       });
 
       setDialogOpen(false);
@@ -161,25 +156,17 @@ export const AdminAds = () => {
 
   const handleToggleActive = async (ad: AdBanner) => {
     try {
+      const newStatus = ad.status === 'active' ? 'inactive' : 'active';
       const { error } = await supabase
-        .from("ads_banners")
-        .update({ active: !ad.active })
+        .from("ads")
+        .update({ status: newStatus })
         .eq("id", ad.id);
 
       if (error) throw error;
 
-      // Log the admin action
-      await supabase.rpc("log_admin_action", {
-        p_action: ad.active ? "deactivate_ad_banner" : "activate_ad_banner",
-        p_resource_type: "ads_banners",
-        p_resource_id: ad.id,
-        p_old_values: JSON.parse(JSON.stringify(ad)),
-        p_new_values: JSON.parse(JSON.stringify({ ...ad, active: !ad.active })),
-      });
-
       toast({
         title: "Success",
-        description: `Ad banner ${ad.active ? "deactivated" : "activated"} successfully`,
+        description: `Ad ${newStatus === 'active' ? "activated" : "deactivated"} successfully`,
       });
 
       loadAds();
@@ -193,24 +180,16 @@ export const AdminAds = () => {
   };
 
   const handleDelete = async (ad: AdBanner) => {
-    if (!confirm("Are you sure you want to delete this ad banner?")) return;
+    if (!confirm("Are you sure you want to delete this ad?")) return;
 
     try {
-      const { error } = await supabase.from("ads_banners").delete().eq("id", ad.id);
+      const { error } = await supabase.from("ads").delete().eq("id", ad.id);
 
       if (error) throw error;
 
-      // Log the admin action
-      await supabase.rpc("log_admin_action", {
-        p_action: "delete_ad_banner",
-        p_resource_type: "ads_banners",
-        p_resource_id: ad.id,
-        p_old_values: JSON.parse(JSON.stringify(ad)),
-      });
-
       toast({
         title: "Success",
-        description: "Ad banner deleted successfully",
+        description: "Ad deleted successfully",
       });
 
       loadAds();
@@ -223,8 +202,8 @@ export const AdminAds = () => {
     }
   };
 
-  const getStatusColor = (active: boolean | null) => {
-    return active ? "default" : "secondary";
+  const getStatusColor = (status: string) => {
+    return status === 'active' ? "default" : "secondary";
   };
 
   const formatDate = (dateString: string | null) => {
@@ -233,24 +212,18 @@ export const AdminAds = () => {
   };
 
   const isAdActive = (ad: AdBanner) => {
-    if (!ad.active) return false;
+    if (ad.status !== 'active') return false;
     const now = new Date();
-    const startDate = ad.start_date ? new Date(ad.start_date) : null;
-    const endDate = ad.end_date ? new Date(ad.end_date) : null;
+    const startDate = ad.start_at ? new Date(ad.start_at) : null;
+    const endDate = ad.end_at ? new Date(ad.end_at) : null;
     
     if (startDate && now < startDate) return false;
     if (endDate && now > endDate) return false;
     return true;
   };
 
-  const getCTR = (impressions: number | null, clicks: number | null) => {
-    if (!impressions || impressions === 0) return "0%";
-    const ctr = ((clicks || 0) / impressions) * 100;
-    return `${ctr.toFixed(2)}%`;
-  };
-
   if (loading) {
-    return <div className="flex items-center justify-center h-64">Loading ad banners...</div>;
+    return <div className="flex items-center justify-center h-64">Loading ads...</div>;
   }
 
   return (
@@ -260,10 +233,10 @@ export const AdminAds = () => {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Megaphone className="h-5 w-5" />
-              Ads & CMS Management
+              Ad Mining Management
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Manage banners, carousels, and promotional content across the platform
+              Manage ad campaigns and BSK reward settings
             </p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -276,22 +249,22 @@ export const AdminAds = () => {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
-                  {editingAd ? "Edit Ad Banner" : "Create New Ad Banner"}
+                  {editingAd ? "Edit Ad" : "Create New Ad"}
                 </DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-4 py-4 max-h-[600px] overflow-y-auto">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Banner Title</Label>
+                  <Label htmlFor="title">Ad Title</Label>
                   <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="e.g., Summer Trading Promotion"
+                    placeholder="e.g., Watch and Earn BSK"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="image_url">Image URL</Label>
+                  <Label htmlFor="image_url">Banner Image URL</Label>
                   <Input
                     id="image_url"
                     value={formData.image_url}
@@ -313,34 +286,53 @@ export const AdminAds = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="link_url">Click-through URL (optional)</Label>
+                  <Label htmlFor="square_image_url">Square Image URL (optional)</Label>
                   <Input
-                    id="link_url"
-                    value={formData.link_url}
-                    onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
-                    placeholder="https://example.com/promotion"
+                    id="square_image_url"
+                    value={formData.square_image_url}
+                    onChange={(e) => setFormData({ ...formData, square_image_url: e.target.value })}
+                    placeholder="https://example.com/square.jpg"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="target_url">Target URL</Label>
+                  <Input
+                    id="target_url"
+                    value={formData.target_url}
+                    onChange={(e) => setFormData({ ...formData, target_url: e.target.value })}
+                    placeholder="https://example.com/landing"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="target_audience">Target Audience</Label>
-                    <Select
-                      value={formData.target_audience}
-                      onValueChange={(value) => setFormData({ ...formData, target_audience: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Users</SelectItem>
-                        <SelectItem value="new">New Users</SelectItem>
-                        <SelectItem value="premium">Premium Users</SelectItem>
-                        <SelectItem value="traders">Active Traders</SelectItem>
-                        <SelectItem value="stakers">Stakers</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="reward_bsk">BSK Reward</Label>
+                    <Input
+                      id="reward_bsk"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={formData.reward_bsk}
+                      onChange={(e) => setFormData({ ...formData, reward_bsk: parseFloat(e.target.value) || 0 })}
+                      placeholder="5"
+                    />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="required_view_time">View Time (seconds)</Label>
+                    <Input
+                      id="required_view_time"
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={formData.required_view_time}
+                      onChange={(e) => setFormData({ ...formData, required_view_time: parseInt(e.target.value) || 5 })}
+                      placeholder="5"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="placement">Placement</Label>
                     <Select
@@ -351,45 +343,63 @@ export const AdminAds = () => {
                         <SelectValue placeholder="Select placement" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="hero">Hero Banner</SelectItem>
-                        <SelectItem value="sidebar">Sidebar</SelectItem>
-                        <SelectItem value="footer">Footer</SelectItem>
-                        <SelectItem value="popup">Popup Modal</SelectItem>
-                        <SelectItem value="carousel">Carousel</SelectItem>
-                        <SelectItem value="inline">Inline Content</SelectItem>
+                        <SelectItem value="home_top">Home Top</SelectItem>
+                        <SelectItem value="programs">Programs Section</SelectItem>
+                        <SelectItem value="trading">Trading Page</SelectItem>
+                        <SelectItem value="wallet">Wallet Page</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="max_impressions">Max Views per User/Day</Label>
+                    <Input
+                      id="max_impressions"
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={formData.max_impressions_per_user_per_day}
+                      onChange={(e) => setFormData({ ...formData, max_impressions_per_user_per_day: parseInt(e.target.value) || 3 })}
+                      placeholder="3"
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="start_date">Start Date (optional)</Label>
+                    <Label htmlFor="start_at">Start Date (optional)</Label>
                     <Input
-                      id="start_date"
+                      id="start_at"
                       type="datetime-local"
-                      value={formData.start_date}
-                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                      value={formData.start_at}
+                      onChange={(e) => setFormData({ ...formData, start_at: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="end_date">End Date (optional)</Label>
+                    <Label htmlFor="end_at">End Date (optional)</Label>
                     <Input
-                      id="end_date"
+                      id="end_at"
                       type="datetime-local"
-                      value={formData.end_date}
-                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                      value={formData.end_at}
+                      onChange={(e) => setFormData({ ...formData, end_at: e.target.value })}
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="active"
-                    checked={formData.active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
-                  />
-                  <Label htmlFor="active">Active</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">
@@ -409,7 +419,7 @@ export const AdminAds = () => {
         {ads.length === 0 ? (
           <div className="text-center py-8">
             <Megaphone className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">No ad banners found. Create your first banner to get started.</p>
+            <p className="text-muted-foreground">No ads found. Create your first ad to get started.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -428,7 +438,7 @@ export const AdminAds = () => {
                             target.style.display = 'none';
                             const parent = target.parentElement;
                             if (parent) {
-                              parent.innerHTML = '<ImageIcon class="h-6 w-6 text-gray-400" />';
+                              parent.innerHTML = '<div class="h-6 w-6 text-gray-400">📷</div>';
                             }
                           }}
                         />
@@ -439,8 +449,8 @@ export const AdminAds = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold">{ad.title}</h3>
-                        <Badge variant={getStatusColor(ad.active)}>
-                          {ad.active ? "Active" : "Inactive"}
+                        <Badge variant={getStatusColor(ad.status)}>
+                          {ad.status}
                         </Badge>
                         {isAdActive(ad) && (
                           <Badge variant="default" className="bg-green-500">
@@ -448,19 +458,24 @@ export const AdminAds = () => {
                           </Badge>
                         )}
                         <Badge variant="outline">{ad.placement}</Badge>
-                        <Badge variant="outline">{ad.target_audience}</Badge>
+                        <Badge variant="secondary">{ad.reward_bsk} BSK</Badge>
                       </div>
-                      {ad.link_url && (
-                        <div className="flex items-center gap-1 text-sm text-blue-600">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>View time: {ad.required_view_time}s</span>
+                        <span>Max per user: {ad.max_impressions_per_user_per_day}/day</span>
+                        <span>Created: {formatDate(ad.created_at)}</span>
+                      </div>
+                      {ad.target_url && (
+                        <div className="flex items-center gap-1 text-sm text-blue-600 mt-1">
                           <ExternalLink className="h-3 w-3" />
-                          <span className="truncate max-w-64">{ad.link_url}</span>
+                          <span className="truncate max-w-64">{ad.target_url}</span>
                         </div>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
-                      checked={ad.active ?? false}
+                      checked={ad.status === 'active'}
                       onCheckedChange={() => handleToggleActive(ad)}
                     />
                     <Button variant="outline" size="sm" onClick={() => handleEdit(ad)}>
@@ -476,37 +491,15 @@ export const AdminAds = () => {
                     </Button>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Eye className="h-4 w-4 text-blue-500" />
-                    <div>
-                      <p className="text-muted-foreground">Impressions</p>
-                      <p className="font-semibold">{(ad.impressions || 0).toLocaleString()}</p>
-                    </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t">
+                  <div>
+                    <span className="text-muted-foreground">Start: </span>
+                    {formatDate(ad.start_at)}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <MousePointer className="h-4 w-4 text-green-500" />
-                    <div>
-                      <p className="text-muted-foreground">Clicks</p>
-                      <p className="font-semibold">{(ad.clicks || 0).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-purple-500" />
-                    <div>
-                      <p className="text-muted-foreground">CTR</p>
-                      <p className="font-semibold">{getCTR(ad.impressions, ad.clicks)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-orange-500" />
-                    <div>
-                      <p className="text-muted-foreground">Schedule</p>
-                      <p className="font-semibold text-xs">
-                        {formatDate(ad.start_date)} - {formatDate(ad.end_date)}
-                      </p>
-                    </div>
+                  <div>
+                    <span className="text-muted-foreground">End: </span>
+                    {formatDate(ad.end_at)}
                   </div>
                 </div>
               </div>
