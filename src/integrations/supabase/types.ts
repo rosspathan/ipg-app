@@ -1908,6 +1908,33 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_rewards_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          level: number
+          reward_bsk: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          level: number
+          reward_bsk?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          level?: number
+          reward_bsk?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       referral_settings: {
         Row: {
           caps: Json
@@ -2026,6 +2053,30 @@ export type Database = {
           prospect_phone?: string | null
           referrer_id?: string
           status?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string | null
+          id: string
+          level: number
+          parent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          level?: number
+          parent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          level?: number
+          parent_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -2651,6 +2702,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tiers: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          deposit_ipg: number
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          max_ref_depth: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          deposit_ipg: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_ref_depth: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          deposit_ipg?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_ref_depth?: number
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       trades: {
         Row: {
           buy_order_id: string
@@ -2902,6 +2989,51 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          biometric_enabled: boolean | null
+          created_at: string | null
+          email: string | null
+          email_verified: boolean | null
+          id: string
+          kyc_status: string | null
+          onboarding_completed: boolean | null
+          pin_hash: string | null
+          tier_id: string | null
+          updated_at: string | null
+          user_id: string
+          wallet_address: string | null
+        }
+        Insert: {
+          biometric_enabled?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          email_verified?: boolean | null
+          id?: string
+          kyc_status?: string | null
+          onboarding_completed?: boolean | null
+          pin_hash?: string | null
+          tier_id?: string | null
+          updated_at?: string | null
+          user_id: string
+          wallet_address?: string | null
+        }
+        Update: {
+          biometric_enabled?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          email_verified?: boolean | null
+          id?: string
+          kyc_status?: string | null
+          onboarding_completed?: boolean | null
+          pin_hash?: string | null
+          tier_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
@@ -3147,9 +3279,17 @@ export type Database = {
       }
     }
     Enums: {
+      announcement_type: "carousel" | "ticker"
       app_role: "admin" | "support" | "compliance" | "finance" | "user"
       balance_metric: "MAIN" | "TOTAL" | "BONUS_INCLUDED"
+      claim_status: "PENDING" | "APPROVED" | "REJECTED"
+      draw_status: "OPEN" | "CLOSED" | "COMPLETED" | "CANCELLED"
+      insurance_type: "ACCIDENT" | "TRADING"
       invite_policy: "BLOCK_WHEN_FULL" | "WAITLIST"
+      policy_status: "ACTIVE" | "EXPIRED" | "CANCELLED"
+      promotion_type: "INR_BONUS" | "DEPOSIT_BONUS" | "TRADING_BONUS"
+      spin_outcome: "WIN" | "LOSE"
+      token_bucket: "holding" | "tradable"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3277,9 +3417,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      announcement_type: ["carousel", "ticker"],
       app_role: ["admin", "support", "compliance", "finance", "user"],
       balance_metric: ["MAIN", "TOTAL", "BONUS_INCLUDED"],
+      claim_status: ["PENDING", "APPROVED", "REJECTED"],
+      draw_status: ["OPEN", "CLOSED", "COMPLETED", "CANCELLED"],
+      insurance_type: ["ACCIDENT", "TRADING"],
       invite_policy: ["BLOCK_WHEN_FULL", "WAITLIST"],
+      policy_status: ["ACTIVE", "EXPIRED", "CANCELLED"],
+      promotion_type: ["INR_BONUS", "DEPOSIT_BONUS", "TRADING_BONUS"],
+      spin_outcome: ["WIN", "LOSE"],
+      token_bucket: ["holding", "tradable"],
     },
   },
 } as const
