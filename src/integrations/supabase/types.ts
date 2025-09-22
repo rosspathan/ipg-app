@@ -1309,6 +1309,47 @@ export type Database = {
         }
         Relationships: []
       }
+      lucky_draw_tickets: {
+        Row: {
+          config_id: string
+          created_at: string
+          id: string
+          prize_amount: number | null
+          status: string
+          ticket_number: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config_id: string
+          created_at?: string
+          id?: string
+          prize_amount?: number | null
+          status?: string
+          ticket_number: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config_id?: string
+          created_at?: string
+          id?: string
+          prize_amount?: number | null
+          status?: string
+          ticket_number?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lucky_draw_tickets_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "lucky_draw_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       markets: {
         Row: {
           base_asset_id: string

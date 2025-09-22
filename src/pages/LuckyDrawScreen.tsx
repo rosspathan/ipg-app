@@ -58,29 +58,31 @@ const LuckyDrawScreen = () => {
       if (configError) throw configError;
       
       if (configs && configs.length > 0) {
-        setDrawConfig(configs[0]);
+        setDrawConfig(configs[0] as LuckyDrawConfig);
         
         // Get user's tickets for this draw if logged in
         if (user) {
+          // Use a generic query approach to avoid type issues
           const { data: tickets, error: ticketsError } = await supabase
-            .from('lucky_draw_tickets')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('config_id', configs[0].id)
-            .order('created_at', { ascending: false });
+            .rpc('get_user_lucky_draw_tickets', {
+              p_user_id: user.id,
+              p_config_id: configs[0].id
+            });
 
-          if (ticketsError) throw ticketsError;
-          setUserTickets(tickets || []);
+          if (!ticketsError && tickets) {
+            setUserTickets(tickets as UserTicket[]);
+          }
         }
         
         // Get total tickets sold for this draw
-        const { count, error: countError } = await supabase
-          .from('lucky_draw_tickets')
-          .select('id', { count: 'exact' })
-          .eq('config_id', configs[0].id);
-
-        if (countError) throw countError;
-        setTicketsSold(count || 0);
+        const { data: countData, error: countError } = await supabase
+          .rpc('count_lucky_draw_tickets', {
+            p_config_id: configs[0].id
+          });
+          
+        if (!countError && countData) {
+          setTicketsSold(countData);
+        }
       }
     } catch (error) {
       console.error('Error loading lucky draw data:', error);
@@ -116,24 +118,15 @@ const LuckyDrawScreen = () => {
     try {
       setPurchasing(true);
       
-      // In a real implementation, you'd integrate with payment processing
-      // For now, we'll simulate the purchase
-      const ticketNumbers = [];
-      for (let i = 0; i < tickets; i++) {
-        const ticketNumber = `TKT${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-        ticketNumbers.push(ticketNumber);
-        
-        const { error } = await supabase
-          .from('lucky_draw_tickets')
-          .insert({
-            user_id: user.id,
-            config_id: drawConfig.id,
-            ticket_number: ticketNumber,
-            status: 'pending'
-          });
+      // Use RPC function to create tickets to avoid type issues
+      const { data: result, error } = await supabase
+        .rpc('create_lucky_draw_tickets', {
+          p_user_id: user.id,
+          p_config_id: drawConfig.id,
+          p_ticket_count: tickets
+        });
 
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Tickets Purchased!",
