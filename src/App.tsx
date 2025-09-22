@@ -28,6 +28,7 @@ import AuthRegisterScreen from "./pages/AuthRegisterScreen";
 import AppLockScreen from "./pages/AppLockScreen";
 
 // Onboarding Pages
+import OnboardingFlow from "./pages/OnboardingFlow";
 import OnboardingIndexScreen from "./pages/OnboardingIndexScreen";
 import WalletSelectionScreen from "./pages/WalletSelectionScreen";
 import CreateWalletScreen from "./pages/CreateWalletScreen";
@@ -114,7 +115,7 @@ function App() {
           <BrowserRouter>
             <Routes>
               {/* Landing & Splash */}
-              <Route path="/" element={<Navigate to="/splash" replace />} />
+              <Route path="/" element={<Navigate to="/onboarding" replace />} />
               <Route path="/splash" element={<SplashScreen />} />
               <Route path="/welcome" element={<WelcomeScreen />} />
               <Route path="/welcome-1" element={<WelcomeScreen1 />} />
@@ -122,7 +123,8 @@ function App() {
               <Route path="/welcome-3" element={<WelcomeScreen3 />} />
 
               {/* Onboarding Flow */}
-              <Route path="/onboarding" element={<OnboardingIndexScreen />} />
+              <Route path="/onboarding" element={<OnboardingFlow />} />
+              <Route path="/onboarding-legacy" element={<OnboardingIndexScreen />} />
               <Route path="/onboarding/create-wallet" element={<CreateWalletScreen />} />
               <Route path="/onboarding/import-wallet" element={<ImportWalletScreen />} />
               <Route path="/onboarding/security" element={<SecuritySetupScreen />} />

@@ -143,27 +143,19 @@ export function useOnboarding() {
     }
   };
 
-  const completeOnboarding = async () => {
+      const completeOnboarding = async () => {
     try {
-      // Create user profile in database
-      if (state.walletInfo && state.email && state.pinHash) {
-        const { error } = await supabase
-          .from('user_profiles')
-          .upsert({
-            user_id: 'temp-user-id', // Will be replaced with actual auth user id
-            email: state.email,
-            wallet_address: state.walletInfo.address,
-            email_verified: state.hasVerifiedEmail,
-            pin_hash: state.pinHash,
-            biometric_enabled: state.hasSetupBiometric,
-            onboarding_completed: true
-          });
-
-        if (error) {
-          console.error('Error saving user profile:', error);
-          throw error;
-        }
+      if (!state.walletInfo || !state.email || !state.pinHash) {
+        throw new Error('Missing required onboarding data');
       }
+
+      // Save security data locally first
+      const { saveLocalSecurityData } = await import('@/utils/localSecurityStorage');
+      await saveLocalSecurityData({
+        pin: state.pinHash,
+        biometric_enabled: state.hasSetupBiometric,
+        anti_phishing_code: Math.random().toString(36).substring(2, 8).toUpperCase()
+      });
 
       // Update security setup
       const securitySetup: SecuritySetup = {

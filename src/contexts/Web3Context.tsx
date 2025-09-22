@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { WalletInfo } from '@/utils/wallet';
 
 // Extend Window interface for MetaMask
 declare global {
@@ -40,6 +41,8 @@ interface Web3ContextType {
   signMessage: (message: string) => Promise<string>;
   getBalance: () => Promise<string>;
   disconnectWallet: () => void;
+  // Onboarding integration
+  setWalletFromOnboarding: (walletInfo: WalletInfo) => void;
 }
 
 const Web3Context = createContext<Web3ContextType | undefined>(undefined);
@@ -342,6 +345,33 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const setWalletFromOnboarding = (walletInfo: WalletInfo) => {
+    const walletData: WalletData = {
+      address: walletInfo.address,
+      privateKey: walletInfo.privateKey,
+      seedPhrase: walletInfo.mnemonic,
+      network: 'mainnet',
+      balance: '0' // Will be fetched async
+    };
+    
+    setWallet(walletData);
+    localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
+    
+    // Fetch balance async
+    if (provider) {
+      provider.getBalance(walletInfo.address)
+        .then(balance => {
+          const formattedBalance = ethers.formatEther(balance);
+          const updatedWallet = { ...walletData, balance: formattedBalance };
+          setWallet(updatedWallet);
+          localStorage.setItem('cryptoflow_wallet', JSON.stringify(updatedWallet));
+        })
+        .catch(error => {
+          console.warn('Could not fetch balance:', error);
+        });
+    }
+  };
+
   const disconnectWallet = () => {
     setWallet(null);
     localStorage.removeItem('cryptoflow_wallet');
@@ -359,6 +389,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     signMessage,
     getBalance,
     disconnectWallet,
+    setWalletFromOnboarding,
   };
 
   return (

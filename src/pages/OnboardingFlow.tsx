@@ -1,10 +1,12 @@
 import React from 'react';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useWeb3 } from '@/contexts/Web3Context';
 import SplashScreen from './onboarding/SplashScreen';
 import WelcomeScreens from './onboarding/WelcomeScreens';
 import WalletChoiceScreen from './onboarding/WalletChoiceScreen';
 import CreateWalletScreen from './onboarding/CreateWalletScreen';
 import ImportWalletScreen from './onboarding/ImportWalletScreen';
+import WalletConnectScreen from './onboarding/WalletConnectScreen';
 import EmailInputScreen from './onboarding/EmailInputScreen';
 import EmailVerificationScreen from './onboarding/EmailVerificationScreen';
 import PinSetupScreen from './onboarding/PinSetupScreen';
@@ -22,12 +24,21 @@ const OnboardingFlow: React.FC = () => {
     completeOnboarding,
     resetOnboarding
   } = useOnboarding();
+  
+  const { setWalletFromOnboarding } = useWeb3();
 
   const handleSplashComplete = () => setStep('welcome');
   const handleWelcomeComplete = () => setStep('wallet-choice');
-  const handleWalletChoice = (choice: 'create' | 'import' | 'connect') => setStep(choice + '-wallet' as any);
+  const handleWalletChoice = (choice: 'create' | 'import' | 'connect') => {
+    if (choice === 'connect') {
+      setStep('wallet-connect');
+    } else {
+      setStep(choice + '-wallet' as any);
+    }
+  };
   const handleWalletCreated = (wallet: any) => {
     setWalletInfo(wallet);
+    setWalletFromOnboarding(wallet);
     setStep('email-input');
   };
   const handleEmailSubmitted = (email: string) => {
@@ -76,6 +87,14 @@ const OnboardingFlow: React.FC = () => {
       return (
         <ImportWalletScreen
           onWalletImported={handleWalletCreated}
+          onBack={() => setStep('wallet-choice')}
+        />
+      );
+    
+    case 'wallet-connect':
+      return (
+        <WalletConnectScreen
+          onWalletConnected={handleWalletCreated}
           onBack={() => setStep('wallet-choice')}
         />
       );
