@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,47 +6,154 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Gift, Clock, Trophy, Ticket } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuthUser } from "@/hooks/useAuthUser";
+
+interface LuckyDrawConfig {
+  id: string;
+  ticket_price: number;
+  prize_pool: number;
+  draw_date: string;
+  max_winners: number;
+  status: string;
+}
+
+interface UserTicket {
+  id: string;
+  user_id: string;
+  config_id: string;
+  ticket_number: string;
+  created_at: string;
+  status: 'pending' | 'won' | 'lost';
+  prize_amount?: number;
+}
 
 const LuckyDrawScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [tickets, setTickets] = useState(3);
+  const { user } = useAuthUser();
+  const [tickets, setTickets] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [purchasing, setPurchasing] = useState(false);
+  const [drawConfig, setDrawConfig] = useState<LuckyDrawConfig | null>(null);
+  const [userTickets, setUserTickets] = useState<UserTicket[]>([]);
+  const [ticketsSold, setTicketsSold] = useState(0);
 
-  const drawInfo = {
-    ticketPrice: "$5.00",
-    prizePool: "$50,000",
-    nextDraw: "Dec 31, 2024 23:59",
-    ticketsSold: 8456,
-    maxTickets: 10000
+  useEffect(() => {
+    loadLuckyDrawData();
+  }, []);
+
+  const loadLuckyDrawData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get active draw config
+      const { data: configs, error: configError } = await supabase
+        .from('lucky_draw_configs')
+        .select('*')
+        .eq('status', 'active')
+        .order('draw_date', { ascending: true })
+        .limit(1);
+
+      if (configError) throw configError;
+      
+      if (configs && configs.length > 0) {
+        setDrawConfig(configs[0]);
+        
+        // Get user's tickets for this draw if logged in
+        if (user) {
+          const { data: tickets, error: ticketsError } = await supabase
+            .from('lucky_draw_tickets')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('config_id', configs[0].id)
+            .order('created_at', { ascending: false });
+
+          if (ticketsError) throw ticketsError;
+          setUserTickets(tickets || []);
+        }
+        
+        // Get total tickets sold for this draw
+        const { count, error: countError } = await supabase
+          .from('lucky_draw_tickets')
+          .select('id', { count: 'exact' })
+          .eq('config_id', configs[0].id);
+
+        if (countError) throw countError;
+        setTicketsSold(count || 0);
+      }
+    } catch (error) {
+      console.error('Error loading lucky draw data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load lucky draw information",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const userTickets = [
-    { id: "TKT001", drawDate: "Dec 31, 2024", status: "Pending", prize: null },
-    { id: "TKT002", drawDate: "Dec 31, 2024", status: "Pending", prize: null },
-    { id: "TKT003", drawDate: "Dec 31, 2024", status: "Pending", prize: null },
-    { id: "TKT156", drawDate: "Nov 30, 2024", status: "Lost", prize: null },
-    { id: "TKT089", drawDate: "Oct 31, 2024", status: "Won", prize: "$100" },
-  ];
+  const handleBuyTickets = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to purchase tickets",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const prizeStructure = [
-    { prize: "1st Prize", amount: "$25,000", winners: 1, odds: "1:10,000" },
-    { prize: "2nd Prize", amount: "$5,000", winners: 2, odds: "1:5,000" },
-    { prize: "3rd Prize", amount: "$1,000", winners: 5, odds: "1:2,000" },
-    { prize: "4th Prize", amount: "$100", winners: 50, odds: "1:200" },
-    { prize: "5th Prize", amount: "$20", winners: 200, odds: "1:50" },
-  ];
+    if (!drawConfig) {
+      toast({
+        title: "Error",
+        description: "No active draw available",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const lastDrawResults = [
-    { prize: "1st Prize", ticketId: "TKT7891", amount: "$25,000" },
-    { prize: "2nd Prize", ticketId: "TKT3456", amount: "$5,000" },
-    { prize: "2nd Prize", ticketId: "TKT9012", amount: "$5,000" },
-  ];
+    try {
+      setPurchasing(true);
+      
+      // In a real implementation, you'd integrate with payment processing
+      // For now, we'll simulate the purchase
+      const ticketNumbers = [];
+      for (let i = 0; i < tickets; i++) {
+        const ticketNumber = `TKT${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        ticketNumbers.push(ticketNumber);
+        
+        const { error } = await supabase
+          .from('lucky_draw_tickets')
+          .insert({
+            user_id: user.id,
+            config_id: drawConfig.id,
+            ticket_number: ticketNumber,
+            status: 'pending'
+          });
 
-  const handleBuyTickets = () => {
-    toast({
-      title: "Tickets Purchased!",
-      description: `Successfully bought ${tickets} ticket(s) for $${(tickets * 5).toFixed(2)}`,
-    });
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Tickets Purchased!",
+        description: `Successfully bought ${tickets} ticket(s) for $${(tickets * drawConfig.ticket_price).toFixed(2)}`,
+      });
+
+      // Reload data to show new tickets
+      await loadLuckyDrawData();
+      setTickets(1);
+      
+    } catch (error) {
+      console.error('Error purchasing tickets:', error);
+      toast({
+        title: "Purchase Failed",
+        description: "Failed to purchase tickets. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPurchasing(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -66,6 +173,46 @@ const LuckyDrawScreen = () => {
       default: return <Ticket className="w-4 h-4" />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!drawConfig) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background px-6 py-8">
+        <div className="flex items-center mb-6">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="mr-2"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="text-xl font-semibold">Lucky Draw</h1>
+        </div>
+        
+        <Card className="bg-gradient-card shadow-card border-0">
+          <CardContent className="p-8 text-center">
+            <Gift className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-medium mb-2">No Active Draw</h3>
+            <p className="text-sm text-muted-foreground">
+              There are no active lucky draws at the moment. Check back later!
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const maxTicketsPerDraw = 10000; // Could be configurable per draw
+  const drawDate = new Date(drawConfig.draw_date);
+  const isDrawEnded = drawDate < new Date();
 
   return (
     <div className="min-h-screen flex flex-col bg-background px-6 py-8">
@@ -88,12 +235,12 @@ const LuckyDrawScreen = () => {
             <div className="flex items-center space-x-3">
               <Gift className="w-8 h-8 text-purple-500" />
               <div>
-                <CardTitle className="text-xl">Next Draw</CardTitle>
-                <p className="text-sm text-muted-foreground">{drawInfo.nextDraw}</p>
+                <CardTitle className="text-xl">{isDrawEnded ? 'Draw Ended' : 'Next Draw'}</CardTitle>
+                <p className="text-sm text-muted-foreground">{drawDate.toLocaleString()}</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-primary">{drawInfo.prizePool}</p>
+              <p className="text-2xl font-bold text-primary">${drawConfig.prize_pool.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground">Prize Pool</p>
             </div>
           </div>
@@ -102,12 +249,12 @@ const LuckyDrawScreen = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Ticket Price</p>
-              <p className="text-lg font-bold">{drawInfo.ticketPrice}</p>
+              <p className="text-lg font-bold">${drawConfig.ticket_price}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Tickets Sold</p>
               <p className="text-lg font-bold">
-                {drawInfo.ticketsSold.toLocaleString()} / {drawInfo.maxTickets.toLocaleString()}
+                {ticketsSold.toLocaleString()} / {maxTicketsPerDraw.toLocaleString()}
               </p>
             </div>
           </div>
@@ -136,12 +283,17 @@ const LuckyDrawScreen = () => {
             
             <div className="flex items-center justify-between text-sm">
               <span>Total Cost:</span>
-              <span className="font-bold">${(tickets * 5).toFixed(2)}</span>
+              <span className="font-bold">${(tickets * drawConfig.ticket_price).toFixed(2)}</span>
             </div>
 
-            <Button onClick={handleBuyTickets} className="w-full" size="lg">
+            <Button 
+              onClick={handleBuyTickets} 
+              className="w-full" 
+              size="lg"
+              disabled={purchasing || isDrawEnded || !user}
+            >
               <Ticket className="w-4 h-4 mr-2" />
-              Buy {tickets} Ticket{tickets > 1 ? 's' : ''}
+              {purchasing ? 'Processing...' : isDrawEnded ? 'Draw Ended' : !user ? 'Login Required' : `Buy ${tickets} Ticket${tickets > 1 ? 's' : ''}`}
             </Button>
           </div>
         </CardContent>
@@ -155,49 +307,76 @@ const LuckyDrawScreen = () => {
         </TabsList>
 
         <TabsContent value="tickets" className="space-y-4">
-          {userTickets.map((ticket) => (
-            <Card key={ticket.id} className="bg-gradient-card shadow-card border-0">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {getStatusIcon(ticket.status)}
-                    <div>
-                      <p className="font-medium">Ticket #{ticket.id}</p>
-                      <p className="text-sm text-muted-foreground">Draw: {ticket.drawDate}</p>
+          {userTickets.length > 0 ? (
+            userTickets.map((ticket) => (
+              <Card key={ticket.id} className="bg-gradient-card shadow-card border-0">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {getStatusIcon(ticket.status)}
+                      <div>
+                        <p className="font-medium">#{ticket.ticket_number}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Purchased: {new Date(ticket.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="outline" className={getStatusColor(ticket.status)}>
+                        {ticket.status}
+                      </Badge>
+                      {ticket.prize_amount && (
+                        <p className="text-sm font-bold text-green-600 mt-1">
+                          ${ticket.prize_amount.toLocaleString()}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <Badge variant="outline" className={getStatusColor(ticket.status)}>
-                      {ticket.status}
-                    </Badge>
-                    {ticket.prize && (
-                      <p className="text-sm font-bold text-green-600 mt-1">{ticket.prize}</p>
-                    )}
-                  </div>
-                </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <Card className="bg-gradient-card shadow-card border-0">
+              <CardContent className="p-8 text-center">
+                <Ticket className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium mb-2">No Tickets Yet</h3>
+                <p className="text-sm text-muted-foreground">
+                  {user ? 'Purchase tickets above to participate in the draw!' : 'Please log in to view your tickets'}
+                </p>
               </CardContent>
             </Card>
-          ))}
+          )}
         </TabsContent>
 
         <TabsContent value="prizes" className="space-y-4">
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle className="text-base">Prize Structure</CardTitle>
+              <CardTitle className="text-base">Prize Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {prizeStructure.map((prize, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                    <div>
-                      <p className="font-medium">{prize.prize}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {prize.winners} winner{prize.winners > 1 ? 's' : ''} • {prize.odds}
-                      </p>
-                    </div>
-                    <p className="text-lg font-bold text-primary">{prize.amount}</p>
+              <div className="space-y-4">
+                <div className="p-4 bg-muted/20 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium">Total Prize Pool</span>
+                    <span className="text-xl font-bold text-primary">
+                      ${drawConfig.prize_pool.toLocaleString()}
+                    </span>
                   </div>
-                ))}
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Maximum Winners</span>
+                    <span>{drawConfig.max_winners}</span>
+                  </div>
+                </div>
+                
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p><strong>How it works:</strong></p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Purchase tickets before the draw date</li>
+                    <li>Winners are randomly selected after the draw closes</li>
+                    <li>Prize pool is distributed among winners</li>
+                    <li>Winning tickets will be notified automatically</li>
+                  </ul>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -206,20 +385,53 @@ const LuckyDrawScreen = () => {
         <TabsContent value="results" className="space-y-4">
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle className="text-base">Last Draw Results</CardTitle>
-              <p className="text-sm text-muted-foreground">Nov 30, 2024</p>
+              <CardTitle className="text-base">Draw Status</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {drawConfig.status === 'active' ? 'Current Draw' : 'Draw Completed'}
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {lastDrawResults.map((result, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
-                    <div>
-                      <p className="font-medium">{result.prize}</p>
-                      <p className="text-sm text-muted-foreground">#{result.ticketId}</p>
-                    </div>
-                    <p className="text-lg font-bold text-green-600">{result.amount}</p>
+              <div className="space-y-4">
+                <div className="text-center p-6 bg-muted/20 rounded-lg">
+                  {isDrawEnded ? (
+                    drawConfig.status === 'completed' ? (
+                      <>
+                        <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                        <h3 className="font-medium mb-2">Draw Completed</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Winners have been selected and notified
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="font-medium mb-2">Processing Results</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Draw has ended. Results will be announced soon.
+                        </p>
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <Gift className="w-12 h-12 text-primary mx-auto mb-4" />
+                      <h3 className="font-medium mb-2">Draw in Progress</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Get your tickets before {drawDate.toLocaleDateString()}!
+                      </p>
+                    </>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-primary">{ticketsSold}</p>
+                    <p className="text-sm text-muted-foreground">Tickets Sold</p>
                   </div>
-                ))}
+                  <div>
+                    <p className="text-2xl font-bold text-primary">{drawConfig.max_winners}</p>
+                    <p className="text-sm text-muted-foreground">Max Winners</p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
