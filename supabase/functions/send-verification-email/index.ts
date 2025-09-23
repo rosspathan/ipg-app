@@ -33,24 +33,37 @@ const handler = async (req: Request): Promise<Response> => {
       getOnboardingEmailTemplate(userName, verificationCode) : 
       getRegularEmailTemplate(confirmationUrl || '');
 
-    // Always use Resend's verified sender to guarantee delivery until domain is verified
+    // Try sending from your domain first; if not verified, fallback to onboarding@resend.dev
+    const fromEmail = Deno.env.get("SMTP_FROM") || "onboarding@resend.dev";
     const fromName = Deno.env.get("SMTP_NAME") || "IPG iSmart Exchange";
-    const supportFrom = Deno.env.get("SMTP_FROM") || "info@i-smartapp.com";
 
     let responseId: string | undefined;
     try {
-      const res = await resend.emails.send({
+      const primaryRes = await resend.emails.send({
+        from: `${fromName} <${fromEmail}>`,
+        to: [email],
+        subject: isOnboarding ? "Welcome to IPG iSmart Exchange - Verify Your Email" : "Verify Your Email - IPG iSmart",
+        html: emailContent,
+        reply_to: [`${fromName} <${fromEmail}>`],
+      });
+      if ((primaryRes as any)?.error) throw (primaryRes as any).error;
+      responseId = (primaryRes as any)?.data?.id ?? (primaryRes as any)?.id;
+      console.log("Primary send result:", primaryRes);
+    } catch (err: any) {
+      console.warn("Primary send failed, falling back to onboarding@resend.dev:", err?.message || err);
+      const fallbackRes = await resend.emails.send({
         from: `IPG iSmart Exchange <onboarding@resend.dev>`,
         to: [email],
         subject: isOnboarding ? "Welcome to IPG iSmart Exchange - Verify Your Email" : "Verify Your Email - IPG iSmart",
         html: emailContent,
-        reply_to: [`${fromName} <${supportFrom}>`],
+        reply_to: [`${fromName} <${fromEmail}>`],
       });
-      responseId = (res as any)?.data?.id ?? (res as any)?.id;
-      console.log("Email sent via Resend sandbox from onboarding@resend.dev", { to: email, id: responseId });
-    } catch (err) {
-      console.error("Resend send failed:", err);
-      throw err;
+      if ((fallbackRes as any)?.error) {
+        console.error("Fallback send failed:", (fallbackRes as any).error);
+        throw new Error((fallbackRes as any).error?.message || "Email send failed");
+      }
+      responseId = (fallbackRes as any)?.data?.id ?? (fallbackRes as any)?.id;
+      console.log("Fallback Resend send result:", fallbackRes);
     }
 
     return new Response(JSON.stringify({ 
