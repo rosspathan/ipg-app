@@ -33,13 +33,20 @@ const handler = async (req: Request): Promise<Response> => {
       getOnboardingEmailTemplate(userName, verificationCode) : 
       getRegularEmailTemplate(confirmationUrl || '');
 
-    // Get environment variables
+    // Get environment variables and sanitize sender
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const fromEmail = Deno.env.get("SMTP_FROM") || "info@i-smartapp.com";
-    const fromName = Deno.env.get("SMTP_NAME") || "IPG iSmart Exchange";
-    
+    const rawFromEmail = Deno.env.get("SMTP_FROM") || "info@i-smartapp.com";
+    const fromNameRaw = Deno.env.get("SMTP_NAME") || "IPG iSmart Exchange";
+
+    // Sanitize: trim quotes/spaces and extract pure email if provided as "Name <email>"
+    const trimmed = String(rawFromEmail).trim().replace(/^['\"]|['\"]$/g, "");
+    const extracted = trimmed.includes("<") ? trimmed.replace(/^.*<([^>]+)>.*/, "$1") : trimmed;
+    const fromEmail = extracted.trim();
+    const fromName = String(fromNameRaw).trim() || "IPG iSmart Exchange";
+
     console.log("DEBUG - Resend API Key exists:", !!resendApiKey);
-    console.log("DEBUG - From email:", fromEmail);
+    console.log("DEBUG - From email (raw):", rawFromEmail);
+    console.log("DEBUG - From email (sanitized):", fromEmail);
     console.log("DEBUG - From name:", fromName);
     
     if (!resendApiKey) {
@@ -49,8 +56,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Create a fresh Resend instance to ensure we're using the right API key
     const resendClient = new Resend(resendApiKey);
     
+    // Validate email format; if invalid, fallback to verified default
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const fromAddress = emailRegex.test(fromEmail) ? `${fromName} <${fromEmail}>` : `IPG iSmart Exchange <info@i-smartapp.com>`;
+
     const emailData = {
-      from: `${fromName} <${fromEmail}>`,
+      from: fromAddress,
       to: [email],
       subject: isOnboarding ? "Welcome to IPG iSmart Exchange - Verify Your Email" : "Verify Your Email - IPG iSmart",
       html: emailContent,
