@@ -1,18 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { Resend } from "npm:resend@4.0.0";
 
-// SMTP Configuration
-const client = new SMTPClient({
-  connection: {
-    hostname: Deno.env.get("SMTP_HOST") || "smtp.hostinger.com",
-    port: parseInt(Deno.env.get("SMTP_PORT") || "465"),
-    tls: Deno.env.get("SMTP_SECURE") === "true",
-    auth: {
-      username: Deno.env.get("SMTP_USER") || "",
-      password: Deno.env.get("SMTP_PASS") || "",
-    },
-  },
-});
+// Use Resend HTTP API (Edge Functions cannot open raw SMTP connections)
+const resend = new Resend(Deno.env.get("RESEND_API_KEY") as string);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,21 +33,37 @@ const handler = async (req: Request): Promise<Response> => {
       getOnboardingEmailTemplate(userName, verificationCode) : 
       getRegularEmailTemplate(confirmationUrl || '');
 
-    const fromEmail = Deno.env.get("SMTP_FROM") || "info@i-smartapp.com";
+    const fromEmail = Deno.env.get("SMTP_FROM") || "onboarding@resend.dev";
     const fromName = Deno.env.get("SMTP_NAME") || "IPG iSmart Exchange";
 
-    await client.send({
-      from: `${fromName} <${fromEmail}>`,
-      to: email,
-      subject: isOnboarding ? "Welcome to IPG iSmart Exchange - Verify Your Email" : "Verify Your Email - IPG iSmart",
-      html: emailContent,
-    });
-
-    console.log("Verification email sent successfully via SMTP to:", email);
+    let responseId: string | undefined;
+    try {
+      const res = await resend.emails.send({
+        from: `${fromName} <${fromEmail}>`,
+        to: [email],
+        subject: isOnboarding ? "Welcome to IPG iSmart Exchange - Verify Your Email" : "Verify Your Email - IPG iSmart",
+        html: emailContent,
+        reply_to: fromEmail !== "onboarding@resend.dev" ? [`${fromName} <${fromEmail}>`] : undefined,
+      });
+      responseId = (res as any)?.data?.id ?? (res as any)?.id;
+      console.log("Resend send result:", res);
+    } catch (err) {
+      console.warn("Primary send failed (likely unverified domain). Falling back to resend.dev:", err?.message || err);
+      const res = await resend.emails.send({
+        from: `IPG iSmart Exchange <onboarding@resend.dev>`,
+        to: [email],
+        subject: isOnboarding ? "Welcome to IPG iSmart Exchange - Verify Your Email" : "Verify Your Email - IPG iSmart",
+        html: emailContent,
+        reply_to: [`${fromName} <${fromEmail}>`],
+      });
+      responseId = (res as any)?.data?.id ?? (res as any)?.id;
+      console.log("Fallback Resend send result:", res);
+    }
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "Verification email sent successfully" 
+      message: "Verification email sent successfully",
+      id: responseId
     }), {
       status: 200,
       headers: {
