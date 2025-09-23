@@ -188,6 +188,40 @@ export const AdminLuckyDraw = () => {
     }
   };
 
+  const handleExecuteDraw = async (draw: LuckyDrawConfig) => {
+    if (!confirm(`Are you sure you want to execute the lucky draw? This will randomly select ${draw.max_winners} winner(s) and distribute the ${draw.prize_pool} USDT prize pool. This action cannot be undone.`)) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('execute-lucky-draw', {
+        body: { config_id: draw.id }
+      });
+
+      if (error) throw error;
+
+      const result = data as any;
+      if (result?.success) {
+        toast({
+          title: "Draw Executed Successfully!",
+          description: `${result.results.winners_count} winner(s) selected. Each winner receives ${result.results.prize_per_winner} USDT.`,
+        });
+
+        // Reload data to reflect changes
+        loadDraws();
+        if (selectedDrawId === draw.id) {
+          loadTickets(draw.id);
+        }
+      } else {
+        throw new Error(result?.error || 'Draw execution failed');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Draw Execution Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleStatusChange = async (draw: LuckyDrawConfig, newStatus: string) => {
     try {
       const { error } = await supabase
@@ -408,9 +442,16 @@ export const AdminLuckyDraw = () => {
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                     {draw.status === 'active' && (
                       <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleExecuteDraw(draw)}
+                        >
+                          Execute Draw
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
