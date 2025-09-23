@@ -33,15 +33,21 @@ const handler = async (req: Request): Promise<Response> => {
       getOnboardingEmailTemplate(userName, verificationCode) : 
       getRegularEmailTemplate(confirmationUrl || '');
 
-    // Debug: Log what secrets we're using
-    const fromEmail = Deno.env.get("SMTP_FROM") || "onboarding@resend.dev";
+    // Get environment variables
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const fromEmail = Deno.env.get("SMTP_FROM") || "info@i-smartapp.com";
     const fromName = Deno.env.get("SMTP_NAME") || "IPG iSmart Exchange";
     
-    console.log("DEBUG - Using fromEmail:", fromEmail);
-    console.log("DEBUG - Using fromName:", fromName);
+    console.log("DEBUG - Resend API Key exists:", !!resendApiKey);
+    console.log("DEBUG - From email:", fromEmail);
+    console.log("DEBUG - From name:", fromName);
     
-    // Try sending directly with the verified domain
-    let responseId: string | undefined;
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY not configured");
+    }
+    
+    // Create a fresh Resend instance to ensure we're using the right API key
+    const resendClient = new Resend(resendApiKey);
     
     const emailData = {
       from: `${fromName} <${fromEmail}>`,
@@ -50,26 +56,18 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailContent,
     };
     
-    console.log("DEBUG - Email data:", JSON.stringify(emailData, null, 2));
+    console.log("DEBUG - Sending email with data:", JSON.stringify(emailData, null, 2));
     
-    try {
-      const result = await resend.emails.send(emailData);
-      console.log("DEBUG - Full Resend result:", JSON.stringify(result, null, 2));
-      
-      if ((result as any)?.error) {
-        console.error("DEBUG - Resend returned error:", (result as any).error);
-        throw new Error((result as any).error?.message || "Email send failed");
-      }
-      
-      responseId = (result as any)?.data?.id ?? (result as any)?.id;
-      console.log("Email sent successfully with ID:", responseId);
-    } catch (err: any) {
-      console.error("DEBUG - Send failed with error:", err);
-      console.error("DEBUG - Error type:", typeof err);
-      console.error("DEBUG - Error message:", err?.message);
-      console.error("DEBUG - Full error object:", JSON.stringify(err, null, 2));
-      throw err;
+    const result = await resendClient.emails.send(emailData);
+    console.log("DEBUG - Resend response:", JSON.stringify(result, null, 2));
+    
+    if (result.error) {
+      console.error("DEBUG - Resend error:", result.error);
+      throw new Error(`Resend error: ${result.error.message || JSON.stringify(result.error)}`);
     }
+    
+    const responseId = result.data?.id;
+    console.log("Email sent successfully with ID:", responseId);
 
     return new Response(JSON.stringify({ 
       success: true, 
