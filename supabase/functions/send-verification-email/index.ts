@@ -180,22 +180,18 @@ function getOnboardingEmailTemplate(userName: string, verificationCode: string):
             border-top: 1px solid #e2e8f0;
           }
           .logo {
-            width: 60px;
-            height: 60px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
+            width: 80px;
+            height: 80px;
             margin-bottom: 16px;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(255,255,255,0.2);
           }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <div class="logo">🏦</div>
+            <img src="https://ocblgldglqhlrmtnynmu.supabase.co/storage/v1/object/public/assets/ipg-logo-email.jpg" alt="IPG iSmart Exchange" class="logo" />
             <h1>IPG iSmart Exchange</h1>
             <p>Welcome to the Future of Trading</p>
           </div>
