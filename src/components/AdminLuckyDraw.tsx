@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Ticket, DollarSign, Users, Calendar, Trophy } from "lucide-react";
+import { Plus, Edit, Trash2, Ticket, DollarSign, Users, Calendar, Trophy, List, Eye } from "lucide-react";
 
 interface LuckyDrawConfig {
   id: string;
@@ -21,9 +23,22 @@ interface LuckyDrawConfig {
   ticket_price: number;
 }
 
+interface LuckyDrawTicket {
+  id: string;
+  user_id: string;
+  config_id: string;
+  ticket_number: string;
+  status: string;
+  prize_amount?: number;
+  created_at: string;
+}
+
 export const AdminLuckyDraw = () => {
   const [draws, setDraws] = useState<LuckyDrawConfig[]>([]);
+  const [tickets, setTickets] = useState<LuckyDrawTicket[]>([]);
+  const [selectedDrawId, setSelectedDrawId] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [loadingTickets, setLoadingTickets] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDraw, setEditingDraw] = useState<LuckyDrawConfig | null>(null);
   const [formData, setFormData] = useState({
@@ -58,9 +73,42 @@ export const AdminLuckyDraw = () => {
     }
   };
 
+  const loadTickets = async (drawId: string) => {
+    try {
+      setLoadingTickets(true);
+      
+      const { data, error } = await supabase
+        .from("lucky_draw_tickets")
+        .select(`
+          *,
+          profiles!inner(email, full_name)
+        `)
+        .eq("config_id", drawId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setTickets(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error loading tickets",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
   useEffect(() => {
     loadDraws();
   }, []);
+
+  useEffect(() => {
+    if (selectedDrawId) {
+      loadTickets(selectedDrawId);
+    }
+  }, [selectedDrawId]);
 
   const resetForm = () => {
     setFormData({
@@ -226,18 +274,19 @@ export const AdminLuckyDraw = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Ticket className="h-5 w-5" />
-              Lucky Draw Configuration
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Configure lottery draws, prizes, schedules, and ticket pricing
-            </p>
-          </div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Ticket className="h-5 w-5" />
+                Lucky Draw Management
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Manage lottery draws, view tickets, and configure prizes
+              </p>
+            </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
@@ -331,6 +380,13 @@ export const AdminLuckyDraw = () => {
         </div>
       </CardHeader>
       <CardContent>
+        <Tabs defaultValue="draws" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="draws">Draw Configuration</TabsTrigger>
+            <TabsTrigger value="tickets">Ticket Management</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="draws" className="space-y-4">
         {draws.length === 0 ? (
           <div className="text-center py-8">
             <Ticket className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -430,7 +486,110 @@ export const AdminLuckyDraw = () => {
             ))}
           </div>
         )}
+          </TabsContent>
+          
+          <TabsContent value="tickets" className="space-y-4">
+            <div className="flex items-center gap-4 mb-4">
+              <Label htmlFor="draw-select">Select Draw:</Label>
+              <Select value={selectedDrawId} onValueChange={setSelectedDrawId}>
+                <SelectTrigger className="w-[300px]">
+                  <SelectValue placeholder="Choose a draw to view tickets" />
+                </SelectTrigger>
+                <SelectContent>
+                  {draws.map((draw) => (
+                    <SelectItem key={draw.id} value={draw.id}>
+                      Draw #{draw.id.slice(0, 8)} - {draw.prize_pool} USDT
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedDrawId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <List className="h-5 w-5" />
+                    Tickets for Draw #{selectedDrawId.slice(0, 8)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingTickets ? (
+                    <div className="flex items-center justify-center h-32">
+                      Loading tickets...
+                    </div>
+                  ) : tickets.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Ticket className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">No tickets purchased for this draw yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                          Total Tickets: {tickets.length}
+                        </p>
+                      </div>
+                      
+                      <div className="border rounded-lg">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Ticket Number</TableHead>
+                              <TableHead>User</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Prize</TableHead>
+                              <TableHead>Purchase Date</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {tickets.map((ticket) => (
+                              <TableRow key={ticket.id}>
+                                <TableCell className="font-mono text-sm">
+                                  {ticket.ticket_number}
+                                </TableCell>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">
+                                      {(ticket as any).profiles?.full_name || 'N/A'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {(ticket as any).profiles?.email || ticket.user_id.slice(0, 8)}
+                                    </p>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={
+                                    ticket.status === 'won' ? 'default' : 
+                                    ticket.status === 'lost' ? 'secondary' : 
+                                    'outline'
+                                  }>
+                                    {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {ticket.prize_amount ? 
+                                    `${ticket.prize_amount} USDT` : 
+                                    '-'
+                                  }
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {new Date(ticket.created_at).toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
+    </div>
   );
 };
