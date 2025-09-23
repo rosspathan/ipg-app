@@ -1,7 +1,18 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+// SMTP Configuration
+const client = new SMTPClient({
+  connection: {
+    hostname: Deno.env.get("SMTP_HOST") || "smtp.hostinger.com",
+    port: parseInt(Deno.env.get("SMTP_PORT") || "465"),
+    tls: Deno.env.get("SMTP_SECURE") === "true",
+    auth: {
+      username: Deno.env.get("SMTP_USER") || "",
+      password: Deno.env.get("SMTP_PASS") || "",
+    },
+  },
+});
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,14 +43,17 @@ const handler = async (req: Request): Promise<Response> => {
       getOnboardingEmailTemplate(userName, verificationCode) : 
       getRegularEmailTemplate(confirmationUrl || '');
 
-    const emailResponse = await resend.emails.send({
-      from: "IPG iSmart Exchange <onboarding@resend.dev>",
-      to: [email],
+    const fromEmail = Deno.env.get("SMTP_FROM") || "info@i-smartapp.com";
+    const fromName = Deno.env.get("SMTP_NAME") || "IPG iSmart Exchange";
+
+    await client.send({
+      from: `${fromName} <${fromEmail}>`,
+      to: email,
       subject: isOnboarding ? "Welcome to IPG iSmart Exchange - Verify Your Email" : "Verify Your Email - IPG iSmart",
       html: emailContent,
     });
 
-    console.log("Verification email sent successfully:", emailResponse);
+    console.log("Verification email sent successfully via SMTP to:", email);
 
     return new Response(JSON.stringify({ 
       success: true, 
