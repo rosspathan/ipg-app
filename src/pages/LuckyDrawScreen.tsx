@@ -24,7 +24,7 @@ interface UserTicket {
   config_id: string;
   ticket_number: string;
   created_at: string;
-  status: 'pending' | 'won' | 'lost';
+  status: string;
   prize_amount?: number;
 }
 
@@ -60,24 +60,35 @@ const LuckyDrawScreen = () => {
       if (configs && configs.length > 0) {
         setDrawConfig(configs[0] as LuckyDrawConfig);
         
-        // For now, use mock data for tickets since types aren't updated yet
+        // Get user's tickets for this draw
         if (user) {
-          // Mock user tickets - in reality these would come from the database
-          const mockTickets: UserTicket[] = [
+          const { data: ticketsData, error: ticketsError } = await supabase.rpc(
+            'get_user_lucky_draw_tickets',
             {
-              id: '1',
-              user_id: user.id,
-              config_id: configs[0].id,
-              ticket_number: 'TKT001-SAMPLE',
-              status: 'pending',
-              created_at: new Date().toISOString()
+              p_user_id: user.id,
+              p_config_id: configs[0].id
             }
-          ];
-          setUserTickets(mockTickets);
+          );
+
+          if (ticketsError) {
+            console.error('Error loading user tickets:', ticketsError);
+          } else {
+            setUserTickets(ticketsData || []);
+          }
         }
         
-        // Mock tickets sold count
-        setTicketsSold(Math.floor(Math.random() * 500) + 100);
+        // Get total tickets sold count
+        const { data: ticketCount, error: countError } = await supabase.rpc(
+          'count_lucky_draw_tickets',
+          { p_config_id: configs[0].id }
+        );
+
+        if (countError) {
+          console.error('Error loading ticket count:', countError);
+          setTicketsSold(0);
+        } else {
+          setTicketsSold(ticketCount || 0);
+        }
       }
     } catch (error) {
       console.error('Error loading lucky draw data:', error);
@@ -113,42 +124,40 @@ const LuckyDrawScreen = () => {
     try {
       setPurchasing(true);
       
-      // For now, simulate ticket purchase since types aren't updated yet
-      // In a real implementation, this would use the RPC function
-      toast({
-        title: "Tickets Purchased!",
-        description: `Successfully bought ${tickets} ticket(s) for $${(tickets * drawConfig.ticket_price).toFixed(2)}`,
-      });
+      // Create tickets using the RPC function
+      const { data: result, error: purchaseError } = await supabase.rpc(
+        'create_lucky_draw_tickets',
+        {
+          p_user_id: user.id,
+          p_config_id: drawConfig.id,
+          p_ticket_count: tickets
+        }
+      );
 
-      // Add mock tickets to the user's tickets
-      const newTickets: UserTicket[] = [];
-      for (let i = 0; i < tickets; i++) {
-        newTickets.push({
-          id: `${Date.now()}-${i}`,
-          user_id: user.id,
-          config_id: drawConfig.id,
-          ticket_number: `TKT${Date.now()}-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-          status: 'pending',
-          created_at: new Date().toISOString()
+      if (purchaseError) throw purchaseError;
+
+      // Parse the JSON response
+      const response = result as any;
+      if (response?.success) {
+        toast({
+          title: "Tickets Purchased!",
+          description: `Successfully bought ${tickets} ticket(s) for $${(tickets * drawConfig.ticket_price).toFixed(2)}`,
         });
+
+        // Reload the data to get updated tickets and count
+        await loadLuckyDrawData();
+
+        // Reset ticket count
+        setTickets(1);
+      } else {
+        throw new Error(response?.message || 'Purchase failed');
       }
-      
-      setUserTickets(prev => [...newTickets, ...prev]);
-      setTicketsSold(prev => prev + tickets);
-
-      toast({
-        title: "Tickets Purchased!",
-        description: `Successfully bought ${tickets} ticket(s) for $${(tickets * drawConfig.ticket_price).toFixed(2)}`,
-      });
-
-      // Reset ticket count
-      setTickets(1);
       
     } catch (error) {
       console.error('Error purchasing tickets:', error);
       toast({
         title: "Purchase Failed",
-        description: "Failed to purchase tickets. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to purchase tickets. Please try again.",
         variant: "destructive",
       });
     } finally {
