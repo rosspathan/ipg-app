@@ -191,7 +191,7 @@ function getOnboardingEmailTemplate(userName: string, verificationCode: string):
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://ocblgldglqhlrmtnynmu.supabase.co/storage/v1/object/public/assets/ipg-logo-email.jpg" alt="IPG iSmart Exchange" class="logo" />
+            <img src="https://ocblgldglqhlrmtnynmu.supabase.co/storage/v1/object/public/assets/ipg-logo-email.png" alt="IPG iSmart Exchange" class="logo" />
             <h1>IPG iSmart Exchange</h1>
             <p>Welcome to the Future of Trading</p>
           </div>
