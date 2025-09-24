@@ -6,30 +6,59 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-wallet-address, x-local-auth",
 };
 
+interface SpinRequest {
+  wheel_id?: string;
+  wallet_address?: string;
+  local_auth?: boolean;
+  bet_amount?: number;
+}
+
+interface SpinSettings {
+  id: string;
+  free_spins_default: number;
+  fee_bp_after_free: number;
+  min_bet_usdt: number;
+  max_bet_usdt: number;
+  segments: any[];
+  is_enabled: boolean;
+  cooldown_seconds: number;
+}
+
+interface UserBalance {
+  user_id: string;
+  bsk_available: number;
+  bsk_pending: number;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = crypto.randomUUID();
+  console.log(`🎯 [${requestId}] Spin request initiated`);
+
   try {
-    const { wheel_id, wallet_address, local_auth } = await req.json();
-    
-    if (!wheel_id) {
-      throw new Error("wheel_id is required");
+    const requestBody: SpinRequest = await req.json();
+    console.log(`📥 [${requestId}] Request body:`, JSON.stringify(requestBody));
+
+    // Environment validation
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+
+    if (!supabaseUrl || !serviceRoleKey || !anonKey) {
+      throw new Error("Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY");
     }
 
-    // Create Supabase client with service role for full access
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+    console.log(`🔧 [${requestId}] Environment verified - URL: ${supabaseUrl}`);
 
-    // Create client for user auth
-    const supabaseAuth = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
+    // Create Supabase clients
+    const supabaseService = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false }
+    });
+
+    const supabaseAuth = createClient(supabaseUrl, anonKey);
 
     // Determine authentication method and get user ID
     let userId: string;
@@ -40,155 +69,176 @@ serve(async (req) => {
     const localAuthHeader = req.headers.get("x-local-auth");
 
     if (authHeader && authHeader.startsWith("Bearer ")) {
-      // Supabase authentication
       const token = authHeader.replace("Bearer ", "");
-      const { data: { user } } = await supabaseAuth.auth.getUser(token);
+      const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
       
-      if (!user) {
-        throw new Error("Invalid Supabase authentication");
+      if (authError || !user) {
+        console.error(`❌ [${requestId}] Supabase auth failed:`, authError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Invalid authentication token",
+            error_code: "AUTH_INVALID"
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+        );
       }
       
       userId = user.id;
       authMethod = "supabase";
-      console.log(`Spin request from Supabase user ${userId} for wheel ${wheel_id}`);
+      console.log(`👤 [${requestId}] Supabase user authenticated: ${userId}`);
       
-    } else if (wallet_address || walletHeader) {
-      // Web3 wallet authentication
-      const address = wallet_address || walletHeader;
-      if (!address) {
-        throw new Error("Wallet address required for Web3 authentication");
-      }
-      
-      // Use wallet address as pseudo user ID (prefixed to avoid conflicts)
-      userId = `wallet_${address.toLowerCase()}`;
+    } else if (requestBody.wallet_address || walletHeader) {
+      const address = requestBody.wallet_address || walletHeader;
+      userId = `wallet_${address?.toLowerCase()}`;
       authMethod = "web3";
-      console.log(`Spin request from Web3 wallet ${address} for wheel ${wheel_id}`);
+      console.log(`🔗 [${requestId}] Web3 wallet authenticated: ${address}`);
       
-    } else if (local_auth === true || localAuthHeader === "true") {
-      // Local security authentication
-      // Use a temporary ID based on request timestamp and IP (for demo purposes)
+    } else if (requestBody.local_auth === true || localAuthHeader === "true") {
       const clientIP = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
       userId = `local_${clientIP}_${Date.now()}`;
       authMethod = "local";
-      console.log(`Spin request from local auth user ${userId} for wheel ${wheel_id}`);
+      console.log(`🏠 [${requestId}] Local auth user: ${userId}`);
       
     } else {
-      throw new Error("Authentication required - provide Supabase token, wallet address, or local auth");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Authentication required",
+          error_code: "AUTH_REQUIRED"
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
     }
 
-    // 1. Load active wheel and segments
-    const { data: wheel, error: wheelError } = await supabaseService
-      .from("spin_wheels")
+    // Load spin settings
+    const { data: settings, error: settingsError } = await supabaseService
+      .from("spin_settings")
       .select("*")
-      .eq("id", wheel_id)
-      .eq("is_active", true)
+      .eq("is_enabled", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .single();
 
-    if (wheelError || !wheel) {
-      throw new Error("Wheel not found or inactive");
+    if (settingsError || !settings) {
+      console.error(`❌ [${requestId}] Failed to load spin settings:`, settingsError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Spin system not configured",
+          error_code: "SETTINGS_MISSING"
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
     }
 
-    // Check time window
-    const now = new Date();
-    if (wheel.start_at && new Date(wheel.start_at) > now) {
-      throw new Error("Wheel not yet started");
-    }
-    if (wheel.end_at && new Date(wheel.end_at) < now) {
-      throw new Error("Wheel has ended");
+    console.log(`⚙️ [${requestId}] Settings loaded:`, {
+      free_spins: settings.free_spins_default,
+      fee_percent: settings.fee_bp_after_free,
+      cooldown: settings.cooldown_seconds
+    });
+
+    // Get user balance (for Supabase users only)
+    let userBalance: UserBalance | null = null;
+    if (authMethod === "supabase") {
+      const { data: balance } = await supabaseService
+        .from("user_bonus_balances")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+      
+      if (balance) {
+        userBalance = balance;
+        console.log(`💰 [${requestId}] User balance: ${balance.bsk_available} BSK available`);
+      } else {
+        // Create initial balance
+        const { data: newBalance } = await supabaseService
+          .from("user_bonus_balances")
+          .insert({ user_id: userId, bsk_available: 100, bsk_pending: 0 })
+          .select()
+          .single();
+        userBalance = newBalance;
+        console.log(`🆕 [${requestId}] Created initial balance: 100 BSK`);
+      }
     }
 
-    const { data: segments, error: segmentsError } = await supabaseService
-      .from("spin_segments")
-      .select("*")
-      .eq("wheel_id", wheel_id)
-      .eq("is_enabled", true);
-
-    if (segmentsError || !segments || segments.length === 0) {
-      throw new Error("No active segments found");
-    }
-
-    // 2. Check user limits
+    // Check daily spin limits and cooldown
     const today = new Date().toISOString().split('T')[0];
-    
-    // Get or create daily limits
-    const { data: userLimit, error: limitError } = await supabaseService
-      .from("spin_user_limits")
-      .select("*")
-      .eq("wheel_id", wheel_id)
+    const { data: todaySpins } = await supabaseService
+      .from("spin_results")
+      .select("id, created_at")
       .eq("user_id", userId)
-      .eq("day", today)
-      .single();
+      .gte("created_at", `${today}T00:00:00.000Z`)
+      .order("created_at", { ascending: false });
 
-    let spinsToday = 0;
-    if (!limitError && userLimit) {
-      spinsToday = userLimit.spins_today;
-    }
+    const spinsToday = todaySpins?.length || 0;
+    const freeSpinsRemaining = Math.max(0, settings.free_spins_default - spinsToday);
+
+    console.log(`📊 [${requestId}] Daily stats: ${spinsToday} spins today, ${freeSpinsRemaining} free spins left`);
 
     // Check cooldown
-    if (wheel.cooldown_seconds > 0) {
-      const { data: lastRun } = await supabaseService
-        .from("spin_runs")
-        .select("created_at")
-        .eq("wheel_id", wheel_id)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (lastRun) {
-        const timeSinceLastSpin = now.getTime() - new Date(lastRun.created_at).getTime();
-        if (timeSinceLastSpin < wheel.cooldown_seconds * 1000) {
-          const remainingCooldown = Math.ceil((wheel.cooldown_seconds * 1000 - timeSinceLastSpin) / 1000);
-          throw new Error(`Cooldown active. Wait ${remainingCooldown} seconds`);
-        }
-      }
-    }
-
-    // Check max spins per user
-    if (wheel.max_spins_per_user > 0) {
-      const { count } = await supabaseService
-        .from("spin_runs")
-        .select("*", { count: "exact", head: true })
-        .eq("wheel_id", wheel_id)
-        .eq("user_id", userId);
-
-      if (count && count >= wheel.max_spins_per_user) {
-        throw new Error("Maximum spins per user reached");
-      }
-    }
-
-    // 3. Determine cost and payment
-    let ticketCost = 0;
-    let ticketCurrency = wheel.ticket_currency;
-    const freeSpinsRemaining = Math.max(0, wheel.free_spins_daily - spinsToday);
-
-    if (freeSpinsRemaining > 0) {
-      ticketCost = 0;
-      console.log(`Using free spin. ${freeSpinsRemaining - 1} remaining today`);
-    } else {
-      ticketCost = wheel.ticket_price;
-      console.log(`Charging ${ticketCost} ${ticketCurrency}`);
+    if (settings.cooldown_seconds > 0 && todaySpins && todaySpins.length > 0) {
+      const lastSpinTime = new Date(todaySpins[0].created_at).getTime();
+      const now = Date.now();
+      const timeSinceLastSpin = now - lastSpinTime;
       
-      if (ticketCost > 0) {
-        // For non-Supabase users, skip balance checking for now (free spins only)
-        if (authMethod !== "supabase") {
-          console.log(`Non-Supabase user - allowing free spin only`);
-          ticketCost = 0; // Override to free for demo
-        } else {
-          // For MVP, we'll just log the charge - implement actual balance checking/deduction later
-          console.log(`TODO: Deduct ${ticketCost} ${ticketCurrency} from user ${userId}`);
-        }
+      if (timeSinceLastSpin < settings.cooldown_seconds * 1000) {
+        const remainingCooldown = Math.ceil((settings.cooldown_seconds * 1000 - timeSinceLastSpin) / 1000);
+        console.log(`⏰ [${requestId}] Cooldown active: ${remainingCooldown}s remaining`);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Cooldown active. Wait ${remainingCooldown} seconds`,
+            error_code: "COOLDOWN_ACTIVE",
+            cooldown_remaining: remainingCooldown
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 422 }
+        );
       }
     }
 
-    // 4. Server-side randomness with weighted selection
-    const totalWeight = segments.reduce((sum, segment) => sum + segment.weight, 0);
+    // Determine cost and validate bet
+    const betAmount = requestBody.bet_amount || settings.min_bet_usdt;
+    let isFreeSpin = freeSpinsRemaining > 0;
+    let feeBsk = 0;
+
+    if (betAmount < settings.min_bet_usdt || betAmount > settings.max_bet_usdt) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Bet amount must be between ${settings.min_bet_usdt} and ${settings.max_bet_usdt} USDT`,
+          error_code: "INVALID_BET_AMOUNT"
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 422 }
+      );
+    }
+
+    if (!isFreeSpin) {
+      feeBsk = (betAmount * settings.fee_bp_after_free) / 100;
+      console.log(`💸 [${requestId}] Fee calculation: ${betAmount} USDT * ${settings.fee_bp_after_free}% = ${feeBsk} BSK`);
+      
+      // Check if user has enough BSK for fee (Supabase users only)
+      if (authMethod === "supabase" && userBalance && userBalance.bsk_available < feeBsk) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Insufficient BSK balance. Need ${feeBsk} BSK for fee, have ${userBalance.bsk_available} BSK`,
+            error_code: "INSUFFICIENT_BALANCE"
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 422 }
+        );
+      }
+    }
+
+    console.log(`🎰 [${requestId}] Spin parameters: bet=${betAmount} USDT, free=${isFreeSpin}, fee=${feeBsk} BSK`);
+
+    // Server-side randomness with weighted selection from settings
+    const segments = settings.segments;
+    const totalWeight = segments.reduce((sum: number, segment: any) => sum + segment.weight, 0);
     
-    // Use crypto.getRandomValues for secure randomness
     const randomArray = new Uint32Array(1);
     crypto.getRandomValues(randomArray);
-    const randomValue = randomArray[0] / (0xFFFFFFFF + 1); // Convert to 0-1 range
-    
+    const randomValue = randomArray[0] / (0xFFFFFFFF + 1);
     const pick = Math.floor(randomValue * totalWeight);
     
     let currentWeight = 0;
@@ -202,144 +252,95 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Selected segment: ${winningSegment.label} (weight: ${winningSegment.weight}/${totalWeight})`);
+    console.log(`🎯 [${requestId}] Winning segment: ${winningSegment.label} (${winningSegment.weight}/${totalWeight})`);
 
-    // 5. Create spin run record
+    // Calculate BSK delta
+    const baseBskDelta = winningSegment.reward_value || 0;
+    const totalBskDelta = baseBskDelta - feeBsk;
+
+    console.log(`📈 [${requestId}] BSK calculation: ${baseBskDelta} (reward) - ${feeBsk} (fee) = ${totalBskDelta}`);
+
+    // Create spin result record
     const outcome = {
-      segment_id: winningSegment.id,
-      label: winningSegment.label,
-      reward_type: winningSegment.reward_type,
-      reward_value: winningSegment.reward_value,
-      reward_token: winningSegment.reward_token
+      segment: winningSegment,
+      random_value: randomValue,
+      pick: pick,
+      total_weight: totalWeight
     };
 
-    const { data: spinRun, error: runError } = await supabaseService
-      .from("spin_runs")
+    const { data: spinResult, error: resultError } = await supabaseService
+      .from("spin_results")
       .insert({
-        wheel_id: wheel_id,
         user_id: userId,
-        segment_id: winningSegment.id,
-        ticket_cost: ticketCost,
-        ticket_currency: ticketCurrency,
+        bet_amount: betAmount,
         outcome: outcome,
-        status: "won"
+        bsk_delta: totalBskDelta,
+        fee_bsk: feeBsk,
+        segment_label: winningSegment.label,
+        is_free_spin: isFreeSpin,
+        auth_method: authMethod
       })
       .select()
       .single();
 
-    if (runError) {
-      throw new Error(`Failed to create spin run: ${runError.message}`);
+    if (resultError) {
+      console.error(`❌ [${requestId}] Failed to create spin result:`, resultError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Failed to record spin result",
+          error_code: "DATABASE_ERROR"
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
     }
 
-    // 6. Grant rewards and update BSK balance (only for Supabase users for now)
-    if (winningSegment.reward_type === "token" && winningSegment.reward_token === "BSK" && winningSegment.reward_value !== null) {
-      // Create grant record
-      const { error: grantError } = await supabaseService
-        .from("spin_grants")
-        .insert({
-          run_id: spinRun.id,
-          user_id: userId,
-          type: winningSegment.reward_type,
-          value: winningSegment.reward_value,
-          token: winningSegment.reward_token,
-          meta: { segment_label: winningSegment.label, auth_method: authMethod }
-        });
+    console.log(`📝 [${requestId}] Spin result created: ${spinResult.id}`);
 
-      if (grantError) {
-        console.error("Failed to create grant:", grantError);
+    // Update user balance (Supabase users only)
+    let newBalance = null;
+    if (authMethod === "supabase" && userBalance) {
+      const updatedAvailable = userBalance.bsk_available + totalBskDelta;
+      
+      const { data: balanceUpdate, error: balanceError } = await supabaseService
+        .from("user_bonus_balances")
+        .update({ 
+          bsk_available: updatedAvailable,
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", userId)
+        .select()
+        .single();
+
+      if (balanceError) {
+        console.error(`❌ [${requestId}] Failed to update balance:`, balanceError);
       } else {
-        console.log(`Granted ${winningSegment.reward_value} ${winningSegment.reward_token}`);
-        
-        // Update BSK bonus balance (only for Supabase authenticated users)
-        if (authMethod === "supabase") {
-          try {
-            // Get BSK asset ID
-            const { data: bskAsset } = await supabaseService
-              .from("bonus_assets")
-              .select("id")
-              .eq("symbol", "BSK")
-              .single();
-            
-            if (bskAsset) {
-              // Get current balance or create new record
-              const { data: currentBalance } = await supabaseService
-                .from("wallet_bonus_balances")
-                .select("balance")
-                .eq("user_id", userId)
-                .eq("asset_id", bskAsset.id)
-                .single();
-              
-              const newBalance = (currentBalance?.balance || 0) + winningSegment.reward_value;
-              
-              if (currentBalance) {
-                // Update existing balance
-                await supabaseService
-                  .from("wallet_bonus_balances")
-                  .update({ 
-                    balance: newBalance,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq("user_id", userId)
-                  .eq("asset_id", bskAsset.id);
-              } else {
-                // Create new balance record
-                await supabaseService
-                  .from("wallet_bonus_balances")
-                  .insert({
-                    user_id: userId,
-                    asset_id: bskAsset.id,
-                    balance: newBalance
-                  });
-              }
-              
-              console.log(`Updated BSK balance: ${newBalance} (${winningSegment.reward_value > 0 ? '+' : ''}${winningSegment.reward_value})`);
-            }
-          } catch (balanceError) {
-            console.error("Failed to update BSK balance:", balanceError);
-          }
-        } else {
-          console.log(`Reward granted but balance not updated for non-Supabase user (${authMethod})`);
-        }
+        newBalance = balanceUpdate;
+        console.log(`💰 [${requestId}] Balance updated: ${userBalance.bsk_available} → ${updatedAvailable} BSK`);
       }
     }
 
-    // Update run status to granted
-    await supabaseService
-      .from("spin_runs")
-      .update({ status: "granted" })
-      .eq("id", spinRun.id);
+    const response = {
+      success: true,
+      spin_id: spinResult.id,
+      segment: winningSegment,
+      bsk_delta: totalBskDelta,
+      fee_bsk: feeBsk,
+      is_free_spin: isFreeSpin,
+      free_spins_remaining: Math.max(0, freeSpinsRemaining - 1),
+      new_balance: newBalance,
+      auth_method: authMethod,
+      cooldown_seconds: settings.cooldown_seconds
+    };
 
-    // 7. Update user limits
-    if (userLimit) {
-      await supabaseService
-        .from("spin_user_limits")
-        .update({ spins_today: spinsToday + 1 })
-        .eq("id", userLimit.id);
-    } else {
-      await supabaseService
-        .from("spin_user_limits")
-        .insert({
-          wheel_id: wheel_id,
-          user_id: userId,
-          day: today,
-          spins_today: 1
-        });
-    }
+    console.log(`✅ [${requestId}] Spin completed successfully:`, {
+      segment: winningSegment.label,
+      bsk_delta: totalBskDelta,
+      free_spin: isFreeSpin
+    });
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        run_id: spinRun.id,
-        segment_id: winningSegment.id,
-        label: winningSegment.label,
-        reward: {
-          type: winningSegment.reward_type,
-          value: winningSegment.reward_value,
-          token: winningSegment.reward_token
-        },
-        ticket_cost: ticketCost,
-        free_spins_remaining: Math.max(0, freeSpinsRemaining - 1)
-      }),
+      JSON.stringify(response),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -347,15 +348,32 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("Spin execution error:", error);
+    console.error(`💥 [${requestId}] Spin execution error:`, error);
+    
+    let errorCode = "INTERNAL_ERROR";
+    let statusCode = 500;
+    
+    if (error.message.includes("authentication") || error.message.includes("auth")) {
+      errorCode = "AUTH_ERROR";
+      statusCode = 401;
+    } else if (error.message.includes("balance") || error.message.includes("insufficient")) {
+      errorCode = "INSUFFICIENT_BALANCE";
+      statusCode = 422;
+    } else if (error.message.includes("cooldown")) {
+      errorCode = "COOLDOWN_ACTIVE";
+      statusCode = 422;
+    }
+
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error.message || "Internal server error",
+        error_code: errorCode,
+        request_id: requestId
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
+        status: statusCode,
       }
     );
   }

@@ -2243,6 +2243,45 @@ export type Database = {
           },
         ]
       }
+      spin_results: {
+        Row: {
+          auth_method: string
+          bet_amount: number
+          bsk_delta: number
+          created_at: string
+          fee_bsk: number
+          id: string
+          is_free_spin: boolean
+          outcome: Json
+          segment_label: string
+          user_id: string
+        }
+        Insert: {
+          auth_method?: string
+          bet_amount?: number
+          bsk_delta?: number
+          created_at?: string
+          fee_bsk?: number
+          id?: string
+          is_free_spin?: boolean
+          outcome: Json
+          segment_label: string
+          user_id: string
+        }
+        Update: {
+          auth_method?: string
+          bet_amount?: number
+          bsk_delta?: number
+          created_at?: string
+          fee_bsk?: number
+          id?: string
+          is_free_spin?: boolean
+          outcome?: Json
+          segment_label?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       spin_runs: {
         Row: {
           created_at: string | null
@@ -2343,6 +2382,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      spin_settings: {
+        Row: {
+          cooldown_seconds: number
+          created_at: string
+          fee_bp_after_free: number
+          free_spins_default: number
+          id: string
+          is_enabled: boolean
+          max_bet_usdt: number
+          min_bet_usdt: number
+          segments: Json
+          updated_at: string
+        }
+        Insert: {
+          cooldown_seconds?: number
+          created_at?: string
+          fee_bp_after_free?: number
+          free_spins_default?: number
+          id?: string
+          is_enabled?: boolean
+          max_bet_usdt?: number
+          min_bet_usdt?: number
+          segments?: Json
+          updated_at?: string
+        }
+        Update: {
+          cooldown_seconds?: number
+          created_at?: string
+          fee_bp_after_free?: number
+          free_spins_default?: number
+          id?: string
+          is_enabled?: boolean
+          max_bet_usdt?: number
+          min_bet_usdt?: number
+          segments?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       spin_user_limits: {
         Row: {
@@ -2937,6 +3015,30 @@ export type Database = {
           points_earned?: number
           unlocked?: boolean
           unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_bonus_balances: {
+        Row: {
+          bsk_available: number
+          bsk_pending: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bsk_available?: number
+          bsk_pending?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bsk_available?: number
+          bsk_pending?: number
+          id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

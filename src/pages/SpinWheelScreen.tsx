@@ -250,28 +250,40 @@ export default function SpinWheelScreen() {
 
       if (error) throw error;
 
-      if (data.success) {
+      if (data?.success) {
         console.log("🎯 Spin successful:", data);
-        setWinningResult(data);
+        
+        // Update winning result with new format
+        setWinningResult({
+          segment_id: data.segment?.id || null,
+          label: data.segment?.label || 'Unknown',
+          reward: {
+            type: data.segment?.reward_type || 'token',
+            value: data.bsk_delta || 0,
+            token: data.segment?.reward_token || 'BSK'
+          },
+          free_spins_remaining: data.free_spins_remaining || 0
+        });
+
         setFreeSpinsLeft(data.free_spins_remaining || 0);
         
-        // Set cooldown
-        if (wheel.cooldown_seconds > 0) {
-          setCooldownRemaining(wheel.cooldown_seconds);
+        // Set cooldown if provided
+        if (data.cooldown_seconds > 0) {
+          setCooldownRemaining(data.cooldown_seconds);
         }
 
         // Force bonus balance update
         setBonusBalanceKey(prev => prev + 1);
 
         // Show appropriate toast
-        const isWin = data.reward?.value > 0;
+        const isWin = data.bsk_delta > 0;
         toast({
           title: isWin ? "🎉 Congratulations!" : "😢 Better luck next time!",
-          description: `${data.label}: ${data.reward?.value > 0 ? '+' : ''}${data.reward?.value} BSK`,
+          description: `${data.segment?.label}: ${data.bsk_delta > 0 ? '+' : ''}${data.bsk_delta} BSK${data.is_free_spin ? ' (Free Spin)' : ''}`,
           variant: isWin ? "default" : "destructive"
         });
       } else {
-        throw new Error(data.error || "Spin failed");
+        throw new Error(data?.error || "Spin failed");
       }
     } catch (error: any) {
       console.error("Spin error:", error);
