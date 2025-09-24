@@ -52,29 +52,56 @@ export const FuturisticSpinWheel = ({
     drawWheel();
   }, [segments]);
 
+  // Start spinning immediately when isSpinning becomes true
   useEffect(() => {
-    if (winningSegment && !isSpinning) {
+    if (isSpinning && !isAnimating) {
+      console.log("🎪 Starting immediate spin animation");
+      setIsAnimating(true);
+      // Start with a continuous spin animation
+      const continuousSpin = setInterval(() => {
+        setRotation(prev => prev + 10);
+      }, 16); // ~60fps
+      
+      // Store interval ref for cleanup
+      const intervalRef = continuousSpin;
+      
+      // Clean up when not spinning anymore
+      const cleanup = () => {
+        clearInterval(intervalRef);
+      };
+      
+      return cleanup;
+    }
+  }, [isSpinning, isAnimating]);
+
+  // Handle result when spin completes
+  useEffect(() => {
+    if (winningSegment && !isSpinning && isAnimating) {
+      console.log("🎪 Handling spin result", winningSegment);
+      
       // Calculate the angle to land on the winning segment
       const segmentAngle = 360 / segments.length;
-      const winningIndex = segments.findIndex(s => s.id === winningSegment.segment_id);
+      const winningIndex = segments.findIndex(s => 
+        s.label === winningSegment.label || 
+        s.id === winningSegment.segment_id
+      );
       
       if (winningIndex !== -1) {
-        // Calculate final rotation to land on winning segment
+        // Calculate final rotation to land on winning segment  
         const targetAngle = (winningIndex * segmentAngle) + (segmentAngle / 2);
-        const spins = 8; // Number of full rotations for dramatic effect
+        const spins = 3; // Additional rotations for dramatic effect
         const finalRotation = (spins * 360) + (360 - targetAngle);
         
         setRotation(prev => prev + finalRotation);
-        setIsAnimating(true);
         setResultData(winningSegment);
         
         setTimeout(() => {
           setIsAnimating(false);
           setShowResultDialog(true);
-        }, 4000);
+        }, 3000);
       }
     }
-  }, [winningSegment, isSpinning, segments]);
+  }, [winningSegment, isSpinning, segments, isAnimating]);
 
   const drawWheel = () => {
     const canvas = canvasRef.current;

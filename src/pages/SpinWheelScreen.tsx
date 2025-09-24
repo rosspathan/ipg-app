@@ -24,10 +24,12 @@ interface SpinSettings {
 }
 
 interface SpinSegment {
+  id: string;
   label: string;
   weight: number;
   reward_value: number;
   reward_token: string;
+  reward_type: string;
   color?: string;
 }
 
@@ -132,8 +134,23 @@ export default function SpinWheelScreen() {
         return;
       }
 
-      setSettings(settingsData);
-      const segmentsArray = Array.isArray(settingsData.segments) ? settingsData.segments as SpinSegment[] : [];
+      const segmentsArray = Array.isArray(settingsData.segments) 
+        ? (settingsData.segments as any[]).map((seg: any, index: number) => ({
+            id: `segment-${index}`,
+            label: seg.label || `Segment ${index + 1}`,
+            weight: seg.weight || 25,
+            reward_value: seg.reward_value || 0,
+            reward_token: seg.reward_token || 'BSK',
+            reward_type: seg.reward_type || 'token',
+            color: seg.color || (seg.reward_value > 0 ? '#00ff88' : '#ff0066')
+          } as SpinSegment))
+        : [];
+
+      const processedSettings: SpinSettings = {
+        ...settingsData,
+        segments: segmentsArray
+      };
+      setSettings(processedSettings);
       setSegments(segmentsArray);
       console.log("🎰 Loaded settings:", {
         free_spins: settingsData.free_spins_default,
