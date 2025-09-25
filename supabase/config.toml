@@ -33,6 +33,12 @@ verify_jwt = true
 [functions.spin-verify]
 verify_jwt = false
 
+[functions.provably-fair-commit]
+verify_jwt = true
+
+[functions.provably-fair-reveal]
+verify_jwt = true
+
 [functions.bsk-vesting-swap]
 verify_jwt = true
 

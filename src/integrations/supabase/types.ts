@@ -2972,33 +2972,42 @@ export type Database = {
           created_at: string
           daily_spin_limit: number | null
           fee_percentage: number
+          free_spins_per_user: number | null
           house_edge_percentage: number
           id: string
           is_active: boolean
           max_bet_usdt: number
           min_bet_usdt: number
+          name: string | null
+          target_rtp_percentage: number | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           daily_spin_limit?: number | null
           fee_percentage?: number
+          free_spins_per_user?: number | null
           house_edge_percentage?: number
           id?: string
           is_active?: boolean
           max_bet_usdt?: number
           min_bet_usdt?: number
+          name?: string | null
+          target_rtp_percentage?: number | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           daily_spin_limit?: number | null
           fee_percentage?: number
+          free_spins_per_user?: number | null
           house_edge_percentage?: number
           id?: string
           is_active?: boolean
           max_bet_usdt?: number
           min_bet_usdt?: number
+          name?: string | null
+          target_rtp_percentage?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -3007,36 +3016,45 @@ export type Database = {
         Row: {
           color_hex: string | null
           created_at: string
+          daily_win_limit: number | null
           id: number
           is_active: boolean
           label: string
           max_payout: number
           min_payout: number
           payout_token: string
+          payout_type: string | null
+          total_win_limit: number | null
           updated_at: string
           weight: number
         }
         Insert: {
           color_hex?: string | null
           created_at?: string
+          daily_win_limit?: number | null
           id?: number
           is_active?: boolean
           label: string
           max_payout?: number
           min_payout?: number
           payout_token?: string
+          payout_type?: string | null
+          total_win_limit?: number | null
           updated_at?: string
           weight?: number
         }
         Update: {
           color_hex?: string | null
           created_at?: string
+          daily_win_limit?: number | null
           id?: number
           is_active?: boolean
           label?: string
           max_payout?: number
           min_payout?: number
           payout_token?: string
+          payout_type?: string | null
+          total_win_limit?: number | null
           updated_at?: string
           weight?: number
         }
@@ -4047,6 +4065,57 @@ export type Database = {
       }
     }
     Views: {
+      admin_spin_wheel_stats: {
+        Row: {
+          active_segments: number | null
+          fee_percentage: number | null
+          fees_collected_today: number | null
+          free_spins_today: number | null
+          house_edge_percentage: number | null
+          is_active: boolean | null
+          max_bet_usdt: number | null
+          min_bet_usdt: number | null
+          spins_today: number | null
+          target_rtp_percentage: number | null
+          total_losses_today: number | null
+          total_payouts_today: number | null
+          wheel_id: string | null
+          wheel_name: string | null
+        }
+        Insert: {
+          active_segments?: never
+          fee_percentage?: number | null
+          fees_collected_today?: never
+          free_spins_today?: never
+          house_edge_percentage?: number | null
+          is_active?: boolean | null
+          max_bet_usdt?: number | null
+          min_bet_usdt?: number | null
+          spins_today?: never
+          target_rtp_percentage?: number | null
+          total_losses_today?: never
+          total_payouts_today?: never
+          wheel_id?: string | null
+          wheel_name?: string | null
+        }
+        Update: {
+          active_segments?: never
+          fee_percentage?: number | null
+          fees_collected_today?: never
+          free_spins_today?: never
+          house_edge_percentage?: number | null
+          is_active?: boolean | null
+          max_bet_usdt?: number | null
+          min_bet_usdt?: number | null
+          spins_today?: never
+          target_rtp_percentage?: number | null
+          total_losses_today?: never
+          total_payouts_today?: never
+          wheel_id?: string | null
+          wheel_name?: string | null
+        }
+        Relationships: []
+      }
       fiat_settings_inr_public: {
         Row: {
           bank_name: string | null
@@ -4173,6 +4242,16 @@ export type Database = {
         Returns: boolean
       }
       log_admin_action: {
+        Args: {
+          p_action: string
+          p_new_values?: Json
+          p_old_values?: Json
+          p_resource_id?: string
+          p_resource_type: string
+        }
+        Returns: undefined
+      }
+      log_spin_wheel_admin_action: {
         Args: {
           p_action: string
           p_new_values?: Json
