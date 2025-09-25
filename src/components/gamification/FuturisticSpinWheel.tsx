@@ -57,10 +57,10 @@ export const FuturisticSpinWheel = ({
     if (isSpinning && !isAnimating) {
       console.log("🎪 Starting immediate spin animation");
       setIsAnimating(true);
-      // Start with a continuous spin animation
+      // Start with a fast continuous spin animation for smooth circular motion
       const continuousSpin = setInterval(() => {
-        setRotation(prev => prev + 10);
-      }, 16); // ~60fps
+        setRotation(prev => prev + 15); // Faster rotation for better circular motion
+      }, 8); // Higher frequency for smoother animation
       
       // Store interval ref for cleanup
       const intervalRef = continuousSpin;
@@ -337,7 +337,6 @@ export const FuturisticSpinWheel = ({
           }
           
           .mobile-spin-wheel-canvas {
-            transition: transform 4s cubic-bezier(0.23, 1, 0.32, 1);
             filter: drop-shadow(0 0 15px rgba(147, 51, 234, 0.4));
           }
           
