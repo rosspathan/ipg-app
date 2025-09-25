@@ -62,6 +62,7 @@ export default function SpinWheelScreen() {
   const [winningResult, setWinningResult] = useState<any>(null);
   const [bonusBalanceKey, setBonusBalanceKey] = useState(0);
   const [error, setError] = useState<{code: string, message: string, hint?: string} | null>(null);
+  const [betAmount, setBetAmount] = useState(1);
   
   // Refs for debouncing and request locking
   const spinLockRef = useRef(false);
@@ -152,10 +153,12 @@ export default function SpinWheelScreen() {
       };
       setSettings(processedSettings);
       setSegments(segmentsArray);
+      setBetAmount(settingsData.min_bet_usdt); // Set initial bet amount
       console.log("🎰 Loaded settings:", {
         free_spins: settingsData.free_spins_default,
         cooldown: settingsData.cooldown_seconds,
-        segments: segmentsArray.length
+        segments: segmentsArray.length,
+        bet_range: `${settingsData.min_bet_usdt}-${settingsData.max_bet_usdt} USDT`
       });
 
       // Load user's recent spin results to calculate stats
@@ -271,7 +274,7 @@ export default function SpinWheelScreen() {
       
       // Prepare authentication headers and body based on auth method
       let headers: Record<string, string> = {};
-      let body: Record<string, any> = { bet_usdt: settings.min_bet_usdt };
+      let body: Record<string, any> = { bet_usdt: freeSpinsLeft > 0 ? 0 : betAmount };
       
       if (session?.access_token) {
         // Supabase authentication
@@ -461,9 +464,86 @@ export default function SpinWheelScreen() {
           </div>
         )}
 
+        {/* Bet Amount Selector */}
+        {!error && settings && (
+          <div className="mb-6">
+            <Card className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 border-purple-500/30 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="text-center mb-4">
+                  <h3 className="text-lg font-bold text-purple-300 mb-2">
+                    {freeSpinsLeft > 0 ? "Free Spin Available!" : "Choose Bet Amount"}
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    {freeSpinsLeft > 0 
+                      ? "You have free spins remaining - no bet required!" 
+                      : `Range: ${settings.min_bet_usdt} - ${settings.max_bet_usdt} USDT`
+                    }
+                  </p>
+                </div>
+                
+                {freeSpinsLeft === 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setBetAmount(Math.max(settings.min_bet_usdt, betAmount - 1))}
+                        disabled={betAmount <= settings.min_bet_usdt}
+                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      >
+                        -
+                      </Button>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">{betAmount}</div>
+                        <div className="text-sm text-slate-400">USDT</div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setBetAmount(Math.min(settings.max_bet_usdt, betAmount + 1))}
+                        disabled={betAmount >= settings.max_bet_usdt}
+                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      >
+                        +
+                      </Button>
+                    </div>
+                    
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setBetAmount(settings.min_bet_usdt)}
+                        className="text-xs text-slate-400 hover:text-white"
+                      >
+                        Min
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setBetAmount(Math.floor((settings.min_bet_usdt + settings.max_bet_usdt) / 2))}
+                        className="text-xs text-slate-400 hover:text-white"
+                      >
+                        Mid
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setBetAmount(settings.max_bet_usdt)}
+                        className="text-xs text-slate-400 hover:text-white"
+                      >
+                        Max
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Wheel Section */}
         {!error && (
-          <div className="mt-8 mb-8">
+          <div className="mb-8">
             <FuturisticSpinWheel
               segments={segments}
               onSpin={handleSpin}
@@ -500,9 +580,9 @@ export default function SpinWheelScreen() {
             <CardContent className="p-4 text-center">
               <Coins className="h-5 w-5 mx-auto mb-2 text-purple-400" />
               <div className="text-lg font-bold text-purple-400">
-                {settings ? `±${Math.abs(settings.segments[0]?.reward_value || 5)}` : '±5'}
+                {freeSpinsLeft > 0 ? "FREE" : `${betAmount} USDT`}
               </div>
-              <div className="text-xs text-purple-300">BSK Reward</div>
+              <div className="text-xs text-purple-300">Bet Amount</div>
             </CardContent>
           </Card>
         </div>
