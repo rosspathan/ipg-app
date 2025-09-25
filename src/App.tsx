@@ -101,6 +101,8 @@ import { AdminNotificationsScreen } from "@/pages/AdminNotificationsScreen";
 import { NotificationsScreen } from "@/pages/NotificationsScreen";
 import NotFound from "@/pages/NotFound";
 import DebugFunding from "@/pages/DebugFunding";
+import ProvablyFairSpinScreen from "@/pages/ProvablyFairSpinScreen";
+import SpinVerifyScreen from "@/pages/SpinVerifyScreen";
 
 const queryClient = new QueryClient();
 
