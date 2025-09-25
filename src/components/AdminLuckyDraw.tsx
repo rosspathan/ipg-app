@@ -12,6 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, Ticket, DollarSign, Users, Calendar, Trophy, List, Eye } from "lucide-react";
+import type { Database } from "@/integrations/supabase/types";
+
+type LuckyDrawConfig = Database['public']['Tables']['lucky_draw_configs']['Row'];
 
 interface PoolDrawConfig {
   id: string;
@@ -30,6 +33,7 @@ interface PoolDrawConfig {
   commit_hash?: string;
   reveal_value?: string;
   executed_at?: string;
+  created_at: string;
 }
 
 interface LuckyDrawTicket {
@@ -60,6 +64,8 @@ export const AdminLuckyDraw = () => {
     max_winners: "3",
     status: "active",
     auto_execute: "true",
+    ticket_currency: "IPG",
+    payout_currency: "BSK"
   });
   const { toast } = useToast();
 
@@ -125,11 +131,17 @@ export const AdminLuckyDraw = () => {
 
   const resetForm = () => {
     setFormData({
-      prize_pool: "",
       ticket_price: "",
-      max_winners: "",
-      draw_date: "",
+      pool_size: "",
+      first_place_prize: "",
+      second_place_prize: "",
+      third_place_prize: "",
+      admin_fee_percent: "",
+      max_winners: "3",
       status: "active",
+      auto_execute: "true",
+      ticket_currency: "IPG",
+      payout_currency: "BSK"
     });
     setEditingDraw(null);
   };
@@ -146,6 +158,8 @@ export const AdminLuckyDraw = () => {
       max_winners: draw.max_winners.toString(),
       status: draw.status,
       auto_execute: draw.auto_execute.toString(),
+      ticket_currency: draw.ticket_currency || "IPG",
+      payout_currency: draw.payout_currency || "BSK"
     });
     setDialogOpen(true);
   };
@@ -153,11 +167,17 @@ export const AdminLuckyDraw = () => {
   const handleSave = async () => {
     try {
       const drawData = {
-        prize_pool: parseFloat(formData.prize_pool),
         ticket_price: parseFloat(formData.ticket_price),
+        pool_size: parseInt(formData.pool_size),
+        first_place_prize: parseFloat(formData.first_place_prize),
+        second_place_prize: parseFloat(formData.second_place_prize),
+        third_place_prize: parseFloat(formData.third_place_prize),
+        admin_fee_percent: parseFloat(formData.admin_fee_percent),
         max_winners: parseInt(formData.max_winners),
-        draw_date: new Date(formData.draw_date).toISOString(),
         status: formData.status,
+        auto_execute: formData.auto_execute === "true",
+        ticket_currency: formData.ticket_currency,
+        payout_currency: formData.payout_currency
       };
 
       let response;
@@ -205,8 +225,8 @@ export const AdminLuckyDraw = () => {
     }
   };
 
-  const handleExecuteDraw = async (draw: LuckyDrawConfig) => {
-    if (!confirm(`Are you sure you want to execute the lucky draw? This will randomly select ${draw.max_winners} winner(s) and distribute the ${draw.prize_pool} USDT prize pool. This action cannot be undone.`)) return;
+  const handleExecuteDraw = async (draw: PoolDrawConfig) => {
+    if (!confirm(`Are you sure you want to execute the lucky draw? This will randomly select ${draw.max_winners} winner(s) from ${draw.current_participants} participants. This action cannot be undone.`)) return;
 
     try {
       const { data, error } = await supabase.functions.invoke('execute-lucky-draw', {
@@ -239,7 +259,7 @@ export const AdminLuckyDraw = () => {
     }
   };
 
-  const handleStatusChange = async (draw: LuckyDrawConfig, newStatus: string) => {
+  const handleStatusChange = async (draw: PoolDrawConfig, newStatus: string) => {
     try {
       const { error } = await supabase
         .from("lucky_draw_configs")
@@ -272,7 +292,7 @@ export const AdminLuckyDraw = () => {
     }
   };
 
-  const handleDelete = async (draw: LuckyDrawConfig) => {
+  const handleDelete = async (draw: PoolDrawConfig) => {
     if (!confirm("Are you sure you want to delete this lucky draw? This action cannot be undone.")) return;
 
     try {
@@ -353,20 +373,7 @@ export const AdminLuckyDraw = () => {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="prize_pool">Prize Pool (USDT)</Label>
-                  <Input
-                    id="prize_pool"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.prize_pool}
-                    onChange={(e) => setFormData({ ...formData, prize_pool: e.target.value })}
-                    placeholder="e.g., 1000"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="ticket_price">Ticket Price (USDT)</Label>
+                  <Label htmlFor="ticket_price">Ticket Price ({formData.ticket_currency})</Label>
                   <Input
                     id="ticket_price"
                     type="number"
@@ -374,6 +381,71 @@ export const AdminLuckyDraw = () => {
                     min="0.01"
                     value={formData.ticket_price}
                     onChange={(e) => setFormData({ ...formData, ticket_price: e.target.value })}
+                    placeholder="e.g., 10"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pool_size">Pool Size</Label>
+                  <Input
+                    id="pool_size"
+                    type="number"
+                    min="1"
+                    value={formData.pool_size}
+                    onChange={(e) => setFormData({ ...formData, pool_size: e.target.value })}
+                    placeholder="e.g., 100"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="first_place_prize">1st Place Prize ({formData.payout_currency})</Label>
+                  <Input
+                    id="first_place_prize"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.first_place_prize}
+                    onChange={(e) => setFormData({ ...formData, first_place_prize: e.target.value })}
+                    placeholder="e.g., 500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="second_place_prize">2nd Place Prize ({formData.payout_currency})</Label>
+                  <Input
+                    id="second_place_prize"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.second_place_prize}
+                    onChange={(e) => setFormData({ ...formData, second_place_prize: e.target.value })}
+                    placeholder="e.g., 300"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="third_place_prize">3rd Place Prize ({formData.payout_currency})</Label>
+                  <Input
+                    id="third_place_prize"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.third_place_prize}
+                    onChange={(e) => setFormData({ ...formData, third_place_prize: e.target.value })}
+                    placeholder="e.g., 200"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="admin_fee_percent">Admin Fee (%)</Label>
+                  <Input
+                    id="admin_fee_percent"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={formData.admin_fee_percent}
+                    onChange={(e) => setFormData({ ...formData, admin_fee_percent: e.target.value })}
                     placeholder="e.g., 10"
                   />
                 </div>
@@ -387,16 +459,6 @@ export const AdminLuckyDraw = () => {
                     value={formData.max_winners}
                     onChange={(e) => setFormData({ ...formData, max_winners: e.target.value })}
                     placeholder="e.g., 3"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="draw_date">Draw Date & Time</Label>
-                  <Input
-                    id="draw_date"
-                    type="datetime-local"
-                    value={formData.draw_date}
-                    onChange={(e) => setFormData({ ...formData, draw_date: e.target.value })}
                   />
                 </div>
 
@@ -453,9 +515,9 @@ export const AdminLuckyDraw = () => {
                     <Badge variant={getStatusColor(draw.status)}>
                       {draw.status.charAt(0).toUpperCase() + draw.status.slice(1)}
                     </Badge>
-                    {isDrawPast(draw.draw_date) && draw.status === 'active' && (
-                      <Badge variant="outline" className="text-orange-500">
-                        Past Due
+                    {draw.status === 'completed' && (
+                      <Badge variant="outline" className="text-green-500">
+                        Completed
                       </Badge>
                     )}
                   </div>
@@ -503,29 +565,29 @@ export const AdminLuckyDraw = () => {
                   <div className="flex items-center gap-2">
                     <Trophy className="h-4 w-4 text-yellow-500" />
                     <div>
-                      <p className="text-muted-foreground">Prize Pool</p>
-                      <p className="font-semibold">{draw.prize_pool.toLocaleString()} USDT</p>
+                      <p className="text-muted-foreground">Pool Size</p>
+                      <p className="font-semibold">{draw.pool_size} slots</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-green-500" />
                     <div>
                       <p className="text-muted-foreground">Ticket Price</p>
-                      <p className="font-semibold">{draw.ticket_price} USDT</p>
+                      <p className="font-semibold">{draw.ticket_price} {draw.ticket_currency}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-blue-500" />
                     <div>
-                      <p className="text-muted-foreground">Max Winners</p>
-                      <p className="font-semibold">{draw.max_winners}</p>
+                      <p className="text-muted-foreground">Participants</p>
+                      <p className="font-semibold">{draw.current_participants}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-purple-500" />
                     <div>
-                      <p className="text-muted-foreground">Draw Date</p>
-                      <p className="font-semibold text-xs">{formatDate(draw.draw_date)}</p>
+                      <p className="text-muted-foreground">Winners</p>
+                      <p className="font-semibold">{draw.max_winners}</p>
                     </div>
                   </div>
                 </div>
@@ -537,7 +599,7 @@ export const AdminLuckyDraw = () => {
                     Created: {formatDate(draw.created_at)}
                   </div>
                   <div className="text-muted-foreground">
-                    Max Tickets: {Math.floor(draw.prize_pool / draw.ticket_price)}
+                    Status: {draw.status} • Auto-execute: {draw.auto_execute ? 'Yes' : 'No'}
                   </div>
                 </div>
               </div>
@@ -556,7 +618,7 @@ export const AdminLuckyDraw = () => {
                 <SelectContent>
                   {draws.map((draw) => (
                     <SelectItem key={draw.id} value={draw.id}>
-                      Draw #{draw.id.slice(0, 8)} - {draw.prize_pool} USDT
+                      Draw #{draw.id.slice(0, 8)} - {draw.pool_size} slots
                     </SelectItem>
                   ))}
                 </SelectContent>

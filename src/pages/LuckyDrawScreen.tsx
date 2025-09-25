@@ -461,9 +461,9 @@ const LuckyDrawScreen = () => {
               <div className="space-y-4">
                 <div className="p-4 bg-muted/20 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">Total Prize Pool</span>
+                    <span className="font-medium">Total Collected</span>
                     <span className="text-xl font-bold text-primary">
-                      ${drawConfig.prize_pool.toLocaleString()}
+                      {(drawConfig.current_participants * drawConfig.ticket_price).toFixed(2)} {drawConfig.ticket_currency}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
