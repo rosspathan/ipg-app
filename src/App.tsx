@@ -103,6 +103,8 @@ import NotFound from "@/pages/NotFound";
 import DebugFunding from "@/pages/DebugFunding";
 import ProvablyFairSpinScreen from "@/pages/ProvablyFairSpinScreen";
 import SpinVerifyScreen from "@/pages/SpinVerifyScreen";
+import ProvablyFairSpinScreen from "@/pages/ProvablyFairSpinScreen";
+import SpinVerifyScreen from "@/pages/SpinVerifyScreen";
 
 const queryClient = new QueryClient();
 
