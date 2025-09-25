@@ -44,6 +44,15 @@ const AppHomeScreen = () => {
 
   const featuredPrograms = [
     {
+      title: "Lucky Draw",
+      description: "Join pool-based lottery draws to win big prizes",
+      icon: Gift,
+      color: "text-warning",
+      action: () => navigate("/app/lucky"),
+      gradient: "from-warning/20 to-danger/20",
+      badge: "WIN"
+    },
+    {
       title: "Staking Rewards",
       description: "Earn 12.4% APY on your crypto holdings",
       icon: Star,
