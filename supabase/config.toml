@@ -32,3 +32,9 @@ verify_jwt = true
 
 [functions.spin-verify]
 verify_jwt = false
+
+[functions.bsk-vesting-swap]
+verify_jwt = true
+
+[functions.bsk-daily-vesting]
+verify_jwt = false

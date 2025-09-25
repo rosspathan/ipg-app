@@ -701,6 +701,142 @@ export type Database = {
           },
         ]
       }
+      bsk_vesting_config: {
+        Row: {
+          anti_sybil_max_per_ip: number | null
+          created_at: string
+          daily_release_percent: number
+          eligible_chains: string[]
+          id: string
+          is_enabled: boolean
+          max_ipg_swap_amount: number | null
+          max_vesting_per_user: number | null
+          min_ipg_swap_amount: number
+          referral_reward_percent: number
+          updated_at: string
+          vesting_duration_days: number
+        }
+        Insert: {
+          anti_sybil_max_per_ip?: number | null
+          created_at?: string
+          daily_release_percent?: number
+          eligible_chains?: string[]
+          id?: string
+          is_enabled?: boolean
+          max_ipg_swap_amount?: number | null
+          max_vesting_per_user?: number | null
+          min_ipg_swap_amount?: number
+          referral_reward_percent?: number
+          updated_at?: string
+          vesting_duration_days?: number
+        }
+        Update: {
+          anti_sybil_max_per_ip?: number | null
+          created_at?: string
+          daily_release_percent?: number
+          eligible_chains?: string[]
+          id?: string
+          is_enabled?: boolean
+          max_ipg_swap_amount?: number | null
+          max_vesting_per_user?: number | null
+          min_ipg_swap_amount?: number
+          referral_reward_percent?: number
+          updated_at?: string
+          vesting_duration_days?: number
+        }
+        Relationships: []
+      }
+      bsk_vesting_referral_rewards: {
+        Row: {
+          id: string
+          processed_at: string
+          referee_id: string
+          referrer_id: string
+          reward_amount: number
+          reward_date: string
+          status: string
+          vesting_release_id: string | null
+        }
+        Insert: {
+          id?: string
+          processed_at?: string
+          referee_id: string
+          referrer_id: string
+          reward_amount: number
+          reward_date: string
+          status?: string
+          vesting_release_id?: string | null
+        }
+        Update: {
+          id?: string
+          processed_at?: string
+          referee_id?: string
+          referrer_id?: string
+          reward_amount?: number
+          reward_date?: string
+          status?: string
+          vesting_release_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_vesting_referral_rewards_vesting_release_id_fkey"
+            columns: ["vesting_release_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_vesting_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_vesting_releases: {
+        Row: {
+          batch_id: string | null
+          bsk_amount: number
+          day_number: number
+          id: string
+          processed_at: string
+          referrer_id: string | null
+          referrer_reward_amount: number | null
+          release_date: string
+          status: string
+          user_id: string
+          vesting_id: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          bsk_amount: number
+          day_number: number
+          id?: string
+          processed_at?: string
+          referrer_id?: string | null
+          referrer_reward_amount?: number | null
+          release_date: string
+          status?: string
+          user_id: string
+          vesting_id?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          bsk_amount?: number
+          day_number?: number
+          id?: string
+          processed_at?: string
+          referrer_id?: string | null
+          referrer_reward_amount?: number | null
+          release_date?: string
+          status?: string
+          user_id?: string
+          vesting_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_vesting_releases_vesting_id_fkey"
+            columns: ["vesting_id"]
+            isOneToOne: false
+            referencedRelation: "user_bsk_vesting"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversions: {
         Row: {
           amount_from: number
@@ -3525,6 +3661,74 @@ export type Database = {
         }
         Relationships: []
       }
+      user_bsk_vesting: {
+        Row: {
+          bsk_daily_amount: number
+          bsk_pending_total: number
+          bsk_released_total: number
+          bsk_total_amount: number
+          config_id: string | null
+          created_at: string
+          days_completed: number
+          end_date: string
+          id: string
+          ipg_amount_swapped: number
+          is_active: boolean
+          is_paused: boolean
+          start_date: string
+          swap_chain: string
+          swap_tx_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bsk_daily_amount: number
+          bsk_pending_total?: number
+          bsk_released_total?: number
+          bsk_total_amount: number
+          config_id?: string | null
+          created_at?: string
+          days_completed?: number
+          end_date: string
+          id?: string
+          ipg_amount_swapped: number
+          is_active?: boolean
+          is_paused?: boolean
+          start_date: string
+          swap_chain?: string
+          swap_tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bsk_daily_amount?: number
+          bsk_pending_total?: number
+          bsk_released_total?: number
+          bsk_total_amount?: number
+          config_id?: string | null
+          created_at?: string
+          days_completed?: number
+          end_date?: string
+          id?: string
+          ipg_amount_swapped?: number
+          is_active?: boolean
+          is_paused?: boolean
+          start_date?: string
+          swap_chain?: string
+          swap_tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_bsk_vesting_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_vesting_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_free_spins: {
         Row: {
           created_at: string
@@ -3974,6 +4178,10 @@ export type Database = {
           p_transaction_hash?: string
           p_user_id: string
         }
+        Returns: Json
+      }
+      process_daily_bsk_vesting: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       reset_monthly_claim_counts: {

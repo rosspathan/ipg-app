@@ -103,8 +103,7 @@ import NotFound from "@/pages/NotFound";
 import DebugFunding from "@/pages/DebugFunding";
 import ProvablyFairSpinScreen from "@/pages/ProvablyFairSpinScreen";
 import SpinVerifyScreen from "@/pages/SpinVerifyScreen";
-import ProvablyFairSpinScreen from "@/pages/ProvablyFairSpinScreen";
-import SpinVerifyScreen from "@/pages/SpinVerifyScreen";
+import BSKVestingScreen from "@/pages/BSKVestingScreen";
 
 const queryClient = new QueryClient();
 
@@ -193,6 +192,7 @@ function App() {
                 <Route path="lucky" element={<LuckyDrawScreen />} />
                 <Route path="spin-wheel" element={<ProvablyFairSpinScreen />} />
                 <Route path="spin-verify" element={<SpinVerifyScreen />} />
+                <Route path="bsk-vesting" element={<BSKVestingScreen />} />
                 <Route path="programs/insurance" element={<InsuranceScreen />} />
                 <Route path="programs/insurance/claim" element={<FileClaimScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
