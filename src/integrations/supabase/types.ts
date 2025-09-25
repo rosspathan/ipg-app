@@ -4090,6 +4090,14 @@ export type Database = {
         }
         Returns: number
       }
+      calculate_user_balance_internal: {
+        Args: {
+          p_base_currency?: string
+          p_metric?: Database["public"]["Enums"]["balance_metric"]
+          p_user_id: string
+        }
+        Returns: number
+      }
       count_lucky_draw_tickets: {
         Args: { p_config_id: string }
         Returns: number
