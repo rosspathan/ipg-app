@@ -41,6 +41,8 @@ export const FuturisticSpinWheel = ({
   const [resultData, setResultData] = useState<any>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const spinIntervalRef = useRef<number | null>(null);
+  const [isDecelerating, setIsDecelerating] = useState(false);
 
   // Default colors for WIN/LOSE segments
   const segmentColors = {
@@ -52,53 +54,72 @@ export const FuturisticSpinWheel = ({
     drawWheel();
   }, [segments]);
 
-  // Start spinning immediately when isSpinning becomes true
+  // Start/stop continuous spin when isSpinning changes
   useEffect(() => {
-    if (isSpinning && !isAnimating) {
-      console.log("🎪 Starting immediate spin animation");
+    if (isSpinning) {
       setIsAnimating(true);
-      // Start with a fast continuous spin animation for smooth circular motion
-      const continuousSpin = setInterval(() => {
-        setRotation(prev => prev + 15); // Faster rotation for better circular motion
-      }, 8); // Higher frequency for smoother animation
-      
-      // Store interval ref for cleanup
-      const intervalRef = continuousSpin;
-      
-      // Clean up when not spinning anymore
-      const cleanup = () => {
-        clearInterval(intervalRef);
-      };
-      
-      return cleanup;
+      setIsDecelerating(false);
+      if (spinIntervalRef.current) {
+        clearInterval(spinIntervalRef.current);
+      }
+      spinIntervalRef.current = window.setInterval(() => {
+        setRotation(prev => prev + 12);
+      }, 16); // ~60fps
+    } else {
+      if (spinIntervalRef.current) {
+        clearInterval(spinIntervalRef.current);
+        spinIntervalRef.current = null;
+      }
     }
-  }, [isSpinning, isAnimating]);
+
+    return () => {
+      if (spinIntervalRef.current) {
+        clearInterval(spinIntervalRef.current);
+        spinIntervalRef.current = null;
+      }
+    };
+  }, [isSpinning]);
 
   // Handle result when spin completes
   useEffect(() => {
     if (winningSegment && !isSpinning && isAnimating) {
       console.log("🎪 Handling spin result", winningSegment);
-      
+
+      // Ensure continuous spin is stopped before deceleration
+      if (spinIntervalRef.current) {
+        clearInterval(spinIntervalRef.current);
+        spinIntervalRef.current = null;
+      }
+
       // Calculate the angle to land on the winning segment
       const segmentAngle = 360 / segments.length;
-      const winningIndex = segments.findIndex(s => 
-        s.label === winningSegment.label || 
+      const winningIndex = segments.findIndex(s =>
+        s.label === (winningSegment.label || winningSegment.segment?.label) ||
         s.id === winningSegment.segment_id
       );
-      
+
       if (winningIndex !== -1) {
-        // Calculate final rotation to land on winning segment  
         const targetAngle = (winningIndex * segmentAngle) + (segmentAngle / 2);
-        const spins = 3; // Additional rotations for dramatic effect
+        const spins = 4; // More spins for drama
         const finalRotation = (spins * 360) + (360 - targetAngle);
-        
-        setRotation(prev => prev + finalRotation);
+
+        // Enable CSS transition for deceleration
+        setIsDecelerating(true);
+        requestAnimationFrame(() => {
+          setRotation(prev => prev + finalRotation);
+        });
+
         setResultData(winningSegment);
-        
-        setTimeout(() => {
+
+        // Finish after transition
+        const duration = 2800;
+        const timer = setTimeout(() => {
           setIsAnimating(false);
+          setIsDecelerating(false);
           setShowResultDialog(true);
-        }, 3000);
+        }, duration);
+
+        return () => clearTimeout(timer);
       }
     }
   }, [winningSegment, isSpinning, segments, isAnimating]);
@@ -354,7 +375,9 @@ export const FuturisticSpinWheel = ({
             className="mobile-spin-wheel-canvas"
             style={{ 
               transform: `rotate(${rotation}deg)`,
-              transformOrigin: 'center'
+              transformOrigin: 'center',
+              transition: isDecelerating ? 'transform 2.8s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
+              willChange: 'transform'
             }}
           >
             <canvas

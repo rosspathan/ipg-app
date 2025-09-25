@@ -3642,6 +3642,7 @@ export type Database = {
           bsk_available: number
           bsk_pending: number
           id: string
+          last_spin_at: string | null
           updated_at: string
           user_id: string
         }
@@ -3649,6 +3650,7 @@ export type Database = {
           bsk_available?: number
           bsk_pending?: number
           id?: string
+          last_spin_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -3656,6 +3658,7 @@ export type Database = {
           bsk_available?: number
           bsk_pending?: number
           id?: string
+          last_spin_at?: string | null
           updated_at?: string
           user_id?: string
         }
