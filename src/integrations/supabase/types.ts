@@ -378,6 +378,156 @@ export type Database = {
         }
         Relationships: []
       }
+      badge_qualification_audit: {
+        Row: {
+          admin_user_id: string | null
+          badge_qualification_event_id: string | null
+          created_at: string
+          direct_referrer_reward_id: string | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          reason: string | null
+          referrer_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_user_id?: string | null
+          badge_qualification_event_id?: string | null
+          created_at?: string
+          direct_referrer_reward_id?: string | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          reason?: string | null
+          referrer_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_user_id?: string | null
+          badge_qualification_event_id?: string | null
+          created_at?: string
+          direct_referrer_reward_id?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          reason?: string | null
+          referrer_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      badge_qualification_events: {
+        Row: {
+          badge_name: string
+          created_at: string
+          id: string
+          previous_badge: string | null
+          qualification_type: string
+          qualifying_amount: number
+          transaction_chain: string | null
+          transaction_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_name: string
+          created_at?: string
+          id?: string
+          previous_badge?: string | null
+          qualification_type?: string
+          qualifying_amount: number
+          transaction_chain?: string | null
+          transaction_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_name?: string
+          created_at?: string
+          id?: string
+          previous_badge?: string | null
+          qualification_type?: string
+          qualifying_amount?: number
+          transaction_chain?: string | null
+          transaction_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      badge_system_settings: {
+        Row: {
+          auto_settle_enabled: boolean
+          cooloff_hours: number
+          created_at: string
+          detect_self_funding: boolean
+          diamond_threshold: number
+          direct_referral_percentage: number
+          gold_threshold: number
+          id: string
+          payout_token: string
+          per_day_global_cap: number | null
+          per_user_daily_cap: number | null
+          platinum_threshold: number
+          require_net_new_ipg: boolean
+          silver_threshold: number
+          system_enabled: boolean
+          threshold_currency: string
+          updated_at: string
+          vip_threshold: number
+        }
+        Insert: {
+          auto_settle_enabled?: boolean
+          cooloff_hours?: number
+          created_at?: string
+          detect_self_funding?: boolean
+          diamond_threshold?: number
+          direct_referral_percentage?: number
+          gold_threshold?: number
+          id?: string
+          payout_token?: string
+          per_day_global_cap?: number | null
+          per_user_daily_cap?: number | null
+          platinum_threshold?: number
+          require_net_new_ipg?: boolean
+          silver_threshold?: number
+          system_enabled?: boolean
+          threshold_currency?: string
+          updated_at?: string
+          vip_threshold?: number
+        }
+        Update: {
+          auto_settle_enabled?: boolean
+          cooloff_hours?: number
+          created_at?: string
+          detect_self_funding?: boolean
+          diamond_threshold?: number
+          direct_referral_percentage?: number
+          gold_threshold?: number
+          id?: string
+          payout_token?: string
+          per_day_global_cap?: number | null
+          per_user_daily_cap?: number | null
+          platinum_threshold?: number
+          require_net_new_ipg?: boolean
+          silver_threshold?: number
+          system_enabled?: boolean
+          threshold_currency?: string
+          updated_at?: string
+          vip_threshold?: number
+        }
+        Relationships: []
+      }
       banking_inr: {
         Row: {
           account_name: string | null
@@ -649,6 +799,72 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      direct_referrer_rewards: {
+        Row: {
+          badge_qualification_event_id: string
+          clawback_at: string | null
+          clawback_by: string | null
+          clawback_reason: string | null
+          cooloff_until: string | null
+          created_at: string
+          id: string
+          referrer_id: string
+          reward_amount: number
+          reward_token: string
+          reward_token_amount: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_qualification_event_id: string
+          clawback_at?: string | null
+          clawback_by?: string | null
+          clawback_reason?: string | null
+          cooloff_until?: string | null
+          created_at?: string
+          id?: string
+          referrer_id: string
+          reward_amount: number
+          reward_token?: string
+          reward_token_amount: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_qualification_event_id?: string
+          clawback_at?: string | null
+          clawback_by?: string | null
+          clawback_reason?: string | null
+          cooloff_until?: string | null
+          created_at?: string
+          id?: string
+          referrer_id?: string
+          reward_amount?: number
+          reward_token?: string
+          reward_token_amount?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_referrer_rewards_badge_qualification_event_id_fkey"
+            columns: ["badge_qualification_event_id"]
+            isOneToOne: false
+            referencedRelation: "badge_qualification_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "direct_referrer_rewards_badge_qualification_event_id_fkey1"
+            columns: ["badge_qualification_event_id"]
+            isOneToOne: false
+            referencedRelation: "badge_qualification_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fee_configs: {
         Row: {
@@ -3019,6 +3235,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_badge_status: {
+        Row: {
+          achieved_at: string
+          created_at: string
+          current_badge: string
+          referrer_id: string | null
+          total_ipg_contributed: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achieved_at?: string
+          created_at?: string
+          current_badge?: string
+          referrer_id?: string | null
+          total_ipg_contributed?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achieved_at?: string
+          created_at?: string
+          current_badge?: string
+          referrer_id?: string | null
+          total_ipg_contributed?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_bonus_balances: {
         Row: {
           bsk_available: number
@@ -3390,6 +3636,10 @@ export type Database = {
         Args: { asset_row: Database["public"]["Tables"]["assets"]["Row"] }
         Returns: string
       }
+      get_badge_from_ipg_amount: {
+        Args: { ipg_amount: number }
+        Returns: string
+      }
       get_masked_profile_data: {
         Args: {
           p_email?: string
@@ -3432,9 +3682,22 @@ export type Database = {
         }
         Returns: undefined
       }
+      process_badge_qualification: {
+        Args: {
+          p_ipg_amount: number
+          p_transaction_chain?: string
+          p_transaction_hash?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       reset_monthly_claim_counts: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      settle_pending_referrer_rewards: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       update_user_referral_state: {
         Args: { p_user_id: string }
