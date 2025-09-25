@@ -1888,6 +1888,74 @@ export type Database = {
         }
         Relationships: []
       }
+      provably_fair_spins: {
+        Row: {
+          bet_amount: number
+          bet_token: string
+          client_seed: string
+          created_at: string
+          fee_amount: number | null
+          id: string
+          is_free_spin: boolean | null
+          nonce: number
+          payout_amount: number
+          payout_token: string | null
+          random_number: number
+          result_hash: string
+          seed_commit_id: string
+          server_seed: string
+          user_id: string
+          winning_segment_id: number
+          winning_segment_label: string
+        }
+        Insert: {
+          bet_amount: number
+          bet_token?: string
+          client_seed: string
+          created_at?: string
+          fee_amount?: number | null
+          id?: string
+          is_free_spin?: boolean | null
+          nonce: number
+          payout_amount?: number
+          payout_token?: string | null
+          random_number: number
+          result_hash: string
+          seed_commit_id: string
+          server_seed: string
+          user_id: string
+          winning_segment_id: number
+          winning_segment_label: string
+        }
+        Update: {
+          bet_amount?: number
+          bet_token?: string
+          client_seed?: string
+          created_at?: string
+          fee_amount?: number | null
+          id?: string
+          is_free_spin?: boolean | null
+          nonce?: number
+          payout_amount?: number
+          payout_token?: string | null
+          random_number?: number
+          result_hash?: string
+          seed_commit_id?: string
+          server_seed?: string
+          user_id?: string
+          winning_segment_id?: number
+          winning_segment_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provably_fair_spins_seed_commit_id_fkey"
+            columns: ["seed_commit_id"]
+            isOneToOne: false
+            referencedRelation: "spin_seed_commits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_bonus_events: {
         Row: {
           base_filled: number
@@ -2591,6 +2659,57 @@ export type Database = {
           },
         ]
       }
+      spin_seed_commits: {
+        Row: {
+          bet_amount: number
+          bet_token: string
+          client_seed: string | null
+          created_at: string
+          expires_at: string
+          fee_amount: number | null
+          id: string
+          is_free_spin: boolean | null
+          nonce: number | null
+          server_seed: string | null
+          server_seed_hash: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bet_amount: number
+          bet_token?: string
+          client_seed?: string | null
+          created_at?: string
+          expires_at?: string
+          fee_amount?: number | null
+          id?: string
+          is_free_spin?: boolean | null
+          nonce?: number | null
+          server_seed?: string | null
+          server_seed_hash: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bet_amount?: number
+          bet_token?: string
+          client_seed?: string | null
+          created_at?: string
+          expires_at?: string
+          fee_amount?: number | null
+          id?: string
+          is_free_spin?: boolean | null
+          nonce?: number | null
+          server_seed?: string | null
+          server_seed_hash?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       spin_segments: {
         Row: {
           color: string | null
@@ -2711,6 +2830,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      spin_wheel_config: {
+        Row: {
+          created_at: string
+          daily_spin_limit: number | null
+          fee_percentage: number
+          house_edge_percentage: number
+          id: string
+          is_active: boolean
+          max_bet_usdt: number
+          min_bet_usdt: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_spin_limit?: number | null
+          fee_percentage?: number
+          house_edge_percentage?: number
+          id?: string
+          is_active?: boolean
+          max_bet_usdt?: number
+          min_bet_usdt?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_spin_limit?: number | null
+          fee_percentage?: number
+          house_edge_percentage?: number
+          id?: string
+          is_active?: boolean
+          max_bet_usdt?: number
+          min_bet_usdt?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      spin_wheel_segments: {
+        Row: {
+          color_hex: string | null
+          created_at: string
+          id: number
+          is_active: boolean
+          label: string
+          max_payout: number
+          min_payout: number
+          payout_token: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          color_hex?: string | null
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          label: string
+          max_payout?: number
+          min_payout?: number
+          payout_token?: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          color_hex?: string | null
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          label?: string
+          max_payout?: number
+          min_payout?: number
+          payout_token?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
       }
       spin_wheels: {
         Row: {
@@ -3326,6 +3520,36 @@ export type Database = {
           bsk_available?: number
           bsk_pending?: number
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_free_spins: {
+        Row: {
+          created_at: string
+          first_spin_at: string | null
+          free_spins_remaining: number
+          free_spins_used: number
+          last_spin_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          first_spin_at?: string | null
+          free_spins_remaining?: number
+          free_spins_used?: number
+          last_spin_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          first_spin_at?: string | null
+          free_spins_remaining?: number
+          free_spins_used?: number
+          last_spin_at?: string | null
           updated_at?: string
           user_id?: string
         }

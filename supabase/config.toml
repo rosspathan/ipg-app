@@ -23,3 +23,12 @@ verify_jwt = true
 
 [functions.send-verification-email]
 verify_jwt = false
+
+[functions.spin-commit]
+verify_jwt = true
+
+[functions.spin-reveal]
+verify_jwt = true
+
+[functions.spin-verify]
+verify_jwt = false

@@ -187,6 +187,8 @@ function App() {
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/lucky" element={<LuckyDrawScreen />} />
                 <Route path="lucky" element={<LuckyDrawScreen />} />
+                <Route path="spin-wheel" element={<ProvablyFairSpinScreen />} />
+                <Route path="spin-verify" element={<SpinVerifyScreen />} />
                 <Route path="programs/insurance" element={<InsuranceScreen />} />
                 <Route path="programs/insurance/claim" element={<FileClaimScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
