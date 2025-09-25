@@ -1497,64 +1497,106 @@ export type Database = {
       }
       lucky_draw_configs: {
         Row: {
+          admin_fee_percent: number
+          auto_execute: boolean
+          commit_hash: string | null
           created_at: string | null
-          draw_date: string
+          current_participants: number
+          executed_at: string | null
+          first_place_prize: number
           id: string
           max_winners: number | null
-          prize_pool: number
+          payout_currency: string
+          pool_size: number
+          reveal_value: string | null
+          second_place_prize: number
           status: string | null
+          third_place_prize: number
+          ticket_currency: string
           ticket_price: number
         }
         Insert: {
+          admin_fee_percent?: number
+          auto_execute?: boolean
+          commit_hash?: string | null
           created_at?: string | null
-          draw_date: string
+          current_participants?: number
+          executed_at?: string | null
+          first_place_prize?: number
           id?: string
           max_winners?: number | null
-          prize_pool: number
+          payout_currency?: string
+          pool_size?: number
+          reveal_value?: string | null
+          second_place_prize?: number
           status?: string | null
+          third_place_prize?: number
+          ticket_currency?: string
           ticket_price: number
         }
         Update: {
+          admin_fee_percent?: number
+          auto_execute?: boolean
+          commit_hash?: string | null
           created_at?: string | null
-          draw_date?: string
+          current_participants?: number
+          executed_at?: string | null
+          first_place_prize?: number
           id?: string
           max_winners?: number | null
-          prize_pool?: number
+          payout_currency?: string
+          pool_size?: number
+          reveal_value?: string | null
+          second_place_prize?: number
           status?: string | null
+          third_place_prize?: number
+          ticket_currency?: string
           ticket_price?: number
         }
         Relationships: []
       }
       lucky_draw_tickets: {
         Row: {
+          bsk_payout: number | null
           config_id: string
           created_at: string
           id: string
+          ipg_paid: number | null
           prize_amount: number | null
+          prize_tier: number | null
           status: string
           ticket_number: string
           updated_at: string
           user_id: string
+          verification_data: Json | null
         }
         Insert: {
+          bsk_payout?: number | null
           config_id: string
           created_at?: string
           id?: string
+          ipg_paid?: number | null
           prize_amount?: number | null
+          prize_tier?: number | null
           status?: string
           ticket_number: string
           updated_at?: string
           user_id: string
+          verification_data?: Json | null
         }
         Update: {
+          bsk_payout?: number | null
           config_id?: string
           created_at?: string
           id?: string
+          ipg_paid?: number | null
           prize_amount?: number | null
+          prize_tier?: number | null
           status?: string
           ticket_number?: string
           updated_at?: string
           user_id?: string
+          verification_data?: Json | null
         }
         Relationships: [
           {
@@ -3632,6 +3674,15 @@ export type Database = {
         Args: { p_config_id: string; p_ticket_count: number; p_user_id: string }
         Returns: Json
       }
+      create_pool_draw_tickets: {
+        Args: {
+          p_config_id: string
+          p_ipg_amount: number
+          p_ticket_count: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_asset_logo_url: {
         Args: { asset_row: Database["public"]["Tables"]["assets"]["Row"] }
         Returns: string
@@ -3648,6 +3699,16 @@ export type Database = {
           p_wallet_address?: string
         }
         Returns: Json
+      }
+      get_pool_draw_stats: {
+        Args: { p_config_id: string }
+        Returns: {
+          estimated_payouts: Json
+          pool_size: number
+          spaces_remaining: number
+          total_ipg_collected: number
+          total_participants: number
+        }[]
       }
       get_user_lucky_draw_tickets: {
         Args: { p_config_id: string; p_user_id: string }
