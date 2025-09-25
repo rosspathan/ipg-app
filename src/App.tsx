@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React from "react";
 import { AuthProviderUser } from "@/hooks/useAuthUser";
 import { AuthProviderAdmin } from "@/hooks/useAuthAdmin";
 import { Web3Provider } from "@/contexts/Web3Context";
@@ -101,9 +102,11 @@ import { AdminNotificationsScreen } from "@/pages/AdminNotificationsScreen";
 import { NotificationsScreen } from "@/pages/NotificationsScreen";
 import NotFound from "@/pages/NotFound";
 import DebugFunding from "@/pages/DebugFunding";
-import ProvablyFairSpinScreen from "@/pages/ProvablyFairSpinScreen";
-import SpinVerifyScreen from "@/pages/SpinVerifyScreen";
+import SpinVerifyScreen from "@/pages/SpinVerifyScreen"; 
 import BSKVestingScreen from "@/pages/BSKVestingScreen";
+
+// Import ProvablyFairSpinScreen separately to avoid module conflicts
+const ProvablyFairSpinScreen = React.lazy(() => import("@/pages/ProvablyFairSpinScreen"));
 
 const queryClient = new QueryClient();
 
@@ -190,7 +193,11 @@ function App() {
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/lucky" element={<LuckyDrawScreen />} />
                 <Route path="lucky" element={<LuckyDrawScreen />} />
-                <Route path="spin-wheel" element={<ProvablyFairSpinScreen />} />
+                <Route path="spin-wheel" element={
+                  <React.Suspense fallback={<div className="p-6">Loading...</div>}>
+                    <ProvablyFairSpinScreen />
+                  </React.Suspense>
+                } />
                 <Route path="spin-verify" element={<SpinVerifyScreen />} />
                 <Route path="bsk-vesting" element={<BSKVestingScreen />} />
                 <Route path="programs/insurance" element={<InsuranceScreen />} />
