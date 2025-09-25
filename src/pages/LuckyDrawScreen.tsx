@@ -3,19 +3,30 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Gift, Clock, Trophy, Ticket } from "lucide-react";
+import { ChevronLeft, Gift, Trophy, Ticket, Users, DollarSign, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
 
-interface LuckyDrawConfig {
+interface PoolDrawConfig {
   id: string;
   ticket_price: number;
-  prize_pool: number;
-  draw_date: string;
+  pool_size: number;
+  current_participants: number;
+  first_place_prize: number;
+  second_place_prize: number;
+  third_place_prize: number;
+  admin_fee_percent: number;
   max_winners: number;
   status: string;
+  ticket_currency: string;
+  payout_currency: string;
+  auto_execute: boolean;
+  commit_hash?: string;
+  reveal_value?: string;
+  executed_at?: string;
 }
 
 interface UserTicket {
@@ -25,7 +36,23 @@ interface UserTicket {
   ticket_number: string;
   created_at: string;
   status: string;
-  prize_amount?: number;
+  prize_tier?: number;
+  bsk_payout?: number;
+  ipg_paid?: number;
+  verification_data?: any;
+}
+
+interface PoolStats {
+  total_participants: number;
+  pool_size: number;
+  spaces_remaining: number;
+  total_ipg_collected: number;
+  estimated_payouts: {
+    first_place_bsk: number;
+    second_place_bsk: number;
+    third_place_bsk: number;
+    admin_fee_ipg: number;
+  };
 }
 
 const LuckyDrawScreen = () => {
@@ -35,9 +62,9 @@ const LuckyDrawScreen = () => {
   const [tickets, setTickets] = useState(1);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
-  const [drawConfig, setDrawConfig] = useState<LuckyDrawConfig | null>(null);
+  const [drawConfig, setDrawConfig] = useState<PoolDrawConfig | null>(null);
   const [userTickets, setUserTickets] = useState<UserTicket[]>([]);
-  const [ticketsSold, setTicketsSold] = useState(0);
+  const [poolStats, setPoolStats] = useState<PoolStats | null>(null);
 
   useEffect(() => {
     loadLuckyDrawData();
@@ -47,18 +74,33 @@ const LuckyDrawScreen = () => {
     try {
       setLoading(true);
       
-      // Get active draw config
+      // Get active pool-based draw config
       const { data: configs, error: configError } = await supabase
         .from('lucky_draw_configs')
         .select('*')
         .eq('status', 'active')
-        .order('draw_date', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(1);
 
       if (configError) throw configError;
       
       if (configs && configs.length > 0) {
-        setDrawConfig(configs[0] as LuckyDrawConfig);
+        setDrawConfig(configs[0] as PoolDrawConfig);
+        
+        // Get pool statistics
+        const { data: statsData, error: statsError } = await supabase.rpc(
+          'get_pool_draw_stats',
+          { p_config_id: configs[0].id }
+        );
+
+        if (statsError) {
+          console.error('Error loading pool stats:', statsError);
+        } else {
+          setPoolStats({
+            ...statsData[0],
+            estimated_payouts: statsData[0].estimated_payouts as any
+          });
+        }
         
         // Get user's tickets for this draw
         if (user) {
@@ -75,19 +117,6 @@ const LuckyDrawScreen = () => {
           } else {
             setUserTickets(ticketsData || []);
           }
-        }
-        
-        // Get total tickets sold count
-        const { data: ticketCount, error: countError } = await supabase.rpc(
-          'count_lucky_draw_tickets',
-          { p_config_id: configs[0].id }
-        );
-
-        if (countError) {
-          console.error('Error loading ticket count:', countError);
-          setTicketsSold(0);
-        } else {
-          setTicketsSold(ticketCount || 0);
         }
       }
     } catch (error) {
@@ -121,16 +150,28 @@ const LuckyDrawScreen = () => {
       return;
     }
 
+    if (!poolStats || poolStats.spaces_remaining < tickets) {
+      toast({
+        title: "Error",
+        description: `Not enough spaces left. Only ${poolStats?.spaces_remaining || 0} spaces remaining.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setPurchasing(true);
       
-      // Create tickets using the RPC function
+      const totalCost = tickets * drawConfig.ticket_price;
+      
+      // Create pool-based tickets using the new RPC function
       const { data: result, error: purchaseError } = await supabase.rpc(
-        'create_lucky_draw_tickets',
+        'create_pool_draw_tickets',
         {
           p_user_id: user.id,
           p_config_id: drawConfig.id,
-          p_ticket_count: tickets
+          p_ticket_count: tickets,
+          p_ipg_amount: totalCost
         }
       );
 
@@ -141,7 +182,7 @@ const LuckyDrawScreen = () => {
       if (response?.success) {
         toast({
           title: "Tickets Purchased!",
-          description: `Successfully bought ${tickets} ticket(s) for $${(tickets * drawConfig.ticket_price).toFixed(2)}`,
+          description: `Successfully bought ${tickets} ticket(s) for ${totalCost} ${drawConfig.ticket_currency}. ${response.pool_remaining} spaces remaining.`,
         });
 
         // Reload the data to get updated tickets and count
@@ -167,19 +208,28 @@ const LuckyDrawScreen = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Won": return "text-green-600 border-green-600";
-      case "Lost": return "text-red-600 border-red-600";
-      case "Pending": return "text-yellow-600 border-yellow-600";
+      case "won": return "text-green-600 border-green-600";
+      case "lost": return "text-red-600 border-red-600";
+      case "pending": return "text-yellow-600 border-yellow-600";
       default: return "text-gray-600 border-gray-600";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "Won": return <Trophy className="w-4 h-4" />;
-      case "Lost": return <div className="w-4 h-4" />;
-      case "Pending": return <Clock className="w-4 h-4" />;
+      case "won": return <Trophy className="w-4 h-4" />;
+      case "lost": return <div className="w-4 h-4" />;
+      case "pending": return <Users className="w-4 h-4" />;
       default: return <Ticket className="w-4 h-4" />;
+    }
+  };
+
+  const getTierText = (tier?: number) => {
+    switch (tier) {
+      case 1: return "🥇 1st Place";
+      case 2: return "🥈 2nd Place"; 
+      case 3: return "🥉 3rd Place";
+      default: return "Participant";
     }
   };
 
@@ -219,10 +269,6 @@ const LuckyDrawScreen = () => {
     );
   }
 
-  const maxTicketsPerDraw = 10000; // Could be configurable per draw
-  const drawDate = new Date(drawConfig.draw_date);
-  const isDrawEnded = drawDate < new Date();
-
   return (
     <div className="min-h-screen flex flex-col bg-background px-6 py-8">
       <div className="flex items-center mb-6">
@@ -234,7 +280,7 @@ const LuckyDrawScreen = () => {
         >
           <ChevronLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-xl font-semibold">Lucky Draw</h1>
+        <h1 className="text-xl font-semibold">Pool Lucky Draw</h1>
       </div>
 
       {/* Current Draw Info */}
@@ -244,28 +290,73 @@ const LuckyDrawScreen = () => {
             <div className="flex items-center space-x-3">
               <Gift className="w-8 h-8 text-purple-500" />
               <div>
-                <CardTitle className="text-xl">{isDrawEnded ? 'Draw Ended' : 'Next Draw'}</CardTitle>
-                <p className="text-sm text-muted-foreground">{drawDate.toLocaleString()}</p>
+                <CardTitle className="text-xl">
+                  {drawConfig.status === 'completed' ? 'Draw Complete' : 'Pool Draw'}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {drawConfig.current_participants}/{drawConfig.pool_size} participants
+                </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-primary">${drawConfig.prize_pool.toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground">Prize Pool</p>
+              <p className="text-2xl font-bold text-primary">
+                {poolStats?.total_ipg_collected || 0} {drawConfig.ticket_currency}
+              </p>
+              <p className="text-sm text-muted-foreground">Total Collected</p>
             </div>
+          </div>
+          
+          {/* Pool Progress */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Pool Progress</span>
+              <span>{drawConfig.current_participants}/{drawConfig.pool_size}</span>
+            </div>
+            <Progress 
+              value={(drawConfig.current_participants / drawConfig.pool_size) * 100} 
+              className="h-2"
+            />
+            <p className="text-xs text-muted-foreground text-center">
+              {poolStats?.spaces_remaining || 0} spaces remaining • Auto-executes when full
+            </p>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
               <p className="text-sm text-muted-foreground">Ticket Price</p>
-              <p className="text-lg font-bold">${drawConfig.ticket_price}</p>
+              <p className="text-lg font-bold">{drawConfig.ticket_price} {drawConfig.ticket_currency}</p>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Tickets Sold</p>
-              <p className="text-lg font-bold">
-                {ticketsSold.toLocaleString()} / {maxTicketsPerDraw.toLocaleString()}
-              </p>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">Participants</p>
+              <p className="text-lg font-bold">{drawConfig.current_participants}</p>
             </div>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">Winners</p>
+              <p className="text-lg font-bold">{drawConfig.max_winners}</p>
+            </div>
+          </div>
+
+          {/* Prize Tiers */}
+          <div className="bg-muted/20 rounded-lg p-3">
+            <h4 className="font-medium mb-2 text-center">Prize Tiers ({drawConfig.payout_currency})</h4>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="text-center">
+                <div className="font-bold text-yellow-500">🥇</div>
+                <div>{poolStats?.estimated_payouts.first_place_bsk || drawConfig.first_place_prize}</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-gray-400">🥈</div>
+                <div>{poolStats?.estimated_payouts.second_place_bsk || drawConfig.second_place_prize}</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-orange-500">🥉</div>
+                <div>{poolStats?.estimated_payouts.third_place_bsk || drawConfig.third_place_prize}</div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              After {drawConfig.admin_fee_percent}% admin fee
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -283,7 +374,7 @@ const LuckyDrawScreen = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setTickets(Math.min(10, tickets + 1))}
+                  onClick={() => setTickets(Math.min(Math.min(10, poolStats?.spaces_remaining || 1), tickets + 1))}
                 >
                   +
                 </Button>
@@ -292,17 +383,21 @@ const LuckyDrawScreen = () => {
             
             <div className="flex items-center justify-between text-sm">
               <span>Total Cost:</span>
-              <span className="font-bold">${(tickets * drawConfig.ticket_price).toFixed(2)}</span>
+              <span className="font-bold">{(tickets * drawConfig.ticket_price).toFixed(2)} {drawConfig.ticket_currency}</span>
             </div>
 
             <Button 
               onClick={handleBuyTickets} 
               className="w-full" 
               size="lg"
-              disabled={purchasing || isDrawEnded || !user}
+              disabled={purchasing || drawConfig.status !== 'active' || !user || (poolStats?.spaces_remaining || 0) < tickets}
             >
               <Ticket className="w-4 h-4 mr-2" />
-              {purchasing ? 'Processing...' : isDrawEnded ? 'Draw Ended' : !user ? 'Login Required' : `Buy ${tickets} Ticket${tickets > 1 ? 's' : ''}`}
+              {purchasing ? 'Processing...' : 
+               drawConfig.status !== 'active' ? 'Draw Closed' :
+               !user ? 'Login Required' : 
+               (poolStats?.spaces_remaining || 0) < tickets ? 'Not Enough Spaces' :
+               `Buy ${tickets} Ticket${tickets > 1 ? 's' : ''}`}
             </Button>
           </div>
         </CardContent>
@@ -334,9 +429,9 @@ const LuckyDrawScreen = () => {
                       <Badge variant="outline" className={getStatusColor(ticket.status)}>
                         {ticket.status}
                       </Badge>
-                      {ticket.prize_amount && (
+                      {ticket.bsk_payout && (
                         <p className="text-sm font-bold text-green-600 mt-1">
-                          ${ticket.prize_amount.toLocaleString()}
+                          {ticket.bsk_payout.toLocaleString()} {drawConfig.payout_currency}
                         </p>
                       )}
                     </div>
@@ -402,30 +497,27 @@ const LuckyDrawScreen = () => {
             <CardContent>
               <div className="space-y-4">
                 <div className="text-center p-6 bg-muted/20 rounded-lg">
-                  {isDrawEnded ? (
-                    drawConfig.status === 'completed' ? (
-                      <>
-                        <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                        <h3 className="font-medium mb-2">Draw Completed</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Winners have been selected and notified
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="font-medium mb-2">Processing Results</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Draw has ended. Results will be announced soon.
-                        </p>
-                      </>
-                    )
+                  {drawConfig.status === 'completed' ? (
+                    <>
+                      <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                      <h3 className="font-medium mb-2">Draw Completed</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Winners have been selected and BSK rewards distributed
+                      </p>
+                      {drawConfig.reveal_value && (
+                        <div className="mt-4 p-2 bg-card rounded text-xs">
+                          <p><strong>Verification:</strong></p>
+                          <p>Commit: {drawConfig.commit_hash?.slice(0, 16)}...</p>
+                          <p>Reveal: {drawConfig.reveal_value.slice(0, 16)}...</p>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <>
                       <Gift className="w-12 h-12 text-primary mx-auto mb-4" />
-                      <h3 className="font-medium mb-2">Draw in Progress</h3>
+                      <h3 className="font-medium mb-2">Pool Filling</h3>
                       <p className="text-sm text-muted-foreground">
-                        Get your tickets before {drawDate.toLocaleDateString()}!
+                        Draw executes automatically when {drawConfig.pool_size} participants join!
                       </p>
                     </>
                   )}
@@ -433,12 +525,12 @@ const LuckyDrawScreen = () => {
                 
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div>
-                    <p className="text-2xl font-bold text-primary">{ticketsSold}</p>
-                    <p className="text-sm text-muted-foreground">Tickets Sold</p>
+                    <p className="text-2xl font-bold text-primary">{drawConfig.current_participants}</p>
+                    <p className="text-sm text-muted-foreground">Participants</p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-primary">{drawConfig.max_winners}</p>
-                    <p className="text-sm text-muted-foreground">Max Winners</p>
+                    <p className="text-sm text-muted-foreground">Winners</p>
                   </div>
                 </div>
               </div>

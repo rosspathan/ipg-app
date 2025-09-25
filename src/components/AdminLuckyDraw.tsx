@@ -13,14 +13,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, Ticket, DollarSign, Users, Calendar, Trophy, List, Eye } from "lucide-react";
 
-interface LuckyDrawConfig {
+interface PoolDrawConfig {
   id: string;
-  prize_pool: number;
-  status: string;
-  created_at: string;
-  max_winners: number;
-  draw_date: string;
   ticket_price: number;
+  pool_size: number;
+  current_participants: number;
+  first_place_prize: number;
+  second_place_prize: number;
+  third_place_prize: number;
+  admin_fee_percent: number;
+  max_winners: number;
+  status: string;
+  ticket_currency: string;
+  payout_currency: string;
+  auto_execute: boolean;
+  commit_hash?: string;
+  reveal_value?: string;
+  executed_at?: string;
 }
 
 interface LuckyDrawTicket {
@@ -34,19 +43,23 @@ interface LuckyDrawTicket {
 }
 
 export const AdminLuckyDraw = () => {
-  const [draws, setDraws] = useState<LuckyDrawConfig[]>([]);
+  const [draws, setDraws] = useState<PoolDrawConfig[]>([]);
   const [tickets, setTickets] = useState<LuckyDrawTicket[]>([]);
   const [selectedDrawId, setSelectedDrawId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingDraw, setEditingDraw] = useState<LuckyDrawConfig | null>(null);
+  const [editingDraw, setEditingDraw] = useState<PoolDrawConfig | null>(null);
   const [formData, setFormData] = useState({
-    prize_pool: "",
     ticket_price: "",
-    max_winners: "",
-    draw_date: "",
+    pool_size: "",
+    first_place_prize: "",
+    second_place_prize: "",
+    third_place_prize: "",
+    admin_fee_percent: "",
+    max_winners: "3",
     status: "active",
+    auto_execute: "true",
   });
   const { toast } = useToast();
 
@@ -121,14 +134,18 @@ export const AdminLuckyDraw = () => {
     setEditingDraw(null);
   };
 
-  const handleEdit = (draw: LuckyDrawConfig) => {
+  const handleEdit = (draw: PoolDrawConfig) => {
     setEditingDraw(draw);
     setFormData({
-      prize_pool: draw.prize_pool.toString(),
       ticket_price: draw.ticket_price.toString(),
+      pool_size: draw.pool_size.toString(),
+      first_place_prize: draw.first_place_prize.toString(),
+      second_place_prize: draw.second_place_prize.toString(),
+      third_place_prize: draw.third_place_prize.toString(),
+      admin_fee_percent: draw.admin_fee_percent.toString(),
       max_winners: draw.max_winners.toString(),
-      draw_date: new Date(draw.draw_date).toISOString().slice(0, 16),
       status: draw.status,
+      auto_execute: draw.auto_execute.toString(),
     });
     setDialogOpen(true);
   };
