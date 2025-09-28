@@ -166,7 +166,7 @@ const AdminInsuranceBSK = () => {
         .insert({
           rate_inr_per_bsk: parseFloat(newBskRate),
           notes: 'Updated via admin panel',
-          set_by: user?.id || 'admin'
+          set_by: 'admin'
         });
 
       if (error) throw error;
