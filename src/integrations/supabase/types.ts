@@ -2276,6 +2276,290 @@ export type Database = {
         }
         Relationships: []
       }
+      insurance_bsk_claims: {
+        Row: {
+          admin_notes: string | null
+          approved_amount_inr: number | null
+          approved_at: string | null
+          claim_reference: string
+          claim_type: string
+          created_at: string | null
+          description: string | null
+          evidence_documents: Json | null
+          id: string
+          incident_at: string | null
+          internal_data: Json | null
+          paid_at: string | null
+          payout_bsk: number | null
+          payout_rate_snapshot: number | null
+          period_end: string | null
+          period_start: string | null
+          policy_id: string
+          rejection_reason: string | null
+          requested_amount_inr: number | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_amount_inr?: number | null
+          approved_at?: string | null
+          claim_reference: string
+          claim_type: string
+          created_at?: string | null
+          description?: string | null
+          evidence_documents?: Json | null
+          id?: string
+          incident_at?: string | null
+          internal_data?: Json | null
+          paid_at?: string | null
+          payout_bsk?: number | null
+          payout_rate_snapshot?: number | null
+          period_end?: string | null
+          period_start?: string | null
+          policy_id: string
+          rejection_reason?: string | null
+          requested_amount_inr?: number | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_amount_inr?: number | null
+          approved_at?: string | null
+          claim_reference?: string
+          claim_type?: string
+          created_at?: string | null
+          description?: string | null
+          evidence_documents?: Json | null
+          id?: string
+          incident_at?: string | null
+          internal_data?: Json | null
+          paid_at?: string | null
+          payout_bsk?: number | null
+          payout_rate_snapshot?: number | null
+          period_end?: string | null
+          period_start?: string | null
+          policy_id?: string
+          rejection_reason?: string | null
+          requested_amount_inr?: number | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_bsk_claims_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_bsk_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_bsk_global_settings: {
+        Row: {
+          created_at: string | null
+          disclaimer_text: string | null
+          id: string
+          kyc_required_for_payout: boolean | null
+          payout_destination: string | null
+          refund_window_hours: number | null
+          region_restrictions: Json | null
+          system_enabled: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          disclaimer_text?: string | null
+          id?: string
+          kyc_required_for_payout?: boolean | null
+          payout_destination?: string | null
+          refund_window_hours?: number | null
+          region_restrictions?: Json | null
+          system_enabled?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          disclaimer_text?: string | null
+          id?: string
+          kyc_required_for_payout?: boolean | null
+          payout_destination?: string | null
+          refund_window_hours?: number | null
+          region_restrictions?: Json | null
+          system_enabled?: boolean
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      insurance_bsk_ledger: {
+        Row: {
+          bsk_amount: number
+          claim_id: string | null
+          created_at: string | null
+          destination: string | null
+          id: string
+          idempotency_key: string | null
+          inr_amount: number
+          metadata: Json | null
+          plan_type: string
+          policy_id: string | null
+          processed_at: string | null
+          processor_id: string | null
+          rate_snapshot: number
+          type: string
+          user_id: string
+        }
+        Insert: {
+          bsk_amount: number
+          claim_id?: string | null
+          created_at?: string | null
+          destination?: string | null
+          id?: string
+          idempotency_key?: string | null
+          inr_amount: number
+          metadata?: Json | null
+          plan_type: string
+          policy_id?: string | null
+          processed_at?: string | null
+          processor_id?: string | null
+          rate_snapshot: number
+          type: string
+          user_id: string
+        }
+        Update: {
+          bsk_amount?: number
+          claim_id?: string | null
+          created_at?: string | null
+          destination?: string | null
+          id?: string
+          idempotency_key?: string | null
+          inr_amount?: number
+          metadata?: Json | null
+          plan_type?: string
+          policy_id?: string | null
+          processed_at?: string | null
+          processor_id?: string | null
+          rate_snapshot?: number
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_bsk_ledger_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_bsk_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_bsk_ledger_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_bsk_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_bsk_plan_configs: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_enabled: boolean
+          plan_settings: Json
+          plan_type: string
+          premium_inr: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean
+          plan_settings?: Json
+          plan_type: string
+          premium_inr?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean
+          plan_settings?: Json
+          plan_type?: string
+          premium_inr?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      insurance_bsk_policies: {
+        Row: {
+          beneficiaries: Json | null
+          coverage_config: Json
+          created_at: string | null
+          end_at: string | null
+          id: string
+          maturity_at: string | null
+          plan_type: string
+          policy_number: string
+          premium_bsk: number
+          premium_inr: number
+          rate_snapshot: number
+          region: string
+          start_at: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          beneficiaries?: Json | null
+          coverage_config: Json
+          created_at?: string | null
+          end_at?: string | null
+          id?: string
+          maturity_at?: string | null
+          plan_type: string
+          policy_number: string
+          premium_bsk: number
+          premium_inr: number
+          rate_snapshot: number
+          region: string
+          start_at?: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          beneficiaries?: Json | null
+          coverage_config?: Json
+          created_at?: string | null
+          end_at?: string | null
+          id?: string
+          maturity_at?: string | null
+          plan_type?: string
+          policy_number?: string
+          premium_bsk?: number
+          premium_inr?: number
+          rate_snapshot?: number
+          region?: string
+          start_at?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       insurance_claims: {
         Row: {
           admin_notes: string | null
