@@ -7,7 +7,7 @@ import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useISmartSpin } from '@/hooks/useISmartSpin'
-import { ISmartSpinWheel } from '@/components/ismart/ISmartSpinWheel'
+import { PremiumSpinWheel } from '@/components/premium-wheel/PremiumSpinWheel'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function ISmartSpinScreen() {
@@ -199,11 +199,13 @@ export default function ISmartSpinScreen() {
         {/* Spin Wheel */}
         <Card>
           <CardContent className="pt-6">
-            <ISmartSpinWheel
+            <PremiumSpinWheel
               segments={segments}
               isSpinning={isSpinning}
               winningSegmentIndex={winningSegmentIndex}
               onSpinComplete={handleSpinComplete}
+              showParticles={lastResult !== null && winningSegmentIndex !== undefined}
+              particleType={lastResult?.multiplier > 0 ? 'win' : 'lose'}
             />
           </CardContent>
         </Card>
