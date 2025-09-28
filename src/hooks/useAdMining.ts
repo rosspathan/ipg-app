@@ -138,10 +138,13 @@ export const useAdMining = () => {
       .from('user_bsk_balances')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (balError && balError.code !== 'PGRST116') {
-      // If no balance record exists, create one
+      throw balError;
+    }
+
+    if (!balances) {
       const { data: newBalance, error: insertError } = await supabase
         .from('user_bsk_balances')
         .insert({ user_id: user.id })
@@ -161,10 +164,13 @@ export const useAdMining = () => {
       .select('*')
       .eq('user_id', user.id)
       .eq('date_key', today)
-      .single();
+      .maybeSingle();
 
     if (viewsError && viewsError.code !== 'PGRST116') {
-      // Create today's record if it doesn't exist
+      throw viewsError;
+    }
+
+    if (!views) {
       const { data: newViews, error: insertError } = await supabase
         .from('user_daily_ad_views')
         .insert({
