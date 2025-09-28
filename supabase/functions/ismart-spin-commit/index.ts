@@ -160,7 +160,9 @@ serve(async (req) => {
 
     // Get current RNG seed
     const { data: seedData, error: seedError } = await supabase
-      .rpc('get_current_spin_seed')
+      .from('rng_seeds')
+      .select('server_seed_hash')
+      .eq('is_current', true)
       .single()
 
     if (seedError || !seedData) {

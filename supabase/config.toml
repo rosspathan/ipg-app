@@ -24,26 +24,29 @@ verify_jwt = true
 [functions.send-verification-email]
 verify_jwt = false
 
-[functions.spin-commit]
+[functions.ismart-spin-commit]
 verify_jwt = true
 
-[functions.spin-reveal]
+[functions.ismart-spin-reveal]
 verify_jwt = true
 
-[functions.spin-verify]
+[functions.ismart-spin-verify]
 verify_jwt = false
 
 [functions.team-referral-processor]
 verify_jwt = false
 
-[functions.provably-fair-commit]
-verify_jwt = true
-
-[functions.provably-fair-reveal]
-verify_jwt = true
-
 [functions.bsk-vesting-swap]
 verify_jwt = true
 
 [functions.bsk-daily-vesting]
+verify_jwt = false
+
+[functions.execute-lucky-draw]
+verify_jwt = true
+
+[functions.purchase-bonus-handler]
+verify_jwt = true
+
+[functions.admin-create-default]
 verify_jwt = false
