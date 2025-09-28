@@ -8,8 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, CreditCard, Calculator, Clock, AlertCircle, CheckCircle, DollarSign, Calendar } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ChevronLeft, CreditCard, Calculator, Clock, AlertCircle, CheckCircle, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useToast } from "@/hooks/use-toast";
@@ -123,7 +122,6 @@ const BSKLoansScreen = () => {
           setActiveTab("active");
         }
       }
-
     } catch (error) {
       console.error('Error loading loan data:', error);
       toast({
