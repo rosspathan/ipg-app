@@ -21,17 +21,17 @@ const InsuranceCard = ({ className, variant = "compact", style }: InsuranceCardP
     {
       type: "accident",
       name: "Accident Protection",
-      premium: "₹500",
-      coverage: "₹5,00,000",
+      premium: "₹10,000/year",
+      coverage: "₹10,00,000",
       icon: Shield,
       color: "text-success",
       gradient: "from-success/20 to-accent/10"
     },
     {
-      type: "trading",
+      type: "trading", 
       name: "Trading Loss Cover",
-      premium: "₹300",
-      coverage: "₹2,50,000", 
+      premium: "₹10,000/month",
+      coverage: "Up to ₹50,000", 
       icon: TrendingDown,
       color: "text-warning",
       gradient: "from-warning/20 to-primary/10"
@@ -39,8 +39,8 @@ const InsuranceCard = ({ className, variant = "compact", style }: InsuranceCardP
     {
       type: "life",
       name: "Life Insurance",
-      premium: "₹1000",
-      coverage: "₹10,00,000",
+      premium: "₹10,000 one-time",
+      coverage: "₹5,00,000",
       icon: Heart,
       color: "text-danger",
       gradient: "from-danger/20 to-secondary/10"
@@ -86,7 +86,7 @@ const InsuranceCard = ({ className, variant = "compact", style }: InsuranceCardP
         <CardContent>
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">Plans starting from</span>
-            <span className="font-bold text-primary">₹300/month</span>
+            <span className="font-bold text-primary">₹10,000</span>
           </div>
           <div className="flex justify-between items-center text-sm mt-1">
             <span className="text-muted-foreground">Coverage up to</span>
@@ -129,7 +129,7 @@ const InsuranceCard = ({ className, variant = "compact", style }: InsuranceCardP
                     <div>
                       <div className="font-medium">{plan.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        {plan.premium}/month • Coverage: {plan.coverage}
+                        {plan.premium} • Coverage: {plan.coverage}
                       </div>
                     </div>
                   </div>

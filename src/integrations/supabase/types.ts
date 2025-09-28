@@ -2276,6 +2276,36 @@ export type Database = {
         }
         Relationships: []
       }
+      insurance_admin_controls: {
+        Row: {
+          control_settings: Json
+          control_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          control_settings?: Json
+          control_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          control_settings?: Json
+          control_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       insurance_bsk_claims: {
         Row: {
           admin_notes: string | null
@@ -2370,10 +2400,14 @@ export type Database = {
       }
       insurance_bsk_global_settings: {
         Row: {
+          admin_approval_required: boolean | null
+          audit_all_transactions: boolean | null
+          auto_approval_enabled: boolean | null
           created_at: string | null
           disclaimer_text: string | null
           id: string
           kyc_required_for_payout: boolean | null
+          manual_review_required: boolean | null
           payout_destination: string | null
           refund_window_hours: number | null
           region_restrictions: Json | null
@@ -2381,10 +2415,14 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          admin_approval_required?: boolean | null
+          audit_all_transactions?: boolean | null
+          auto_approval_enabled?: boolean | null
           created_at?: string | null
           disclaimer_text?: string | null
           id?: string
           kyc_required_for_payout?: boolean | null
+          manual_review_required?: boolean | null
           payout_destination?: string | null
           refund_window_hours?: number | null
           region_restrictions?: Json | null
@@ -2392,10 +2430,14 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          admin_approval_required?: boolean | null
+          audit_all_transactions?: boolean | null
+          auto_approval_enabled?: boolean | null
           created_at?: string | null
           disclaimer_text?: string | null
           id?: string
           kyc_required_for_payout?: boolean | null
+          manual_review_required?: boolean | null
           payout_destination?: string | null
           refund_window_hours?: number | null
           region_restrictions?: Json | null
