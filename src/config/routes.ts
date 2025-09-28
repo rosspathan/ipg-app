@@ -32,6 +32,7 @@ export const ROUTES = {
   
   APP_SWAP: '/app/swap',
   APP_PROGRAMS: '/app/programs',
+  APP_ADVERTISING: '/app/programs/advertising',
   APP_STAKING: '/app/staking',
   APP_STAKING_DETAIL: '/app/staking/:id',
   

@@ -13,6 +13,7 @@ import AssetLogo from "@/components/AssetLogo";
 import CurrencyPicker from "@/components/CurrencyPicker";
 import BalanceDisplay from "@/components/BalanceDisplay";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
+import { BSKBalanceCard } from "@/components/BSKBalanceCard";
 import { cn } from "@/lib/utils";
 
 const WalletHomeScreen = () => {
@@ -121,10 +122,27 @@ const WalletHomeScreen = () => {
           style={{ animationDelay: "200ms", animationFillMode: "both" }}
         />
 
-        {/* Bonus Balance Card */}
+        {/* BSK Balance Cards */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-foreground tracking-tight">BSK Balances</h3>
+          <div className="grid gap-4">
+            <BSKBalanceCard 
+              balanceType="withdrawable"
+              className="animate-fade-in-scale"
+              style={{ animationDelay: "300ms", animationFillMode: "both" }}
+            />
+            <BSKBalanceCard 
+              balanceType="holding"
+              className="animate-fade-in-scale"
+              style={{ animationDelay: "350ms", animationFillMode: "both" }}
+            />
+          </div>
+        </div>
+        
+        {/* Legacy Bonus Balance Card (for compatibility) */}
         <BonusBalanceCard 
           className="animate-fade-in-scale"
-          style={{ animationDelay: "300ms", animationFillMode: "both" }}
+          style={{ animationDelay: "400ms", animationFillMode: "both" }}
         />
 
         {/* Quick Actions - Cyberpunk Grid */}

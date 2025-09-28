@@ -102,16 +102,160 @@ export type Database = {
           },
         ]
       }
-      ads: {
+      ad_mining_settings: {
+        Row: {
+          allow_multiple_subscriptions: boolean
+          auto_credit_no_inventory: boolean
+          bsk_inr_rate: number
+          carry_forward_days: number
+          created_at: string
+          daily_reset_timezone: string
+          free_daily_enabled: boolean
+          free_daily_reward_bsk: number
+          id: string
+          max_free_per_day: number
+          max_subscription_payout_per_day_per_tier: number
+          missed_day_policy: Database["public"]["Enums"]["missed_day_policy"]
+          updated_at: string
+        }
+        Insert: {
+          allow_multiple_subscriptions?: boolean
+          auto_credit_no_inventory?: boolean
+          bsk_inr_rate?: number
+          carry_forward_days?: number
+          created_at?: string
+          daily_reset_timezone?: string
+          free_daily_enabled?: boolean
+          free_daily_reward_bsk?: number
+          id?: string
+          max_free_per_day?: number
+          max_subscription_payout_per_day_per_tier?: number
+          missed_day_policy?: Database["public"]["Enums"]["missed_day_policy"]
+          updated_at?: string
+        }
+        Update: {
+          allow_multiple_subscriptions?: boolean
+          auto_credit_no_inventory?: boolean
+          bsk_inr_rate?: number
+          carry_forward_days?: number
+          created_at?: string
+          daily_reset_timezone?: string
+          free_daily_enabled?: boolean
+          free_daily_reward_bsk?: number
+          id?: string
+          max_free_per_day?: number
+          max_subscription_payout_per_day_per_tier?: number
+          missed_day_policy?: Database["public"]["Enums"]["missed_day_policy"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ad_subscription_tiers: {
         Row: {
           created_at: string
+          daily_bsk: number
+          duration_days: number
+          id: string
+          is_active: boolean
+          tier_inr: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_bsk: number
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          tier_inr: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_bsk?: number
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          tier_inr?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ad_user_subscriptions: {
+        Row: {
+          created_at: string
+          daily_bsk: number
+          days_total: number
+          end_date: string
+          id: string
+          policy: Database["public"]["Enums"]["missed_day_policy"]
+          purchased_bsk: number
+          start_date: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          tier_id: string
+          tier_inr: number
+          total_earned_bsk: number
+          total_missed_days: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_bsk: number
+          days_total?: number
+          end_date: string
+          id?: string
+          policy?: Database["public"]["Enums"]["missed_day_policy"]
+          purchased_bsk: number
+          start_date: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tier_id: string
+          tier_inr: number
+          total_earned_bsk?: number
+          total_missed_days?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_bsk?: number
+          days_total?: number
+          end_date?: string
+          id?: string
+          policy?: Database["public"]["Enums"]["missed_day_policy"]
+          purchased_bsk?: number
+          start_date?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tier_id?: string
+          tier_inr?: number
+          total_earned_bsk?: number
+          total_missed_days?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_user_subscriptions_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "ad_subscription_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ads: {
+        Row: {
+          content_category: string | null
+          created_at: string
           created_by: string | null
+          daily_impression_limit: number | null
           end_at: string | null
           id: string
           image_url: string
           max_impressions_per_user_per_day: number | null
           placement: string
+          region_targeting: Json | null
           required_view_time: number
+          required_view_time_seconds: number
           reward_bsk: number
           square_image_url: string | null
           start_at: string | null
@@ -119,16 +263,21 @@ export type Database = {
           target_url: string
           title: string
           updated_at: string
+          verification_required: boolean
         }
         Insert: {
+          content_category?: string | null
           created_at?: string
           created_by?: string | null
+          daily_impression_limit?: number | null
           end_at?: string | null
           id?: string
           image_url: string
           max_impressions_per_user_per_day?: number | null
           placement?: string
+          region_targeting?: Json | null
           required_view_time?: number
+          required_view_time_seconds?: number
           reward_bsk?: number
           square_image_url?: string | null
           start_at?: string | null
@@ -136,16 +285,21 @@ export type Database = {
           target_url: string
           title: string
           updated_at?: string
+          verification_required?: boolean
         }
         Update: {
+          content_category?: string | null
           created_at?: string
           created_by?: string | null
+          daily_impression_limit?: number | null
           end_at?: string | null
           id?: string
           image_url?: string
           max_impressions_per_user_per_day?: number | null
           placement?: string
+          region_targeting?: Json | null
           required_view_time?: number
+          required_view_time_seconds?: number
           reward_bsk?: number
           square_image_url?: string | null
           start_at?: string | null
@@ -153,6 +307,7 @@ export type Database = {
           target_url?: string
           title?: string
           updated_at?: string
+          verification_required?: boolean
         }
         Relationships: []
       }
@@ -782,6 +937,83 @@ export type Database = {
           },
         ]
       }
+      bsk_holding_ledger: {
+        Row: {
+          ad_id: string | null
+          bsk_amount: number
+          created_at: string
+          date_key: string
+          id: string
+          inr_snapshot: number
+          rate_snapshot: number
+          reason: string | null
+          status: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          ad_id?: string | null
+          bsk_amount?: number
+          created_at?: string
+          date_key: string
+          id?: string
+          inr_snapshot?: number
+          rate_snapshot?: number
+          reason?: string | null
+          status?: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          ad_id?: string | null
+          bsk_amount?: number
+          created_at?: string
+          date_key?: string
+          id?: string
+          inr_snapshot?: number
+          rate_snapshot?: number
+          reason?: string | null
+          status?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_holding_ledger_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_rate_snapshots: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          previous_rate: number | null
+          rate: number
+          reason: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          previous_rate?: number | null
+          rate: number
+          reason?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          previous_rate?: number | null
+          rate?: number
+          reason?: string | null
+        }
+        Relationships: []
+      }
       bsk_vesting_config: {
         Row: {
           anti_sybil_max_per_ip: number | null
@@ -914,6 +1146,66 @@ export type Database = {
             columns: ["vesting_id"]
             isOneToOne: false
             referencedRelation: "user_bsk_vesting"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_withdrawable_ledger: {
+        Row: {
+          ad_id: string | null
+          bsk_amount: number
+          created_at: string
+          day_index: number
+          id: string
+          inr_snapshot: number
+          rate_snapshot: number
+          reason: string | null
+          status: string
+          subscription_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          ad_id?: string | null
+          bsk_amount?: number
+          created_at?: string
+          day_index: number
+          id?: string
+          inr_snapshot?: number
+          rate_snapshot?: number
+          reason?: string | null
+          status?: string
+          subscription_id?: string | null
+          type?: string
+          user_id: string
+        }
+        Update: {
+          ad_id?: string | null
+          bsk_amount?: number
+          created_at?: string
+          day_index?: number
+          id?: string
+          inr_snapshot?: number
+          rate_snapshot?: number
+          reason?: string | null
+          status?: string
+          subscription_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_withdrawable_ledger_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bsk_withdrawable_ledger_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "ad_user_subscriptions"
             referencedColumns: ["id"]
           },
         ]
@@ -3898,6 +4190,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_bsk_balances: {
+        Row: {
+          created_at: string
+          holding_balance: number
+          id: string
+          total_earned_holding: number
+          total_earned_withdrawable: number
+          updated_at: string
+          user_id: string
+          withdrawable_balance: number
+        }
+        Insert: {
+          created_at?: string
+          holding_balance?: number
+          id?: string
+          total_earned_holding?: number
+          total_earned_withdrawable?: number
+          updated_at?: string
+          user_id: string
+          withdrawable_balance?: number
+        }
+        Update: {
+          created_at?: string
+          holding_balance?: number
+          id?: string
+          total_earned_holding?: number
+          total_earned_withdrawable?: number
+          updated_at?: string
+          user_id?: string
+          withdrawable_balance?: number
+        }
+        Relationships: []
+      }
       user_bsk_vesting: {
         Row: {
           bsk_daily_amount: number
@@ -3965,6 +4290,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_daily_ad_views: {
+        Row: {
+          created_at: string
+          date_key: string
+          free_views_used: number
+          id: string
+          last_view_at: string | null
+          subscription_views_used: number
+          total_bsk_earned: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_key: string
+          free_views_used?: number
+          id?: string
+          last_view_at?: string | null
+          subscription_views_used?: number
+          total_bsk_earned?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_key?: string
+          free_views_used?: number
+          id?: string
+          last_view_at?: string | null
+          subscription_views_used?: number
+          total_bsk_earned?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_free_spins: {
         Row: {
@@ -4620,13 +4981,16 @@ export type Database = {
       announcement_type: "carousel" | "ticker"
       app_role: "admin" | "support" | "compliance" | "finance" | "user"
       balance_metric: "MAIN" | "TOTAL" | "BONUS_INCLUDED"
+      bsk_balance_type: "withdrawable" | "holding"
       claim_status: "PENDING" | "APPROVED" | "REJECTED"
       draw_status: "OPEN" | "CLOSED" | "COMPLETED" | "CANCELLED"
       insurance_type: "ACCIDENT" | "TRADING"
       invite_policy: "BLOCK_WHEN_FULL" | "WAITLIST"
+      missed_day_policy: "forfeit" | "carry_forward"
       policy_status: "ACTIVE" | "EXPIRED" | "CANCELLED"
       promotion_type: "INR_BONUS" | "DEPOSIT_BONUS" | "TRADING_BONUS"
       spin_outcome: "WIN" | "LOSE"
+      subscription_status: "active" | "expired" | "cancelled"
       token_bucket: "holding" | "tradable"
     }
     CompositeTypes: {
@@ -4758,13 +5122,16 @@ export const Constants = {
       announcement_type: ["carousel", "ticker"],
       app_role: ["admin", "support", "compliance", "finance", "user"],
       balance_metric: ["MAIN", "TOTAL", "BONUS_INCLUDED"],
+      bsk_balance_type: ["withdrawable", "holding"],
       claim_status: ["PENDING", "APPROVED", "REJECTED"],
       draw_status: ["OPEN", "CLOSED", "COMPLETED", "CANCELLED"],
       insurance_type: ["ACCIDENT", "TRADING"],
       invite_policy: ["BLOCK_WHEN_FULL", "WAITLIST"],
+      missed_day_policy: ["forfeit", "carry_forward"],
       policy_status: ["ACTIVE", "EXPIRED", "CANCELLED"],
       promotion_type: ["INR_BONUS", "DEPOSIT_BONUS", "TRADING_BONUS"],
       spin_outcome: ["WIN", "LOSE"],
+      subscription_status: ["active", "expired", "cancelled"],
       token_bucket: ["holding", "tradable"],
     },
   },
