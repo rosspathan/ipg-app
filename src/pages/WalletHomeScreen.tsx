@@ -128,11 +128,14 @@ const WalletHomeScreen = () => {
         <BSKPromotionBanner />
 
         {/* Insurance Card */}
-        <InsuranceCard 
-          variant="compact"
-          className="animate-fade-in-scale"
-          style={{ animationDelay: "250ms", animationFillMode: "both" }}
-        />
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold text-foreground tracking-tight">Insurance</h3>
+          <InsuranceCard 
+            variant="compact"
+            className="animate-fade-in-scale"
+            style={{ animationDelay: "250ms", animationFillMode: "both" }}
+          />
+        </div>
 
         {/* BSK Balances */}
         <div className="space-y-4">

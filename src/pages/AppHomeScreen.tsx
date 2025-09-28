@@ -170,11 +170,14 @@ const AppHomeScreen = () => {
         <BSKPromotionBanner />
 
         {/* Insurance Card */}
-        <InsuranceCard 
-          variant="compact"
-          className="animate-fade-in-scale border-2 border-primary/30"
-          style={{ animationDelay: "230ms", animationFillMode: "both" }}
-        />
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold text-foreground tracking-tight">Insurance</h3>
+          <InsuranceCard 
+            variant="compact"
+            className="animate-fade-in-scale border-2 border-primary/30"
+            style={{ animationDelay: "230ms", animationFillMode: "both" }}
+          />
+        </div>
 
         {/* BSK Balances Section */}
         <div className="space-y-4">
