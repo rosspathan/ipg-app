@@ -18,8 +18,12 @@ import { cn } from "@/lib/utils";
 import ipgLogoPremium from "@/assets/ipg-logo-premium.jpg";
 
 const AppHomeScreen = () => {
+  console.log('AppHomeScreen: Component rendering...');
+  
   const navigate = useNavigate();
   const { user } = useAuthUser();
+
+  console.log('AppHomeScreen: User authenticated:', !!user);
 
   // Mock data - in real app this would come from APIs
   const totalBalance = 15247.82;

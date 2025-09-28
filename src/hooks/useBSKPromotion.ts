@@ -61,11 +61,13 @@ export const useBSKPromotion = () => {
   // Load active campaign and user data
   const loadData = async () => {
     if (!user) {
+      console.log('BSK Promotion: No user authenticated');
       setLoading(false);
       return;
     }
 
     try {
+      console.log('BSK Promotion: Loading campaign data...');
       setLoading(true);
 
       // Fetch active campaign
@@ -73,17 +75,18 @@ export const useBSKPromotion = () => {
         .from('bsk_bonus_campaigns')
         .select('*')
         .eq('status', 'live')
-        .or('start_at.is.null,start_at.lte.now()')
-        .or('end_at.is.null,end_at.gte.now()')
+        .or(`start_at.is.null,start_at.lte.${new Date().toISOString()}`)
+        .or(`end_at.is.null,end_at.gte.${new Date().toISOString()}`)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (campaignError) {
-        console.error('Error fetching campaign:', campaignError);
+        console.error('BSK Promotion: Error fetching campaign:', campaignError);
         return;
       }
 
+      console.log('BSK Promotion: Campaign loaded:', campaign);
       setActiveCampaign(campaign);
 
       if (campaign) {

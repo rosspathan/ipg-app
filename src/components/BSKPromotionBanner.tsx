@@ -15,6 +15,8 @@ export const BSKPromotionBanner: React.FC<BSKPromotionBannerProps> = ({
   showFullDetails = false,
   className = ""
 }) => {
+  console.log('BSK Promotion Banner: Component rendering...');
+  
   const {
     activeCampaign,
     getUserStatus,
@@ -24,7 +26,10 @@ export const BSKPromotionBanner: React.FC<BSKPromotionBannerProps> = ({
   } = useBSKPromotion();
   const navigate = useNavigate();
 
+  console.log('BSK Promotion Banner: loading =', loading, 'activeCampaign =', activeCampaign);
+
   if (loading || !activeCampaign) {
+    console.log('BSK Promotion Banner: Not showing banner - loading:', loading, 'activeCampaign:', !!activeCampaign);
     return null;
   }
 
