@@ -162,7 +162,7 @@ serve(async (req) => {
     const { data: seedData, error: seedError } = await supabase
       .from('rng_seeds')
       .select('server_seed_hash')
-      .eq('is_current', true)
+      .is('valid_to', null)
       .single()
 
     if (seedError || !seedData) {
