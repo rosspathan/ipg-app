@@ -148,19 +148,20 @@ export function ISmartSpinWheel({ segments, isSpinning, winningSegmentIndex, onS
     }
 
     const totalWeight = segments.reduce((sum, segment) => sum + segment.weight, 0)
-    let targetAngle = 0
+    let cumulativeAngle = 0
     
-    // Calculate the angle for the winning segment (start from beginning)
+    // Calculate the cumulative angle up to the winning segment
     for (let i = 0; i < segmentIndex; i++) {
-      targetAngle += (segments[i].weight / totalWeight) * 360
+      cumulativeAngle += (segments[i].weight / totalWeight) * 360
     }
     
     // Add half of the winning segment's angle to center the pointer on it
-    targetAngle += (segments[segmentIndex].weight / totalWeight) * 360 / 2
+    const winningSegmentHalfAngle = (segments[segmentIndex].weight / totalWeight) * 360 / 2
+    const targetAngle = cumulativeAngle + winningSegmentHalfAngle
     
-    // Since we start drawing from -90 degrees but rotation is from 0, we need to adjust
-    // The pointer is at the top, so we need the winning segment to align with 0 degrees (top)
-    const finalAngle = 1440 + targetAngle // 4 full rotations + position winning segment at top
+    // Since we draw from -90 degrees (top), we need to rotate to align the winning segment with top (0 degrees)
+    // We want the winning segment center to be at the top, so we rotate to put it there
+    const finalAngle = 1440 - targetAngle + 90 // 4 full rotations + positioning to align with arrow
     
     setRotation(finalAngle)
     
