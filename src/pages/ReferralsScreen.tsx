@@ -41,6 +41,26 @@ const ReferralsScreen = () => {
   } = useTeamReferrals();
 
   const referralLink = user ? `${window.location.origin}/auth/register?ref=${user.id}` : "";
+  
+  const [currentBadge, setCurrentBadge] = useState<string>('None');
+  
+  // Load current badge
+  useEffect(() => {
+    const userId = user?.id;
+    if (userId) {
+      const fetchCurrentBadge = async () => {
+        try {
+          const { data } = await supabase.from('user_badge_status').select('current_badge').eq('user_id', userId).single();
+          setCurrentBadge(data?.current_badge || 'None');
+        } catch (error) {
+          console.error('Error fetching current badge:', error);
+          setCurrentBadge('None');
+        }
+      };
+      
+      fetchCurrentBadge();
+    }
+  }, [user?.id]);
 
   const handleCopyLink = async () => {
     if (!referralLink) {
@@ -97,25 +117,6 @@ const ReferralsScreen = () => {
     totalReferrals: totalReferrals,
     activeReferrals: activeReferrals
   };
-
-  const [currentBadge, setCurrentBadge] = useState<string>('None');
-  
-  // Load current badge
-  useEffect(() => {
-    if (userId) {
-      const fetchCurrentBadge = async () => {
-        try {
-          const { data } = await supabase.from('user_badge_status').select('current_badge').eq('user_id', userId).single();
-          setCurrentBadge(data?.current_badge || 'None');
-        } catch (error) {
-          console.error('Error fetching current badge:', error);
-          setCurrentBadge('None');
-        }
-      };
-      
-      fetchCurrentBadge();
-    }
-  }, [userId]);
 
   // Badge progression data
   const getBadgeIcon = (badgeName: string) => {
