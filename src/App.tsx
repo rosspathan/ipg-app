@@ -56,7 +56,7 @@ import ReferralsScreen from "./pages/ReferralsScreen";
 import StakingScreen from "./pages/StakingScreen";
 import StakingDetailScreen from "./pages/StakingDetailScreen";
 import LuckyDrawScreen from "./pages/LuckyDrawScreen";
-import SpinWheelScreen from "./pages/SpinWheelScreen";
+
 import SpinHistoryScreen from "./pages/SpinHistoryScreen";
 import AdvertisingMiningScreen from "./pages/AdvertisingMiningScreen";
 import BSKPromotionScreen from "./pages/BSKPromotionScreen";
@@ -86,7 +86,7 @@ import AdminInsurance from "./components/AdminInsurance";
 import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
 import { AdminTradingFeesSimple } from "./components/AdminTradingFeesSimple";
-import AdminSpinScreen from "./pages/AdminSpinScreen";
+
 import AdminINRFundingScreen from "./pages/AdminINRFundingScreen";
 import AdminCredentialsTest from "./pages/AdminCredentialsTest";
 import AdminSystemScreen from "./pages/AdminSystemScreen";
@@ -107,8 +107,7 @@ import DebugFunding from "@/pages/DebugFunding";
 import SpinVerifyScreen from "@/pages/SpinVerifyScreen"; 
 import BSKVestingScreen from "@/pages/BSKVestingScreen";
 
-// Import ProvablyFairSpinScreen separately to avoid module conflicts
-const ProvablyFairSpinScreen = React.lazy(() => import("@/pages/ProvablyFairSpinScreen"));
+const ISmartSpinScreen = React.lazy(() => import("@/pages/ISmartSpinScreen"));
 
 const queryClient = new QueryClient();
 
@@ -184,9 +183,9 @@ function App() {
                 <Route path="trade/confirmation" element={<OrderConfirmationScreen />} />
                 <Route path="swap" element={<SwapScreen />} />
                 <Route path="programs" element={<ProgramsScreen />} />
-                <Route path="spin" element={<SpinWheelScreen />} />
+                <Route path="spin" element={<ISmartSpinScreen />} />
                 <Route path="spin/history" element={<SpinHistoryScreen />} />
-                <Route path="programs/spin" element={<SpinWheelScreen />} />
+                <Route path="programs/spin" element={<ISmartSpinScreen />} />
                 <Route path="programs/spin/history" element={<SpinHistoryScreen />} />
                 <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
                 <Route path="programs/ads" element={<AdvertisingMiningScreen />} />
@@ -200,7 +199,7 @@ function App() {
                 <Route path="lucky" element={<LuckyDrawScreen />} />
                 <Route path="spin-wheel" element={
                   <React.Suspense fallback={<div className="p-6">Loading...</div>}>
-                    <ProvablyFairSpinScreen />
+                    <ISmartSpinScreen />
                   </React.Suspense>
                 } />
                 <Route path="spin-verify" element={<SpinVerifyScreen />} />
@@ -241,7 +240,7 @@ function App() {
                 <Route path="referrals" element={<AdminReferralProgram />} />
                 <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="staking" element={<AdminStaking />} />
-                <Route path="lucky" element={<AdminSpinScreen />} />
+                <Route path="lucky" element={<AdminLuckyDraw />} />
                 <Route path="lucky/draw" element={<AdminLuckyDraw />} />
                 <Route path="insurance" element={<AdminInsurance />} />
                 <Route path="ads" element={<AdminAdsScreen />} />
