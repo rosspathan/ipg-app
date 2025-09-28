@@ -14,6 +14,8 @@ interface InsuranceCardProps {
 
 const InsuranceCard = ({ className, variant = "compact", style }: InsuranceCardProps) => {
   const navigate = useNavigate();
+  
+  console.log("InsuranceCard: Rendering with variant:", variant);
 
   const insurancePlans = [
     {
@@ -46,16 +48,21 @@ const InsuranceCard = ({ className, variant = "compact", style }: InsuranceCardP
   ];
 
   if (variant === "compact") {
+    console.log("InsuranceCard: Rendering compact variant");
     return (
       <Card 
         className={cn(
           "group cursor-pointer relative overflow-hidden",
-          "bg-gradient-to-br from-primary/10 to-secondary/5 border-primary/20",
-          "hover:border-primary/40 hover:shadow-glow-primary transition-all duration-normal",
+          "bg-gradient-to-br from-success/20 to-primary/20 border-success/40",
+          "hover:border-success/60 hover:shadow-glow-success transition-all duration-normal",
+          "p-1 min-h-[120px]", // Ensure minimum height and visibility
           className
         )}
         style={style}
-        onClick={() => navigate("/app/insurance")}
+        onClick={() => {
+          console.log("InsuranceCard: Navigating to /app/insurance");
+          navigate("/app/insurance");
+        }}
       >
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">

@@ -172,7 +172,7 @@ const AppHomeScreen = () => {
         {/* Insurance Card */}
         <InsuranceCard 
           variant="compact"
-          className="animate-fade-in-scale"
+          className="animate-fade-in-scale border-2 border-primary/30"
           style={{ animationDelay: "230ms", animationFillMode: "both" }}
         />
 
