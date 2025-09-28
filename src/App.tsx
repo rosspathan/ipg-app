@@ -61,7 +61,7 @@ import SpinHistoryScreen from "./pages/SpinHistoryScreen";
 import AdvertisingMiningScreen from "./pages/AdvertisingMiningScreen";
 import BSKPromotionScreen from "./pages/BSKPromotionScreen";
 import { AdminAdsScreen } from "./pages/AdminAdsScreen";
-import InsuranceScreen from "./pages/InsuranceScreen";
+import InsuranceScreen from "./components/InsuranceScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import HistoryScreen from "./pages/HistoryScreen";
 import GamificationScreen from "./pages/GamificationScreen";
