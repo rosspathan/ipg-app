@@ -21,7 +21,7 @@ interface DrawConfig {
   ticket_price_inr: number;
   per_user_ticket_cap: number;
   fee_percent: number;
-  state: 'draft' | 'open' | 'full' | 'drawing' | 'completed' | 'expired';
+  state: 'draft' | 'open' | 'full' | 'drawing' | 'completed' | 'expired' | 'refunding' | 'closed';
   current_participants: number;
   created_at: string;
   updated_at: string;
@@ -34,7 +34,7 @@ interface DrawTemplate {
   description: string;
   pool_size: number;
   ticket_price_inr: number;
-  prizes: Array<{rank: string, amount_inr: number}>;
+  prizes: any; // Will be parsed from JSON
   fee_percent: number;
 }
 
@@ -45,10 +45,8 @@ interface DrawTicket {
   status: string;
   bsk_paid: number;
   created_at: string;
-  profiles?: {
-    full_name: string;
-    email: string;
-  };
+  user_email?: string;
+  full_name?: string;
 }
 
 interface BSKRate {
@@ -149,10 +147,7 @@ const AdminNewLuckyDraw = () => {
       
       const { data, error } = await supabase
         .from('draw_tickets')
-        .select(`
-          *,
-          profiles!inner(full_name, email)
-        `)
+        .select('*')
         .eq('draw_id', drawId)
         .order('created_at', { ascending: false });
 
@@ -338,7 +333,7 @@ const AdminNewLuckyDraw = () => {
     }
   };
 
-  const handleStateChange = async (draw: DrawConfig, newState: string) => {
+  const handleStateChange = async (draw: DrawConfig, newState: DrawConfig['state']) => {
     try {
       const { error } = await supabase
         .from('draw_configs')
@@ -728,8 +723,8 @@ const AdminNewLuckyDraw = () => {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <p className="font-medium">{ticket.profiles?.full_name || 'Unknown'}</p>
-                                <p className="text-sm text-muted-foreground">{ticket.profiles?.email}</p>
+                                <p className="font-medium">{ticket.full_name || 'Unknown'}</p>
+                                <p className="text-sm text-muted-foreground">{ticket.user_email}</p>
                               </div>
                             </TableCell>
                             <TableCell>

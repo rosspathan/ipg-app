@@ -40,6 +40,9 @@ interface DrawTicket {
 interface DrawResult {
   winners: any;
   proof_data: any;
+  server_seed: string;
+  client_seed: string;
+  nonce: number;
 }
 
 const NewLuckyDraw = () => {
