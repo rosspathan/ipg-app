@@ -62,6 +62,7 @@ import AdvertisingMiningScreen from "./pages/AdvertisingMiningScreen";
 import BSKPromotionScreen from "./pages/BSKPromotionScreen";
 import { AdminAdsScreen } from "./pages/AdminAdsScreen";
 import InsuranceScreen from "./components/InsuranceScreen";
+import BSKLoansScreen from "./pages/BSKLoansScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import HistoryScreen from "./pages/HistoryScreen";
 import GamificationScreen from "./pages/GamificationScreen";
@@ -206,6 +207,7 @@ function App() {
                 <Route path="bsk-vesting" element={<BSKVestingScreen />} />
                 <Route path="programs/insurance" element={<InsuranceScreen />} />
                 <Route path="insurance" element={<InsuranceScreen />} />
+                <Route path="loans" element={<BSKLoansScreen />} />
                 <Route path="programs/insurance/claim" element={<FileClaimScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="deposit/inr" element={<INRDepositScreen />} />

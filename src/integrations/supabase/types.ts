@@ -1240,6 +1240,335 @@ export type Database = {
           },
         ]
       }
+      bsk_loan_installments: {
+        Row: {
+          created_at: string
+          due_date: string
+          emi_bsk: number | null
+          emi_inr: number | null
+          id: string
+          installment_number: number
+          interest_bsk: number
+          late_fee_bsk: number
+          loan_id: string
+          paid_at: string | null
+          paid_bsk: number
+          payment_rate_snapshot: number | null
+          principal_bsk: number
+          status: string
+          total_due_bsk: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          due_date: string
+          emi_bsk?: number | null
+          emi_inr?: number | null
+          id?: string
+          installment_number: number
+          interest_bsk?: number
+          late_fee_bsk?: number
+          loan_id: string
+          paid_at?: string | null
+          paid_bsk?: number
+          payment_rate_snapshot?: number | null
+          principal_bsk?: number
+          status?: string
+          total_due_bsk: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string
+          emi_bsk?: number | null
+          emi_inr?: number | null
+          id?: string
+          installment_number?: number
+          interest_bsk?: number
+          late_fee_bsk?: number
+          loan_id?: string
+          paid_at?: string | null
+          paid_bsk?: number
+          payment_rate_snapshot?: number | null
+          principal_bsk?: number
+          status?: string
+          total_due_bsk?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_loan_installments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_loan_ledger: {
+        Row: {
+          amount_bsk: number
+          amount_inr: number
+          balance_type: string
+          direction: string
+          id: string
+          idempotency_key: string | null
+          installment_id: string | null
+          loan_id: string | null
+          metadata: Json | null
+          notes: string | null
+          processed_at: string
+          processed_by: string | null
+          rate_snapshot: number
+          reference_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount_bsk: number
+          amount_inr: number
+          balance_type?: string
+          direction: string
+          id?: string
+          idempotency_key?: string | null
+          installment_id?: string | null
+          loan_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          processed_at?: string
+          processed_by?: string | null
+          rate_snapshot: number
+          reference_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount_bsk?: number
+          amount_inr?: number
+          balance_type?: string
+          direction?: string
+          id?: string
+          idempotency_key?: string | null
+          installment_id?: string | null
+          loan_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          processed_at?: string
+          processed_by?: string | null
+          rate_snapshot?: number
+          reference_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_loan_ledger_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loan_installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bsk_loan_ledger_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_loan_settings: {
+        Row: {
+          autopay_enabled: boolean
+          badge_limits: Json
+          created_at: string
+          created_by: string | null
+          daily_disbursal_cap_inr: number | null
+          default_interest_rate_weekly: number
+          default_tenor_weeks: number
+          global_exposure_cap_inr: number | null
+          grace_period_days: number
+          id: string
+          interest_type: string
+          kyc_required: boolean
+          late_fee_percent: number
+          max_amount_inr: number
+          max_concurrent_loans_per_user: number
+          min_account_age_days: number
+          min_amount_inr: number
+          origination_fee_percent: number
+          per_user_exposure_cap_inr: number | null
+          prepayment_allowed: boolean
+          prepayment_penalty_percent: number
+          region_restrictions: Json
+          schedule_denomination: string
+          system_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          autopay_enabled?: boolean
+          badge_limits?: Json
+          created_at?: string
+          created_by?: string | null
+          daily_disbursal_cap_inr?: number | null
+          default_interest_rate_weekly?: number
+          default_tenor_weeks?: number
+          global_exposure_cap_inr?: number | null
+          grace_period_days?: number
+          id?: string
+          interest_type?: string
+          kyc_required?: boolean
+          late_fee_percent?: number
+          max_amount_inr?: number
+          max_concurrent_loans_per_user?: number
+          min_account_age_days?: number
+          min_amount_inr?: number
+          origination_fee_percent?: number
+          per_user_exposure_cap_inr?: number | null
+          prepayment_allowed?: boolean
+          prepayment_penalty_percent?: number
+          region_restrictions?: Json
+          schedule_denomination?: string
+          system_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          autopay_enabled?: boolean
+          badge_limits?: Json
+          created_at?: string
+          created_by?: string | null
+          daily_disbursal_cap_inr?: number | null
+          default_interest_rate_weekly?: number
+          default_tenor_weeks?: number
+          global_exposure_cap_inr?: number | null
+          grace_period_days?: number
+          id?: string
+          interest_type?: string
+          kyc_required?: boolean
+          late_fee_percent?: number
+          max_amount_inr?: number
+          max_concurrent_loans_per_user?: number
+          min_account_age_days?: number
+          min_amount_inr?: number
+          origination_fee_percent?: number
+          per_user_exposure_cap_inr?: number | null
+          prepayment_allowed?: boolean
+          prepayment_penalty_percent?: number
+          region_restrictions?: Json
+          schedule_denomination?: string
+          system_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bsk_loans: {
+        Row: {
+          admin_notes: string | null
+          amount_inr: number
+          applied_at: string
+          approved_at: string | null
+          approved_by: string | null
+          closed_at: string | null
+          created_at: string
+          days_past_due: number
+          disbursal_rate_snapshot: number
+          disbursed_at: string | null
+          disbursed_by: string | null
+          grace_period_days: number
+          id: string
+          interest_rate_weekly: number
+          interest_type: string
+          late_fee_percent: number
+          loan_number: string
+          net_disbursed_bsk: number
+          next_due_date: string | null
+          origination_fee_bsk: number
+          origination_fee_percent: number
+          outstanding_bsk: number
+          paid_bsk: number
+          policy_snapshot: Json
+          principal_bsk: number
+          region: string
+          schedule_denomination: string
+          status: string
+          tenor_weeks: number
+          total_due_bsk: number
+          updated_at: string
+          user_badge: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_inr: number
+          applied_at?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          closed_at?: string | null
+          created_at?: string
+          days_past_due?: number
+          disbursal_rate_snapshot: number
+          disbursed_at?: string | null
+          disbursed_by?: string | null
+          grace_period_days?: number
+          id?: string
+          interest_rate_weekly?: number
+          interest_type?: string
+          late_fee_percent?: number
+          loan_number: string
+          net_disbursed_bsk: number
+          next_due_date?: string | null
+          origination_fee_bsk?: number
+          origination_fee_percent?: number
+          outstanding_bsk: number
+          paid_bsk?: number
+          policy_snapshot?: Json
+          principal_bsk: number
+          region?: string
+          schedule_denomination?: string
+          status?: string
+          tenor_weeks?: number
+          total_due_bsk: number
+          updated_at?: string
+          user_badge?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_inr?: number
+          applied_at?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          closed_at?: string | null
+          created_at?: string
+          days_past_due?: number
+          disbursal_rate_snapshot?: number
+          disbursed_at?: string | null
+          disbursed_by?: string | null
+          grace_period_days?: number
+          id?: string
+          interest_rate_weekly?: number
+          interest_type?: string
+          late_fee_percent?: number
+          loan_number?: string
+          net_disbursed_bsk?: number
+          next_due_date?: string | null
+          origination_fee_bsk?: number
+          origination_fee_percent?: number
+          outstanding_bsk?: number
+          paid_bsk?: number
+          policy_snapshot?: Json
+          principal_bsk?: number
+          region?: string
+          schedule_denomination?: string
+          status?: string
+          tenor_weeks?: number
+          total_due_bsk?: number
+          updated_at?: string
+          user_badge?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bsk_rate_snapshots: {
         Row: {
           changed_by: string | null

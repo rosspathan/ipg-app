@@ -12,6 +12,7 @@ import { BSKBalanceCard } from "@/components/BSKBalanceCard";
 import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import { AdCarousel } from "@/components/AdCarousel";
 import InsuranceCard from "@/components/InsuranceCard";
+import BSKLoanCard from "@/components/BSKLoanCard";
 import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
@@ -176,6 +177,16 @@ const AppHomeScreen = () => {
             variant="compact"
             className="animate-fade-in-scale border-2 border-primary/30"
             style={{ animationDelay: "230ms", animationFillMode: "both" }}
+          />
+        </div>
+
+        {/* BSK Loan Card */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold text-foreground tracking-tight">BSK Loans</h3>
+          <BSKLoanCard 
+            variant="compact"
+            className="animate-fade-in-scale"
+            style={{ animationDelay: "260ms", animationFillMode: "both" }}
           />
         </div>
 

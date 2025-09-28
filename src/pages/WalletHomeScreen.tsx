@@ -16,6 +16,7 @@ import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { BSKBalanceCard } from "@/components/BSKBalanceCard";
 import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import InsuranceCard from "@/components/InsuranceCard";
+import BSKLoanCard from "@/components/BSKLoanCard";
 import { cn } from "@/lib/utils";
 
 const WalletHomeScreen = () => {
@@ -134,6 +135,16 @@ const WalletHomeScreen = () => {
             variant="compact"
             className="animate-fade-in-scale"
             style={{ animationDelay: "250ms", animationFillMode: "both" }}
+          />
+        </div>
+
+        {/* BSK Loan Card */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold text-foreground tracking-tight">BSK Loans</h3>
+          <BSKLoanCard 
+            variant="compact"
+            className="animate-fade-in-scale"
+            style={{ animationDelay: "280ms", animationFillMode: "both" }}
           />
         </div>
 
