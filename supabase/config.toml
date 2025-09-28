@@ -33,6 +33,9 @@ verify_jwt = true
 [functions.spin-verify]
 verify_jwt = false
 
+[functions.team-referral-processor]
+verify_jwt = false
+
 [functions.provably-fair-commit]
 verify_jwt = true
 

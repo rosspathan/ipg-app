@@ -378,6 +378,54 @@ export type Database = {
         }
         Relationships: []
       }
+      badge_purchases: {
+        Row: {
+          badge_name: string
+          bsk_amount: number
+          bsk_rate_at_purchase: number
+          created_at: string
+          id: string
+          inr_amount: number
+          is_upgrade: boolean
+          payment_method: string | null
+          payment_ref: string | null
+          previous_badge: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_name: string
+          bsk_amount: number
+          bsk_rate_at_purchase: number
+          created_at?: string
+          id?: string
+          inr_amount: number
+          is_upgrade?: boolean
+          payment_method?: string | null
+          payment_ref?: string | null
+          previous_badge?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_name?: string
+          bsk_amount?: number
+          bsk_rate_at_purchase?: number
+          created_at?: string
+          id?: string
+          inr_amount?: number
+          is_upgrade?: boolean
+          payment_method?: string | null
+          payment_ref?: string | null
+          previous_badge?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       badge_qualification_audit: {
         Row: {
           admin_user_id: string | null
@@ -525,6 +573,39 @@ export type Database = {
           threshold_currency?: string
           updated_at?: string
           vip_threshold?: number
+        }
+        Relationships: []
+      }
+      badge_thresholds: {
+        Row: {
+          badge_name: string
+          created_at: string
+          id: string
+          inr_threshold: number
+          is_active: boolean
+          unlock_levels: number
+          updated_at: string
+          vip_bonus_inr: number | null
+        }
+        Insert: {
+          badge_name: string
+          created_at?: string
+          id?: string
+          inr_threshold: number
+          is_active?: boolean
+          unlock_levels: number
+          updated_at?: string
+          vip_bonus_inr?: number | null
+        }
+        Update: {
+          badge_name?: string
+          created_at?: string
+          id?: string
+          inr_threshold?: number
+          is_active?: boolean
+          unlock_levels?: number
+          updated_at?: string
+          vip_bonus_inr?: number | null
         }
         Relationships: []
       }
@@ -2390,6 +2471,66 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_ledger: {
+        Row: {
+          badge_at_event: string | null
+          bsk_amount: number
+          bsk_rate_snapshot: number
+          created_at: string
+          depth: number | null
+          id: string
+          inr_amount_snapshot: number
+          ledger_type: string
+          notes: string | null
+          referrer_id: string | null
+          settled_at: string | null
+          source_user_id: string | null
+          status: string
+          trigger_type: string | null
+          tx_refs: Json | null
+          user_id: string
+          voided_at: string | null
+        }
+        Insert: {
+          badge_at_event?: string | null
+          bsk_amount: number
+          bsk_rate_snapshot: number
+          created_at?: string
+          depth?: number | null
+          id?: string
+          inr_amount_snapshot: number
+          ledger_type: string
+          notes?: string | null
+          referrer_id?: string | null
+          settled_at?: string | null
+          source_user_id?: string | null
+          status?: string
+          trigger_type?: string | null
+          tx_refs?: Json | null
+          user_id: string
+          voided_at?: string | null
+        }
+        Update: {
+          badge_at_event?: string | null
+          bsk_amount?: number
+          bsk_rate_snapshot?: number
+          created_at?: string
+          depth?: number | null
+          id?: string
+          inr_amount_snapshot?: number
+          ledger_type?: string
+          notes?: string | null
+          referrer_id?: string | null
+          settled_at?: string | null
+          source_user_id?: string | null
+          status?: string
+          trigger_type?: string | null
+          tx_refs?: Json | null
+          user_id?: string
+          voided_at?: string | null
+        }
+        Relationships: []
+      }
       referral_relationships: {
         Row: {
           created_at: string
@@ -3427,6 +3568,81 @@ export type Database = {
         }
         Relationships: []
       }
+      team_income_levels: {
+        Row: {
+          bsk_reward: number
+          created_at: string
+          id: string
+          is_active: boolean
+          level: number
+          updated_at: string
+        }
+        Insert: {
+          bsk_reward?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          level: number
+          updated_at?: string
+        }
+        Update: {
+          bsk_reward?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          level?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      team_referral_settings: {
+        Row: {
+          bsk_inr_rate: number
+          cooloff_hours: number
+          created_at: string
+          daily_cap_per_earner: number | null
+          direct_referral_percent: number
+          enabled: boolean
+          id: string
+          per_downline_event_cap: number | null
+          region_enabled: Json
+          spillover_to_next_eligible_upline: boolean
+          trigger_event: string
+          updated_at: string
+          weekly_cap_per_earner: number | null
+        }
+        Insert: {
+          bsk_inr_rate?: number
+          cooloff_hours?: number
+          created_at?: string
+          daily_cap_per_earner?: number | null
+          direct_referral_percent?: number
+          enabled?: boolean
+          id?: string
+          per_downline_event_cap?: number | null
+          region_enabled?: Json
+          spillover_to_next_eligible_upline?: boolean
+          trigger_event?: string
+          updated_at?: string
+          weekly_cap_per_earner?: number | null
+        }
+        Update: {
+          bsk_inr_rate?: number
+          cooloff_hours?: number
+          created_at?: string
+          daily_cap_per_earner?: number | null
+          direct_referral_percent?: number
+          enabled?: boolean
+          id?: string
+          per_downline_event_cap?: number | null
+          region_enabled?: Json
+          spillover_to_next_eligible_upline?: boolean
+          trigger_event?: string
+          updated_at?: string
+          weekly_cap_per_earner?: number | null
+        }
+        Relationships: []
+      }
       tiers: {
         Row: {
           color: string | null
@@ -3965,6 +4181,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_vip_milestones: {
+        Row: {
+          created_at: string
+          direct_vip_count: number
+          id: string
+          last_vip_referral_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          direct_vip_count?: number
+          id?: string
+          last_vip_referral_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          direct_vip_count?: number
+          id?: string
+          last_vip_referral_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       users_app: {
         Row: {
           account_frozen: boolean | null
@@ -3998,6 +4241,92 @@ export type Database = {
           id?: string
           phone?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      vip_milestone_claims: {
+        Row: {
+          claimed_at: string
+          created_at: string
+          fulfillment_notes: string | null
+          id: string
+          kyc_verified: boolean | null
+          milestone_id: string
+          shipping_info: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          created_at?: string
+          fulfillment_notes?: string | null
+          id?: string
+          kyc_verified?: boolean | null
+          milestone_id: string
+          shipping_info?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          created_at?: string
+          fulfillment_notes?: string | null
+          id?: string
+          kyc_verified?: boolean | null
+          milestone_id?: string
+          shipping_info?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_milestone_claims_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "vip_milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vip_milestones: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          physical_reward_sku: string | null
+          requires_kyc: boolean
+          reward_description: string | null
+          reward_inr_value: number
+          reward_type: string
+          updated_at: string
+          vip_count_threshold: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          physical_reward_sku?: string | null
+          requires_kyc?: boolean
+          reward_description?: string | null
+          reward_inr_value: number
+          reward_type: string
+          updated_at?: string
+          vip_count_threshold: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          physical_reward_sku?: string | null
+          requires_kyc?: boolean
+          reward_description?: string | null
+          reward_inr_value?: number
+          reward_type?: string
+          updated_at?: string
+          vip_count_threshold?: number
         }
         Relationships: []
       }

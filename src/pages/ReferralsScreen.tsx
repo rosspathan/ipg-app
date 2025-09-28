@@ -22,8 +22,19 @@ const ReferralsScreen = () => {
     bonusBalances,
     referralRelationships,
     getCurrentPrice,
-    loading
+    loading: referralLoading
   } = useReferralProgram();
+  
+  const {
+    settings: teamSettings,
+    badgeThresholds,
+    vipMilestones,
+    userVipMilestones,
+    referralLedger,
+    purchaseBadge,
+    claimVipMilestone,
+    loading: teamLoading
+  } = useTeamReferrals();
 
   const referralLink = user ? `${window.location.origin}/auth/register?ref=${user.id}` : "";
 
@@ -46,6 +57,8 @@ const ReferralsScreen = () => {
     }
   };
 
+  const loading = referralLoading || teamLoading;
+  
   if (loading) {
     console.log('ReferralsScreen loading state:', { loading, userPresent: !!user });
     return (
@@ -81,6 +94,58 @@ const ReferralsScreen = () => {
     activeReferrals: activeReferrals
   };
 
+  // Get current user badge status
+  const userBadgeStatus = userId ? (async () => {
+    const { data } = await supabase.from('user_badge_status').select('current_badge').eq('user_id', userId).single();
+    return data?.current_badge || 'None';
+  })() : Promise.resolve('None');
+
+  const [currentBadge, setCurrentBadge] = useState<string>('None');
+  
+  // Load current badge
+  useState(() => {
+    if (userId) {
+      userBadgeStatus.then(badge => setCurrentBadge(badge));
+    }
+  });
+
+  // Badge progression data
+  const getBadgeIcon = (badgeName: string) => {
+    switch (badgeName) {
+      case 'Silver': return <Shield className="w-5 h-5" />;
+      case 'Gold': return <Star className="w-5 h-5" />;
+      case 'Platinum': return <Trophy className="w-5 h-5" />;
+      case 'Diamond': return <Crown className="w-5 h-5" />;
+      case 'VIP i-SMART': return <Zap className="w-5 h-5" />;
+      default: return <Users className="w-5 h-5" />;
+    }
+  };
+
+  const getBadgeColor = (badgeName: string) => {
+    switch (badgeName) {
+      case 'Silver': return 'text-gray-500';
+      case 'Gold': return 'text-yellow-500';
+      case 'Platinum': return 'text-gray-300';
+      case 'Diamond': return 'text-blue-500';
+      case 'VIP i-SMART': return 'text-purple-500';
+      default: return 'text-muted-foreground';
+    }
+  };
+
+  // Get next badge
+  const currentBadgeIndex = badgeThresholds.findIndex(b => b.badge_name === currentBadge);
+  const nextBadge = currentBadgeIndex < badgeThresholds.length - 1 ? badgeThresholds[currentBadgeIndex + 1] : null;
+  const currentBadgeData = badgeThresholds.find(b => b.badge_name === currentBadge);
+
+  // Calculate earnings from new system
+  const teamIncomeEarnings = userId ? referralLedger.filter(e => e.user_id === userId && e.ledger_type === 'team_income') : [];
+  const directBonusEarnings = userId ? referralLedger.filter(e => e.user_id === userId && e.ledger_type === 'direct_badge_bonus') : [];
+  const vipMilestoneEarnings = userId ? referralLedger.filter(e => e.user_id === userId && e.ledger_type === 'vip_milestone_bonus') : [];
+  
+  const totalNewEarnings = teamIncomeEarnings.reduce((sum, e) => sum + e.bsk_amount, 0) +
+                          directBonusEarnings.reduce((sum, e) => sum + e.bsk_amount, 0) +
+                          vipMilestoneEarnings.reduce((sum, e) => sum + e.bsk_amount, 0);
+
   // Create referral tree from actual data
   const referralTree = userId ? userReferees.map(referral => {
     const referralEventsForUser = referralEvents.filter(event => 
@@ -100,6 +165,25 @@ const ReferralsScreen = () => {
 
   const levels = (referralSettings?.levels as any) || [];
 
+  // Handle badge purchase
+  const handleBadgePurchase = async (badgeName: string) => {
+    try {
+      await purchaseBadge(badgeName, currentBadge !== 'None' ? currentBadge : undefined);
+      setCurrentBadge(badgeName);
+    } catch (error) {
+      console.error('Badge purchase failed:', error);
+    }
+  };
+
+  // Handle VIP milestone claim
+  const handleVIPMilestoneClaim = async (milestoneId: string) => {
+    try {
+      await claimVipMilestone(milestoneId);
+    } catch (error) {
+      console.error('VIP milestone claim failed:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background px-6 py-8">
       <div className="flex items-center mb-6">
@@ -114,28 +198,76 @@ const ReferralsScreen = () => {
         <h1 className="text-xl font-semibold">Referrals</h1>
       </div>
 
+      {/* Badge & Level Access Card */}
+      <Card className="bg-gradient-card shadow-card border-0 mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {getBadgeIcon(currentBadge)}
+            <span>My Badge & Level Access</span>
+            <Badge variant={currentBadge === 'None' ? 'outline' : 'default'} className={getBadgeColor(currentBadge)}>
+              {currentBadge}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Levels Unlocked:</span>
+            <span className="font-medium">
+              L1-L{currentBadgeData?.unlock_levels || 0}
+            </span>
+          </div>
+          
+          {nextBadge && (
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Progress to {nextBadge.badge_name}:</span>
+                  <span className="font-medium">₹{nextBadge.inr_threshold.toLocaleString()}</span>
+                </div>
+                <Progress value={currentBadgeData ? (currentBadgeData.inr_threshold / nextBadge.inr_threshold) * 100 : 0} className="h-2" />
+              </div>
+              
+              <Button 
+                onClick={() => handleBadgePurchase(nextBadge.badge_name)}
+                className="w-full gap-2"
+                variant="outline"
+              >
+                <TrendingUp className="w-4 h-4" />
+                Upgrade to {nextBadge.badge_name} (₹{nextBadge.inr_threshold.toLocaleString()})
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-4 gap-3 mb-6">
         <Card className="bg-gradient-card shadow-card border-0">
-          <CardContent className="p-4 text-center">
-            <Gift className="w-6 h-6 text-primary mx-auto mb-2" />
-            <p className="text-lg font-bold text-foreground">{referralStats.totalBSK.toFixed(4)} BSK</p>
-            <p className="text-xs text-muted-foreground">Total Earned</p>
-            <p className="text-xs text-muted-foreground">${referralStats.totalValue.toFixed(2)} value</p>
+          <CardContent className="p-3 text-center">
+            <Gift className="w-5 h-5 text-primary mx-auto mb-2" />
+            <p className="text-lg font-bold text-foreground">{(referralStats.totalBSK + totalNewEarnings).toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">BSK Earned</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-card shadow-card border-0">
-          <CardContent className="p-4 text-center">
-            <Users className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+          <CardContent className="p-3 text-center">
+            <Users className="w-5 h-5 text-blue-500 mx-auto mb-2" />
             <p className="text-lg font-bold text-foreground">{referralStats.totalReferrals}</p>
             <p className="text-xs text-muted-foreground">Total Refs</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-card shadow-card border-0">
-          <CardContent className="p-4 text-center">
-            <Users className="w-6 h-6 text-orange-500 mx-auto mb-2" />
+          <CardContent className="p-3 text-center">
+            <Users className="w-5 h-5 text-orange-500 mx-auto mb-2" />
             <p className="text-lg font-bold text-foreground">{referralStats.activeReferrals}</p>
             <p className="text-xs text-muted-foreground">Active</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-card shadow-card border-0">
+          <CardContent className="p-3 text-center">
+            <Crown className="w-5 h-5 text-purple-500 mx-auto mb-2" />
+            <p className="text-lg font-bold text-foreground">{userVipMilestones?.direct_vip_count || 0}</p>
+            <p className="text-xs text-muted-foreground">VIP Refs</p>
           </CardContent>
         </Card>
       </div>
@@ -175,11 +307,85 @@ const ReferralsScreen = () => {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="referrals" className="flex-1">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="referrals">My Referrals</TabsTrigger>
-          <TabsTrigger value="rates">BSK Rewards</TabsTrigger>
+      <Tabs defaultValue="earnings" className="flex-1">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="earnings">Earnings</TabsTrigger>
+          <TabsTrigger value="referrals">My Team</TabsTrigger>
+          <TabsTrigger value="milestones">VIP Milestones</TabsTrigger>
+          <TabsTrigger value="rates">Rewards</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="earnings" className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            {/* Team Income */}
+            <Card className="bg-gradient-card shadow-card border-0">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Team Income
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {teamIncomeEarnings.length > 0 ? teamIncomeEarnings.slice(0, 5).map((entry) => (
+                    <div key={entry.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                      <div>
+                        <p className="font-medium">Level {entry.depth} Reward</p>
+                        <p className="text-sm text-muted-foreground">
+                          {entry.badge_at_event} badge purchase • {entry.status}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-primary">{entry.bsk_amount.toFixed(4)} BSK</p>
+                        <p className="text-xs text-muted-foreground">₹{entry.inr_amount_snapshot.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No team income yet</p>
+                      <p className="text-sm">Earn when your team purchases badges</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Direct Badge Bonuses */}
+            <Card className="bg-gradient-card shadow-card border-0">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gift className="w-4 h-4" />
+                  Direct 10% Bonuses
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {directBonusEarnings.length > 0 ? directBonusEarnings.slice(0, 5).map((entry) => (
+                    <div key={entry.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                      <div>
+                        <p className="font-medium">Direct {entry.badge_at_event} Bonus</p>
+                        <p className="text-sm text-muted-foreground">
+                          10% of badge purchase • {entry.status}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-primary">{entry.bsk_amount.toFixed(4)} BSK</p>
+                        <p className="text-xs text-muted-foreground">₹{entry.inr_amount_snapshot.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Gift className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No direct bonuses yet</p>
+                      <p className="text-sm">Earn 10% when direct referrals purchase badges</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         <TabsContent value="referrals" className="space-y-4">
           <Card className="bg-gradient-card shadow-card border-0">
@@ -213,6 +419,60 @@ const ReferralsScreen = () => {
                     <p className="text-sm">Share your link to start earning BSK!</p>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="milestones" className="space-y-4">
+          <Card className="bg-gradient-card shadow-card border-0">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Crown className="w-4 h-4" />
+                VIP Milestone Progress
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="text-center p-4 border border-border rounded-lg bg-muted/20">
+                  <p className="text-2xl font-bold text-primary">{userVipMilestones?.direct_vip_count || 0}</p>
+                  <p className="text-sm text-muted-foreground">Direct VIP i-SMART Referrals</p>
+                </div>
+                
+                {vipMilestones.map((milestone) => {
+                  const isEligible = (userVipMilestones?.direct_vip_count || 0) >= milestone.vip_count_threshold;
+                  const progress = Math.min(((userVipMilestones?.direct_vip_count || 0) / milestone.vip_count_threshold) * 100, 100);
+                  
+                  return (
+                    <div key={milestone.id} className="p-4 border border-border rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="font-medium">{milestone.vip_count_threshold} VIP Referrals</p>
+                          <p className="text-sm text-muted-foreground">{milestone.reward_description}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-primary">₹{milestone.reward_inr_value.toLocaleString()}</p>
+                          {isEligible && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleVIPMilestoneClaim(milestone.id)}
+                              className="mt-2"
+                            >
+                              Claim
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>{userVipMilestones?.direct_vip_count || 0} / {milestone.vip_count_threshold} VIPs</span>
+                          <span>{progress.toFixed(0)}%</span>
+                        </div>
+                        <Progress value={progress} className="h-2" />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
