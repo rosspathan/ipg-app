@@ -98,20 +98,24 @@ const ReferralsScreen = () => {
     activeReferrals: activeReferrals
   };
 
-  // Get current user badge status
-  const userBadgeStatus = userId ? (async () => {
-    const { data } = await supabase.from('user_badge_status').select('current_badge').eq('user_id', userId).single();
-    return data?.current_badge || 'None';
-  })() : Promise.resolve('None');
-
   const [currentBadge, setCurrentBadge] = useState<string>('None');
   
   // Load current badge
-  useState(() => {
+  useEffect(() => {
     if (userId) {
-      userBadgeStatus.then(badge => setCurrentBadge(badge));
+      const fetchCurrentBadge = async () => {
+        try {
+          const { data } = await supabase.from('user_badge_status').select('current_badge').eq('user_id', userId).single();
+          setCurrentBadge(data?.current_badge || 'None');
+        } catch (error) {
+          console.error('Error fetching current badge:', error);
+          setCurrentBadge('None');
+        }
+      };
+      
+      fetchCurrentBadge();
     }
-  });
+  }, [userId]);
 
   // Badge progression data
   const getBadgeIcon = (badgeName: string) => {
