@@ -130,7 +130,7 @@ export const useTeamReferrals = () => {
         .single();
       
       if (error && error.code !== 'PGRST116') throw error;
-      setSettings(data);
+      setSettings(data as TeamReferralSettings);
     } catch (error) {
       console.error('Error fetching team referral settings:', error);
     }
@@ -177,7 +177,7 @@ export const useTeamReferrals = () => {
         .order('vip_count_threshold');
       
       if (error) throw error;
-      setVipMilestones(data || []);
+      setVipMilestones((data || []) as VIPMilestone[]);
     } catch (error) {
       console.error('Error fetching VIP milestones:', error);
     }
@@ -216,7 +216,7 @@ export const useTeamReferrals = () => {
       const { data, error } = await query;
       
       if (error) throw error;
-      setReferralLedger(data || []);
+      setReferralLedger((data || []) as ReferralLedgerEntry[]);
     } catch (error) {
       console.error('Error fetching referral ledger:', error);
     }
@@ -237,7 +237,7 @@ export const useTeamReferrals = () => {
       const { data, error } = await query;
       
       if (error) throw error;
-      setBadgePurchases(data || []);
+      setBadgePurchases((data || []) as BadgePurchase[]);
     } catch (error) {
       console.error('Error fetching badge purchases:', error);
     }
@@ -258,7 +258,7 @@ export const useTeamReferrals = () => {
       const { data, error } = await query;
       
       if (error) throw error;
-      setVipMilestoneClaims(data || []);
+      setVipMilestoneClaims((data || []) as VIPMilestoneClaim[]);
     } catch (error) {
       console.error('Error fetching VIP milestone claims:', error);
     }
@@ -275,7 +275,7 @@ export const useTeamReferrals = () => {
         .single();
       
       if (error) throw error;
-      setSettings(data);
+      setSettings(data as TeamReferralSettings);
       
       toast({
         title: "Success",

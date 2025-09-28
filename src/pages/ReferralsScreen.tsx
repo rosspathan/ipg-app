@@ -1,15 +1,19 @@
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Copy, Users, Gift, Info } from "lucide-react";
+import { ChevronLeft, Copy, Users, Gift, Info, Trophy, Star, Crown, Shield, Zap, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useReferralProgram } from '@/hooks/useReferralProgram';
+import { useTeamReferrals } from '@/hooks/useTeamReferrals';
+import { supabase } from '@/integrations/supabase/client';
 
 const ReferralsScreen = () => {
   const navigate = useNavigate();

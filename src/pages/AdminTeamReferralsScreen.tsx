@@ -43,9 +43,9 @@ const AdminTeamReferralsScreen = () => {
     try {
       await updateSettings({
         ...formData,
-        daily_cap_per_earner: formData.daily_cap_per_earner ? parseFloat(formData.daily_cap_per_earner) : null,
-        weekly_cap_per_earner: formData.weekly_cap_per_earner ? parseFloat(formData.weekly_cap_per_earner) : null,
-        per_downline_event_cap: formData.per_downline_event_cap ? parseFloat(formData.per_downline_event_cap) : null
+    daily_cap_per_earner: formData.daily_cap_per_earner ? parseFloat(formData.daily_cap_per_earner.toString()) : null,
+    weekly_cap_per_earner: formData.weekly_cap_per_earner ? parseFloat(formData.weekly_cap_per_earner.toString()) : null,
+    per_downline_event_cap: formData.per_downline_event_cap ? parseFloat(formData.per_downline_event_cap.toString()) : null
       });
     } catch (error) {
       console.error('Failed to save settings:', error);
