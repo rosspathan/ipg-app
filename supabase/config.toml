@@ -1,29 +1,5 @@
 project_id = "ocblgldglqhlrmtnynmu"
 
-[functions.web3-admin-auth]
-verify_jwt = false
-
-[functions.grant-admin-by-email]
-verify_jwt = false
-
-[functions.admin-password-reset]
-verify_jwt = false
-
-[functions.trading-websocket]
-verify_jwt = false
-
-[functions.place-order]
-verify_jwt = true
-
-[functions.cancel-order]
-verify_jwt = true
-
-[functions.order-history]
-verify_jwt = true
-
-[functions.send-verification-email]
-verify_jwt = false
-
 [functions.ismart-spin-commit]
 verify_jwt = true
 
@@ -33,20 +9,63 @@ verify_jwt = true
 [functions.ismart-spin-verify]
 verify_jwt = false
 
-[functions.team-referral-processor]
+[functions.send-verification-email]
 verify_jwt = false
 
-[functions.bsk-vesting-swap]
-verify_jwt = true
+# Temporarily disabled functions with TypeScript errors
+# [functions.provably-fair-commit]
+# verify_jwt = true
 
-[functions.bsk-daily-vesting]
-verify_jwt = false
+# [functions.provably-fair-reveal]
+# verify_jwt = true
 
-[functions.execute-lucky-draw]
-verify_jwt = true
+# [functions.spin-commit]
+# verify_jwt = true
 
-[functions.purchase-bonus-handler]
-verify_jwt = true
+# [functions.spin-execute]
+# verify_jwt = true
 
-[functions.admin-create-default]
-verify_jwt = false
+# [functions.spin-reveal]
+# verify_jwt = true
+
+# [functions.spin-verify]
+# verify_jwt = true
+
+# [functions.web3-admin-auth]
+# verify_jwt = false
+
+# [functions.grant-admin-by-email]
+# verify_jwt = false
+
+# [functions.admin-password-reset]
+# verify_jwt = false
+
+# [functions.trading-websocket]
+# verify_jwt = false
+
+# [functions.place-order]
+# verify_jwt = true
+
+# [functions.cancel-order]
+# verify_jwt = true
+
+# [functions.order-history]
+# verify_jwt = true
+
+# [functions.team-referral-processor]
+# verify_jwt = false
+
+# [functions.bsk-vesting-swap]
+# verify_jwt = true
+
+# [functions.bsk-daily-vesting]
+# verify_jwt = false
+
+# [functions.execute-lucky-draw]
+# verify_jwt = true
+
+# [functions.purchase-bonus-handler]
+# verify_jwt = true
+
+# [functions.admin-create-default]
+# verify_jwt = false
