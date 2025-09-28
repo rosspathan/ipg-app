@@ -8,6 +8,20 @@ const ProgramsScreen = () => {
 
   const programs = [
     {
+      title: "BSK Purchase Bonus",
+      description: "Get 50% extra BSK on your first purchase! Limited time offer",
+      icon: Gift,
+      color: "text-purple-500",
+      route: "/app/programs/bsk-bonus"
+    },
+    {
+      title: "Advertising Mining", 
+      description: "Watch ads and earn BSK rewards with premium subscriptions",
+      icon: Users,
+      color: "text-blue-500",
+      route: "/app/programs/advertising"
+    },
+    {
       title: "BSK Fortune Wheel",
       description: "Spin to win or lose BSK Coins! Futuristic wheel with premium design",
       icon: Gift,

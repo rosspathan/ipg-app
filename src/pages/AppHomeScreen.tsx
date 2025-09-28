@@ -9,6 +9,7 @@ import BalanceDisplay from "@/components/BalanceDisplay";
 import QuickActionGrid from "@/components/QuickActionGrid";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { BSKBalanceCard } from "@/components/BSKBalanceCard";
+import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import { AdCarousel } from "@/components/AdCarousel";
 import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -160,7 +161,10 @@ const AppHomeScreen = () => {
           style={{ animationDelay: "200ms", animationFillMode: "both" }}
         />
 
-        {/* BSK Balance Cards */}
+        {/* BSK Promotion Banner */}
+        <BSKPromotionBanner />
+
+        {/* BSK Balances Section */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-foreground tracking-tight">BSK Balances</h3>
           <div className="grid gap-4">

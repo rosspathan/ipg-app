@@ -14,6 +14,7 @@ import CurrencyPicker from "@/components/CurrencyPicker";
 import BalanceDisplay from "@/components/BalanceDisplay";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { BSKBalanceCard } from "@/components/BSKBalanceCard";
+import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import { cn } from "@/lib/utils";
 
 const WalletHomeScreen = () => {
@@ -122,7 +123,10 @@ const WalletHomeScreen = () => {
           style={{ animationDelay: "200ms", animationFillMode: "both" }}
         />
 
-        {/* BSK Balance Cards */}
+        {/* BSK Promotion Banner */}
+        <BSKPromotionBanner />
+
+        {/* BSK Balances */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-foreground tracking-tight">BSK Balances</h3>
           <div className="grid gap-4">

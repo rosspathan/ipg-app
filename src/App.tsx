@@ -59,6 +59,7 @@ import LuckyDrawScreen from "./pages/LuckyDrawScreen";
 import SpinWheelScreen from "./pages/SpinWheelScreen";
 import SpinHistoryScreen from "./pages/SpinHistoryScreen";
 import AdvertisingMiningScreen from "./pages/AdvertisingMiningScreen";
+import BSKPromotionScreen from "./pages/BSKPromotionScreen";
 import { AdminAdsScreen } from "./pages/AdminAdsScreen";
 import InsuranceScreen from "./pages/InsuranceScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
@@ -187,8 +188,10 @@ function App() {
                 <Route path="spin/history" element={<SpinHistoryScreen />} />
                 <Route path="programs/spin" element={<SpinWheelScreen />} />
                 <Route path="programs/spin/history" element={<SpinHistoryScreen />} />
+                <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
                 <Route path="programs/ads" element={<AdvertisingMiningScreen />} />
                 <Route path="programs/advertising" element={<AdvertisingMiningScreen />} />
+                <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
                 <Route path="programs/subscriptions" element={<SubscriptionsScreen />} />
                 <Route path="programs/referrals" element={<ReferralsScreen />} />
                 <Route path="programs/staking" element={<StakingScreen />} />

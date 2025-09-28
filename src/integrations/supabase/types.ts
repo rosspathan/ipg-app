@@ -937,6 +937,223 @@ export type Database = {
           },
         ]
       }
+      bsk_bonus_campaigns: {
+        Row: {
+          allow_stacking: boolean
+          bonus_percent: number
+          cooloff_hours: number
+          created_at: string
+          created_by: string | null
+          destination: Database["public"]["Enums"]["bonus_destination"]
+          eligible_channels: Database["public"]["Enums"]["purchase_channel"][]
+          end_at: string | null
+          global_budget_bsk: number | null
+          global_budget_used_bsk: number
+          id: string
+          kyc_required: boolean
+          max_purchase_inr: number
+          min_purchase_inr: number
+          name: string
+          per_user_limit: Database["public"]["Enums"]["per_user_limit_type"]
+          per_user_max_times: number | null
+          rate_snapshot_bsk_inr: number | null
+          region_restrictions: Json | null
+          stacking_priority: number | null
+          start_at: string | null
+          status: Database["public"]["Enums"]["promotion_status"]
+          updated_at: string
+          vesting_duration_days: number | null
+          vesting_enabled: boolean
+        }
+        Insert: {
+          allow_stacking?: boolean
+          bonus_percent?: number
+          cooloff_hours?: number
+          created_at?: string
+          created_by?: string | null
+          destination?: Database["public"]["Enums"]["bonus_destination"]
+          eligible_channels?: Database["public"]["Enums"]["purchase_channel"][]
+          end_at?: string | null
+          global_budget_bsk?: number | null
+          global_budget_used_bsk?: number
+          id?: string
+          kyc_required?: boolean
+          max_purchase_inr?: number
+          min_purchase_inr?: number
+          name?: string
+          per_user_limit?: Database["public"]["Enums"]["per_user_limit_type"]
+          per_user_max_times?: number | null
+          rate_snapshot_bsk_inr?: number | null
+          region_restrictions?: Json | null
+          stacking_priority?: number | null
+          start_at?: string | null
+          status?: Database["public"]["Enums"]["promotion_status"]
+          updated_at?: string
+          vesting_duration_days?: number | null
+          vesting_enabled?: boolean
+        }
+        Update: {
+          allow_stacking?: boolean
+          bonus_percent?: number
+          cooloff_hours?: number
+          created_at?: string
+          created_by?: string | null
+          destination?: Database["public"]["Enums"]["bonus_destination"]
+          eligible_channels?: Database["public"]["Enums"]["purchase_channel"][]
+          end_at?: string | null
+          global_budget_bsk?: number | null
+          global_budget_used_bsk?: number
+          id?: string
+          kyc_required?: boolean
+          max_purchase_inr?: number
+          min_purchase_inr?: number
+          name?: string
+          per_user_limit?: Database["public"]["Enums"]["per_user_limit_type"]
+          per_user_max_times?: number | null
+          rate_snapshot_bsk_inr?: number | null
+          region_restrictions?: Json | null
+          stacking_priority?: number | null
+          start_at?: string | null
+          status?: Database["public"]["Enums"]["promotion_status"]
+          updated_at?: string
+          vesting_duration_days?: number | null
+          vesting_enabled?: boolean
+        }
+        Relationships: []
+      }
+      bsk_bonus_events: {
+        Row: {
+          bonus_bsk: number
+          campaign_id: string
+          channel: Database["public"]["Enums"]["purchase_channel"]
+          clawback_at: string | null
+          clawback_reason: string | null
+          created_at: string
+          destination: Database["public"]["Enums"]["bonus_destination"]
+          effective_purchase_inr: number
+          id: string
+          purchase_id: string
+          purchase_inr: number
+          rate_snapshot_bsk_inr: number
+          settled_at: string | null
+          status: Database["public"]["Enums"]["bonus_event_status"]
+          updated_at: string
+          user_id: string
+          vesting_schedule_id: string | null
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          bonus_bsk: number
+          campaign_id: string
+          channel: Database["public"]["Enums"]["purchase_channel"]
+          clawback_at?: string | null
+          clawback_reason?: string | null
+          created_at?: string
+          destination: Database["public"]["Enums"]["bonus_destination"]
+          effective_purchase_inr: number
+          id?: string
+          purchase_id: string
+          purchase_inr: number
+          rate_snapshot_bsk_inr: number
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["bonus_event_status"]
+          updated_at?: string
+          user_id: string
+          vesting_schedule_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          bonus_bsk?: number
+          campaign_id?: string
+          channel?: Database["public"]["Enums"]["purchase_channel"]
+          clawback_at?: string | null
+          clawback_reason?: string | null
+          created_at?: string
+          destination?: Database["public"]["Enums"]["bonus_destination"]
+          effective_purchase_inr?: number
+          id?: string
+          purchase_id?: string
+          purchase_inr?: number
+          rate_snapshot_bsk_inr?: number
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["bonus_event_status"]
+          updated_at?: string
+          user_id?: string
+          vesting_schedule_id?: string | null
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_bonus_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_bonus_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_bonus_vesting_schedules: {
+        Row: {
+          bonus_event_id: string
+          bsk_pending: number
+          bsk_released: number
+          created_at: string
+          daily_release_bsk: number
+          days_completed: number
+          days_total: number
+          id: string
+          is_active: boolean
+          next_release_date: string | null
+          start_date: string
+          total_bsk: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bonus_event_id: string
+          bsk_pending: number
+          bsk_released?: number
+          created_at?: string
+          daily_release_bsk: number
+          days_completed?: number
+          days_total: number
+          id?: string
+          is_active?: boolean
+          next_release_date?: string | null
+          start_date: string
+          total_bsk: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bonus_event_id?: string
+          bsk_pending?: number
+          bsk_released?: number
+          created_at?: string
+          daily_release_bsk?: number
+          days_completed?: number
+          days_total?: number
+          id?: string
+          is_active?: boolean
+          next_release_date?: string | null
+          start_date?: string
+          total_bsk?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_bonus_vesting_schedules_bonus_event_id_fkey"
+            columns: ["bonus_event_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_bonus_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bsk_holding_ledger: {
         Row: {
           ad_id: string | null
@@ -2396,6 +2613,50 @@ export type Database = {
           withdrawal_locked?: boolean | null
         }
         Relationships: []
+      }
+      promotion_events_log: {
+        Row: {
+          admin_user_id: string | null
+          campaign_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          user_agent: string | null
+        }
+        Insert: {
+          admin_user_id?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+        }
+        Update: {
+          admin_user_id?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_events_log_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_bonus_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       provably_fair_spins: {
         Row: {
@@ -4491,6 +4752,50 @@ export type Database = {
         }
         Relationships: []
       }
+      user_promotion_claims: {
+        Row: {
+          campaign_id: string
+          claims_count: number
+          created_at: string
+          first_claim_at: string | null
+          id: string
+          last_claim_at: string | null
+          total_bonus_bsk: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          claims_count?: number
+          created_at?: string
+          first_claim_at?: string | null
+          id?: string
+          last_claim_at?: string | null
+          total_bonus_bsk?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          claims_count?: number
+          created_at?: string
+          first_claim_at?: string | null
+          id?: string
+          last_claim_at?: string | null
+          total_bonus_bsk?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_promotion_claims_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_bonus_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
@@ -4960,6 +5265,16 @@ export type Database = {
         }
         Returns: Json
       }
+      process_bsk_bonus_purchase: {
+        Args: {
+          p_campaign_id?: string
+          p_channel: Database["public"]["Enums"]["purchase_channel"]
+          p_purchase_id: string
+          p_purchase_inr: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       process_daily_bsk_vesting: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -4981,14 +5296,19 @@ export type Database = {
       announcement_type: "carousel" | "ticker"
       app_role: "admin" | "support" | "compliance" | "finance" | "user"
       balance_metric: "MAIN" | "TOTAL" | "BONUS_INCLUDED"
+      bonus_destination: "withdrawable" | "holding"
+      bonus_event_status: "pending" | "settled" | "void" | "clawed_back"
       bsk_balance_type: "withdrawable" | "holding"
       claim_status: "PENDING" | "APPROVED" | "REJECTED"
       draw_status: "OPEN" | "CLOSED" | "COMPLETED" | "CANCELLED"
       insurance_type: "ACCIDENT" | "TRADING"
       invite_policy: "BLOCK_WHEN_FULL" | "WAITLIST"
       missed_day_policy: "forfeit" | "carry_forward"
+      per_user_limit_type: "once" | "once_per_campaign" | "unlimited"
       policy_status: "ACTIVE" | "EXPIRED" | "CANCELLED"
+      promotion_status: "draft" | "scheduled" | "live" | "paused" | "ended"
       promotion_type: "INR_BONUS" | "DEPOSIT_BONUS" | "TRADING_BONUS"
+      purchase_channel: "inr_onramp" | "swap_ipg_bsk" | "swap_crypto_bsk"
       spin_outcome: "WIN" | "LOSE"
       subscription_status: "active" | "expired" | "cancelled"
       token_bucket: "holding" | "tradable"
@@ -5122,14 +5442,19 @@ export const Constants = {
       announcement_type: ["carousel", "ticker"],
       app_role: ["admin", "support", "compliance", "finance", "user"],
       balance_metric: ["MAIN", "TOTAL", "BONUS_INCLUDED"],
+      bonus_destination: ["withdrawable", "holding"],
+      bonus_event_status: ["pending", "settled", "void", "clawed_back"],
       bsk_balance_type: ["withdrawable", "holding"],
       claim_status: ["PENDING", "APPROVED", "REJECTED"],
       draw_status: ["OPEN", "CLOSED", "COMPLETED", "CANCELLED"],
       insurance_type: ["ACCIDENT", "TRADING"],
       invite_policy: ["BLOCK_WHEN_FULL", "WAITLIST"],
       missed_day_policy: ["forfeit", "carry_forward"],
+      per_user_limit_type: ["once", "once_per_campaign", "unlimited"],
       policy_status: ["ACTIVE", "EXPIRED", "CANCELLED"],
+      promotion_status: ["draft", "scheduled", "live", "paused", "ended"],
       promotion_type: ["INR_BONUS", "DEPOSIT_BONUS", "TRADING_BONUS"],
+      purchase_channel: ["inr_onramp", "swap_ipg_bsk", "swap_crypto_bsk"],
       spin_outcome: ["WIN", "LOSE"],
       subscription_status: ["active", "expired", "cancelled"],
       token_bucket: ["holding", "tradable"],
