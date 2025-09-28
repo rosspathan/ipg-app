@@ -8,6 +8,7 @@ import { NeonIconTile } from "@/components/ui/neon-icon-tile";
 import BalanceDisplay from "@/components/BalanceDisplay";
 import QuickActionGrid from "@/components/QuickActionGrid";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
+import { BSKBalanceCard } from "@/components/BSKBalanceCard";
 import { AdCarousel } from "@/components/AdCarousel";
 import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -43,6 +44,15 @@ const AppHomeScreen = () => {
   ];
 
   const featuredPrograms = [
+    {
+      title: "Advertising Mining",
+      description: "Watch ads and earn BSK rewards with subscriptions",
+      icon: Gift,
+      color: "text-accent",
+      action: () => navigate("/app/programs/advertising"),
+      gradient: "from-accent/20 to-warning/20",
+      badge: "EARN"
+    },
     {
       title: "Lucky Draw",
       description: "Join pool-based lottery draws to win big prizes",
@@ -150,10 +160,27 @@ const AppHomeScreen = () => {
           style={{ animationDelay: "200ms", animationFillMode: "both" }}
         />
 
-        {/* Bonus Balance Card */}
+        {/* BSK Balance Cards */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-foreground tracking-tight">BSK Balances</h3>
+          <div className="grid gap-4">
+            <BSKBalanceCard 
+              balanceType="withdrawable"
+              className="animate-fade-in-scale"
+              style={{ animationDelay: "250ms", animationFillMode: "both" }}
+            />
+            <BSKBalanceCard 
+              balanceType="holding"
+              className="animate-fade-in-scale"
+              style={{ animationDelay: "280ms", animationFillMode: "both" }}
+            />
+          </div>
+        </div>
+
+        {/* Legacy Bonus Balance Card */}
         <BonusBalanceCard 
           className="animate-fade-in-scale"
-          style={{ animationDelay: "250ms", animationFillMode: "both" }}
+          style={{ animationDelay: "310ms", animationFillMode: "both" }}
         />
 
         {/* Ad Banner */}
