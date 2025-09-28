@@ -11,6 +11,7 @@ import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { BSKBalanceCard } from "@/components/BSKBalanceCard";
 import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import { AdCarousel } from "@/components/AdCarousel";
+import InsuranceCard from "@/components/InsuranceCard";
 import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
@@ -167,6 +168,13 @@ const AppHomeScreen = () => {
 
         {/* BSK Promotion Banner */}
         <BSKPromotionBanner />
+
+        {/* Insurance Card */}
+        <InsuranceCard 
+          variant="compact"
+          className="animate-fade-in-scale"
+          style={{ animationDelay: "230ms", animationFillMode: "both" }}
+        />
 
         {/* BSK Balances Section */}
         <div className="space-y-4">

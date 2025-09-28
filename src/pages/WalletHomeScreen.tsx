@@ -15,6 +15,7 @@ import BalanceDisplay from "@/components/BalanceDisplay";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { BSKBalanceCard } from "@/components/BSKBalanceCard";
 import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
+import InsuranceCard from "@/components/InsuranceCard";
 import { cn } from "@/lib/utils";
 
 const WalletHomeScreen = () => {
@@ -125,6 +126,13 @@ const WalletHomeScreen = () => {
 
         {/* BSK Promotion Banner */}
         <BSKPromotionBanner />
+
+        {/* Insurance Card */}
+        <InsuranceCard 
+          variant="compact"
+          className="animate-fade-in-scale"
+          style={{ animationDelay: "250ms", animationFillMode: "both" }}
+        />
 
         {/* BSK Balances */}
         <div className="space-y-4">

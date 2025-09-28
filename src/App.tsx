@@ -205,6 +205,7 @@ function App() {
                 <Route path="spin-verify" element={<SpinVerifyScreen />} />
                 <Route path="bsk-vesting" element={<BSKVestingScreen />} />
                 <Route path="programs/insurance" element={<InsuranceScreen />} />
+                <Route path="insurance" element={<InsuranceScreen />} />
                 <Route path="programs/insurance/claim" element={<FileClaimScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="deposit/inr" element={<INRDepositScreen />} />
