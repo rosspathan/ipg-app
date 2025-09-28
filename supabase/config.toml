@@ -1,5 +1,14 @@
 project_id = "ocblgldglqhlrmtnynmu"
 
+[functions.draw-commit]
+verify_jwt = false
+
+[functions.draw-reveal]
+verify_jwt = false
+
+[functions.draw-purchase]
+verify_jwt = true
+
 [functions.ismart-spin-commit]
 verify_jwt = true
 

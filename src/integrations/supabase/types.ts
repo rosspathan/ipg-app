@@ -242,6 +242,42 @@ export type Database = {
           },
         ]
       }
+      admin_fees_ledger: {
+        Row: {
+          bsk_rate_snapshot: number
+          created_at: string | null
+          draw_id: string | null
+          fee_bsk: number
+          fee_inr: number
+          id: string
+          metadata: Json | null
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          bsk_rate_snapshot: number
+          created_at?: string | null
+          draw_id?: string | null
+          fee_bsk?: number
+          fee_inr?: number
+          id?: string
+          metadata?: Json | null
+          source_type: string
+          user_id: string
+        }
+        Update: {
+          bsk_rate_snapshot?: number
+          created_at?: string | null
+          draw_id?: string | null
+          fee_bsk?: number
+          fee_inr?: number
+          id?: string
+          metadata?: Json | null
+          source_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ads: {
         Row: {
           content_category: string | null
@@ -1231,6 +1267,30 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_rates: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          rate_inr_per_bsk: number
+          set_by: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          rate_inr_per_bsk: number
+          set_by: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          rate_inr_per_bsk?: number
+          set_by?: string
+        }
+        Relationships: []
+      }
       bsk_vesting_config: {
         Row: {
           anti_sybil_max_per_ip: number | null
@@ -1588,6 +1648,264 @@ export type Database = {
             columns: ["badge_qualification_event_id"]
             isOneToOne: false
             referencedRelation: "badge_qualification_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      draw_configs: {
+        Row: {
+          client_seed: string | null
+          created_at: string | null
+          created_by: string
+          current_participants: number | null
+          description: string | null
+          enable_referral_events: boolean | null
+          expiry_time: string | null
+          fee_percent: number
+          id: string
+          image_url: string | null
+          kyc_required: boolean | null
+          min_tickets_for_scheduled: number | null
+          nonce: number | null
+          per_user_ticket_cap: number
+          pool_size: number
+          region_restrictions: Json | null
+          scheduled_time: string | null
+          server_seed: string | null
+          server_seed_hash: string | null
+          start_mode: string
+          state: Database["public"]["Enums"]["draw_state"] | null
+          ticket_price_inr: number
+          title: string
+          updated_at: string | null
+          winners_determined_at: string | null
+        }
+        Insert: {
+          client_seed?: string | null
+          created_at?: string | null
+          created_by: string
+          current_participants?: number | null
+          description?: string | null
+          enable_referral_events?: boolean | null
+          expiry_time?: string | null
+          fee_percent?: number
+          id?: string
+          image_url?: string | null
+          kyc_required?: boolean | null
+          min_tickets_for_scheduled?: number | null
+          nonce?: number | null
+          per_user_ticket_cap?: number
+          pool_size?: number
+          region_restrictions?: Json | null
+          scheduled_time?: string | null
+          server_seed?: string | null
+          server_seed_hash?: string | null
+          start_mode?: string
+          state?: Database["public"]["Enums"]["draw_state"] | null
+          ticket_price_inr: number
+          title: string
+          updated_at?: string | null
+          winners_determined_at?: string | null
+        }
+        Update: {
+          client_seed?: string | null
+          created_at?: string | null
+          created_by?: string
+          current_participants?: number | null
+          description?: string | null
+          enable_referral_events?: boolean | null
+          expiry_time?: string | null
+          fee_percent?: number
+          id?: string
+          image_url?: string | null
+          kyc_required?: boolean | null
+          min_tickets_for_scheduled?: number | null
+          nonce?: number | null
+          per_user_ticket_cap?: number
+          pool_size?: number
+          region_restrictions?: Json | null
+          scheduled_time?: string | null
+          server_seed?: string | null
+          server_seed_hash?: string | null
+          start_mode?: string
+          state?: Database["public"]["Enums"]["draw_state"] | null
+          ticket_price_inr?: number
+          title?: string
+          updated_at?: string | null
+          winners_determined_at?: string | null
+        }
+        Relationships: []
+      }
+      draw_prizes: {
+        Row: {
+          amount_inr: number
+          created_at: string | null
+          draw_id: string
+          id: string
+          rank: Database["public"]["Enums"]["winner_rank"]
+        }
+        Insert: {
+          amount_inr: number
+          created_at?: string | null
+          draw_id: string
+          id?: string
+          rank: Database["public"]["Enums"]["winner_rank"]
+        }
+        Update: {
+          amount_inr?: number
+          created_at?: string | null
+          draw_id?: string
+          id?: string
+          rank?: Database["public"]["Enums"]["winner_rank"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draw_prizes_draw_id_fkey"
+            columns: ["draw_id"]
+            isOneToOne: false
+            referencedRelation: "draw_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      draw_results: {
+        Row: {
+          client_seed: string
+          created_at: string | null
+          draw_id: string
+          id: string
+          nonce: number
+          proof_data: Json
+          server_seed: string
+          ticket_ids_ordered: Json
+          winners: Json
+        }
+        Insert: {
+          client_seed: string
+          created_at?: string | null
+          draw_id: string
+          id?: string
+          nonce: number
+          proof_data: Json
+          server_seed: string
+          ticket_ids_ordered: Json
+          winners: Json
+        }
+        Update: {
+          client_seed?: string
+          created_at?: string | null
+          draw_id?: string
+          id?: string
+          nonce?: number
+          proof_data?: Json
+          server_seed?: string
+          ticket_ids_ordered?: Json
+          winners?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draw_results_draw_id_fkey"
+            columns: ["draw_id"]
+            isOneToOne: false
+            referencedRelation: "draw_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      draw_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          fee_percent: number
+          id: string
+          is_active: boolean | null
+          name: string
+          pool_size: number
+          prizes: Json
+          ticket_price_inr: number
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          fee_percent?: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          pool_size: number
+          prizes: Json
+          ticket_price_inr: number
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          fee_percent?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          pool_size?: number
+          prizes?: Json
+          ticket_price_inr?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      draw_tickets: {
+        Row: {
+          bsk_paid: number
+          bsk_rate_snapshot: number
+          config_snapshot: Json
+          created_at: string | null
+          draw_id: string
+          fee_bsk: number | null
+          id: string
+          inr_amount: number
+          prize_bsk_gross: number | null
+          prize_bsk_net: number | null
+          prize_rank: Database["public"]["Enums"]["winner_rank"] | null
+          status: Database["public"]["Enums"]["ticket_status"] | null
+          ticket_number: string
+          user_id: string
+        }
+        Insert: {
+          bsk_paid: number
+          bsk_rate_snapshot: number
+          config_snapshot: Json
+          created_at?: string | null
+          draw_id: string
+          fee_bsk?: number | null
+          id?: string
+          inr_amount: number
+          prize_bsk_gross?: number | null
+          prize_bsk_net?: number | null
+          prize_rank?: Database["public"]["Enums"]["winner_rank"] | null
+          status?: Database["public"]["Enums"]["ticket_status"] | null
+          ticket_number: string
+          user_id: string
+        }
+        Update: {
+          bsk_paid?: number
+          bsk_rate_snapshot?: number
+          config_snapshot?: Json
+          created_at?: string | null
+          draw_id?: string
+          fee_bsk?: number | null
+          id?: string
+          inr_amount?: number
+          prize_bsk_gross?: number | null
+          prize_bsk_net?: number | null
+          prize_rank?: Database["public"]["Enums"]["winner_rank"] | null
+          status?: Database["public"]["Enums"]["ticket_status"] | null
+          ticket_number?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draw_tickets_draw_id_fkey"
+            columns: ["draw_id"]
+            isOneToOne: false
+            referencedRelation: "draw_configs"
             referencedColumns: ["id"]
           },
         ]
@@ -2444,119 +2762,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      lucky_draw_configs: {
-        Row: {
-          admin_fee_percent: number
-          auto_execute: boolean
-          commit_hash: string | null
-          created_at: string | null
-          current_participants: number
-          executed_at: string | null
-          first_place_prize: number
-          id: string
-          max_winners: number | null
-          payout_currency: string
-          pool_size: number
-          reveal_value: string | null
-          second_place_prize: number
-          status: string | null
-          third_place_prize: number
-          ticket_currency: string
-          ticket_price: number
-        }
-        Insert: {
-          admin_fee_percent?: number
-          auto_execute?: boolean
-          commit_hash?: string | null
-          created_at?: string | null
-          current_participants?: number
-          executed_at?: string | null
-          first_place_prize?: number
-          id?: string
-          max_winners?: number | null
-          payout_currency?: string
-          pool_size?: number
-          reveal_value?: string | null
-          second_place_prize?: number
-          status?: string | null
-          third_place_prize?: number
-          ticket_currency?: string
-          ticket_price: number
-        }
-        Update: {
-          admin_fee_percent?: number
-          auto_execute?: boolean
-          commit_hash?: string | null
-          created_at?: string | null
-          current_participants?: number
-          executed_at?: string | null
-          first_place_prize?: number
-          id?: string
-          max_winners?: number | null
-          payout_currency?: string
-          pool_size?: number
-          reveal_value?: string | null
-          second_place_prize?: number
-          status?: string | null
-          third_place_prize?: number
-          ticket_currency?: string
-          ticket_price?: number
-        }
-        Relationships: []
-      }
-      lucky_draw_tickets: {
-        Row: {
-          bsk_payout: number | null
-          config_id: string
-          created_at: string
-          id: string
-          ipg_paid: number | null
-          prize_amount: number | null
-          prize_tier: number | null
-          status: string
-          ticket_number: string
-          updated_at: string
-          user_id: string
-          verification_data: Json | null
-        }
-        Insert: {
-          bsk_payout?: number | null
-          config_id: string
-          created_at?: string
-          id?: string
-          ipg_paid?: number | null
-          prize_amount?: number | null
-          prize_tier?: number | null
-          status?: string
-          ticket_number: string
-          updated_at?: string
-          user_id: string
-          verification_data?: Json | null
-        }
-        Update: {
-          bsk_payout?: number | null
-          config_id?: string
-          created_at?: string
-          id?: string
-          ipg_paid?: number | null
-          prize_amount?: number | null
-          prize_tier?: number | null
-          status?: string
-          ticket_number?: string
-          updated_at?: string
-          user_id?: string
-          verification_data?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lucky_draw_tickets_config_id_fkey"
-            columns: ["config_id"]
-            isOneToOne: false
-            referencedRelation: "lucky_draw_configs"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       markets: {
         Row: {
@@ -4915,6 +5120,14 @@ export type Database = {
         }
         Returns: number
       }
+      convert_bsk_to_inr: {
+        Args: { bsk_amount: number }
+        Returns: number
+      }
+      convert_inr_to_bsk: {
+        Args: { inr_amount: number }
+        Returns: number
+      }
       count_lucky_draw_tickets: {
         Args: { p_config_id: string }
         Returns: number
@@ -4943,6 +5156,10 @@ export type Database = {
       get_badge_from_ipg_amount: {
         Args: { ipg_amount: number }
         Returns: string
+      }
+      get_current_bsk_rate: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       get_current_spin_seed: {
         Args: Record<PropertyKey, never>
@@ -5058,6 +5275,15 @@ export type Database = {
       bonus_event_status: "pending" | "settled" | "void" | "clawed_back"
       bsk_balance_type: "withdrawable" | "holding"
       claim_status: "PENDING" | "APPROVED" | "REJECTED"
+      draw_state:
+        | "draft"
+        | "open"
+        | "full"
+        | "drawing"
+        | "completed"
+        | "expired"
+        | "refunding"
+        | "closed"
       draw_status: "OPEN" | "CLOSED" | "COMPLETED" | "CANCELLED"
       insurance_type: "ACCIDENT" | "TRADING"
       invite_policy: "BLOCK_WHEN_FULL" | "WAITLIST"
@@ -5069,7 +5295,9 @@ export type Database = {
       purchase_channel: "inr_onramp" | "swap_ipg_bsk" | "swap_crypto_bsk"
       spin_outcome: "WIN" | "LOSE"
       subscription_status: "active" | "expired" | "cancelled"
+      ticket_status: "active" | "won" | "refunded"
       token_bucket: "holding" | "tradable"
+      winner_rank: "first" | "second" | "third"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -5204,6 +5432,16 @@ export const Constants = {
       bonus_event_status: ["pending", "settled", "void", "clawed_back"],
       bsk_balance_type: ["withdrawable", "holding"],
       claim_status: ["PENDING", "APPROVED", "REJECTED"],
+      draw_state: [
+        "draft",
+        "open",
+        "full",
+        "drawing",
+        "completed",
+        "expired",
+        "refunding",
+        "closed",
+      ],
       draw_status: ["OPEN", "CLOSED", "COMPLETED", "CANCELLED"],
       insurance_type: ["ACCIDENT", "TRADING"],
       invite_policy: ["BLOCK_WHEN_FULL", "WAITLIST"],
@@ -5215,7 +5453,9 @@ export const Constants = {
       purchase_channel: ["inr_onramp", "swap_ipg_bsk", "swap_crypto_bsk"],
       spin_outcome: ["WIN", "LOSE"],
       subscription_status: ["active", "expired", "cancelled"],
+      ticket_status: ["active", "won", "refunded"],
       token_bucket: ["holding", "tradable"],
+      winner_rank: ["first", "second", "third"],
     },
   },
 } as const

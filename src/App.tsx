@@ -55,7 +55,7 @@ import SubscriptionsScreen from "./pages/SubscriptionsScreen";
 import ReferralsScreen from "./pages/ReferralsScreen";
 import StakingScreen from "./pages/StakingScreen";
 import StakingDetailScreen from "./pages/StakingDetailScreen";
-import LuckyDrawScreen from "./pages/LuckyDrawScreen";
+import NewLuckyDraw from "./components/NewLuckyDraw";
 
 import SpinHistoryScreen from "./pages/SpinHistoryScreen";
 import AdvertisingMiningScreen from "./pages/AdvertisingMiningScreen";
@@ -81,7 +81,7 @@ import { AdminSubscriptions } from "./components/AdminSubscriptions";
 import AdminReferralProgram from "./pages/AdminReferralProgram";
 import AdminTeamReferralsScreen from "./pages/AdminTeamReferralsScreen";
 import { AdminStaking } from "./components/AdminStaking";
-import { AdminLuckyDraw } from "./components/AdminLuckyDraw";
+import AdminNewLuckyDraw from "./components/AdminNewLuckyDraw";
 import AdminInsurance from "./components/AdminInsurance";
 import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
@@ -195,8 +195,8 @@ function App() {
                 <Route path="programs/referrals" element={<ReferralsScreen />} />
                 <Route path="programs/staking" element={<StakingScreen />} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
-                <Route path="programs/lucky" element={<LuckyDrawScreen />} />
-                <Route path="lucky" element={<LuckyDrawScreen />} />
+                <Route path="programs/lucky" element={<NewLuckyDraw />} />
+                <Route path="lucky" element={<NewLuckyDraw />} />
                 <Route path="spin-wheel" element={
                   <React.Suspense fallback={<div className="p-6">Loading...</div>}>
                     <ISmartSpinScreen />
@@ -240,8 +240,8 @@ function App() {
                 <Route path="referrals" element={<AdminReferralProgram />} />
                 <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="staking" element={<AdminStaking />} />
-                <Route path="lucky" element={<AdminLuckyDraw />} />
-                <Route path="lucky/draw" element={<AdminLuckyDraw />} />
+                <Route path="lucky" element={<AdminNewLuckyDraw />} />
+                <Route path="lucky/draw" element={<AdminNewLuckyDraw />} />
                 <Route path="insurance" element={<AdminInsurance />} />
                 <Route path="ads" element={<AdminAdsScreen />} />
                 <Route path="fees" element={<AdminFees />} />
