@@ -108,6 +108,12 @@ import DebugFunding from "@/pages/DebugFunding";
 import SpinVerifyScreen from "@/pages/SpinVerifyScreen"; 
 import BSKVestingScreen from "@/pages/BSKVestingScreen";
 
+// Astra Design System
+import { AstraLayout } from "@/layouts/AstraLayout";
+import { HomePage } from "@/pages/astra/HomePage";
+import { WalletPage } from "@/pages/astra/WalletPage";
+import { ProgramsPage } from "@/pages/astra/ProgramsPage";
+
 const ISmartSpinScreen = React.lazy(() => import("@/pages/ISmartSpinScreen"));
 
 const queryClient = new QueryClient();

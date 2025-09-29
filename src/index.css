@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Neo-Noir Glow Design System */
+    /* ASTRA DESIGN SYSTEM - Premium Dark UI */
     /* Core Brand Colors - HSL for precision */
     --primary: 248 67% 64%; /* #8853FF */
     --primary-foreground: 0 0% 98%;
@@ -34,9 +34,10 @@ All colors MUST be HSL.
     --destructive: 0 70% 68%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Dark Background System */
-    --background: 222 39% 7%; /* #0C0F14 */
+    /* Astra Background System */
+    --background-primary: 222 39% 7%; /* #0C0F14 */
     --background-secondary: 225 34% 9%; /* #0E1220 */
+    --background: 222 39% 7%;
     --foreground: 0 0% 98%;
 
     --card: 223 32% 11%; /* #121624 */
