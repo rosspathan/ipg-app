@@ -7,6 +7,7 @@ import { SectionHeader } from "@/components/astra/SectionHeader"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { AstraCard } from "@/components/astra/AstraCard"
 import { useNavigation } from "@/hooks/useNavigation"
+import ipgLogo from "@/assets/ipg-logo.jpg"
 
 // Mock wallet address
 const MOCK_WALLET_ADDRESS = "0x742d35Cc6135C5C8C91b8f54534d7134E6faE9A2"
@@ -38,6 +39,19 @@ export function WalletPage() {
 
   return (
     <div className="p-4 space-y-6" data-testid="page-wallet">
+      {/* Header with IPG Logo */}
+      <div className="flex items-center gap-3 mb-6">
+        <img 
+          src={ipgLogo} 
+          alt="IPG I-SMART Logo" 
+          className="w-10 h-10 object-contain rounded-lg"
+        />
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">My Wallet</h1>
+          <p className="text-sm text-muted-foreground">Manage your digital assets</p>
+        </div>
+      </div>
+
       {/* Wallet Address Panel */}
       <AstraCard variant="glass" data-testid="address-panel">
         <div className="p-6">

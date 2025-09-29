@@ -17,7 +17,7 @@ import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } f
 import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
-import ipgLogoPremium from "@/assets/ipg-logo-premium.jpg";
+import ipgLogo from "@/assets/ipg-logo.jpg";
 
 const AppHomeScreen = () => {
   console.log('AppHomeScreen: Component rendering...');
@@ -135,9 +135,9 @@ const AppHomeScreen = () => {
       <div>
         {/* Cyber Header with KPIs */}
         <CyberHeader
-          title="I-SMART"
+          title="IPG I-SMART"
           subtitle="Welcome back to your digital future"
-          logo={ipgLogoPremium}
+          logo={ipgLogo}
           kpis={kpis}
           actions={
             <div className="flex items-center gap-3">

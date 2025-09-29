@@ -18,6 +18,7 @@ import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import InsuranceCard from "@/components/InsuranceCard";
 import BSKLoanCard from "@/components/BSKLoanCard";
 import { cn } from "@/lib/utils";
+import ipgLogo from "@/assets/ipg-logo.jpg";
 
 const WalletHomeScreen = () => {
   const navigate = useNavigate();
@@ -108,6 +109,7 @@ const WalletHomeScreen = () => {
       <CyberHeader
         title="My Wallet"
         subtitle="Manage your digital assets"
+        logo={ipgLogo}
         kpis={kpis}
         actions={<CurrencyPicker />}
       />
