@@ -5709,42 +5709,7 @@ export type Database = {
       }
     }
     Views: {
-      fiat_settings_inr_public: {
-        Row: {
-          bank_name: string | null
-          created_at: string | null
-          enabled: boolean | null
-          fee_fixed: number | null
-          fee_percent: number | null
-          id: string | null
-          min_deposit: number | null
-          notes: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          bank_name?: string | null
-          created_at?: string | null
-          enabled?: boolean | null
-          fee_fixed?: number | null
-          fee_percent?: number | null
-          id?: string | null
-          min_deposit?: number | null
-          notes?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          bank_name?: string | null
-          created_at?: string | null
-          enabled?: boolean | null
-          fee_fixed?: number | null
-          fee_percent?: number | null
-          id?: string | null
-          min_deposit?: number | null
-          notes?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       calculate_provable_spin_result: {
