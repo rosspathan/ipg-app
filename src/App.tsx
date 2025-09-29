@@ -113,6 +113,11 @@ import { AstraLayout } from "@/layouts/AstraLayout";
 import { HomePage } from "@/pages/astra/HomePage";
 import { WalletPage } from "@/pages/astra/WalletPage";
 import { ProgramsPage } from "@/pages/astra/ProgramsPage";
+import { TradingPage } from "@/pages/astra/TradingPage";
+import { InsurancePage } from "@/pages/astra/InsurancePage";
+import { SpinWheelPage } from "@/pages/astra/SpinWheelPage";
+import { AdvertiseMiningPage } from "@/pages/astra/AdvertiseMiningPage";
+import { DesignReview } from "@/pages/astra/DesignReview";
 
 const ISmartSpinScreen = React.lazy(() => import("@/pages/ISmartSpinScreen"));
 
@@ -164,8 +169,8 @@ function App() {
               } />
               <Route path="/auth/lock" element={<AppLockScreen />} />
 
-              {/* User App Routes */}
-              <Route path="/app/*" element={
+              {/* User App Routes - Legacy Layout */}
+              <Route path="/app-legacy/*" element={
                 <AuthProviderUser>
                   <UserRoute>
                     <UnlockGate>
@@ -174,7 +179,7 @@ function App() {
                   </UserRoute>
                 </AuthProviderUser>
               }>
-                <Route index element={<Navigate to="/app/home" replace />} />
+                <Route index element={<Navigate to="/app-legacy/home" replace />} />
                 <Route path="home" element={<AppHomeScreen />} />
                 <Route path="wallet" element={<WalletHomeScreen />} />
                 <Route path="wallet/deposit" element={<DepositScreen />} />
@@ -222,6 +227,29 @@ function App() {
                 <Route path="support" element={<SupportScreen />} />
                 <Route path="support/t/:id" element={<SupportTicketScreen />} />
                 <Route path="notifications" element={<NotificationsScreen />} />
+              </Route>
+
+              {/* User App Routes - New Astra Design System */}
+              <Route path="/app/*" element={
+                <AuthProviderUser>
+                  <UserRoute>
+                    <UnlockGate>
+                      <AstraLayout />
+                    </UnlockGate>
+                  </UserRoute>
+                </AuthProviderUser>
+              }>
+                <Route index element={<Navigate to="/app/home" replace />} />
+                <Route path="home" element={<HomePage />} />
+                <Route path="wallet" element={<WalletPage />} />
+                <Route path="programs" element={<ProgramsPage />} />
+                <Route path="trade" element={<TradingPage />} />
+                <Route path="programs/insurance" element={<InsurancePage />} />
+                <Route path="programs/spin" element={<SpinWheelPage />} />
+                <Route path="programs/ads" element={<AdvertiseMiningPage />} />
+                <Route path="design-review" element={<DesignReview />} />
+                {/* Legacy redirects will be handled by fallback */}
+                <Route path="*" element={<Navigate to="/app-legacy" replace />} />
               </Route>
 
               {/* Admin Authentication */}
