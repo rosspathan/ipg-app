@@ -52,12 +52,12 @@ const CyberHeader: React.FC<CyberHeaderProps> = ({
           )}
           {logo && (
             <div className="relative group">
-              <div className="w-12 h-12 rounded-xl bg-gradient-primary p-0.5 shadow-neon">
-                <div className="w-full h-full rounded-xl bg-background/90 backdrop-blur-sm flex items-center justify-center overflow-hidden">
+              <div className="w-16 h-16 rounded-xl bg-gradient-primary p-0.5 shadow-neon">
+                <div className="w-full h-full rounded-xl bg-black/90 backdrop-blur-sm flex items-center justify-center overflow-hidden">
                   <img 
                     src={logo}
                     alt="IPG I-SMART Logo" 
-                    className="w-11 h-11 object-contain filter drop-shadow-lg transition-all duration-300 group-hover:scale-105"
+                    className="w-14 h-14 object-contain filter drop-shadow-lg transition-all duration-300 group-hover:scale-105"
                   />
                 </div>
               </div>
