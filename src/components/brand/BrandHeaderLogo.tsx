@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import ipgLogo from '@/assets/ipg-logo.jpg';
 
 interface BrandHeaderLogoProps {
   size?: 'small' | 'medium' | 'large';
@@ -98,88 +99,28 @@ const BrandHeaderLogo: React.FC<BrandHeaderLogoProps> = ({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        <svg
-          width={currentSize.width}
-          height={currentSize.height}
-          viewBox="0 0 32 32"
-          className="overflow-visible"
-        >
-          <defs>
-            <radialGradient id="headerCoinGradient" cx="50%" cy="30%" r="70%">
-              <stop offset="0%" stopColor="hsl(242, 86%, 70%)" stopOpacity="0.9"/>
-              <stop offset="40%" stopColor="hsl(242, 86%, 65%)" stopOpacity="0.7"/>
-              <stop offset="100%" stopColor="hsl(242, 86%, 45%)" stopOpacity="0.8"/>
-            </radialGradient>
-            <linearGradient id="headerRimGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="hsl(188, 100%, 50%)" stopOpacity="0.6"/>
-              <stop offset="50%" stopColor="hsl(242, 86%, 65%)" stopOpacity="0.4"/>
-              <stop offset="100%" stopColor="hsl(188, 100%, 50%)" stopOpacity="0.6"/>
-            </linearGradient>
-          </defs>
-          
-          {/* Success pulse ring */}
-          {onSuccess && (
-            <motion.circle
-              cx="16"
-              cy="16"
-              r="14"
-              fill="none"
-              stroke="hsl(142, 76%, 36%)"
-              strokeWidth="2"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1.5, opacity: 0 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            />
-          )}
-          
-          {/* Main coin */}
-          <circle cx="16" cy="16" r="15" fill="none" stroke="url(#headerRimGlow)" strokeWidth={currentSize.strokeWidth} opacity="0.4"/>
-          <circle cx="16" cy="16" r="13" fill="url(#headerCoinGradient)" stroke="hsl(242, 86%, 65%)" strokeWidth="0.5"/>
-          <circle cx="16" cy="16" r="10" fill="hsl(215, 25%, 8%)" stroke="hsl(242, 86%, 65%)" strokeWidth="0.5"/>
-          
-          {/* IS Monogram */}
-          <g transform="translate(16, 16) scale(0.4)">
-            {/* I */}
-            <rect x="-18" y="-12" width="4" height="24" fill="hsl(242, 86%, 65%)"/>
-            <rect x="-22" y="-12" width="12" height="3" fill="hsl(242, 86%, 65%)"/>
-            <rect x="-22" y="9" width="12" height="3" fill="hsl(242, 86%, 65%)"/>
-            
-            {/* S */}
-            <path d="M2 -12 Q12 -12 12 -6 Q12 0 2 0 Q12 0 12 6 Q12 12 2 12 L-2 12 Q-6 12 -6 8" 
-                  fill="none" stroke="hsl(242, 86%, 65%)" strokeWidth="3.5" strokeLinecap="round"/>
-            
-            {/* Star spark */}
-            <motion.g
-              variants={sparkVariants}
-              animate={getSparkState()}
-            >
-              <circle cx="-16" cy="-18" r="2" fill="hsl(188, 100%, 50%)"/>
-              <path d="M-16 -22 L-15 -19 L-12 -18 L-15 -17 L-16 -14 L-17 -17 L-20 -18 L-17 -19 Z" 
-                    fill="hsl(188, 100%, 50%)"/>
-            </motion.g>
-          </g>
-        </svg>
+        <img 
+          src={ipgLogo} 
+          alt="IPG I-SMART Logo" 
+          className="object-contain rounded-lg"
+          style={{
+            width: currentSize.width,
+            height: currentSize.height,
+            filter: `brightness(1.1) drop-shadow(0 0 8px hsl(var(--primary) / ${glowOpacity/2}))`
+          }}
+        />
       </motion.button>
 
       <Dialog open={showAbout} onOpenChange={setShowAbout}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <svg width="40" height="40" viewBox="0 0 32 32">
-                <circle cx="16" cy="16" r="15" fill="url(#headerCoinGradient)" stroke="hsl(242, 86%, 65%)"/>
-                <circle cx="16" cy="16" r="10" fill="hsl(215, 25%, 8%)"/>
-                <g transform="translate(16, 16) scale(0.4)">
-                  <rect x="-18" y="-12" width="4" height="24" fill="hsl(242, 86%, 65%)"/>
-                  <rect x="-22" y="-12" width="12" height="3" fill="hsl(242, 86%, 65%)"/>
-                  <rect x="-22" y="9" width="12" height="3" fill="hsl(242, 86%, 65%)"/>
-                  <path d="M2 -12 Q12 -12 12 -6 Q12 0 2 0 Q12 0 12 6 Q12 12 2 12 L-2 12 Q-6 12 -6 8" 
-                        fill="none" stroke="hsl(242, 86%, 65%)" strokeWidth="3.5" strokeLinecap="round"/>
-                  <circle cx="-16" cy="-18" r="2" fill="hsl(188, 100%, 50%)"/>
-                  <path d="M-16 -22 L-15 -19 L-12 -18 L-15 -17 L-16 -14 L-17 -17 L-20 -18 L-17 -19 Z" 
-                        fill="hsl(188, 100%, 50%)"/>
-                </g>
-              </svg>
-              About I-SMART
+              <img 
+                src={ipgLogo} 
+                alt="IPG I-SMART Logo" 
+                className="w-10 h-10 object-contain rounded"
+              />
+              About IPG I-SMART
             </DialogTitle>
           </DialogHeader>
           
