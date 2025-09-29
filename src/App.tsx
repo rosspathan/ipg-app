@@ -117,7 +117,7 @@ import { TradingPage } from "@/pages/astra/TradingPage";
 import { InsurancePage } from "@/pages/astra/InsurancePage";
 import { SpinWheelPage } from "@/pages/astra/SpinWheelPage";
 import { AdvertiseMiningPage } from "@/pages/astra/AdvertiseMiningPage";
-import { DesignReview } from "@/pages/astra/DesignReview";
+import DesignReview from "@/pages/astra/DesignReview";
 
 const ISmartSpinScreen = React.lazy(() => import("@/pages/ISmartSpinScreen"));
 
