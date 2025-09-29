@@ -1,0 +1,23 @@
+<svg width="240" height="48" viewBox="0 0 240 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="hsl(242, 86%, 65%)"/>
+      <stop offset="50%" stop-color="hsl(188, 100%, 50%)"/>
+      <stop offset="100%" stop-color="hsl(242, 86%, 65%)"/>
+    </linearGradient>
+    <filter id="textGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- I-SMART wordmark -->
+  <text x="20" y="32" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="32" 
+        fill="url(#textGradient)" filter="url(#textGlow)">I-SMART</text>
+  
+  <!-- Subtle underline -->
+  <rect x="20" y="38" width="160" height="2" fill="hsl(242, 86%, 65%)" opacity="0.4"/>
+</svg>

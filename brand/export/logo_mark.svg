@@ -1,0 +1,58 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="coinGradient" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="hsl(242, 86%, 70%)" stop-opacity="0.9"/>
+      <stop offset="40%" stop-color="hsl(242, 86%, 65%)" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="hsl(242, 86%, 45%)" stop-opacity="0.8"/>
+    </radialGradient>
+    <linearGradient id="rimGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="hsl(188, 100%, 50%)" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="hsl(242, 86%, 65%)" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="hsl(188, 100%, 50%)" stop-opacity="0.6"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="circuitPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <rect width="20" height="20" fill="none"/>
+      <path d="M2 2h4v4h4v4h4v4h4M6 6h4M10 10h4M14 14h4" stroke="hsl(242, 86%, 65%)" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  
+  <!-- Outer glow ring -->
+  <circle cx="60" cy="60" r="58" fill="none" stroke="url(#rimGlow)" stroke-width="2" opacity="0.4" filter="url(#glow)"/>
+  
+  <!-- Main coin ring -->
+  <circle cx="60" cy="60" r="54" fill="url(#coinGradient)" stroke="hsl(242, 86%, 65%)" stroke-width="1"/>
+  
+  <!-- Circuit pattern ring -->
+  <circle cx="60" cy="60" r="48" fill="url(#circuitPattern)" opacity="0.6"/>
+  
+  <!-- Inner ring -->
+  <circle cx="60" cy="60" r="42" fill="hsl(215, 25%, 8%)" stroke="hsl(242, 86%, 65%)" stroke-width="1"/>
+  
+  <!-- IS Monogram -->
+  <g transform="translate(60, 60)">
+    <!-- I -->
+    <rect x="-18" y="-12" width="4" height="24" fill="hsl(242, 86%, 65%)"/>
+    <rect x="-22" y="-12" width="12" height="3" fill="hsl(242, 86%, 65%)"/>
+    <rect x="-22" y="9" width="12" height="3" fill="hsl(242, 86%, 65%)"/>
+    
+    <!-- S -->
+    <path d="M2 -12 Q12 -12 12 -6 Q12 0 2 0 Q12 0 12 6 Q12 12 2 12 L-2 12 Q-6 12 -6 8" 
+          fill="none" stroke="hsl(242, 86%, 65%)" stroke-width="3.5" stroke-linecap="round"/>
+    
+    <!-- Star spark over I -->
+    <circle cx="-16" cy="-18" r="2" fill="hsl(188, 100%, 50%)">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <path d="M-16 -22 L-15 -19 L-12 -18 L-15 -17 L-16 -14 L-17 -17 L-20 -18 L-17 -19 Z" 
+          fill="hsl(188, 100%, 50%)" opacity="0.8">
+      <animateTransform attributeName="transform" type="rotate" values="0 -16 -18;360 -16 -18" dur="6s" repeatCount="indefinite"/>
+    </path>
+  </g>
+</svg>
