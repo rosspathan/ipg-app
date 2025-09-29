@@ -396,4 +396,18 @@ All colors MUST be HSL.
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Grid system animations */
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes fillProgress {
+    0% { clip-path: polygon(50% 50%, 50% 0%, 50% 0%, 50% 50%); }
+    25% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 50% 50%); }
+    50% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 50%); }
+    75% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 100%, 50% 50%); }
+    100% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 100%, 0% 100%, 0% 0%, 50% 50%); }
+  }
 }

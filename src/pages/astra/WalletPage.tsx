@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
 import { copyToClipboard } from "@/utils/clipboard"
 import { SectionHeader } from "@/components/astra/SectionHeader"
-import { BalanceCluster } from "@/components/astra/BalanceCluster"
+import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { AstraCard } from "@/components/astra/AstraCard"
 import { useNavigation } from "@/hooks/useNavigation"
 
