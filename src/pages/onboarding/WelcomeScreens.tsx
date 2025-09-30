@@ -26,8 +26,8 @@ const screens: ScreenData[] = [
   {
     id: 'welcome',
     title: 'Welcome to the Future',
-    subtitle: 'IPG iSmart Exchange',
-    description: 'Join millions of users in the next generation of digital trading and crypto earnings.',
+    subtitle: 'IPG I-Smart Exchange',
+    description: 'World\'s No.1 trusted crypto exchange. Join millions of users in the next generation of digital trading and crypto earnings.',
     icon: '🚀',
     gradient: 'from-blue-600 via-purple-600 to-indigo-700',
     features: [
