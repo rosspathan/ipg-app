@@ -19,7 +19,7 @@ const GamificationScreen = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/app/programs")}
+            onClick={() => navigate("/app/home")}
             className="hover:bg-muted"
           >
             <ArrowLeft className="h-5 w-5" />

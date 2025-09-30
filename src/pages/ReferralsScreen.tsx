@@ -199,7 +199,7 @@ const ReferralsScreen = () => {
         <Button 
           variant="ghost" 
           size="icon"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/app/home")}
           className="mr-2"
         >
           <ChevronLeft className="w-5 h-5" />

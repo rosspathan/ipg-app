@@ -16,7 +16,7 @@ export default function BSKPromotionScreen() {
             <Button 
               variant="ghost" 
               size="icon"
-              onClick={() => navigate('/app/programs')}
+              onClick={() => navigate('/app/home')}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
