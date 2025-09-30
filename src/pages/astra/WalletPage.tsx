@@ -1,142 +1,148 @@
 import * as React from "react"
-import { Copy, ExternalLink, Eye } from "lucide-react"
+import { Copy, ExternalLink, QrCode, Eye, EyeOff, ChevronDown, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
 import { copyToClipboard } from "@/utils/clipboard"
-import { SectionHeader } from "@/components/astra/SectionHeader"
-import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
-import { AstraCard } from "@/components/astra/AstraCard"
+import { AppShellGlass } from "@/components/astra/AppShellGlass"
+import { BalanceCluster } from "@/components/astra/BalanceCluster"
+import { QuickActionsRibbon } from "@/components/astra/grid/QuickActionsRibbon"
 import { useNavigation } from "@/hooks/useNavigation"
-import ipgLogo from "@/assets/ipg-logo.jpg"
+import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
 
-// Mock wallet address
 const MOCK_WALLET_ADDRESS = "0x742d35Cc6135C5C8C91b8f54534d7134E6faE9A2"
 
 export function WalletPage() {
   const { navigate } = useNavigation()
+  const [showAddress, setShowAddress] = React.useState(false)
 
   const handleCopyAddress = async () => {
     const success = await copyToClipboard(MOCK_WALLET_ADDRESS)
-    
-    if (success) {
-      toast({
-        title: "Address Copied",
-        description: "Wallet address copied to clipboard",
-      })
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to copy address",
-        variant: "destructive",
-      })
-    }
+    toast({
+      title: success ? "Address Copied" : "Error",
+      description: success ? "Wallet address copied to clipboard" : "Failed to copy address",
+      variant: success ? "default" : "destructive",
+    })
   }
 
-  const handleViewOnExplorer = () => {
-    const explorerUrl = `https://bscscan.com/address/${MOCK_WALLET_ADDRESS}`
-    window.open(explorerUrl, '_blank', 'noopener,noreferrer')
-  }
+  const quickActions = [
+    { 
+      id: "deposit", 
+      label: "Deposit", 
+      icon: <Plus className="h-4 w-4" />, 
+      variant: "primary" as const,
+      onPress: () => navigate("/app/deposit")
+    },
+    { 
+      id: "withdraw", 
+      label: "Withdraw", 
+      icon: <Copy className="h-4 w-4" />, 
+      variant: "default" as const,
+      onPress: () => navigate("/app/withdraw")
+    },
+    { 
+      id: "send", 
+      label: "Send", 
+      icon: <ExternalLink className="h-4 w-4" />, 
+      variant: "default" as const,
+      onPress: () => navigate("/app/send")
+    },
+    { 
+      id: "swap", 
+      label: "Swap", 
+      icon: <ChevronDown className="h-4 w-4" />, 
+      variant: "default" as const,
+      onPress: () => navigate("/app/swap")
+    }
+  ]
+
+  const topBar = (
+    <div className="flex items-center justify-between p-4">
+      <BrandHeaderLogo size="medium" />
+      <div className="text-center flex-1">
+        <h1 className="font-bold text-lg text-foreground font-heading">My Wallet</h1>
+        <p className="text-xs text-muted-foreground">Manage assets securely</p>
+      </div>
+      <div className="w-8" />
+    </div>
+  )
 
   return (
-    <div className="p-4 space-y-6" data-testid="page-wallet">
-      {/* Header with IPG Logo */}
-      <div className="flex items-center gap-3 mb-6">
-        <img 
-          src={ipgLogo} 
-          alt="IPG I-SMART Logo" 
-          className="w-10 h-10 object-contain rounded-lg"
-        />
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">My Wallet</h1>
-          <p className="text-sm text-muted-foreground">Manage your digital assets</p>
-        </div>
-      </div>
+    <AppShellGlass topBar={topBar} data-testid="page-wallet">
+      <div className="space-y-6 pb-24">
+        {/* Address Panel with Network Badge */}
+        <div 
+          className="mx-4 mt-4 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 transition-all duration-220"
+          data-testid="address-panel"
+        >
+          {/* Network Pill */}
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
+            <span className="text-xs font-semibold text-warning tracking-wide">BINANCE SMART CHAIN</span>
+          </div>
 
-      {/* Wallet Address Panel */}
-      <AstraCard variant="glass" data-testid="address-panel">
-        <div className="p-6">
-          <SectionHeader
-            title="Wallet Address"
-            subtitle="BSC Network"
-            className="mb-4"
-          />
-          
-          <div className="space-y-4">
-            {/* Network Badge */}
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-warning rounded-full"></div>
-              <span className="text-sm font-medium text-warning">Binance Smart Chain (BSC)</span>
+          {/* Address Display */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Your Wallet Address</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAddress(!showAddress)}
+                className="h-6 px-2 text-xs"
+              >
+                {showAddress ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+              </Button>
             </div>
-            
-            {/* Address Display */}
-            <div className="bg-background-secondary/50 border border-border-subtle rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-text-secondary">Your Wallet Address</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyAddress}
-                  className="h-8 px-2 text-accent hover:bg-accent/10"
-                >
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy
-                </Button>
-              </div>
-              
-              <p className="font-mono text-sm break-all text-text-primary">
-                {MOCK_WALLET_ADDRESS}
+
+            <div className="bg-background/50 rounded-xl p-4 border border-border/30">
+              <p className="font-mono text-sm break-all text-foreground">
+                {showAddress ? MOCK_WALLET_ADDRESS : "••••••••••••••••••••••••••••••••••••••••"}
               </p>
             </div>
-            
-            {/* Explorer Link */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleViewOnExplorer}
-              className="w-full justify-center border-accent/30 text-accent hover:bg-accent/10"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              View on BSCScan
-            </Button>
-          </div>
-        </div>
-      </AstraCard>
 
-      {/* Balance Cluster - Three BSK/Crypto Cards */}
-      <BalanceCluster />
-
-      {/* Quick Tips */}
-      <AstraCard variant="elevated">
-        <div className="p-6">
-          <SectionHeader
-            title="Wallet Tips"
-            subtitle="Keep your assets safe"
-            className="mb-4"
-          />
-          
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 p-3 bg-accent/5 rounded-lg border border-accent/20">
-              <Eye className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium text-sm text-accent">BSK Balance Types</h4>
-                <p className="text-xs text-text-secondary mt-1">
-                  Withdrawable BSK can be transferred or withdrawn. Holding BSK comes from rewards and cannot be withdrawn.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3 p-3 bg-warning/5 rounded-lg border border-warning/20">
-              <ExternalLink className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium text-sm text-warning">Network Fees</h4>
-                <p className="text-xs text-text-secondary mt-1">
-                  All transactions on BSC require BNB for gas fees. Keep some BNB in your wallet.
-                </p>
-              </div>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyAddress}
+                className="flex-1 border-accent/30 text-accent hover:bg-accent/10"
+                disabled={!showAddress}
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                Copy
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 border-accent/30 text-accent hover:bg-accent/10"
+              >
+                <QrCode className="h-3 w-3 mr-1" />
+                QR
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`https://bscscan.com/address/${MOCK_WALLET_ADDRESS}`, '_blank')}
+                className="flex-1 border-accent/30 text-accent hover:bg-accent/10"
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Explorer
+              </Button>
             </div>
           </div>
         </div>
-      </AstraCard>
-    </div>
+
+        {/* Quick Actions Ribbon */}
+        <div className="px-4">
+          <QuickActionsRibbon actions={quickActions} />
+        </div>
+
+        {/* Balance Cluster with Crypto Assets Grid */}
+        <div className="px-4">
+          <BalanceCluster />
+        </div>
+      </div>
+    </AppShellGlass>
   )
 }

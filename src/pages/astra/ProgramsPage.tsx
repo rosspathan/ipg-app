@@ -2,7 +2,7 @@ import * as React from "react"
 import { useState } from "react"
 import { Gift, Star, Zap, Users, TrendingUp, Shield, Coins, Target, Sparkles } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
-import { GridShell } from "@/components/astra/grid/GridShell"
+import { AppShellGlass } from "@/components/astra/AppShellGlass"
 import { GridToolbar, type CategoryFilter, type SortOption } from "@/components/astra/grid/GridToolbar"
 import { GridViewport } from "@/components/astra/grid/GridViewport"
 import { ProgramGrid } from "@/components/astra/grid/ProgramGrid"
@@ -255,54 +255,51 @@ export function ProgramsPage() {
   )
 
   return (
-    <GridShell topBar={topBar} data-testid="page-programs">
-      <GridViewport data-testid="grid-viewport">
-        <div className="space-y-6 pb-20">
-          {selectedCategory === "all" ? (
-            // Show grouped by category
-            Object.entries(groupedPrograms).map(([category, programs]) => {
-              if (programs.length === 0) return null
-              
-              return (
-                <div key={category}>
-                  <GroupHeader
-                    title={categoryLabels[category].title}
-                    subtitle={categoryLabels[category].subtitle} 
-                    icon={categoryLabels[category].icon}
-                    count={programs.length}
-                    data-testid="group-header"
-                  />
-                  
-                  <div className="px-4">
-                    <ProgramGrid data-testid="program-grid">
-                      {programs.map((program, index) => renderProgram(program, index))}
-                    </ProgramGrid>
-                  </div>
+    <AppShellGlass topBar={topBar} data-testid="page-programs">
+      <div className="space-y-6 pb-24">
+        {selectedCategory === "all" ? (
+          // Show grouped by category
+          Object.entries(groupedPrograms).map(([category, programs]) => {
+            if (programs.length === 0) return null
+            
+            return (
+              <div key={category}>
+                <GroupHeader
+                  title={categoryLabels[category].title}
+                  subtitle={categoryLabels[category].subtitle} 
+                  icon={categoryLabels[category].icon}
+                  count={programs.length}
+                />
+                
+                <div className="px-4">
+                  <ProgramGrid>
+                    {programs.map((program, index) => renderProgram(program, index))}
+                  </ProgramGrid>
                 </div>
-              )
-            })
-          ) : (
-            // Show filtered category
-            <div className="px-4">
-              <ProgramGrid data-testid="program-grid">
-                {filteredPrograms.map((program, index) => renderProgram(program, index))}
-              </ProgramGrid>
-            </div>
-          )}
-
-          {filteredPrograms.length === 0 && (
-            <div className="text-center py-12 px-4">
-              <div className="w-16 h-16 mx-auto mb-4 bg-muted/20 rounded-full flex items-center justify-center">
-                <Sparkles className="h-8 w-8 text-muted-foreground opacity-40" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">No Programs Found</h3>
-              <p className="text-muted-foreground text-sm">
-                Try adjusting your search or filters
-              </p>
+            )
+          })
+        ) : (
+          // Show filtered category
+          <div className="px-4">
+            <ProgramGrid>
+              {filteredPrograms.map((program, index) => renderProgram(program, index))}
+            </ProgramGrid>
+          </div>
+        )}
+
+        {filteredPrograms.length === 0 && (
+          <div className="text-center py-12 px-4">
+            <div className="w-16 h-16 mx-auto mb-4 bg-muted/20 rounded-full flex items-center justify-center">
+              <Sparkles className="h-8 w-8 text-muted-foreground opacity-40" />
             </div>
-          )}
-        </div>
-      </GridViewport>
+            <h3 className="font-semibold text-lg mb-2">No Programs Found</h3>
+            <p className="text-muted-foreground text-sm">
+              Try adjusting your search or filters
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Filters Bottom Sheet */}
       <BottomSheetFilters
@@ -311,8 +308,7 @@ export function ProgramsPage() {
         filters={filters}
         onFiltersChange={setFilters}
         onReset={() => setFilters(defaultFilters)}
-        data-testid="filters-sheet"
       />
-    </GridShell>
+    </AppShellGlass>
   )
 }
