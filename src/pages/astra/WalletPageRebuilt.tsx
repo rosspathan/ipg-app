@@ -33,13 +33,13 @@ export function WalletPageRebuilt() {
   const openQR = async () => {
     try {
       setQrLoading(true)
+      setShowQR(true)
       const dataUrl = await QRCode.toDataURL(MOCK_WALLET_ADDRESS, {
         width: 512,
         margin: 1,
-        color: { dark: "#000000", light: "#00000000" }
+        color: { dark: "#000000", light: "#FFFFFF" }
       })
       setQrDataUrl(dataUrl)
-      setShowQR(true)
     } catch (e) {
       console.error("QR generation failed", e)
       toast({ title: "QR Error", description: "Could not generate QR code", variant: "destructive" })
