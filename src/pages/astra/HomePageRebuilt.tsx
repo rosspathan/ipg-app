@@ -149,9 +149,9 @@ export function HomePageRebuilt() {
 
   const quickActions = [
     { id: "deposit", label: "Deposit", icon: <ArrowDownUp className="h-4 w-4" />, variant: "success" as const, onPress: () => navigate("/app-legacy/wallet/deposit") },
+    { id: "trade", label: "Trade", icon: <Target className="h-4 w-4" />, variant: "primary" as const, onPress: () => navigate("/app/trade") },
     { id: "withdraw", label: "Withdraw", icon: <ArrowUpRight className="h-4 w-4" />, variant: "warning" as const, onPress: () => navigate("/app-legacy/wallet/withdraw") },
-    { id: "swap", label: "Swap", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app-legacy/swap") },
-    { id: "send", label: "Send", icon: <Send className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app-legacy/wallet/send") }
+    { id: "swap", label: "Swap", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app-legacy/swap") }
   ]
 
   const handleQuickSwitchAction = (action: string) => {
@@ -249,7 +249,8 @@ export function HomePageRebuilt() {
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                   action.variant === "success" ? "bg-success/10 text-success" :
                   action.variant === "warning" ? "bg-warning/10 text-warning" :
-                  "bg-primary/10 text-primary"
+                  action.variant === "primary" ? "bg-primary/10 text-primary" :
+                  "bg-muted/10 text-muted-foreground"
                 }`}>
                   {action.icon}
                 </div>
