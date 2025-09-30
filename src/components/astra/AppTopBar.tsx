@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useLocation } from "react-router-dom"
-import { BrandLogoBlink } from "@/components/brand/BrandLogoBlink"
+import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
 
 interface AppTopBarProps {
   className?: string
@@ -30,9 +30,9 @@ export function AppTopBar({ className }: AppTopBarProps) {
       )}
       data-testid="app-top-bar"
     >
-      {/* Left: Blinking Brand Logo */}
+      {/* Left: Premium Flipper Logo */}
       <div className="flex items-center gap-3">
-        <BrandLogoBlink size="sm" />
+        <HeaderLogoFlipper size="sm" />
       </div>
 
       {/* Right: Profile name + Notifications */}
