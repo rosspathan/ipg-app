@@ -48,19 +48,9 @@ const BrandLoader: React.FC<BrandLoaderProps> = ({
   const ringVariants = {
     rotate: {
       rotate: 360,
+      scale: [1, 1.05, 1],
       transition: {
-        duration: 2,
-        repeat: Infinity,
-        ease: 'linear'
-      }
-    }
-  };
-
-  const sparkVariants = {
-    orbit: {
-      rotate: 360,
-      transition: {
-        duration: 1.2,
+        duration: 2.5,
         repeat: Infinity,
         ease: 'linear'
       }
@@ -69,10 +59,13 @@ const BrandLoader: React.FC<BrandLoaderProps> = ({
 
   const pulseVariants = {
     pulse: {
-      scale: [1, 1.1, 1],
-      opacity: [0.6, 1, 0.6],
+      filter: [
+        'drop-shadow(0 0 8px hsl(248 67% 64% / 0.4))',
+        'drop-shadow(0 0 16px hsl(186 100% 50% / 0.6))',
+        'drop-shadow(0 0 8px hsl(248 67% 64% / 0.4))'
+      ],
       transition: {
-        duration: 1.5,
+        duration: 2,
         repeat: Infinity,
         ease: 'easeInOut'
       }
@@ -80,27 +73,52 @@ const BrandLoader: React.FC<BrandLoaderProps> = ({
   };
 
   return (
-    <div data-testid="logo-loader" className={`flex flex-col items-center gap-3 ${className}`}>
+    <div data-testid="logo-loader" className={`flex flex-col items-center gap-4 ${className}`}>
       <div className="relative">
+        {/* Rotating outer ring */}
         <motion.div
-          className="relative flex items-center justify-center"
-          animate={{
-            rotate: 360,
-            transition: {
-              duration: 3,
-              repeat: Infinity,
-              ease: 'linear'
-            }
-          }}
+          className="absolute inset-0 flex items-center justify-center"
+          variants={ringVariants}
+          animate="rotate"
+        >
+          <svg 
+            width={currentSize.width + 16} 
+            height={currentSize.height + 16} 
+            viewBox="0 0 80 80"
+            className="opacity-60"
+          >
+            <circle 
+              cx="40" 
+              cy="40" 
+              r="38" 
+              fill="none" 
+              stroke="url(#loaderGradient)" 
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray="180 60"
+            />
+            <defs>
+              <linearGradient id="loaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="hsl(248, 67%, 64%)"/>
+                <stop offset="100%" stopColor="hsl(186, 100%, 50%)"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </motion.div>
+
+        {/* Pulsing logo */}
+        <motion.div
+          className="relative flex items-center justify-center z-10"
+          variants={pulseVariants}
+          animate="pulse"
         >
           <img 
             src={ipgLogo} 
-            alt="IPG I-SMART Logo Loading" 
+            alt="IPG I-SMART Loading" 
             className="object-contain rounded-lg"
             style={{
               width: currentSize.width,
-              height: currentSize.height,
-              filter: 'brightness(1.1) drop-shadow(0 0 8px hsl(var(--primary) / 0.3))'
+              height: currentSize.height
             }}
           />
         </motion.div>
@@ -108,10 +126,10 @@ const BrandLoader: React.FC<BrandLoaderProps> = ({
       
       {label && (
         <motion.p 
-          className="text-sm text-muted-foreground"
+          className="text-sm text-muted-foreground font-medium tabular-nums"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          animate={{ opacity: [0, 1, 0.7] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
         >
           {label}
         </motion.p>

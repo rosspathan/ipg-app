@@ -93,12 +93,14 @@ const BrandStamp: React.FC<BrandStampProps> = ({
   };
 
   const coinVariants = {
-    enter: { rotateY: 0 },
+    enter: { rotateY: 0, scale: 1 },
     main: { 
-      rotateY: type === 'win' ? 360 : 0,
+      rotateY: type === 'win' ? [0, 180, 360] : 0,
+      scale: type === 'win' ? [1, 1.1, 1] : 1,
       transition: { 
-        duration: type === 'win' ? 0.8 : 0,
-        ease: [0.22, 1, 0.36, 1]
+        duration: type === 'win' ? 1.2 : 0,
+        ease: [0.22, 1, 0.36, 1],
+        times: type === 'win' ? [0, 0.5, 1] : undefined
       }
     }
   };

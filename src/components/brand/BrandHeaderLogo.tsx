@@ -44,19 +44,21 @@ const BrandHeaderLogo: React.FC<BrandHeaderLogoProps> = ({
     idle: { 
       rotate: 0,
       scale: 1,
-      filter: `drop-shadow(0 0 8px hsl(242, 86%, 65%, ${glowOpacity}))`
+      filter: `drop-shadow(0 0 8px hsl(248 67% 64% / ${glowOpacity}))`
     },
     refresh: { 
       rotate: 180,
+      filter: 'drop-shadow(0 0 12px hsl(186 100% 50% / 0.6))',
       transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
     },
     success: {
-      scale: [1, 1.1, 1],
-      transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] }
+      scale: [1, 1.12, 1],
+      filter: 'drop-shadow(0 0 16px hsl(154 67% 52% / 0.8))',
+      transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
     },
     error: {
-      x: [-2, 2, -2, 2, 0],
-      filter: 'drop-shadow(0 0 8px hsl(0, 84%, 60%, 0.6))',
+      x: [-3, 3, -3, 3, 0],
+      filter: 'drop-shadow(0 0 12px hsl(0 70% 68% / 0.8))',
       transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] }
     }
   };
