@@ -172,6 +172,27 @@ export function HomePageRebuilt() {
           <KPIChipRow data={kpiData} />
         </div>
 
+        {/* Add Funds - Premium CTA */}
+        <div className="px-3">
+          <button
+            onClick={() => navigate("/app-legacy/wallet/deposit")}
+            className="w-full h-14 rounded-2xl relative overflow-hidden group
+                       bg-gradient-to-r from-primary via-accent to-primary
+                       text-primary-foreground font-bold tracking-wide
+                       border border-primary/40 shadow-lg shadow-primary/20
+                       transition-all duration-300 ease-out
+                       hover:scale-[1.02] active:scale-95"
+            aria-label="Add funds to your wallet"
+          >
+            <span className="absolute inset-0 bg-white/20 translate-x-[-120%] group-hover:translate-x-[120%] transition-transform duration-700 ease-out" />
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <ArrowDownUp className="h-5 w-5" />
+              Add Funds
+              <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-background/20 border border-white/30">Instant</span>
+            </span>
+          </button>
+        </div>
+
         {/* Balance Cluster */}
         <div className="px-3">
           <BalanceCluster />
