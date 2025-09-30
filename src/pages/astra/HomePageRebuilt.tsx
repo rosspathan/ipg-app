@@ -177,6 +177,28 @@ export function HomePageRebuilt() {
           <BalanceCluster />
         </div>
 
+        {/* Promotional Banner */}
+        <div className="px-3">
+          <div 
+            onClick={() => navigate("/app/programs/loans")}
+            className="relative rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 p-4 cursor-pointer hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-[220ms] overflow-hidden"
+          >
+            {/* Animated gradient border effect */}
+            <div className="absolute inset-0 rounded-2xl opacity-50 pointer-events-none bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-pulse" />
+            
+            <div className="relative flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground leading-snug">
+                  0% interest for 16 weeks on amounts up to ₹50,000
+                </p>
+              </div>
+              <div className="shrink-0 px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30">
+                <span className="text-xs font-bold text-primary tracking-wide">Trading</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* My Programs Lane */}
         <CardLane
           title="My Programs"
