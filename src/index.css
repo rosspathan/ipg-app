@@ -8,18 +8,18 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* ASTRA DESIGN SYSTEM - Premium Dark UI */
+    /* PURPLE NOVA DS - Premium Dark UI */
     /* Core Brand Colors - HSL for precision */
-    --primary: 248 67% 64%; /* #8853FF */
+    --primary: 262 100% 65%; /* #7C4DFF */
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 248 100% 90%;
+    --primary-glow: 262 100% 85%;
 
-    --secondary: 217 32% 17%;
+    --secondary: 265 100% 71%; /* #A66CFF */
     --secondary-foreground: 0 0% 98%;
 
-    --accent: 186 100% 50%; /* #00E5FF */
+    --accent: 189 100% 50%; /* #00E5FF */
     --accent-foreground: 0 0% 8%;
-    --accent-glow: 186 100% 80%;
+    --accent-glow: 189 100% 80%;
 
     /* Status Colors */
     --success: 154 67% 52%; /* #2BD67B */
@@ -34,14 +34,14 @@ All colors MUST be HSL.
     --destructive: 0 70% 68%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Astra Background System */
-    --background-primary: 222 39% 7%; /* #0C0F14 */
-    --background-secondary: 225 34% 9%; /* #0E1220 */
-    --background: 222 39% 7%;
+    /* Purple Nova Background System */
+    --background-primary: 240 35% 7%; /* #0B0A12 */
+    --background-secondary: 235 28% 15%; /* #12142A */
+    --background: 240 35% 7%;
     --foreground: 0 0% 98%;
 
-    --card: 223 32% 11%; /* #121624 */
-    --card-secondary: 223 30% 13%; /* #141A2A */
+    --card: 235 28% 13%; /* #161A2C */
+    --card-secondary: 235 25% 15%; /* #1B2036 */
     --card-glass: rgba(18, 22, 36, 0.7);
     --card-foreground: 0 0% 98%;
 
@@ -51,8 +51,8 @@ All colors MUST be HSL.
     --muted: 217 19% 16%;
     --muted-foreground: 0 0% 70%;
 
-    --border: 217 24% 18%; /* #2A2F42 */
-    --divider: 217 30% 14%; /* #1C2233 with 12% alpha */
+    --border: 235 20% 22% / 0.12; /* #2A2F42 with 12% alpha */
+    --divider: 235 18% 18% / 0.16; /* #1C2233 with 16% alpha */
     --input: 217 24% 18%;
     --ring: 248 67% 64%;
 
@@ -87,7 +87,7 @@ All colors MUST be HSL.
     --safe-area-top: env(safe-area-inset-top);
     --safe-area-bottom: env(safe-area-inset-bottom);
 
-    /* Animation Durations - Premium Feel */
+    /* Purple Nova Motion - 120/220/320ms */
     --duration-micro: 120ms;
     --duration-fast: 120ms;
     --duration-normal: 220ms;
@@ -95,8 +95,8 @@ All colors MUST be HSL.
     --duration-slow: 320ms;
     --duration-enter: 320ms;
 
-    /* Easing - Material + Custom */
-    --ease-standard: cubic-bezier(0.4, 0.0, 0.2, 1);
+    /* Easing - Purple Nova Smooth */
+    --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
     --ease-decelerate: cubic-bezier(0.0, 0.0, 0.2, 1);
     --ease-accelerate: cubic-bezier(0.4, 0.0, 1, 1);
     --ease-entrance: cubic-bezier(0.22, 1, 0.36, 1);
@@ -197,10 +197,7 @@ All colors MUST be HSL.
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     user-select: none;
-    background: #090B14;
-    background-image: 
-      radial-gradient(ellipse at top, hsl(271 91% 65% / 0.05), transparent 50%),
-      radial-gradient(ellipse at bottom, hsl(190 100% 56% / 0.05), transparent 50%);
+    background: linear-gradient(180deg, #0B0A12 0%, #12142A 100%);
     background-attachment: fixed;
   }
 
@@ -409,5 +406,33 @@ All colors MUST be HSL.
     50% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 50%); }
     75% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 100%, 50% 50%); }
     100% { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 100%, 0% 100%, 0% 0%, 50% 50%); }
+  }
+
+  /* Breathing animation for LogoDockButton */
+  @keyframes breathing {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+  }
+
+  /* Shake animation for error states */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+  }
+
+  .animate-shake {
+    animation: shake 0.4s ease-in-out;
+  }
+
+  /* Reduced motion overrides */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
