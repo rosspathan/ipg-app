@@ -8,21 +8,26 @@ import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { AccountTab } from "@/components/profile/AccountTab"
+import SecurityTab from "@/components/profile/SecurityTab"
+import { NotificationsTab } from "@/components/profile/NotificationsTab"
+import { PreferencesTab } from "@/components/profile/PreferencesTab"
 
 const profileSections = [
   {
     title: "Account",
     items: [
-      { id: "personal", label: "Personal Info", icon: User, route: "/app/profile/personal" },
-      { id: "email", label: "Email & Phone", icon: Mail, route: "/app/profile/contact" },
-      { id: "security", label: "Security", icon: Shield, route: "/app/profile/security" }
+      { id: "personal", label: "Personal Info", icon: User },
+      { id: "email", label: "Email & Phone", icon: Mail },
+      { id: "security", label: "Security", icon: Shield }
     ]
   },
   {
     title: "Preferences",
     items: [
-      { id: "notifications", label: "Notifications", icon: Bell, route: "/app/profile/notifications" },
-      { id: "settings", label: "App Settings", icon: Settings, route: "/app/profile/settings" }
+      { id: "notifications", label: "Notifications", icon: Bell },
+      { id: "settings", label: "App Settings", icon: Settings }
     ]
   }
 ]
@@ -31,6 +36,7 @@ export function ProfilePageRebuilt() {
   const { navigate } = useNavigation()
   const { user } = useAuthUser()
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
+  const [openSheet, setOpenSheet] = useState<string | null>(null)
 
   const handleQuickSwitchAction = (action: string) => {
     switch (action) {
@@ -88,7 +94,7 @@ export function ProfilePageRebuilt() {
                 return (
                   <button
                     key={item.id}
-                    onClick={() => navigate(item.route)}
+                    onClick={() => setOpenSheet(item.id)}
                     className={`
                       w-full flex items-center justify-between p-4 transition-all duration-[120ms]
                       hover:bg-primary/5 active:bg-primary/10
@@ -134,6 +140,62 @@ export function ProfilePageRebuilt() {
         onClose={() => setShowQuickSwitch(false)}
         onAction={handleQuickSwitchAction}
       />
+
+      {/* Profile Sheets */}
+      <Sheet open={openSheet === "personal"} onOpenChange={(open) => !open && setOpenSheet(null)}>
+        <SheetContent side="bottom" className="h-[90vh]">
+          <SheetHeader>
+            <SheetTitle>Personal Info</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            <AccountTab />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={openSheet === "email"} onOpenChange={(open) => !open && setOpenSheet(null)}>
+        <SheetContent side="bottom" className="h-[90vh]">
+          <SheetHeader>
+            <SheetTitle>Email & Phone</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            <AccountTab />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={openSheet === "security"} onOpenChange={(open) => !open && setOpenSheet(null)}>
+        <SheetContent side="bottom" className="h-[90vh]">
+          <SheetHeader>
+            <SheetTitle>Security</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            <SecurityTab />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={openSheet === "notifications"} onOpenChange={(open) => !open && setOpenSheet(null)}>
+        <SheetContent side="bottom" className="h-[90vh]">
+          <SheetHeader>
+            <SheetTitle>Notifications</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            <NotificationsTab />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={openSheet === "settings"} onOpenChange={(open) => !open && setOpenSheet(null)}>
+        <SheetContent side="bottom" className="h-[90vh]">
+          <SheetHeader>
+            <SheetTitle>App Settings</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            <PreferencesTab />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
