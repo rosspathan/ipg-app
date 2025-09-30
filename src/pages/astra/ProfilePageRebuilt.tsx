@@ -143,7 +143,7 @@ export function ProfilePageRebuilt() {
 
       {/* Profile Sheets */}
       <Sheet open={openSheet === "personal"} onOpenChange={(open) => !open && setOpenSheet(null)}>
-        <SheetContent side="bottom" className="h-[90vh]">
+        <SheetContent side="bottom" className="h-[90vh] max-w-md mx-auto left-0 right-0">
           <SheetHeader>
             <SheetTitle>Personal Info</SheetTitle>
           </SheetHeader>
@@ -154,7 +154,7 @@ export function ProfilePageRebuilt() {
       </Sheet>
 
       <Sheet open={openSheet === "email"} onOpenChange={(open) => !open && setOpenSheet(null)}>
-        <SheetContent side="bottom" className="h-[90vh]">
+        <SheetContent side="bottom" className="h-[90vh] max-w-md mx-auto left-0 right-0">
           <SheetHeader>
             <SheetTitle>Email & Phone</SheetTitle>
           </SheetHeader>
@@ -165,7 +165,7 @@ export function ProfilePageRebuilt() {
       </Sheet>
 
       <Sheet open={openSheet === "security"} onOpenChange={(open) => !open && setOpenSheet(null)}>
-        <SheetContent side="bottom" className="h-[90vh]">
+        <SheetContent side="bottom" className="h-[90vh] max-w-md mx-auto left-0 right-0">
           <SheetHeader>
             <SheetTitle>Security</SheetTitle>
           </SheetHeader>
@@ -176,7 +176,7 @@ export function ProfilePageRebuilt() {
       </Sheet>
 
       <Sheet open={openSheet === "notifications"} onOpenChange={(open) => !open && setOpenSheet(null)}>
-        <SheetContent side="bottom" className="h-[90vh]">
+        <SheetContent side="bottom" className="h-[90vh] max-w-md mx-auto left-0 right-0">
           <SheetHeader>
             <SheetTitle>Notifications</SheetTitle>
           </SheetHeader>
@@ -187,7 +187,7 @@ export function ProfilePageRebuilt() {
       </Sheet>
 
       <Sheet open={openSheet === "settings"} onOpenChange={(open) => !open && setOpenSheet(null)}>
-        <SheetContent side="bottom" className="h-[90vh]">
+        <SheetContent side="bottom" className="h-[90vh] max-w-md mx-auto left-0 right-0">
           <SheetHeader>
             <SheetTitle>App Settings</SheetTitle>
           </SheetHeader>
