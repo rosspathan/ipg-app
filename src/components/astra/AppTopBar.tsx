@@ -1,13 +1,11 @@
 import * as React from "react"
-import { Bell, User, TrendingUp } from "lucide-react"
+import { Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { KPIChip } from "./KPIChip"
-import { BalanceDisplay } from "@/components/ui/balance-display"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useLocation } from "react-router-dom"
+import { BrandLogoBlink } from "@/components/brand/BrandLogoBlink"
 
 interface AppTopBarProps {
   className?: string
@@ -18,18 +16,9 @@ export function AppTopBar({ className }: AppTopBarProps) {
   const { navigate } = useNavigation()
   const location = useLocation()
 
-  // Mock portfolio data - replace with real data
-  const portfolioData = {
-    total: 125430.50,
-    change: {
-      value: 2340.20,
-      percentage: 1.87,
-      isPositive: true
-    }
-  }
-
-  const showPortfolio = location.pathname === "/app/home" || location.pathname === "/app"
   const notificationCount = 3 // Mock data
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
 
   return (
     <header 
@@ -40,47 +29,23 @@ export function AppTopBar({ className }: AppTopBarProps) {
       )}
       data-testid="app-top-bar"
     >
-      {/* Left: Avatar & Portfolio */}
+      {/* Left: Blinking Brand Logo */}
       <div className="flex items-center gap-3">
+        <BrandLogoBlink size="sm" />
+      </div>
+
+      {/* Right: Profile name + Notifications */}
+      <div className="flex items-center gap-2">
         <Button
           variant="ghost"
           size="sm"
-          className="h-10 w-10 rounded-full p-0"
+          className="h-10 px-3 rounded-full"
           onClick={() => navigate("/app/profile")}
+          data-testid="profile-button"
         >
-          <Avatar className="h-10 w-10 border-2 border-accent/20">
-            <AvatarImage src={user?.user_metadata?.avatar_url} />
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {user?.email?.charAt(0).toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
+          <span className="text-sm font-semibold max-w-[140px] truncate">{userName}</span>
         </Button>
-        
-        {showPortfolio && (
-          <div className="flex flex-col" data-testid="portfolio-display">
-            <div className="text-xs text-text-secondary">Total Portfolio</div>
-            <BalanceDisplay
-              amount={portfolioData.total}
-              currency="INR"
-              size="sm"
-              className="font-mono"
-            />
-          </div>
-        )}
-      </div>
 
-      {/* Right: Stats & Notifications */}
-      <div className="flex items-center gap-2">
-        {portfolioData.change && showPortfolio && (
-          <KPIChip
-            variant={portfolioData.change.isPositive ? "success" : "danger"}
-            size="sm"
-            icon={<TrendingUp className="h-3 w-3" />}
-            value={`${portfolioData.change.isPositive ? "+" : ""}${portfolioData.change.percentage.toFixed(1)}%`}
-            glow="subtle"
-          />
-        )}
-        
         <Button
           variant="ghost"
           size="sm"
