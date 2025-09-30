@@ -99,60 +99,7 @@ export function AppShell() {
         </FloatingActionButton>
       )}
 
-      {/* Bottom Navigation Bar */}
-      <nav 
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50"
-        data-testid="bottom-nav"
-      >
-        <div className="bg-card-glass backdrop-blur-xl border-t border-border-subtle">
-          <div className="flex items-center justify-around py-3 px-4 safe-area-bottom">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const active = isActive(item.route)
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => navigate(item.route)}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-standard min-w-[60px] relative",
-                    "hover:bg-accent/10 active:scale-95",
-                    active && "bg-accent/10"
-                  )}
-                  data-testid={`nav-${item.id}`}
-                >
-                  <div className={cn(
-                    "relative p-1 rounded-lg transition-all duration-standard",
-                    active && "bg-accent/20"
-                  )}>
-                    <Icon className={cn(
-                      "h-5 w-5 transition-colors duration-standard",
-                      active ? "text-accent" : "text-text-secondary"
-                    )} />
-                    
-                    {/* Active glow indicator */}
-                    {active && (
-                      <div className="absolute inset-0 rounded-lg bg-accent/20 animate-pulse" />
-                    )}
-                  </div>
-                  
-                  <span className={cn(
-                    "text-xs font-medium mt-1 transition-colors duration-standard",
-                    active ? "text-accent" : "text-text-secondary"
-                  )}>
-                    {item.label}
-                  </span>
-                  
-                  {/* Glow underline for active */}
-                  {active && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-accent rounded-full shadow-[0_0_8px_rgba(0,229,255,0.6)]" />
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </nav>
+      {/* Bottom Navigation handled by each page via DockNav */}
     </div>
   )
 }
