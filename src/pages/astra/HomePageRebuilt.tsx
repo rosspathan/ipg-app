@@ -177,6 +177,9 @@ export function HomePageRebuilt() {
           <BalanceCluster />
         </div>
 
+        {/* Marquee - Top placement below portfolio */}
+        <Marquee items={marqueeItems} />
+
         {/* Promotional Banner */}
         <div className="px-3">
           <div 
@@ -240,8 +243,6 @@ export function HomePageRebuilt() {
           <AnnouncementsCarousel announcements={announcements} />
         </div>
 
-        {/* Marquee */}
-        <Marquee items={marqueeItems} />
 
         {/* Recent Activity */}
         <div className="px-3 space-y-2">
