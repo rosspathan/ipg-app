@@ -71,18 +71,14 @@ export function AppTopBar({ className }: AppTopBarProps) {
           <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl bg-primary/20 pointer-events-none" />
         </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
+        <div
           className={cn(
-            "h-10 w-10 p-0 relative rounded-full",
-            "transition-all duration-200 hover:scale-110",
-            "hover:bg-primary/10 hover:border-primary/30 border border-transparent"
+            "h-10 w-10 p-0 relative rounded-full flex items-center justify-center",
+            "transition-all duration-200"
           )}
-          onClick={() => navigate("/app/notifications")}
           data-testid="notifications-button"
         >
-          <Bell className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
+          <Bell className="h-5 w-5 transition-transform duration-300" />
           {notificationCount > 0 && (
             <div className={cn(
               "absolute -top-1 -right-1 h-5 w-5 bg-danger rounded-full",
@@ -95,7 +91,7 @@ export function AppTopBar({ className }: AppTopBarProps) {
               </span>
             </div>
           )}
-        </Button>
+        </div>
       </div>
     </header>
   )
