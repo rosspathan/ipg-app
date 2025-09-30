@@ -3,8 +3,8 @@ import { useState } from "react"
 import { Bell, User, Gift, Target, Star, TrendingUp, Users, Coins, Shield, Zap, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useNavigation } from "@/hooks/useNavigation"
-import { GridShell } from "@/components/astra/grid/GridShell"
-import { KPIChip } from "@/components/astra/grid/KPIChip"
+import { AppShellGlass } from "@/components/astra/AppShellGlass"
+import { KPIChipRow } from "@/components/astra/KPIChipRow"
 import { AnnouncementsCarousel } from "@/components/astra/grid/AnnouncementsCarousel"
 import { Marquee } from "@/components/astra/grid/Marquee"
 import { ProgramGrid } from "@/components/astra/grid/ProgramGrid"
@@ -14,11 +14,30 @@ import { ActivityGrid } from "@/components/astra/grid/ActivityGrid"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { FloatingActionButton } from "@/components/ui/floating-action-button"
 
-// Mock data
+// Enhanced KPI data with trends
 const kpiData = [
-  { icon: "💰", value: "₹2,45,678", label: "Total Portfolio", variant: "success" as const, trending: "up" as const },
-  { icon: "🚀", value: "+12.4%", label: "24h Change", variant: "primary" as const, trending: "up" as const },
-  { icon: "⭐", value: "VIP Gold", label: "Status Level", variant: "warning" as const, trending: "neutral" as const }
+  { 
+    icon: "💰", 
+    value: "₹2,45,678", 
+    label: "Portfolio", 
+    variant: "success" as const, 
+    trend: "up" as const,
+    changePercent: "+12.4%"
+  },
+  { 
+    icon: "🚀", 
+    value: "+12.4%", 
+    label: "24h Change", 
+    variant: "primary" as const, 
+    trend: "up" as const 
+  },
+  { 
+    icon: "⭐", 
+    value: "VIP Gold", 
+    label: "Status", 
+    variant: "warning" as const, 
+    trend: "neutral" as const 
+  }
 ]
 
 const announcements = [
@@ -128,20 +147,31 @@ export function HomePage() {
     navigate("/app/wallet")
   }
 
+  // Premium glass top bar
   const topBar = (
     <div className="flex items-center justify-between p-4">
-      <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full">
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="h-10 w-10 p-0 rounded-full hover:bg-primary/10"
+        onClick={() => navigate("/app/profile")}
+      >
         <User className="h-5 w-5" />
       </Button>
       
       <div className="text-center">
-        <h1 className="font-bold text-lg text-foreground">Dashboard</h1>
+        <h1 className="font-bold text-lg text-foreground font-heading">Dashboard</h1>
         <p className="text-xs text-muted-foreground">Welcome back</p>
       </div>
       
-      <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-full relative">
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="h-10 w-10 p-0 rounded-full relative hover:bg-accent/10"
+        onClick={() => navigate("/app/notifications")}
+      >
         <Bell className="h-5 w-5" />
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-danger rounded-full text-xs flex items-center justify-center text-white">
+        <div className="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-[10px] flex items-center justify-center text-white font-bold">
           2
         </div>
       </Button>
@@ -149,32 +179,19 @@ export function HomePage() {
   )
 
   return (
-    <GridShell topBar={topBar} data-testid="page-home">
-      <div className="space-y-6 pb-20">
-        {/* KPI Row */}
+    <AppShellGlass topBar={topBar} data-testid="page-home">
+      <div className="space-y-6 pb-24">
+        {/* KPI Row - New Component */}
         <div className="px-4 pt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-testid="kpi-row">
-            {kpiData.map((kpi, index) => (
-              <KPIChip
-                key={index}
-                icon={<span className="text-lg">{kpi.icon}</span>}
-                value={kpi.value}
-                label={kpi.label}
-                variant={kpi.variant}
-                trending={kpi.trending}
-                glow={index === 0}
-                className="animate-fade-in-scale"
-              />
-            ))}
-          </div>
+          <KPIChipRow data={kpiData} />
         </div>
 
-        {/* Balance Overview */}
+        {/* Balance Cluster - Updated */}
         <div className="px-4">
           <BalanceCluster />
         </div>
 
-        {/* Announcements */}
+        {/* Announcements Carousel */}
         <div className="px-4" data-testid="announcements">
           <AnnouncementsCarousel announcements={announcements} />
         </div>
@@ -182,20 +199,26 @@ export function HomePage() {
         {/* Marquee */}
         <Marquee items={marqueeItems} />
 
-        {/* My Programs Carousel */}
+        {/* My Programs Section */}
         <div className="space-y-4">
           <div className="px-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-lg text-foreground">My Programs</h2>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/app/programs")}>
-                View All
+              <h2 className="font-bold text-lg text-foreground font-heading">My Programs</h2>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate("/app/programs")}
+                className="text-accent hover:text-accent-glow"
+              >
+                View All →
               </Button>
             </div>
           </div>
           
+          {/* Horizontal Carousel */}
           <div className="overflow-x-auto scrollbar-hide" data-testid="programs-carousel">
             <div className="flex gap-4 px-4 pb-2">
-              {myPrograms.map((program, index) => (
+              {myPrograms.map((program) => (
                 <div key={program.title} className="flex-shrink-0 w-40">
                   <ProgramTile
                     title={program.title}
@@ -217,26 +240,31 @@ export function HomePage() {
         <div className="space-y-4">
           <div className="px-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-lg text-foreground">Recent Activity</h2>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/app/history")}>
-                View All
+              <h2 className="font-bold text-lg text-foreground font-heading">Recent Activity</h2>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate("/app/history")}
+                className="text-accent hover:text-accent-glow"
+              >
+                View All →
               </Button>
             </div>
           </div>
           
           <div className="px-4">
-            <ActivityGrid activities={recentActivities} data-testid="activity-grid" />
+            <ActivityGrid activities={recentActivities} />
           </div>
         </div>
       </div>
 
-      {/* FAB */}
+      {/* FAB - Premium positioning */}
       <FloatingActionButton
         onClick={handleFABAction}
-        className="fixed bottom-20 right-4"
+        className="fixed bottom-24 right-6 shadow-fab hover:shadow-neon"
       >
         <Plus className="h-6 w-6" />
       </FloatingActionButton>
-    </GridShell>
+    </AppShellGlass>
   )
 }
