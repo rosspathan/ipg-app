@@ -245,7 +245,7 @@ function App() {
               <Route path="home" element={<HomePageRebuilt />} />
                 <Route path="wallet" element={<WalletPageRebuilt />} />
                 <Route path="programs" element={<ProgramsPageRebuilt />} />
-                <Route path="trade" element={<TradingPageRebuilt />} />
+                <Route path="trade" element={<TradingScreenRebuilt />} />
                 <Route path="profile" element={<ProfilePageRebuilt />} />
                 <Route path="programs/insurance" element={<InsurancePage />} />
                 <Route path="programs/spin" element={<SpinWheelPage />} />
