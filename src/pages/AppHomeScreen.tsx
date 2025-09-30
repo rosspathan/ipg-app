@@ -56,7 +56,7 @@ const AppHomeScreen = () => {
       description: "Watch ads and earn BSK rewards with subscriptions",
       icon: Gift,
       color: "text-accent",
-      action: () => navigate("/app/programs/advertising"),
+      action: () => navigate("/app-legacy/programs/advertising"),
       gradient: "from-accent/20 to-warning/20",
       badge: "EARN"
     },
@@ -65,7 +65,7 @@ const AppHomeScreen = () => {
       description: "Join pool-based lottery draws to win big prizes",
       icon: Gift,
       color: "text-warning",
-      action: () => navigate("/app/lucky"),
+      action: () => navigate("/app-legacy/lucky"),
       gradient: "from-warning/20 to-danger/20",
       badge: "WIN"
     },
@@ -74,7 +74,7 @@ const AppHomeScreen = () => {
       description: "Earn 12.4% APY on your crypto holdings",
       icon: Star,
       color: "text-warning",
-      action: () => navigate("/app/programs/staking"),
+      action: () => navigate("/app-legacy/programs/staking"),
       gradient: "from-warning/20 to-primary/20",
       badge: "HOT"
     },
@@ -83,7 +83,7 @@ const AppHomeScreen = () => {
       description: "Spin to win or lose BSK Coins! Futuristic wheel with premium design", 
       icon: Zap,
       color: "text-primary", 
-      action: () => navigate("/app/spin"),
+      action: () => navigate("/app-legacy/spin"),
       gradient: "from-primary/20 to-secondary/20",
       badge: "DAILY"
     },
@@ -92,7 +92,7 @@ const AppHomeScreen = () => {
       description: "Real-time market data & advanced tools",
       icon: Activity,
       color: "text-success",
-      action: () => navigate("/app/trade"),
+      action: () => navigate("/app-legacy/trade"),
       gradient: "from-success/20 to-accent/20",
       badge: "LIVE"
     },
@@ -101,13 +101,13 @@ const AppHomeScreen = () => {
       description: "Earn with friends & grow your network", 
       icon: Users,
       color: "text-secondary",
-      action: () => navigate("/app/programs/referrals"),
+      action: () => navigate("/app-legacy/programs/referrals"),
       gradient: "from-secondary/20 to-primary/20"
     }
   ];
 
   const handleAddFunds = () => {
-    navigate("/app/wallet/deposit");
+    navigate("/app-legacy/wallet/deposit");
   };
 
   const handleCopyAddress = async () => {
@@ -169,7 +169,7 @@ const AppHomeScreen = () => {
 
         {/* Promotional Banner - 0% interest loan */}
         <div 
-          onClick={() => navigate("/app/loans")}
+          onClick={() => navigate("/app-legacy/loans")}
           className="relative rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 p-4 cursor-pointer hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-[220ms] overflow-hidden animate-fade-in-scale"
           style={{ animationDelay: "215ms", animationFillMode: "both" }}
         >
@@ -303,12 +303,22 @@ const AppHomeScreen = () => {
           style={{ animationDelay: "1200ms", animationFillMode: "both" }}
         >
           <CyberCardHeader>
-            <CyberCardTitle className="text-lg flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-                <Activity className="h-5 w-5 text-primary" />
-              </div>
-              Recent Activity
-            </CyberCardTitle>
+            <div className="flex items-center justify-between">
+              <CyberCardTitle className="text-lg flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
+                Recent Activity
+              </CyberCardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/app-legacy/wallet/history")}
+                className="text-accent hover:text-accent/80 transition-colors text-sm font-medium"
+              >
+                View All →
+              </Button>
+            </div>
           </CyberCardHeader>
           <CyberCardContent>
             <div className="text-center py-12 text-muted-foreground">
@@ -319,7 +329,7 @@ const AppHomeScreen = () => {
               <p className="font-bold text-lg mb-2">No Activity Yet</p>
               <p className="text-sm">Start trading to see your activity here</p>
               <Button 
-                onClick={() => navigate("/app/trade")}
+                onClick={() => navigate("/app-legacy/trade")}
                 className="mt-4 bg-gradient-primary border-0 shadow-glow-primary"
               >
                 Start Trading
