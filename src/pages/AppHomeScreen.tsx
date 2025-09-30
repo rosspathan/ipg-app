@@ -13,7 +13,7 @@ import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import { AdCarousel } from "@/components/AdCarousel";
 import InsuranceCard from "@/components/InsuranceCard";
 import BSKLoanCard from "@/components/BSKLoanCard";
-import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2 } from "lucide-react";
+import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
@@ -158,6 +158,48 @@ const AppHomeScreen = () => {
         />
 
       <div className="p-3 space-y-4 md:p-4 md:space-y-6">
+        {/* Premium Add Funds Button - World Class Design */}
+        <div className="relative group animate-fade-in-scale" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
+          <Button
+            onClick={handleAddFunds}
+            size="lg"
+            className={cn(
+              "w-full h-16 relative overflow-hidden",
+              "bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%]",
+              "hover:bg-[position:100%_0] transition-all duration-[600ms] ease-out",
+              "border-2 border-primary/30 hover:border-primary/60",
+              "shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.6)]",
+              "group-hover:scale-[1.02] active:scale-[0.98]",
+              "font-bold text-base tracking-wide"
+            )}
+          >
+            {/* Animated shimmer effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-[1200ms] ease-out" />
+            
+            {/* Icon with animation */}
+            <div className="relative z-10 flex items-center justify-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/30 blur-xl rounded-full animate-pulse" />
+                <Plus className="relative h-6 w-6 group-hover:rotate-90 transition-transform duration-[400ms] ease-out" />
+              </div>
+              <span className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
+                Add Funds
+              </span>
+              <div className="ml-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-xs font-medium">
+                Instant
+              </div>
+            </div>
+
+            {/* Glow effect on hover */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-[400ms] pointer-events-none">
+              <div className="absolute inset-0 bg-gradient-radial from-white/10 via-transparent to-transparent" />
+            </div>
+          </Button>
+
+          {/* Decorative elements */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-[400ms] -z-10" />
+        </div>
+
         {/* Balance Display */}
         <BalanceDisplay
           balance={totalBalance}
