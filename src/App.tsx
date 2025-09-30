@@ -241,7 +241,7 @@ function App() {
                 </AuthProviderUser>
               }>
                 <Route index element={<Navigate to="/app/home" replace />} />
-                <Route path="home" element={<HomePageRebuilt />} />
+              <Route path="home" element={<HomePageRebuilt />} />
                 <Route path="wallet" element={<WalletPageRebuilt />} />
                 <Route path="programs" element={<ProgramsPageRebuilt />} />
                 <Route path="trade" element={<TradingPageRebuilt />} />
@@ -249,6 +249,13 @@ function App() {
                 <Route path="programs/insurance" element={<InsurancePage />} />
                 <Route path="programs/spin" element={<SpinWheelPage />} />
                 <Route path="programs/ads" element={<AdvertiseMiningPage />} />
+                <Route path="programs/advertising" element={<AdvertiseMiningPage />} />
+                <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
+                <Route path="programs/subscriptions" element={<SubscriptionsScreen />} />
+                <Route path="programs/referrals" element={<ReferralsScreen />} />
+                <Route path="programs/staking" element={<StakingScreen />} />
+                <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
+                <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="design-review" element={<DesignReview />} />
                 {/* Legacy redirects will be handled by fallback */}
                 <Route path="*" element={<Navigate to="/app-legacy" replace />} />

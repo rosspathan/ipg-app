@@ -33,14 +33,14 @@ const ProgramsScreen = () => {
       description: "Get premium benefits with our subscription plans",
       icon: Star,
       color: "text-yellow-500",
-      route: "/subscriptions"
+      route: "/app/programs/subscriptions"
     },
     {
       title: "Referrals",
       description: "Earn commissions by referring friends",
       icon: Users,
       color: "text-blue-500",
-      route: "/referrals"
+      route: "/app/programs/referrals"
     },
     {
       title: "Staking",
@@ -61,7 +61,7 @@ const ProgramsScreen = () => {
       description: "Protect your assets with insurance plans",
       icon: Shield,
       color: "text-red-500",
-      route: "/insurance"
+      route: "/app/programs/insurance"
     }
   ];
 
