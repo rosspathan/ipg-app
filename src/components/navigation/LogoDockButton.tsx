@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
+import logoImage from "@/assets/ipg-ismart-logo.jpg"
 
 interface LogoDockButtonProps {
   onClick?: () => void
@@ -62,22 +63,13 @@ export function LogoDockButton({ onClick, className }: LogoDockButtonProps) {
         />
       )}
 
-      {/* IS monogram - matching BrandLogoBlink */}
-      <div className="relative z-10 flex items-center justify-center">
-        <svg viewBox="0 0 32 32" className="h-8 w-8 drop-shadow-[0_2px_8px_rgba(255,255,255,0.4)]">
-          <text 
-            x="16" 
-            y="22" 
-            textAnchor="middle" 
-            fill="white" 
-            fontSize="18" 
-            fontWeight="700" 
-            fontFamily="Space Grotesk, sans-serif"
-            style={{ letterSpacing: '0.05em' }}
-          >
-            IS
-          </text>
-        </svg>
+      {/* IPG I-SMART Logo */}
+      <div className="relative z-10 flex items-center justify-center w-full h-full p-2">
+        <img 
+          src={logoImage} 
+          alt="IPG I-SMART" 
+          className="w-full h-full object-contain rounded-full drop-shadow-[0_2px_8px_rgba(255,255,255,0.4)]"
+        />
       </div>
     </button>
   )

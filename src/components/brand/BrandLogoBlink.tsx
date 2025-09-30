@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
+import logoImage from "@/assets/ipg-ismart-logo.jpg"
 
 interface BrandLogoBlinkProps {
   size?: "sm" | "md" | "lg"
@@ -89,28 +90,17 @@ export function BrandLogoBlink({
         )}
       />
 
-      {/* Logo mark - "IS" monogram */}
-      <div className="relative z-10 flex items-center justify-center w-full h-full">
-        <svg
-          viewBox="0 0 32 32"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-5 h-5"
-        >
-          {/* "I" */}
-          <rect x="6" y="8" width="4" height="16" fill="white" rx="1" />
-          
-          {/* "S" */}
-          <path
-            d="M18 8C15.79 8 14 9.79 14 12C14 13.1 14.4 14.1 15 14.83C15.6 15.53 16.4 16 17.5 16H19C19.55 16 20 16.45 20 17C20 17.55 19.55 18 19 18H14V20H19C21.21 20 23 18.21 23 16C23 14.9 22.6 13.9 22 13.17C21.4 12.47 20.6 12 19.5 12H18C17.45 12 17 11.55 17 11C17 10.45 17.45 10 18 10H23V8H18Z"
-            fill="white"
-          />
-
-          {/* Spark on "I" dot (blinks) */}
-          {blink && !prefersReducedMotion && (
-            <circle cx="8" cy="6" r="1.5" fill="#00E5FF" className="animate-ping" />
-          )}
-        </svg>
+      {/* Logo mark - IPG I-SMART */}
+      <div className={cn(
+        "relative z-10 flex items-center justify-center w-full h-full p-1",
+        "transition-all duration-[320ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+        blink && "brightness-150 scale-110"
+      )}>
+        <img 
+          src={logoImage} 
+          alt="IPG I-SMART" 
+          className="w-full h-full object-contain rounded-full drop-shadow-[0_2px_8px_rgba(255,255,255,0.3)]"
+        />
       </div>
 
       {/* Status indicator */}
