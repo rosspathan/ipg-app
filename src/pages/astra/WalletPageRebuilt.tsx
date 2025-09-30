@@ -9,6 +9,8 @@ import { AppHeaderSticky } from "@/components/navigation/AppHeaderSticky"
 import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
+import QRCode from "qrcode"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 const MOCK_WALLET_ADDRESS = "0x742d35Cc6135C5C8C91b8f54534d7134E6faE9A2"
 
@@ -16,6 +18,9 @@ export function WalletPageRebuilt() {
   const { navigate } = useNavigation()
   const [showAddress, setShowAddress] = useState(false)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
+  const [showQR, setShowQR] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState<string>("")
+  const [qrLoading, setQrLoading] = useState(false)
 
   const handleCopyAddress = async () => {
     const success = await copyToClipboard(MOCK_WALLET_ADDRESS)
@@ -24,6 +29,24 @@ export function WalletPageRebuilt() {
       description: success ? "Wallet address copied to clipboard" : "Failed to copy address",
       variant: success ? "default" : "destructive",
     })
+  }
+
+  const openQR = async () => {
+    try {
+      setQrLoading(true)
+      const dataUrl = await QRCode.toDataURL(MOCK_WALLET_ADDRESS, {
+        width: 512,
+        margin: 1,
+        color: { dark: "#000000", light: "#00000000" }
+      })
+      setQrDataUrl(dataUrl)
+      setShowQR(true)
+    } catch (e) {
+      console.error("QR generation failed", e)
+      toast({ title: "QR Error", description: "Could not generate QR code", variant: "destructive" })
+    } finally {
+      setQrLoading(false)
+    }
   }
 
   const shortcuts = [
@@ -124,6 +147,7 @@ export function WalletPageRebuilt() {
               <Button
                 variant="outline"
                 size="default"
+                onClick={openQR}
                 className="flex flex-col items-center gap-2 h-20 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all duration-[120ms]"
               >
                 <QrCode className="h-5 w-5" />
@@ -199,6 +223,25 @@ export function WalletPageRebuilt() {
         onClose={() => setShowQuickSwitch(false)}
         onAction={handleQuickSwitchAction}
       />
+
+      {/* QR Modal */}
+      <Dialog open={showQR} onOpenChange={setShowQR}>
+        <DialogContent className="sm:max-w-[380px] bg-card/90 backdrop-blur-xl border border-border/40">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Receive via QR</DialogTitle>
+            <DialogDescription className="text-xs">Scan this code to receive assets to your BSC address</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-3">
+            {qrLoading ? (
+              <div className="w-56 h-56 rounded-xl bg-border/40 animate-pulse" />
+            ) : (
+              <img src={qrDataUrl} alt="Wallet Address QR Code" className="w-56 h-56 rounded-xl bg-background p-2" />
+            )}
+            <p className="font-mono text-xs break-all text-center text-muted-foreground">{MOCK_WALLET_ADDRESS}</p>
+            <Button size="sm" variant="secondary" onClick={handleCopyAddress}>Copy Address</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
