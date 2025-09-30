@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState } from "react"
-import { Copy, ExternalLink, QrCode, Eye, EyeOff, Plus } from "lucide-react"
+import { Copy, ExternalLink, QrCode, Eye, EyeOff, ArrowDownUp, ArrowUpRight, ArrowLeftRight, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
 import { copyToClipboard } from "@/utils/clipboard"
@@ -9,7 +9,6 @@ import { AppHeaderSticky } from "@/components/navigation/AppHeaderSticky"
 import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
-import { CardLane } from "@/components/astra/CardLane"
 
 const MOCK_WALLET_ADDRESS = "0x742d35Cc6135C5C8C91b8f54534d7134E6faE9A2"
 
@@ -31,29 +30,29 @@ export function WalletPageRebuilt() {
     { 
       id: "deposit", 
       label: "Deposit", 
-      icon: <Plus className="h-5 w-5" />, 
-      color: "bg-success/10 text-success",
+      icon: <ArrowDownUp className="h-6 w-6" />, 
+      color: "bg-success/20 text-success border border-success/30",
       onPress: () => navigate("/app/deposit")
     },
     { 
       id: "withdraw", 
       label: "Withdraw", 
-      icon: <ExternalLink className="h-5 w-5" />, 
-      color: "bg-warning/10 text-warning",
+      icon: <ArrowUpRight className="h-6 w-6" />, 
+      color: "bg-warning/20 text-warning border border-warning/30",
       onPress: () => navigate("/app/withdraw")
     },
     { 
       id: "swap", 
       label: "Swap", 
-      icon: <Copy className="h-5 w-5" />, 
-      color: "bg-accent/10 text-accent",
+      icon: <ArrowLeftRight className="h-6 w-6" />, 
+      color: "bg-accent/20 text-accent border border-accent/30",
       onPress: () => navigate("/app/swap")
     },
     { 
       id: "send", 
       label: "Send", 
-      icon: <ExternalLink className="h-5 w-5" />, 
-      color: "bg-primary/10 text-primary",
+      icon: <Send className="h-6 w-6" />, 
+      color: "bg-primary/20 text-primary border border-primary/30",
       onPress: () => navigate("/app/send")
     }
   ]
@@ -110,55 +109,77 @@ export function WalletPageRebuilt() {
               </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* Action Buttons - Larger, more visible */}
+            <div className="grid grid-cols-3 gap-3">
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={handleCopyAddress}
-                className="border-accent/30 text-accent hover:bg-accent/10"
+                className="flex flex-col items-center gap-2 h-20 border-accent/30 text-accent hover:bg-accent/10 hover:border-accent/50 transition-all duration-[120ms]"
                 disabled={!showAddress}
               >
-                <Copy className="h-3 w-3 mr-1" />
-                Copy
+                <Copy className="h-5 w-5" />
+                <span className="text-xs font-semibold font-heading">Copy</span>
               </Button>
               <Button
                 variant="outline"
-                size="sm"
-                className="border-accent/30 text-accent hover:bg-accent/10"
+                size="default"
+                className="flex flex-col items-center gap-2 h-20 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all duration-[120ms]"
               >
-                <QrCode className="h-3 w-3 mr-1" />
-                QR
+                <QrCode className="h-5 w-5" />
+                <span className="text-xs font-semibold font-heading">QR Code</span>
               </Button>
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => window.open(`https://bscscan.com/address/${MOCK_WALLET_ADDRESS}`, '_blank')}
-                className="border-accent/30 text-accent hover:bg-accent/10"
+                className="flex flex-col items-center gap-2 h-20 border-warning/30 text-warning hover:bg-warning/10 hover:border-warning/50 transition-all duration-[120ms]"
               >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Scan
+                <ExternalLink className="h-5 w-5" />
+                <span className="text-xs font-semibold font-heading">Explorer</span>
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Shortcuts Lane */}
-        <CardLane title="Shortcuts" enableParallax={false}>
-          {shortcuts.map((shortcut) => (
-            <div key={shortcut.id} className="w-28">
+        {/* Shortcuts - Redesigned for mobile with proper touch targets */}
+        <div className="px-4 space-y-3">
+          <h2 className="font-heading text-lg font-bold text-foreground">Quick Actions</h2>
+          
+          <div className="grid grid-cols-2 gap-3">
+            {shortcuts.map((shortcut) => (
               <button
+                key={shortcut.id}
                 onClick={shortcut.onPress}
-                className="w-full h-28 rounded-2xl bg-card/50 border border-border/40 hover:bg-card hover:border-primary/30 hover:scale-105 transition-all duration-[120ms] flex flex-col items-center justify-center gap-3"
+                className={`
+                  relative flex flex-col items-center justify-center gap-3 p-6 rounded-2xl
+                  bg-card/50 border border-border/40
+                  hover:bg-card hover:border-primary/30 hover:scale-[1.02]
+                  active:scale-95
+                  transition-all duration-[120ms] ease-[cubic-bezier(0.22,1,0.36,1)]
+                  min-h-[120px]
+                `}
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${shortcut.color}`}>
-                  {shortcut.icon}
+                {/* Icon container with gradient background */}
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${shortcut.color}`}>
+                  {React.cloneElement(shortcut.icon as React.ReactElement, { className: "h-7 w-7" })}
                 </div>
-                <span className="text-xs font-semibold text-foreground font-heading">{shortcut.label}</span>
+                
+                {/* Label */}
+                <span className="text-sm font-bold text-foreground font-heading">
+                  {shortcut.label}
+                </span>
+
+                {/* Subtle glow on hover */}
+                <div className="absolute inset-0 rounded-2xl opacity-0 hover:opacity-100 transition-opacity duration-[220ms] pointer-events-none"
+                  style={{
+                    background: 'radial-gradient(circle at center, hsl(var(--primary) / 0.1), transparent 70%)'
+                  }}
+                />
               </button>
-            </div>
-          ))}
-        </CardLane>
+            ))}
+          </div>
+        </div>
 
         {/* Balance Cluster (strict order: Withdrawable → Holding → Crypto grid) */}
         <div className="px-4">
