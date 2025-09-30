@@ -241,7 +241,7 @@ export function HeaderLogoFlipper({
 
               <div className="pt-2 border-t">
                 <p className="text-xs text-muted-foreground">
-                  Version 1.0.0 • Built with Lovable • Premium Logo System Active
+                  Version 1.0.0 • Premium Logo System Active
                 </p>
               </div>
 

@@ -143,7 +143,7 @@ const BrandHeaderLogo: React.FC<BrandHeaderLogoProps> = ({
             
             <div className="pt-2 border-t">
               <p className="text-xs text-muted-foreground">
-                Version 1.0.0 • Built with Lovable
+                Version 1.0.0 • IPG I-SMART Platform
               </p>
             </div>
             
