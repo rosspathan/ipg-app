@@ -1,10 +1,11 @@
 import * as React from "react"
-import { Zap, History, Lock, Coins, RotateCw } from "lucide-react"
+import { Zap, History, Lock, Coins, RotateCw, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AstraCard } from "@/components/astra/AstraCard"
 import { KPIChip } from "@/components/astra/KPIChip"
 import { ProgressRing } from "@/components/ui/progress-ring"
 import { cn } from "@/lib/utils"
+import { useNavigate } from "react-router-dom"
 
 // Mock spin wheel data
 const MOCK_DATA = {
@@ -24,6 +25,7 @@ const WHEEL_SEGMENTS = [
 ]
 
 export function SpinWheelPage() {
+  const navigate = useNavigate()
   const [betAmount, setBetAmount] = React.useState(500)
   const [isSpinning, setIsSpinning] = React.useState(false)
   const [spinHistory, setSpinHistory] = React.useState<any[]>([])
@@ -61,9 +63,19 @@ export function SpinWheelPage() {
     <div className="space-y-6 p-4" data-testid="page-spin-wheel">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-heading text-xl font-bold text-foreground">i-SMART Spin</h2>
-          <p className="text-sm text-muted-foreground mt-1">Test your luck with provably fair spins</p>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/app/home")}
+            className="h-9 w-9"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h2 className="font-heading text-xl font-bold text-foreground">i-SMART Spin</h2>
+            <p className="text-sm text-muted-foreground mt-1">Test your luck with provably fair spins</p>
+          </div>
         </div>
         
         <Button

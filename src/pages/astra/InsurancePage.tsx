@@ -1,9 +1,10 @@
 import * as React from "react"
-import { Shield, Heart, TrendingDown, FileText, Plus } from "lucide-react"
+import { Shield, Heart, TrendingDown, FileText, Plus, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AstraCard } from "@/components/astra/AstraCard"
 import { KPIChip } from "@/components/astra/KPIChip"
 import { cn } from "@/lib/utils"
+import { useNavigate } from "react-router-dom"
 
 // Mock insurance plans
 const INSURANCE_PLANS = [
@@ -55,6 +56,7 @@ const INSURANCE_PLANS = [
 ] as const
 
 export function InsurancePage() {
+  const navigate = useNavigate()
   const [selectedPlan, setSelectedPlan] = React.useState<string | null>(null)
 
   const handlePurchase = (planId: string) => {
@@ -65,9 +67,19 @@ export function InsurancePage() {
   return (
     <div className="space-y-6 p-4" data-testid="page-insurance">
       {/* Header */}
-      <div>
-        <h2 className="font-heading text-xl font-bold text-foreground">Insurance Plans</h2>
-        <p className="text-sm text-muted-foreground mt-1">Protect your investments and lifestyle</p>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/app/home")}
+          className="h-9 w-9"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h2 className="font-heading text-xl font-bold text-foreground">Insurance Plans</h2>
+          <p className="text-sm text-muted-foreground mt-1">Protect your investments and lifestyle</p>
+        </div>
       </div>
 
       {/* Plan Cards */}

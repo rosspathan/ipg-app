@@ -1,10 +1,11 @@
 import * as React from "react"
-import { Play, Clock, Gift, Calendar, Target } from "lucide-react"
+import { Play, Clock, Gift, Calendar, Target, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AstraCard } from "@/components/astra/AstraCard"
 import { KPIChip } from "@/components/astra/KPIChip"
 import { ProgressRing } from "@/components/ui/progress-ring"
 import { cn } from "@/lib/utils"
+import { useNavigate } from "react-router-dom"
 
 // Mock data
 const MOCK_DATA = {
@@ -39,6 +40,7 @@ const MOCK_DATA = {
 }
 
 export function AdvertiseMiningPage() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = React.useState<"daily" | "subscriptions">("daily")
   const [isWatching, setIsWatching] = React.useState(false)
 
@@ -71,9 +73,19 @@ export function AdvertiseMiningPage() {
   return (
     <div className="space-y-6 p-4" data-testid="page-advertise-mining">
       {/* Header */}
-      <div>
-        <h2 className="font-heading text-xl font-bold text-foreground">Advertise Mining</h2>
-        <p className="text-sm text-muted-foreground mt-1">Earn BSK by watching ads and subscribing</p>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/app/home")}
+          className="h-9 w-9"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h2 className="font-heading text-xl font-bold text-foreground">Advertise Mining</h2>
+          <p className="text-sm text-muted-foreground mt-1">Earn BSK by watching ads and subscribing</p>
+        </div>
       </div>
 
       {/* Tab Navigation */}
