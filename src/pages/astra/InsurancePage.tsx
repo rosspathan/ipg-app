@@ -2,7 +2,6 @@ import * as React from "react"
 import { Shield, Heart, TrendingDown, FileText, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AstraCard } from "@/components/astra/AstraCard"
-import { SectionHeader } from "@/components/astra/SectionHeader"
 import { KPIChip } from "@/components/astra/KPIChip"
 import { cn } from "@/lib/utils"
 
@@ -67,10 +66,8 @@ export function InsurancePage() {
     <div className="space-y-6 p-4" data-testid="page-insurance">
       {/* Header */}
       <div>
-        <SectionHeader
-          title="Insurance Plans"
-          subtitle="Protect your investments and lifestyle"
-        />
+        <h2 className="font-heading text-xl font-bold text-foreground">Insurance Plans</h2>
+        <p className="text-sm text-muted-foreground mt-1">Protect your investments and lifestyle</p>
       </div>
 
       {/* Plan Cards */}
@@ -168,11 +165,10 @@ export function InsurancePage() {
       {/* Claims Center */}
       <AstraCard variant="glass">
         <div className="p-6">
-          <SectionHeader
-            title="Claims Center"
-            subtitle="File and track your insurance claims"
-            className="mb-4"
-          />
+          <div className="mb-4">
+            <h3 className="font-heading text-lg font-semibold text-foreground">Claims Center</h3>
+            <p className="text-sm text-muted-foreground mt-1">File and track your insurance claims</p>
+          </div>
           
           <div className="space-y-3">
             <Button

@@ -2,7 +2,6 @@ import * as React from "react"
 import { Play, Clock, Gift, Calendar, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AstraCard } from "@/components/astra/AstraCard"
-import { SectionHeader } from "@/components/astra/SectionHeader"
 import { KPIChip } from "@/components/astra/KPIChip"
 import { ProgressRing } from "@/components/ui/progress-ring"
 import { cn } from "@/lib/utils"
@@ -72,10 +71,10 @@ export function AdvertiseMiningPage() {
   return (
     <div className="space-y-6 p-4" data-testid="page-advertise-mining">
       {/* Header */}
-      <SectionHeader
-        title="Advertise Mining"
-        subtitle="Earn BSK by watching ads and subscribing"
-      />
+      <div>
+        <h2 className="font-heading text-xl font-bold text-foreground">Advertise Mining</h2>
+        <p className="text-sm text-muted-foreground mt-1">Earn BSK by watching ads and subscribing</p>
+      </div>
 
       {/* Tab Navigation */}
       <div className="flex gap-1 bg-card-secondary/50 p-1 rounded-lg">

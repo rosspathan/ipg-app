@@ -2,7 +2,6 @@ import * as React from "react"
 import { Zap, History, Lock, Coins, RotateCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AstraCard } from "@/components/astra/AstraCard"
-import { SectionHeader } from "@/components/astra/SectionHeader"
 import { KPIChip } from "@/components/astra/KPIChip"
 import { ProgressRing } from "@/components/ui/progress-ring"
 import { cn } from "@/lib/utils"
@@ -62,10 +61,10 @@ export function SpinWheelPage() {
     <div className="space-y-6 p-4" data-testid="page-spin-wheel">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <SectionHeader
-          title="i-SMART Spin"
-          subtitle="Test your luck with provably fair spins"
-        />
+        <div>
+          <h2 className="font-heading text-xl font-bold text-foreground">i-SMART Spin</h2>
+          <p className="text-sm text-muted-foreground mt-1">Test your luck with provably fair spins</p>
+        </div>
         
         <Button
           variant="outline"
@@ -152,11 +151,10 @@ export function SpinWheelPage() {
       {/* Bet Controls */}
       <AstraCard variant="elevated">
         <div className="p-6 space-y-4">
-          <SectionHeader
-            title="Place Your Bet"
-            subtitle={hasFreeSpins ? "Use your free spin or place a bet" : "Choose your bet amount"}
-            className="mb-4"
-          />
+          <div className="mb-4">
+            <h3 className="font-heading text-lg font-semibold text-foreground">Place Your Bet</h3>
+            <p className="text-sm text-muted-foreground mt-1">{hasFreeSpins ? "Use your free spin or place a bet" : "Choose your bet amount"}</p>
+          </div>
 
           {/* Bet Amount Slider */}
           <div className="space-y-3">
@@ -263,11 +261,10 @@ export function SpinWheelPage() {
       {spinHistory.length > 0 && (
         <AstraCard variant="elevated">
           <div className="p-6">
-            <SectionHeader
-              title="Recent Spins"
-              subtitle="Your last few spin results"
-              className="mb-4"
-            />
+            <div className="mb-4">
+              <h3 className="font-heading text-lg font-semibold text-foreground">Recent Spins</h3>
+              <p className="text-sm text-muted-foreground mt-1">Your last few spin results</p>
+            </div>
             
             <div className="space-y-2">
               {spinHistory.slice(0, 5).map((spin, index) => (

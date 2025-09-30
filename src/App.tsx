@@ -113,7 +113,7 @@ import { AstraLayout } from "@/layouts/AstraLayout";
 import { HomePage } from "@/pages/astra/HomePage";
 import { WalletPage } from "@/pages/astra/WalletPage";
 import { ProgramsPage } from "@/pages/astra/ProgramsPage";
-import { TradingPage } from "@/pages/astra/TradingPage";
+import { TradingPageRebuilt } from "@/pages/astra/TradingPageRebuilt";
 import { InsurancePage } from "@/pages/astra/InsurancePage";
 import { SpinWheelPage } from "@/pages/astra/SpinWheelPage";
 import { AdvertiseMiningPage } from "@/pages/astra/AdvertiseMiningPage";
@@ -243,7 +243,7 @@ function App() {
                 <Route path="home" element={<HomePage />} />
                 <Route path="wallet" element={<WalletPage />} />
                 <Route path="programs" element={<ProgramsPage />} />
-                <Route path="trade" element={<TradingPage />} />
+                <Route path="trade" element={<TradingPageRebuilt />} />
                 <Route path="programs/insurance" element={<InsurancePage />} />
                 <Route path="programs/spin" element={<SpinWheelPage />} />
                 <Route path="programs/ads" element={<AdvertiseMiningPage />} />
