@@ -61,16 +61,18 @@ export function HeaderLogoFlipper({
   // Auto-flip interval
   React.useEffect(() => {
     intervalRef.current = setInterval(() => {
+      // Debug: trace flip
+      console.debug("[HeaderLogoFlipper] auto-flip", { next: (activeIndex + 1) % logos.length })
       motion.triggerFlip()
       setTimeout(() => {
         setActiveIndex((prev) => (prev + 1) % logos.length)
-      }, motion.shouldReduceMotion ? 100 : 150) // Swap at 90° (hidden phase)
+      }, motion.shouldReduceMotion ? 100 : 150)
     }, motion.config.flipIntervalMs)
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [motion.config.flipIntervalMs, motion.shouldReduceMotion, logos.length, motion])
+  }, [motion.config.flipIntervalMs, motion.shouldReduceMotion, logos.length])
 
   // Handle external state changes
   React.useEffect(() => {
