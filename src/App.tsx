@@ -87,6 +87,7 @@ import AdminInsurance from "./components/AdminInsurance";
 import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
 import { AdminTradingFeesSimple } from "./components/AdminTradingFeesSimple";
+import AdminTradingSettings from "./pages/AdminTradingSettings";
 
 import AdminINRFundingScreen from "./pages/AdminINRFundingScreen";
 import AdminCredentialsTest from "./pages/AdminCredentialsTest";
@@ -292,6 +293,7 @@ function App() {
                 <Route path="ads" element={<AdminAdsScreen />} />
                 <Route path="fees" element={<AdminFees />} />
                 <Route path="trading-fees" element={<AdminTradingFeesSimple />} />
+                <Route path="trading-settings" element={<AdminTradingSettings />} />
                 <Route path="transfers" element={<div className="p-6"><h1 className="text-2xl font-bold">Transfer Management</h1></div>} />
                 <Route path="compliance" element={<div className="p-6"><h1 className="text-2xl font-bold">Compliance</h1></div>} />
                 <Route path="reports" element={<div className="p-6"><h1 className="text-2xl font-bold">Reports</h1></div>} />

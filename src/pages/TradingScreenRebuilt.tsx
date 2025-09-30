@@ -17,12 +17,12 @@ import { AlertCircle } from "lucide-react";
 
 // Mock trading pairs - in production, fetch from admin config
 const mockPairs: TradingPair[] = [
-  { symbol: "BSK/INR", baseAsset: "BSK", quoteAsset: "INR", lastPrice: 12.45, priceChange24h: 2.34, volume24h: 1250000, isFavorite: true },
-  { symbol: "BTC/INR", baseAsset: "BTC", quoteAsset: "INR", lastPrice: 3625000, priceChange24h: 3.21, volume24h: 45000000 },
-  { symbol: "ETH/INR", baseAsset: "ETH", quoteAsset: "INR", lastPrice: 222500, priceChange24h: -1.45, volume24h: 12000000 },
-  { symbol: "BNB/INR", baseAsset: "BNB", quoteAsset: "INR", lastPrice: 26450, priceChange24h: 1.87, volume24h: 5500000 },
-  { symbol: "USDT/INR", baseAsset: "USDT", quoteAsset: "INR", lastPrice: 83.75, priceChange24h: 0.05, volume24h: 98000000 },
-  { symbol: "IPG/INR", baseAsset: "IPG", quoteAsset: "INR", lastPrice: 45.50, priceChange24h: 5.12, volume24h: 750000 }
+  { symbol: "BSK/INR", baseAsset: "BSK", quoteAsset: "INR", lastPrice: 12.45, priceChange24h: 2.34, volume24h: 1250000, isFavorite: true, isListed: true },
+  { symbol: "BTC/INR", baseAsset: "BTC", quoteAsset: "INR", lastPrice: 3625000, priceChange24h: 3.21, volume24h: 45000000, isListed: true },
+  { symbol: "ETH/INR", baseAsset: "ETH", quoteAsset: "INR", lastPrice: 222500, priceChange24h: -1.45, volume24h: 12000000, isListed: true },
+  { symbol: "BNB/INR", baseAsset: "BNB", quoteAsset: "INR", lastPrice: 26450, priceChange24h: 1.87, volume24h: 5500000, isListed: true },
+  { symbol: "USDT/INR", baseAsset: "USDT", quoteAsset: "INR", lastPrice: 83.75, priceChange24h: 0.05, volume24h: 98000000, isListed: true },
+  { symbol: "IPG/INR", baseAsset: "IPG", quoteAsset: "INR", lastPrice: 45.50, priceChange24h: 5.12, volume24h: 750000, isListed: true }
 ];
 
 // Mock order book data
@@ -63,10 +63,11 @@ export default function TradingScreenRebuilt() {
   // Core state
   const [selectedPair, setSelectedPair] = useState<string>("BSK/INR");
   const [tradingMode, setTradingMode] = useState<"LIVE" | "SIM">("SIM"); // Default to SIM
-  const [candlesEnabled, setCandlesEnabled] = useState(false);
+  const [candlesEnabled, setCandlesEnabled] = useState(false); // CRITICAL: Chart disabled by default
   const [timeframe, setTimeframe] = useState<Timeframe>("1D");
   const [pairs, setPairs] = useState<TradingPair[]>(mockPairs);
   const [executionStatus, setExecutionStatus] = useState<ExecutionStatus | null>(null);
+  const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
 
   // Exchange adapter
   const [adapter, setAdapter] = useState<ExchangeAdapter | null>(null);
@@ -87,6 +88,38 @@ export default function TradingScreenRebuilt() {
     };
   }, [tradingMode]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ignore if user is typing in input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key.toLowerCase()) {
+        case "/":
+          e.preventDefault();
+          // Focus pair search
+          const searchInput = document.querySelector('[placeholder="Search pairs..."]') as HTMLInputElement;
+          searchInput?.focus();
+          break;
+        case "b":
+          e.preventDefault();
+          setOrderSide("buy");
+          break;
+        case "s":
+          e.preventDefault();
+          setOrderSide("sell");
+          break;
+        case "c":
+          e.preventDefault();
+          setCandlesEnabled(prev => !prev);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, []);
+
   // Get current pair data
   const currentPair = pairs.find(p => p.symbol === selectedPair) || pairs[0];
 
@@ -101,6 +134,12 @@ export default function TradingScreenRebuilt() {
     setPairs(prev => prev.map(p => 
       p.symbol === symbol ? { ...p, isFavorite: !p.isFavorite } : p
     ));
+  };
+
+  // Handle chart toggle - CRITICAL: Only enable when user explicitly toggles
+  const handleCandlesToggle = (enabled: boolean) => {
+    setCandlesEnabled(enabled);
+    console.log("[Trading] Candles", enabled ? "enabled" : "disabled", "- Chart will", enabled ? "mount" : "unmount");
   };
 
   // Handle order submission
@@ -153,7 +192,7 @@ export default function TradingScreenRebuilt() {
 
   return (
     <div 
-      className="min-h-screen bg-background pb-20"
+      className="min-h-screen bg-background pb-32"
       data-testid="page-trading"
     >
       {/* Header */}
@@ -162,16 +201,17 @@ export default function TradingScreenRebuilt() {
         mode={tradingMode}
       />
 
-      {/* Market Stats */}
-      <MarketStatsRow
-        lastPrice={currentPair.lastPrice}
-        priceChange24h={currentPair.priceChange24h}
-        volume24h={currentPair.volume24h}
-      />
+      {/* Market Stats - 3 cards in grid */}
+      <div className="px-4 py-3">
+        <MarketStatsRow
+          lastPrice={currentPair.lastPrice}
+          priceChange24h={currentPair.priceChange24h}
+          volume24h={currentPair.volume24h}
+        />
+      </div>
 
-      {/* Pairs Grid */}
-      <div className="px-4 mb-4">
-        <h2 className="text-sm font-semibold mb-3">Market Pairs</h2>
+      {/* Pairs Grid with tabs */}
+      <div className="mb-4">
         <PairsGrid
           pairs={pairs}
           onPairSelect={handlePairSelect}
@@ -180,15 +220,15 @@ export default function TradingScreenRebuilt() {
         />
       </div>
 
-      {/* Candle Toggle */}
+      {/* Candle Toggle - Chart controls */}
       <CandleToggle
         enabled={candlesEnabled}
-        onToggle={setCandlesEnabled}
+        onToggle={handleCandlesToggle}
         timeframe={timeframe}
         onTimeframeChange={setTimeframe}
       />
 
-      {/* Chart Panel (lazy loaded only when enabled) */}
+      {/* Chart Panel - ONLY renders when candlesEnabled is true */}
       <div className="px-4">
         <ChartPanel
           symbol={selectedPair}

@@ -1,68 +1,69 @@
-import { CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle2, XCircle, Clock, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export interface ExecutionStatus {
-  type: "success" | "error" | "warning" | "processing";
+  type: "success" | "error" | "processing";
   message: string;
   details?: string;
 }
 
 interface ExecutionStatusBarProps {
   status: ExecutionStatus | null;
-  onDismiss?: () => void;
+  onDismiss: () => void;
 }
 
 export function ExecutionStatusBar({ status, onDismiss }: ExecutionStatusBarProps) {
   if (!status) return null;
 
   const icons = {
-    success: CheckCircle2,
-    error: XCircle,
-    warning: AlertCircle,
-    processing: Loader2
+    success: <CheckCircle2 className="h-5 w-5 text-success" />,
+    error: <XCircle className="h-5 w-5 text-destructive" />,
+    processing: <Clock className="h-5 w-5 text-primary animate-pulse" />
   };
 
-  const Icon = icons[status.type];
-
-  const variants = {
-    success: "default",
-    error: "destructive",
-    warning: "default",
-    processing: "default"
-  } as const;
+  const bgColors = {
+    success: "bg-success/10 border-success/30",
+    error: "bg-destructive/10 border-destructive/30",
+    processing: "bg-primary/10 border-primary/30"
+  };
 
   return (
-    <div 
-      className="fixed bottom-20 left-4 right-4 z-50 animate-slide-in-up"
-      data-testid="exec-status"
-    >
-      <Alert 
-        variant={variants[status.type]}
-        className={`shadow-lg ${
-          status.type === "success" ? "border-green-500 bg-green-500/10" :
-          status.type === "error" ? "border-red-500 bg-red-500/10" :
-          status.type === "warning" ? "border-yellow-500 bg-yellow-500/10" :
-          "border-primary bg-primary/10"
-        }`}
+    <AnimatePresence>
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 100, opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="fixed bottom-24 left-4 right-4 z-50"
+        data-testid="exec-status"
       >
-        <Icon className={`h-4 w-4 ${
-          status.type === "processing" ? "animate-spin" : ""
-        }`} />
-        <AlertDescription className="ml-2">
-          <div className="font-medium">{status.message}</div>
-          {status.details && (
-            <div className="text-xs text-muted-foreground mt-1">{status.details}</div>
-          )}
-        </AlertDescription>
-        {onDismiss && status.type !== "processing" && (
-          <button
-            onClick={onDismiss}
-            className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
-          >
-            ×
-          </button>
-        )}
-      </Alert>
-    </div>
+        <div className={`rounded-xl border p-4 backdrop-blur-lg shadow-lg ${bgColors[status.type]}`}>
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5">{icons[status.type]}</div>
+            
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-foreground">
+                {status.message}
+              </p>
+              {status.details && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {status.details}
+                </p>
+              )}
+            </div>
+
+            {status.type !== "processing" && (
+              <button
+                onClick={onDismiss}
+                className="hover:bg-background/20 rounded-lg p-1 transition-colors"
+                aria-label="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
