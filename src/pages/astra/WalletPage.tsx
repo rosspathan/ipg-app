@@ -30,28 +30,28 @@ export function WalletPage() {
       label: "Deposit", 
       icon: <Plus className="h-4 w-4" />, 
       variant: "primary" as const,
-      onPress: () => navigate("/app/deposit")
+      onPress: () => navigate("/app-legacy/wallet/deposit")
     },
     { 
       id: "withdraw", 
       label: "Withdraw", 
       icon: <Copy className="h-4 w-4" />, 
       variant: "default" as const,
-      onPress: () => navigate("/app/withdraw")
+      onPress: () => navigate("/app-legacy/wallet/withdraw")
     },
     { 
       id: "send", 
       label: "Send", 
       icon: <ExternalLink className="h-4 w-4" />, 
       variant: "default" as const,
-      onPress: () => navigate("/app/send")
+      onPress: () => navigate("/app-legacy/wallet/send")
     },
     { 
       id: "swap", 
       label: "Swap", 
       icon: <ChevronDown className="h-4 w-4" />, 
       variant: "default" as const,
-      onPress: () => navigate("/app/swap")
+      onPress: () => navigate("/app-legacy/swap")
     }
   ]
 

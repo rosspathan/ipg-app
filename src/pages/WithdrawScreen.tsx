@@ -262,7 +262,7 @@ const WithdrawScreen = () => {
                     Withdraw your funds directly to your Indian bank account or UPI.
                   </p>
                   <Button 
-                    onClick={() => navigate('/app/withdraw/inr')}
+                    onClick={() => navigate('/app-legacy/withdraw/inr')}
                     className="w-full"
                   >
                     Start INR Withdrawal

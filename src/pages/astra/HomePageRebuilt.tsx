@@ -148,16 +148,16 @@ export function HomePageRebuilt() {
   ]
 
   const quickActions = [
-    { id: "deposit", label: "Deposit", icon: <ArrowDownUp className="h-4 w-4" />, variant: "success" as const, onPress: () => navigate("/app/deposit") },
-    { id: "withdraw", label: "Withdraw", icon: <ArrowUpRight className="h-4 w-4" />, variant: "warning" as const, onPress: () => navigate("/app/withdraw") },
-    { id: "swap", label: "Swap", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/swap") },
-    { id: "send", label: "Send", icon: <Send className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/send") }
+    { id: "deposit", label: "Deposit", icon: <ArrowDownUp className="h-4 w-4" />, variant: "success" as const, onPress: () => navigate("/app-legacy/wallet/deposit") },
+    { id: "withdraw", label: "Withdraw", icon: <ArrowUpRight className="h-4 w-4" />, variant: "warning" as const, onPress: () => navigate("/app-legacy/wallet/withdraw") },
+    { id: "swap", label: "Swap", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app-legacy/swap") },
+    { id: "send", label: "Send", icon: <Send className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app-legacy/wallet/send") }
   ]
 
   const handleQuickSwitchAction = (action: string) => {
     switch (action) {
-      case "deposit": navigate("/app/deposit"); break
-      case "convert": navigate("/app/swap"); break
+      case "deposit": navigate("/app-legacy/wallet/deposit"); break
+      case "convert": navigate("/app-legacy/swap"); break
       case "trade": navigate("/app/trade"); break
       case "programs": navigate("/app/programs"); break
     }
@@ -249,7 +249,7 @@ export function HomePageRebuilt() {
           <div className="flex items-center justify-between">
             <h2 className="font-heading text-base font-bold text-foreground">Recent Activity</h2>
             <button 
-              onClick={() => navigate("/app/history")}
+              onClick={() => navigate("/app-legacy/wallet/history")}
               className="text-xs font-medium text-accent hover:text-accent/80 transition-colors duration-[120ms]"
             >
               View All →

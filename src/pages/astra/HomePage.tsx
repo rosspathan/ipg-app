@@ -244,7 +244,7 @@ export function HomePage() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => navigate("/app/history")}
+                onClick={() => navigate("/app-legacy/wallet/history")}
                 className="text-accent hover:text-accent-glow"
               >
                 View All →
