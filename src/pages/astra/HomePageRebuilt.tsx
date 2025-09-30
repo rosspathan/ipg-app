@@ -2,7 +2,6 @@ import * as React from "react"
 import { useState } from "react"
 import { Gift, Target, Star, Zap, ArrowDownUp, ArrowUpRight, ArrowLeftRight, Send, Users } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
-import { AppHeaderSticky } from "@/components/navigation/AppHeaderSticky"
 import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { KPIChipRow } from "@/components/astra/KPIChipRow"
@@ -166,13 +165,6 @@ export function HomePageRebuilt() {
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-home">
-      {/* Header */}
-      <AppHeaderSticky
-        onProfileClick={() => navigate("/app/profile")}
-        onNotificationsClick={() => navigate("/app/notifications")}
-        notificationCount={2}
-      />
-
       {/* Main Content */}
       <div className="space-y-4 pt-3 pb-4">
         {/* KPI Row */}

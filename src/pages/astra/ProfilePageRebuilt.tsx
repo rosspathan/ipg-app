@@ -3,7 +3,6 @@ import { useState } from "react"
 import { User, Mail, Phone, Shield, Bell, Settings, LogOut, ChevronRight } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useAuthUser } from "@/hooks/useAuthUser"
-import { AppHeaderSticky } from "@/components/navigation/AppHeaderSticky"
 import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -49,12 +48,6 @@ export function ProfilePageRebuilt() {
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-profile">
-      {/* Header */}
-      <AppHeaderSticky
-        onProfileClick={() => navigate("/app/profile")}
-        onNotificationsClick={() => navigate("/app/notifications")}
-      />
-
       {/* Main Content */}
       <div className="space-y-6 pt-4">
         {/* Profile Header Card */}

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
 import { copyToClipboard } from "@/utils/clipboard"
 import { useNavigation } from "@/hooks/useNavigation"
-import { AppHeaderSticky } from "@/components/navigation/AppHeaderSticky"
 import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
@@ -91,12 +90,6 @@ export function WalletPageRebuilt() {
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-wallet">
-      {/* Header */}
-      <AppHeaderSticky
-        onProfileClick={() => navigate("/app/profile")}
-        onNotificationsClick={() => navigate("/app/notifications")}
-      />
-
       {/* Main Content */}
       <div className="space-y-6 pt-4">
         {/* Address Panel */}
