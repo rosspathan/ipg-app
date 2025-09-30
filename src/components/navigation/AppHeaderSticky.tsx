@@ -3,10 +3,9 @@ import { Bell, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { BrandLogoBlink } from "@/components/brand/BrandLogoBlink"
+import { useAuthUser } from "@/hooks/useAuthUser"
 
 interface AppHeaderStickyProps {
-  title?: string
-  subtitle?: string
   onProfileClick?: () => void
   onNotificationsClick?: () => void
   notificationCount?: number
@@ -15,18 +14,18 @@ interface AppHeaderStickyProps {
 
 /**
  * AppHeaderSticky - Purple Nova DS sticky header
- * Top-left: BrandLogoBlink (animated, blinking logo)
- * Center: Title/subtitle
- * Right: Profile + Notifications
+ * Left: BrandLogoBlink (animated, blinking logo)
+ * Right: Profile name + Notifications
  */
 export function AppHeaderSticky({
-  title,
-  subtitle,
   onProfileClick,
   onNotificationsClick,
   notificationCount = 0,
   className
 }: AppHeaderStickyProps) {
+  const { user } = useAuthUser()
+  
+  const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
   return (
     <header
       className={cn(
@@ -48,37 +47,26 @@ export function AppHeaderSticky({
           <BrandLogoBlink size="sm" />
         </div>
 
-        {/* Center: Title/Subtitle - only show if provided */}
-        {(title || subtitle) && (
-          <div className="flex-1 text-center mx-3">
-            {title && (
-              <h1 className="font-heading text-base font-bold text-foreground leading-tight">
-                {title}
-              </h1>
-            )}
-            {subtitle && (
-              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                {subtitle}
-              </p>
-            )}
-          </div>
-        )}
+        {/* Spacer */}
+        <div className="flex-1" />
 
-        {/* Spacer if no title/subtitle */}
-        {!(title || subtitle) && <div className="flex-1" />}
-
-        {/* Right: Actions */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        {/* Right: Profile Name + Notifications */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Profile Name */}
           <Button
             variant="ghost"
             size="sm"
             onClick={onProfileClick}
-            className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-all duration-[120ms]"
+            className="h-9 px-3 rounded-full hover:bg-primary/10 transition-all duration-[120ms] flex items-center gap-2"
             aria-label="Profile"
           >
             <User className="h-[18px] w-[18px]" />
+            <span className="text-sm font-semibold text-foreground max-w-[120px] truncate">
+              {userName}
+            </span>
           </Button>
 
+          {/* Notifications */}
           <Button
             variant="ghost"
             size="sm"

@@ -93,8 +93,6 @@ export function WalletPageRebuilt() {
     <div className="min-h-screen bg-background pb-32" data-testid="page-wallet">
       {/* Header */}
       <AppHeaderSticky
-        title="My Wallet"
-        subtitle="Manage assets securely"
         onProfileClick={() => navigate("/app/profile")}
         onNotificationsClick={() => navigate("/app/notifications")}
       />
