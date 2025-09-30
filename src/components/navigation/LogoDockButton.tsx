@@ -27,30 +27,33 @@ export function LogoDockButton({ onClick, className }: LogoDockButtonProps) {
       onClick={handleClick}
       className={cn(
         "relative flex items-center justify-center",
-        "w-16 h-16 rounded-full",
+        "w-20 h-20 rounded-full",
         "bg-gradient-to-br from-primary via-secondary to-accent",
-        "shadow-[0_0_24px_rgba(124,77,255,0.6),0_0_48px_rgba(124,77,255,0.4)]",
-        "border-2 border-white/30",
+        "shadow-[0_0_32px_rgba(124,77,255,0.7),0_0_64px_rgba(124,77,255,0.5),0_-8px_24px_rgba(124,77,255,0.4)]",
+        "border-4 border-background/80",
         "transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-        "hover:scale-110 hover:shadow-[0_0_32px_rgba(124,77,255,0.8),0_0_60px_rgba(124,77,255,0.5)]",
+        "hover:scale-110 hover:shadow-[0_0_40px_rgba(124,77,255,0.9),0_0_80px_rgba(124,77,255,0.6),0_-12px_32px_rgba(124,77,255,0.5)]",
         "active:scale-95",
-        "focus:outline-none focus:ring-4 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background",
+        "focus:outline-none focus:ring-4 focus:ring-primary/50 focus:ring-offset-4 focus:ring-offset-background",
         "animate-[breathing_3s_ease-in-out_infinite]",
         className
       )}
+      style={{
+        transform: 'translateY(-20px)' // Elevate above nav bar
+      }}
       aria-label="Quick Actions"
       data-testid="dock-logo-button"
     >
-      {/* Outer breathing glow */}
+      {/* Outer breathing glow - enhanced */}
       <div 
-        className="absolute -inset-3 rounded-full blur-2xl opacity-70 bg-gradient-to-br from-primary via-secondary to-accent animate-[breathing_3s_ease-in-out_infinite]"
+        className="absolute -inset-4 rounded-full blur-2xl opacity-80 bg-gradient-to-br from-primary via-secondary to-accent animate-[breathing_3s_ease-in-out_infinite]"
         style={{
           animationDelay: '0.5s'
         }}
       />
 
-      {/* Inner backdrop */}
-      <div className="absolute inset-[3px] rounded-full bg-background/20 backdrop-blur-sm border border-white/10" />
+      {/* Inner backdrop with stronger border */}
+      <div className="absolute inset-[4px] rounded-full bg-background/30 backdrop-blur-sm border-2 border-white/20" />
 
       {/* Ripple effect */}
       {ripple && (
@@ -64,13 +67,16 @@ export function LogoDockButton({ onClick, className }: LogoDockButtonProps) {
       )}
 
       {/* IPG I-SMART Logo */}
-      <div className="relative z-10 flex items-center justify-center w-full h-full p-2">
+      <div className="relative z-10 flex items-center justify-center w-full h-full p-2.5">
         <img 
           src={logoImage} 
           alt="IPG I-SMART" 
-          className="w-full h-full object-contain rounded-full drop-shadow-[0_2px_8px_rgba(255,255,255,0.4)]"
+          className="w-full h-full object-contain rounded-full drop-shadow-[0_4px_12px_rgba(255,255,255,0.5)]"
         />
       </div>
+
+      {/* Action hint ring on hover */}
+      <div className="absolute inset-0 rounded-full ring-2 ring-inset ring-white/0 hover:ring-white/30 transition-all duration-[220ms]" />
     </button>
   )
 }
