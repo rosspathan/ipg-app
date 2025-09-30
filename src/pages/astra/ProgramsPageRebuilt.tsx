@@ -9,109 +9,109 @@ import { ProgramGrid } from "@/components/astra/grid/ProgramGrid"
 import { ProgramTile } from "@/components/astra/grid/ProgramTile"
 import { GroupHeader } from "@/components/astra/grid/GroupHeader"
 
-const allPrograms = [
-  // EARN
-  {
-    id: "advertise-mining",
-    title: "Advertise Mining",
-    subtitle: "Watch ads daily\nEarn BSK rewards",
-    icon: <Gift className="h-6 w-6 text-success" />,
-    category: "earn" as CategoryFilter,
-    status: "available" as const,
-    badge: "DAILY" as const,
-    sparkline: [100, 120, 115, 140, 135, 160, 155],
-    onPress: () => {}
-  },
-  {
-    id: "staking",
-    title: "Staking Rewards",
-    subtitle: "12.4% APY\nFlexible terms",
-    icon: <Star className="h-6 w-6 text-primary" />,
-    category: "earn" as CategoryFilter,
-    status: "available" as const,
-    sparkline: [50, 55, 52, 58, 62, 59, 65],
-    onPress: () => {}
-  },
-  {
-    id: "purchase",
-    title: "One-Time Purchase",
-    subtitle: "Promo channels\nSpecial offers",
-    icon: <Coins className="h-6 w-6 text-warning" />,
-    category: "earn" as CategoryFilter,
-    status: "available" as const,
-    badge: "NEW" as const,
-    onPress: () => {}
-  },
-
-  // GAMES
-  {
-    id: "lucky-draw",
-    title: "Lucky Draw",
-    subtitle: "Pool lottery\nWin big prizes",
-    icon: <Target className="h-6 w-6 text-warning" />,
-    category: "games" as CategoryFilter,
-    status: "available" as const,
-    badge: "HOT" as const,
-    progress: 78,
-    onPress: () => {}
-  },
-  {
-    id: "spin-wheel",
-    title: "i-SMART Spin",
-    subtitle: "Daily spins\nProvably fair",
-    icon: <Zap className="h-6 w-6 text-accent" />,
-    category: "games" as CategoryFilter,
-    status: "available" as const,
-    badge: "LIVE" as const,
-    onPress: () => {}
-  },
-
-  // FINANCE
-  {
-    id: "loans",
-    title: "BSK Loans",
-    subtitle: "0% interest\n16 weeks term",
-    icon: <Coins className="h-6 w-6 text-success" />,
-    category: "finance" as CategoryFilter,
-    status: "available" as const,
-    onPress: () => {}
-  },
-  {
-    id: "insurance",
-    title: "Insurance Plans",
-    subtitle: "Protect assets\n3 plans available",
-    icon: <Shield className="h-6 w-6 text-accent" />,
-    category: "finance" as CategoryFilter,
-    status: "available" as const,
-    onPress: () => {}
-  },
-
-  // NETWORK
-  {
-    id: "referrals",
-    title: "Referral Program",
-    subtitle: "Invite friends\nEarn together",
-    icon: <Users className="h-6 w-6 text-secondary" />,
-    category: "network" as CategoryFilter,
-    status: "available" as const,
-    badge: "NEW" as const,
-    onPress: () => {}
-  },
-
-  // TRADING
-  {
-    id: "trading",
-    title: "Trading Platform",
-    subtitle: "Real-time data\nAdvanced tools",
-    icon: <TrendingUp className="h-6 w-6 text-primary" />,
-    category: "trading" as CategoryFilter,
-    status: "available" as const,
-    onPress: () => {}
-  }
-]
-
 export function ProgramsPageRebuilt() {
   const { navigate } = useNavigation()
+  
+  const allPrograms = [
+    // EARN
+    {
+      id: "advertise-mining",
+      title: "Advertise Mining",
+      subtitle: "Watch ads daily\nEarn BSK rewards",
+      icon: <Gift className="h-6 w-6 text-success" />,
+      category: "earn" as CategoryFilter,
+      status: "available" as const,
+      badge: "DAILY" as const,
+      sparkline: [100, 120, 115, 140, 135, 160, 155],
+      onPress: () => navigate("/app/programs/advertising")
+    },
+    {
+      id: "staking",
+      title: "Staking Rewards",
+      subtitle: "12.4% APY\nFlexible terms",
+      icon: <Star className="h-6 w-6 text-primary" />,
+      category: "earn" as CategoryFilter,
+      status: "available" as const,
+      sparkline: [50, 55, 52, 58, 62, 59, 65],
+      onPress: () => navigate("/app/programs/staking")
+    },
+    {
+      id: "purchase",
+      title: "One-Time Purchase",
+      subtitle: "Promo channels\nSpecial offers",
+      icon: <Coins className="h-6 w-6 text-warning" />,
+      category: "earn" as CategoryFilter,
+      status: "available" as const,
+      badge: "NEW" as const,
+      onPress: () => navigate("/app/programs/bsk-bonus")
+    },
+
+    // GAMES
+    {
+      id: "lucky-draw",
+      title: "Lucky Draw",
+      subtitle: "Pool lottery\nWin big prizes",
+      icon: <Target className="h-6 w-6 text-warning" />,
+      category: "games" as CategoryFilter,
+      status: "available" as const,
+      badge: "HOT" as const,
+      progress: 78,
+      onPress: () => navigate("/app-legacy/lucky")
+    },
+    {
+      id: "spin-wheel",
+      title: "i-SMART Spin",
+      subtitle: "Daily spins\nProvably fair",
+      icon: <Zap className="h-6 w-6 text-accent" />,
+      category: "games" as CategoryFilter,
+      status: "available" as const,
+      badge: "LIVE" as const,
+      onPress: () => navigate("/app/programs/spin")
+    },
+
+    // FINANCE
+    {
+      id: "loans",
+      title: "BSK Loans",
+      subtitle: "0% interest\n16 weeks term",
+      icon: <Coins className="h-6 w-6 text-success" />,
+      category: "finance" as CategoryFilter,
+      status: "available" as const,
+      onPress: () => navigate("/app-legacy/loans")
+    },
+    {
+      id: "insurance",
+      title: "Insurance Plans",
+      subtitle: "Protect assets\n3 plans available",
+      icon: <Shield className="h-6 w-6 text-accent" />,
+      category: "finance" as CategoryFilter,
+      status: "available" as const,
+      onPress: () => navigate("/app/programs/insurance")
+    },
+
+    // NETWORK
+    {
+      id: "referrals",
+      title: "Referral Program",
+      subtitle: "Invite friends\nEarn together",
+      icon: <Users className="h-6 w-6 text-secondary" />,
+      category: "network" as CategoryFilter,
+      status: "available" as const,
+      badge: "NEW" as const,
+      onPress: () => navigate("/app/programs/referrals")
+    },
+
+    // TRADING
+    {
+      id: "trading",
+      title: "Trading Platform",
+      subtitle: "Real-time data\nAdvanced tools",
+      icon: <TrendingUp className="h-6 w-6 text-primary" />,
+      category: "trading" as CategoryFilter,
+      status: "available" as const,
+      onPress: () => navigate("/app/trade")
+    }
+  ]
   const [searchValue, setSearchValue] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all")
   const [sortBy, setSortBy] = useState<SortOption>("most-used")
