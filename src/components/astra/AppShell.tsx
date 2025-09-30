@@ -80,14 +80,14 @@ export function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background-primary to-background-secondary relative w-full" data-testid="app-shell">
+    <div className="fixed inset-0 bg-gradient-to-br from-background-primary to-background-secondary overflow-hidden" data-testid="app-shell">
       {/* Mobile constraint wrapper */}
-      <div className="max-w-[430px] mx-auto min-h-screen bg-background relative">
-        {/* Top Bar */}
+      <div className="max-w-[430px] mx-auto h-full bg-background relative flex flex-col overflow-hidden">
+        {/* Top Bar - Sticky */}
         <AppTopBar />
 
-        {/* Main Content */}
-        <main className="pb-24 min-h-[calc(100vh-64px)]">
+        {/* Main Content - Scrollable */}
+        <main className="flex-1 overflow-y-auto pb-24">
           <Outlet />
         </main>
 
