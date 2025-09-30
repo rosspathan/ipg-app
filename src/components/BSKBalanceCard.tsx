@@ -136,7 +136,7 @@ export const BSKBalanceCard: React.FC<BSKBalanceCardProps> = ({
                 variant="default"
                 size="sm"
                 className="flex-1"
-                onClick={() => navigate('/app/wallet/withdraw')}
+                onClick={() => navigate('/app/withdraw')}
                 disabled={balance <= 0}
               >
                 <ArrowUpCircle className="h-4 w-4 mr-1" />
@@ -146,7 +146,7 @@ export const BSKBalanceCard: React.FC<BSKBalanceCardProps> = ({
                 variant="outline"
                 size="sm"
                 className="flex-1"
-                onClick={() => navigate('/app/wallet/send')}
+                onClick={() => navigate('/app/transfer')}
                 disabled={balance <= 0}
               >
                 <Send className="h-4 w-4 mr-1" />
@@ -164,7 +164,7 @@ export const BSKBalanceCard: React.FC<BSKBalanceCardProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/app/programs/advertising/history')}
+            onClick={() => navigate('/app/history')}
           >
             <History className="h-4 w-4 mr-1" />
             History
