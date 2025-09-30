@@ -2,7 +2,7 @@ import * as React from "react"
 import { Bell, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { BrandLogoBlink } from "@/components/brand/BrandLogoBlink"
+import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
 import { useAuthUser } from "@/hooks/useAuthUser"
 
 interface AppHeaderStickyProps {
@@ -42,9 +42,9 @@ export function AppHeaderSticky({
       data-testid="header-sticky"
     >
       <div className="flex items-center justify-between px-3 py-2 h-14">
-        {/* Left: Animated Logo */}
+        {/* Left: Premium Flipper Logo */}
         <div className="flex-shrink-0">
-          <BrandLogoBlink size="sm" />
+          <HeaderLogoFlipper size="sm" />
         </div>
 
         {/* Spacer */}
