@@ -1,0 +1,251 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { TradingHeader } from "@/components/trading/TradingHeader";
+import { MarketStatsRow } from "@/components/trading/MarketStatsRow";
+import { PairsGrid, TradingPair } from "@/components/trading/PairsGrid";
+import { CandleToggle, Timeframe } from "@/components/trading/CandleToggle";
+import { ChartPanel } from "@/components/trading/ChartPanel";
+import { OrderTicket, OrderTicketData } from "@/components/trading/OrderTicket";
+import { OrderBookDepth, OrderBookEntry } from "@/components/trading/OrderBookDepth";
+import { TradesTape, Trade } from "@/components/trading/TradesTape";
+import { ExecutionStatusBar, ExecutionStatus } from "@/components/trading/ExecutionStatusBar";
+import { FeeBar } from "@/components/trading/FeeBar";
+import { AdapterFactory } from "@/lib/trading/AdapterFactory";
+import { ExchangeAdapter } from "@/lib/trading/ExchangeAdapter";
+import { AlertCircle } from "lucide-react";
+
+// Mock trading pairs - in production, fetch from admin config
+const mockPairs: TradingPair[] = [
+  { symbol: "BSK/INR", baseAsset: "BSK", quoteAsset: "INR", lastPrice: 12.45, priceChange24h: 2.34, volume24h: 1250000, isFavorite: true },
+  { symbol: "BTC/INR", baseAsset: "BTC", quoteAsset: "INR", lastPrice: 3625000, priceChange24h: 3.21, volume24h: 45000000 },
+  { symbol: "ETH/INR", baseAsset: "ETH", quoteAsset: "INR", lastPrice: 222500, priceChange24h: -1.45, volume24h: 12000000 },
+  { symbol: "BNB/INR", baseAsset: "BNB", quoteAsset: "INR", lastPrice: 26450, priceChange24h: 1.87, volume24h: 5500000 },
+  { symbol: "USDT/INR", baseAsset: "USDT", quoteAsset: "INR", lastPrice: 83.75, priceChange24h: 0.05, volume24h: 98000000 },
+  { symbol: "IPG/INR", baseAsset: "IPG", quoteAsset: "INR", lastPrice: 45.50, priceChange24h: 5.12, volume24h: 750000 }
+];
+
+// Mock order book data
+const mockOrderBook = {
+  bids: Array.from({ length: 15 }, (_, i) => ({
+    price: 12.45 - (i * 0.01),
+    quantity: Math.random() * 1000,
+    total: 0
+  })),
+  asks: Array.from({ length: 15 }, (_, i) => ({
+    price: 12.45 + (i * 0.01),
+    quantity: Math.random() * 1000,
+    total: 0
+  }))
+};
+
+// Calculate totals
+mockOrderBook.bids.forEach((bid, i) => {
+  bid.total = mockOrderBook.bids.slice(0, i + 1).reduce((sum, b) => sum + (b.price * b.quantity), 0);
+});
+mockOrderBook.asks.forEach((ask, i) => {
+  ask.total = mockOrderBook.asks.slice(0, i + 1).reduce((sum, a) => sum + (a.price * a.quantity), 0);
+});
+
+// Mock recent trades
+const mockTrades: Trade[] = Array.from({ length: 30 }, (_, i) => ({
+  id: `trade-${i}`,
+  price: 12.45 + (Math.random() - 0.5) * 0.1,
+  quantity: Math.random() * 100,
+  side: Math.random() > 0.5 ? "buy" : "sell",
+  timestamp: Date.now() - (i * 60000)
+}));
+
+export default function TradingScreenRebuilt() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Core state
+  const [selectedPair, setSelectedPair] = useState<string>("BSK/INR");
+  const [tradingMode, setTradingMode] = useState<"LIVE" | "SIM">("SIM"); // Default to SIM
+  const [candlesEnabled, setCandlesEnabled] = useState(false);
+  const [timeframe, setTimeframe] = useState<Timeframe>("1D");
+  const [pairs, setPairs] = useState<TradingPair[]>(mockPairs);
+  const [executionStatus, setExecutionStatus] = useState<ExecutionStatus | null>(null);
+
+  // Exchange adapter
+  const [adapter, setAdapter] = useState<ExchangeAdapter | null>(null);
+
+  // Initialize adapter
+  useEffect(() => {
+    const exchangeAdapter = AdapterFactory.create({
+      mode: tradingMode,
+      // In production, these would come from admin settings
+      apiKey: undefined,
+      apiSecret: undefined,
+      endpoint: undefined
+    });
+    setAdapter(exchangeAdapter);
+
+    return () => {
+      exchangeAdapter.unsubscribe();
+    };
+  }, [tradingMode]);
+
+  // Get current pair data
+  const currentPair = pairs.find(p => p.symbol === selectedPair) || pairs[0];
+
+  // Handle pair selection
+  const handlePairSelect = (symbol: string) => {
+    setSelectedPair(symbol);
+    setCandlesEnabled(false); // Reset chart when switching pairs
+  };
+
+  // Handle favorite toggle
+  const handleToggleFavorite = (symbol: string) => {
+    setPairs(prev => prev.map(p => 
+      p.symbol === symbol ? { ...p, isFavorite: !p.isFavorite } : p
+    ));
+  };
+
+  // Handle order submission
+  const handleOrderSubmit = async (order: OrderTicketData) => {
+    if (!adapter) {
+      toast({
+        title: "Error",
+        description: "Trading adapter not initialized",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setExecutionStatus({
+      type: "processing",
+      message: `Placing ${order.side} order...`
+    });
+
+    try {
+      const response = await adapter.placeOrder({
+        pair: selectedPair,
+        side: order.side,
+        type: order.type,
+        amount: order.amount,
+        price: order.price
+      });
+
+      setExecutionStatus({
+        type: "success",
+        message: `Order ${response.status}!`,
+        details: `${order.side.toUpperCase()} ${order.amount} ${currentPair.baseAsset} @ ₹${response.averagePrice.toFixed(2)}`
+      });
+
+      setTimeout(() => setExecutionStatus(null), 5000);
+
+      toast({
+        title: "Order Executed",
+        description: `${order.side.toUpperCase()} order filled at ₹${response.averagePrice.toFixed(2)}`
+      });
+    } catch (error: any) {
+      setExecutionStatus({
+        type: "error",
+        message: "Order failed",
+        details: error.message
+      });
+
+      setTimeout(() => setExecutionStatus(null), 5000);
+    }
+  };
+
+  return (
+    <div 
+      className="min-h-screen bg-background pb-20"
+      data-testid="page-trading"
+    >
+      {/* Header */}
+      <TradingHeader 
+        pair={selectedPair} 
+        mode={tradingMode}
+      />
+
+      {/* Market Stats */}
+      <MarketStatsRow
+        lastPrice={currentPair.lastPrice}
+        priceChange24h={currentPair.priceChange24h}
+        volume24h={currentPair.volume24h}
+      />
+
+      {/* Pairs Grid */}
+      <div className="px-4 mb-4">
+        <h2 className="text-sm font-semibold mb-3">Market Pairs</h2>
+        <PairsGrid
+          pairs={pairs}
+          onPairSelect={handlePairSelect}
+          onToggleFavorite={handleToggleFavorite}
+          selectedPair={selectedPair}
+        />
+      </div>
+
+      {/* Candle Toggle */}
+      <CandleToggle
+        enabled={candlesEnabled}
+        onToggle={setCandlesEnabled}
+        timeframe={timeframe}
+        onTimeframeChange={setTimeframe}
+      />
+
+      {/* Chart Panel (lazy loaded only when enabled) */}
+      <div className="px-4">
+        <ChartPanel
+          symbol={selectedPair}
+          timeframe={timeframe}
+          enabled={candlesEnabled}
+        />
+      </div>
+
+      {/* Order Ticket */}
+      <div className="px-4 my-4">
+        <OrderTicket
+          pair={selectedPair}
+          currentPrice={currentPair.lastPrice}
+          availableBalance={{ base: 1000, quote: 100000 }}
+          makerFee={0.10}
+          takerFee={0.10}
+          onSubmit={handleOrderSubmit}
+        />
+      </div>
+
+      {/* Order Book & Trades */}
+      <div className="px-4 space-y-4 mb-4">
+        <OrderBookDepth
+          bids={mockOrderBook.bids}
+          asks={mockOrderBook.asks}
+        />
+        
+        <TradesTape trades={mockTrades} />
+      </div>
+
+      {/* Fee Bar */}
+      <div className="px-4 mb-4">
+        <FeeBar
+          makerFee={0.10}
+          takerFee={0.10}
+          feeAsset="BSK"
+          onLearnMore={() => navigate("/app/fees")}
+        />
+      </div>
+
+      {/* Risk Disclaimer */}
+      <div className="px-4 mb-4">
+        <div className="p-3 bg-muted/30 border border-border/50 rounded-lg flex items-start gap-2 text-xs text-muted-foreground">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <p>
+            <strong className="text-foreground">Risk Warning:</strong> Trading crypto involves risk. 
+            {tradingMode === "SIM" && " You are in simulation mode - no real funds at risk."}
+            {tradingMode === "LIVE" && " You are trading with real funds. Trade responsibly."}
+          </p>
+        </div>
+      </div>
+
+      {/* Execution Status */}
+      <ExecutionStatusBar
+        status={executionStatus}
+        onDismiss={() => setExecutionStatus(null)}
+      />
+    </div>
+  );
+}

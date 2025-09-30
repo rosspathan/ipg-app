@@ -46,7 +46,7 @@ import SendScreen from "./pages/SendScreen";
 import TransferScreen from "./pages/TransferScreen";
 import MarketsScreen from "./pages/MarketsScreen";
 import MarketDetailScreen from "./pages/MarketDetailScreen";
-import TradingScreen from "./pages/TradingScreen";
+import TradingScreenRebuilt from "./pages/TradingScreenRebuilt";
 import TradeReceiptScreen from "./pages/TradeReceiptScreen";
 import OrderConfirmationScreen from "./pages/OrderConfirmationScreen";
 import SwapScreen from "./pages/SwapScreen";
@@ -190,8 +190,8 @@ function App() {
                 <Route path="wallet/history" element={<HistoryScreen />} />
                 <Route path="markets" element={<MarketsScreen />} />
                 <Route path="markets/:pair" element={<MarketDetailScreen />} />
-                <Route path="trade" element={<TradingScreen />} />
-                <Route path="trade/:pair" element={<TradingScreen />} />
+                <Route path="trade" element={<TradingScreenRebuilt />} />
+                <Route path="trade/:pair" element={<TradingScreenRebuilt />} />
                 <Route path="trade/receipt" element={<TradeReceiptScreen />} />
                 <Route path="trade/confirmation" element={<OrderConfirmationScreen />} />
                 <Route path="swap" element={<SwapScreen />} />
