@@ -192,6 +192,21 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setWallet(walletData);
       localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
+      
+      // Save wallet address to profiles table
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          await supabase
+            .from('profiles')
+            .update({ wallet_address: ethersWallet.address })
+            .eq('user_id', user.id);
+        }
+      } catch (profileError) {
+        console.warn('Could not update profile with wallet address:', profileError);
+      }
     } catch (error) {
       console.error('Error creating BSC wallet:', error);
       throw new Error('Failed to create BSC wallet');
@@ -223,6 +238,21 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setWallet(walletData);
       localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
+      
+      // Save wallet address to profiles table
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          await supabase
+            .from('profiles')
+            .update({ wallet_address: ethersWallet.address })
+            .eq('user_id', user.id);
+        }
+      } catch (profileError) {
+        console.warn('Could not update profile with wallet address:', profileError);
+      }
     } catch (error) {
       console.error('Error importing BSC wallet:', error);
       throw new Error('Failed to import BSC wallet');
@@ -356,6 +386,23 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setWallet(walletData);
     localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
+    
+    // Save wallet address to profiles table
+    (async () => {
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          await supabase
+            .from('profiles')
+            .update({ wallet_address: walletInfo.address })
+            .eq('user_id', user.id);
+        }
+      } catch (profileError) {
+        console.warn('Could not update profile with wallet address:', profileError);
+      }
+    })();
     
     // Fetch balance async
     if (provider) {
