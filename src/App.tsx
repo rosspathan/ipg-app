@@ -110,9 +110,9 @@ import BSKVestingScreen from "@/pages/BSKVestingScreen";
 
 // Astra Design System
 import { AstraLayout } from "@/layouts/AstraLayout";
-import { HomePage } from "@/pages/astra/HomePage";
-import { WalletPage } from "@/pages/astra/WalletPage";
-import { ProgramsPage } from "@/pages/astra/ProgramsPage";
+import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
+import { WalletPageRebuilt } from "@/pages/astra/WalletPageRebuilt";
+import { ProgramsPageRebuilt } from "@/pages/astra/ProgramsPageRebuilt";
 import { TradingPageRebuilt } from "@/pages/astra/TradingPageRebuilt";
 import { InsurancePage } from "@/pages/astra/InsurancePage";
 import { SpinWheelPage } from "@/pages/astra/SpinWheelPage";
@@ -240,9 +240,9 @@ function App() {
                 </AuthProviderUser>
               }>
                 <Route index element={<Navigate to="/app/home" replace />} />
-                <Route path="home" element={<HomePage />} />
-                <Route path="wallet" element={<WalletPage />} />
-                <Route path="programs" element={<ProgramsPage />} />
+                <Route path="home" element={<HomePageRebuilt />} />
+                <Route path="wallet" element={<WalletPageRebuilt />} />
+                <Route path="programs" element={<ProgramsPageRebuilt />} />
                 <Route path="trade" element={<TradingPageRebuilt />} />
                 <Route path="programs/insurance" element={<InsurancePage />} />
                 <Route path="programs/spin" element={<SpinWheelPage />} />

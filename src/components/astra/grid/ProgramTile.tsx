@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useState } from "react"
+import { Lock, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AstraCard } from "../AstraCard"
 
@@ -33,6 +34,11 @@ const statusStyles = {
   maintenance: "opacity-40 cursor-not-allowed"
 }
 
+/**
+ * ProgramTile - Purple Nova DS enhanced tile
+ * 1.03 scale on press + rim-light sweep (purple → cyan)
+ * Status badges, sparkline, progress
+ */
 export function ProgramTile({
   title,
   subtitle,
@@ -46,131 +52,163 @@ export function ProgramTile({
   className
 }: ProgramTileProps) {
   const [isPressed, setIsPressed] = useState(false)
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null)
+  const prefersReducedMotion = typeof window !== 'undefined'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false
 
-  const handleMouseDown = () => {
-    if (status !== "available") return
-    
+  const handlePointerDown = () => {
     setIsPressed(true)
-    
     if (onLongPress) {
-      const timer = setTimeout(() => {
-        onLongPress()
-        setIsPressed(false)
+      setTimeout(() => {
+        if (isPressed) onLongPress()
       }, 500)
-      setLongPressTimer(timer)
     }
   }
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     setIsPressed(false)
-    
-    if (longPressTimer) {
-      clearTimeout(longPressTimer)
-      setLongPressTimer(null)
-    }
   }
 
   const handleClick = () => {
-    if (status === "available" && onPress && !longPressTimer) {
+    if (status === "available" && onPress) {
       onPress()
     }
   }
 
+  const badgeColors = {
+    NEW: "bg-accent/20 text-accent border-accent/40",
+    HOT: "bg-danger/20 text-danger border-danger/40",
+    DAILY: "bg-success/20 text-success border-success/40",
+    LIVE: "bg-warning/20 text-warning border-warning/40"
+  }
+
+  const isDisabled = status !== "available"
+
   return (
-    <AstraCard
-      variant="glass"
-      className={cn(
-        "relative p-4 space-y-3 cursor-pointer transition-all duration-220",
-        "hover:scale-[1.03] hover:shadow-neon",
-        "active:scale-[0.98]",
-        isPressed && "scale-[1.03] shadow-neon",
-        statusStyles[status],
-        className
-      )}
+    <div
+      className={cn("relative", className)}
       data-testid="program-tile"
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onClick={handleClick}
     >
-      {/* Status Overlay */}
-      {status !== "available" && (
-        <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center z-10">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            {status === "locked" && "🔒 Locked"}
-            {status === "coming-soon" && "🚀 Coming Soon"}
-            {status === "maintenance" && "🔧 Maintenance"}
-          </span>
-        </div>
-      )}
+      <AstraCard
+        variant="elevated"
+        className={cn(
+          "relative h-full p-4 cursor-pointer overflow-hidden",
+          "transition-all duration-[120ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+          !isDisabled && !prefersReducedMotion && "hover:scale-[1.03]",
+          isPressed && !prefersReducedMotion && "scale-[1.03]",
+          isDisabled && "opacity-60 cursor-not-allowed"
+        )}
+        onPointerDown={!isDisabled ? handlePointerDown : undefined}
+        onPointerUp={!isDisabled ? handlePointerUp : undefined}
+        onPointerLeave={() => setIsPressed(false)}
+        onClick={handleClick}
+      >
+        {/* Rim light effect on press */}
+        {isPressed && !prefersReducedMotion && !isDisabled && (
+          <div 
+            className="absolute inset-0 rounded-2xl opacity-0 animate-[rimLight_0.6s_ease-out_forwards]"
+            style={{
+              background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%)',
+              filter: 'blur(8px)',
+              zIndex: 0
+            }}
+          />
+        )}
 
-      {/* Badge */}
-      {badge && (
-        <div className={cn(
-          "absolute -top-1 -right-1 text-xs font-bold px-2 py-1 rounded-full border",
-          "animate-pulse",
-          badgeStyles[badge]
-        )}>
-          {badge}
-        </div>
-      )}
+        {/* Badge */}
+        {badge && (
+          <div className={cn(
+            "absolute top-2 right-2 z-10",
+            "px-2 py-0.5 rounded-full text-[10px] font-bold border",
+            badgeColors[badge]
+          )}>
+            {badge}
+          </div>
+        )}
 
-      {/* Icon */}
-      <div className="w-8 h-8 flex items-center justify-center text-primary">
-        {icon}
-      </div>
+        {/* Content */}
+        <div className="relative z-10 flex flex-col h-full">
+          {/* Icon */}
+          <div className="mb-3">
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center",
+              "bg-gradient-to-br from-primary/20 to-secondary/20",
+              "border border-primary/30"
+            )}>
+              {icon}
+            </div>
+          </div>
 
-      {/* Content */}
-      <div className="space-y-1">
-        <h3 className="font-semibold text-sm text-foreground line-clamp-1">
-          {title}
-        </h3>
-        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-          {subtitle}
-        </p>
-      </div>
+          {/* Title & Subtitle */}
+          <div className="flex-1 min-h-0">
+            <h3 className="font-heading text-sm font-bold text-foreground leading-tight mb-1 line-clamp-1">
+              {title}
+            </h3>
+            <p className="text-xs text-muted-foreground leading-tight line-clamp-2 whitespace-pre-line">
+              {subtitle}
+            </p>
+          </div>
 
-      {/* Metrics */}
-      {(sparkline || typeof progress === "number") && (
-        <div className="flex items-center justify-between">
-          {sparkline && (
-            <div className="flex-1">
-              <MiniSparkline data={sparkline} />
+          {/* Metrics */}
+          {(sparkline || typeof progress === 'number') && (
+            <div className="mt-3 pt-3 border-t border-border/40">
+              {sparkline && <MiniSparkline data={sparkline} />}
+              {typeof progress === 'number' && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Progress</span>
+                    <span className="font-mono font-semibold text-primary tabular-nums">{progress}%</span>
+                  </div>
+                  <div className="h-1.5 bg-background/50 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-[220ms]"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
-          
-          {typeof progress === "number" && (
-            <div className="text-xs text-accent font-mono tabular-nums">
-              {progress}%
+
+          {/* Status Overlays */}
+          {status === "locked" && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-2xl flex items-center justify-center z-20">
+              <div className="text-center">
+                <Lock className="h-6 w-6 text-warning mx-auto mb-1" />
+                <p className="text-xs font-semibold text-warning">Locked</p>
+              </div>
+            </div>
+          )}
+
+          {status === "coming-soon" && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-2xl flex items-center justify-center z-20">
+              <div className="text-center">
+                <Clock className="h-6 w-6 text-accent mx-auto mb-1" />
+                <p className="text-xs font-semibold text-accent">Coming Soon</p>
+              </div>
             </div>
           )}
         </div>
-      )}
-
-      {/* Rim Light Effect */}
-      <div className={cn(
-        "absolute inset-0 rounded-xl border border-transparent transition-all duration-220 pointer-events-none",
-        isPressed && "border-primary/40 shadow-[inset_0_0_20px_rgba(136,83,255,0.2)]"
-      )} />
-    </AstraCard>
+      </AstraCard>
+    </div>
   )
 }
 
+// Mini sparkline component
 function MiniSparkline({ data }: { data: number[] }) {
   const max = Math.max(...data)
   const min = Math.min(...data)
   const range = max - min || 1
 
   return (
-    <div className="flex items-end h-6 gap-px">
+    <div className="flex items-end gap-0.5 h-6" role="img" aria-label="Sparkline chart">
       {data.map((value, i) => {
         const height = ((value - min) / range) * 100
         return (
           <div
             key={i}
-            className="bg-accent/60 rounded-sm flex-1 min-h-[2px]"
-            style={{ height: `${Math.max(height, 8)}%` }}
+            className="flex-1 bg-gradient-to-t from-success to-success/50 rounded-sm transition-all duration-[220ms]"
+            style={{ height: `${height}%`, minHeight: '2px' }}
           />
         )
       })}

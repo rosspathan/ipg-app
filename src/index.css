@@ -414,6 +414,13 @@ All colors MUST be HSL.
     50% { transform: scale(1.05); opacity: 0.9; }
   }
 
+  /* Rim-light sweep animation for ProgramTile */
+  @keyframes rimLight {
+    0% { opacity: 0; transform: scale(0.95); }
+    50% { opacity: 0.6; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.05); }
+  }
+
   /* Shake animation for error states */
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
