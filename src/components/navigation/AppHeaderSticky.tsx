@@ -42,48 +42,53 @@ export function AppHeaderSticky({
       }}
       data-testid="header-sticky"
     >
-      <div className="flex items-center justify-between px-4 py-3 h-16">
+      <div className="flex items-center justify-between px-3 py-2 h-14">
         {/* Left: Animated Logo */}
-        <BrandLogoBlink />
+        <div className="flex-shrink-0">
+          <BrandLogoBlink size="sm" />
+        </div>
 
-        {/* Center: Title/Subtitle */}
+        {/* Center: Title/Subtitle - only show if provided */}
         {(title || subtitle) && (
-          <div className="flex-1 text-center mx-4">
+          <div className="flex-1 text-center mx-3">
             {title && (
-              <h1 className="font-heading text-lg font-bold text-foreground leading-tight">
+              <h1 className="font-heading text-base font-bold text-foreground leading-tight">
                 {title}
               </h1>
             )}
             {subtitle && (
-              <p className="text-xs text-muted-foreground leading-tight mt-0.5">
+              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
                 {subtitle}
               </p>
             )}
           </div>
         )}
 
+        {/* Spacer if no title/subtitle */}
+        {!(title || subtitle) && <div className="flex-1" />}
+
         {/* Right: Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={onProfileClick}
-            className="h-10 w-10 p-0 rounded-full hover:bg-primary/10 transition-all duration-[120ms]"
+            className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-all duration-[120ms]"
             aria-label="Profile"
           >
-            <User className="h-5 w-5" />
+            <User className="h-[18px] w-[18px]" />
           </Button>
 
           <Button
             variant="ghost"
             size="sm"
             onClick={onNotificationsClick}
-            className="h-10 w-10 p-0 rounded-full relative hover:bg-accent/10 transition-all duration-[120ms]"
+            className="h-9 w-9 p-0 rounded-full relative hover:bg-accent/10 transition-all duration-[120ms]"
             aria-label={`Notifications${notificationCount > 0 ? ` (${notificationCount})` : ''}`}
           >
-            <Bell className="h-5 w-5" />
+            <Bell className="h-[18px] w-[18px]" />
             {notificationCount > 0 && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-danger rounded-full text-[10px] flex items-center justify-center text-white font-bold shadow-lg shadow-danger/50">
+              <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-danger rounded-full text-[9px] flex items-center justify-center text-white font-bold shadow-lg shadow-danger/50">
                 {notificationCount > 9 ? '9+' : notificationCount}
               </div>
             )}

@@ -1,6 +1,5 @@
 import * as React from "react"
 import { useState } from "react"
-import { Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface LogoDockButtonProps {
@@ -27,12 +26,14 @@ export function LogoDockButton({ onClick, className }: LogoDockButtonProps) {
       onClick={handleClick}
       className={cn(
         "relative flex items-center justify-center",
-        "w-14 h-14 -mt-8 rounded-full",
-        "bg-gradient-to-br from-primary via-secondary to-primary",
-        "shadow-2xl shadow-primary/50",
+        "w-16 h-16 rounded-full",
+        "bg-gradient-to-br from-primary via-secondary to-accent",
+        "shadow-[0_0_24px_rgba(124,77,255,0.6),0_0_48px_rgba(124,77,255,0.4)]",
+        "border-2 border-white/30",
         "transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-        "hover:scale-110 active:scale-95",
-        "focus:outline-none focus:ring-4 focus:ring-primary/30 focus:ring-offset-2 focus:ring-offset-background",
+        "hover:scale-110 hover:shadow-[0_0_32px_rgba(124,77,255,0.8),0_0_60px_rgba(124,77,255,0.5)]",
+        "active:scale-95",
+        "focus:outline-none focus:ring-4 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background",
         "animate-[breathing_3s_ease-in-out_infinite]",
         className
       )}
@@ -41,19 +42,19 @@ export function LogoDockButton({ onClick, className }: LogoDockButtonProps) {
     >
       {/* Outer breathing glow */}
       <div 
-        className="absolute inset-0 rounded-full blur-xl opacity-60 bg-gradient-to-br from-primary to-accent animate-[breathing_3s_ease-in-out_infinite]"
+        className="absolute -inset-3 rounded-full blur-2xl opacity-70 bg-gradient-to-br from-primary via-secondary to-accent animate-[breathing_3s_ease-in-out_infinite]"
         style={{
           animationDelay: '0.5s'
         }}
       />
 
-      {/* Inner ring */}
-      <div className="absolute inset-0 rounded-full ring-2 ring-inset ring-white/30" />
+      {/* Inner backdrop */}
+      <div className="absolute inset-[3px] rounded-full bg-background/20 backdrop-blur-sm border border-white/10" />
 
       {/* Ripple effect */}
       {ripple && (
         <div 
-          className="absolute inset-0 rounded-full bg-white/30 animate-ping"
+          className="absolute inset-0 rounded-full bg-white/40 animate-ping"
           style={{
             animationDuration: '600ms',
             animationIterationCount: '1'
@@ -61,8 +62,23 @@ export function LogoDockButton({ onClick, className }: LogoDockButtonProps) {
         />
       )}
 
-      {/* Icon */}
-      <Zap className="relative z-10 h-6 w-6 text-white" fill="white" />
+      {/* IS monogram - matching BrandLogoBlink */}
+      <div className="relative z-10 flex items-center justify-center">
+        <svg viewBox="0 0 32 32" className="h-8 w-8 drop-shadow-[0_2px_8px_rgba(255,255,255,0.4)]">
+          <text 
+            x="16" 
+            y="22" 
+            textAnchor="middle" 
+            fill="white" 
+            fontSize="18" 
+            fontWeight="700" 
+            fontFamily="Space Grotesk, sans-serif"
+            style={{ letterSpacing: '0.05em' }}
+          >
+            IS
+          </text>
+        </svg>
+      </div>
     </button>
   )
 }

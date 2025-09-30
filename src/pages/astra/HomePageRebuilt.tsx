@@ -165,25 +165,23 @@ export function HomePageRebuilt() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="page-home">
+    <div className="min-h-screen bg-background pb-28" data-testid="page-home">
       {/* Header */}
       <AppHeaderSticky
-        title="Dashboard"
-        subtitle="Welcome back"
         onProfileClick={() => navigate("/app/profile")}
         onNotificationsClick={() => navigate("/app/notifications")}
         notificationCount={2}
       />
 
       {/* Main Content */}
-      <div className="space-y-6 pt-4">
+      <div className="space-y-4 pt-3 pb-4">
         {/* KPI Row */}
-        <div className="px-4">
+        <div className="px-3">
           <KPIChipRow data={kpiData} />
         </div>
 
         {/* Balance Cluster */}
-        <div className="px-4">
+        <div className="px-3">
           <BalanceCluster />
         </div>
 
@@ -194,35 +192,37 @@ export function HomePageRebuilt() {
           enableParallax
         >
           {myPrograms.map((program) => (
-            <div key={program.title} className="w-40">
+            <div key={program.title} className="w-[156px]">
               <ProgramTile {...program} />
             </div>
           ))}
         </CardLane>
 
-        {/* Quick Actions Lane */}
-        <CardLane title="Quick Actions" enableParallax={false}>
-          {quickActions.map((action) => (
-            <div key={action.id} className="w-24">
+        {/* Quick Actions Grid - Mobile Friendly */}
+        <div className="px-3 space-y-2">
+          <h3 className="font-heading text-base font-bold text-foreground">Quick Actions</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {quickActions.map((action) => (
               <button
+                key={action.id}
                 onClick={action.onPress}
-                className="w-full h-24 rounded-2xl bg-card/50 border border-border/40 hover:bg-card hover:border-primary/30 transition-all duration-[120ms] flex flex-col items-center justify-center gap-2"
+                className="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-card/50 border border-border/40 hover:bg-card hover:border-primary/30 transition-all duration-[120ms] min-h-[88px]"
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                   action.variant === "success" ? "bg-success/10 text-success" :
                   action.variant === "warning" ? "bg-warning/10 text-warning" :
                   "bg-primary/10 text-primary"
                 }`}>
                   {action.icon}
                 </div>
-                <span className="text-xs font-medium text-foreground">{action.label}</span>
+                <span className="text-[10px] font-medium text-foreground leading-tight text-center">{action.label}</span>
               </button>
-            </div>
-          ))}
-        </CardLane>
+            ))}
+          </div>
+        </div>
 
         {/* Announcements */}
-        <div className="px-4">
+        <div className="px-3">
           <AnnouncementsCarousel announcements={announcements} />
         </div>
 
@@ -230,12 +230,12 @@ export function HomePageRebuilt() {
         <Marquee items={marqueeItems} />
 
         {/* Recent Activity */}
-        <div className="px-4 space-y-3">
+        <div className="px-3 space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="font-heading text-lg font-bold text-foreground">Recent Activity</h2>
+            <h2 className="font-heading text-base font-bold text-foreground">Recent Activity</h2>
             <button 
               onClick={() => navigate("/app/history")}
-              className="text-sm font-medium text-accent hover:text-accent/80 transition-colors duration-[120ms]"
+              className="text-xs font-medium text-accent hover:text-accent/80 transition-colors duration-[120ms]"
             >
               View All →
             </button>

@@ -51,14 +51,15 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
       }}
       data-testid="dock-nav"
     >
-      <div className="flex items-center justify-around px-2 pt-2 pb-1 relative">
+      <div className="flex items-center justify-around px-1 pt-2 pb-1.5 relative">
         {navItems.map((item) => {
           if (item.id === "center") {
             return (
-              <LogoDockButton
-                key={item.id}
-                onClick={onCenterPress}
-              />
+              <div key={item.id} className="flex items-center justify-center -mt-6">
+                <LogoDockButton
+                  onClick={onCenterPress}
+                />
+              </div>
             )
           }
 
@@ -70,7 +71,7 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
               key={item.id}
               onClick={() => handleNavClick(item.path)}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-2xl",
+                "flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-xl min-w-[60px]",
                 "transition-all duration-[120ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
                 "focus:outline-none focus:ring-2 focus:ring-primary/50",
                 "hover:bg-primary/10",
@@ -86,7 +87,7 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
               )} />
               
               <span className={cn(
-                "text-[10px] font-medium transition-all duration-[120ms]",
+                "text-[9px] font-medium transition-all duration-[120ms]",
                 "font-[Inter,sans-serif]",
                 active && "font-semibold"
               )}>
@@ -96,7 +97,7 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
               {/* Active indicator - neon underline */}
               {active && (
                 <div 
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-8 bg-gradient-to-r from-primary to-accent rounded-full"
+                  className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-6 bg-gradient-to-r from-primary to-accent rounded-full"
                   style={{
                     boxShadow: '0 0 8px hsl(var(--primary))'
                   }}
