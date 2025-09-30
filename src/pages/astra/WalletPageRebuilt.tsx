@@ -90,7 +90,7 @@ export function WalletPageRebuilt() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="page-wallet">
+    <div className="min-h-screen bg-background pb-32" data-testid="page-wallet">
       {/* Header */}
       <AppHeaderSticky
         title="My Wallet"

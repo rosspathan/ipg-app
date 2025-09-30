@@ -80,26 +80,29 @@ export function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background-primary to-background-secondary relative max-w-[430px] mx-auto" data-testid="app-shell">
-      {/* Top Bar */}
-      <AppTopBar />
+    <div className="min-h-screen bg-gradient-to-br from-background-primary to-background-secondary relative w-full" data-testid="app-shell">
+      {/* Mobile constraint wrapper */}
+      <div className="max-w-[430px] mx-auto min-h-screen bg-background relative">
+        {/* Top Bar */}
+        <AppTopBar />
 
-      {/* Main Content */}
-      <main className="pb-20 min-h-[calc(100vh-64px)]">
-        <Outlet />
-      </main>
+        {/* Main Content */}
+        <main className="pb-24 min-h-[calc(100vh-64px)]">
+          <Outlet />
+        </main>
 
-      {/* Floating Action Button */}
-      {shouldShowFAB() && (
-        <FloatingActionButton 
-          onClick={handleFABAction}
-          className="fixed bottom-24 right-6 z-30"
-        >
-          <Plus className="h-6 w-6" />
-        </FloatingActionButton>
-      )}
+        {/* Floating Action Button */}
+        {shouldShowFAB() && (
+          <FloatingActionButton 
+            onClick={handleFABAction}
+            className="fixed bottom-28 right-6 z-30"
+          >
+            <Plus className="h-6 w-6" />
+          </FloatingActionButton>
+        )}
 
-      {/* Bottom Navigation handled by each page via DockNav */}
+        {/* Bottom Navigation handled by each page via DockNav */}
+      </div>
     </div>
   )
 }

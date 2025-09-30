@@ -161,7 +161,7 @@ export function ProgramsPageRebuilt() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="page-programs">
+    <div className="min-h-screen bg-background pb-32" data-testid="page-programs">
       {/* Grid Toolbar (sticky header with search & filters) */}
       <GridToolbar
         searchValue={searchValue}

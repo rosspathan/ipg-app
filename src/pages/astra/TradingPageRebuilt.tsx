@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input"
 import { AppShellGlass } from "@/components/astra/AppShellGlass"
 import { KPIChipRow } from "@/components/astra/KPIChipRow"
 import { ChartCard } from "@/components/astra/ChartCard"
+import { DockNav } from "@/components/navigation/DockNav"
+import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { cn } from "@/lib/utils"
 import { useNavigation } from "@/hooks/useNavigation"
 import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
@@ -32,6 +34,7 @@ export function TradingPageRebuilt() {
   const [selectedTab, setSelectedTab] = useState<"recent" | "favorites" | "all">("recent")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedPair, setSelectedPair] = useState(mockPairs[0])
+  const [showQuickSwitch, setShowQuickSwitch] = useState(false)
 
   const kpiData = [
     { 
@@ -58,6 +61,15 @@ export function TradingPageRebuilt() {
     })
     .filter(pair => pair.symbol.toLowerCase().includes(searchTerm.toLowerCase()))
 
+  const handleQuickSwitchAction = (action: string) => {
+    switch (action) {
+      case "deposit": navigate("/app/deposit"); break
+      case "convert": navigate("/app/swap"); break
+      case "trade": navigate("/app/trade"); break
+      case "programs": navigate("/app/programs"); break
+    }
+  }
+
   const topBar = (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -75,7 +87,7 @@ export function TradingPageRebuilt() {
 
   return (
     <AppShellGlass topBar={topBar} data-testid="page-trading">
-      <div className="space-y-6 pb-24">
+      <div className="space-y-6 pb-32">
         {/* KPI Row */}
         <div className="px-4 pt-4">
           <KPIChipRow data={kpiData} />
@@ -210,6 +222,19 @@ export function TradingPageRebuilt() {
           </Button>
         </div>
       </div>
+
+      {/* Bottom Navigation */}
+      <DockNav
+        onNavigate={navigate}
+        onCenterPress={() => setShowQuickSwitch(true)}
+      />
+
+      {/* Quick Switch */}
+      <QuickSwitch
+        isOpen={showQuickSwitch}
+        onClose={() => setShowQuickSwitch(false)}
+        onAction={handleQuickSwitchAction}
+      />
     </AppShellGlass>
   )
 }

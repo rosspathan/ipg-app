@@ -14,8 +14,8 @@ const navItems = [
   { id: "home", label: "Home", icon: Home, path: "/app/home" },
   { id: "wallet", label: "Wallet", icon: Wallet, path: "/app/wallet" },
   { id: "center", label: "Quick", icon: null, path: null }, // Center button placeholder
-  { id: "trade", label: "Trade", icon: TrendingUp, path: "/app/trade" },
-  { id: "programs", label: "Programs", icon: Grid3x3, path: "/app/programs" }
+  { id: "programs", label: "Programs", icon: Grid3x3, path: "/app/programs" },
+  { id: "profile", label: "Profile", icon: User, path: "/app/profile" }
 ]
 
 /**
@@ -39,7 +39,7 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50",
+        "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50",
         "pb-[env(safe-area-inset-bottom)]",
         className
       )}

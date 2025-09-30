@@ -165,7 +165,7 @@ export function HomePageRebuilt() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-28" data-testid="page-home">
+    <div className="min-h-screen bg-background pb-32" data-testid="page-home">
       {/* Header */}
       <AppHeaderSticky
         onProfileClick={() => navigate("/app/profile")}
