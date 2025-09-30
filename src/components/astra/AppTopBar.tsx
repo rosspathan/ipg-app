@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useLocation } from "react-router-dom"
-import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
+
 
 interface AppTopBarProps {
   className?: string
@@ -30,11 +30,6 @@ export function AppTopBar({ className }: AppTopBarProps) {
       )}
       data-testid="app-top-bar"
     >
-      {/* Left: Premium Flipper Logo */}
-      <div className="flex items-center gap-3">
-        <HeaderLogoFlipper size="sm" />
-      </div>
-
       {/* Right: Profile name + Notifications */}
       <div className="flex items-center gap-2">
         <Button
