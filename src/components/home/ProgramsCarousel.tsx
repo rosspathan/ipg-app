@@ -19,7 +19,7 @@ const programs = [
     description: "Watch ads, earn BSK daily",
     icon: <Coins className="h-6 w-6" />,
     category: "earn" as const,
-    route: "/app/ad-mining",
+    route: "/app/programs/advertising",
     badge: { type: "daily" as const, text: "DAILY" }
   },
   {
@@ -28,7 +28,7 @@ const programs = [
     description: "5 free spins, win up to 2x",
     icon: <Zap className="h-6 w-6" />,
     category: "games" as const,
-    route: "/app/spin",
+    route: "/app/programs/spin",
     badge: { type: "hot" as const, text: "HOT" }
   },
   {
@@ -37,7 +37,7 @@ const programs = [
     description: "Join pools, win big prizes",
     icon: <Target className="h-6 w-6" />,
     category: "games" as const,
-    route: "/app/lucky-draws"
+    route: "/app-legacy/lucky"
   },
   {
     id: "trading",
@@ -45,7 +45,7 @@ const programs = [
     description: "Buy & sell crypto assets",
     icon: <TrendingUp className="h-6 w-6" />,
     category: "trading" as const,
-    route: "/app/trading",
+    route: "/app/trade",
     badge: { type: "live" as const, text: "LIVE" }
   },
   {
@@ -54,7 +54,7 @@ const programs = [
     description: "Stake tokens, earn rewards",
     icon: <Sparkles className="h-6 w-6" />,
     category: "finance" as const,
-    route: "/app/staking"
+    route: "/app/programs/staking"
   },
   {
     id: "loans",
@@ -62,7 +62,7 @@ const programs = [
     description: "Borrow BSK, 16-week terms",
     icon: <CreditCard className="h-6 w-6" />,
     category: "finance" as const,
-    route: "/app/loans",
+    route: "/app-legacy/loans",
     badge: { type: "new" as const, text: "NEW" }
   },
   {
@@ -71,7 +71,7 @@ const programs = [
     description: "Protect your investments",
     icon: <Shield className="h-6 w-6" />,
     category: "finance" as const,
-    route: "/app/insurance"
+    route: "/app/programs/insurance"
   },
   {
     id: "referrals",
@@ -79,7 +79,7 @@ const programs = [
     description: "Invite friends, earn together",
     icon: <Users className="h-6 w-6" />,
     category: "earn" as const,
-    route: "/app/referrals"
+    route: "/app/programs/referrals"
   }
 ]
 

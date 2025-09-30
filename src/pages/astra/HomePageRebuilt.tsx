@@ -114,7 +114,7 @@ export function HomePageRebuilt() {
       icon: <Gift className="h-6 w-6 text-success" />,
       badge: "DAILY" as const,
       sparkline: [100, 120, 115, 140, 135, 160, 155],
-      onPress: () => navigate("/app/programs/ads")
+      onPress: () => navigate("/app/programs/advertising")
     },
     {
       title: "Lucky Draw",
@@ -122,7 +122,7 @@ export function HomePageRebuilt() {
       icon: <Target className="h-6 w-6 text-warning" />,
       badge: "HOT" as const,
       progress: 78,
-      onPress: () => navigate("/app/programs/draws")
+      onPress: () => navigate("/app-legacy/lucky")
     },
     {
       title: "BSK Fortune Wheel",
@@ -136,14 +136,14 @@ export function HomePageRebuilt() {
       subtitle: "12.4% APY\nFlexible terms",
       icon: <Star className="h-6 w-6 text-primary" />,
       sparkline: [50, 55, 52, 58, 62, 59, 65],
-      onPress: () => navigate("/app/staking")
+      onPress: () => navigate("/app/programs/staking")
     },
     {
       title: "Referral Program",
       subtitle: "Invite friends\nEarn together",
       icon: <Users className="h-6 w-6 text-secondary" />,
       badge: "NEW" as const,
-      onPress: () => navigate("/app/referrals")
+      onPress: () => navigate("/app/programs/referrals")
     }
   ]
 
