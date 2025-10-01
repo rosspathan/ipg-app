@@ -109,11 +109,6 @@ export function AdminSidebar() {
       collapsible="icon"
     >
       <SidebarContent className="bg-gradient-to-b from-[hsl(245_35%_7%)] to-[hsl(234_38%_13%)]">
-        {/* Trigger inside sidebar for consistency */}
-        <div className="flex items-center justify-end p-2">
-          <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-        </div>
-
         <SidebarGroup>
           <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
             Admin Console

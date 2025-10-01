@@ -19,13 +19,13 @@ const AdminLayout = () => {
           </div>
 
           {/* Main Content */}
-          <div className="flex flex-col min-h-screen md:ml-0">
+          <div className="flex flex-col min-h-screen">
             {/* Top Header */}
             <header className="sticky top-0 z-40 bg-[hsl(230_28%_13%/0.8)] backdrop-blur-xl border-b border-[hsl(225_24%_22%/0.16)] shadow-[0_8px_32px_-8px_hsl(245_35%_7%/0.4)]">
               <div className="flex items-center justify-between h-16 px-4 gap-3">
                 {/* Left: Trigger + Logo */}
                 <div className="flex items-center gap-3">
-                  <SidebarTrigger className="hidden md:flex text-muted-foreground hover:text-foreground" />
+                  <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
                   <BrandLogoBlink />
                 </div>
 
