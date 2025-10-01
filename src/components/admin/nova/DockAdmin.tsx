@@ -1,18 +1,18 @@
 import * as React from "react";
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Users,
-  TrendingUp, 
-  FileText, 
+  Package, 
+  LineChart, 
   Settings,
   Plus,
   Coins,
   Repeat,
-  Gift,
-  Megaphone,
-  DollarSign
+  UserPlus,
+  BarChart3,
+  Cog
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -29,60 +29,61 @@ interface QuickAction {
 
 /**
  * DockAdmin - Bottom glass dock navigation with center Quick Add
- * - 5 main tabs: Overview, Catalog, Programs, Reports, Settings
+ * - 5 main tabs: Overview, Users, Programs, Markets, Settings
  * - Center "+" opens radial Quick Add menu
  * - Glass morphism with backdrop blur
  * - Sticky bottom on mobile, hidden on desktop with collapsible rail
  */
 export function DockAdmin({ className }: DockAdminProps) {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const navigate = useNavigate();
 
-  const tabs = [
-    { path: "/admin/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
+  const mainTabs = [
+    { path: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
     { path: "/admin/users", label: "Users", icon: Users },
-    { path: "/admin/programs", label: "Programs", icon: TrendingUp },
-    { path: "/admin/markets", label: "Markets", icon: FileText },
-    { path: "/admin/reports", label: "Reports", icon: Settings },
+    { path: "/admin/programs", label: "Programs", icon: Package },
+    { path: "/admin/markets", label: "Markets", icon: LineChart },
+    { path: "/admin/reports", label: "Reports", icon: BarChart3 },
   ];
 
   const quickActions: QuickAction[] = [
     {
       label: "New Program",
-      icon: Coins,
+      icon: Package,
       onClick: () => {
-        console.log("New Program");
+        navigate("/admin/programs");
         setShowQuickAdd(false);
       },
     },
     {
       label: "List Token",
-      icon: Repeat,
+      icon: Coins,
       onClick: () => {
-        console.log("List Token");
+        navigate("/admin/markets");
         setShowQuickAdd(false);
       },
     },
     {
-      label: "Manage User",
-      icon: Gift,
+      label: "Manage Users",
+      icon: UserPlus,
       onClick: () => {
-        console.log("Manage User");
+        navigate("/admin/users");
         setShowQuickAdd(false);
       },
     },
     {
       label: "Settings",
-      icon: Megaphone,
+      icon: Cog,
       onClick: () => {
-        console.log("Settings");
+        navigate("/admin/settings");
         setShowQuickAdd(false);
       },
     },
     {
       label: "Reports",
-      icon: DollarSign,
+      icon: BarChart3,
       onClick: () => {
-        console.log("Reports");
+        navigate("/admin/reports");
         setShowQuickAdd(false);
       },
     },
@@ -103,7 +104,7 @@ export function DockAdmin({ className }: DockAdminProps) {
       >
         <div className="flex items-center justify-around h-16 px-2 relative">
           {/* Left tabs (2) */}
-          {tabs.slice(0, 2).map((tab) => (
+          {mainTabs.slice(0, 2).map((tab) => (
             <NavLink
               key={tab.path}
               to={tab.path}
@@ -152,7 +153,7 @@ export function DockAdmin({ className }: DockAdminProps) {
           </button>
 
           {/* Right tabs (3) */}
-          {tabs.slice(2).map((tab) => (
+          {mainTabs.slice(2).map((tab) => (
             <NavLink
               key={tab.path}
               to={tab.path}
