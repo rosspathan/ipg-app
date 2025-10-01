@@ -64,11 +64,14 @@ This document outlines the complete plan to achieve Release Candidate status for
 - [ ] **NEEDS VERIFICATION**: ≥1 qualified view/day enforcement
 - [ ] **NEEDS VERIFICATION**: Admin fallback auto-credit functionality
 
-#### 3. BSK One-Time Purchase
-- [ ] Range: 1,000-100,000 BSK
-- [ ] Bonus: +50% to Holding
-- [ ] Min badge requirement (default: Silver)
-- [ ] Admin enable/disable + budgets
+#### 3. BSK One-Time Purchase ⚠️
+- [x] **VERIFIED**: Range: 1,000-100,000 INR ✅
+- [x] **VERIFIED**: Bonus: +50% to Holding ✅ (Fixed destination)
+- [x] **VERIFIED**: Per user limit: once ✅
+- [x] **VERIFIED**: Admin enable/disable (status field) ✅
+- [x] **VERIFIED**: Global budget tracking ✅
+- [ ] **NEEDS VERIFICATION**: Min badge requirement enforcement
+- [ ] **NEEDS VERIFICATION**: Edge function badge check logic
 
 #### 4. Spin Wheel (Provably Fair)
 - [ ] 4 segments: 2× WIN×2, 2× LOSE
