@@ -25,6 +25,10 @@ import AdminSpinNova from "./pages/admin/AdminSpinNova";
 import AdminReportsNova from "./pages/admin/AdminReportsNova";
 import AdminSettingsNova from "./pages/admin/AdminSettingsNova";
 
+// CMS Program Registry
+const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNova"));
+const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
+
 // Guards
 import UserRoute from "@/components/UserRoute";
 import AdminRouteNew from "@/components/AdminRouteNew";
@@ -304,11 +308,9 @@ function App() {
                 <Route path="reports" element={<AdminReportsNova />} />
                 <Route path="settings" element={<AdminSettingsNova />} />
                 
-                {/* Placeholder routes for Phase 3+ */}
-                <Route path="catalog" element={<div className="p-4"><p className="text-muted-foreground">Catalog - Coming in Phase 3</p></div>} />
-                <Route path="programs" element={<div className="p-4"><p className="text-muted-foreground">Programs - Coming in Phase 3</p></div>} />
-                <Route path="reports" element={<div className="p-4"><p className="text-muted-foreground">Reports - Coming in Phase 3</p></div>} />
-                <Route path="settings" element={<div className="p-4"><p className="text-muted-foreground">Settings - Coming in Phase 3</p></div>} />
+                {/* CMS Program Registry */}
+                <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />
+                <Route path="programs/:moduleId" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
               </Route>
 
               {/* Admin Console Routes - Legacy (for reference) */}

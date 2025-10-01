@@ -3698,6 +3698,182 @@ export type Database = {
         }
         Relationships: []
       }
+      program_audit: {
+        Row: {
+          action: string
+          after_json: Json | null
+          before_json: Json | null
+          config_id: string | null
+          created_at: string
+          diff_json: Json | null
+          entity_type: string
+          id: string
+          ip_address: unknown | null
+          module_id: string | null
+          notes: string | null
+          operator_id: string
+          operator_role: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          after_json?: Json | null
+          before_json?: Json | null
+          config_id?: string | null
+          created_at?: string
+          diff_json?: Json | null
+          entity_type: string
+          id?: string
+          ip_address?: unknown | null
+          module_id?: string | null
+          notes?: string | null
+          operator_id: string
+          operator_role?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          after_json?: Json | null
+          before_json?: Json | null
+          config_id?: string | null
+          created_at?: string
+          diff_json?: Json | null
+          entity_type?: string
+          id?: string
+          ip_address?: unknown | null
+          module_id?: string | null
+          notes?: string | null
+          operator_id?: string
+          operator_role?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_audit_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "program_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_audit_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "program_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_configs: {
+        Row: {
+          config_json: Json
+          created_at: string
+          created_by: string | null
+          effective_from: string | null
+          effective_to: string | null
+          id: string
+          is_current: boolean
+          module_id: string
+          notes: string | null
+          published_at: string | null
+          published_by: string | null
+          schema_json: Json
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          config_json?: Json
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          is_current?: boolean
+          module_id: string
+          notes?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          schema_json?: Json
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          config_json?: Json
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          is_current?: boolean
+          module_id?: string
+          notes?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          schema_json?: Json
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_configs_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "program_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_modules: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          enabled_regions: Json
+          enabled_roles: Json
+          icon: string | null
+          id: string
+          key: string
+          name: string
+          order_index: number
+          route: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          enabled_regions?: Json
+          enabled_roles?: Json
+          icon?: string | null
+          id?: string
+          key: string
+          name: string
+          order_index?: number
+          route?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          enabled_regions?: Json
+          enabled_roles?: Json
+          icon?: string | null
+          id?: string
+          key?: string
+          name?: string
+          order_index?: number
+          route?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       promotion_events_log: {
         Row: {
           admin_user_id: string | null
@@ -5781,6 +5957,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_current_program_config: {
+        Args: { p_module_key: string }
+        Returns: Json
+      }
       get_current_spin_seed: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -5872,6 +6052,10 @@ export type Database = {
       }
       process_daily_bsk_vesting: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      publish_program_config: {
+        Args: { p_config_id: string; p_operator_id: string }
         Returns: Json
       }
       reset_monthly_claim_counts: {
