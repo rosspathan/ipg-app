@@ -15,6 +15,11 @@ import UserLayout from "@/layouts/UserLayout";
 import AdminLayout from "@/layouts/AdminLayout";
 import { AdminShellAdaptive } from "@/components/admin/nova/AdminShellAdaptive";
 
+// Nova Admin Pages
+import AdminDashboardNova from "./pages/admin/AdminDashboardNova";
+import AdminUsersNova from "./pages/admin/AdminUsersNova";
+import AdminMarketsNova from "./pages/admin/AdminMarketsNova";
+
 // Guards
 import UserRoute from "@/components/UserRoute";
 import AdminRouteNew from "@/components/AdminRouteNew";
@@ -285,6 +290,9 @@ function App() {
                 
                 {/* Phase 2 Routes */}
                 <Route path="users" element={<AdminUsersNova />} />
+                
+                {/* Phase 3 Routes */}
+                <Route path="markets" element={<AdminMarketsNova />} />
                 
                 {/* Placeholder routes for Phase 3+ */}
                 <Route path="catalog" element={<div className="p-4"><p className="text-muted-foreground">Catalog - Coming in Phase 3</p></div>} />
