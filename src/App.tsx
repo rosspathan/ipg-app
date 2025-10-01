@@ -197,8 +197,8 @@ function App() {
                   </UserRoute>
                 </AuthProviderUser>
               }>
-                <Route index element={<Navigate to="/app-legacy/home" replace />} />
-                <Route path="home" element={<AppHomeScreen />} />
+                <Route index element={<Navigate to="/app/home" replace />} />
+                <Route path="home" element={<Navigate to="/app/home" replace />} />
                 <Route path="wallet" element={<WalletHomeScreen />} />
                 <Route path="wallet/deposit" element={<DepositScreen />} />
                 <Route path="wallet/withdraw" element={<WithdrawScreen />} />
