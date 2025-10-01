@@ -67,7 +67,7 @@ export default function ReferralsPage() {
   });
 
   const referralLink = user?.id
-    ? `${window.location.origin}/auth?ref=${user.id.slice(0, 8)}`
+    ? `${window.location.origin}/auth?ref=${user.id}`
     : "";
 
   const handleCopyLink = async () => {

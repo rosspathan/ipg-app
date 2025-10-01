@@ -35,6 +35,13 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Handle referral relationship creation after successful signup
+        if (event === 'SIGNED_IN' && session?.user) {
+          setTimeout(() => {
+            handlePendingReferral(session.user.id);
+          }, 0);
+        }
       }
     );
 
@@ -70,12 +77,82 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
+  const handlePendingReferral = async (userId: string) => {
+    try {
+      const pendingReferral = localStorage.getItem('pending_referral');
+      
+      if (!pendingReferral) {
+        return; // No referral to process
+      }
+
+      console.log('🔗 Processing pending referral:', pendingReferral, 'for user:', userId);
+
+      // Check if referral relationship already exists
+      const { data: existingRelationship } = await supabase
+        .from('referral_relationships')
+        .select('id')
+        .eq('referee_id', userId)
+        .maybeSingle();
+
+      if (existingRelationship) {
+        console.log('⚠️ Referral relationship already exists for this user');
+        localStorage.removeItem('pending_referral');
+        return;
+      }
+
+      // Validate that the referrer exists and is not the same as the new user
+      const { data: referrerProfile } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('user_id', pendingReferral)
+        .maybeSingle();
+
+      if (!referrerProfile) {
+        console.log('❌ Invalid referrer ID');
+        localStorage.removeItem('pending_referral');
+        return;
+      }
+
+      if (referrerProfile.user_id === userId) {
+        console.log('❌ Cannot refer yourself');
+        localStorage.removeItem('pending_referral');
+        return;
+      }
+
+      // Create referral relationship
+      const { data: newRelationship, error } = await supabase
+        .from('referral_relationships')
+        .insert({
+          referrer_id: pendingReferral,
+          referee_id: userId
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error creating referral relationship:', error);
+        return;
+      }
+
+      console.log('✅ Referral relationship created successfully:', newRelationship);
+      
+      // Clear the pending referral
+      localStorage.removeItem('pending_referral');
+
+      // Optionally show a success toast
+      // toast({ title: "Success", description: "Referral bonus will be credited soon!" });
+    } catch (error) {
+      console.error('❌ Error handling pending referral:', error);
+    }
+  };
+
   const signOut = async () => {
     // Clear user-specific localStorage items
     localStorage.removeItem("cryptoflow_pin");
     localStorage.removeItem("cryptoflow_biometric");
     localStorage.removeItem("cryptoflow_antiphishing");
     localStorage.removeItem("cryptoflow_setup_complete");
+    localStorage.removeItem("pending_referral");
     
     await supabase.auth.signOut();
   };

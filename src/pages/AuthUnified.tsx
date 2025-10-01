@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,18 @@ export default function AuthUnified() {
   const [isLoading, setIsLoading] = useState(false);
 
   const from = location.state?.from?.pathname || "/app/home";
+
+  // Capture referral code from URL on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const referralCode = params.get('ref');
+    
+    if (referralCode) {
+      // Store referral code for use after signup/verification
+      localStorage.setItem('pending_referral', referralCode);
+      console.log('📌 Referral code captured:', referralCode);
+    }
+  }, [location.search]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
