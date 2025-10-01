@@ -29,7 +29,7 @@ import {
 export default function AdminDashboardNova() {
   const navigate = useNavigate();
   return (
-    <div data-testid="page-admin-home" className="space-y-6 pb-6">
+    <div data-testid="page-admin-home" className="space-y-4 sm:space-y-6 pb-4 sm:pb-6">
       {/* KPI Lane */}
       <CardLane title="Key Metrics">
         <KPIStat
@@ -179,8 +179,8 @@ export default function AdminDashboardNova() {
       </CardLane>
 
       {/* Recent Activity Feed */}
-      <div className="px-3 md:px-4 space-y-3">
-        <h2 className="text-base font-heading font-semibold text-foreground">
+      <div className="px-2 sm:px-3 lg:px-4 space-y-2 sm:space-y-3">
+        <h2 className="text-sm sm:text-base font-heading font-semibold text-foreground">
           Recent Activity
         </h2>
         <div className="space-y-2">
@@ -244,17 +244,18 @@ function QueueCard({
   return (
     <div
       className={cn(
-        "min-w-[200px] p-4 rounded-2xl border",
+        "min-w-[160px] sm:min-w-[180px] lg:min-w-[200px]",
+        "p-3 sm:p-4 rounded-xl sm:rounded-2xl border",
         "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
         "transition-all duration-220 touch-manipulation active:scale-[0.98]",
         variantStyles[variant]
       )}
     >
-      <div className="flex items-center gap-3 mb-3">
-        <div className="text-muted-foreground">{icon}</div>
-        <div className="flex-1">
-          <p className="text-sm font-medium text-foreground">{title}</p>
-          <p className="text-2xl font-heading font-bold text-foreground tabular-nums">
+      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+        <div className="text-muted-foreground shrink-0">{icon}</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-foreground truncate">{title}</p>
+          <p className="text-xl sm:text-2xl font-heading font-bold text-foreground tabular-nums">
             {count}
           </p>
         </div>
@@ -263,7 +264,7 @@ function QueueCard({
         size="sm"
         variant="outline"
         onClick={action}
-        className="w-full bg-transparent border-[hsl(225_24%_22%/0.16)] touch-manipulation"
+        className="w-full bg-transparent border-[hsl(225_24%_22%/0.16)] touch-manipulation min-h-[44px] text-xs sm:text-sm"
       >
         Review
       </Button>
@@ -284,19 +285,21 @@ function QuickActionCard({
     <button
       onClick={action}
       className={cn(
-        "min-w-[140px] p-4 rounded-2xl border",
+        "min-w-[120px] sm:min-w-[140px] p-3 sm:p-4",
+        "rounded-xl sm:rounded-2xl border",
         "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
         "border-[hsl(225_24%_22%/0.16)]",
         "hover:bg-[hsl(229_30%_16%)] hover:border-primary/30",
         "transition-all duration-220",
         "flex flex-col items-center gap-2",
-        "touch-manipulation active:scale-95"
+        "touch-manipulation active:scale-95",
+        "min-h-[100px]" // Ensures adequate touch target
       )}
     >
-      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
         {icon}
       </div>
-      <p className="text-sm font-medium text-foreground">{title}</p>
+      <p className="text-xs sm:text-sm font-medium text-foreground text-center leading-tight">{title}</p>
     </button>
   );
 }
