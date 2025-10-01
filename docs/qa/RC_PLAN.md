@@ -73,13 +73,14 @@ This document outlines the complete plan to achieve Release Candidate status for
 - [ ] **NEEDS VERIFICATION**: Min badge requirement enforcement
 - [ ] **NEEDS VERIFICATION**: Edge function badge check logic
 
-#### 4. Spin Wheel (Provably Fair)
-- [ ] 4 segments: 2× WIN×2, 2× LOSE
-- [ ] Bet range: 100-1,000 BSK
-- [ ] First 5 spins: fee-free
-- [ ] After 5: 10 BSK fee per spin
-- [ ] 10% of winnings → Admin Fees
-- [ ] Commit-reveal RNG with Verify page
+#### 4. Spin Wheel (Provably Fair) ⚠️
+- [x] **VERIFIED**: 4 segments: 2× WIN×2, 2× LOSE ✅
+- [x] **VERIFIED**: Bet range: 100-1,000 INR ✅
+- [x] **VERIFIED**: First 5 spins: fee-free ✅
+- [x] **VERIFIED**: After 5: 10 INR fee per spin ✅
+- [x] **VERIFIED**: Commit-reveal RNG implementation ✅
+- [x] **VERIFIED**: Verify page exists (/app/spin/verify) ✅
+- [ ] **MISSING**: 10% of winnings → Admin Fees (not implemented in edge function)
 
 #### 5. Lucky Draw (Provably Fair)
 - [ ] Default: 100 participants
