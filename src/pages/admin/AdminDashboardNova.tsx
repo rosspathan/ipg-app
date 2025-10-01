@@ -154,17 +154,17 @@ export default function AdminDashboardNova() {
         <QuickActionCard
           title="List Token"
           icon={<Coins className="w-5 h-5" />}
-          action={() => navigate('/admin/markets')}
+          action={() => navigate('/admin-nova/markets')}
         />
         <QuickActionCard
           title="Create Pair"
           icon={<RefreshCw className="w-5 h-5" />}
-          action={() => navigate('/admin/markets')}
+          action={() => navigate('/admin-nova/markets')}
         />
         <QuickActionCard
           title="Start Draw"
           icon={<Gift className="w-5 h-5" />}
-          action={() => navigate('/admin/spin')}
+          action={() => navigate('/admin-nova/spin')}
         />
         <QuickActionCard
           title="New Ad"
@@ -174,7 +174,7 @@ export default function AdminDashboardNova() {
         <QuickActionCard
           title="Set Fee Rule"
           icon={<DollarSign className="w-5 h-5" />}
-          action={() => navigate('/admin/settings')}
+          action={() => navigate('/admin-nova/settings')}
         />
       </CardLane>
 
