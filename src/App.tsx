@@ -75,6 +75,7 @@ import ProfileScreen from "./pages/ProfileScreen";
 import AdminLoginScreen from "./pages/AdminLoginScreen";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminDashboardNova from "./pages/admin/AdminDashboardNova";
+import AdminUsersNova from "./pages/admin/AdminUsersNova";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAssets from "./pages/AdminAssets";
 import AdminMarkets from "./pages/AdminMarkets";
@@ -282,11 +283,14 @@ function App() {
                 <Route index element={<AdminDashboardNova />} />
                 <Route path="dashboard" element={<AdminDashboardNova />} />
                 
-                {/* Placeholder routes for Phase 2+ */}
-                <Route path="catalog" element={<div className="p-4"><p className="text-muted-foreground">Catalog - Coming in Phase 2</p></div>} />
-                <Route path="programs" element={<div className="p-4"><p className="text-muted-foreground">Programs - Coming in Phase 2</p></div>} />
-                <Route path="reports" element={<div className="p-4"><p className="text-muted-foreground">Reports - Coming in Phase 2</p></div>} />
-                <Route path="settings" element={<div className="p-4"><p className="text-muted-foreground">Settings - Coming in Phase 2</p></div>} />
+                {/* Phase 2 Routes */}
+                <Route path="users" element={<AdminUsersNova />} />
+                
+                {/* Placeholder routes for Phase 3+ */}
+                <Route path="catalog" element={<div className="p-4"><p className="text-muted-foreground">Catalog - Coming in Phase 3</p></div>} />
+                <Route path="programs" element={<div className="p-4"><p className="text-muted-foreground">Programs - Coming in Phase 3</p></div>} />
+                <Route path="reports" element={<div className="p-4"><p className="text-muted-foreground">Reports - Coming in Phase 3</p></div>} />
+                <Route path="settings" element={<div className="p-4"><p className="text-muted-foreground">Settings - Coming in Phase 3</p></div>} />
               </Route>
 
               {/* Admin Console Routes - Legacy (for reference) */}

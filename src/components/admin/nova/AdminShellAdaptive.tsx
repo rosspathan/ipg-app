@@ -4,6 +4,7 @@ import { Search, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandLogoBlink } from "./BrandLogoBlink";
 import { DockAdmin } from "./DockAdmin";
+import { CommandPalette, useCommandPalette } from "./CommandPalette";
 import { Button } from "@/components/ui/button";
 
 interface AdminShellAdaptiveProps {
@@ -22,6 +23,8 @@ export function AdminShellAdaptive({
   title = "Admin Console", 
   className 
 }: AdminShellAdaptiveProps) {
+  const commandPalette = useCommandPalette();
+
   return (
     <div
       data-testid="admin-shell"
@@ -55,7 +58,7 @@ export function AdminShellAdaptive({
               variant="ghost"
               size="icon"
               className="w-9 h-9 text-muted-foreground hover:text-foreground"
-              onClick={() => console.log("Open search")}
+              onClick={() => commandPalette.toggle()}
             >
               <Search className="w-5 h-5" />
             </Button>
@@ -81,6 +84,9 @@ export function AdminShellAdaptive({
 
       {/* Bottom Dock (mobile only) */}
       <DockAdmin />
+
+      {/* Command Palette (⌘K) */}
+      <CommandPalette open={commandPalette.open} onOpenChange={commandPalette.setOpen} />
     </div>
   );
 }
