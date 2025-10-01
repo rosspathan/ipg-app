@@ -96,13 +96,14 @@ This document outlines the complete plan to achieve Release Candidate status for
 - [x] **VERIFIED**: Life: 10k INR, 15-70 years → 500k INR maturity ✅ (min_term: 15y, max_term: 70y, maturity: 500000)
 - [x] **VERIFIED**: Manual approval workflow ✅ (insurance-claim-submit → admin review → insurance-claim-process)
 
-#### 7. BSK Loan
-- [ ] Range: 100-25,000 BSK
-- [ ] 16-week schedule
-- [ ] 0% interest default (admin configurable)
-- [ ] KYC before disbursal (toggle)
-- [ ] Repay from Withdrawable
-- [ ] Late fee policy
+#### 7. BSK Loan ⚠️
+- [x] **VERIFIED**: Range: 100-50,000 INR (converts to BSK at current rate) ✅
+- [ ] **MISMATCH**: Spec says "100-25,000 BSK" but implementation has max_amount_inr: 50000
+- [x] **VERIFIED**: 16-week schedule ✅ (default_tenor_weeks: 16)
+- [x] **VERIFIED**: 0% interest default ✅ (default_interest_rate_weekly: 0.0, admin configurable)
+- [x] **VERIFIED**: KYC before disbursal (toggle) ✅ (kyc_required: true in settings)
+- [x] **VERIFIED**: Repay from Withdrawable ✅ (bsk-loan-repay debits from withdrawable_balance)
+- [x] **VERIFIED**: Late fee policy ✅ (late_fee_percent: 0%, grace_period_days: 3, admin configurable)
 
 #### 8. Staking (Real Crypto)
 - [ ] Pools: BNB/BTC/ETH/IPG
