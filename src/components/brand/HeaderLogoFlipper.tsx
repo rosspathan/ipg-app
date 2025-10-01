@@ -4,8 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { LogoCropper } from "./LogoCropper"
 import { useLogoMotionFX, LogoMotionSettings } from "@/hooks/useLogoMotionFX"
-import logoPrimary from "../../../brand/input/logo_primary.jpg"
-import logoAlt from "../../../brand/input/logo_alt.jpg"
+import logoPrimary from "@/assets/logo-primary.jpg"
+import logoAlt from "@/assets/logo-alt.jpg"
 
 interface HeaderLogoFlipperProps {
   size?: "sm" | "md" | "lg"

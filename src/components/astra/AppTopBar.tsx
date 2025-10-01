@@ -1,11 +1,12 @@
 import * as React from "react"
-import { Bell, Sparkles } from "lucide-react"
+import { Bell, Sparkles, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useLocation } from "react-router-dom"
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
+import { APP_CONFIG } from "@/config/app"
 
 
 interface AppTopBarProps {
@@ -36,8 +37,20 @@ export function AppTopBar({ className }: AppTopBarProps) {
         <HeaderLogoFlipper size="sm" />
       </div>
 
-      {/* Right: Profile name + Notifications */}
+      {/* Right: Profile name + Notifications + WhatsApp */}
       <div className="flex items-center gap-2">
+        {/* WhatsApp Support */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 rounded-full hover:bg-success/10 hover:scale-105 transition-all"
+          onClick={() => window.open(APP_CONFIG.WHATSAPP_SUPPORT, '_blank')}
+          data-testid="whatsapp-support"
+          title="Contact Support"
+        >
+          <MessageCircle className="h-5 w-5 text-success" />
+        </Button>
+
         <Button
           variant="ghost"
           size="sm"

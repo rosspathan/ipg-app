@@ -24,6 +24,17 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       "@typescript-eslint/no-unused-vars": "off",
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["*Section*", "*List*", "*Card*", "*Shell*"],
+              message: "Legacy component imports are blocked. Use Astra or Nova design system components only."
+            }
+          ]
+        }
+      ]
     },
   }
 );

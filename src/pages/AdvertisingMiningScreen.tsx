@@ -251,27 +251,27 @@ const AdvertisingMiningScreen: React.FC = () => {
         
         if (dailyReward > 0) {
           // Add to withdrawable ledger for each active subscription
-            for (const subscription of userSubscriptions) {
-              const before = (bskBalances?.withdrawable_balance || 0);
-              const amount = subscription.daily_bsk;
-              const after = before + amount;
-              const { error: ledgerError } = await (supabase as any)
-                .from('bsk_withdrawable_ledger')
-                .insert({
-                  user_id: user.id,
-                  amount_bsk: amount,
-                  amount_inr: amount * settings.bsk_inr_rate,
-                  rate_snapshot: settings.bsk_inr_rate,
-                  tx_type: 'ad_subscription_daily',
-                  tx_subtype: subscription.id,
-                  reference_id: subscription.id,
-                  balance_before: before,
-                  balance_after: after,
-                  notes: `Daily subscription reward for ₹${subscription.tier_inr} tier`
-                });
+          let runningBalance = bskBalances?.withdrawable_balance || 0;
+          for (const subscription of userSubscriptions) {
+            const amount = subscription.daily_bsk;
+            const { error: ledgerError } = await (supabase as any)
+              .from('bsk_withdrawable_ledger')
+              .insert({
+                user_id: user.id,
+                amount_bsk: amount,
+                amount_inr: amount * settings.bsk_inr_rate,
+                rate_snapshot: settings.bsk_inr_rate,
+                tx_type: 'ad_subscription_daily',
+                tx_subtype: subscription.id,
+                reference_id: subscription.id,
+                balance_before: runningBalance,
+                balance_after: runningBalance + amount,
+                notes: `Daily subscription reward for ₹${subscription.tier_inr} tier`
+              });
 
-              if (ledgerError) throw ledgerError;
-            }
+            if (ledgerError) throw ledgerError;
+            runningBalance += amount;
+          }
 
           // Update withdrawable balance
           const { error: balanceError } = await supabase
