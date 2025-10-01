@@ -268,7 +268,6 @@ function App() {
                 <Route path="programs/ads" element={<AdvertiseMiningPage />} />
                 <Route path="programs/advertising" element={<AdvertiseMiningPage />} />
                 <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
-                <Route path="programs/subscriptions" element={<SubscriptionsScreen />} />
                 <Route path="programs/referrals" element={<ReferralsScreen />} />
                 <Route path="programs/staking" element={<StakingScreen />} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
