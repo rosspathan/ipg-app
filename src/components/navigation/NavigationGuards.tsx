@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthLock } from '@/hooks/useAuthLock';
 import { ROUTES } from '@/config/routes';
 import { useNavigation } from '@/hooks/useNavigation';
+import { hasLocalSecurity } from '@/utils/localSecurityStorage';
 
 // Auth Guard - Protects authenticated routes
 interface AuthGuardProps {
@@ -133,6 +135,47 @@ export const VerificationGuard: React.FC<VerificationGuardProps> = ({
   return <>{children}</>;
 };
 
+// Lock Guard - CRITICAL: Enforces PIN/biometric on every app open
+interface LockGuardProps {
+  children: React.ReactNode;
+}
+
+export const LockGuard: React.FC<LockGuardProps> = ({ children }) => {
+  const { user, loading } = useAuth();
+  const { lockState, isUnlockRequired } = useAuthLock();
+  const location = useLocation();
+
+  // Skip lock screen for auth routes
+  const isAuthRoute = location.pathname.startsWith('/auth') || 
+                     location.pathname.startsWith('/onboarding') ||
+                     location.pathname === '/' ||
+                     location.pathname.startsWith('/welcome');
+
+  if (isAuthRoute) {
+    return <>{children}</>;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">Initializing security...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // CRITICAL: If user is authenticated and has security set up, require unlock
+  if (user && (hasLocalSecurity() || lockState.biometricEnabled)) {
+    if (!lockState.isUnlocked || isUnlockRequired()) {
+      return <Navigate to="/auth/lock" state={{ from: location }} replace />;
+    }
+  }
+
+  return <>{children}</>;
+};
+
 // Route Guard - Master guard that combines all guards
 interface RouteGuardProps {
   children: React.ReactNode;
@@ -181,6 +224,15 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
       <AuthGuard>
         {guardedChildren}
       </AuthGuard>
+    );
+  }
+
+  // CRITICAL: Apply lock guard to all authenticated user routes
+  if (requireAuth && !requireRole) {
+    guardedChildren = (
+      <LockGuard>
+        {guardedChildren}
+      </LockGuard>
     );
   }
 

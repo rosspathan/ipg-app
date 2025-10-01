@@ -21,14 +21,14 @@ This document outlines the complete plan to achieve Release Candidate status for
 - [x] Email verification (OTP + magic link)
 - [x] PIN setup (6-digit)
 - [x] Biometric enrollment
-- [ ] **VERIFY**: App lock on every open (PIN/biometric required)
+- [x] **VERIFY**: App lock on every open (PIN/biometric required) - LockGuard now enforces this
 
-### B) Dashboard (User Home) ⚠️
+### B) Dashboard (User Home) ✅
 - [x] Sticky header with animated spinning logo (5s flip)
 - [x] Username display
 - [x] Bell icon (notifications)
-- [ ] **VERIFY**: Support → WhatsApp link
-- [ ] **VERIFY**: Balance order: 1) Crypto Portfolio, 2) BSK Withdrawable, 3) BSK Holding
+- [x] **VERIFY**: Support → WhatsApp link (+919133444422)
+- [x] **VERIFY**: Balance order: 1) Crypto Portfolio, 2) BSK Withdrawable, 3) BSK Holding
 - [x] Actions: Deposit, Withdraw, Trade, Swap, Transfer
 - [x] Announcements: ticker + image carousel
 - [x] Programs grid (admin-controlled)
@@ -100,13 +100,13 @@ This document outlines the complete plan to achieve Release Candidate status for
 - [ ] APR/lock periods
 - [ ] Rewards per admin policy
 
-### D) Trading (Real Spot) ⚠️
+### D) Trading (Real Spot) ✅
 - [x] PairsGrid (Recent/Favorites/All)
 - [x] Admin-editable tokens & pairs
-- [ ] **CRITICAL**: Chart does NOT render by default
-- [ ] **CRITICAL**: User must tap "Candles" to mount ChartPanel
-- [ ] **CRITICAL**: Unsubscribe streams when OFF
-- [ ] **CRITICAL**: Lazy-load chart library
+- [x] **CRITICAL**: Chart does NOT render by default
+- [x] **CRITICAL**: User must tap "Candles" to mount ChartPanel
+- [x] **CRITICAL**: Unsubscribe streams when OFF
+- [x] **CRITICAL**: Lazy-load chart library
 - [x] OrderTicket (Market/Limit)
 - [x] Depth, trades tape, fees
 - [x] LIVE/SIM adapters
@@ -278,10 +278,10 @@ This document outlines the complete plan to achieve Release Candidate status for
 ## Critical Issues Identified
 
 ### 🔴 HIGH PRIORITY
-1. **Trading Chart**: Must NOT render by default - needs implementation
-2. **Balance Order**: Verify wallet shows correct order
-3. **WhatsApp Support**: Verify link exists and works
-4. **App Lock**: Verify PIN/biometric required on every open
+1. ~~**Trading Chart**: Must NOT render by default - needs implementation~~ ✅ FIXED
+2. ~~**Balance Order**: Verify wallet shows correct order~~ ✅ FIXED  
+3. ~~**WhatsApp Support**: Verify link exists and works~~ ✅ FIXED (+919133444422)
+4. ~~**App Lock**: Verify PIN/biometric required on every open~~ ✅ FIXED (LockGuard enforces)
 
 ### 🟡 MEDIUM PRIORITY
 1. All program rules need verification against spec
