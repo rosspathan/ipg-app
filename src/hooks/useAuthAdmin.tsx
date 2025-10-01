@@ -63,47 +63,44 @@ export function AuthProviderAdmin({ children }: { children: React.ReactNode }) {
       setIsAdmin(true);
     }
 
+    const resolveSession = async (session: Session | null) => {
+      console.log('Admin auth state change:', session ? 'SIGNED_IN' : 'SIGNED_OUT', session?.user?.email);
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        const latestWeb3Admin = localStorage.getItem('cryptoflow_web3_admin');
+        if (latestWeb3Admin === 'true') {
+          setIsAdmin(true);
+        } else {
+          await checkAdminRole(session.user.id);
+        }
+      } else {
+        // Clear admin status on logout
+        localStorage.removeItem('cryptoflow_web3_admin');
+        localStorage.removeItem('cryptoflow_admin_wallet');
+        setIsAdmin(false);
+      }
+
+      setLoading(false);
+    };
+
     // Set up auth state listener for admin sessions
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Admin auth state change:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Check admin role for authenticated users (unless already web3 admin)
-          const latestWeb3Admin = localStorage.getItem('cryptoflow_web3_admin');
-          if (latestWeb3Admin !== 'true') {
-            setTimeout(() => {
-              checkAdminRole(session.user!.id);
-            }, 0);
-          }
-        } else {
-          // Clear admin status on logout
-          localStorage.removeItem('cryptoflow_web3_admin');
-          localStorage.removeItem('cryptoflow_admin_wallet');
-          setIsAdmin(false);
-        }
-        
-        setLoading(false);
+      (_event, session) => {
+        // enter loading while we validate role
+        setLoading(true);
+        resolveSession(session);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    (async () => {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
       console.log('Initial admin session check:', session?.user?.email);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      const latestWeb3Admin = localStorage.getItem('cryptoflow_web3_admin');
-      if (session?.user && latestWeb3Admin !== 'true') {
-        setTimeout(() => {
-          checkAdminRole(session.user!.id);
-        }, 0);
-      }
-      
-      setLoading(false);
-    });
+      await resolveSession(session);
+    })();
 
     return () => subscription.unsubscribe();
   }, []);
