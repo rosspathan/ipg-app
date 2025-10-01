@@ -79,8 +79,6 @@ import ProfileScreen from "./pages/ProfileScreen";
 // Admin Pages
 import AdminLoginScreen from "./pages/AdminLoginScreen";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminDashboardNova from "./pages/admin/AdminDashboardNova";
-import AdminUsersNova from "./pages/admin/AdminUsersNova";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAssets from "./pages/AdminAssets";
 import AdminMarkets from "./pages/AdminMarkets";
