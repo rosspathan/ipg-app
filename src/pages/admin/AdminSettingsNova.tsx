@@ -1,173 +1,253 @@
 import * as React from "react";
 import { useState } from "react";
+import { CardLane } from "@/components/admin/nova/CardLane";
+import { KPIStat } from "@/components/admin/nova/KPIStat";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Settings, Bell, Shield, Database, Globe, Mail } from "lucide-react";
+import { Settings, Save, Database, Shield, Mail, Bell, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function AdminSettingsNova() {
-  const [notifications, setNotifications] = useState(true);
-  const [maintenance, setMaintenance] = useState(false);
+  const [settings, setSettings] = useState({
+    siteName: "I-SMART Platform",
+    siteUrl: "https://ismart.app",
+    maintenanceMode: false,
+    registrationOpen: true,
+    emailNotifications: true,
+    pushNotifications: true,
+    twoFactorRequired: false,
+    maxWithdrawalDaily: "50000",
+    minDepositAmount: "100",
+    tradingFeePercent: "0.1",
+  });
 
-  const settingSections = [
-    {
-      id: "general",
-      title: "General Settings",
-      icon: Settings,
-      items: [
-        { label: "Platform Name", value: "IPG Admin" },
-        { label: "Default Currency", value: "USDT" },
-        { label: "Timezone", value: "UTC" },
-      ],
-    },
-    {
-      id: "notifications",
-      title: "Notifications",
-      icon: Bell,
-      items: [
-        { label: "Email Alerts", value: "Enabled" },
-        { label: "SMS Alerts", value: "Disabled" },
-        { label: "Push Notifications", value: "Enabled" },
-      ],
-    },
-    {
-      id: "security",
-      title: "Security",
-      icon: Shield,
-      items: [
-        { label: "2FA Required", value: "Admin Only" },
-        { label: "Session Timeout", value: "30 minutes" },
-        { label: "IP Whitelist", value: "Enabled" },
-      ],
-    },
-    {
-      id: "database",
-      title: "Database",
-      icon: Database,
-      items: [
-        { label: "Backup Frequency", value: "Daily" },
-        { label: "Retention Period", value: "90 days" },
-        { label: "Last Backup", value: "2 hours ago" },
-      ],
-    },
-  ];
+  const handleSave = () => {
+    toast.success("Settings saved successfully");
+  };
 
   return (
-    <div data-testid="page-admin-settings" className="space-y-4 p-4 pb-6">
-      <h1 className="text-xl font-heading font-bold text-foreground">
-        Settings
-      </h1>
+    <div data-testid="page-admin-settings" className="space-y-4 pb-6">
+      {/* Summary KPIs */}
+      <CardLane title="System Status">
+        <KPIStat
+          label="System Status"
+          value="Healthy"
+          icon={<Database className="w-4 h-4" />}
+          variant="success"
+        />
+        <KPIStat
+          label="Uptime"
+          value="99.9%"
+          icon={<Shield className="w-4 h-4" />}
+          variant="success"
+        />
+        <KPIStat
+          label="Active Users"
+          value="12,847"
+          icon={<Settings className="w-4 h-4" />}
+        />
+      </CardLane>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="px-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-heading font-bold text-foreground">
+            System Settings
+          </h1>
+          <Button
+            size="sm"
+            className="gap-2"
+            onClick={handleSave}
+          >
+            <Save className="w-4 h-4" />
+            Save Changes
+          </Button>
+        </div>
+
+        {/* General Settings */}
         <div
           className={cn(
-            "p-4 rounded-2xl border",
+            "p-6 rounded-2xl border space-y-4",
             "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
             "border-[hsl(225_24%_22%/0.16)]"
           )}
         >
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-foreground">Notifications</p>
-            <Bell className="w-4 h-4 text-muted-foreground" />
+          <div className="flex items-center gap-3 mb-4">
+            <Settings className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-heading font-semibold text-foreground">
+              General
+            </h2>
           </div>
-          <Switch
-            checked={notifications}
-            onCheckedChange={setNotifications}
-          />
+          
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">
+                Site Name
+              </label>
+              <Input
+                value={settings.siteName}
+                onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
+                className="bg-background/50"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">
+                Site URL
+              </label>
+              <Input
+                value={settings.siteUrl}
+                onChange={(e) => setSettings({ ...settings, siteUrl: e.target.value })}
+                className="bg-background/50"
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">Maintenance Mode</p>
+                <p className="text-xs text-muted-foreground">Disable access for non-admin users</p>
+              </div>
+              <Switch
+                checked={settings.maintenanceMode}
+                onCheckedChange={(checked) => setSettings({ ...settings, maintenanceMode: checked })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">Registration Open</p>
+                <p className="text-xs text-muted-foreground">Allow new user registrations</p>
+              </div>
+              <Switch
+                checked={settings.registrationOpen}
+                onCheckedChange={(checked) => setSettings({ ...settings, registrationOpen: checked })}
+              />
+            </div>
+          </div>
         </div>
 
+        {/* Security Settings */}
         <div
           className={cn(
-            "p-4 rounded-2xl border",
+            "p-6 rounded-2xl border space-y-4",
             "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
-            maintenance
-              ? "border-warning/20 bg-warning/5"
-              : "border-[hsl(225_24%_22%/0.16)]"
+            "border-[hsl(225_24%_22%/0.16)]"
           )}
         >
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-foreground">Maintenance Mode</p>
-            <Shield className="w-4 h-4 text-muted-foreground" />
+          <div className="flex items-center gap-3 mb-4">
+            <Shield className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-heading font-semibold text-foreground">
+              Security
+            </h2>
           </div>
-          <Switch
-            checked={maintenance}
-            onCheckedChange={setMaintenance}
-          />
-        </div>
-      </div>
-
-      {/* Settings Sections */}
-      <div className="space-y-3">
-        {settingSections.map((section) => (
-          <div
-            key={section.id}
-            className={cn(
-              "p-4 rounded-2xl border",
-              "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
-              "border-[hsl(225_24%_22%/0.16)]"
-            )}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <section.icon className="w-4 h-4" />
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">Require 2FA</p>
+                <p className="text-xs text-muted-foreground">Force two-factor authentication for all users</p>
               </div>
-              <h2 className="text-base font-heading font-semibold text-foreground">
-                {section.title}
-              </h2>
+              <Switch
+                checked={settings.twoFactorRequired}
+                onCheckedChange={(checked) => setSettings({ ...settings, twoFactorRequired: checked })}
+              />
             </div>
 
-            <div className="space-y-3">
-              {section.items.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between py-2"
-                >
-                  <p className="text-sm text-muted-foreground">{item.label}</p>
-                  <Badge
-                    variant="outline"
-                    className="bg-accent/10 text-accent border-accent/20"
-                  >
-                    {item.value}
-                  </Badge>
-                </div>
-              ))}
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">
+                Max Daily Withdrawal (INR)
+              </label>
+              <Input
+                type="number"
+                value={settings.maxWithdrawalDaily}
+                onChange={(e) => setSettings({ ...settings, maxWithdrawalDaily: e.target.value })}
+                className="bg-background/50"
+              />
             </div>
 
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full mt-4 bg-transparent border-[hsl(225_24%_22%/0.16)]"
-              onClick={() => console.log("Edit", section.id)}
-            >
-              Edit {section.title}
-            </Button>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">
+                Min Deposit Amount (INR)
+              </label>
+              <Input
+                type="number"
+                value={settings.minDepositAmount}
+                onChange={(e) => setSettings({ ...settings, minDepositAmount: e.target.value })}
+                className="bg-background/50"
+              />
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* System Info */}
-      <div
-        className={cn(
-          "p-4 rounded-2xl border",
-          "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
-          "border-[hsl(225_24%_22%/0.16)]"
-        )}
-      >
-        <h3 className="text-sm font-medium text-foreground mb-3">System Info</h3>
-        <div className="space-y-2 text-xs text-muted-foreground">
-          <div className="flex justify-between">
-            <span>Version</span>
-            <span className="text-foreground">3.2.1</span>
+        {/* Notification Settings */}
+        <div
+          className={cn(
+            "p-6 rounded-2xl border space-y-4",
+            "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
+            "border-[hsl(225_24%_22%/0.16)]"
+          )}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <Bell className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-heading font-semibold text-foreground">
+              Notifications
+            </h2>
           </div>
-          <div className="flex justify-between">
-            <span>Environment</span>
-            <span className="text-foreground">Production</span>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">Email Notifications</p>
+                <p className="text-xs text-muted-foreground">Send system emails to users</p>
+              </div>
+              <Switch
+                checked={settings.emailNotifications}
+                onCheckedChange={(checked) => setSettings({ ...settings, emailNotifications: checked })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">Push Notifications</p>
+                <p className="text-xs text-muted-foreground">Enable push notifications</p>
+              </div>
+              <Switch
+                checked={settings.pushNotifications}
+                onCheckedChange={(checked) => setSettings({ ...settings, pushNotifications: checked })}
+              />
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span>Uptime</span>
-            <span className="text-foreground">12 days</span>
+        </div>
+
+        {/* Trading Settings */}
+        <div
+          className={cn(
+            "p-6 rounded-2xl border space-y-4",
+            "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
+            "border-[hsl(225_24%_22%/0.16)]"
+          )}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <Palette className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-heading font-semibold text-foreground">
+              Trading
+            </h2>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">
+                Trading Fee (%)
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                value={settings.tradingFeePercent}
+                onChange={(e) => setSettings({ ...settings, tradingFeePercent: e.target.value })}
+                className="bg-background/50"
+              />
+            </div>
           </div>
         </div>
       </div>
