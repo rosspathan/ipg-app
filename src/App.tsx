@@ -243,31 +243,33 @@ function App() {
               <Route path="/admin/*" element={
                 <AuthProviderAdmin>
                   <AdminRouteNew>
-                    <AdminShellAdaptive title="Admin Console" />
+                    <AdminLayout />
                   </AdminRouteNew>
                 </AuthProviderAdmin>
               }>
                 <Route index element={<AdminDashboardNova />} />
                 <Route path="dashboard" element={<AdminDashboardNova />} />
                 
-                {/* Phase 2 Routes */}
+                {/* Users Management */}
                 <Route path="users" element={<React.Suspense fallback={<div>Loading...</div>}><AdminUsersManagementNova /></React.Suspense>} />
                 
-                {/* Phase 3 Routes */}
+                {/* Markets Management */}
                 <Route path="markets" element={<AdminMarketsNova />} />
                 
-                {/* Phase 4 Routes */}
-                <Route path="subscriptions" element={<AdminSubscriptionsNova />} />
-                <Route path="staking" element={<AdminStakingNova />} />
-                <Route path="spin" element={<AdminSpinNova />} />
-                <Route path="reports" element={<AdminReportsNova />} />
-                <Route path="settings" element={<AdminSettingsNova />} />
+                {/* BSK Management */}
+                <Route path="bsk" element={<AdminBSKManagementNova />} />
                 
-                {/* CMS Program Registry */}
+                {/* Programs */}
                 <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />
-                <Route path="programs/:moduleId" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
-                <Route path="programs/bsk" element={<AdminBSKManagementNova />} />
+                <Route path="programs/editor" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
                 
+                {/* Gamification & Programs */}
+                <Route path="spin" element={<AdminSpinNova />} />
+                <Route path="staking" element={<AdminStakingNova />} />
+                <Route path="subscriptions" element={<AdminSubscriptionsNova />} />
+                
+                {/* Reports & Settings */}
+                <Route path="reports" element={<AdminReportsNova />} />
                 <Route path="settings" element={<AdminSettingsNova />} />
               </Route>
 
