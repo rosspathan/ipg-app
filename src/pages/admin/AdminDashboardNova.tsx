@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import { CardLane } from "@/components/admin/nova/CardLane";
 import { KPIStat } from "@/components/admin/nova/KPIStat";
 import { RecordCard } from "@/components/admin/nova/RecordCard";
@@ -26,6 +27,7 @@ import {
  * - Recent Activity feed
  */
 export default function AdminDashboardNova() {
+  const navigate = useNavigate();
   return (
     <div data-testid="page-admin-home" className="space-y-6 pb-6">
       {/* KPI Lane */}
@@ -152,27 +154,27 @@ export default function AdminDashboardNova() {
         <QuickActionCard
           title="List Token"
           icon={<Coins className="w-5 h-5" />}
-          action={() => console.log("List Token")}
+          action={() => navigate('/admin/markets')}
         />
         <QuickActionCard
           title="Create Pair"
           icon={<RefreshCw className="w-5 h-5" />}
-          action={() => console.log("Create Pair")}
+          action={() => navigate('/admin/markets')}
         />
         <QuickActionCard
           title="Start Draw"
           icon={<Gift className="w-5 h-5" />}
-          action={() => console.log("Start Draw")}
+          action={() => navigate('/admin/spin')}
         />
         <QuickActionCard
           title="New Ad"
           icon={<Megaphone className="w-5 h-5" />}
-          action={() => console.log("New Ad")}
+          action={() => navigate('/admin-legacy/ads')}
         />
         <QuickActionCard
           title="Set Fee Rule"
           icon={<DollarSign className="w-5 h-5" />}
-          action={() => console.log("Set Fee")}
+          action={() => navigate('/admin/settings')}
         />
       </CardLane>
 

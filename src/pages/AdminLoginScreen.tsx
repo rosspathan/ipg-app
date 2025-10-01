@@ -6,13 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Wallet, Shield, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { useWeb3 } from "@/contexts/Web3Context";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthAdmin } from "@/hooks/useAuthAdmin";
 import { supabase } from "@/integrations/supabase/client";
 
 const AdminLoginScreen = () => {
   const navigate = useNavigate();
   const { wallet, isConnected, connectMetaMask, signMessage, disconnectWallet } = useWeb3();
-  const { setIsAdmin } = useAuth();
+  const { setIsAdmin } = useAuthAdmin();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
