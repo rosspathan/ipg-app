@@ -42,7 +42,7 @@ export default function AdminProgramEditorNova() {
           <p className="text-muted-foreground">Module not found</p>
           <Button
             size="sm"
-            onClick={() => navigate('/admin-nova/programs')}
+            onClick={() => navigate('/admin/programs')}
             className="mt-4"
           >
             Back to Programs
@@ -95,7 +95,7 @@ export default function AdminProgramEditorNova() {
             <Button
               size="icon"
               variant="ghost"
-              onClick={() => navigate('/admin-nova/programs')}
+              onClick={() => navigate('/admin/programs')}
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>

@@ -279,6 +279,7 @@ function App() {
                 <Route path="subscriptions" element={<AdminSubscriptionsNova />} />
                 
                 {/* Reports & Settings */}
+                <Route path="ads" element={<AdminAdsScreen />} />
                 <Route path="reports" element={<AdminReportsNova />} />
                 <Route path="settings" element={<AdminSettingsNova />} />
               </Route>

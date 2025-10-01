@@ -66,7 +66,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       group: "navigation",
       keywords: ["home", "overview"],
       onSelect: () => {
-        navigate("/admin-nova");
+        navigate("/admin");
         addToRecent("nav-dashboard");
       },
     },
@@ -77,7 +77,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       group: "navigation",
       keywords: ["assets", "tokens", "markets"],
       onSelect: () => {
-        navigate("/admin-nova/catalog");
+        navigate("/admin/markets");
         addToRecent("nav-catalog");
       },
     },
@@ -88,7 +88,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       group: "navigation",
       keywords: ["staking", "spin", "draw", "insurance"],
       onSelect: () => {
-        navigate("/admin-nova/programs");
+        navigate("/admin/programs");
         addToRecent("nav-programs");
       },
     },
@@ -99,7 +99,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       group: "navigation",
       keywords: ["analytics", "stats"],
       onSelect: () => {
-        navigate("/admin-nova/reports");
+        navigate("/admin/reports");
         addToRecent("nav-reports");
       },
     },
@@ -110,7 +110,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       group: "navigation",
       keywords: ["config", "system"],
       onSelect: () => {
-        navigate("/admin-nova/settings");
+        navigate("/admin/settings");
         addToRecent("nav-settings");
       },
     },

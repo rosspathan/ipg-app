@@ -39,11 +39,11 @@ export function DockAdmin({ className }: DockAdminProps) {
   const navigate = useNavigate();
 
   const mainTabs = [
-    { path: "/admin-nova", label: "Overview", icon: LayoutDashboard, exact: true },
-    { path: "/admin-nova/users", label: "Users", icon: Users },
-    { path: "/admin-nova/programs", label: "Programs", icon: Package },
-    { path: "/admin-nova/markets", label: "Markets", icon: LineChart },
-    { path: "/admin-nova/reports", label: "Reports", icon: BarChart3 },
+    { path: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+    { path: "/admin/users", label: "Users", icon: Users },
+    { path: "/admin/programs", label: "Programs", icon: Package },
+    { path: "/admin/markets", label: "Markets", icon: LineChart },
+    { path: "/admin/reports", label: "Reports", icon: BarChart3 },
   ];
 
   const quickActions: QuickAction[] = [
@@ -51,7 +51,7 @@ export function DockAdmin({ className }: DockAdminProps) {
       label: "New Program",
       icon: Package,
       onClick: () => {
-        navigate("/admin-nova/programs");
+        navigate("/admin/programs");
         setShowQuickAdd(false);
       },
     },
@@ -59,7 +59,7 @@ export function DockAdmin({ className }: DockAdminProps) {
       label: "List Token",
       icon: Coins,
       onClick: () => {
-        navigate("/admin-nova/markets");
+        navigate("/admin/markets");
         setShowQuickAdd(false);
       },
     },
@@ -67,7 +67,7 @@ export function DockAdmin({ className }: DockAdminProps) {
       label: "Manage Users",
       icon: UserPlus,
       onClick: () => {
-        navigate("/admin-nova/users");
+        navigate("/admin/users");
         setShowQuickAdd(false);
       },
     },
@@ -75,7 +75,7 @@ export function DockAdmin({ className }: DockAdminProps) {
       label: "Settings",
       icon: Cog,
       onClick: () => {
-        navigate("/admin-nova/settings");
+        navigate("/admin/settings");
         setShowQuickAdd(false);
       },
     },
@@ -83,7 +83,7 @@ export function DockAdmin({ className }: DockAdminProps) {
       label: "Reports",
       icon: BarChart3,
       onClick: () => {
-        navigate("/admin-nova/reports");
+        navigate("/admin/reports");
         setShowQuickAdd(false);
       },
     },
