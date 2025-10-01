@@ -90,10 +90,11 @@ This document outlines the complete plan to achieve Release Candidate status for
 - [x] **VERIFIED**: Auto-run when full or at schedule ✅ (start_mode: 'auto_when_full', 'scheduled_time')
 - [x] **NOT REQUIRED**: Refund on expiry - Admin will fill pools with own members to ensure draws always complete
 
-#### 6. Insurance (Manual Approval)
-- [ ] Accident: 10k BSK/year → up to 1M BSK payout
-- [ ] Trading: 10k BSK/sub → 50k BSK if 100k loss
-- [ ] Life: 10k BSK, 15-70 years → 500k maturity
+#### 6. Insurance (Manual Approval) ✅
+- [x] **VERIFIED**: Accident: 10k INR/year → up to 1M INR payout ✅ (premium_inr: 10000, coverage_amount_inr: 1000000)
+- [x] **VERIFIED**: Trading: 10k INR/sub → 50% compensation up to 50k INR max ✅ (compensation_percent: 50%, max_payout: 50000)
+- [x] **VERIFIED**: Life: 10k INR, 15-70 years → 500k INR maturity ✅ (min_term: 15y, max_term: 70y, maturity: 500000)
+- [x] **VERIFIED**: Manual approval workflow ✅ (insurance-claim-submit → admin review → insurance-claim-process)
 
 #### 7. BSK Loan
 - [ ] Range: 100-25,000 BSK
