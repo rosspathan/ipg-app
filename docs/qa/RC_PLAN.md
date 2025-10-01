@@ -33,25 +33,25 @@ This document outlines the complete plan to achieve Release Candidate status for
 - [x] Announcements: ticker + image carousel
 - [x] Programs grid (admin-controlled)
 
-### C) Programs Rules 🔍
-#### 1. Team & Referrals (50 levels)
-- [ ] Verify L1-50 payout structure:
-  - L1 (direct): +5 BSK → Holding
-  - L2-10: +0.5 BSK → Withdrawable
-  - L11-20: +0.4 BSK → Withdrawable
-  - L21-30: +0.3 BSK → Withdrawable
-  - L31-40: +0.2 BSK → Withdrawable
-  - L41-50: +0.1 BSK → Withdrawable
-- [ ] Badge subscriptions (BSK):
-  - Silver 1000 → unlock L2-10
-  - Gold 2000 → unlock L11-20
-  - Platinum 3000 → unlock L21-30
-  - Diamond 4000 → unlock L31-40
-  - VIP 5000 → unlock L41-50 + 10k BSK Holding
-- [ ] Direct referrer bonus: 10% of subscriber's amount → Withdrawable
-- [ ] Upgrade logic: pay difference only
-- [ ] VIP milestones: 10→10k, 50→50k, 100→100k, 250→200k, 500→500k
-- [ ] Anti-abuse: self-referral block, daily caps, 24-48h clawback
+### C) Programs Rules ⚠️
+#### 1. Team & Referrals (50 levels) 
+- [x] **VERIFIED**: L1-50 payout structure:
+  - L1 (direct): +5 BSK → Holding ✅
+  - L2-10: +0.5 BSK → Withdrawable ✅
+  - L11-20: +0.4 BSK → Withdrawable ✅
+  - L21-30: +0.3 BSK → Withdrawable ✅ (Fixed)
+  - L31-40: +0.2 BSK → Withdrawable ✅ (Fixed)
+  - L41-50: +0.1 BSK → Withdrawable ✅ (Fixed)
+- [x] **VERIFIED**: Badge subscriptions (BSK):
+  - Silver 1000 → unlock L2-10 ✅
+  - Gold 2000 → unlock L11-20 ✅
+  - Platinum 3000 → unlock L21-30 ✅
+  - Diamond 4000 → unlock L31-40 ✅
+  - VIP 5000 → unlock L41-50 + 10k BSK Holding ✅
+- [x] **VERIFIED**: Direct referrer bonus: 10% of subscriber's amount → Withdrawable ✅
+- [x] **VERIFIED**: VIP milestones: 10→10k, 50→50k, 100→100k, 250→200k, 500→500k ✅
+- [ ] **NEEDS VERIFICATION**: Upgrade logic implementation (pay difference only)
+- [ ] **NEEDS VERIFICATION**: Anti-abuse implementation (self-referral block, daily caps, 24-48h clawback)
 
 #### 2. Advertise Mining
 - [ ] Free daily: 1 qualified ad → +1 BSK Holding
