@@ -53,12 +53,16 @@ This document outlines the complete plan to achieve Release Candidate status for
 - [ ] **NEEDS VERIFICATION**: Upgrade logic implementation (pay difference only)
 - [ ] **NEEDS VERIFICATION**: Anti-abuse implementation (self-referral block, daily caps, 24-48h clawback)
 
-#### 2. Advertise Mining
-- [ ] Free daily: 1 qualified ad → +1 BSK Holding
-- [ ] Subscriptions: 100-10,000 BSK tiers
-- [ ] Daily payout: (tier/100) BSK × 100 days → Withdrawable
-- [ ] Requires ≥1 qualified view/day
-- [ ] Admin fallback auto-credit
+#### 2. Advertise Mining ⚠️
+- [x] **VERIFIED**: Subscriptions: 100-10,000 INR tiers ✅ (Database corrected)
+- [x] **VERIFIED**: Daily payout: (tier/100) BSK × 100 days ✅
+- [x] **VERIFIED**: Duration: 100 days for all tiers ✅
+- [x] **VERIFIED**: Required view time: 30 seconds ✅
+- [x] **VERIFIED**: Admin fallback setting exists (auto_credit_no_inventory) ✅
+- [ ] **NEEDS VERIFICATION**: Free daily +1 BSK goes to Holding (not Withdrawable)
+- [ ] **NEEDS VERIFICATION**: Subscription payouts go to Withdrawable
+- [ ] **NEEDS VERIFICATION**: ≥1 qualified view/day enforcement
+- [ ] **NEEDS VERIFICATION**: Admin fallback auto-credit functionality
 
 #### 3. BSK One-Time Purchase
 - [ ] Range: 1,000-100,000 BSK
