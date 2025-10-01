@@ -75,10 +75,10 @@ export function CardLane({
   return (
     <div
       data-testid="card-lane"
-      className={cn("space-y-2 sm:space-y-3", className)}
+      className={cn("space-y-3", className)}
     >
       {title && (
-        <h2 className="text-sm sm:text-base font-heading font-semibold text-foreground px-2 sm:px-3 lg:px-4">
+        <h2 className="text-base sm:text-base font-heading font-semibold text-foreground px-3 sm:px-4 lg:px-6">
           {title}
         </h2>
       )}
@@ -86,23 +86,22 @@ export function CardLane({
       <div
         ref={scrollRef}
         className={cn(
-          "flex gap-2 sm:gap-3 overflow-x-auto px-2 sm:px-3 lg:px-4 pb-2",
+          "flex gap-3 overflow-x-auto pb-3",
           "snap-x snap-mandatory scroll-smooth",
-          "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[hsl(225_24%_22%/0.3)]",
-          "-mx-2 sm:-mx-3 lg:-mx-4" // Negative margin for edge-to-edge scroll
+          "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[hsl(225_24%_22%/0.3)]"
         )}
         style={{
           scrollbarWidth: "thin",
           scrollbarColor: "hsl(225 24% 22% / 0.3) transparent",
-          paddingLeft: 'max(0.5rem, env(safe-area-inset-left))',
-          paddingRight: 'max(0.5rem, env(safe-area-inset-right))',
+          paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
+          paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
         }}
       >
         {React.Children.map(children, (child, idx) => (
           <div
             key={idx}
             data-parallax-card
-            className="snap-start shrink-0 transition-[transform,opacity] duration-200 first:ml-2 last:mr-2 sm:first:ml-3 sm:last:mr-3 lg:first:ml-4 lg:last:mr-4"
+            className="snap-start shrink-0 transition-[transform,opacity] duration-200 first:ml-0 last:mr-0"
             style={{ willChange: "transform, opacity" }}
           >
             {child}

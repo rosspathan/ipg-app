@@ -11,7 +11,7 @@ import { DockAdmin } from "@/components/admin/nova/DockAdmin";
 const AdminLayout = () => {
   return (
     <NavigationStateManager>
-      <SidebarProvider>
+      <SidebarProvider defaultOpen={false}>
         <div className="flex min-h-screen w-full bg-gradient-to-b from-[hsl(245_35%_7%)] to-[hsl(234_38%_13%)]">
           {/* Desktop Sidebar - Only visible on desktop (lg+) */}
           <div className="hidden lg:block lg:fixed lg:inset-y-0 lg:left-0 lg:z-50">
@@ -19,7 +19,7 @@ const AdminLayout = () => {
           </div>
 
           {/* Main Content Wrapper - Full width on mobile, offset on desktop */}
-          <div className="flex flex-col min-h-screen w-full lg:pl-64">
+          <div className="flex flex-col min-h-screen w-full lg:pl-64">....
             {/* Top Header - Mobile Optimized with Safe Areas */}
             <header 
               className="sticky top-0 z-40 bg-[hsl(230_28%_13%/0.95)] backdrop-blur-xl border-b border-[hsl(225_24%_22%/0.16)] shadow-[0_4px_24px_-8px_hsl(245_35%_7%/0.5)]"
