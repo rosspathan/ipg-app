@@ -166,7 +166,6 @@ function App() {
               <Route path="/onboarding/create-wallet" element={<CreateWalletScreen />} />
               <Route path="/onboarding/import-wallet" element={<ImportWalletScreen />} />
               <Route path="/onboarding/security" element={<SecuritySetupScreen />} />
-              <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
               <Route path="/recovery/verify" element={<RecoveryVerifyScreen />} />
 
               {/* Legacy Onboarding Redirects */}
