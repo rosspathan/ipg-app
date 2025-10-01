@@ -29,6 +29,7 @@ import AdminSettingsNova from "./pages/admin/AdminSettingsNova";
 const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNova"));
 const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
 const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
+import AdminBSKManagementNova from "./pages/admin/AdminBSKManagementNova";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -125,7 +126,7 @@ import RemovedPage from "@/pages/RemovedPage";
 import DebugFunding from "@/pages/DebugFunding";
 import SpinVerifyScreen from "@/pages/SpinVerifyScreen"; 
 import BSKVestingScreen from "@/pages/BSKVestingScreen";
-import { BSKBalanceViewer } from "@/components/bsk/BSKBalanceViewer";
+import { BSKWalletPage } from "@/pages/astra/BSKWalletPage";
 
 // Astra Design System
 import { AstraLayout } from "@/layouts/AstraLayout";
@@ -224,16 +225,11 @@ function App() {
                 <Route path="programs/referrals" element={<ReferralsScreen />} />
                 <Route path="programs/staking" element={<StakingScreen />} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
-      {/* BSK Balance integration */}
-      <Route path="programs/bsk" element={
-        <div className="p-6 space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">BSK Management</h1>
-            <p className="text-muted-foreground">Bonos Stellar Krypto balance and ledger</p>
-          </div>
-          <BSKBalanceViewer />
-        </div>
-      } />
+                <Route path="programs/bsk" element={<BSKWalletPage />} />
+                <Route path="programs/achievements" element={<GamificationScreen />} />
+                <Route path="design-review" element={<DesignReview />} />
+                {/* Unknown Astra sub-route */}
+                <Route path="*" element={<NotFound />} />
               </Route>
 
               {/* Admin Authentication */}
@@ -270,6 +266,9 @@ function App() {
                 {/* CMS Program Registry */}
                 <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />
                 <Route path="programs/:moduleId" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
+                <Route path="programs/bsk" element={<AdminBSKManagementNova />} />
+                
+                <Route path="settings" element={<AdminSettingsNova />} />
               </Route>
 
               {/* Legacy Admin Console removed */}
