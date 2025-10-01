@@ -46,46 +46,7 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
 
   return (
     <div className={cn("space-y-4", className)} data-testid="balance-cluster">
-      {/* BSK Withdrawable */}
-      <AstraCard variant="elevated" className="p-4" data-testid="bsk-withdrawable-card">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-heading font-semibold text-sm text-success">BSK — Withdrawable</h3>
-          <Button variant="ghost" size="sm" onClick={() => setIsPrivate(!isPrivate)} className="h-6 w-6 p-0">
-            {isPrivate ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-          </Button>
-        </div>
-        <BalanceDisplay 
-          amount={mockBalances.withdrawable} 
-          currency="BSK" 
-          size="lg" 
-          isPrivate={isPrivate}
-          gradient 
-        />
-        <div className="mt-3">
-          <QuickActionsRibbon actions={withdrawActions} compact />
-        </div>
-      </AstraCard>
-
-      {/* BSK Holding */}
-      <AstraCard variant="glass" className="p-4" data-testid="bsk-holding-card">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h3 className="font-heading font-semibold text-sm text-warning">BSK — Holding</h3>
-            <span className="text-xs text-muted-foreground">(Locked)</span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => setIsPrivate(!isPrivate)} className="h-6 w-6 p-0">
-            {isPrivate ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-          </Button>
-        </div>
-        <BalanceDisplay 
-          amount={mockBalances.holding} 
-          currency="BSK" 
-          size="lg" 
-          isPrivate={isPrivate}
-        />
-      </AstraCard>
-
-      {/* Crypto Assets Grid */}
+      {/* Crypto Assets Grid - FIRST per spec */}
       <AstraCard variant="glass" className="p-4" data-testid="crypto-assets-grid">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-heading font-semibold text-sm text-accent">Crypto Assets</h3>
@@ -141,6 +102,45 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
             )}
           </>
         )}
+      </AstraCard>
+
+      {/* BSK Withdrawable - SECOND per spec */}
+      <AstraCard variant="elevated" className="p-4" data-testid="bsk-withdrawable-card">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-heading font-semibold text-sm text-success">BSK — Withdrawable</h3>
+          <Button variant="ghost" size="sm" onClick={() => setIsPrivate(!isPrivate)} className="h-6 w-6 p-0">
+            {isPrivate ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          </Button>
+        </div>
+        <BalanceDisplay 
+          amount={mockBalances.withdrawable} 
+          currency="BSK" 
+          size="lg" 
+          isPrivate={isPrivate}
+          gradient 
+        />
+        <div className="mt-3">
+          <QuickActionsRibbon actions={withdrawActions} compact />
+        </div>
+      </AstraCard>
+
+      {/* BSK Holding - THIRD per spec */}
+      <AstraCard variant="glass" className="p-4" data-testid="bsk-holding-card">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h3 className="font-heading font-semibold text-sm text-warning">BSK — Holding</h3>
+            <span className="text-xs text-muted-foreground">(Locked)</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setIsPrivate(!isPrivate)} className="h-6 w-6 p-0">
+            {isPrivate ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          </Button>
+        </div>
+        <BalanceDisplay 
+          amount={mockBalances.holding} 
+          currency="BSK" 
+          size="lg" 
+          isPrivate={isPrivate}
+        />
       </AstraCard>
     </div>
   )
