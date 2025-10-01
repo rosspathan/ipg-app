@@ -13,6 +13,7 @@ import { useSecuritySync } from "@/hooks/useSecuritySync";
 // Layouts
 import UserLayout from "@/layouts/UserLayout";
 import AdminLayout from "@/layouts/AdminLayout";
+import { AdminShellAdaptive } from "@/components/admin/nova/AdminShellAdaptive";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -73,6 +74,7 @@ import ProfileScreen from "./pages/ProfileScreen";
 // Admin Pages
 import AdminLoginScreen from "./pages/AdminLoginScreen";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboardNova from "./pages/admin/AdminDashboardNova";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAssets from "./pages/AdminAssets";
 import AdminMarkets from "./pages/AdminMarkets";
@@ -269,8 +271,26 @@ function App() {
                 </AuthProviderAdmin>
               } />
 
-              {/* Admin Console Routes */}
+              {/* Admin Console Routes - Nova DS */}
               <Route path="/admin/*" element={
+                <AuthProviderAdmin>
+                  <AdminRouteNew>
+                    <AdminShellAdaptive title="Admin Console" />
+                  </AdminRouteNew>
+                </AuthProviderAdmin>
+              }>
+                <Route index element={<AdminDashboardNova />} />
+                <Route path="dashboard" element={<AdminDashboardNova />} />
+                
+                {/* Placeholder routes for Phase 2+ */}
+                <Route path="catalog" element={<div className="p-4"><p className="text-muted-foreground">Catalog - Coming in Phase 2</p></div>} />
+                <Route path="programs" element={<div className="p-4"><p className="text-muted-foreground">Programs - Coming in Phase 2</p></div>} />
+                <Route path="reports" element={<div className="p-4"><p className="text-muted-foreground">Reports - Coming in Phase 2</p></div>} />
+                <Route path="settings" element={<div className="p-4"><p className="text-muted-foreground">Settings - Coming in Phase 2</p></div>} />
+              </Route>
+
+              {/* Admin Console Routes - Legacy (for reference) */}
+              <Route path="/admin-legacy/*" element={
                 <AuthProviderAdmin>
                   <AdminRouteNew>
                     <AdminLayout />

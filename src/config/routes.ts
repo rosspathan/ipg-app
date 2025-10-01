@@ -71,10 +71,19 @@ export const ROUTES = {
   ORDER_CONFIRMATION: '/app/order/:orderId',
   TRADE_RECEIPT: '/app/trade/:tradeId',
   
-  // Admin stack (/admin/*)
+  // Admin stack (/admin/*) - Nova DS
   ADMIN: '/admin',
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_LOGIN: '/admin/login',
+  
+  // Nova DS Admin Routes (Phase 1)
+  ADMIN_CATALOG: '/admin/catalog',
+  ADMIN_PROGRAMS_NOVA: '/admin/programs',
+  ADMIN_REPORTS: '/admin/reports',
+  ADMIN_SETTINGS: '/admin/settings',
+  
+  // Legacy Admin Routes
+  ADMIN_LEGACY: '/admin-legacy',
   
   ADMIN_USERS: '/admin/users',
   ADMIN_ASSETS: '/admin/assets',

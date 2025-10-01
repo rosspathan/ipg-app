@@ -18,6 +18,13 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				heading: 'var(--font-heading)',
+				body: 'var(--font-body)',
+			},
+			fontFeatureSettings: {
+				'tnum': '"tnum"', // tabular numbers
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

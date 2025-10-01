@@ -8,6 +8,12 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* ===============================================
+       NOVA ADMIN DS - DESIGN TOKENS
+       Mobile-first admin console with Purple theme
+       Reference: src/design-system/nova-admin-tokens.ts
+       =============================================== */
+    
     /* PURPLE NOVA DS - Premium Dark UI */
     /* Core Brand Colors - HSL for precision */
     --primary: 262 100% 65%; /* #7C4DFF */
@@ -86,6 +92,10 @@ All colors MUST be HSL.
     --card-blur: 12px;
     --safe-area-top: env(safe-area-inset-top);
     --safe-area-bottom: env(safe-area-inset-bottom);
+
+    /* Nova Admin DS Typography */
+    --font-heading: 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
 
     /* Purple Nova Motion - 120/220/320ms */
     --duration-micro: 120ms;
