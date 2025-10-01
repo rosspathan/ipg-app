@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { BrandLogoBlink } from "./BrandLogoBlink";
 import { DockAdmin } from "./DockAdmin";
 import { CommandPalette, useCommandPalette } from "./CommandPalette";
+import { BreadcrumbNav } from "./BreadcrumbNav";
 import { Button } from "@/components/ui/button";
 
 interface AdminShellAdaptiveProps {
@@ -76,6 +77,9 @@ export function AdminShellAdaptive({
           </div>
         </div>
       </header>
+
+      {/* Breadcrumb Navigation */}
+      <BreadcrumbNav />
 
       {/* Main Content */}
       <main className="pb-20 md:pb-8">

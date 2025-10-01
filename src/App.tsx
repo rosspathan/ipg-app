@@ -40,8 +40,8 @@ import WelcomeScreen from "./pages/WelcomeScreen";
 import WelcomeScreen1 from "./pages/WelcomeScreen1";
 import WelcomeScreen2 from "./pages/WelcomeScreen2";
 import WelcomeScreen3 from "./pages/WelcomeScreen3";
-import AuthLoginScreen from "./pages/AuthLoginScreen";
-import AuthRegisterScreen from "./pages/AuthRegisterScreen";
+import AuthUnified from "./pages/AuthUnified";
+import AuthEmailVerification from "./pages/AuthEmailVerification";
 import AppLockScreen from "./pages/AppLockScreen";
 
 // Onboarding Pages
@@ -125,6 +125,7 @@ import RemovedPage from "@/pages/RemovedPage";
 import DebugFunding from "@/pages/DebugFunding";
 import SpinVerifyScreen from "@/pages/SpinVerifyScreen"; 
 import BSKVestingScreen from "@/pages/BSKVestingScreen";
+import { BSKBalanceViewer } from "@/components/bsk/BSKBalanceViewer";
 
 // Astra Design System
 import { AstraLayout } from "@/layouts/AstraLayout";
@@ -174,14 +175,24 @@ function App() {
               <Route path="/import-wallet" element={<Navigate to="/onboarding/import-wallet" replace />} />
 
               {/* User Authentication */}
+              <Route path="/auth" element={
+                <AuthProviderUser>
+                  <AuthUnified />
+                </AuthProviderUser>
+              } />
               <Route path="/auth/login" element={
                 <AuthProviderUser>
-                  <AuthLoginScreen />
+                  <AuthUnified />
                 </AuthProviderUser>
               } />
               <Route path="/auth/register" element={
                 <AuthProviderUser>
-                  <AuthRegisterScreen />
+                  <AuthUnified />
+                </AuthProviderUser>
+              } />
+              <Route path="/auth/email-verification" element={
+                <AuthProviderUser>
+                  <AuthEmailVerification />
                 </AuthProviderUser>
               } />
               <Route path="/auth/lock" element={<AppLockScreen />} />
@@ -213,10 +224,16 @@ function App() {
                 <Route path="programs/referrals" element={<ReferralsScreen />} />
                 <Route path="programs/staking" element={<StakingScreen />} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
-                <Route path="programs/achievements" element={<GamificationScreen />} />
-                <Route path="design-review" element={<DesignReview />} />
-                {/* Unknown Astra sub-route */}
-                <Route path="*" element={<NotFound />} />
+      {/* BSK Balance integration */}
+      <Route path="programs/bsk" element={
+        <div className="p-6 space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">BSK Management</h1>
+            <p className="text-muted-foreground">Bonos Stellar Krypto balance and ledger</p>
+          </div>
+          <BSKBalanceViewer />
+        </div>
+      } />
               </Route>
 
               {/* Admin Authentication */}

@@ -3,6 +3,7 @@ import { Home, Wallet, TrendingUp, Grid3x3, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLocation } from "react-router-dom"
 import { LogoDockButton } from "./LogoDockButton"
+import { QuickSwitchMenu } from "./QuickSwitchMenu"
 
 interface DockNavProps {
   onNavigate?: (path: string) => void
@@ -24,6 +25,7 @@ const navItems = [
  */
 export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) {
   const location = useLocation()
+  const [quickSwitchOpen, setQuickSwitchOpen] = React.useState(false)
 
   const isActive = (path: string | null) => {
     if (!path) return false
@@ -34,6 +36,11 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
     if (path && onNavigate) {
       onNavigate(path)
     }
+  }
+
+  const handleCenterPress = () => {
+    setQuickSwitchOpen(true)
+    onCenterPress?.()
   }
 
   return (
@@ -138,9 +145,15 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
 
         {/* Floating center button - positioned absolutely above the nav */}
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-          <LogoDockButton onClick={onCenterPress} />
+          <LogoDockButton onClick={handleCenterPress} />
         </div>
       </div>
+
+      {/* QuickSwitch Radial Menu */}
+      <QuickSwitchMenu 
+        isOpen={quickSwitchOpen} 
+        onClose={() => setQuickSwitchOpen(false)} 
+      />
     </nav>
   )
 }
