@@ -19,6 +19,11 @@ import { AdminShellAdaptive } from "@/components/admin/nova/AdminShellAdaptive";
 import AdminDashboardNova from "./pages/admin/AdminDashboardNova";
 import AdminUsersNova from "./pages/admin/AdminUsersNova";
 import AdminMarketsNova from "./pages/admin/AdminMarketsNova";
+import AdminSubscriptionsNova from "./pages/admin/AdminSubscriptionsNova";
+import AdminStakingNova from "./pages/admin/AdminStakingNova";
+import AdminSpinNova from "./pages/admin/AdminSpinNova";
+import AdminReportsNova from "./pages/admin/AdminReportsNova";
+import AdminSettingsNova from "./pages/admin/AdminSettingsNova";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -291,6 +296,13 @@ function App() {
                 
                 {/* Phase 3 Routes */}
                 <Route path="markets" element={<AdminMarketsNova />} />
+                
+                {/* Phase 4 Routes */}
+                <Route path="subscriptions" element={<AdminSubscriptionsNova />} />
+                <Route path="staking" element={<AdminStakingNova />} />
+                <Route path="spin" element={<AdminSpinNova />} />
+                <Route path="reports" element={<AdminReportsNova />} />
+                <Route path="settings" element={<AdminSettingsNova />} />
                 
                 {/* Placeholder routes for Phase 3+ */}
                 <Route path="catalog" element={<div className="p-4"><p className="text-muted-foreground">Catalog - Coming in Phase 3</p></div>} />
