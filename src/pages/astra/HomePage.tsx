@@ -148,7 +148,7 @@ export function HomePage() {
   }
 
   const handleWhatsAppSupport = () => {
-    window.open("https://wa.me/YOUR_NUMBER?text=Hello%20iSmart%20support", '_blank')
+    window.open("https://wa.me/919133444422?text=Hello%20iSmart%20support", '_blank')
   }
 
   // Premium glass top bar
