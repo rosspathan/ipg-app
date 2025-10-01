@@ -82,13 +82,13 @@ This document outlines the complete plan to achieve Release Candidate status for
 - [x] **VERIFIED**: Verify page exists (/app/spin/verify) ✅
 - [ ] **MISSING**: 10% of winnings → Admin Fees (not implemented in edge function)
 
-#### 5. Lucky Draw (Provably Fair) ⚠️
+#### 5. Lucky Draw (Provably Fair) ✅
 - [x] **VERIFIED**: Default: 100 participants ✅ (pool_size default in draw_configs)
 - [x] **VERIFIED**: Admin sets: ticket price, winners, prizes ✅ (draw_configs + draw_prizes tables)
 - [x] **VERIFIED**: 10% fee per winner → Admin Fees ✅ (fee_percent default 10%, admin_fees_ledger populated)
 - [x] **VERIFIED**: Multiple pools ✅ (draw_configs supports multiple concurrent draws)
 - [x] **VERIFIED**: Auto-run when full or at schedule ✅ (start_mode: 'auto_when_full', 'scheduled_time')
-- [ ] **MISSING**: Refund on expiry (expiry_time field exists but no refund logic in edge functions)
+- [x] **NOT REQUIRED**: Refund on expiry - Admin will fill pools with own members to ensure draws always complete
 
 #### 6. Insurance (Manual Approval)
 - [ ] Accident: 10k BSK/year → up to 1M BSK payout
