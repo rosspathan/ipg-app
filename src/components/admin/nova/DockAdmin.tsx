@@ -23,7 +23,7 @@ import {
   CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 interface DockAdminProps {
   className?: string;
@@ -261,35 +261,36 @@ export function DockAdmin({ className }: DockAdminProps) {
 
       {/* Quick Add Sheet */}
       <Sheet open={showQuickAdd} onOpenChange={setShowQuickAdd}>
-        <SheetContent
+      <SheetContent
           side="bottom"
-          className="bg-[hsl(230_28%_13%)] border-[hsl(225_24%_22%)] max-h-[80vh] overflow-y-auto"
+          className="bg-[hsl(230_28%_13%)] border-[hsl(225_24%_22%)] h-[88dvh] sm:max-h-[80vh] overflow-y-auto rounded-t-3xl"
           style={{
             paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))'
           }}
         >
-          <SheetHeader>
-            <SheetTitle className="font-heading text-base sm:text-lg">Quick Actions</SheetTitle>
-          </SheetHeader>
+      <SheetHeader>
+        <SheetTitle className="font-heading text-base sm:text-lg">Quick Actions</SheetTitle>
+        <SheetDescription className="sr-only">Admin quick actions grid. Choose an action to navigate.</SheetDescription>
+      </SheetHeader>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6 pb-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 mt-3 sm:mt-6 pb-2">
             {quickActions.map((action) => (
               <button
                 key={action.label}
                 onClick={action.onClick}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-2 sm:gap-3",
-                  "p-4 sm:p-5",
-                  "rounded-2xl border border-[hsl(225_24%_22%/0.16)]",
+                  "flex flex-col items-center justify-center gap-1.5 sm:gap-3",
+                  "p-3 sm:p-5",
+                  "rounded-xl border border-[hsl(225_24%_22%/0.16)]",
                   "bg-[hsl(229_30%_16%/0.5)] backdrop-blur",
                   "transition-all duration-[120ms]",
                   "hover:bg-[hsl(229_30%_16%)] hover:border-primary/30",
                   "active:scale-95 touch-manipulation",
-                  "min-h-[90px] sm:min-h-[100px]",
+                  "min-h-[72px] sm:min-h-[100px]",
                   "min-w-[44px]" // Ensures touch target
                 )}
               >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <action.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
                 <span className="text-xs sm:text-sm font-medium text-center leading-tight px-1">
