@@ -1,0 +1,58 @@
+Route,Component,Purpose,Design System,Has Grid?,Has Card-Lane?,Has Sticky Dock?,testid,Notes
+/,Navigate,Root redirect,-,No,No,No,-,→ /onboarding
+/splash,SplashScreen,Brand intro,Legacy,No,No,No,-,Logo animation
+/onboarding,OnboardingFlow,Main onboarding,Legacy,No,No,No,-,Wizard pattern
+/auth/login,AuthLoginScreen,User login,Legacy,No,No,No,-,Email + password
+/auth/register,AuthRegisterScreen,Registration,Legacy,No,No,No,-,Email verification
+/app/home,HomePageRebuilt,Dashboard,Astra,Yes,Yes,Yes,page-home,Programs grid + KPIs
+/app/wallet,WalletPageRebuilt,Wallet view,Astra,Yes,Yes,Yes,page-wallet,Balance cluster
+/app/programs,ProgramsPageRebuilt,Program catalog,Astra,Yes,Yes,Yes,page-programs,Program tiles
+/app/trade,TradingScreenRebuilt,Live trading,Astra,Yes,No,Yes,page-trading,Order book + chart
+/app/profile,ProfilePageRebuilt,User settings,Astra,Yes,Yes,Yes,page-profile,Tabs UI
+/app/programs/insurance,InsurancePage,Insurance plans,Astra,Yes,Yes,Yes,-,Plan cards
+/app/programs/spin,SpinWheelPage,Spin wheel game,Astra,Yes,No,Yes,-,Canvas wheel
+/app/programs/ads,AdvertiseMiningPage,Ad mining,Astra,Yes,Yes,Yes,-,Video ad integration
+/app/programs/bsk-bonus,BSKPromotionScreen,BSK promotions,Legacy,No,No,Yes,-,⚠️ Legacy in Astra
+/app/programs/subscriptions,SubscriptionsScreen,Subscriptions,Legacy,No,No,Yes,-,⚠️ Legacy in Astra
+/app/programs/referrals,ReferralsScreen,Referrals,Legacy,No,No,Yes,-,⚠️ Legacy in Astra
+/app/programs/staking,StakingScreen,Staking pools,Legacy,No,No,Yes,-,⚠️ Legacy in Astra
+/app/programs/staking/:id,StakingDetailScreen,Pool detail,Legacy,No,No,Yes,-,⚠️ Legacy in Astra
+/app/programs/achievements,GamificationScreen,Achievements,Legacy,No,No,Yes,-,⚠️ Legacy in Astra
+/app-legacy/home,AppHomeScreen,Home dashboard,Legacy,No,No,Yes,-,Classic cards
+/app-legacy/wallet,WalletHomeScreen,Wallet main,Legacy,No,No,Yes,-,Asset list
+/app-legacy/wallet/deposit,DepositScreen,Crypto deposit,Legacy,No,No,Yes,-,QR code
+/app-legacy/wallet/withdraw,WithdrawScreen,Crypto withdraw,Legacy,No,No,Yes,-,Address input
+/app-legacy/wallet/history,HistoryScreen,Transaction log,Legacy,No,No,Yes,-,Table view
+/app-legacy/markets,MarketsScreen,Market list,Legacy,No,No,Yes,-,Crypto pairs
+/app-legacy/markets/:pair,MarketDetailScreen,Pair chart,Legacy,No,No,Yes,-,TradingView widget
+/app-legacy/trade,TradingScreenRebuilt,Trading UI,Legacy,No,No,Yes,-,Shared component
+/app-legacy/programs,ProgramsScreen,Program catalog,Legacy,No,No,Yes,-,Grid cards
+/app-legacy/programs/spin,ISmartSpinScreen,Spin wheel,Legacy,No,No,Yes,-,Canvas rendering
+/app-legacy/programs/insurance,InsuranceScreen,Insurance,Legacy,No,No,Yes,-,Plans + claims
+/app-legacy/profile,ProfileScreen,User profile,Legacy,No,No,Yes,-,Tab navigation
+/app-legacy/support,SupportScreen,Support tickets,Legacy,No,No,Yes,-,Ticket list
+/admin,AdminDashboardNova,Admin dashboard,Nova,No,Yes,Yes,page-admin-home,KPI lanes + queues
+/admin/users,AdminUsersManagementNova,User management,Nova,Yes,Yes,Yes,page-admin-users-management,DataGrid + filters
+/admin/markets,AdminMarketsNova,Markets admin,Nova,Yes,No,Yes,page-admin-markets,Token/pair manager
+/admin/programs,AdminProgramsNova,Program catalog,Nova,No,Yes,Yes,programs-catalog,CMS registry
+/admin/programs/:moduleId,AdminProgramEditorNova,Program editor,Nova,No,No,Yes,program-editor,Schema-driven forms
+/admin/subscriptions,AdminSubscriptionsNova,Sub management,Nova,No,Yes,Yes,page-admin-subscriptions,Tier management
+/admin/staking,AdminStakingNova,Staking admin,Nova,No,Yes,Yes,page-admin-staking,Pool config
+/admin/spin,AdminSpinNova,Spin wheel admin,Nova,No,Yes,Yes,page-admin-spin,Wheel config
+/admin/reports,AdminReportsNova,Reports,Nova,No,Yes,Yes,page-admin-reports,Report list
+/admin/settings,AdminSettingsNova,Settings,Nova,No,No,Yes,page-admin-settings,System config
+/admin/login,AdminLoginScreen,Admin auth,Legacy,No,No,No,-,Email + Web3 wallet
+/admin-legacy,AdminDashboard,Legacy dashboard,Legacy,No,No,No,-,⚠️ Migrate to Nova
+/admin-legacy/users,AdminUsers,User list,Legacy,No,No,No,-,⚠️ Migrate to Nova
+/admin-legacy/assets,AdminAssets,Asset management,Legacy,No,No,No,-,No Nova equivalent
+/admin-legacy/markets,AdminMarkets,Markets config,Legacy,No,No,No,-,No Nova equivalent
+/admin-legacy/funding,AdminFunding,Funding ops,Legacy,No,No,No,-,No Nova equivalent
+/admin-legacy/subscriptions,AdminSubscriptions,Sub admin,Legacy,No,No,No,-,Migrated to Nova
+/admin-legacy/referrals,AdminReferralProgram,Referral config,Legacy,No,No,No,-,No Nova equivalent
+/admin-legacy/staking,AdminStaking,Staking admin,Legacy,No,No,No,-,Migrated to Nova
+/admin-legacy/lucky,AdminNewLuckyDraw,Lucky draw,Legacy,No,No,No,-,No Nova equivalent
+/admin-legacy/insurance,AdminInsurance,Insurance admin,Legacy,No,No,No,-,No Nova equivalent
+/admin-legacy/ads,AdminAdsScreen,Ad management,Legacy,No,No,No,-,No Nova equivalent
+/admin-legacy/fees,AdminFees,Fee settings,Legacy,No,No,No,-,No Nova equivalent
+/admin-legacy/support,AdminSupportScreen,Support center,Legacy,No,No,No,-,No Nova equivalent
+/admin-legacy/system,AdminSystemScreen,System settings,Legacy,No,No,No,-,Migrated to Nova
