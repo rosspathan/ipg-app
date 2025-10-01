@@ -164,17 +164,32 @@ export default function AdminDashboardNova() {
         <QuickActionCard
           title="Start Draw"
           icon={<Gift className="w-5 h-5" />}
-          action={() => navigate('/admin/spin')}
+          action={() => navigate('/admin/lucky-draw')}
         />
         <QuickActionCard
-          title="New Ad"
+          title="Manage Insurance"
+          icon={<Shield className="w-5 h-5" />}
+          action={() => navigate('/admin/insurance')}
+        />
+        <QuickActionCard
+          title="Ad Campaigns"
           icon={<Megaphone className="w-5 h-5" />}
           action={() => navigate('/admin/ads')}
         />
         <QuickActionCard
-          title="Set Fee Rule"
+          title="Purchase Bonus"
           icon={<DollarSign className="w-5 h-5" />}
-          action={() => navigate('/admin/settings')}
+          action={() => navigate('/admin/purchase-bonus')}
+        />
+        <QuickActionCard
+          title="Referrals"
+          icon={<Users className="w-5 h-5" />}
+          action={() => navigate('/admin/referrals')}
+        />
+        <QuickActionCard
+          title="Funding Routes"
+          icon={<TrendingUp className="w-5 h-5" />}
+          action={() => navigate('/admin/funding')}
         />
       </CardLane>
 

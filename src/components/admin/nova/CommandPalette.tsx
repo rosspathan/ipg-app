@@ -23,6 +23,11 @@ import {
   Megaphone,
   DollarSign,
   Search,
+  Shield,
+  RefreshCw,
+  Ticket,
+  CreditCard,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -114,6 +119,105 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         addToRecent("nav-settings");
       },
     },
+    {
+      id: "nav-users",
+      label: "Go to Users",
+      icon: Users,
+      group: "navigation",
+      keywords: ["manage", "accounts"],
+      onSelect: () => {
+        navigate("/admin/users");
+        addToRecent("nav-users");
+      },
+    },
+    {
+      id: "nav-spin",
+      label: "Go to Spin Wheel",
+      icon: RefreshCw,
+      group: "navigation",
+      keywords: ["wheel", "game"],
+      onSelect: () => {
+        navigate("/admin/spin");
+        addToRecent("nav-spin");
+      },
+    },
+    {
+      id: "nav-staking",
+      label: "Go to Staking",
+      icon: TrendingUp,
+      group: "navigation",
+      keywords: ["stake", "earn"],
+      onSelect: () => {
+        navigate("/admin/staking");
+        addToRecent("nav-staking");
+      },
+    },
+    {
+      id: "nav-insurance",
+      label: "Go to Insurance",
+      icon: Shield,
+      group: "navigation",
+      keywords: ["protection", "coverage"],
+      onSelect: () => {
+        navigate("/admin/insurance");
+        addToRecent("nav-insurance");
+      },
+    },
+    {
+      id: "nav-lucky-draw",
+      label: "Go to Lucky Draw",
+      icon: Ticket,
+      group: "navigation",
+      keywords: ["lottery", "draw"],
+      onSelect: () => {
+        navigate("/admin/lucky-draw");
+        addToRecent("nav-lucky-draw");
+      },
+    },
+    {
+      id: "nav-referrals",
+      label: "Go to Referrals",
+      icon: UserPlus,
+      group: "navigation",
+      keywords: ["affiliate", "reward"],
+      onSelect: () => {
+        navigate("/admin/referrals");
+        addToRecent("nav-referrals");
+      },
+    },
+    {
+      id: "nav-funding",
+      label: "Go to Funding",
+      icon: DollarSign,
+      group: "navigation",
+      keywords: ["deposits", "withdrawals"],
+      onSelect: () => {
+        navigate("/admin/funding");
+        addToRecent("nav-funding");
+      },
+    },
+    {
+      id: "nav-ads",
+      label: "Go to Ads",
+      icon: Megaphone,
+      group: "navigation",
+      keywords: ["advertising", "campaigns"],
+      onSelect: () => {
+        navigate("/admin/ads");
+        addToRecent("nav-ads");
+      },
+    },
+    {
+      id: "nav-subscriptions",
+      label: "Go to Subscriptions",
+      icon: CreditCard,
+      group: "navigation",
+      keywords: ["plans", "tiers"],
+      onSelect: () => {
+        navigate("/admin/subscriptions");
+        addToRecent("nav-subscriptions");
+      },
+    },
 
     // Quick Actions
     {
@@ -123,7 +227,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       group: "actions",
       keywords: ["add", "create", "asset"],
       onSelect: () => {
-        console.log("List Token");
+        navigate("/admin/markets");
         addToRecent("action-list-token");
       },
     },
@@ -134,7 +238,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       group: "actions",
       keywords: ["market", "trading"],
       onSelect: () => {
-        console.log("Create Pair");
+        navigate("/admin/markets");
         addToRecent("action-create-pair");
       },
     },
@@ -145,7 +249,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       group: "actions",
       keywords: ["lucky", "lottery"],
       onSelect: () => {
-        console.log("Start Draw");
+        navigate("/admin/lucky-draw");
         addToRecent("action-start-draw");
       },
     },
@@ -156,19 +260,19 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       group: "actions",
       keywords: ["advertisement", "campaign"],
       onSelect: () => {
-        console.log("New Ad");
+        navigate("/admin/ads");
         addToRecent("action-new-ad");
       },
     },
     {
-      id: "action-set-fee",
-      label: "Set Fee Rule",
-      icon: DollarSign,
+      id: "action-purchase-bonus",
+      label: "Create Purchase Bonus",
+      icon: Gift,
       group: "actions",
-      keywords: ["trading", "commission"],
+      keywords: ["bonus", "reward"],
       onSelect: () => {
-        console.log("Set Fee Rule");
-        addToRecent("action-set-fee");
+        navigate("/admin/purchase-bonus");
+        addToRecent("action-purchase-bonus");
       },
     },
   ];

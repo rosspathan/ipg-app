@@ -12,7 +12,15 @@ import {
   Repeat,
   UserPlus,
   BarChart3,
-  Cog
+  Cog,
+  Gift,
+  Shield,
+  Megaphone,
+  DollarSign,
+  TrendingUp,
+  RefreshCw,
+  Ticket,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -72,18 +80,74 @@ export function DockAdmin({ className }: DockAdminProps) {
       },
     },
     {
-      label: "Settings",
-      icon: Cog,
+      label: "Lucky Draw",
+      icon: Ticket,
       onClick: () => {
-        navigate("/admin/settings");
+        navigate("/admin/lucky-draw");
         setShowQuickAdd(false);
       },
     },
     {
-      label: "Reports",
-      icon: BarChart3,
+      label: "Spin Wheel",
+      icon: RefreshCw,
       onClick: () => {
-        navigate("/admin/reports");
+        navigate("/admin/spin");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "Insurance",
+      icon: Shield,
+      onClick: () => {
+        navigate("/admin/insurance");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "Staking",
+      icon: TrendingUp,
+      onClick: () => {
+        navigate("/admin/staking");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "Purchase Bonus",
+      icon: DollarSign,
+      onClick: () => {
+        navigate("/admin/purchase-bonus");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "Referrals",
+      icon: UserPlus,
+      onClick: () => {
+        navigate("/admin/referrals");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "Funding",
+      icon: DollarSign,
+      onClick: () => {
+        navigate("/admin/funding");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "Ads",
+      icon: Megaphone,
+      onClick: () => {
+        navigate("/admin/ads");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "Subscriptions",
+      icon: CreditCard,
+      onClick: () => {
+        navigate("/admin/subscriptions");
         setShowQuickAdd(false);
       },
     },
@@ -199,7 +263,7 @@ export function DockAdmin({ className }: DockAdminProps) {
       <Sheet open={showQuickAdd} onOpenChange={setShowQuickAdd}>
         <SheetContent
           side="bottom"
-          className="bg-[hsl(230_28%_13%)] border-[hsl(225_24%_22%)]"
+          className="bg-[hsl(230_28%_13%)] border-[hsl(225_24%_22%)] max-h-[80vh] overflow-y-auto"
           style={{
             paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))'
           }}
@@ -208,7 +272,7 @@ export function DockAdmin({ className }: DockAdminProps) {
             <SheetTitle className="font-heading text-base sm:text-lg">Quick Actions</SheetTitle>
           </SheetHeader>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6 pb-4">
             {quickActions.map((action) => (
               <button
                 key={action.label}

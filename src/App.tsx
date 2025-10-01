@@ -105,7 +105,7 @@ import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
 import { AdminTradingFeesSimple } from "./components/AdminTradingFeesSimple";
 import AdminTradingSettings from "./pages/AdminTradingSettings";
-
+import AdminPurchaseBonusScreen from "./pages/AdminPurchaseBonusScreen";
 import AdminINRFundingScreen from "./pages/AdminINRFundingScreen";
 import AdminCredentialsTest from "./pages/AdminCredentialsTest";
 import AdminSystemScreen from "./pages/AdminSystemScreen";
@@ -277,6 +277,13 @@ function App() {
                 <Route path="spin" element={<AdminSpinNova />} />
                 <Route path="staking" element={<AdminStakingNova />} />
                 <Route path="subscriptions" element={<AdminSubscriptionsNova />} />
+                <Route path="insurance" element={<AdminInsurance />} />
+                <Route path="lucky-draw" element={<AdminNewLuckyDraw />} />
+                <Route path="purchase-bonus" element={<AdminPurchaseBonusScreen />} />
+                <Route path="referrals" element={<AdminReferralProgram />} />
+                <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />
+                <Route path="funding" element={<AdminFunding />} />
+                <Route path="funding/inr" element={<AdminINRFundingScreen />} />
                 
                 {/* Reports & Settings */}
                 <Route path="ads" element={<AdminAdsScreen />} />
