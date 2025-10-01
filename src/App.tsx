@@ -121,6 +121,7 @@ import { AdminSupportTicketScreen } from "@/pages/AdminSupportTicketScreen";
 import { AdminNotificationsScreen } from "@/pages/AdminNotificationsScreen";
 import { NotificationsScreen } from "@/pages/NotificationsScreen";
 import NotFound from "@/pages/NotFound";
+import RemovedPage from "@/pages/RemovedPage";
 import DebugFunding from "@/pages/DebugFunding";
 import SpinVerifyScreen from "@/pages/SpinVerifyScreen"; 
 import BSKVestingScreen from "@/pages/BSKVestingScreen";
@@ -185,65 +186,8 @@ function App() {
               } />
               <Route path="/auth/lock" element={<AppLockScreen />} />
 
-              {/* User App Routes - Legacy Layout */}
-              <Route path="/app-legacy/*" element={
-                <AuthProviderUser>
-                  <UserRoute>
-                    <UnlockGate>
-                      <UserLayout />
-                    </UnlockGate>
-                  </UserRoute>
-                </AuthProviderUser>
-              }>
-                <Route index element={<Navigate to="/app/home" replace />} />
-                <Route path="home" element={<Navigate to="/app/home" replace />} />
-                <Route path="wallet" element={<WalletHomeScreen />} />
-                <Route path="wallet/deposit" element={<DepositScreen />} />
-                <Route path="wallet/withdraw" element={<WithdrawScreen />} />
-                <Route path="wallet/send" element={<SendScreen />} />
-                <Route path="wallet/transfer" element={<TransferScreen />} />
-                <Route path="wallet/history" element={<HistoryScreen />} />
-                <Route path="markets" element={<MarketsScreen />} />
-                <Route path="markets/:pair" element={<MarketDetailScreen />} />
-                <Route path="trade" element={<TradingScreenRebuilt />} />
-                <Route path="trade/:pair" element={<TradingScreenRebuilt />} />
-                <Route path="trade/receipt" element={<TradeReceiptScreen />} />
-                <Route path="trade/confirmation" element={<OrderConfirmationScreen />} />
-                <Route path="swap" element={<SwapScreen />} />
-                <Route path="programs" element={<ProgramsScreen />} />
-                <Route path="spin" element={<ISmartSpinScreen />} />
-                <Route path="spin/history" element={<SpinHistoryScreen />} />
-                <Route path="programs/spin" element={<ISmartSpinScreen />} />
-                <Route path="programs/spin/history" element={<SpinHistoryScreen />} />
-                <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
-                <Route path="programs/ads" element={<AdvertisingMiningScreen />} />
-                <Route path="programs/advertising" element={<AdvertisingMiningScreen />} />
-                <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
-                <Route path="programs/subscriptions" element={<SubscriptionsScreen />} />
-                <Route path="programs/referrals" element={<ReferralsScreen />} />
-                <Route path="programs/staking" element={<StakingScreen />} />
-                <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
-                <Route path="programs/lucky" element={<NewLuckyDraw />} />
-                <Route path="lucky" element={<NewLuckyDraw />} />
-                <Route path="spin-wheel" element={
-                  <React.Suspense fallback={<div className="p-6">Loading...</div>}>
-                    <ISmartSpinScreen />
-                  </React.Suspense>
-                } />
-                <Route path="spin-verify" element={<SpinVerifyScreen />} />
-                <Route path="bsk-vesting" element={<BSKVestingScreen />} />
-                <Route path="programs/insurance" element={<InsuranceScreen />} />
-                <Route path="insurance" element={<InsuranceScreen />} />
-                <Route path="loans" element={<BSKLoansScreen />} />
-                <Route path="programs/insurance/claim" element={<FileClaimScreen />} />
-                <Route path="programs/achievements" element={<GamificationScreen />} />
-                <Route path="deposit/inr" element={<INRDepositScreen />} />
-                <Route path="withdraw/inr" element={<INRWithdrawScreen />} />
-                <Route path="profile" element={<ProfileScreen />} />
-                <Route path="support" element={<SupportScreen />} />
-                <Route path="support/t/:id" element={<SupportTicketScreen />} />
-                <Route path="notifications" element={<NotificationsScreen />} />
-              </Route>
+              {/* Legacy User App removed */}
+              <Route path="/app-legacy/*" element={<RemovedPage home="/app/home" removed="Legacy user routes have been removed." />} />
 
               {/* User App Routes - New Astra Design System */}
               <Route path="/app/*" element={
@@ -271,8 +215,8 @@ function App() {
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="design-review" element={<DesignReview />} />
-                {/* Legacy redirects will be handled by fallback */}
-                <Route path="*" element={<Navigate to="/app-legacy" replace />} />
+                {/* Unknown Astra sub-route */}
+                <Route path="*" element={<NotFound />} />
               </Route>
 
               {/* Admin Authentication */}
@@ -311,38 +255,8 @@ function App() {
                 <Route path="programs/:moduleId" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
               </Route>
 
-              {/* Admin Console Routes - Legacy (for reference) */}
-              <Route path="/admin-legacy/*" element={
-                <AuthProviderAdmin>
-                  <AdminRouteNew>
-                    <AdminLayout />
-                  </AdminRouteNew>
-                </AuthProviderAdmin>
-              }>
-                <Route index element={<AdminDashboard />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="assets" element={<AdminAssets />} />
-                <Route path="markets" element={<AdminMarkets />} />
-                <Route path="funding" element={<AdminFunding />} />
-                <Route path="funding/inr" element={<AdminINRFundingScreen />} />
-                <Route path="subscriptions" element={<AdminSubscriptions />} />
-                <Route path="referrals" element={<AdminReferralProgram />} />
-                <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />
-                <Route path="staking" element={<AdminStaking />} />
-                <Route path="insurance" element={<AdminInsurance />} />
-                <Route path="ads" element={<AdminAdsScreen />} />
-                <Route path="fees" element={<AdminFees />} />
-                <Route path="trading-fees" element={<AdminTradingFeesSimple />} />
-                <Route path="trading-settings" element={<AdminTradingSettings />} />
-                <Route path="transfers" element={<div className="p-6"><h1 className="text-2xl font-bold">Transfer Management</h1></div>} />
-                <Route path="compliance" element={<div className="p-6"><h1 className="text-2xl font-bold">Compliance</h1></div>} />
-                <Route path="reports" element={<div className="p-6"><h1 className="text-2xl font-bold">Reports</h1></div>} />
-                <Route path="support" element={<AdminSupportScreen />} />
-                <Route path="support/t/:id" element={<AdminSupportTicketScreen />} />
-                <Route path="notifications" element={<AdminNotificationsScreen />} />
-                <Route path="system" element={<AdminSystemScreen />} />
-                <Route path="market-feed" element={<AdminMarketFeedScreen />} />
-              </Route>
+              {/* Legacy Admin Console removed */}
+              <Route path="/admin-legacy/*" element={<RemovedPage admin home="/admin" removed="Legacy admin routes have been removed." />} />
 
               {/* Utility Routes */}
             <Route path="/email-verification" element={<EmailVerificationScreen />} />

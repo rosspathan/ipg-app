@@ -238,19 +238,20 @@ export const useAdMining = () => {
     if (balanceError) throw balanceError;
 
     // Create ledger entry for the purchase
-    await supabase
+    const currentWithdrawable = bskBalances?.withdrawable_balance || 0;
+    await (supabase as any)
       .from('bsk_withdrawable_ledger')
       .insert({
         user_id: user.id,
-        subscription_id: data.id,
-        ad_id: null,
-        day_index: 0,
-        bsk_amount: -requiredBSK,
-        inr_snapshot: tierINR,
+        amount_bsk: -requiredBSK,
+        amount_inr: tierINR,
         rate_snapshot: settings.bsk_inr_rate,
-        status: 'settled',
-        type: 'subscription_purchase',
-        reason: `Purchased ${tierINR} INR subscription tier`
+        tx_type: 'ad_subscription_purchase',
+        tx_subtype: `${tierINR}`,
+        reference_id: data.id,
+        balance_before: currentWithdrawable,
+        balance_after: currentWithdrawable - requiredBSK,
+        notes: `Purchased subscription tier ₹${tierINR}`
       });
 
     toast({

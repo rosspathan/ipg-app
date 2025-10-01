@@ -199,18 +199,20 @@ const AdvertisingMiningScreen: React.FC = () => {
       
       if (type === 'free') {
         // Add to holding ledger
-        const { error: ledgerError } = await supabase
+        const baseHolding = (bskBalances?.holding_balance || 0);
+        const { error: ledgerError } = await (supabase as any)
           .from('bsk_holding_ledger')
           .insert({
             user_id: user.id,
-            ad_id: ad.id,
-            date_key: today,
-            bsk_amount: settings.free_daily_reward_bsk,
-            inr_snapshot: settings.free_daily_reward_bsk * settings.bsk_inr_rate,
+            amount_bsk: settings.free_daily_reward_bsk,
+            amount_inr: settings.free_daily_reward_bsk * settings.bsk_inr_rate,
             rate_snapshot: settings.bsk_inr_rate,
-            status: 'settled',
-            type: 'ad_free_view',
-            reason: 'Free daily ad view reward'
+            tx_type: 'ad_free_view',
+            tx_subtype: ad.id,
+            reference_id: ad.id,
+            balance_before: baseHolding,
+            balance_after: baseHolding + settings.free_daily_reward_bsk,
+            notes: `Free daily ad view on ${today}`
           });
 
         if (ledgerError) throw ledgerError;
@@ -249,24 +251,27 @@ const AdvertisingMiningScreen: React.FC = () => {
         
         if (dailyReward > 0) {
           // Add to withdrawable ledger for each active subscription
-          for (const subscription of userSubscriptions) {
-            const { error: ledgerError } = await supabase
-              .from('bsk_withdrawable_ledger')
-              .insert({
-                user_id: user.id,
-                subscription_id: subscription.id,
-                ad_id: ad.id,
-                day_index: Math.floor((Date.now() - new Date(subscription.start_date).getTime()) / (24 * 60 * 60 * 1000)) + 1,
-                bsk_amount: subscription.daily_bsk,
-                inr_snapshot: subscription.daily_bsk * settings.bsk_inr_rate,
-                rate_snapshot: settings.bsk_inr_rate,
-                status: 'settled',
-                type: 'ad_subscription_daily',
-                reason: `Daily subscription reward for ₹${subscription.tier_inr} tier`
-              });
+            for (const subscription of userSubscriptions) {
+              const before = (bskBalances?.withdrawable_balance || 0);
+              const amount = subscription.daily_bsk;
+              const after = before + amount;
+              const { error: ledgerError } = await (supabase as any)
+                .from('bsk_withdrawable_ledger')
+                .insert({
+                  user_id: user.id,
+                  amount_bsk: amount,
+                  amount_inr: amount * settings.bsk_inr_rate,
+                  rate_snapshot: settings.bsk_inr_rate,
+                  tx_type: 'ad_subscription_daily',
+                  tx_subtype: subscription.id,
+                  reference_id: subscription.id,
+                  balance_before: before,
+                  balance_after: after,
+                  notes: `Daily subscription reward for ₹${subscription.tier_inr} tier`
+                });
 
-            if (ledgerError) throw ledgerError;
-          }
+              if (ledgerError) throw ledgerError;
+            }
 
           // Update withdrawable balance
           const { error: balanceError } = await supabase

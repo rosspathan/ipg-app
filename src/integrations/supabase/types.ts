@@ -1192,53 +1192,63 @@ export type Database = {
       }
       bsk_holding_ledger: {
         Row: {
-          ad_id: string | null
-          bsk_amount: number
+          amount_bsk: number
+          amount_inr: number
+          balance_after: number
+          balance_before: number
           created_at: string
-          date_key: string
+          created_by: string | null
           id: string
-          inr_snapshot: number
+          idempotency_key: string | null
+          locked_until: string | null
+          metadata: Json | null
+          notes: string | null
           rate_snapshot: number
-          reason: string | null
-          status: string
-          type: string
+          reference_id: string | null
+          release_schedule_id: string | null
+          tx_subtype: string | null
+          tx_type: string
           user_id: string
         }
         Insert: {
-          ad_id?: string | null
-          bsk_amount?: number
+          amount_bsk: number
+          amount_inr: number
+          balance_after: number
+          balance_before?: number
           created_at?: string
-          date_key: string
+          created_by?: string | null
           id?: string
-          inr_snapshot?: number
-          rate_snapshot?: number
-          reason?: string | null
-          status?: string
-          type?: string
+          idempotency_key?: string | null
+          locked_until?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          rate_snapshot: number
+          reference_id?: string | null
+          release_schedule_id?: string | null
+          tx_subtype?: string | null
+          tx_type: string
           user_id: string
         }
         Update: {
-          ad_id?: string | null
-          bsk_amount?: number
+          amount_bsk?: number
+          amount_inr?: number
+          balance_after?: number
+          balance_before?: number
           created_at?: string
-          date_key?: string
+          created_by?: string | null
           id?: string
-          inr_snapshot?: number
+          idempotency_key?: string | null
+          locked_until?: string | null
+          metadata?: Json | null
+          notes?: string | null
           rate_snapshot?: number
-          reason?: string | null
-          status?: string
-          type?: string
+          reference_id?: string | null
+          release_schedule_id?: string | null
+          tx_subtype?: string | null
+          tx_type?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "bsk_holding_ledger_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "ads"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       bsk_loan_installments: {
         Row: {
@@ -1758,63 +1768,57 @@ export type Database = {
       }
       bsk_withdrawable_ledger: {
         Row: {
-          ad_id: string | null
-          bsk_amount: number
+          amount_bsk: number
+          amount_inr: number
+          balance_after: number
+          balance_before: number
           created_at: string
-          day_index: number
+          created_by: string | null
           id: string
-          inr_snapshot: number
+          idempotency_key: string | null
+          metadata: Json | null
+          notes: string | null
           rate_snapshot: number
-          reason: string | null
-          status: string
-          subscription_id: string | null
-          type: string
+          reference_id: string | null
+          tx_subtype: string | null
+          tx_type: string
           user_id: string
         }
         Insert: {
-          ad_id?: string | null
-          bsk_amount?: number
+          amount_bsk: number
+          amount_inr: number
+          balance_after: number
+          balance_before?: number
           created_at?: string
-          day_index: number
+          created_by?: string | null
           id?: string
-          inr_snapshot?: number
-          rate_snapshot?: number
-          reason?: string | null
-          status?: string
-          subscription_id?: string | null
-          type?: string
+          idempotency_key?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          rate_snapshot: number
+          reference_id?: string | null
+          tx_subtype?: string | null
+          tx_type: string
           user_id: string
         }
         Update: {
-          ad_id?: string | null
-          bsk_amount?: number
+          amount_bsk?: number
+          amount_inr?: number
+          balance_after?: number
+          balance_before?: number
           created_at?: string
-          day_index?: number
+          created_by?: string | null
           id?: string
-          inr_snapshot?: number
+          idempotency_key?: string | null
+          metadata?: Json | null
+          notes?: string | null
           rate_snapshot?: number
-          reason?: string | null
-          status?: string
-          subscription_id?: string | null
-          type?: string
+          reference_id?: string | null
+          tx_subtype?: string | null
+          tx_type?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "bsk_withdrawable_ledger_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "ads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bsk_withdrawable_ledger_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "ad_user_subscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       conversions: {
         Row: {
@@ -5303,6 +5307,39 @@ export type Database = {
           last_spin_at?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_bsk_balance_summary: {
+        Row: {
+          created_at: string
+          holding_balance: number
+          lifetime_holding_earned: number
+          lifetime_withdrawable_earned: number
+          lifetime_withdrawn: number
+          updated_at: string
+          user_id: string
+          withdrawable_balance: number
+        }
+        Insert: {
+          created_at?: string
+          holding_balance?: number
+          lifetime_holding_earned?: number
+          lifetime_withdrawable_earned?: number
+          lifetime_withdrawn?: number
+          updated_at?: string
+          user_id: string
+          withdrawable_balance?: number
+        }
+        Update: {
+          created_at?: string
+          holding_balance?: number
+          lifetime_holding_earned?: number
+          lifetime_withdrawable_earned?: number
+          lifetime_withdrawn?: number
+          updated_at?: string
+          user_id?: string
+          withdrawable_balance?: number
         }
         Relationships: []
       }
