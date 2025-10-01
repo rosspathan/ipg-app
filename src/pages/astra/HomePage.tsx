@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState } from "react"
-import { Bell, User, Gift, Target, Star, TrendingUp, Users, Coins, Shield, Zap, Plus } from "lucide-react"
+import { Bell, User, Gift, Target, Star, TrendingUp, Users, Coins, Shield, Zap, Plus, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useNavigation } from "@/hooks/useNavigation"
 import { AppShellGlass } from "@/components/astra/AppShellGlass"
@@ -147,6 +147,10 @@ export function HomePage() {
     navigate("/app/wallet")
   }
 
+  const handleWhatsAppSupport = () => {
+    window.open("https://wa.me/YOUR_NUMBER?text=Hello%20iSmart%20support", '_blank')
+  }
+
   // Premium glass top bar
   const topBar = (
     <div className="flex items-center justify-between p-4">
@@ -164,17 +168,29 @@ export function HomePage() {
         <p className="text-xs text-muted-foreground">Welcome back</p>
       </div>
       
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="h-10 w-10 p-0 rounded-full relative hover:bg-accent/10"
-        onClick={() => navigate("/app/notifications")}
-      >
-        <Bell className="h-5 w-5" />
-        <div className="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-[10px] flex items-center justify-center text-white font-bold">
-          2
-        </div>
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-10 w-10 p-0 rounded-full hover:bg-success/10"
+          onClick={handleWhatsAppSupport}
+          title="WhatsApp Support"
+          data-testid="whatsapp-support"
+        >
+          <MessageCircle className="h-5 w-5 text-success" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-10 w-10 p-0 rounded-full relative hover:bg-accent/10"
+          onClick={() => navigate("/app/notifications")}
+        >
+          <Bell className="h-5 w-5" />
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-[10px] flex items-center justify-center text-white font-bold">
+            2
+          </div>
+        </Button>
+      </div>
     </div>
   )
 

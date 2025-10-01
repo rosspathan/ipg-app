@@ -13,7 +13,7 @@ import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import { AdCarousel } from "@/components/AdCarousel";
 import InsuranceCard from "@/components/InsuranceCard";
 import BSKLoanCard from "@/components/BSKLoanCard";
-import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2, Plus } from "lucide-react";
+import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2, Plus, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
@@ -129,6 +129,10 @@ const AppHomeScreen = () => {
     }
   };
 
+  const handleWhatsAppSupport = () => {
+    window.open("https://wa.me/YOUR_NUMBER?text=Hello%20iSmart%20support", '_blank');
+  };
+
   return (
     <div className="min-h-screen w-full animate-slide-in-right">
       {/* Content */}
@@ -141,6 +145,16 @@ const AppHomeScreen = () => {
           kpis={kpis}
           actions={
             <div className="flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="relative p-2 hover:bg-success/10"
+                onClick={handleWhatsAppSupport}
+                title="WhatsApp Support"
+                data-testid="whatsapp-support"
+              >
+                <MessageCircle className="h-5 w-5 text-success" />
+              </Button>
               <Button 
                 variant="ghost" 
                 size="sm"
