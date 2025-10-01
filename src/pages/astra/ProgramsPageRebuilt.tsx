@@ -20,7 +20,7 @@ export function ProgramsPageRebuilt() {
       status: "available" as const,
       badge: "DAILY" as const,
       sparkline: [100, 120, 115, 140, 135, 160, 155],
-      onPress: () => navigate("/app/programs/advertising")
+      onPress: () => navigate("/app/programs/ads")
     },
     {
       id: "staking",
@@ -48,7 +48,7 @@ export function ProgramsPageRebuilt() {
       status: "available" as const,
       badge: "HOT" as const,
       progress: 78,
-      onPress: () => navigate("/app-legacy/lucky")
+      onPress: () => navigate("/app/programs/lucky-draw")
     },
     {
       id: "spin-wheel",
@@ -65,7 +65,7 @@ export function ProgramsPageRebuilt() {
       subtitle: "0% interest\n16 weeks term",
       icon: <Coins className="h-6 w-6 text-success" />,
       status: "available" as const,
-      onPress: () => navigate("/app-legacy/loans")
+      onPress: () => navigate("/app/programs/loans")
     },
     {
       id: "insurance",

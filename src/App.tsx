@@ -128,7 +128,6 @@ import SpinVerifyScreen from "@/pages/SpinVerifyScreen";
 import BSKVestingScreen from "@/pages/BSKVestingScreen";
 import { BSKWalletPage } from "@/pages/astra/BSKWalletPage";
 
-// Astra Design System
 import { AstraLayout } from "@/layouts/AstraLayout";
 import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
 import { WalletPageRebuilt } from "@/pages/astra/WalletPageRebuilt";
@@ -139,6 +138,12 @@ import { InsurancePage } from "@/pages/astra/InsurancePage";
 import { SpinWheelPage } from "@/pages/astra/SpinWheelPage";
 import { AdvertiseMiningPage } from "@/pages/astra/AdvertiseMiningPage";
 import DesignReview from "@/pages/astra/DesignReview";
+
+// Phase 3 & 4 User Programs
+const ReferralsPage = React.lazy(() => import("./pages/astra/ReferralsPage"));
+const AdMiningPage = React.lazy(() => import("./pages/astra/AdMiningPage"));
+const LuckyDrawPage = React.lazy(() => import("./pages/astra/LuckyDrawPage"));
+const LoansPage = React.lazy(() => import("./pages/astra/LoansPage"));
 
 const ISmartSpinScreen = React.lazy(() => import("@/pages/ISmartSpinScreen"));
 
@@ -212,21 +217,26 @@ function App() {
                 </AuthProviderUser>
               }>
                 <Route index element={<Navigate to="/app/home" replace />} />
-              <Route path="home" element={<HomePageRebuilt />} />
+                <Route path="home" element={<HomePageRebuilt />} />
                 <Route path="wallet" element={<WalletPageRebuilt />} />
                 <Route path="programs" element={<ProgramsPageRebuilt />} />
                 <Route path="trade" element={<TradingScreenRebuilt />} />
                 <Route path="profile" element={<ProfilePageRebuilt />} />
+                
+                {/* Programs */}
                 <Route path="programs/insurance" element={<InsurancePage />} />
                 <Route path="programs/spin" element={<SpinWheelPage />} />
-                <Route path="programs/ads" element={<AdvertiseMiningPage />} />
-                <Route path="programs/advertising" element={<AdvertiseMiningPage />} />
+                <Route path="programs/ads" element={<AdMiningPage />} />
+                <Route path="programs/advertising" element={<AdMiningPage />} />
+                <Route path="programs/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPage /></React.Suspense>} />
+                <Route path="programs/lucky-draw" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawPage /></React.Suspense>} />
+                <Route path="programs/loans" element={<React.Suspense fallback={<div>Loading...</div>}><LoansPage /></React.Suspense>} />
                 <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
-                <Route path="programs/referrals" element={<ReferralsScreen />} />
                 <Route path="programs/staking" element={<StakingScreen />} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
+                
                 <Route path="design-review" element={<DesignReview />} />
                 {/* Unknown Astra sub-route */}
                 <Route path="*" element={<NotFound />} />
