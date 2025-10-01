@@ -163,7 +163,6 @@ function App() {
 
               {/* Onboarding Flow */}
               <Route path="/onboarding" element={<OnboardingFlow />} />
-              <Route path="/onboarding-legacy" element={<OnboardingIndexScreen />} />
               <Route path="/onboarding/create-wallet" element={<CreateWalletScreen />} />
               <Route path="/onboarding/import-wallet" element={<ImportWalletScreen />} />
               <Route path="/onboarding/security" element={<SecuritySetupScreen />} />
