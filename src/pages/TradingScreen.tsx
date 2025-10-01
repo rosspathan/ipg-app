@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useMarketStore, useMarketTicker, useMarketOrderBook, useMarketTrades, useMarketConnection } from "@/hooks/useMarketStore";
 
 // Enhanced trading components
-import PriceChart from "@/components/trading/PriceChart";
+import { ChartPanel } from "@/components/trading/ChartPanel";
+import { CandleToggle, Timeframe } from "@/components/trading/CandleToggle";
 import EnhancedOrderBook from "@/components/trading/EnhancedOrderBook";
 import TradingOrderForm from "@/components/trading/TradingOrderForm";
 import RecentTrades from "@/components/RecentTrades";
@@ -26,6 +27,8 @@ const TradingScreen = () => {
   const [selectedPair, setSelectedPair] = useState(pair?.replace('-', '/') || 'BTC/USDT');
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
+  const [candlesEnabled, setCandlesEnabled] = useState(false); // CRITICAL: Chart disabled by default
+  const [timeframe, setTimeframe] = useState<Timeframe>("1D");
 
   // Market data store
   const { subscribe, unsubscribe, disconnect } = useMarketStore();
@@ -304,9 +307,21 @@ const TradingScreen = () => {
         </div>
       </div>
 
-      {/* Price Chart */}
-      <div className="p-4">
-        <PriceChart symbol={selectedPair} height={280} />
+      {/* Candle Toggle - Chart controls */}
+      <CandleToggle
+        enabled={candlesEnabled}
+        onToggle={setCandlesEnabled}
+        timeframe={timeframe}
+        onTimeframeChange={setTimeframe}
+      />
+
+      {/* Chart Panel - ONLY renders when candlesEnabled is true */}
+      <div className="px-4">
+        <ChartPanel
+          symbol={selectedPair}
+          timeframe={timeframe}
+          enabled={candlesEnabled}
+        />
       </div>
 
       {/* Order Book & Recent Trades */}
