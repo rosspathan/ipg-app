@@ -28,6 +28,7 @@ import AdminSettingsNova from "./pages/admin/AdminSettingsNova";
 // CMS Program Registry
 const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNova"));
 const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
+const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -296,7 +297,7 @@ function App() {
                 <Route path="dashboard" element={<AdminDashboardNova />} />
                 
                 {/* Phase 2 Routes */}
-                <Route path="users" element={<AdminUsersNova />} />
+                <Route path="users" element={<React.Suspense fallback={<div>Loading...</div>}><AdminUsersManagementNova /></React.Suspense>} />
                 
                 {/* Phase 3 Routes */}
                 <Route path="markets" element={<AdminMarketsNova />} />

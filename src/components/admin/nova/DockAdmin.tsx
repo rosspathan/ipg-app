@@ -3,7 +3,7 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { 
   LayoutDashboard, 
-  Package, 
+  Users,
   TrendingUp, 
   FileText, 
   Settings,
@@ -38,51 +38,51 @@ export function DockAdmin({ className }: DockAdminProps) {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   const tabs = [
-    { path: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
-    { path: "/admin/catalog", label: "Catalog", icon: Package },
+    { path: "/admin/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
+    { path: "/admin/users", label: "Users", icon: Users },
     { path: "/admin/programs", label: "Programs", icon: TrendingUp },
-    { path: "/admin/reports", label: "Reports", icon: FileText },
-    { path: "/admin/settings", label: "Settings", icon: Settings },
+    { path: "/admin/markets", label: "Markets", icon: FileText },
+    { path: "/admin/reports", label: "Reports", icon: Settings },
   ];
 
   const quickActions: QuickAction[] = [
     {
-      label: "List Token",
+      label: "New Program",
       icon: Coins,
+      onClick: () => {
+        console.log("New Program");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "List Token",
+      icon: Repeat,
       onClick: () => {
         console.log("List Token");
         setShowQuickAdd(false);
       },
     },
     {
-      label: "Create Pair",
-      icon: Repeat,
-      onClick: () => {
-        console.log("Create Pair");
-        setShowQuickAdd(false);
-      },
-    },
-    {
-      label: "Start Draw",
+      label: "Manage User",
       icon: Gift,
       onClick: () => {
-        console.log("Start Draw");
+        console.log("Manage User");
         setShowQuickAdd(false);
       },
     },
     {
-      label: "New Ad",
+      label: "Settings",
       icon: Megaphone,
       onClick: () => {
-        console.log("New Ad");
+        console.log("Settings");
         setShowQuickAdd(false);
       },
     },
     {
-      label: "Set Fee Rule",
+      label: "Reports",
       icon: DollarSign,
       onClick: () => {
-        console.log("Set Fee Rule");
+        console.log("Reports");
         setShowQuickAdd(false);
       },
     },
