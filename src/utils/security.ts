@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+
 
 export interface SecuritySetup {
   hasPin: boolean;
@@ -11,6 +11,7 @@ export interface SecuritySetup {
  * Hash PIN securely using bcrypt
  */
 export async function hashPin(pin: string): Promise<string> {
+  const bcrypt = await import('bcryptjs');
   const saltRounds = 12;
   return await bcrypt.hash(pin, saltRounds);
 }
@@ -20,6 +21,7 @@ export async function hashPin(pin: string): Promise<string> {
  */
 export async function verifyPin(pin: string, hash: string): Promise<boolean> {
   try {
+    const bcrypt = await import('bcryptjs');
     return await bcrypt.compare(pin, hash);
   } catch (error) {
     console.error('Error verifying PIN:', error);

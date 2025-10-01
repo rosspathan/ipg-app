@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { saveLocalSecurityData } from "@/utils/localSecurityStorage";
 import { supabase } from "@/integrations/supabase/client";
-import * as bcrypt from 'bcryptjs';
+
 
 type Phase = 'idle' | 'valid' | 'submitting' | 'done' | 'error';
 
@@ -63,6 +63,7 @@ const SecuritySetupScreen = () => {
     
     try {
       // Hash the PIN client-side
+      const bcrypt = await import('bcryptjs');
       const salt = await bcrypt.genSalt(12);
       const hash = await bcrypt.hash(pin, salt);
       

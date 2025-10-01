@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
-import * as bcrypt from 'bcryptjs';
+
 
 interface LockState {
   isUnlocked: boolean;
@@ -115,6 +115,7 @@ export const useAuthLock = () => {
 
   // Hash PIN with salt
   const hashPin = useCallback(async (pin: string): Promise<{ hash: string; salt: string }> => {
+    const bcrypt = await import('bcryptjs');
     const salt = await bcrypt.genSalt(12);
     const hash = await bcrypt.hash(pin, salt);
     return { hash, salt };
@@ -122,7 +123,8 @@ export const useAuthLock = () => {
 
   // Verify PIN
   const verifyPin = useCallback(async (pin: string, storedHash: string): Promise<boolean> => {
-    return bcrypt.compare(pin, storedHash);
+    const bcrypt = await import('bcryptjs');
+    return await bcrypt.compare(pin, storedHash);
   }, []);
 
   // Set PIN (for initial setup or change)

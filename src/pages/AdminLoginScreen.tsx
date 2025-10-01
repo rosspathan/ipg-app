@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 const AdminLoginScreen = () => {
   const navigate = useNavigate();
   const { wallet, isConnected, connectMetaMask, signMessage, disconnectWallet } = useWeb3();
-  const { setIsAdmin } = useAuthAdmin();
+  const { setIsAdmin, isAdmin, user } = useAuthAdmin();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -42,6 +42,14 @@ const AdminLoginScreen = () => {
       console.log('AdminLoginScreen: No stored admin state, showing login form');
     }
   }, [setIsAdmin, navigate]);
+
+  // If already signed in and has admin role via email, redirect
+  useEffect(() => {
+    if (isAdmin && user) {
+      console.log('AdminLoginScreen: Admin role detected (email), redirecting to /admin');
+      navigate('/admin', { replace: true });
+    }
+  }, [isAdmin, user, navigate]);
 
   const handleConnectWallet = async () => {
     setLoading(true);
