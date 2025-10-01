@@ -133,7 +133,7 @@ export function useISmartSpin() {
 
         // Get BSK balance
         const { data: balanceData, error: balanceError } = await supabase
-          .from('user_bsk_balances')
+          .from('user_bsk_balance_summary')
           .select('withdrawable_balance')
           .eq('user_id', user.id)
           .maybeSingle()
@@ -143,7 +143,7 @@ export function useISmartSpin() {
         } else if (!balanceError) {
           // Create initial balance record
           await supabase
-            .from('user_bsk_balances')
+            .from('user_bsk_balance_summary')
             .insert({ user_id: user.id })
         }
       }

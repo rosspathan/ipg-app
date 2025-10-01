@@ -104,7 +104,7 @@ const NewLuckyDraw = () => {
 
           // Get user BSK balance
           const { data: balanceData } = await supabase
-            .from('user_bsk_balances')
+            .from('user_bsk_balance_summary')
             .select('withdrawable_balance')
             .eq('user_id', user.id)
             .single();

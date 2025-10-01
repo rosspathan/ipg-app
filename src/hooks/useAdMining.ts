@@ -45,8 +45,8 @@ export interface UserSubscription {
 export interface BSKBalances {
   withdrawable_balance: number;
   holding_balance: number;
-  total_earned_withdrawable: number;
-  total_earned_holding: number;
+  lifetime_withdrawable_earned: number;
+  lifetime_holding_earned: number;
 }
 
 export interface DailyAdViews {
@@ -135,7 +135,7 @@ export const useAdMining = () => {
 
     // Load BSK balances
     const { data: balances, error: balError } = await supabase
-      .from('user_bsk_balances')
+      .from('user_bsk_balance_summary')
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
@@ -146,7 +146,7 @@ export const useAdMining = () => {
 
     if (!balances) {
       const { data: newBalance, error: insertError } = await supabase
-        .from('user_bsk_balances')
+        .from('user_bsk_balance_summary')
         .insert({ user_id: user.id })
         .select()
         .single();
@@ -229,7 +229,7 @@ export const useAdMining = () => {
 
     // Deduct BSK from withdrawable balance
     const { error: balanceError } = await supabase
-      .from('user_bsk_balances')
+      .from('user_bsk_balance_summary')
       .update({
         withdrawable_balance: bskBalances.withdrawable_balance - requiredBSK
       })

@@ -38,8 +38,8 @@ export const BSKBalanceCard: React.FC<BSKBalanceCardProps> = ({
     : bskBalances.holding_balance;
 
   const totalEarned = balanceType === 'withdrawable'
-    ? bskBalances.total_earned_withdrawable
-    : bskBalances.total_earned_holding;
+    ? bskBalances.lifetime_withdrawable_earned
+    : bskBalances.lifetime_holding_earned;
 
   const currentRate = getCurrentBSKRate();
   const inrValue = balance * currentRate;

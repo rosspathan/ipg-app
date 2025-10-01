@@ -219,10 +219,10 @@ const AdvertisingMiningScreen: React.FC = () => {
 
         // Update holding balance
         const { error: balanceError } = await supabase
-          .from('user_bsk_balances')
+          .from('user_bsk_balance_summary')
           .update({
             holding_balance: (bskBalances?.holding_balance || 0) + settings.free_daily_reward_bsk,
-            total_earned_holding: (bskBalances?.total_earned_holding || 0) + settings.free_daily_reward_bsk
+            lifetime_holding_earned: (bskBalances?.lifetime_holding_earned || 0) + settings.free_daily_reward_bsk
           })
           .eq('user_id', user.id);
 
@@ -275,10 +275,10 @@ const AdvertisingMiningScreen: React.FC = () => {
 
           // Update withdrawable balance
           const { error: balanceError } = await supabase
-            .from('user_bsk_balances')
+            .from('user_bsk_balance_summary')
             .update({
               withdrawable_balance: (bskBalances?.withdrawable_balance || 0) + dailyReward,
-              total_earned_withdrawable: (bskBalances?.total_earned_withdrawable || 0) + dailyReward
+              lifetime_withdrawable_earned: (bskBalances?.lifetime_withdrawable_earned || 0) + dailyReward
             })
             .eq('user_id', user.id);
 
