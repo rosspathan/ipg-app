@@ -96,13 +96,14 @@ export function DockAdmin({ className }: DockAdminProps) {
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50",
           "md:hidden", // Hide on desktop
-          "bg-[hsl(230_28%_13%/0.8)] backdrop-blur-xl",
+          "bg-[hsl(230_28%_13%/0.95)] backdrop-blur-xl",
           "border-t border-[hsl(225_24%_22%/0.16)]",
           "shadow-[0_-8px_32px_-8px_hsl(245_35%_7%/0.6)]",
+          "pb-[env(safe-area-inset-bottom)]",
           className
         )}
       >
-        <div className="flex items-center justify-around h-16 px-2 relative">
+        <div className="flex items-center justify-around h-20 px-3 relative">
           {/* Left tabs (2) */}
           {mainTabs.slice(0, 2).map((tab) => (
             <NavLink
@@ -111,12 +112,13 @@ export function DockAdmin({ className }: DockAdminProps) {
               end={tab.exact}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-col items-center justify-center gap-1 px-4 py-1",
-                  "rounded-xl transition-all duration-[120ms]",
-                  "text-xs font-medium",
+                  "flex flex-col items-center justify-center gap-1.5 px-3 py-2 min-w-[64px]",
+                  "rounded-2xl transition-all duration-[120ms]",
+                  "text-xs font-medium touch-manipulation",
+                  "active:scale-95",
                   isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground"
                 )
               }
             >
@@ -124,11 +126,11 @@ export function DockAdmin({ className }: DockAdminProps) {
                 <>
                   <tab.icon
                     className={cn(
-                      "w-5 h-5 transition-transform duration-[120ms]",
+                      "w-6 h-6 transition-transform duration-[120ms]",
                       isActive && "scale-110"
                     )}
                   />
-                  <span>{tab.label}</span>
+                  <span className="text-[11px]">{tab.label}</span>
                 </>
               )}
             </NavLink>
@@ -139,17 +141,18 @@ export function DockAdmin({ className }: DockAdminProps) {
             data-testid="admin-dock-center"
             onClick={() => setShowQuickAdd(true)}
             className={cn(
-              "absolute left-1/2 -translate-x-1/2 -top-6",
-              "w-14 h-14 rounded-full",
+              "absolute left-1/2 -translate-x-1/2 -top-7",
+              "w-16 h-16 rounded-full",
               "bg-gradient-to-br from-primary to-secondary",
-              "shadow-[0_0_24px_-6px_hsl(262_100%_65%/0.6)]",
+              "shadow-[0_0_32px_-4px_hsl(262_100%_65%/0.7)]",
               "flex items-center justify-center",
               "transition-transform duration-[120ms]",
-              "hover:scale-110 active:scale-95",
-              "focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              "active:scale-90 touch-manipulation",
+              "focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:outline-none",
+              "border-4 border-[hsl(230_28%_13%)]"
             )}
           >
-            <Plus className="w-6 h-6 text-white" strokeWidth={2.5} />
+            <Plus className="w-7 h-7 text-white" strokeWidth={2.5} />
           </button>
 
           {/* Right tabs (3) */}
@@ -160,12 +163,13 @@ export function DockAdmin({ className }: DockAdminProps) {
               end={tab.exact}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-col items-center justify-center gap-1 px-4 py-1",
-                  "rounded-xl transition-all duration-[120ms]",
-                  "text-xs font-medium",
+                  "flex flex-col items-center justify-center gap-1.5 px-3 py-2 min-w-[64px]",
+                  "rounded-2xl transition-all duration-[120ms]",
+                  "text-xs font-medium touch-manipulation",
+                  "active:scale-95",
                   isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground"
                 )
               }
             >
@@ -173,11 +177,11 @@ export function DockAdmin({ className }: DockAdminProps) {
                 <>
                   <tab.icon
                     className={cn(
-                      "w-5 h-5 transition-transform duration-[120ms]",
+                      "w-6 h-6 transition-transform duration-[120ms]",
                       isActive && "scale-110"
                     )}
                   />
-                  <span>{tab.label}</span>
+                  <span className="text-[11px]">{tab.label}</span>
                 </>
               )}
             </NavLink>
@@ -189,28 +193,33 @@ export function DockAdmin({ className }: DockAdminProps) {
       <Sheet open={showQuickAdd} onOpenChange={setShowQuickAdd}>
         <SheetContent
           side="bottom"
-          className="bg-[hsl(230_28%_13%)] border-[hsl(225_24%_22%)]"
+          className="bg-[hsl(230_28%_13%)] border-[hsl(225_24%_22%)] pb-[env(safe-area-inset-bottom)]"
         >
           <SheetHeader>
-            <SheetTitle className="font-heading">Quick Add</SheetTitle>
+            <SheetTitle className="font-heading text-lg">Quick Actions</SheetTitle>
           </SheetHeader>
           
-          <div className="grid grid-cols-2 gap-3 mt-6">
+          <div className="grid grid-cols-2 gap-4 mt-6 pb-4">
             {quickActions.map((action) => (
               <button
                 key={action.label}
                 onClick={action.onClick}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-2 p-4",
+                  "flex flex-col items-center justify-center gap-3 p-5",
                   "rounded-2xl border border-[hsl(225_24%_22%/0.16)]",
                   "bg-[hsl(229_30%_16%/0.5)] backdrop-blur",
                   "transition-all duration-[120ms]",
                   "hover:bg-[hsl(229_30%_16%)] hover:border-primary/30",
-                  "active:scale-95"
+                  "active:scale-95 touch-manipulation",
+                  "min-h-[100px]"
                 )}
               >
-                <action.icon className="w-6 h-6 text-primary" />
-                <span className="text-sm font-medium">{action.label}</span>
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <action.icon className="w-6 h-6 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-center leading-tight">
+                  {action.label}
+                </span>
               </button>
             ))}
           </div>

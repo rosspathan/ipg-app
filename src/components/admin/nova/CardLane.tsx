@@ -78,7 +78,7 @@ export function CardLane({
       className={cn("space-y-3", className)}
     >
       {title && (
-        <h2 className="text-base font-heading font-semibold text-foreground px-4">
+        <h2 className="text-base font-heading font-semibold text-foreground px-3 md:px-4">
           {title}
         </h2>
       )}
@@ -86,7 +86,7 @@ export function CardLane({
       <div
         ref={scrollRef}
         className={cn(
-          "flex gap-3 overflow-x-auto px-4 pb-2",
+          "flex gap-3 overflow-x-auto px-3 md:px-4 pb-2",
           "snap-x snap-mandatory scroll-smooth",
           "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[hsl(225_24%_22%/0.3)]"
         )}

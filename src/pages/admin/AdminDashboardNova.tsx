@@ -179,7 +179,7 @@ export default function AdminDashboardNova() {
       </CardLane>
 
       {/* Recent Activity Feed */}
-      <div className="px-4 space-y-3">
+      <div className="px-3 md:px-4 space-y-3">
         <h2 className="text-base font-heading font-semibold text-foreground">
           Recent Activity
         </h2>
@@ -246,6 +246,7 @@ function QueueCard({
       className={cn(
         "min-w-[200px] p-4 rounded-2xl border",
         "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
+        "transition-all duration-220 touch-manipulation active:scale-[0.98]",
         variantStyles[variant]
       )}
     >
@@ -262,7 +263,7 @@ function QueueCard({
         size="sm"
         variant="outline"
         onClick={action}
-        className="w-full bg-transparent border-[hsl(225_24%_22%/0.16)]"
+        className="w-full bg-transparent border-[hsl(225_24%_22%/0.16)] touch-manipulation"
       >
         Review
       </Button>
@@ -287,8 +288,9 @@ function QuickActionCard({
         "bg-[hsl(229_30%_16%/0.5)] backdrop-blur-sm",
         "border-[hsl(225_24%_22%/0.16)]",
         "hover:bg-[hsl(229_30%_16%)] hover:border-primary/30",
-        "transition-colors duration-220",
-        "flex flex-col items-center gap-2"
+        "transition-all duration-220",
+        "flex flex-col items-center gap-2",
+        "touch-manipulation active:scale-95"
       )}
     >
       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
