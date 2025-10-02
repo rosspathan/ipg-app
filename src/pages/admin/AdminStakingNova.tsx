@@ -418,10 +418,10 @@ export default function AdminStakingNova() {
                 id: "asset_id",
                 type: "select",
                 label: "Asset (Optional)",
-                value: formData.asset_id,
-                onChange: (v) => setFormData({ ...formData, asset_id: v }),
+                value: formData.asset_id || "any",
+                onChange: (v) => setFormData({ ...formData, asset_id: v === "any" ? "" : v }),
                 options: [
-                  { value: "", label: "Any Asset" },
+                  { value: "any", label: "Any Asset" },
                   ...assets.map((a) => ({ value: a.id, label: `${a.symbol} - ${a.name}` })),
                 ],
               },
