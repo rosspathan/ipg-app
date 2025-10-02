@@ -281,12 +281,12 @@ const AdminTeamReferralsScreen = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {teamIncomeLevels.filter(level => level.is_active).map((level) => (
+                {teamIncomeLevels.filter(level => level.is_active).slice(0, 10).map((level) => (
                   <div key={level.id} className="text-center p-3 border border-border rounded-lg">
                     <Badge variant="outline" className="mb-2">L{level.level}</Badge>
                     <p className="text-lg font-bold text-primary">{level.bsk_reward} BSK</p>
                     <p className="text-xs text-muted-foreground">
-                      ₹{(level.bsk_reward * formData.bsk_inr_rate).toFixed(2)}
+                      {(level as any).balance_type === 'holding' ? 'Holding' : 'Withdrawable'}
                     </p>
                   </div>
                 ))}
@@ -315,7 +315,7 @@ const AdminTeamReferralsScreen = () => {
                         {badge.badge_name}
                       </Badge>
                       <div>
-                        <p className="font-medium">₹{badge.inr_threshold.toLocaleString()} INR Threshold</p>
+                        <p className="font-medium">{badge.bsk_threshold.toLocaleString()} BSK Threshold</p>
                         <p className="text-sm text-muted-foreground">
                           Unlocks earning from {badge.unlock_levels} levels
                         </p>
@@ -323,9 +323,9 @@ const AdminTeamReferralsScreen = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-primary">L1-L{badge.unlock_levels}</p>
-                      {badge.vip_bonus_inr > 0 && (
+                      {badge.bonus_bsk_holding > 0 && (
                         <p className="text-sm text-green-600">
-                          +₹{badge.vip_bonus_inr.toLocaleString()} VIP Bonus
+                          +{badge.bonus_bsk_holding.toLocaleString()} BSK Bonus
                         </p>
                       )}
                     </div>

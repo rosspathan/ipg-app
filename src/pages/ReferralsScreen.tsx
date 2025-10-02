@@ -231,9 +231,9 @@ const ReferralsScreen = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Progress to {nextBadge.badge_name}:</span>
-                  <span className="font-medium">₹{nextBadge.inr_threshold.toLocaleString()}</span>
+                  <span className="font-medium">{nextBadge.bsk_threshold.toLocaleString()} BSK</span>
                 </div>
-                <Progress value={currentBadgeData ? (currentBadgeData.inr_threshold / nextBadge.inr_threshold) * 100 : 0} className="h-2" />
+                <Progress value={currentBadgeData ? (currentBadgeData.bsk_threshold / nextBadge.bsk_threshold) * 100 : 0} className="h-2" />
               </div>
               
               <Button 
@@ -242,7 +242,7 @@ const ReferralsScreen = () => {
                 variant="outline"
               >
                 <TrendingUp className="w-4 h-4" />
-                Upgrade to {nextBadge.badge_name} (₹{nextBadge.inr_threshold.toLocaleString()})
+                Upgrade to {nextBadge.badge_name} ({nextBadge.bsk_threshold.toLocaleString()} BSK)
               </Button>
             </>
           )}

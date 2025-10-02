@@ -770,33 +770,36 @@ export type Database = {
       badge_thresholds: {
         Row: {
           badge_name: string
+          bonus_bsk_holding: number
+          bsk_threshold: number
           created_at: string
+          description: string | null
           id: string
-          inr_threshold: number
           is_active: boolean
           unlock_levels: number
           updated_at: string
-          vip_bonus_inr: number | null
         }
         Insert: {
           badge_name: string
+          bonus_bsk_holding?: number
+          bsk_threshold?: number
           created_at?: string
+          description?: string | null
           id?: string
-          inr_threshold: number
           is_active?: boolean
           unlock_levels: number
           updated_at?: string
-          vip_bonus_inr?: number | null
         }
         Update: {
           badge_name?: string
+          bonus_bsk_holding?: number
+          bsk_threshold?: number
           created_at?: string
+          description?: string | null
           id?: string
-          inr_threshold?: number
           is_active?: boolean
           unlock_levels?: number
           updated_at?: string
-          vip_bonus_inr?: number | null
         }
         Relationships: []
       }
@@ -5072,6 +5075,7 @@ export type Database = {
       }
       team_income_levels: {
         Row: {
+          balance_type: string
           bsk_reward: number
           created_at: string
           id: string
@@ -5080,6 +5084,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          balance_type?: string
           bsk_reward?: number
           created_at?: string
           id?: string
@@ -5088,6 +5093,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          balance_type?: string
           bsk_reward?: number
           created_at?: string
           id?: string

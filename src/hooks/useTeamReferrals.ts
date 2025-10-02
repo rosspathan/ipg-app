@@ -22,6 +22,7 @@ export interface TeamIncomeLevel {
   id: string;
   level: number;
   bsk_reward: number;
+  balance_type: 'withdrawable' | 'holding';
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -30,9 +31,10 @@ export interface TeamIncomeLevel {
 export interface BadgeThreshold {
   id: string;
   badge_name: string;
-  inr_threshold: number;
+  bsk_threshold: number;
   unlock_levels: number;
-  vip_bonus_inr: number;
+  bonus_bsk_holding: number;
+  description?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -145,7 +147,7 @@ export const useTeamReferrals = () => {
         .order('level');
       
       if (error) throw error;
-      setTeamIncomeLevels(data || []);
+      setTeamIncomeLevels((data || []) as TeamIncomeLevel[]);
     } catch (error) {
       console.error('Error fetching team income levels:', error);
     }
@@ -158,7 +160,7 @@ export const useTeamReferrals = () => {
         .from('badge_thresholds')
         .select('*')
         .eq('is_active', true)
-        .order('inr_threshold');
+        .order('bsk_threshold');
       
       if (error) throw error;
       setBadgeThresholds(data || []);
@@ -301,13 +303,13 @@ export const useTeamReferrals = () => {
       if (!badge) throw new Error('Badge not found');
 
       // Calculate amount (difference if upgrade)
-      let inrAmount = badge.inr_threshold;
+      let bskAmount = badge.bsk_threshold;
       let isUpgrade = false;
       
       if (previousBadge) {
         const previousBadgeData = badgeThresholds.find(b => b.badge_name === previousBadge);
         if (previousBadgeData) {
-          inrAmount = badge.inr_threshold - previousBadgeData.inr_threshold;
+          bskAmount = badge.bsk_threshold - previousBadgeData.bsk_threshold;
           isUpgrade = true;
         }
       }
@@ -320,7 +322,7 @@ export const useTeamReferrals = () => {
             userId: user.id,
             badgeName,
             previousBadge,
-            inrAmount,
+            bskAmount,
             isUpgrade,
             paymentRef: `badge_${Date.now()}`
           }
