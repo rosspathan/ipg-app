@@ -45,19 +45,36 @@ interface Asset {
   is_active: boolean;
 }
 
+interface Market {
+  id: string;
+  base_asset_id: string;
+  quote_asset_id: string;
+  tick_size: number;
+  lot_size: number;
+  min_notional: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  base_asset?: Asset;
+  quote_asset?: Asset;
+}
+
 /**
  * AdminMarketsNova - Assets (Tokens) + Pairs management
  * Two tabs: Tokens and Pairs with Quick List wizard
  */
 export default function AdminMarketsNova() {
-  const [selectedRecord, setSelectedRecord] = useState<Asset | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<Asset | Market | null>(null);
   const [activeTab, setActiveTab] = useState("tokens");
   const [activeFilters, setActiveFilters] = useState<Record<string, any[]>>({});
   const [searchValue, setSearchValue] = useState("");
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTokenDialog, setShowTokenDialog] = useState(false);
+  const [showPairDialog, setShowPairDialog] = useState(false);
   const [editingToken, setEditingToken] = useState<Asset | null>(null);
+  const [editingPair, setEditingPair] = useState<Market | null>(null);
   const { toast } = useToast();
   const { getLogoUrl } = useAssetLogos();
 
@@ -83,8 +100,18 @@ export default function AdminMarketsNova() {
     price_currency: 'USD',
   });
 
+  const [pairFormData, setPairFormData] = useState({
+    base_asset_id: '',
+    quote_asset_id: '',
+    tick_size: 0.01,
+    lot_size: 0.001,
+    min_notional: 10,
+    is_active: true,
+  });
+
   useEffect(() => {
     loadAssets();
+    loadMarkets();
   }, []);
 
   const loadAssets = async () => {
@@ -105,6 +132,29 @@ export default function AdminMarketsNova() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMarkets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('markets')
+        .select(`
+          *,
+          base_asset:assets!markets_base_asset_id_fkey(*),
+          quote_asset:assets!markets_quote_asset_id_fkey(*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMarkets(data || []);
+    } catch (error) {
+      console.error('Error loading markets:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load markets",
+        variant: "destructive",
+      });
     }
   };
 
@@ -213,6 +263,98 @@ export default function AdminMarketsNova() {
     }
   };
 
+  const handlePairSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (editingPair) {
+        const { error } = await supabase
+          .from('markets')
+          .update(pairFormData)
+          .eq('id', editingPair.id);
+
+        if (error) throw error;
+
+        await supabase.rpc('log_admin_action', {
+          p_action: 'market_updated',
+          p_resource_type: 'market',
+          p_resource_id: editingPair.id,
+          p_new_values: pairFormData,
+        });
+
+        toast({ title: "Success", description: "Trading pair updated successfully" });
+      } else {
+        const { error } = await supabase
+          .from('markets')
+          .insert([pairFormData]);
+
+        if (error) throw error;
+
+        await supabase.rpc('log_admin_action', {
+          p_action: 'market_created',
+          p_resource_type: 'market',
+          p_new_values: pairFormData,
+        });
+
+        toast({ title: "Success", description: "Trading pair created successfully" });
+      }
+
+      setShowPairDialog(false);
+      setEditingPair(null);
+      resetPairForm();
+      loadMarkets();
+    } catch (error) {
+      console.error('Error saving pair:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save trading pair",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditPair = (market: Market) => {
+    setEditingPair(market);
+    setPairFormData({
+      base_asset_id: market.base_asset_id,
+      quote_asset_id: market.quote_asset_id,
+      tick_size: market.tick_size,
+      lot_size: market.lot_size,
+      min_notional: market.min_notional,
+      is_active: market.is_active,
+    });
+    setShowPairDialog(true);
+  };
+
+  const handleDeletePair = async (market: Market) => {
+    if (!confirm(`Are you sure you want to delete this trading pair?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('markets')
+        .delete()
+        .eq('id', market.id);
+
+      if (error) throw error;
+
+      await supabase.rpc('log_admin_action', {
+        p_action: 'market_deleted',
+        p_resource_type: 'market',
+        p_resource_id: market.id,
+      });
+
+      toast({ title: "Success", description: "Trading pair deleted successfully" });
+      loadMarkets();
+    } catch (error) {
+      console.error('Error deleting pair:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete trading pair",
+        variant: "destructive",
+      });
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       symbol: '',
@@ -234,6 +376,17 @@ export default function AdminMarketsNova() {
       asset_type: 'crypto',
       initial_price: null,
       price_currency: 'USD',
+    });
+  };
+
+  const resetPairForm = () => {
+    setPairFormData({
+      base_asset_id: '',
+      quote_asset_id: '',
+      tick_size: 0.01,
+      lot_size: 0.001,
+      min_notional: 10,
+      is_active: true,
     });
   };
 
@@ -353,89 +506,97 @@ export default function AdminMarketsNova() {
     },
   ];
 
-  // Mock data for pairs
-  const pairsData = [
-    {
-      id: "1",
-      pair: "BTC/USDT",
-      base: "BTC",
-      quote: "USDT",
-      status: "Active",
-      tickSize: "0.01",
-      minNotional: "10",
-      feeClass: "A",
-    },
-    {
-      id: "2",
-      pair: "ETH/USDT",
-      base: "ETH",
-      quote: "USDT",
-      status: "Active",
-      tickSize: "0.01",
-      minNotional: "10",
-      feeClass: "A",
-    },
-    {
-      id: "3",
-      pair: "SOL/USDT",
-      base: "SOL",
-      quote: "USDT",
-      status: "Paused",
-      tickSize: "0.001",
-      minNotional: "5",
-      feeClass: "B",
-    },
-  ];
-
   const pairColumns = [
     {
       key: "pair",
       label: "Pair",
-      render: (row: any) => (
-        <span className="font-medium font-mono">{row.pair}</span>
-      ),
+      render: (row: Market) => {
+        const baseAsset = row.base_asset || assets.find(a => a.id === row.base_asset_id);
+        const quoteAsset = row.quote_asset || assets.find(a => a.id === row.quote_asset_id);
+        return (
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-2">
+              <CryptoLogo 
+                symbol={baseAsset?.symbol || '?'}
+                logoFilePath={baseAsset?.logo_file_path}
+                fallbackUrl={baseAsset?.logo_url}
+                size={24}
+                className="ring-2 ring-background"
+              />
+              <CryptoLogo 
+                symbol={quoteAsset?.symbol || '?'}
+                logoFilePath={quoteAsset?.logo_file_path}
+                fallbackUrl={quoteAsset?.logo_url}
+                size={24}
+                className="ring-2 ring-background"
+              />
+            </div>
+            <span className="font-medium font-mono">
+              {baseAsset?.symbol}/{quoteAsset?.symbol}
+            </span>
+          </div>
+        );
+      },
     },
-    { key: "tickSize", label: "Tick Size" },
-    { key: "minNotional", label: "Min Notional" },
-    { key: "feeClass", label: "Fee Class" },
+    { 
+      key: "tick_size", 
+      label: "Tick Size",
+      render: (row: Market) => <span className="font-mono text-sm">{row.tick_size}</span>
+    },
+    { 
+      key: "lot_size", 
+      label: "Lot Size",
+      render: (row: Market) => <span className="font-mono text-sm">{row.lot_size}</span>
+    },
+    { 
+      key: "min_notional", 
+      label: "Min Notional",
+      render: (row: Market) => <span className="font-mono text-sm">{row.min_notional}</span>
+    },
     {
-      key: "status",
+      key: "is_active",
       label: "Status",
-      render: (row: any) => (
+      render: (row: Market) => (
         <Badge
-          variant={row.status === "Active" ? "default" : "outline"}
+          variant={row.is_active ? "default" : "outline"}
           className={
-            row.status === "Active"
+            row.is_active
               ? "bg-success/10 text-success border-success/20"
-              : "bg-warning/10 text-warning border-warning/20"
+              : "bg-muted/10 text-muted-foreground border-muted/20"
           }
         >
-          {row.status}
+          {row.is_active ? "Active" : "Inactive"}
         </Badge>
       ),
     },
-  ];
-
-  const mockAuditEntries = [
     {
-      id: "1",
-      timestamp: "2025-01-15 10:23",
-      operator: "Admin Mike",
-      action: "Listed BTC",
-      changes: [
-        { field: "status", before: "Draft", after: "Listed" },
-        { field: "decimals", before: null, after: 8 },
-      ],
-    },
-    {
-      id: "2",
-      timestamp: "2025-01-14 14:10",
-      operator: "Admin Sarah",
-      action: "Created BTC/USDT pair",
-      changes: [
-        { field: "tickSize", before: null, after: "0.01" },
-        { field: "minNotional", before: null, after: "10" },
-      ],
+      key: "actions",
+      label: "Actions",
+      render: (row: Market) => (
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditPair(row);
+            }}
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeletePair(row);
+            }}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
     },
   ];
 
@@ -542,35 +703,67 @@ export default function AdminMarketsNova() {
 
         {/* Pairs Tab */}
         <TabsContent value="pairs" className="space-y-4 mt-4">
-          <FilterChips
-            groups={filterGroups}
-            activeFilters={activeFilters}
-            onFiltersChange={setActiveFilters}
-            searchValue={searchValue}
-            onSearchChange={setSearchValue}
-          />
+          <div className="flex items-center justify-between mb-4">
+            <FilterChips
+              groups={filterGroups}
+              activeFilters={activeFilters}
+              onFiltersChange={setActiveFilters}
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+            />
+            <Button
+              size="sm"
+              className="gap-2 bg-primary hover:bg-primary/90 ml-2"
+              onClick={() => {
+                resetPairForm();
+                setEditingPair(null);
+                setShowPairDialog(true);
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              Add Pair
+            </Button>
+          </div>
 
           <DataGridAdaptive
-            data={pairsData}
+            data={markets}
             columns={pairColumns}
             keyExtractor={(item) => item.id}
-            renderCard={(item, selected, onSelect) => (
-              <RecordCard
-                id={item.id}
-                title={item.pair}
-                subtitle={`${item.base} / ${item.quote}`}
-                fields={[
-                  { label: "Tick Size", value: item.tickSize },
-                  { label: "Fee Class", value: item.feeClass },
-                ]}
-                status={{
-                  label: item.status,
-                  variant: item.status === "Active" ? "success" : "warning",
-                }}
-                onClick={() => setSelectedRecord(item)}
-                selected={selected}
-              />
-            )}
+            renderCard={(item, selected, onSelect) => {
+              const baseAsset = item.base_asset || assets.find(a => a.id === item.base_asset_id);
+              const quoteAsset = item.quote_asset || assets.find(a => a.id === item.quote_asset_id);
+              return (
+                <RecordCard
+                  id={item.id}
+                  title={`${baseAsset?.symbol}/${quoteAsset?.symbol}`}
+                  subtitle={`${baseAsset?.name} / ${quoteAsset?.name}`}
+                  fields={[
+                    { label: "Tick Size", value: String(item.tick_size) },
+                    { label: "Lot Size", value: String(item.lot_size) },
+                    { label: "Min Notional", value: String(item.min_notional) },
+                  ]}
+                  status={{
+                    label: item.is_active ? "Active" : "Inactive",
+                    variant: item.is_active ? "success" : "default",
+                  }}
+                  actions={[
+                    {
+                      label: "Edit",
+                      icon: Edit,
+                      onClick: () => handleEditPair(item),
+                    },
+                    {
+                      label: "Delete",
+                      icon: Trash2,
+                      onClick: () => handleDeletePair(item),
+                      variant: "destructive",
+                    },
+                  ]}
+                  onClick={() => setSelectedRecord(item)}
+                  selected={selected}
+                />
+              );
+            }}
             onRowClick={(row) => setSelectedRecord(row)}
             selectable
           />
@@ -754,13 +947,150 @@ export default function AdminMarketsNova() {
         </DialogContent>
       </Dialog>
 
+      {/* Pair Add/Edit Dialog */}
+      <Dialog open={showPairDialog} onOpenChange={(open) => {
+        setShowPairDialog(open);
+        if (!open) { 
+          setEditingPair(null); 
+          resetPairForm(); 
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingPair ? 'Edit Trading Pair' : 'Add New Trading Pair'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handlePairSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="base_asset">Base Asset *</Label>
+              <Select
+                value={pairFormData.base_asset_id}
+                onValueChange={(value) => setPairFormData({ ...pairFormData, base_asset_id: value })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select base asset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assets.filter(a => a.trading_enabled).map(asset => (
+                    <SelectItem key={asset.id} value={asset.id}>
+                      <div className="flex items-center gap-2">
+                        <CryptoLogo 
+                          symbol={asset.symbol}
+                          logoFilePath={asset.logo_file_path}
+                          fallbackUrl={asset.logo_url}
+                          size={20}
+                        />
+                        {asset.symbol} - {asset.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="quote_asset">Quote Asset *</Label>
+              <Select
+                value={pairFormData.quote_asset_id}
+                onValueChange={(value) => setPairFormData({ ...pairFormData, quote_asset_id: value })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select quote asset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assets.filter(a => a.trading_enabled).map(asset => (
+                    <SelectItem key={asset.id} value={asset.id}>
+                      <div className="flex items-center gap-2">
+                        <CryptoLogo 
+                          symbol={asset.symbol}
+                          logoFilePath={asset.logo_file_path}
+                          fallbackUrl={asset.logo_url}
+                          size={20}
+                        />
+                        {asset.symbol} - {asset.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="tick_size">Tick Size *</Label>
+                <Input
+                  id="tick_size"
+                  type="number"
+                  step="0.00000001"
+                  value={pairFormData.tick_size}
+                  onChange={(e) => setPairFormData({ ...pairFormData, tick_size: parseFloat(e.target.value) || 0 })}
+                  placeholder="0.01"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="lot_size">Lot Size *</Label>
+                <Input
+                  id="lot_size"
+                  type="number"
+                  step="0.00000001"
+                  value={pairFormData.lot_size}
+                  onChange={(e) => setPairFormData({ ...pairFormData, lot_size: parseFloat(e.target.value) || 0 })}
+                  placeholder="0.001"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="min_notional">Min Notional *</Label>
+              <Input
+                id="min_notional"
+                type="number"
+                step="0.01"
+                value={pairFormData.min_notional}
+                onChange={(e) => setPairFormData({ ...pairFormData, min_notional: parseFloat(e.target.value) || 0 })}
+                placeholder="10"
+                required
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={pairFormData.is_active}
+                onCheckedChange={(checked) => setPairFormData({ ...pairFormData, is_active: checked })}
+              />
+              <Label>Active</Label>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowPairDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">
+                {editingPair ? 'Update Pair' : 'Create Pair'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Detail Sheet */}
       <DetailSheet
         open={!!selectedRecord}
         onOpenChange={(open) => !open && setSelectedRecord(null)}
-        title={`${selectedRecord?.symbol} - ${selectedRecord?.name}`}
+        title={
+          'symbol' in (selectedRecord || {})
+            ? `${(selectedRecord as Asset)?.symbol} - ${(selectedRecord as Asset)?.name}`
+            : `Trading Pair Details`
+        }
       >
-        {selectedRecord && (
+        {selectedRecord && 'symbol' in selectedRecord && (
           <div className="space-y-6">
             <div className="flex items-center gap-3 pb-4 border-b">
               <CryptoLogo 
@@ -824,6 +1154,23 @@ export default function AdminMarketsNova() {
                   <p className="text-xs text-muted-foreground">Min Trade</p>
                   <p className="text-sm">{selectedRecord.min_trade_amount}</p>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {selectedRecord && !('symbol' in selectedRecord) && (
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-foreground">Pair Details</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(selectedRecord).map(([key, value]) => (
+                  <div key={key}>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {key.replace(/_/g, ' ')}
+                    </p>
+                    <p className="text-sm text-foreground">{String(value)}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
