@@ -58,7 +58,7 @@ export default function AdminStakingNova() {
 
   const [formData, setFormData] = useState({
     name: "",
-    asset_id: "",
+    asset_id: "any",
     staking_type: "crypto",
     apy: "",
     lock_period_days: "",
@@ -106,7 +106,7 @@ export default function AdminStakingNova() {
   const resetForm = () => {
     setFormData({
       name: "",
-      asset_id: "",
+      asset_id: "any",
       staking_type: "crypto",
       apy: "",
       lock_period_days: "",
@@ -130,7 +130,7 @@ export default function AdminStakingNova() {
     setEditingPool(pool);
     setFormData({
       name: pool.name,
-      asset_id: pool.asset_id || "",
+      asset_id: pool.asset_id || "any",
       staking_type: pool.staking_type,
       apy: pool.apy.toString(),
       lock_period_days: pool.lock_period_days.toString(),
@@ -153,7 +153,7 @@ export default function AdminStakingNova() {
     try {
       const poolData = {
         name: formData.name,
-        asset_id: formData.asset_id || null,
+        asset_id: formData.asset_id === "any" ? null : formData.asset_id,
         staking_type: formData.staking_type,
         apy: parseFloat(formData.apy),
         lock_period_days: parseInt(formData.lock_period_days),
