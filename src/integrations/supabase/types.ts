@@ -2878,6 +2878,57 @@ export type Database = {
         }
         Relationships: []
       }
+      insurance_bsk_plans: {
+        Row: {
+          annual_premium_bsk: number
+          coverage_ratio: number | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_age: number | null
+          max_coverage_bsk: number
+          min_age: number | null
+          min_loss_required_bsk: number | null
+          plan_name: string
+          plan_type: string
+          terms_conditions: Json | null
+          updated_at: string
+        }
+        Insert: {
+          annual_premium_bsk?: number
+          coverage_ratio?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_age?: number | null
+          max_coverage_bsk?: number
+          min_age?: number | null
+          min_loss_required_bsk?: number | null
+          plan_name: string
+          plan_type: string
+          terms_conditions?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          annual_premium_bsk?: number
+          coverage_ratio?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_age?: number | null
+          max_coverage_bsk?: number
+          min_age?: number | null
+          min_loss_required_bsk?: number | null
+          plan_name?: string
+          plan_type?: string
+          terms_conditions?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       insurance_bsk_policies: {
         Row: {
           beneficiaries: Json | null
