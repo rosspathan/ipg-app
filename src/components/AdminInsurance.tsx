@@ -18,7 +18,8 @@ interface BSKInsurancePlan {
   id: string;
   plan_type: string;
   plan_name: string;
-  annual_premium_bsk: number;
+  premium_bsk: number;
+  premium_frequency: string;
   max_coverage_bsk: number;
   min_age?: number | null;
   max_age?: number | null;
@@ -52,7 +53,8 @@ const AdminInsurance = () => {
     id: '',
     plan_type: 'accident' as 'accident' | 'trading' | 'life',
     plan_name: '',
-    annual_premium_bsk: 10000,
+    premium_bsk: 10000,
+    premium_frequency: 'annual' as 'one_time' | 'annual',
     max_coverage_bsk: 1000000,
     min_age: undefined as number | undefined,
     max_age: undefined as number | undefined,
@@ -125,7 +127,8 @@ const AdminInsurance = () => {
       id: '',
       plan_type: 'accident',
       plan_name: '',
-      annual_premium_bsk: 10000,
+      premium_bsk: 10000,
+      premium_frequency: 'annual',
       max_coverage_bsk: 1000000,
       min_age: undefined,
       max_age: undefined,
@@ -142,7 +145,8 @@ const AdminInsurance = () => {
       const planData = {
         plan_type: planForm.plan_type,
         plan_name: planForm.plan_name,
-        annual_premium_bsk: planForm.annual_premium_bsk,
+        premium_bsk: planForm.premium_bsk,
+        premium_frequency: planForm.premium_frequency,
         max_coverage_bsk: planForm.max_coverage_bsk,
         min_age: planForm.min_age || null,
         max_age: planForm.max_age || null,
@@ -382,13 +386,29 @@ const AdminInsurance = () => {
                     />
                   </div>
 
+                  <div>
+                    <Label>Payment Frequency</Label>
+                    <Select
+                      value={planForm.premium_frequency}
+                      onValueChange={(value: any) => setPlanForm({ ...planForm, premium_frequency: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="one_time">One-Time Payment</SelectItem>
+                        <SelectItem value="annual">Annual Subscription</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Annual Premium (BSK)</Label>
+                      <Label>Premium Amount (BSK)</Label>
                       <Input
                         type="number"
-                        value={planForm.annual_premium_bsk}
-                        onChange={(e) => setPlanForm({ ...planForm, annual_premium_bsk: Number(e.target.value) })}
+                        value={planForm.premium_bsk}
+                        onChange={(e) => setPlanForm({ ...planForm, premium_bsk: Number(e.target.value) })}
                       />
                     </div>
 
@@ -499,7 +519,8 @@ const AdminInsurance = () => {
                               id: plan.id,
                               plan_type: plan.plan_type as any,
                               plan_name: plan.plan_name,
-                              annual_premium_bsk: plan.annual_premium_bsk,
+                              premium_bsk: plan.premium_bsk,
+                              premium_frequency: plan.premium_frequency as 'one_time' | 'annual',
                               max_coverage_bsk: plan.max_coverage_bsk,
                               min_age: plan.min_age || undefined,
                               max_age: plan.max_age || undefined,
@@ -527,8 +548,9 @@ const AdminInsurance = () => {
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Annual Premium</p>
-                        <p className="text-lg font-semibold">{plan.annual_premium_bsk.toLocaleString()} BSK</p>
+                        <p className="text-sm text-muted-foreground">Premium</p>
+                        <p className="text-lg font-semibold">{plan.premium_bsk.toLocaleString()} BSK</p>
+                        <p className="text-xs text-muted-foreground">{plan.premium_frequency === 'one_time' ? 'One-Time' : 'Annual'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Max Coverage</p>

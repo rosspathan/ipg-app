@@ -2880,7 +2880,6 @@ export type Database = {
       }
       insurance_bsk_plans: {
         Row: {
-          annual_premium_bsk: number
           coverage_ratio: number | null
           created_at: string
           description: string | null
@@ -2892,11 +2891,12 @@ export type Database = {
           min_loss_required_bsk: number | null
           plan_name: string
           plan_type: string
+          premium_bsk: number
+          premium_frequency: string
           terms_conditions: Json | null
           updated_at: string
         }
         Insert: {
-          annual_premium_bsk?: number
           coverage_ratio?: number | null
           created_at?: string
           description?: string | null
@@ -2908,11 +2908,12 @@ export type Database = {
           min_loss_required_bsk?: number | null
           plan_name: string
           plan_type: string
+          premium_bsk?: number
+          premium_frequency?: string
           terms_conditions?: Json | null
           updated_at?: string
         }
         Update: {
-          annual_premium_bsk?: number
           coverage_ratio?: number | null
           created_at?: string
           description?: string | null
@@ -2924,6 +2925,8 @@ export type Database = {
           min_loss_required_bsk?: number | null
           plan_name?: string
           plan_type?: string
+          premium_bsk?: number
+          premium_frequency?: string
           terms_conditions?: Json | null
           updated_at?: string
         }
