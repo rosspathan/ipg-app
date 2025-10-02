@@ -3134,10 +3134,12 @@ export type Database = {
           max_bet_inr: number
           max_daily_liability_bsk: number | null
           min_bet_inr: number
+          post_free_fee_bsk: number
           post_free_fee_inr: number
           region_restrictions: Json | null
           risk_free_free_spins: boolean
           updated_at: string
+          winning_fee_percent: number
         }
         Insert: {
           allow_holding_balance?: boolean
@@ -3152,10 +3154,12 @@ export type Database = {
           max_bet_inr?: number
           max_daily_liability_bsk?: number | null
           min_bet_inr?: number
+          post_free_fee_bsk?: number
           post_free_fee_inr?: number
           region_restrictions?: Json | null
           risk_free_free_spins?: boolean
           updated_at?: string
+          winning_fee_percent?: number
         }
         Update: {
           allow_holding_balance?: boolean
@@ -3170,10 +3174,12 @@ export type Database = {
           max_bet_inr?: number
           max_daily_liability_bsk?: number | null
           min_bet_inr?: number
+          post_free_fee_bsk?: number
           post_free_fee_inr?: number
           region_restrictions?: Json | null
           risk_free_free_spins?: boolean
           updated_at?: string
+          winning_fee_percent?: number
         }
         Relationships: []
       }

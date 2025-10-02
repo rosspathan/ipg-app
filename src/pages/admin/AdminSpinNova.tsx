@@ -28,6 +28,8 @@ interface SpinConfig {
   min_bet_inr: number;
   max_bet_inr: number;
   post_free_fee_inr: number;
+  post_free_fee_bsk: number;
+  winning_fee_percent: number;
   free_spins_count: number;
   daily_spin_cap_per_user: number | null;
   lifetime_spin_cap_per_user: number | null;
@@ -107,7 +109,8 @@ export default function AdminSpinNova() {
   const [configForm, setConfigForm] = useState({
     min_bet_inr: "",
     max_bet_inr: "",
-    post_free_fee_inr: "",
+    post_free_fee_bsk: "",
+    winning_fee_percent: "",
     free_spins_count: "",
     daily_spin_cap_per_user: ""
   });
@@ -125,7 +128,8 @@ export default function AdminSpinNova() {
       setConfigForm({
         min_bet_inr: config.min_bet_inr.toString(),
         max_bet_inr: config.max_bet_inr.toString(),
-        post_free_fee_inr: config.post_free_fee_inr.toString(),
+        post_free_fee_bsk: config.post_free_fee_bsk?.toString() || "10",
+        winning_fee_percent: config.winning_fee_percent?.toString() || "5",
         free_spins_count: config.free_spins_count?.toString() || "5",
         daily_spin_cap_per_user: config.daily_spin_cap_per_user?.toString() || "10"
       });
@@ -151,7 +155,8 @@ export default function AdminSpinNova() {
         .update({
           min_bet_inr: parseFloat(data.min_bet_inr),
           max_bet_inr: parseFloat(data.max_bet_inr),
-          post_free_fee_inr: parseFloat(data.post_free_fee_inr),
+          post_free_fee_bsk: parseFloat(data.post_free_fee_bsk),
+          winning_fee_percent: parseFloat(data.winning_fee_percent),
           free_spins_count: parseInt(data.free_spins_count),
           daily_spin_cap_per_user: data.daily_spin_cap_per_user ? parseInt(data.daily_spin_cap_per_user) : null
         })
@@ -499,19 +504,32 @@ export default function AdminSpinNova() {
                 />
               </div>
             </div>
-              <div>
-                <Label>Fee After Free Spins (INR)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={configForm.post_free_fee_inr}
-                  onChange={(e) => setConfigForm({ ...configForm, post_free_fee_inr: e.target.value })}
-                  placeholder="10"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Fixed fee charged after daily free spins are exhausted
-                </p>
-              </div>
+            <div>
+              <Label>Play Fee (BSK)</Label>
+              <Input
+                type="number"
+                step="1"
+                value={configForm.post_free_fee_bsk}
+                onChange={(e) => setConfigForm({ ...configForm, post_free_fee_bsk: e.target.value })}
+                placeholder="10"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                BSK fee charged per spin after daily free spins are exhausted
+              </p>
+            </div>
+            <div>
+              <Label>Winning Fee (%)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={configForm.winning_fee_percent}
+                onChange={(e) => setConfigForm({ ...configForm, winning_fee_percent: e.target.value })}
+                placeholder="5"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Percentage fee deducted from winning amount
+              </p>
+            </div>
             <div>
               <Label>Free Spins Per Day</Label>
               <Input
@@ -520,6 +538,9 @@ export default function AdminSpinNova() {
                 onChange={(e) => setConfigForm({ ...configForm, free_spins_count: e.target.value })}
                 placeholder="5"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Number of free spins each user gets daily
+              </p>
             </div>
             <div>
               <Label>Daily Spin Cap Per User</Label>
