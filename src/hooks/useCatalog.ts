@@ -65,15 +65,22 @@ interface ReferralConfig {
 interface StakingPool {
   id: string;
   asset_id: string;
+  name: string;
+  staking_type: string;
   apy: number;
   lock_period_days: number;
-  capacity: number;
+  has_lock_period: boolean;
+  min_stake_amount: number;
+  max_stake_amount: number | null;
+  capacity: number | null;
   current_staked: number;
   early_exit_penalty: number;
   platform_fee: number;
-  fee_percent: number;
+  reward_distribution: string;
+  compound_rewards: boolean;
   active: boolean;
-  name: string;
+  description: string | null;
+  terms_conditions: string | null;
   created_at: string;
   updated_at: string;
 }

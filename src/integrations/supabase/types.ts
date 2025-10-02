@@ -4723,46 +4723,76 @@ export type Database = {
       }
       staking_pools: {
         Row: {
-          active: boolean | null
+          active: boolean
           apy: number
           asset_id: string | null
           capacity: number | null
-          created_at: string | null
-          current_staked: number | null
-          early_exit_penalty: number | null
+          compound_rewards: boolean
+          created_at: string
+          created_by: string | null
+          current_staked: number
+          description: string | null
+          early_exit_penalty: number
+          has_lock_period: boolean
           id: string
           lock_period_days: number
+          max_stake_amount: number | null
+          min_stake_amount: number
           name: string
-          platform_fee: number | null
-          updated_at: string | null
+          platform_fee: number
+          region_restrictions: Json | null
+          reward_distribution: string
+          staking_type: string
+          terms_conditions: string | null
+          updated_at: string
         }
         Insert: {
-          active?: boolean | null
-          apy: number
-          asset_id?: string | null
-          capacity?: number | null
-          created_at?: string | null
-          current_staked?: number | null
-          early_exit_penalty?: number | null
-          id?: string
-          lock_period_days: number
-          name: string
-          platform_fee?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          active?: boolean | null
+          active?: boolean
           apy?: number
           asset_id?: string | null
           capacity?: number | null
-          created_at?: string | null
-          current_staked?: number | null
-          early_exit_penalty?: number | null
+          compound_rewards?: boolean
+          created_at?: string
+          created_by?: string | null
+          current_staked?: number
+          description?: string | null
+          early_exit_penalty?: number
+          has_lock_period?: boolean
           id?: string
           lock_period_days?: number
+          max_stake_amount?: number | null
+          min_stake_amount?: number
+          name: string
+          platform_fee?: number
+          region_restrictions?: Json | null
+          reward_distribution?: string
+          staking_type?: string
+          terms_conditions?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          apy?: number
+          asset_id?: string | null
+          capacity?: number | null
+          compound_rewards?: boolean
+          created_at?: string
+          created_by?: string | null
+          current_staked?: number
+          description?: string | null
+          early_exit_penalty?: number
+          has_lock_period?: boolean
+          id?: string
+          lock_period_days?: number
+          max_stake_amount?: number | null
+          min_stake_amount?: number
           name?: string
-          platform_fee?: number | null
-          updated_at?: string | null
+          platform_fee?: number
+          region_restrictions?: Json | null
+          reward_distribution?: string
+          staking_type?: string
+          terms_conditions?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
