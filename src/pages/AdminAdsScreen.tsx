@@ -52,8 +52,11 @@ interface AdStats {
 export const AdminAdsScreen: React.FC = () => {
   const [ads, setAds] = useState<(AdData & { id: string; stats?: AdStats })[]>([]);
   const [subscriptionTiers, setSubscriptionTiers] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [tierDialogOpen, setTierDialogOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<AdData | null>(null);
+  const [editingTier, setEditingTier] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ads');
   const { toast } = useToast();
@@ -73,6 +76,7 @@ export const AdminAdsScreen: React.FC = () => {
   useEffect(() => {
     loadAds();
     loadSubscriptionTiers();
+    loadSettings();
   }, []);
 
   const loadAds = async () => {
@@ -130,14 +134,49 @@ export const AdminAdsScreen: React.FC = () => {
   const loadSubscriptionTiers = async () => {
     try {
       const { data, error } = await supabase
-        .from('subscription_tiers')
+        .from('ad_subscription_tiers')
         .select('*')
-        .order('daily_rewarded_clicks');
+        .order('tier_inr', { ascending: true });
 
       if (error) throw error;
       setSubscriptionTiers(data || []);
     } catch (error) {
       console.error('Error loading subscription tiers:', error);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ad_mining_settings')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (!data) {
+        // Create default settings
+        const { data: newSettings, error: insertError } = await supabase
+          .from('ad_mining_settings')
+          .insert({
+            free_daily_enabled: true,
+            free_daily_reward_bsk: 1,
+            bsk_inr_rate: 1.0,
+            allow_multiple_subscriptions: false,
+            max_free_per_day: 1
+          })
+          .select()
+          .single();
+        
+        if (insertError) throw insertError;
+        setSettings(newSettings);
+      } else {
+        setSettings(data);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
     }
   };
 
@@ -249,26 +288,88 @@ export const AdminAdsScreen: React.FC = () => {
     }
   };
 
-  const updateTier = async (tierId: string, updates: any) => {
+  const updateSettings = async (updates: any) => {
+    try {
+      if (!settings?.id) return;
+      
+      const { error } = await supabase
+        .from('ad_mining_settings')
+        .update(updates)
+        .eq('id', settings.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Settings updated successfully"
+      });
+
+      loadSettings();
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update settings",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const saveTier = async (tierData: any) => {
+    try {
+      if (editingTier) {
+        const { error } = await supabase
+          .from('ad_subscription_tiers')
+          .update(tierData)
+          .eq('id', editingTier.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('ad_subscription_tiers')
+          .insert(tierData);
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `Tier ${editingTier ? 'updated' : 'created'} successfully`
+      });
+
+      setTierDialogOpen(false);
+      setEditingTier(null);
+      loadSubscriptionTiers();
+    } catch (error) {
+      console.error('Error saving tier:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save tier",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteTier = async (tierId: string) => {
+    if (!confirm('Are you sure you want to delete this tier?')) return;
+
     try {
       const { error } = await supabase
-        .from('subscription_tiers')
-        .update(updates)
+        .from('ad_subscription_tiers')
+        .delete()
         .eq('id', tierId);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Subscription tier updated"
+        description: "Tier deleted successfully"
       });
 
       loadSubscriptionTiers();
     } catch (error) {
-      console.error('Error updating tier:', error);
+      console.error('Error deleting tier:', error);
       toast({
         title: "Error",
-        description: "Failed to update tier",
+        description: "Failed to delete tier",
         variant: "destructive"
       });
     }
@@ -439,10 +540,11 @@ export const AdminAdsScreen: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="ads">Ads Management</TabsTrigger>
-          <TabsTrigger value="tiers">Subscription Tiers</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        <TabsList className="grid grid-cols-3 md:grid-cols-4">
+          <TabsTrigger value="ads" className="text-xs md:text-sm">Ads</TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs md:text-sm">Settings</TabsTrigger>
+          <TabsTrigger value="tiers" className="text-xs md:text-sm">Tiers</TabsTrigger>
+          <TabsTrigger value="analytics" className="text-xs md:text-sm">Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ads" className="space-y-4">
@@ -526,49 +628,123 @@ export const AdminAdsScreen: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="tiers" className="space-y-4">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Subscription Tier Controls</h3>
-            <div className="space-y-4">
-              {subscriptionTiers.map((tier) => (
-                <div key={tier.id} className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="font-semibold">Subscription Tiers</h3>
+              <p className="text-sm text-muted-foreground">Configure BSK subscription packages (100-10000 BSK)</p>
+            </div>
+            <Dialog open={tierDialogOpen} onOpenChange={setTierDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setEditingTier(null)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Tier
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{editingTier ? 'Edit' : 'Create'} Subscription Tier</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium capitalize">{tier.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Daily rewarded clicks: {tier.daily_rewarded_clicks}
-                    </p>
+                    <Label>Subscription Amount (BSK)</Label>
+                    <Input
+                      type="number"
+                      min="100"
+                      max="10000"
+                      step="100"
+                      defaultValue={editingTier?.tier_inr || 100}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        const daily = value / 100; // Linear: amount / 100 days
+                        setEditingTier({ ...editingTier, tier_inr: value, daily_bsk: daily, duration_days: 100 });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Min: 100 BSK, Max: 10,000 BSK</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm">Daily Clicks:</Label>
-                      <Input
-                        type="number"
-                        className="w-20"
-                        value={tier.daily_rewarded_clicks}
-                        onChange={(e) => updateTier(tier.id, { 
-                          daily_rewarded_clicks: parseInt(e.target.value) 
-                        })}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm">Cooldown (s):</Label>
-                      <Input
-                        type="number"
-                        className="w-20"
-                        value={tier.cooldown_seconds}
-                        onChange={(e) => updateTier(tier.id, { 
-                          cooldown_seconds: parseInt(e.target.value) 
-                        })}
-                      />
-                    </div>
-                    <Switch
-                      checked={tier.is_active}
-                      onCheckedChange={(checked) => updateTier(tier.id, { is_active: checked })}
+                  <div>
+                    <Label>Duration (Days)</Label>
+                    <Input
+                      type="number"
+                      defaultValue={editingTier?.duration_days || 100}
+                      onChange={(e) => setEditingTier({ ...editingTier, duration_days: parseInt(e.target.value) })}
                     />
                   </div>
+                  <div>
+                    <Label>Daily BSK Reward (Withdrawable)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={editingTier?.daily_bsk || (editingTier?.tier_inr / 100 || 1)}
+                      readOnly
+                      className="bg-muted"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Auto-calculated: Amount ÷ Duration</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label>Active</Label>
+                    <Switch
+                      checked={editingTier?.is_active ?? true}
+                      onCheckedChange={(checked) => setEditingTier({ ...editingTier, is_active: checked })}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setTierDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={() => saveTier(editingTier)}>Save</Button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </Card>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="grid gap-4">
+            {subscriptionTiers.map((tier) => (
+              <Card key={tier.id} className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-semibold">{tier.tier_inr} BSK Subscription</h4>
+                      <Badge variant={tier.is_active ? 'default' : 'secondary'}>
+                        {tier.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Daily Reward:</span>
+                        <span className="ml-1 font-medium">{tier.daily_bsk} BSK</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Duration:</span>
+                        <span className="ml-1 font-medium">{tier.duration_days} days</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Total:</span>
+                        <span className="ml-1 font-medium">{tier.daily_bsk * tier.duration_days} BSK</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingTier(tier);
+                        setTierDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteTier(tier.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
 
         <TabsContent value="analytics">
