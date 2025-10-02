@@ -73,7 +73,7 @@ const AdminTeamReferralsScreen = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background px-6 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-3">
         <div className="flex items-center">
           <Button 
             variant="ghost" 
@@ -84,69 +84,69 @@ const AdminTeamReferralsScreen = () => {
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Team & Referrals</h1>
-            <p className="text-sm text-muted-foreground">Manage comprehensive referral program settings</p>
+            <h1 className="text-xl md:text-2xl font-bold text-foreground">Team & Referrals</h1>
+            <p className="text-xs md:text-sm text-muted-foreground">Manage referral program</p>
           </div>
         </div>
-        <Button onClick={handleSave} className="gap-2">
+        <Button onClick={handleSave} className="gap-2 w-full md:w-auto text-sm">
           <Save className="w-4 h-4" />
           Save Settings
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4 mb-4 md:mb-6">
         <Card className="bg-gradient-card shadow-card border-0">
-          <CardContent className="p-4 text-center">
-            <TrendingUp className="w-6 h-6 text-primary mx-auto mb-2" />
-            <p className="text-lg font-bold text-foreground">{totalEarnings.toFixed(2)} BSK</p>
-            <p className="text-xs text-muted-foreground">Total Earnings</p>
+          <CardContent className="p-3 md:p-4 text-center">
+            <TrendingUp className="w-4 h-4 md:w-6 md:h-6 text-primary mx-auto mb-1 md:mb-2" />
+            <p className="text-sm md:text-lg font-bold text-foreground">{totalEarnings.toFixed(1)}</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Total BSK</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-card shadow-card border-0">
-          <CardContent className="p-4 text-center">
-            <Gift className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
-            <p className="text-lg font-bold text-foreground">{pendingEarnings.toFixed(2)} BSK</p>
-            <p className="text-xs text-muted-foreground">Pending</p>
+          <CardContent className="p-3 md:p-4 text-center">
+            <Gift className="w-4 h-4 md:w-6 md:h-6 text-yellow-500 mx-auto mb-1 md:mb-2" />
+            <p className="text-sm md:text-lg font-bold text-foreground">{pendingEarnings.toFixed(1)}</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Pending</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-card shadow-card border-0">
-          <CardContent className="p-4 text-center">
-            <Trophy className="w-6 h-6 text-green-500 mx-auto mb-2" />
-            <p className="text-lg font-bold text-foreground">{settledEarnings.toFixed(2)} BSK</p>
-            <p className="text-xs text-muted-foreground">Settled</p>
+          <CardContent className="p-3 md:p-4 text-center">
+            <Trophy className="w-4 h-4 md:w-6 md:h-6 text-green-500 mx-auto mb-1 md:mb-2" />
+            <p className="text-sm md:text-lg font-bold text-foreground">{settledEarnings.toFixed(1)}</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Settled</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-card shadow-card border-0">
-          <CardContent className="p-4 text-center">
-            <Users className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-            <p className="text-lg font-bold text-foreground">{teamIncomeEntries}</p>
-            <p className="text-xs text-muted-foreground">Team Rewards</p>
+          <CardContent className="p-3 md:p-4 text-center">
+            <Users className="w-4 h-4 md:w-6 md:h-6 text-blue-500 mx-auto mb-1 md:mb-2" />
+            <p className="text-sm md:text-lg font-bold text-foreground">{teamIncomeEntries}</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Team</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-card shadow-card border-0">
-          <CardContent className="p-4 text-center">
-            <Gift className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-            <p className="text-lg font-bold text-foreground">{directBonusEntries}</p>
-            <p className="text-xs text-muted-foreground">Direct Bonuses</p>
+          <CardContent className="p-3 md:p-4 text-center">
+            <Gift className="w-4 h-4 md:w-6 md:h-6 text-purple-500 mx-auto mb-1 md:mb-2" />
+            <p className="text-sm md:text-lg font-bold text-foreground">{directBonusEntries}</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Direct</p>
           </CardContent>
         </Card>
       </div>
 
       <Tabs defaultValue="settings" className="flex-1">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="settings">Program Settings</TabsTrigger>
-          <TabsTrigger value="badges">Badge Configuration</TabsTrigger>
-          <TabsTrigger value="milestones">VIP Milestones</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
+          <TabsTrigger value="settings" className="text-xs md:text-sm px-2">Settings</TabsTrigger>
+          <TabsTrigger value="badges" className="text-xs md:text-sm px-2">Badges</TabsTrigger>
+          <TabsTrigger value="milestones" className="text-xs md:text-sm px-2">Milestones</TabsTrigger>
+          <TabsTrigger value="reports" className="text-xs md:text-sm px-2">Reports</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="space-y-6">
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Team Referral Program Settings
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Settings className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="truncate">Team Referral Settings</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -277,10 +277,10 @@ const AdminTeamReferralsScreen = () => {
           {/* Team Income Levels */}
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle>Team Income Levels (L1-L50)</CardTitle>
+              <CardTitle className="text-base md:text-lg">Team Income Levels</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {teamIncomeLevels.filter(level => level.is_active).slice(0, 10).map((level) => (
                   <div key={level.id} className="text-center p-3 border border-border rounded-lg">
                     <Badge variant="outline" className="mb-2">L{level.level}</Badge>
@@ -301,30 +301,30 @@ const AdminTeamReferralsScreen = () => {
         <TabsContent value="badges" className="space-y-6">
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="w-5 h-5" />
-                Badge Thresholds & Unlock Levels
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Trophy className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="truncate">Badge Thresholds</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {badgeThresholds.map((badge) => (
-                  <div key={badge.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <Badge variant="secondary" className="text-sm">
+                  <div key={badge.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border border-border rounded-lg gap-3">
+                    <div className="flex items-start md:items-center gap-2 md:gap-4">
+                      <Badge variant="secondary" className="text-xs md:text-sm shrink-0">
                         {badge.badge_name}
                       </Badge>
-                      <div>
-                        <p className="font-medium">{badge.bsk_threshold.toLocaleString()} BSK Threshold</p>
-                        <p className="text-sm text-muted-foreground">
-                          Unlocks earning from {badge.unlock_levels} levels
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm md:text-base">{badge.bsk_threshold.toLocaleString()} BSK</p>
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          Unlocks L1-L{badge.unlock_levels}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-primary">L1-L{badge.unlock_levels}</p>
+                    <div className="text-left md:text-right">
+                      <p className="text-base md:text-lg font-bold text-primary">L1-L{badge.unlock_levels}</p>
                       {badge.bonus_bsk_holding > 0 && (
-                        <p className="text-sm text-green-600">
+                        <p className="text-xs md:text-sm text-green-600">
                           +{badge.bonus_bsk_holding.toLocaleString()} BSK Bonus
                         </p>
                       )}
@@ -339,37 +339,37 @@ const AdminTeamReferralsScreen = () => {
         <TabsContent value="milestones" className="space-y-6">
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Gift className="w-5 h-5" />
-                VIP Direct-Referral Milestones
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Gift className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="truncate">VIP Milestones</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {vipMilestones.map((milestone) => (
-                  <div key={milestone.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div className="flex items-center gap-4">
+                  <div key={milestone.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border border-border rounded-lg gap-3">
+                    <div className="flex items-start gap-2 md:gap-4">
                       <Badge 
                         variant={milestone.reward_type === 'physical' ? 'default' : 'secondary'}
-                        className="text-sm"
+                        className="text-xs md:text-sm shrink-0"
                       >
                         {milestone.vip_count_threshold} VIPs
                       </Badge>
-                      <div>
-                        <p className="font-medium">{milestone.reward_description}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {milestone.reward_type === 'physical' ? 'Physical Reward' : 'BSK Reward'}
-                          {milestone.requires_kyc && ' • Requires KYC'}
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm md:text-base truncate">{milestone.reward_description}</p>
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          {milestone.reward_type === 'physical' ? 'Physical' : 'BSK'}
+                          {milestone.requires_kyc && ' • KYC'}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-primary">
-                        ₹{milestone.reward_inr_value.toLocaleString()}
+                    <div className="text-left md:text-right shrink-0">
+                      <p className="text-base md:text-lg font-bold text-primary">
+                        {milestone.reward_inr_value.toLocaleString()} BSK
                       </p>
                       {milestone.reward_type === 'bsk' && (
-                        <p className="text-sm text-muted-foreground">
-                          {(milestone.reward_inr_value / formData.bsk_inr_rate).toFixed(0)} BSK
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          ₹{(milestone.reward_inr_value * formData.bsk_inr_rate).toFixed(0)}
                         </p>
                       )}
                     </div>
@@ -383,9 +383,9 @@ const AdminTeamReferralsScreen = () => {
         <TabsContent value="reports" className="space-y-6">
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle>Recent Referral Activity</CardTitle>
+              <CardTitle className="text-base md:text-lg">Recent Activity</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
