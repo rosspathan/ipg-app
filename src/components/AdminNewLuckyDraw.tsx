@@ -75,9 +75,11 @@ const AdminNewLuckyDraw = () => {
     ticket_price_inr: "100",
     per_user_ticket_cap: "1",
     fee_percent: "10",
-    first_prize: "5000",
-    second_prize: "3000",
-    third_prize: "2000"
+    prizes: [
+      { rank: 1, amount: "5000", emoji: "🥇" },
+      { rank: 2, amount: "3000", emoji: "🥈" },
+      { rank: 3, amount: "2000", emoji: "🥉" }
+    ]
   });
 
   const [rateForm, setRateForm] = useState({
@@ -166,6 +168,18 @@ const AdminNewLuckyDraw = () => {
 
   const createFromTemplate = (template: DrawTemplate) => {
     const prizes = template.prizes;
+    const formattedPrizes = Array.isArray(prizes) 
+      ? prizes.map((p, i) => ({
+          rank: i + 1,
+          amount: p.amount_inr?.toString() || "0",
+          emoji: i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏆"
+        }))
+      : [
+          { rank: 1, amount: "5000", emoji: "🥇" },
+          { rank: 2, amount: "3000", emoji: "🥈" },
+          { rank: 3, amount: "2000", emoji: "🥉" }
+        ];
+    
     setFormData({
       title: template.title,
       description: template.description,
@@ -173,9 +187,7 @@ const AdminNewLuckyDraw = () => {
       ticket_price_inr: template.ticket_price_inr.toString(),
       per_user_ticket_cap: "1",
       fee_percent: template.fee_percent.toString(),
-      first_prize: (prizes.find(p => p.rank === 'first')?.amount_inr || 5000).toString(),
-      second_prize: (prizes.find(p => p.rank === 'second')?.amount_inr || 3000).toString(),
-      third_prize: (prizes.find(p => p.rank === 'third')?.amount_inr || 2000).toString()
+      prizes: formattedPrizes
     });
     setDialogOpen(true);
   };
@@ -224,12 +236,13 @@ const AdminNewLuckyDraw = () => {
         drawId = newDraw.id;
       }
 
-      // Create prizes
-      const prizesData = [
-        { draw_id: drawId, rank: 'first' as const, amount_inr: parseFloat(formData.first_prize) },
-        { draw_id: drawId, rank: 'second' as const, amount_inr: parseFloat(formData.second_prize) },
-        { draw_id: drawId, rank: 'third' as const, amount_inr: parseFloat(formData.third_prize) }
-      ];
+      // Create prizes - dynamically from array
+      const rankNames = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'];
+      const prizesData = formData.prizes.map((prize, index) => ({
+        draw_id: drawId,
+        rank: (rankNames[index] || `rank_${index + 1}`) as any,
+        amount_inr: parseFloat(prize.amount)
+      }));
 
       const { error: prizesError } = await supabase
         .from('draw_prizes')
@@ -365,11 +378,51 @@ const AdminNewLuckyDraw = () => {
       ticket_price_inr: "100",
       per_user_ticket_cap: "1",
       fee_percent: "10",
-      first_prize: "5000",
-      second_prize: "3000",
-      third_prize: "2000"
+      prizes: [
+        { rank: 1, amount: "5000", emoji: "🥇" },
+        { rank: 2, amount: "3000", emoji: "🥈" },
+        { rank: 3, amount: "2000", emoji: "🥉" }
+      ]
     });
     setEditingDraw(null);
+  };
+
+  const addPrize = () => {
+    const newRank = formData.prizes.length + 1;
+    const emoji = newRank === 1 ? "🥇" : newRank === 2 ? "🥈" : newRank === 3 ? "🥉" : "🏆";
+    setFormData({
+      ...formData,
+      prizes: [...formData.prizes, { rank: newRank, amount: "1000", emoji }]
+    });
+  };
+
+  const removePrize = (index: number) => {
+    if (formData.prizes.length <= 1) {
+      toast({
+        title: "Error",
+        description: "Must have at least one prize",
+        variant: "destructive"
+      });
+      return;
+    }
+    const newPrizes = formData.prizes.filter((_, i) => i !== index).map((p, i) => ({
+      ...p,
+      rank: i + 1,
+      emoji: i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏆"
+    }));
+    setFormData({
+      ...formData,
+      prizes: newPrizes
+    });
+  };
+
+  const updatePrizeAmount = (index: number, amount: string) => {
+    const newPrizes = [...formData.prizes];
+    newPrizes[index].amount = amount;
+    setFormData({
+      ...formData,
+      prizes: newPrizes
+    });
   };
 
   const getStateColor = (state: string) => {
@@ -509,34 +562,47 @@ const AdminNewLuckyDraw = () => {
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Prize Structure (₹)</Label>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <Label className="text-xs">🥇 First</Label>
-                          <Input
-                            type="number"
-                            value={formData.first_prize}
-                            onChange={(e) => setFormData({...formData, first_prize: e.target.value})}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">🥈 Second</Label>
-                          <Input
-                            type="number"
-                            value={formData.second_prize}
-                            onChange={(e) => setFormData({...formData, second_prize: e.target.value})}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">🥉 Third</Label>
-                          <Input
-                            type="number"
-                            value={formData.third_prize}
-                            onChange={(e) => setFormData({...formData, third_prize: e.target.value})}
-                          />
-                        </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label>Prize Structure (₹)</Label>
+                        <Button 
+                          type="button"
+                          size="sm" 
+                          variant="outline"
+                          onClick={addPrize}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Prize
+                        </Button>
                       </div>
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        {formData.prizes.map((prize, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className="flex-1">
+                              <Label className="text-xs">{prize.emoji} Rank {prize.rank}</Label>
+                              <Input
+                                type="number"
+                                value={prize.amount}
+                                onChange={(e) => updatePrizeAmount(index, e.target.value)}
+                                placeholder="Prize amount"
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => removePrize(index)}
+                              className="mt-5"
+                              disabled={formData.prizes.length <= 1}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Total Prize Pool: ₹{formData.prizes.reduce((sum, p) => sum + parseFloat(p.amount || "0"), 0).toFixed(2)}
+                      </p>
                     </div>
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -617,8 +683,26 @@ const AdminNewLuckyDraw = () => {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => {
+                            onClick={async () => {
                               setEditingDraw(draw);
+                              
+                              // Load existing prizes
+                              const { data: prizesData } = await supabase
+                                .from('draw_prizes')
+                                .select('*')
+                                .eq('draw_id', draw.id)
+                                .order('amount_inr', { ascending: false });
+                              
+                              const loadedPrizes = prizesData?.map((p, i) => ({
+                                rank: i + 1,
+                                amount: p.amount_inr.toString(),
+                                emoji: i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏆"
+                              })) || [
+                                { rank: 1, amount: "5000", emoji: "🥇" },
+                                { rank: 2, amount: "3000", emoji: "🥈" },
+                                { rank: 3, amount: "2000", emoji: "🥉" }
+                              ];
+                              
                               setFormData({
                                 title: draw.title,
                                 description: draw.description || "",
@@ -626,9 +710,7 @@ const AdminNewLuckyDraw = () => {
                                 ticket_price_inr: draw.ticket_price_inr.toString(),
                                 per_user_ticket_cap: draw.per_user_ticket_cap.toString(),
                                 fee_percent: draw.fee_percent.toString(),
-                                first_prize: "5000",
-                                second_prize: "3000", 
-                                third_prize: "2000"
+                                prizes: loadedPrizes
                               });
                               setDialogOpen(true);
                             }}
