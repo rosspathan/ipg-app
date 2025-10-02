@@ -46,6 +46,46 @@ interface Asset {
   name: string;
 }
 
+function toNum(v: any, def = 0): number {
+  const n = Number(v);
+  return Number.isNaN(n) ? def : n;
+}
+
+function toInt(v: any, def = 0): number {
+  const n = parseInt(String(v), 10);
+  return Number.isNaN(n) ? def : n;
+}
+
+function normalizeRule(raw: any): PurchaseBonusRule {
+  const purchaseSymbol = raw?.purchase_asset_symbol ?? raw?.base_symbol ?? "IPG";
+  const bonusSymbol = raw?.bonus_asset_symbol ?? raw?.bonus_symbol ?? "BSK";
+  const maxPurchase = raw?.max_purchase_amount ?? raw?.max_fill_amount;
+  const maxBonusPerUser = raw?.max_bonus_per_user ?? raw?.max_bonus_per_day_user;
+
+  return {
+    id: raw?.id ?? crypto.randomUUID?.() ?? String(Math.random()),
+    name:
+      raw?.name ?? `${purchaseSymbol} → ${bonusSymbol} ${toNum(raw?.bonus_ratio ?? raw?.ratio_base_per_bonus ?? 1)}:1`,
+    purchase_asset_id: raw?.purchase_asset_id ?? null,
+    purchase_asset_symbol: purchaseSymbol,
+    bonus_asset_symbol: bonusSymbol,
+    min_purchase_amount: toNum(raw?.min_purchase_amount ?? raw?.min_fill_amount ?? 0),
+    max_purchase_amount: maxPurchase != null ? toNum(maxPurchase) : null,
+    bonus_ratio: toNum(raw?.bonus_ratio ?? raw?.ratio_base_per_bonus ?? 1),
+    vesting_days: toInt(raw?.vesting_days ?? 100),
+    vesting_enabled: (raw?.vesting_enabled ?? true) as boolean,
+    rounding_mode: (raw?.rounding_mode ?? "floor") as string,
+    max_bonus_per_user: maxBonusPerUser != null ? toNum(maxBonusPerUser) : null,
+    start_at: raw?.start_at ?? null,
+    end_at: raw?.end_at ?? null,
+    is_active: Boolean(raw?.is_active ?? true),
+    description: raw?.description ?? null,
+    terms: raw?.terms ?? null,
+    created_at: raw?.created_at ?? new Date().toISOString(),
+    updated_at: raw?.updated_at ?? new Date().toISOString(),
+  };
+}
+
 export default function AdminPurchaseBonusNova() {
   const [rules, setRules] = useState<PurchaseBonusRule[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -90,7 +130,8 @@ export default function AdminPurchaseBonusNova() {
       if (rulesResponse.error) throw rulesResponse.error;
       if (assetsResponse.error) throw assetsResponse.error;
 
-      setRules(rulesResponse.data || []);
+      const rawRules = rulesResponse.data || [];
+      setRules(rawRules.map(normalizeRule));
       setAssets(assetsResponse.data || []);
     } catch (error: any) {
       toast({
@@ -178,10 +219,12 @@ export default function AdminPurchaseBonusNova() {
       if (editingRule) {
         response = await supabase
           .from("purchase_bonus_rules")
-          .update(ruleData)
+          .update(ruleData as any)
           .eq("id", editingRule.id);
       } else {
-        response = await supabase.from("purchase_bonus_rules").insert([ruleData]);
+        response = await supabase
+          .from("purchase_bonus_rules")
+          .insert([ruleData as any] as any);
       }
 
       if (response.error) throw response.error;
@@ -340,7 +383,7 @@ export default function AdminPurchaseBonusNova() {
           label="Active Rules"
           value={rules.filter((r) => r.is_active).length.toString()}
           icon={<Gift className="w-4 h-4" />}
-          variant="primary"
+          variant="success"
         />
         <KPIStat
           label="Total Rules"
@@ -407,7 +450,7 @@ export default function AdminPurchaseBonusNova() {
                     label: "Vesting",
                     value: item.vesting_enabled ? `${item.vesting_days} days` : "Instant",
                   },
-                  { label: "Min Purchase", value: item.min_purchase_amount.toString() },
+                  { label: "Min Purchase", value: String(item.min_purchase_amount) },
                 ]}
                 status={{
                   label: item.is_active ? "Active" : "Inactive",
