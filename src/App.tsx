@@ -280,7 +280,7 @@ function App() {
                 <Route path="insurance" element={<AdminInsurance />} />
                 <Route path="lucky-draw" element={<AdminNewLuckyDraw />} />
                 <Route path="purchase-bonus" element={<AdminPurchaseBonusScreen />} />
-                <Route path="referrals" element={<AdminReferralProgram />} />
+                <Route path="referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="funding" element={<AdminFunding />} />
                 <Route path="funding/inr" element={<AdminINRFundingScreen />} />
