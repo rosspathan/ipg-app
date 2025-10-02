@@ -105,12 +105,10 @@ export default function AdminUsersManagementNova() {
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users', searchValue, activeFilters],
     queryFn: async () => {
+      // 1) Load profiles without joins (FK missing between profiles and user_roles)
       let query = supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles:user_roles(role)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (searchValue) {
@@ -127,7 +125,28 @@ export default function AdminUsersManagementNova() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      const profiles = data || [];
+      if (!profiles.length) return [];
+
+      // 2) Load roles separately and merge client-side
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', profiles.map((p: any) => p.user_id));
+
+      if (rolesError) {
+        // If roles query fails, still return profiles
+        return profiles.map((p: any) => ({ ...p, user_roles: [] }));
+      }
+
+      const roleMap = new Map<string, { role: string }[]>();
+      (roles || []).forEach((r: any) => {
+        const arr = roleMap.get(r.user_id) || [];
+        arr.push({ role: r.role });
+        roleMap.set(r.user_id, arr);
+      });
+
+      return profiles.map((p: any) => ({ ...p, user_roles: roleMap.get(p.user_id) || [] }));
     }
   });
 
