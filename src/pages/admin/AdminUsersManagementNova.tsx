@@ -14,11 +14,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Users, UserCheck, UserX, Shield, TrendingUp, AlertTriangle, Wallet, History, Key, Lock, Unlock, Mail, RefreshCw, Eye, Edit, Ban, DollarSign } from "lucide-react";
+import { Users, UserCheck, UserX, Shield, TrendingUp, AlertTriangle, Wallet, History, Key, Lock, Unlock, Mail, RefreshCw, Eye, Edit, Ban, DollarSign, Plus, Minus, Award, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function AdminUsersManagementNova() {
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
@@ -30,8 +31,75 @@ export default function AdminUsersManagementNova() {
   const [showRolesDialog, setShowRolesDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [balanceAmount, setBalanceAmount] = useState("");
+  const [balanceAsset, setBalanceAsset] = useState("BSK");
+  const [balanceType, setBalanceType] = useState<'add' | 'subtract'>('add');
+  const [selectedBalanceType, setSelectedBalanceType] = useState<'withdrawable' | 'holding'>('withdrawable');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch BSK balances for selected user
+  const { data: bskBalances } = useQuery({
+    queryKey: ['user-bsk-balance', selectedRecord?.user_id],
+    queryFn: async () => {
+      if (!selectedRecord) return null;
+      const { data, error } = await supabase
+        .from('user_bsk_balances')
+        .select('*')
+        .eq('user_id', selectedRecord.user_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedRecord?.user_id
+  });
+
+  // Fetch crypto balances for selected user
+  const { data: cryptoBalances } = useQuery({
+    queryKey: ['user-crypto-balances', selectedRecord?.user_id],
+    queryFn: async () => {
+      if (!selectedRecord) return [];
+      const { data, error } = await (supabase as any)
+        .from('wallet_balances')
+        .select('*, assets(*)')
+        .eq('user_id', selectedRecord.user_id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedRecord?.user_id
+  });
+
+  // Fetch user subscriptions
+  const { data: subscriptions } = useQuery({
+    queryKey: ['user-subscriptions', selectedRecord?.user_id],
+    queryFn: async () => {
+      if (!selectedRecord) return { adSubscriptions: [], insuranceSubscriptions: [] };
+      const [adSubs, insuranceSubs] = await Promise.all([
+        (supabase as any).from('user_ad_subscriptions').select('*').eq('user_id', selectedRecord.user_id),
+        (supabase as any).from('user_insurance_subscriptions').select('*, insurance_subscription_tiers(*)').eq('user_id', selectedRecord.user_id)
+      ]);
+      return {
+        adSubscriptions: adSubs.data || [],
+        insuranceSubscriptions: insuranceSubs.data || []
+      };
+    },
+    enabled: !!selectedRecord?.user_id
+  });
+
+  // Fetch user badge status
+  const { data: badgeStatus } = useQuery({
+    queryKey: ['user-badge-status', selectedRecord?.user_id],
+    queryFn: async () => {
+      if (!selectedRecord) return null;
+      const { data, error } = await supabase
+        .from('user_badge_status')
+        .select('*')
+        .eq('user_id', selectedRecord.user_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedRecord?.user_id
+  });
 
   // Fetch users with profiles and roles
   const { data: users, isLoading } = useQuery({
@@ -417,11 +485,14 @@ export default function AdminUsersManagementNova() {
             </div>
 
             <Tabs defaultValue="profile" className="w-full">
-              <TabsList className="w-full grid grid-cols-4">
-                <TabsTrigger value="profile">Profile</TabsTrigger>
-                <TabsTrigger value="balances">Balances</TabsTrigger>
-                <TabsTrigger value="security">Security</TabsTrigger>
-                <TabsTrigger value="actions">Actions</TabsTrigger>
+              <TabsList className="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-1 h-auto">
+                <TabsTrigger value="profile" className="text-xs md:text-sm py-2">Profile</TabsTrigger>
+                <TabsTrigger value="crypto" className="text-xs md:text-sm py-2">Crypto</TabsTrigger>
+                <TabsTrigger value="bsk" className="text-xs md:text-sm py-2">BSK</TabsTrigger>
+                <TabsTrigger value="subscriptions" className="text-xs md:text-sm py-2">Subs</TabsTrigger>
+                <TabsTrigger value="badges" className="text-xs md:text-sm py-2">Badges</TabsTrigger>
+                <TabsTrigger value="security" className="text-xs md:text-sm py-2">Security</TabsTrigger>
+                <TabsTrigger value="actions" className="text-xs md:text-sm py-2">Actions</TabsTrigger>
               </TabsList>
 
               <TabsContent value="profile" className="space-y-4 mt-4">
@@ -504,20 +575,268 @@ export default function AdminUsersManagementNova() {
                 )}
               </TabsContent>
 
-              <TabsContent value="balances" className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Asset Balances</h3>
-                  <p className="text-sm text-muted-foreground">Balance management coming soon</p>
+              <TabsContent value="crypto" className="space-y-4 mt-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium">Crypto Balances</h3>
+                    <Button size="sm" variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['user-crypto-balances'] })}>
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {cryptoBalances && cryptoBalances.length > 0 ? (
+                    <div className="space-y-2">
+                      {cryptoBalances.map((balance: any) => (
+                        <div key={balance.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-xs font-bold">{balance.assets?.symbol?.slice(0, 2)}</span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{balance.assets?.symbol}</p>
+                              <p className="text-xs text-muted-foreground">{balance.assets?.name}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium">{Number(balance.balance).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">{balance.assets?.network}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No crypto balances found</p>
+                  )}
+                  <div className="pt-2">
+                    <h3 className="text-sm font-medium mb-2">Wallet Addresses</h3>
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <p className="text-xs text-muted-foreground mb-1">Primary Wallet</p>
+                      <p className="text-xs font-mono break-all">
+                        {selectedRecord.wallet_address || 'Not set'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowBalanceDialog(true)}
-                  className="w-full gap-2"
-                >
-                  <DollarSign className="w-4 h-4" />
-                  Adjust Balance
-                </Button>
+              </TabsContent>
+
+              <TabsContent value="bsk" className="space-y-4 mt-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium">BSK Balances</h3>
+                    <Button size="sm" variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['user-bsk-balance'] })}>
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-3 rounded-lg bg-success/10 border border-success/20">
+                      <p className="text-xs text-muted-foreground mb-1">Withdrawable</p>
+                      <p className="text-lg font-bold text-success">{bskBalances?.withdrawable_balance?.toLocaleString() || '0'}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Earned: {bskBalances?.total_earned_withdrawable?.toLocaleString() || '0'}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
+                      <p className="text-xs text-muted-foreground mb-1">Holding</p>
+                      <p className="text-lg font-bold text-warning">{bskBalances?.holding_balance?.toLocaleString() || '0'}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Earned: {bskBalances?.total_earned_holding?.toLocaleString() || '0'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Label>Adjust BSK Balance</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant={selectedBalanceType === 'withdrawable' ? 'default' : 'outline'}
+                        onClick={() => setSelectedBalanceType('withdrawable')}
+                        className="flex-1"
+                      >
+                        Withdrawable
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={selectedBalanceType === 'holding' ? 'default' : 'outline'}
+                        onClick={() => setSelectedBalanceType('holding')}
+                        className="flex-1"
+                      >
+                        Holding
+                      </Button>
+                    </div>
+                    <Input
+                      type="number"
+                      placeholder="Amount"
+                      value={balanceAmount}
+                      onChange={(e) => setBalanceAmount(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          if (!balanceAmount || !selectedRecord) return;
+                          const amount = parseFloat(balanceAmount);
+                          const field = selectedBalanceType === 'withdrawable' ? 'withdrawable_balance' : 'holding_balance';
+                          const current = bskBalances?.[field] || 0;
+                          
+                          const { error } = await supabase
+                            .from('user_bsk_balances')
+                            .upsert({
+                              user_id: selectedRecord.user_id,
+                              [field]: current + amount
+                            });
+                          
+                          if (error) {
+                            toast({ title: "Error", description: error.message, variant: "destructive" });
+                          } else {
+                            toast({ title: "BSK balance updated" });
+                            queryClient.invalidateQueries({ queryKey: ['user-bsk-balance'] });
+                            setBalanceAmount("");
+                          }
+                        }}
+                        className="flex-1"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          if (!balanceAmount || !selectedRecord) return;
+                          const amount = parseFloat(balanceAmount);
+                          const field = selectedBalanceType === 'withdrawable' ? 'withdrawable_balance' : 'holding_balance';
+                          const current = bskBalances?.[field] || 0;
+                          
+                          if (current - amount < 0) {
+                            toast({ title: "Error", description: "Insufficient balance", variant: "destructive" });
+                            return;
+                          }
+
+                          const { error } = await supabase
+                            .from('user_bsk_balances')
+                            .upsert({
+                              user_id: selectedRecord.user_id,
+                              [field]: current - amount
+                            });
+                          
+                          if (error) {
+                            toast({ title: "Error", description: error.message, variant: "destructive" });
+                          } else {
+                            toast({ title: "BSK balance updated" });
+                            queryClient.invalidateQueries({ queryKey: ['user-bsk-balance'] });
+                            setBalanceAmount("");
+                          }
+                        }}
+                        className="flex-1"
+                      >
+                        <Minus className="w-4 h-4 mr-1" />
+                        Subtract
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="subscriptions" className="space-y-4 mt-4">
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium">Ad Mining Subscriptions</h3>
+                  {subscriptions && 'adSubscriptions' in subscriptions && subscriptions.adSubscriptions.length > 0 ? (
+                    <div className="space-y-2">
+                      {subscriptions.adSubscriptions.map((sub: any) => (
+                        <div key={sub.id} className="p-3 rounded-lg bg-muted/30 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">Tier: ₹{sub.tier_bsk}</p>
+                            <Badge variant={sub.is_active ? 'default' : 'outline'}>
+                              {sub.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Day {sub.day_counter}/{sub.duration_days}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Earned: {sub.total_earned_bsk} BSK
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No ad mining subscriptions</p>
+                  )}
+
+                  <Separator />
+
+                  <h3 className="text-sm font-medium">Insurance Subscriptions</h3>
+                  {subscriptions && 'insuranceSubscriptions' in subscriptions && subscriptions.insuranceSubscriptions.length > 0 ? (
+                    <div className="space-y-2">
+                      {subscriptions.insuranceSubscriptions.map((sub: any) => (
+                        <div key={sub.id} className="p-3 rounded-lg bg-muted/30 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">{sub.insurance_subscription_tiers?.tier_name}</p>
+                            <Badge variant={sub.status === 'active' ? 'default' : 'outline'}>
+                              {sub.status}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Claims: {sub.claims_used_this_month}/{sub.insurance_subscription_tiers?.max_claims_per_month || '∞'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No insurance subscriptions</p>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="badges" className="space-y-4 mt-4">
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium">Badge Status</h3>
+                  {badgeStatus ? (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Award className="w-5 h-5 text-primary" />
+                          <p className="text-lg font-bold text-primary">{badgeStatus.current_badge}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Current Badge</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-3 rounded-lg bg-muted/30">
+                          <p className="text-xs text-muted-foreground mb-1">IPG Contributed</p>
+                          <p className="text-sm font-medium">{badgeStatus.total_ipg_contributed?.toLocaleString() || '0'}</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-muted/30">
+                          <p className="text-xs text-muted-foreground mb-1">Achieved At</p>
+                          <p className="text-sm font-medium">
+                            {badgeStatus.achieved_at ? new Date(badgeStatus.achieved_at).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Update Badge</Label>
+                        <select className="w-full p-2 rounded-md border bg-background text-sm">
+                          <option value="None">None</option>
+                          <option value="Silver">Silver</option>
+                          <option value="Gold">Gold</option>
+                          <option value="Platinum">Platinum</option>
+                          <option value="Diamond">Diamond</option>
+                          <option value="VIP">VIP</option>
+                        </select>
+                        <Button size="sm" className="w-full" variant="outline">
+                          Update Badge
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No badge status found</p>
+                  )}
+                </div>
               </TabsContent>
 
               <TabsContent value="security" className="space-y-4 mt-4">
