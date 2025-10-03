@@ -1622,9 +1622,11 @@ export type Database = {
           interest_type: string
           kyc_required: boolean
           late_fee_percent: number
+          max_amount_bsk: number | null
           max_amount_inr: number
           max_concurrent_loans_per_user: number
           min_account_age_days: number
+          min_amount_bsk: number | null
           min_amount_inr: number
           origination_fee_percent: number
           per_user_exposure_cap_inr: number | null
@@ -1651,9 +1653,11 @@ export type Database = {
           interest_type?: string
           kyc_required?: boolean
           late_fee_percent?: number
+          max_amount_bsk?: number | null
           max_amount_inr?: number
           max_concurrent_loans_per_user?: number
           min_account_age_days?: number
+          min_amount_bsk?: number | null
           min_amount_inr?: number
           origination_fee_percent?: number
           per_user_exposure_cap_inr?: number | null
@@ -1680,9 +1684,11 @@ export type Database = {
           interest_type?: string
           kyc_required?: boolean
           late_fee_percent?: number
+          max_amount_bsk?: number | null
           max_amount_inr?: number
           max_concurrent_loans_per_user?: number
           min_account_age_days?: number
+          min_amount_bsk?: number | null
           min_amount_inr?: number
           origination_fee_percent?: number
           per_user_exposure_cap_inr?: number | null

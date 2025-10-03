@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface LoanApplicationRequest {
-  amount_inr: number;
+  amount_bsk: number;
   region?: string;
 }
 
@@ -22,7 +22,7 @@ serve(async (req: Request) => {
   );
 
   try {
-    const { amount_inr, region = 'IN' }: LoanApplicationRequest = await req.json();
+    const { amount_bsk, region = 'IN' }: LoanApplicationRequest = await req.json();
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -34,7 +34,7 @@ serve(async (req: Request) => {
       throw new Error('Unauthorized');
     }
 
-    console.log(`BSK Loan Application: User ${user.id} applying for ₹${amount_inr}`);
+    console.log(`BSK Loan Application: User ${user.id} applying for ${amount_bsk} BSK`);
 
     // Load loan settings
     const { data: settings, error: settingsError } = await supabase
@@ -54,11 +54,11 @@ serve(async (req: Request) => {
     }
 
     // Validate amount range
-    if (amount_inr < settings.min_amount_inr || amount_inr > settings.max_amount_inr) {
+    if (amount_bsk < settings.min_amount_bsk || amount_bsk > settings.max_amount_bsk) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Loan amount must be between ₹${settings.min_amount_inr} and ₹${settings.max_amount_inr}` 
+          error: `Loan amount must be between ${settings.min_amount_bsk} and ${settings.max_amount_bsk} BSK` 
         }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders }}
       );
@@ -112,20 +112,9 @@ serve(async (req: Request) => {
       );
     }
 
-    // Get current BSK rate
-    const { data: bskRate, error: rateError } = await supabase
-      .from('bsk_rates')
-      .select('rate_inr_per_bsk')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (rateError || !bskRate) {
-      throw new Error('BSK rate not available');
-    }
-
-    const rateSnapshot = bskRate.rate_inr_per_bsk;
-    const principalBsk = amount_inr / rateSnapshot;
+    // No need to get BSK rate since loan is directly in BSK
+    const principalBsk = amount_bsk;
+    const amountInr = 0; // Optional: Can calculate for display if BSK rate exists
 
     // Calculate fees (either percentage or fixed)
     const processingFeeBsk = settings.processing_fee_fixed_bsk > 0
@@ -133,11 +122,11 @@ serve(async (req: Request) => {
       : (principalBsk * settings.processing_fee_percent) / 100;
     const netDisbursedBsk = principalBsk - processingFeeBsk;
 
-    // Calculate total due (0% interest by default)
+    // Calculate total due
     let totalDueBsk = principalBsk;
     if (settings.default_interest_rate_weekly > 0) {
       if (settings.interest_type === 'flat') {
-        const totalInterest = principalBsk * settings.default_interest_rate_weekly * settings.default_tenor_weeks;
+        const totalInterest = principalBsk * (settings.default_interest_rate_weekly / 100) * settings.default_tenor_weeks;
         totalDueBsk = principalBsk + totalInterest;
       }
       // Reducing balance calculation would go here
@@ -152,8 +141,8 @@ serve(async (req: Request) => {
       .insert({
         user_id: user.id,
         loan_number: loanNumber,
-        amount_inr,
-        disbursal_rate_snapshot: rateSnapshot,
+        amount_inr: amountInr,
+        disbursal_rate_snapshot: 0,
         principal_bsk: principalBsk,
         tenor_weeks: settings.default_tenor_weeks,
         interest_type: settings.interest_type,
@@ -178,12 +167,10 @@ serve(async (req: Request) => {
       throw new Error('Failed to create loan application');
     }
 
-    console.log(`BSK Loan Created: ${loan.loan_number} for ₹${amount_inr} (${principalBsk.toFixed(2)} BSK)`);
+    console.log(`BSK Loan Created: ${loan.loan_number} for ${principalBsk.toFixed(2)} BSK`);
 
     // Generate installment schedule (will be created after approval)
-    const weeklyEmiCalculation = settings.schedule_denomination === 'fixed_bsk' 
-      ? { emi_bsk: totalDueBsk / settings.default_tenor_weeks, emi_inr: null }
-      : { emi_bsk: null, emi_inr: amount_inr / settings.default_tenor_weeks };
+    const weeklyEmiBsk = totalDueBsk / settings.default_tenor_weeks;
 
     return new Response(
       JSON.stringify({
@@ -191,12 +178,11 @@ serve(async (req: Request) => {
         loan: {
           id: loan.id,
           loan_number: loan.loan_number,
-          amount_inr,
+          amount_bsk: principalBsk,
           principal_bsk: principalBsk.toFixed(4),
           net_disbursed_bsk: netDisbursedBsk.toFixed(4),
           total_due_bsk: totalDueBsk.toFixed(4),
-          rate_snapshot: rateSnapshot,
-          weekly_emi: weeklyEmiCalculation,
+          weekly_emi_bsk: weeklyEmiBsk.toFixed(4),
           tenor_weeks: settings.default_tenor_weeks,
           status: 'pending'
         },

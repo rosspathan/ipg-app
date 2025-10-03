@@ -30,8 +30,8 @@ export default function AdminBSKLoansNova() {
   const [formValues, setFormValues] = useState<{
     id?: string;
     system_enabled: boolean;
-    min_amount_inr: number;
-    max_amount_inr: number;
+    min_amount_bsk: number;
+    max_amount_bsk: number;
     default_tenor_weeks: number;
     default_interest_rate_weekly: number;
     processing_fee_percent: number;
@@ -161,20 +161,17 @@ export default function AdminBSKLoansNova() {
       key: "user",
       label: "User",
       render: (row: any) => (
-        <div>
-          <div className="font-medium">{row.profiles?.email || 'N/A'}</div>
-          <div className="text-xs text-muted-foreground">{row.profiles?.full_name || ''}</div>
-        </div>
+              <div>
+                <div className="font-medium">{row.profiles?.email || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">{row.profiles?.full_name || ''}</div>
+              </div>
       )
     },
     {
       key: "loan_amount",
       label: "Amount",
       render: (row: any) => (
-        <div>
-          <div className="font-mono font-medium">{Number(row.principal_bsk).toFixed(2)} BSK</div>
-          <div className="text-xs text-muted-foreground">≈ ₹{Number(row.amount_inr).toLocaleString()}</div>
-        </div>
+        <div className="font-mono font-medium">{Number(row.principal_bsk).toFixed(2)} BSK</div>
       )
     },
     {
@@ -307,25 +304,25 @@ export default function AdminBSKLoansNova() {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Minimum Loan Amount (INR)</Label>
+                      <Label>Minimum Loan Amount (BSK)</Label>
                       <Input
                         type="number"
-                        value={formValues.min_amount_inr}
+                        value={formValues.min_amount_bsk}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, min_amount_inr: value });
+                          setFormValues({ ...formValues, min_amount_bsk: value });
                         }}
                         min="0"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Maximum Loan Amount (INR)</Label>
+                      <Label>Maximum Loan Amount (BSK)</Label>
                       <Input
                         type="number"
-                        value={formValues.max_amount_inr}
+                        value={formValues.max_amount_bsk}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, max_amount_inr: value });
+                          setFormValues({ ...formValues, max_amount_bsk: value });
                         }}
                         min="0"
                       />
@@ -466,11 +463,7 @@ export default function AdminBSKLoansNova() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Loan Amount (INR)</p>
-                  <p className="text-2xl font-bold">₹{Number(selectedApplication.amount_inr).toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Principal (BSK)</p>
+                  <p className="text-sm text-muted-foreground">Loan Amount</p>
                   <p className="text-2xl font-bold">{Number(selectedApplication.principal_bsk).toFixed(2)} BSK</p>
                 </div>
                 <div>
