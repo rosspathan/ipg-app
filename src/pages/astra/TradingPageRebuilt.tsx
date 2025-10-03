@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { TrendingUp, TrendingDown, Star, Clock, Search, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,55 +11,61 @@ import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { cn } from "@/lib/utils"
 import { useNavigation } from "@/hooks/useNavigation"
 import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
-
-interface TradingPair {
-  symbol: string
-  price: number
-  change24h: number
-  volume24h: number
-  isFavorite?: boolean
-  category: "recent" | "favorites" | "all"
-}
-
-const mockPairs: TradingPair[] = [
-  { symbol: "BSK/INR", price: 12.45, change24h: 2.34, volume24h: 1250000, isFavorite: true, category: "recent" },
-  { symbol: "BSK/USDT", price: 0.15, change24h: -1.23, volume24h: 890000, isFavorite: true, category: "favorites" },
-  { symbol: "BTC/INR", price: 5234567, change24h: 3.45, volume24h: 9800000, category: "all" },
-  { symbol: "ETH/INR", price: 234567, change24h: -2.12, volume24h: 5600000, category: "all" },
-  { symbol: "BNB/INR", price: 45678, change24h: 1.89, volume24h: 3400000, category: "all" },
-]
+import { useTradingPairs, useTradingUIDefaults } from "@/hooks/useTradingPairs"
 
 export function TradingPageRebuilt() {
   const { navigate } = useNavigation()
   const [selectedTab, setSelectedTab] = useState<"recent" | "favorites" | "all">("recent")
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedPair, setSelectedPair] = useState(mockPairs[0])
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
+  const [favorites, setFavorites] = useState<string[]>([])
+
+  // Fetch real trading pairs from database
+  const { data: allPairs = [], isLoading } = useTradingPairs('listed')
+  const { data: uiDefaults } = useTradingUIDefaults()
+  
+  const selectedPair = allPairs[0] || { 
+    symbol: "BTC/USDT", 
+    last_price: 0, 
+    price_change_24h: 0,
+    volume_24h: 0,
+    base_symbol: "BTC"
+  }
 
   const kpiData = [
     { 
       icon: "📈", 
-      value: `₹${selectedPair.price.toLocaleString()}`, 
+      value: `$${selectedPair.last_price.toLocaleString()}`, 
       label: "Last Price",
-      variant: selectedPair.change24h > 0 ? "success" as const : "danger" as const,
-      trend: selectedPair.change24h > 0 ? "up" as const : "down" as const,
-      changePercent: `${selectedPair.change24h > 0 ? "+" : ""}${selectedPair.change24h}%`
+      variant: selectedPair.price_change_24h > 0 ? "success" as const : "danger" as const,
+      trend: selectedPair.price_change_24h > 0 ? "up" as const : "down" as const,
+      changePercent: `${selectedPair.price_change_24h > 0 ? "+" : ""}${selectedPair.price_change_24h.toFixed(2)}%`
     },
     { 
       icon: "💰", 
-      value: `₹${(selectedPair.volume24h / 1000000).toFixed(1)}M`, 
+      value: `$${(selectedPair.volume_24h / 1000000).toFixed(1)}M`, 
       label: "24h Volume",
       variant: "primary" as const
     }
   ]
 
-  const filteredPairs = mockPairs
-    .filter(pair => {
-      if (selectedTab === "recent") return pair.category === "recent"
-      if (selectedTab === "favorites") return pair.isFavorite
-      return true
-    })
-    .filter(pair => pair.symbol.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredPairs = useMemo(() => {
+    return allPairs
+      .filter(pair => {
+        if (selectedTab === "recent") return true // Show all for recent (can implement recents tracking later)
+        if (selectedTab === "favorites") return favorites.includes(pair.id)
+        return true
+      })
+      .filter(pair => pair.symbol.toLowerCase().includes(searchTerm.toLowerCase()))
+  }, [allPairs, selectedTab, favorites, searchTerm])
+
+  const toggleFavorite = (pairId: string) => {
+    setFavorites(prev => 
+      prev.includes(pairId) 
+        ? prev.filter(id => id !== pairId)
+        : [...prev, pairId]
+    )
+  }
 
   const handleQuickSwitchAction = (action: string) => {
     switch (action) {
@@ -145,59 +151,77 @@ export function TradingPageRebuilt() {
 
           {/* Pairs Grid */}
           <div className="px-4" data-testid="pairs-grid">
-            <div className="grid grid-cols-1 gap-3">
-              {filteredPairs.map((pair) => {
-                const isProfit = pair.change24h > 0
-                const isSelected = pair.symbol === selectedPair.symbol
-                
-                return (
-                  <button
-                    key={pair.symbol}
-                    onClick={() => setSelectedPair(pair)}
-                    className={cn(
-                      "rounded-2xl border p-4 transition-all duration-220 text-left",
-                      "hover:scale-[1.02] active:scale-[0.98]",
-                      isSelected 
-                        ? "bg-primary/10 border-primary/40 shadow-button" 
-                        : "bg-card/60 border-border/40 hover:border-accent/40"
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {pair.isFavorite && <Star className="w-3 h-3 text-warning fill-warning" />}
-                        <span className="font-bold font-mono">{pair.symbol}</span>
-                      </div>
-                      {isProfit ? (
-                        <TrendingUp className="w-4 h-4 text-success" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-danger" />
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading pairs...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {filteredPairs.map((pair) => {
+                  const isProfit = pair.price_change_24h > 0
+                  const isSelected = pair.symbol === selectedPair.symbol
+                  const isFav = favorites.includes(pair.id)
+                  
+                  return (
+                    <button
+                      key={pair.id}
+                      onClick={() => navigate(`/app/trading/${pair.symbol}`)}
+                      className={cn(
+                        "rounded-2xl border p-4 transition-all duration-220 text-left relative",
+                        "hover:scale-[1.02] active:scale-[0.98]",
+                        isSelected 
+                          ? "bg-primary/10 border-primary/40 shadow-button" 
+                          : "bg-card/60 border-border/40 hover:border-accent/40"
                       )}
-                    </div>
-                    
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <p className="text-lg font-bold font-mono tabular-nums">
-                          ₹{pair.price.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Vol: ₹{(pair.volume24h / 1000000).toFixed(1)}M
-                        </p>
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleFavorite(pair.id)
+                            }}
+                            className="p-1 hover:scale-110 transition-transform"
+                          >
+                            <Star className={cn(
+                              "w-3 h-3",
+                              isFav ? "text-warning fill-warning" : "text-muted-foreground"
+                            )} />
+                          </button>
+                          <span className="font-bold font-mono">{pair.symbol}</span>
+                        </div>
+                        {isProfit ? (
+                          <TrendingUp className="w-4 h-4 text-success" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4 text-danger" />
+                        )}
                       </div>
                       
-                      <span className={cn(
-                        "text-sm font-semibold tabular-nums",
-                        isProfit ? "text-success" : "text-danger"
-                      )}>
-                        {isProfit ? "+" : ""}{pair.change24h}%
-                      </span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className="text-lg font-bold font-mono tabular-nums">
+                            ${pair.last_price.toLocaleString()}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Vol: ${(pair.volume_24h / 1000000).toFixed(1)}M
+                          </p>
+                        </div>
+                        
+                        <span className={cn(
+                          "text-sm font-semibold tabular-nums",
+                          isProfit ? "text-success" : "text-danger"
+                        )}>
+                          {isProfit ? "+" : ""}{pair.price_change_24h.toFixed(2)}%
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
-          {filteredPairs.length === 0 && (
+          {!isLoading && filteredPairs.length === 0 && (
             <div className="text-center py-12 px-4">
               <p className="text-muted-foreground">No pairs found</p>
             </div>
@@ -211,14 +235,14 @@ export function TradingPageRebuilt() {
             onClick={() => navigate(`/app/trading/buy/${selectedPair.symbol}`)}
           >
             <TrendingUp className="w-4 h-4 mr-2" />
-            Buy {selectedPair.symbol.split("/")[0]}
+            Buy {selectedPair.base_symbol}
           </Button>
           <Button 
             className="h-12 bg-danger hover:bg-danger/90 text-danger-foreground shadow-button"
             onClick={() => navigate(`/app/trading/sell/${selectedPair.symbol}`)}
           >
             <TrendingDown className="w-4 h-4 mr-2" />
-            Sell {selectedPair.symbol.split("/")[0]}
+            Sell {selectedPair.base_symbol}
           </Button>
         </div>
       </div>

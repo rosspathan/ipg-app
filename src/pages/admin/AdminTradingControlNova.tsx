@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,94 +14,32 @@ import { Badge } from "@/components/ui/badge";
 import { KPIStat } from "@/components/admin/nova/KPIStat";
 import { CardLane } from "@/components/admin/nova/CardLane";
 import { RecordCard } from "@/components/admin/nova/RecordCard";
+import { useTradingPairs, useTradingAssets, useTradingExecutionSettings } from "@/hooks/useTradingPairs";
 
 export default function AdminTradingControlNova() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Data states - using any until types regenerate
-  const [tokens, setTokens] = useState<any[]>([]);
-  const [pairs, setPairs] = useState<any[]>([]);
-  const [executionSettings, setExecutionSettings] = useState<any | null>(null);
+  // Fetch data using hooks
+  const { data: pairs = [], isLoading: pairsLoading, refetch: refetchPairs } = useTradingPairs();
+  const { data: assets = [], isLoading: assetsLoading } = useTradingAssets();
+  const { data: executionSettings } = useTradingExecutionSettings();
 
-  // KPI states
-  const [stats, setStats] = useState({
-    totalPairs: 0,
-    listedPairs: 0,
-    pausedPairs: 0,
-    volume24h: 0,
-    mode: 'SIM'
-  });
+  const loading = pairsLoading || assetsLoading;
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Calculate stats
+  const listedPairs = pairs.filter(p => p.visibility === 'listed').length;
+  const pausedPairs = pairs.filter(p => p.visibility === 'paused').length;
+  const volume24h = pairs.reduce((sum, p) => sum + (p.volume_24h || 0), 0);
+  const mode = executionSettings?.mode || 'SIM';
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-
-      // Load tokens
-      const { data: tokensData, error: tokensError } = await supabase
-        .from('trading_tokens' as any)
-        .select('*')
-        .order('symbol');
-      
-      if (tokensError) throw tokensError;
-      setTokens(tokensData || []);
-
-      // Load pairs
-      const { data: pairsData, error: pairsError } = await supabase
-        .from('trading_pairs' as any)
-        .select('*')
-        .order('symbol');
-      
-      if (pairsError) throw pairsError;
-      setPairs(pairsData || []);
-
-      // Load execution settings
-      const { data: execData, error: execError } = await supabase
-        .from('trading_execution_settings' as any)
-        .select('*')
-        .eq('region', 'GLOBAL')
-        .maybeSingle();
-      
-      if (execError) throw execError;
-      setExecutionSettings(execData);
-
-      // Calculate stats
-      const listedCount = pairsData?.filter((p: any) => p.visibility === 'listed').length || 0;
-      const pausedCount = pairsData?.filter((p: any) => p.visibility === 'paused').length || 0;
-      const totalVolume = pairsData?.reduce((sum: number, p: any) => sum + (p.volume_24h || 0), 0) || 0;
-
-      let mode = 'SIM';
-      if (execData && typeof execData === 'object') {
-        const data = execData as any;
-        if (data.mode && typeof data.mode === 'string') {
-          mode = data.mode;
-        }
-      }
-
-      setStats({
-        totalPairs: pairsData?.length || 0,
-        listedPairs: listedCount,
-        pausedPairs: pausedCount,
-        volume24h: totalVolume,
-        mode
-      });
-
-    } catch (error: any) {
-      console.error('Error loading trading data:', error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+  const stats = {
+    totalPairs: pairs.length,
+    listedPairs,
+    pausedPairs,
+    volume24h,
+    mode
   };
 
   const handlePauseAll = async () => {
@@ -118,7 +56,7 @@ export default function AdminTradingControlNova() {
         description: "All trading pairs have been paused",
       });
 
-      loadData();
+      refetchPairs();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -144,7 +82,7 @@ export default function AdminTradingControlNova() {
         description: `Trading pair status updated`,
       });
 
-      loadData();
+      refetchPairs();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -308,33 +246,34 @@ export default function AdminTradingControlNova() {
         {/* TOKENS TAB */}
         <TabsContent value="tokens" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Tokens</h3>
-            <Button onClick={() => toast({ title: "Coming soon", description: "Token management UI will be added" })}>
+            <h3 className="text-lg font-semibold">Trading Assets</h3>
+            <Button onClick={() => toast({ title: "Coming soon", description: "Asset management UI will be added" })}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Token
+              Add Asset
             </Button>
           </div>
 
-          {tokens.length === 0 ? (
+          {assets.length === 0 ? (
             <Card className="p-8 text-center">
               <Coins className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">No tokens configured</p>
+              <p className="text-muted-foreground">No assets configured</p>
             </Card>
           ) : (
             <div className="grid gap-3">
-              {tokens.map((token: any) => (
+              {assets.map((asset: any) => (
                 <RecordCard
-                  key={token.id}
-                  id={token.id}
-                  title={token.symbol}
-                  subtitle={token.name}
+                  key={asset.id}
+                  id={asset.id}
+                  title={asset.symbol}
+                  subtitle={asset.name}
                   status={{
-                    label: token.status,
-                    variant: token.status === 'listed' ? 'success' : 'default'
+                    label: asset.is_active ? 'active' : 'inactive',
+                    variant: asset.is_active ? 'success' : 'default'
                   }}
                   fields={[
-                    { label: 'Decimals', value: token.decimals },
-                    { label: 'Status', value: token.status }
+                    { label: 'Decimals', value: asset.decimals },
+                    { label: 'Network', value: asset.network || 'N/A' },
+                    { label: 'Trading', value: asset.trading_enabled ? 'Enabled' : 'Disabled' }
                   ]}
                 />
               ))}
@@ -365,15 +304,15 @@ export default function AdminTradingControlNova() {
                 <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                   <div>
                     <p className="font-medium">Region</p>
-                    <p className="text-sm text-muted-foreground">{executionSettings.region}</p>
+                    <p className="text-sm text-muted-foreground">{(executionSettings as any).region}</p>
                   </div>
-                  <Badge variant={executionSettings.mode === 'LIVE' ? 'default' : 'secondary'}>
-                    {executionSettings.mode}
+                  <Badge variant={(executionSettings as any).mode === 'LIVE' ? 'default' : 'secondary'}>
+                    {(executionSettings as any).mode}
                   </Badge>
                 </div>
                 <div className="p-4 bg-muted/30 rounded-lg">
                   <p className="font-medium mb-2">Adapter</p>
-                  <p className="text-sm text-muted-foreground">{executionSettings.adapter}</p>
+                  <p className="text-sm text-muted-foreground">{(executionSettings as any).adapter}</p>
                 </div>
               </div>
             ) : (
