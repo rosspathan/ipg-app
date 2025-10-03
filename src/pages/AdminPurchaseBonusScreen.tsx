@@ -1,6 +1,6 @@
 import React from 'react';
-import AdminPurchaseBonusNova from '@/components/admin/AdminPurchaseBonusNova';
+import AdminBSKPurchaseCampaigns from '@/components/admin/AdminBSKPurchaseCampaigns';
 
 export default function AdminPurchaseBonusScreen() {
-  return <AdminPurchaseBonusNova />;
+  return <AdminBSKPurchaseCampaigns />;
 }
