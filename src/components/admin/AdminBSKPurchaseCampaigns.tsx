@@ -20,6 +20,8 @@ interface BSKCampaign {
   min_purchase_bsk: number;
   max_purchase_bsk: number;
   bonus_percent: number;
+  fee_percent: number;
+  fee_fixed: number;
   destination: 'withdrawable' | 'holding';
   status: 'draft' | 'live' | 'paused' | 'ended';
   start_at: string | null;
@@ -42,6 +44,8 @@ export default function AdminBSKPurchaseCampaigns() {
     min_purchase_bsk: "1000",
     max_purchase_bsk: "100000",
     bonus_percent: "25",
+    fee_percent: "0",
+    fee_fixed: "0",
     destination: "holding",
     status: "live",
     start_at: "",
@@ -65,6 +69,8 @@ export default function AdminBSKPurchaseCampaigns() {
         min_purchase_bsk: c.min_purchase_inr, // Using INR fields for BSK amounts
         max_purchase_bsk: c.max_purchase_inr,
         bonus_percent: c.bonus_percent,
+        fee_percent: c.fee_percent || 0,
+        fee_fixed: c.fee_fixed || 0,
         destination: c.destination,
         status: c.status,
         start_at: c.start_at,
@@ -93,6 +99,8 @@ export default function AdminBSKPurchaseCampaigns() {
       min_purchase_bsk: "1000",
       max_purchase_bsk: "100000",
       bonus_percent: "25",
+      fee_percent: "0",
+      fee_fixed: "0",
       destination: "holding",
       status: "live",
       start_at: "",
@@ -110,6 +118,8 @@ export default function AdminBSKPurchaseCampaigns() {
       min_purchase_bsk: campaign.min_purchase_bsk.toString(),
       max_purchase_bsk: campaign.max_purchase_bsk.toString(),
       bonus_percent: campaign.bonus_percent.toString(),
+      fee_percent: campaign.fee_percent.toString(),
+      fee_fixed: campaign.fee_fixed.toString(),
       destination: campaign.destination,
       status: campaign.status,
       start_at: campaign.start_at || "",
@@ -126,6 +136,8 @@ export default function AdminBSKPurchaseCampaigns() {
         min_purchase_inr: parseFloat(formData.min_purchase_bsk), // Using INR fields for BSK
         max_purchase_inr: parseFloat(formData.max_purchase_bsk),
         bonus_percent: parseFloat(formData.bonus_percent),
+        fee_percent: parseFloat(formData.fee_percent),
+        fee_fixed: parseFloat(formData.fee_fixed),
         destination: formData.destination,
         status: formData.status,
         start_at: formData.start_at || null,
@@ -240,6 +252,24 @@ export default function AdminBSKPurchaseCampaigns() {
       placeholder: "25",
       required: true,
       description: "Percentage of bonus BSK awarded",
+    },
+    {
+      id: "fee_percent",
+      type: "number" as const,
+      label: "Fee Percentage (%)",
+      value: formData.fee_percent,
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) => updateFormField("fee_percent", e.target.value),
+      placeholder: "0",
+      description: "e.g., 2 = 2% fee on purchase amount",
+    },
+    {
+      id: "fee_fixed",
+      type: "number" as const,
+      label: "Fixed Fee (BSK)",
+      value: formData.fee_fixed,
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) => updateFormField("fee_fixed", e.target.value),
+      placeholder: "0",
+      description: "Flat fee added to every purchase",
     },
     {
       id: "destination",

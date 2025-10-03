@@ -1034,6 +1034,8 @@ export type Database = {
           destination: Database["public"]["Enums"]["bonus_destination"]
           eligible_channels: Database["public"]["Enums"]["purchase_channel"][]
           end_at: string | null
+          fee_fixed: number
+          fee_percent: number
           global_budget_bsk: number | null
           global_budget_used_bsk: number
           id: string
@@ -1061,6 +1063,8 @@ export type Database = {
           destination?: Database["public"]["Enums"]["bonus_destination"]
           eligible_channels?: Database["public"]["Enums"]["purchase_channel"][]
           end_at?: string | null
+          fee_fixed?: number
+          fee_percent?: number
           global_budget_bsk?: number | null
           global_budget_used_bsk?: number
           id?: string
@@ -1088,6 +1092,8 @@ export type Database = {
           destination?: Database["public"]["Enums"]["bonus_destination"]
           eligible_channels?: Database["public"]["Enums"]["purchase_channel"][]
           end_at?: string | null
+          fee_fixed?: number
+          fee_percent?: number
           global_budget_bsk?: number | null
           global_budget_used_bsk?: number
           id?: string
