@@ -20,7 +20,8 @@ import {
   TrendingUp,
   RefreshCw,
   Ticket,
-  CreditCard
+  CreditCard,
+  HandCoins
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -100,6 +101,14 @@ export function DockAdmin({ className }: DockAdminProps) {
       icon: Shield,
       onClick: () => {
         navigate("/admin/insurance");
+        setShowQuickAdd(false);
+      },
+    },
+    {
+      label: "BSK Loans",
+      icon: HandCoins,
+      onClick: () => {
+        navigate("/admin/bsk-loans");
         setShowQuickAdd(false);
       },
     },

@@ -30,6 +30,7 @@ const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNo
 const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
 const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
 import AdminBSKManagementNova from "./pages/admin/AdminBSKManagementNova";
+import AdminBSKLoansNova from "./pages/admin/AdminBSKLoansNova";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -268,6 +269,7 @@ function App() {
                 
                 {/* BSK Management */}
                 <Route path="bsk" element={<AdminBSKManagementNova />} />
+                <Route path="bsk-loans" element={<AdminBSKLoansNova />} />
                 
                 {/* Programs */}
                 <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />
