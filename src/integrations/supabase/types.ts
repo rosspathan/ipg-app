@@ -1855,6 +1855,8 @@ export type Database = {
           admin_bep20_address: string
           created_at: string
           created_by: string | null
+          fee_fixed: number
+          fee_percent: number
           id: string
           instructions: string | null
           is_active: boolean
@@ -1866,6 +1868,8 @@ export type Database = {
           admin_bep20_address: string
           created_at?: string
           created_by?: string | null
+          fee_fixed?: number
+          fee_percent?: number
           id?: string
           instructions?: string | null
           is_active?: boolean
@@ -1877,6 +1881,8 @@ export type Database = {
           admin_bep20_address?: string
           created_at?: string
           created_by?: string | null
+          fee_fixed?: number
+          fee_percent?: number
           id?: string
           instructions?: string | null
           is_active?: boolean

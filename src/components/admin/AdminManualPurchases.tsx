@@ -49,6 +49,8 @@ export default function AdminManualPurchases() {
     admin_bep20_address: "",
     min_purchase_amount: "1000",
     max_purchase_amount: "100000",
+    fee_percent: "0",
+    fee_fixed: "0",
     instructions: "",
   });
 
@@ -82,6 +84,8 @@ export default function AdminManualPurchases() {
           admin_bep20_address: settingsRes.data.admin_bep20_address,
           min_purchase_amount: settingsRes.data.min_purchase_amount.toString(),
           max_purchase_amount: settingsRes.data.max_purchase_amount.toString(),
+          fee_percent: settingsRes.data.fee_percent?.toString() || "0",
+          fee_fixed: settingsRes.data.fee_fixed?.toString() || "0",
           instructions: settingsRes.data.instructions || "",
         });
       }
@@ -193,6 +197,8 @@ export default function AdminManualPurchases() {
             admin_bep20_address: settingsData.admin_bep20_address,
             min_purchase_amount: parseFloat(settingsData.min_purchase_amount),
             max_purchase_amount: parseFloat(settingsData.max_purchase_amount),
+            fee_percent: parseFloat(settingsData.fee_percent),
+            fee_fixed: parseFloat(settingsData.fee_fixed),
             instructions: settingsData.instructions,
           })
           .eq("id", settings.id);
@@ -206,6 +212,8 @@ export default function AdminManualPurchases() {
             admin_bep20_address: settingsData.admin_bep20_address,
             min_purchase_amount: parseFloat(settingsData.min_purchase_amount),
             max_purchase_amount: parseFloat(settingsData.max_purchase_amount),
+            fee_percent: parseFloat(settingsData.fee_percent),
+            fee_fixed: parseFloat(settingsData.fee_fixed),
             instructions: settingsData.instructions,
             created_by: user.id,
           });
@@ -507,6 +515,39 @@ export default function AdminManualPurchases() {
                     setSettingsData({ ...settingsData, max_purchase_amount: e.target.value })
                   }
                 />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Fee Percentage (%)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={settingsData.fee_percent}
+                  onChange={(e) =>
+                    setSettingsData({ ...settingsData, fee_percent: e.target.value })
+                  }
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  e.g., 2 = 2% fee on purchase amount
+                </p>
+              </div>
+              <div>
+                <Label>Fixed Fee (BSK)</Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={settingsData.fee_fixed}
+                  onChange={(e) =>
+                    setSettingsData({ ...settingsData, fee_fixed: e.target.value })
+                  }
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Flat fee added to every purchase
+                </p>
               </div>
             </div>
             <div>

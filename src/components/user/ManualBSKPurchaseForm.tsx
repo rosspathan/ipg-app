@@ -23,6 +23,20 @@ export function ManualBSKPurchaseForm() {
     transaction_hash: "",
   });
 
+  const calculateFee = () => {
+    if (!settings || !formData.purchase_amount) return 0;
+    const amount = parseFloat(formData.purchase_amount);
+    const percentFee = (amount * (settings.fee_percent || 0)) / 100;
+    const totalFee = percentFee + (settings.fee_fixed || 0);
+    return totalFee;
+  };
+
+  const calculateTotal = () => {
+    if (!formData.purchase_amount) return 0;
+    const amount = parseFloat(formData.purchase_amount);
+    return amount + calculateFee();
+  };
+
   useEffect(() => {
     loadSettings();
   }, []);
@@ -228,6 +242,32 @@ export function ManualBSKPurchaseForm() {
                 placeholder="10000"
                 required
               />
+              {formData.purchase_amount && (
+                <div className="p-3 bg-muted/50 rounded-md space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Purchase Amount:</span>
+                    <span className="font-mono">{parseFloat(formData.purchase_amount).toLocaleString()} BSK</span>
+                  </div>
+                  {(settings.fee_percent > 0 || settings.fee_fixed > 0) && (
+                    <>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Fee:</span>
+                        <span className="font-mono">
+                          {calculateFee().toFixed(2)} BSK
+                          {settings.fee_percent > 0 && ` (${settings.fee_percent}%`}
+                          {settings.fee_percent > 0 && settings.fee_fixed > 0 && " + "}
+                          {settings.fee_fixed > 0 && `${settings.fee_fixed} BSK`}
+                          {(settings.fee_percent > 0 || settings.fee_fixed > 0) && ")"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between font-semibold pt-1 border-t">
+                        <span>Total to Send:</span>
+                        <span className="font-mono text-primary">{calculateTotal().toFixed(2)} BSK</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
