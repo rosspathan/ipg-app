@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTeamReferrals } from "@/hooks/useTeamReferrals";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import CommissionPreviewCalculator from "@/components/admin/CommissionPreviewCalculator";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminTeamReferralsScreen = () => {
   const navigate = useNavigate();
@@ -49,6 +50,8 @@ const AdminTeamReferralsScreen = () => {
     cooloff_hours_for_clawback: settings?.cooloff_hours_for_clawback ?? 24,
     max_daily_direct_commission_bsk: settings?.max_daily_direct_commission_bsk ?? 100000
   });
+
+  const [editingLevels, setEditingLevels] = useState<Record<string, { bsk_reward: number; balance_type: string }>>({});
 
   const handleSave = async () => {
     try {
@@ -410,25 +413,163 @@ const AdminTeamReferralsScreen = () => {
             badges={badgeThresholds}
           />
 
-          {/* Team Income Levels */}
+          {/* Team Income Levels - Full Management */}
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle className="text-base md:text-lg">Team Income Levels</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {teamIncomeLevels.filter(level => level.is_active).slice(0, 10).map((level) => (
-                  <div key={level.id} className="text-center p-3 border border-border rounded-lg">
-                    <Badge variant="outline" className="mb-2">L{level.level}</Badge>
-                    <p className="text-lg font-bold text-primary">{level.bsk_reward} BSK</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(level as any).balance_type === 'holding' ? 'Holding' : 'Withdrawable'}
-                    </p>
-                  </div>
-                ))}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <CardTitle className="text-base md:text-lg">Team Income Levels (All 50)</CardTitle>
+                <Button
+                  onClick={async () => {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+                    
+                    const nextLevel = Math.max(...teamIncomeLevels.map(l => l.level), 0) + 1;
+                    const { error } = await supabase.from('team_income_levels').insert({
+                      level: nextLevel,
+                      bsk_reward: 0,
+                      balance_type: 'withdrawable',
+                      is_active: true
+                    });
+                    
+                    if (error) {
+                      toast({ title: "Error", description: error.message, variant: "destructive" });
+                    } else {
+                      toast({ title: "Success", description: `Level ${nextLevel} added` });
+                      window.location.reload();
+                    }
+                  }}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Users className="w-4 h-4" />
+                  Add Level
+                </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-4">
-                Level rewards are distributed based on the earner's badge unlock levels
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="max-h-[500px] overflow-y-auto space-y-2">
+                {teamIncomeLevels.sort((a, b) => a.level - b.level).map((level) => {
+                  const isEditing = editingLevels[level.id];
+                  return (
+                    <div key={level.id} className="flex items-center gap-3 p-3 border border-border rounded-lg">
+                      <Badge variant="outline" className="shrink-0 w-16 justify-center">
+                        L{level.level}
+                      </Badge>
+                      
+                      {isEditing ? (
+                        <>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={isEditing.bsk_reward}
+                            onChange={(e) => setEditingLevels({
+                              ...editingLevels,
+                              [level.id]: { ...isEditing, bsk_reward: parseFloat(e.target.value) || 0 }
+                            })}
+                            className="w-32"
+                            placeholder="BSK Reward"
+                          />
+                          <Select
+                            value={isEditing.balance_type}
+                            onValueChange={(value) => setEditingLevels({
+                              ...editingLevels,
+                              [level.id]: { ...isEditing, balance_type: value }
+                            })}
+                          >
+                            <SelectTrigger className="w-40">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="withdrawable">Withdrawable</SelectItem>
+                              <SelectItem value="holding">Holding</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              const { error } = await supabase
+                                .from('team_income_levels')
+                                .update({
+                                  bsk_reward: isEditing.bsk_reward,
+                                  balance_type: isEditing.balance_type
+                                })
+                                .eq('id', level.id);
+                              
+                              if (error) {
+                                toast({ title: "Error", description: error.message, variant: "destructive" });
+                              } else {
+                                toast({ title: "Success", description: `Level ${level.level} updated` });
+                                const newEditing = { ...editingLevels };
+                                delete newEditing[level.id];
+                                setEditingLevels(newEditing);
+                                window.location.reload();
+                              }
+                            }}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              const newEditing = { ...editingLevels };
+                              delete newEditing[level.id];
+                              setEditingLevels(newEditing);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex-1">
+                            <p className="font-medium">{level.bsk_reward} BSK</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(level as any).balance_type === 'holding' ? 'Holding' : 'Withdrawable'}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingLevels({
+                              ...editingLevels,
+                              [level.id]: {
+                                bsk_reward: level.bsk_reward,
+                                balance_type: (level as any).balance_type || 'withdrawable'
+                              }
+                            })}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={async () => {
+                              if (!confirm(`Delete Level ${level.level}?`)) return;
+                              
+                              const { error } = await supabase
+                                .from('team_income_levels')
+                                .update({ is_active: false })
+                                .eq('id', level.id);
+                              
+                              if (error) {
+                                toast({ title: "Error", description: error.message, variant: "destructive" });
+                              } else {
+                                toast({ title: "Success", description: `Level ${level.level} deleted` });
+                                window.location.reload();
+                              }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-sm text-muted-foreground pt-3 border-t">
+                Levels are distributed to upline based on badge unlock levels. Edit BSK rewards and balance type for each level.
               </p>
             </CardContent>
           </Card>
