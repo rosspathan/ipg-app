@@ -109,7 +109,6 @@ import AdminInsurance from "./components/AdminInsurance";
 import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
 import { AdminTradingFeesSimple } from "./components/AdminTradingFeesSimple";
-import AdminTradingControlNova from "./pages/admin/AdminTradingControlNova";
 import AdminPurchaseBonusScreen from "./pages/AdminPurchaseBonusScreen";
 import AdminINRFundingScreen from "./pages/AdminINRFundingScreen";
 import AdminCredentialsTest from "./pages/AdminCredentialsTest";
@@ -273,7 +272,6 @@ function App() {
                 
                 {/* Markets Management */}
                 <Route path="markets" element={<AdminMarketsNova />} />
-                <Route path="trading-settings" element={<AdminTradingControlNova />} />
                 
                 {/* BSK Management */}
                 <Route path="bsk" element={<AdminBSKManagementNova />} />

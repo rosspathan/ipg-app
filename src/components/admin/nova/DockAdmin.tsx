@@ -160,14 +160,6 @@ export function DockAdmin({ className }: DockAdminProps) {
         setShowQuickAdd(false);
       },
     },
-    {
-      label: "Spot Trading",
-      icon: LineChart,
-      onClick: () => {
-        navigate("/admin/trading-settings");
-        setShowQuickAdd(false);
-      },
-    },
   ];
 
   return (
