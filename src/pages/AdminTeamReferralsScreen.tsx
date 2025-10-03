@@ -36,7 +36,6 @@ const AdminTeamReferralsScreen = () => {
     trigger_event: settings?.trigger_event ?? 'badge_purchase_or_upgrade',
     spillover_to_next_eligible_upline: settings?.spillover_to_next_eligible_upline ?? false,
     direct_referral_percent: settings?.direct_referral_percent ?? 10,
-    bsk_inr_rate: settings?.bsk_inr_rate ?? 1.0,
     // Badge-holder eligibility
     direct_commission_percent: settings?.direct_commission_percent ?? 10,
     min_referrer_badge_required: settings?.min_referrer_badge_required ?? 'ANY_BADGE',
@@ -57,7 +56,6 @@ const AdminTeamReferralsScreen = () => {
       trigger_event: settings.trigger_event,
       spillover_to_next_eligible_upline: settings.spillover_to_next_eligible_upline,
       direct_referral_percent: settings.direct_referral_percent,
-      bsk_inr_rate: settings.bsk_inr_rate,
       direct_commission_percent: settings.direct_commission_percent,
       min_referrer_badge_required: settings.min_referrer_badge_required,
       eligibility_policy: settings.eligibility_policy,
@@ -341,18 +339,7 @@ const AdminTeamReferralsScreen = () => {
                 />
               </div>
 
-              {/* BSK/INR Rate */}
-              <div className="space-y-2">
-                <Label htmlFor="bsk_inr_rate">BSK to INR Rate</Label>
-                <Input
-                  id="bsk_inr_rate"
-                  type="number"
-                  step="0.01"
-                  value={formData.bsk_inr_rate}
-                  onChange={(e) => setFormData({...formData, bsk_inr_rate: parseFloat(e.target.value)})}
-                />
-                <p className="text-xs text-muted-foreground">Current BSK to INR conversion rate</p>
-              </div>
+              {/* BSK/INR Rate - Removed: Now managed in Funding section */}
 
               {/* Spillover */}
               <div className="flex items-center justify-between">
@@ -643,11 +630,6 @@ const AdminTeamReferralsScreen = () => {
                       <p className="text-base md:text-lg font-bold text-primary">
                         {milestone.reward_inr_value.toLocaleString()} BSK
                       </p>
-                      {milestone.reward_type === 'bsk' && (
-                        <p className="text-xs md:text-sm text-muted-foreground">
-                          ₹{(milestone.reward_inr_value * formData.bsk_inr_rate).toFixed(0)}
-                        </p>
-                      )}
                     </div>
                   </div>
                 ))}

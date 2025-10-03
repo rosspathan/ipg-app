@@ -1,32 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Save, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Save, TrendingUp } from "lucide-react";
 
-interface FiatSettings {
-  id: string;
-  enabled: boolean;
-  bank_account_name: string | null;
-  bank_account_number: string | null;
-  ifsc: string | null;
-  bank_name: string | null;
-  upi_id: string | null;
-  upi_name: string | null;
-  notes: string | null;
-  min_deposit: number;
-  fee_percent: number;
-  fee_fixed: number;
-}
-
-export default function AdminINRSettings() {
-  const [settings, setSettings] = useState<FiatSettings | null>(null);
+const AdminINRSettings = () => {
+  const { toast } = useToast();
+  const [bskInrRate, setBskInrRate] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -36,38 +19,26 @@ export default function AdminINRSettings() {
 
   const loadSettings = async () => {
     try {
+      setLoading(true);
+      
+      // Load BSK rate from team_referral_settings
       const { data, error } = await supabase
-        .from('fiat_settings_inr')
-        .select('*')
-        .single();
+        .from('team_referral_settings')
+        .select('bsk_inr_rate')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // Not found error
-        throw error;
-      }
-
+      if (error && error.code !== 'PGRST116') throw error;
+      
       if (data) {
-        setSettings(data);
-      } else {
-        // Create default settings
-        const { data: newSettings, error: createError } = await supabase
-          .from('fiat_settings_inr')
-          .insert({
-            enabled: false,
-            min_deposit: 100,
-            fee_percent: 0,
-            fee_fixed: 0
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        setSettings(newSettings);
+        setBskInrRate(data.bsk_inr_rate);
       }
     } catch (error) {
-      console.error('Error loading INR settings:', error);
+      console.error('Error loading settings:', error);
       toast({
         title: "Error",
-        description: "Failed to load INR settings",
+        description: "Failed to load settings",
         variant: "destructive"
       });
     } finally {
@@ -76,39 +47,41 @@ export default function AdminINRSettings() {
   };
 
   const handleSave = async () => {
-    if (!settings) return;
-
-    setSaving(true);
-
     try {
-      const { error } = await supabase
-        .from('fiat_settings_inr')
-        .update({
-          enabled: settings.enabled,
-          bank_account_name: settings.bank_account_name,
-          bank_account_number: settings.bank_account_number,
-          ifsc: settings.ifsc,
-          bank_name: settings.bank_name,
-          upi_id: settings.upi_id,
-          upi_name: settings.upi_name,
-          notes: settings.notes,
-          min_deposit: settings.min_deposit,
-          fee_percent: settings.fee_percent,
-          fee_fixed: settings.fee_fixed
-        })
-        .eq('id', settings.id);
+      setSaving(true);
 
-      if (error) throw error;
+      // Update in team_referral_settings
+      const { data: existingSettings } = await supabase
+        .from('team_referral_settings')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingSettings) {
+        const { error } = await supabase
+          .from('team_referral_settings')
+          .update({ bsk_inr_rate: bskInrRate })
+          .eq('id', existingSettings.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('team_referral_settings')
+          .insert({ bsk_inr_rate: bskInrRate });
+
+        if (error) throw error;
+      }
 
       toast({
-        title: "Settings Saved",
-        description: "INR deposit settings have been updated",
+        title: "Success",
+        description: "BSK to INR rate updated successfully"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving settings:', error);
       toast({
-        title: "Save Failed",
-        description: "Failed to save INR settings",
+        title: "Error",
+        description: error.message || "Failed to save settings",
         variant: "destructive"
       });
     } finally {
@@ -116,188 +89,98 @@ export default function AdminINRSettings() {
     }
   };
 
-  const updateSettings = (updates: Partial<FiatSettings>) => {
-    if (settings) {
-      setSettings({ ...settings, ...updates });
-    }
-  };
-
   if (loading) {
-    return <div className="p-4">Loading INR settings...</div>;
-  }
-
-  if (!settings) {
     return (
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Failed to load INR settings. Please refresh the page.
-        </AlertDescription>
-      </Alert>
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">INR Deposit Settings</h2>
-        <Button onClick={handleSave} disabled={saving}>
-          <Save className="h-4 w-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Settings'}
-        </Button>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>General Settings</CardTitle>
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <div>
+              <CardTitle>BSK Rate Configuration</CardTitle>
+              <CardDescription>
+                Set the BSK to INR conversion rate used throughout the application
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="enabled"
-              checked={settings.enabled}
-              onCheckedChange={(enabled) => updateSettings({ enabled })}
-            />
-            <Label htmlFor="enabled">Enable INR Deposits</Label>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="min_deposit">Minimum Deposit (INR)</Label>
-              <Input
-                id="min_deposit"
-                type="number"
-                value={settings.min_deposit}
-                onChange={(e) => updateSettings({ min_deposit: parseFloat(e.target.value) || 0 })}
-                min={0}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fee_percent">Fee Percentage (%)</Label>
-              <Input
-                id="fee_percent"
-                type="number"
-                value={settings.fee_percent}
-                onChange={(e) => updateSettings({ fee_percent: parseFloat(e.target.value) || 0 })}
-                min={0}
-                max={10}
-                step={0.1}
-              />
-            </div>
-          </div>
-
+        <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="fee_fixed">Fixed Fee (INR)</Label>
+            <Label htmlFor="bsk_rate">BSK to INR Rate</Label>
             <Input
-              id="fee_fixed"
+              id="bsk_rate"
               type="number"
-              value={settings.fee_fixed}
-              onChange={(e) => updateSettings({ fee_fixed: parseFloat(e.target.value) || 0 })}
-              min={0}
+              step="0.01"
+              min="0.01"
+              value={bskInrRate}
+              onChange={(e) => setBskInrRate(parseFloat(e.target.value))}
+              placeholder="1.00"
             />
+            <p className="text-sm text-muted-foreground">
+              Current BSK to INR conversion rate. This rate is used for:
+            </p>
+            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1 ml-2">
+              <li>Badge subscription pricing</li>
+              <li>Referral commission calculations</li>
+              <li>VIP milestone rewards</li>
+              <li>All BSK to INR conversions</li>
+            </ul>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Instructions/Notes for Users</Label>
-            <Textarea
-              id="notes"
-              placeholder="Additional instructions for users..."
-              value={settings.notes || ''}
-              onChange={(e) => updateSettings({ notes: e.target.value })}
-            />
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <h4 className="font-medium mb-2">Example Conversion</h4>
+            <p className="text-sm text-muted-foreground">
+              1 BSK = ₹{bskInrRate.toFixed(2)}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              100 BSK = ₹{(bskInrRate * 100).toFixed(2)}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              1000 BSK = ₹{(bskInrRate * 1000).toFixed(2)}
+            </p>
           </div>
+
+          <Button 
+            onClick={handleSave} 
+            disabled={saving || bskInrRate <= 0}
+            className="w-full"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {saving ? "Saving..." : "Save BSK Rate"}
+          </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Bank Transfer Details</CardTitle>
+          <CardTitle>Important Notes</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="bank_name">Bank Name</Label>
-              <Input
-                id="bank_name"
-                placeholder="e.g., HDFC Bank"
-                value={settings.bank_name || ''}
-                onChange={(e) => updateSettings({ bank_name: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bank_account_name">Account Holder Name</Label>
-              <Input
-                id="bank_account_name"
-                placeholder="Account holder name"
-                value={settings.bank_account_name || ''}
-                onChange={(e) => updateSettings({ bank_account_name: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="bank_account_number">Account Number</Label>
-              <Input
-                id="bank_account_number"
-                placeholder="Bank account number"
-                value={settings.bank_account_number || ''}
-                onChange={(e) => updateSettings({ bank_account_number: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ifsc">IFSC Code</Label>
-              <Input
-                id="ifsc"
-                placeholder="e.g., HDFC0001234"
-                value={settings.ifsc || ''}
-                onChange={(e) => updateSettings({ ifsc: e.target.value.toUpperCase() })}
-              />
-            </div>
+        <CardContent>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              • This rate affects all BSK-related calculations across the application
+            </p>
+            <p>
+              • Changing this rate will apply to all new transactions immediately
+            </p>
+            <p>
+              • Existing transactions maintain their historical rates
+            </p>
+            <p>
+              • Make sure to communicate rate changes to users in advance
+            </p>
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>UPI Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="upi_id">UPI ID</Label>
-              <Input
-                id="upi_id"
-                placeholder="user@paytm"
-                value={settings.upi_id || ''}
-                onChange={(e) => updateSettings({ upi_id: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="upi_name">UPI Name</Label>
-              <Input
-                id="upi_name"
-                placeholder="Account holder name"
-                value={settings.upi_name || ''}
-                onChange={(e) => updateSettings({ upi_name: e.target.value })}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {settings.enabled && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            INR deposits are currently enabled. Users can now submit deposit requests using the configured bank/UPI details.
-          </AlertDescription>
-        </Alert>
-      )}
     </div>
   );
-}
+};
+
+export default AdminINRSettings;

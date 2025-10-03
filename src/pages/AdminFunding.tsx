@@ -7,6 +7,7 @@ import AdminINRDeposits from "@/components/AdminINRDeposits";
 import AdminINRWithdrawals from "@/components/AdminINRWithdrawals";
 import AdminCryptoControls from "@/components/AdminCryptoControls";
 import AdminBSKBalances from "@/components/AdminBSKBalances";
+import AdminINRSettings from "@/components/AdminINRSettings";
 
 const AdminFunding = () => {
 
@@ -16,8 +17,9 @@ const AdminFunding = () => {
         <h1 className="text-2xl md:text-3xl font-bold">Funding Operations</h1>
       </div>
 
-      <Tabs defaultValue="inr-accounts" className="w-full">
-        <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 gap-1 h-auto">
+      <Tabs defaultValue="inr-settings" className="w-full">
+        <TabsList className="w-full grid grid-cols-3 md:grid-cols-7 gap-1 h-auto">
+          <TabsTrigger value="inr-settings" className="text-xs md:text-sm py-2">Settings</TabsTrigger>
           <TabsTrigger value="inr-accounts" className="text-xs md:text-sm py-2">INR Accounts</TabsTrigger>
           <TabsTrigger value="inr-deposits" className="text-xs md:text-sm py-2">INR Deposits</TabsTrigger>
           <TabsTrigger value="inr-withdrawals" className="text-xs md:text-sm py-2">INR Withdrawals</TabsTrigger>
@@ -25,6 +27,10 @@ const AdminFunding = () => {
           <TabsTrigger value="bsk-withdrawable" className="text-xs md:text-sm py-2">BSK Withdrawable</TabsTrigger>
           <TabsTrigger value="bsk-holding" className="text-xs md:text-sm py-2">BSK Holding</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="inr-settings" className="mt-4">
+          <AdminINRSettings />
+        </TabsContent>
 
         <TabsContent value="inr-accounts" className="mt-4">
           <AdminINRAccounts />
