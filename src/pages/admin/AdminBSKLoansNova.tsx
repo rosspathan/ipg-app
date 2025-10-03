@@ -29,13 +29,13 @@ export default function AdminBSKLoansNova() {
   // Local state for form values
   const [formValues, setFormValues] = useState<{
     id?: string;
-    is_enabled: boolean;
-    min_loan_amount: number;
-    max_loan_amount: number;
-    duration_weeks: number;
-    interest_rate_percent: number;
-    processing_fee_percent: number;
-    late_payment_fee: number;
+    system_enabled: boolean;
+    min_amount_inr: number;
+    max_amount_inr: number;
+    default_tenor_weeks: number;
+    default_interest_rate_weekly: number;
+    origination_fee_percent: number;
+    late_fee_percent: number;
   } | null>(null);
 
   // Fetch loan configuration
@@ -43,7 +43,7 @@ export default function AdminBSKLoansNova() {
     queryKey: ['bsk-loan-config'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('bsk_loan_configs')
+        .from('bsk_loan_settings')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
@@ -62,15 +62,15 @@ export default function AdminBSKLoansNova() {
 
   // Fetch loan applications
   const { data: applications, isLoading: appsLoading } = useQuery({
-    queryKey: ['bsk-loan-applications'],
+    queryKey: ['bsk-loans'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('bsk_loan_applications')
+        .from('bsk_loans')
         .select(`
           *,
-          profiles:user_id (email, full_name)
+          profiles!inner (email, full_name)
         `)
-        .order('applied_at', { ascending: false });
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     }
@@ -81,7 +81,7 @@ export default function AdminBSKLoansNova() {
     mutationFn: async (updates: any) => {
       if (!loanConfig?.id) throw new Error('No config found');
       const { error } = await supabase
-        .from('bsk_loan_configs')
+        .from('bsk_loan_settings')
         .update(updates)
         .eq('id', loanConfig.id);
       if (error) throw error;
@@ -100,22 +100,22 @@ export default function AdminBSKLoansNova() {
     updateConfig.mutate(formValues);
   };
 
-  // Approve loan mutation
+  // Approve loan mutation - calls edge function
   const approveLoan = useMutation({
     mutationFn: async ({ applicationId, notes }: { applicationId: string; notes?: string }) => {
-      const { error } = await supabase
-        .from('bsk_loan_applications')
-        .update({
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-          notes: notes
-        })
-        .eq('id', applicationId);
+      const { data, error } = await supabase.functions.invoke('bsk-loan-disburse', {
+        body: { 
+          loan_id: applicationId, 
+          action: 'approve',
+          admin_notes: notes 
+        }
+      });
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bsk-loan-applications'] });
-      toast({ title: "Loan approved successfully" });
+      queryClient.invalidateQueries({ queryKey: ['bsk-loans'] });
+      toast({ title: "Loan approved and disbursed successfully" });
       setSelectedApplication(null);
       setAdminNotes("");
     },
@@ -124,20 +124,21 @@ export default function AdminBSKLoansNova() {
     }
   });
 
-  // Reject loan mutation
+  // Reject loan mutation - calls edge function
   const rejectLoan = useMutation({
     mutationFn: async ({ applicationId, reason }: { applicationId: string; reason: string }) => {
-      const { error } = await supabase
-        .from('bsk_loan_applications')
-        .update({
-          status: 'rejected',
-          rejection_reason: reason
-        })
-        .eq('id', applicationId);
+      const { data, error } = await supabase.functions.invoke('bsk-loan-disburse', {
+        body: { 
+          loan_id: applicationId, 
+          action: 'reject',
+          admin_notes: reason 
+        }
+      });
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bsk-loan-applications'] });
+      queryClient.invalidateQueries({ queryKey: ['bsk-loans'] });
       toast({ title: "Loan rejected" });
       setSelectedApplication(null);
       setRejectionReason("");
@@ -151,8 +152,8 @@ export default function AdminBSKLoansNova() {
   const approvedCount = applications?.filter(a => a.status === 'approved').length || 0;
   const activeCount = applications?.filter(a => a.status === 'active').length || 0;
   const totalDisbursed = applications
-    ?.filter(a => ['approved', 'active', 'completed'].includes(a.status))
-    .reduce((sum, a) => sum + Number(a.loan_amount), 0) || 0;
+    ?.filter(a => ['approved', 'active', 'closed'].includes(a.status))
+    .reduce((sum, a) => sum + Number(a.net_disbursed_bsk || a.principal_bsk), 0) || 0;
 
   const columns = [
     {
@@ -169,39 +170,42 @@ export default function AdminBSKLoansNova() {
       key: "loan_amount",
       label: "Amount",
       render: (row: any) => (
-        <div className="font-mono font-medium">{Number(row.loan_amount).toLocaleString()} BSK</div>
+        <div>
+          <div className="font-mono font-medium">{Number(row.principal_bsk).toFixed(2)} BSK</div>
+          <div className="text-xs text-muted-foreground">≈ ₹{Number(row.amount_inr).toLocaleString()}</div>
+        </div>
       )
     },
     {
       key: "duration",
       label: "Duration",
-      render: (row: any) => `${row.duration_weeks} weeks`
+      render: (row: any) => `${row.tenor_weeks} weeks`
     },
     {
-      key: "weekly_payment",
-      label: "Weekly Payment",
+      key: "outstanding",
+      label: "Outstanding",
       render: (row: any) => (
-        <div className="font-mono text-sm">{Number(row.weekly_payment).toLocaleString()} BSK</div>
+        <div className="font-mono text-sm">{Number(row.outstanding_bsk).toFixed(2)} BSK</div>
       )
     },
     {
       key: "status",
       label: "Status",
       render: (row: any) => (
-        <Badge
-          variant="outline"
-          className={cn(
-            row.status === 'approved' || row.status === 'active'
-              ? "bg-success/10 text-success border-success/20"
-              : row.status === 'pending'
-              ? "bg-warning/10 text-warning border-warning/20"
-              : row.status === 'rejected'
-              ? "bg-destructive/10 text-destructive border-destructive/20"
-              : "bg-muted/10 text-muted-foreground border-muted/20"
-          )}
-        >
-          {row.status}
-        </Badge>
+            <Badge
+              variant="outline"
+              className={cn(
+                row.status === 'approved' || row.status === 'active'
+                  ? "bg-success/10 text-success border-success/20"
+                  : row.status === 'pending'
+                  ? "bg-warning/10 text-warning border-warning/20"
+                  : row.status === 'closed'
+                  ? "bg-muted/10 text-muted-foreground border-muted/20"
+                  : "bg-destructive/10 text-destructive border-destructive/20"
+              )}
+            >
+              {row.status}
+            </Badge>
       )
     }
   ];
@@ -255,15 +259,15 @@ export default function AdminBSKLoansNova() {
                 <RecordCard
                   id={item.id}
                   title={item.profiles?.email || 'Unknown'}
-                  subtitle={`${Number(item.loan_amount).toLocaleString()} BSK`}
+                  subtitle={`${Number(item.principal_bsk).toFixed(2)} BSK`}
                   fields={[
-                    { label: "Duration", value: `${item.duration_weeks} weeks` },
-                    { label: "Weekly", value: `${Number(item.weekly_payment).toLocaleString()} BSK` },
-                    { label: "Applied", value: new Date(item.applied_at).toLocaleDateString() }
+                    { label: "Duration", value: `${item.tenor_weeks} weeks` },
+                    { label: "Outstanding", value: `${Number(item.outstanding_bsk).toFixed(2)} BSK` },
+                    { label: "Created", value: new Date(item.created_at).toLocaleDateString() }
                   ]}
                   status={{
                     label: item.status,
-                    variant: item.status === 'approved' ? 'success' : item.status === 'pending' ? 'warning' : 'default'
+                    variant: item.status === 'approved' || item.status === 'active' ? 'success' : item.status === 'pending' ? 'warning' : 'default'
                   }}
                   onClick={() => setSelectedApplication(item)}
                   selected={selected}
@@ -291,9 +295,9 @@ export default function AdminBSKLoansNova() {
                       <p className="text-sm text-muted-foreground">Allow users to apply for loans</p>
                     </div>
                     <Switch
-                      checked={formValues.is_enabled}
+                      checked={formValues.system_enabled}
                       onCheckedChange={(checked) => {
-                        setFormValues({ ...formValues, is_enabled: checked });
+                        setFormValues({ ...formValues, system_enabled: checked });
                       }}
                     />
                   </div>
@@ -302,25 +306,25 @@ export default function AdminBSKLoansNova() {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Minimum Loan Amount (BSK)</Label>
+                      <Label>Minimum Loan Amount (INR)</Label>
                       <Input
                         type="number"
-                        value={formValues.min_loan_amount}
+                        value={formValues.min_amount_inr}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, min_loan_amount: value });
+                          setFormValues({ ...formValues, min_amount_inr: value });
                         }}
                         min="0"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Maximum Loan Amount (BSK)</Label>
+                      <Label>Maximum Loan Amount (INR)</Label>
                       <Input
                         type="number"
-                        value={formValues.max_loan_amount}
+                        value={formValues.max_amount_inr}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, max_loan_amount: value });
+                          setFormValues({ ...formValues, max_amount_inr: value });
                         }}
                         min="0"
                       />
@@ -329,48 +333,49 @@ export default function AdminBSKLoansNova() {
                       <Label>Duration (Weeks)</Label>
                       <Input
                         type="number"
-                        value={formValues.duration_weeks}
+                        value={formValues.default_tenor_weeks}
                         onChange={(e) => {
                           const value = parseInt(e.target.value);
-                          setFormValues({ ...formValues, duration_weeks: value });
+                          setFormValues({ ...formValues, default_tenor_weeks: value });
                         }}
                         min="1"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Interest Rate (%)</Label>
+                      <Label>Interest Rate (% weekly)</Label>
                       <Input
                         type="number"
                         step="0.1"
-                        value={formValues.interest_rate_percent}
+                        value={formValues.default_interest_rate_weekly}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, interest_rate_percent: value });
+                          setFormValues({ ...formValues, default_interest_rate_weekly: value });
                         }}
                         min="0"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Processing Fee (%)</Label>
+                      <Label>Origination Fee (%)</Label>
                       <Input
                         type="number"
                         step="0.1"
-                        value={formValues.processing_fee_percent}
+                        value={formValues.origination_fee_percent}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, processing_fee_percent: value });
+                          setFormValues({ ...formValues, origination_fee_percent: value });
                         }}
                         min="0"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Late Payment Fee (BSK)</Label>
+                      <Label>Late Payment Fee (%)</Label>
                       <Input
                         type="number"
-                        value={formValues.late_payment_fee}
+                        step="0.1"
+                        value={formValues.late_fee_percent}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, late_payment_fee: value });
+                          setFormValues({ ...formValues, late_fee_percent: value });
                         }}
                         min="0"
                       />
@@ -426,28 +431,36 @@ export default function AdminBSKLoansNova() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Loan Amount</p>
-                  <p className="text-2xl font-bold">{Number(selectedApplication.loan_amount).toLocaleString()} BSK</p>
+                  <p className="text-sm text-muted-foreground">Loan Amount (INR)</p>
+                  <p className="text-2xl font-bold">₹{Number(selectedApplication.amount_inr).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Principal (BSK)</p>
+                  <p className="text-2xl font-bold">{Number(selectedApplication.principal_bsk).toFixed(2)} BSK</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Duration</p>
-                  <p className="text-2xl font-bold">{selectedApplication.duration_weeks} weeks</p>
+                  <p className="text-lg font-bold">{selectedApplication.tenor_weeks} weeks</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Weekly Payment</p>
-                  <p className="text-lg font-medium">{Number(selectedApplication.weekly_payment).toLocaleString()} BSK</p>
+                  <p className="text-sm text-muted-foreground">Outstanding</p>
+                  <p className="text-lg font-medium">{Number(selectedApplication.outstanding_bsk).toFixed(2)} BSK</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Repayment</p>
-                  <p className="text-lg font-medium">{Number(selectedApplication.total_repayment).toLocaleString()} BSK</p>
+                  <p className="text-sm text-muted-foreground">Total Due</p>
+                  <p className="text-lg font-medium">{Number(selectedApplication.total_due_bsk).toFixed(2)} BSK</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Interest Rate</p>
-                  <p className="text-sm font-medium">{selectedApplication.interest_rate_percent}%</p>
+                  <p className="text-sm font-medium">{selectedApplication.interest_rate_weekly}% weekly</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Processing Fee</p>
-                  <p className="text-sm font-medium">{Number(selectedApplication.processing_fee).toLocaleString()} BSK</p>
+                  <p className="text-sm text-muted-foreground">Origination Fee</p>
+                  <p className="text-sm font-medium">{Number(selectedApplication.origination_fee_bsk).toFixed(2)} BSK</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Net Disbursed</p>
+                  <p className="text-sm font-medium">{Number(selectedApplication.net_disbursed_bsk).toFixed(2)} BSK</p>
                 </div>
               </div>
 
@@ -455,20 +468,13 @@ export default function AdminBSKLoansNova() {
 
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Applied</p>
-                <p className="text-sm font-medium">{new Date(selectedApplication.applied_at).toLocaleString()}</p>
+                <p className="text-sm font-medium">{new Date(selectedApplication.created_at).toLocaleString()}</p>
               </div>
 
-              {selectedApplication.rejection_reason && (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Rejection Reason</p>
-                  <p className="text-sm bg-destructive/10 p-3 rounded">{selectedApplication.rejection_reason}</p>
-                </div>
-              )}
-
-              {selectedApplication.notes && (
+              {selectedApplication.admin_notes && (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Admin Notes</p>
-                  <p className="text-sm bg-muted/50 p-3 rounded">{selectedApplication.notes}</p>
+                  <p className="text-sm bg-muted/50 p-3 rounded">{selectedApplication.admin_notes}</p>
                 </div>
               )}
 
