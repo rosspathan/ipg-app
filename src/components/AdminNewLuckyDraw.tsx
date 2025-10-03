@@ -18,7 +18,7 @@ interface DrawConfig {
   title: string;
   description: string;
   pool_size: number;
-  ticket_price_inr: number;
+  ticket_price_bsk: number;
   per_user_ticket_cap: number;
   fee_percent: number;
   state: 'draft' | 'open' | 'full' | 'drawing' | 'completed' | 'expired' | 'refunding' | 'closed';
@@ -33,7 +33,7 @@ interface DrawTemplate {
   title: string;
   description: string;
   pool_size: number;
-  ticket_price_inr: number;
+  ticket_price_bsk: number;
   prizes: any; // Will be parsed from JSON
   fee_percent: number;
 }
@@ -72,7 +72,7 @@ const AdminNewLuckyDraw = () => {
     title: "",
     description: "",
     pool_size: "100",
-    ticket_price_inr: "100",
+    ticket_price_bsk: "100",
     per_user_ticket_cap: "1",
     fee_percent: "10",
     prizes: [
@@ -171,7 +171,7 @@ const AdminNewLuckyDraw = () => {
     const formattedPrizes = Array.isArray(prizes) 
       ? prizes.map((p, i) => ({
           rank: i + 1,
-          amount: p.amount_inr?.toString() || "0",
+          amount: p.amount_bsk?.toString() || "0",
           emoji: i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏆"
         }))
       : [
@@ -184,7 +184,7 @@ const AdminNewLuckyDraw = () => {
       title: template.title,
       description: template.description,
       pool_size: template.pool_size.toString(),
-      ticket_price_inr: template.ticket_price_inr.toString(),
+      ticket_price_bsk: template.ticket_price_bsk.toString(),
       per_user_ticket_cap: "1",
       fee_percent: template.fee_percent.toString(),
       prizes: formattedPrizes
@@ -203,7 +203,7 @@ const AdminNewLuckyDraw = () => {
         title: formData.title,
         description: formData.description,
         pool_size: parseInt(formData.pool_size),
-        ticket_price_inr: parseFloat(formData.ticket_price_inr),
+        ticket_price_bsk: parseFloat(formData.ticket_price_bsk),
         per_user_ticket_cap: parseInt(formData.per_user_ticket_cap),
         fee_percent: parseFloat(formData.fee_percent),
         state: 'open' as const,
@@ -241,7 +241,7 @@ const AdminNewLuckyDraw = () => {
       const prizesData = formData.prizes.map((prize, index) => ({
         draw_id: drawId,
         rank: (rankNames[index] || `rank_${index + 1}`) as any,
-        amount_inr: parseFloat(prize.amount)
+        amount_bsk: parseFloat(prize.amount)
       }));
 
       const { error: prizesError } = await supabase
@@ -375,7 +375,7 @@ const AdminNewLuckyDraw = () => {
       title: "",
       description: "",
       pool_size: "100",
-      ticket_price_inr: "100",
+      ticket_price_bsk: "100",
       per_user_ticket_cap: "1",
       fee_percent: "10",
       prizes: [
@@ -514,7 +514,7 @@ const AdminNewLuckyDraw = () => {
                       <Input
                         value={formData.title}
                         onChange={(e) => setFormData({...formData, title: e.target.value})}
-                        placeholder="e.g., Classic 100 × ₹100"
+                        placeholder="e.g., Classic 100 × 100 BSK"
                       />
                     </div>
                     <div>
@@ -535,11 +535,11 @@ const AdminNewLuckyDraw = () => {
                         />
                       </div>
                       <div>
-                        <Label>Ticket Price (₹)</Label>
+                        <Label>Ticket Price (BSK)</Label>
                         <Input
                           type="number"
-                          value={formData.ticket_price_inr}
-                          onChange={(e) => setFormData({...formData, ticket_price_inr: e.target.value})}
+                          value={formData.ticket_price_bsk}
+                          onChange={(e) => setFormData({...formData, ticket_price_bsk: e.target.value})}
                         />
                       </div>
                     </div>
@@ -560,11 +560,14 @@ const AdminNewLuckyDraw = () => {
                           value={formData.fee_percent}
                           onChange={(e) => setFormData({...formData, fee_percent: e.target.value})}
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Deducted from each winner's prize amount
+                        </p>
                       </div>
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <Label>Prize Structure (₹)</Label>
+                        <Label>Prize Structure (BSK)</Label>
                         <Button 
                           type="button"
                           size="sm" 
@@ -601,7 +604,7 @@ const AdminNewLuckyDraw = () => {
                         ))}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Total Prize Pool: ₹{formData.prizes.reduce((sum, p) => sum + parseFloat(p.amount || "0"), 0).toFixed(2)}
+                        Total Prize Pool: {formData.prizes.reduce((sum, p) => sum + parseFloat(p.amount || "0"), 0).toFixed(2)} BSK
                       </p>
                     </div>
                     <div className="flex justify-end gap-2">
@@ -647,10 +650,10 @@ const AdminNewLuckyDraw = () => {
                             </div>
                             <div>
                               <span className="text-muted-foreground">Ticket Price:</span>
-                              <p className="font-medium">₹{draw.ticket_price_inr}</p>
+                              <p className="font-medium">{draw.ticket_price_bsk} BSK</p>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Fee:</span>
+                              <span className="text-muted-foreground">Winner Fee:</span>
                               <p className="font-medium">{draw.fee_percent}%</p>
                             </div>
                             <div>
@@ -691,11 +694,11 @@ const AdminNewLuckyDraw = () => {
                                 .from('draw_prizes')
                                 .select('*')
                                 .eq('draw_id', draw.id)
-                                .order('amount_inr', { ascending: false });
+                                .order('amount_bsk', { ascending: false });
                               
                               const loadedPrizes = prizesData?.map((p, i) => ({
                                 rank: i + 1,
-                                amount: p.amount_inr.toString(),
+                                amount: p.amount_bsk.toString(),
                                 emoji: i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "🏆"
                               })) || [
                                 { rank: 1, amount: "5000", emoji: "🥇" },
@@ -707,7 +710,7 @@ const AdminNewLuckyDraw = () => {
                                 title: draw.title,
                                 description: draw.description || "",
                                 pool_size: draw.pool_size.toString(),
-                                ticket_price_inr: draw.ticket_price_inr.toString(),
+                                ticket_price_bsk: draw.ticket_price_bsk.toString(),
                                 per_user_ticket_cap: draw.per_user_ticket_cap.toString(),
                                 fee_percent: draw.fee_percent.toString(),
                                 prizes: loadedPrizes
@@ -745,11 +748,11 @@ const AdminNewLuckyDraw = () => {
                       </div>
                       <div className="flex justify-between">
                         <span>Ticket Price:</span>
-                        <span>₹{template.ticket_price_inr}</span>
+                        <span>{template.ticket_price_bsk} BSK</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Admin Fee:</span>
-                        <span>{template.fee_percent}%</span>
+                        <span>{template.fee_percent}% (on winnings)</span>
                       </div>
                     </div>
                     <Button 
