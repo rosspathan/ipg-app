@@ -434,6 +434,27 @@ const AdvertisingMiningScreen: React.FC = () => {
               <BSKBalanceCard balanceType="holding" />
             </div>
 
+            {/* Info Banner */}
+            <Card className="bg-gradient-to-br from-green-500/10 to-blue-500/10 border-green-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Gift className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1 text-sm">
+                    <p className="font-semibold text-white">Free Daily Ad Benefits</p>
+                    <p className="text-slate-300">
+                      • Watch <strong>1 free ad per day</strong>
+                    </p>
+                    <p className="text-slate-300">
+                      • Earn <strong>1 BSK</strong> credited to holding balance
+                    </p>
+                    <p className="text-slate-300">
+                      • Resets daily at midnight {settings?.daily_reset_timezone || 'UTC'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Daily Progress */}
             {settings && (
               <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
@@ -448,9 +469,6 @@ const AdvertisingMiningScreen: React.FC = () => {
                     value={((dailyViews?.free_views_used || 0) / settings.max_free_per_day) * 100} 
                     className="h-2" 
                   />
-                  <div className="mt-2 text-xs text-slate-400">
-                    Next reset: Tomorrow at {settings.daily_reset_timezone} midnight
-                  </div>
                 </CardContent>
               </Card>
             )}
@@ -519,6 +537,27 @@ const AdvertisingMiningScreen: React.FC = () => {
 
           {/* Subscriptions Tab */}
           <TabsContent value="subscriptions" className="space-y-6">
+            {/* Info Banner */}
+            <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Star className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1 text-sm">
+                    <p className="font-semibold text-white">Premium Subscription Benefits</p>
+                    <p className="text-slate-300">
+                      • Watch <strong>1 ad per day</strong> for each active subscription
+                    </p>
+                    <p className="text-slate-300">
+                      • Earn <strong>1% daily</strong> of your subscription value (withdrawable BSK)
+                    </p>
+                    <p className="text-slate-300">
+                      • Duration: <strong>100 days</strong> per subscription
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* BSK Balance Cards */}
             <div className="grid gap-4">
               <BSKBalanceCard balanceType="withdrawable" />
@@ -534,31 +573,37 @@ const AdvertisingMiningScreen: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 mb-3">
+                    <span className="text-sm text-slate-300">Daily Ads Available</span>
+                    <span className="font-bold text-blue-400">
+                      {Math.max(0, userSubscriptions.length * (settings?.max_subscription_payout_per_day_per_tier || 1) - (dailyViews?.subscription_views_used || 0))} / {userSubscriptions.length}
+                    </span>
+                  </div>
                   {userSubscriptions.map((sub) => (
-                    <div key={sub.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
-                      <div>
-                        <div className="font-semibold">₹{sub.tier_inr} Tier</div>
-                        <div className="text-sm text-slate-400">
-                          {sub.daily_bsk} BSK/day • Expires {new Date(sub.end_date).toLocaleDateString()}
+                    <div key={sub.id} className="p-4 bg-slate-700/30 rounded-lg border border-slate-600/30">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold text-white">₹{sub.tier_inr} Tier</h4>
+                          <p className="text-sm text-slate-400">{sub.daily_bsk} BSK per day (1% of ₹{sub.tier_inr})</p>
+                        </div>
+                        <Badge variant="secondary" className="bg-green-600/20 text-green-400 border-green-600/30">
+                          Active
+                        </Badge>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Total Earned</span>
+                          <span className="font-medium text-white">{sub.total_earned_bsk.toFixed(2)} BSK</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Days Remaining</span>
+                          <span className="font-medium text-white">
+                            {Math.max(0, Math.ceil((new Date(sub.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} / {sub.days_total}
+                          </span>
                         </div>
                       </div>
-                      <Badge variant="default" className="bg-green-600/80">
-                        Active
-                      </Badge>
                     </div>
                   ))}
-                  
-                  {/* Daily reward summary */}
-                  <div className="mt-4 p-3 bg-green-600/10 rounded-lg border border-green-600/20">
-                    <div className="text-center">
-                      <div className="text-lg font-semibold text-green-400">
-                        {getActiveSubscriptionDailyReward()} BSK/day
-                      </div>
-                      <div className="text-sm text-slate-400">
-                        Total daily reward from all subscriptions
-                      </div>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             )}
