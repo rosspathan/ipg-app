@@ -44,7 +44,6 @@ const AdminTeamReferralsScreen = () => {
     commission_scope: settings?.commission_scope ?? 'BADGE_PURCHASES_AND_UPGRADES',
     payout_destination: settings?.payout_destination ?? 'WITHDRAWABLE',
     apply_requirement_to_vip_milestones: settings?.apply_requirement_to_vip_milestones ?? true,
-    cooloff_hours_for_clawback: settings?.cooloff_hours_for_clawback ?? 24,
     max_daily_direct_commission_bsk: settings?.max_daily_direct_commission_bsk ?? 100000
   });
 
@@ -63,7 +62,6 @@ const AdminTeamReferralsScreen = () => {
       commission_scope: settings.commission_scope,
       payout_destination: settings.payout_destination,
       apply_requirement_to_vip_milestones: settings.apply_requirement_to_vip_milestones,
-      cooloff_hours_for_clawback: settings.cooloff_hours_for_clawback,
       max_daily_direct_commission_bsk: settings.max_daily_direct_commission_bsk,
     });
   }, [settings]);
@@ -307,20 +305,6 @@ const AdminTeamReferralsScreen = () => {
                 />
                 <p className="text-xs text-muted-foreground">
                   Per-user daily commission cap (set to 0 for no limit)
-                </p>
-              </div>
-
-              {/* Cooloff for Clawback */}
-              <div className="space-y-2">
-                <Label htmlFor="cooloff_clawback">Cool-off for Clawback (Hours)</Label>
-                <Input
-                  id="cooloff_clawback"
-                  type="number"
-                  value={formData.cooloff_hours_for_clawback}
-                  onChange={(e) => setFormData({...formData, cooloff_hours_for_clawback: parseInt(e.target.value)})}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Hours to allow clawback if payment refunded
                 </p>
               </div>
 
