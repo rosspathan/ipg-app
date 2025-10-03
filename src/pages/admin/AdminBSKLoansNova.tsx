@@ -34,7 +34,8 @@ export default function AdminBSKLoansNova() {
     max_amount_inr: number;
     default_tenor_weeks: number;
     default_interest_rate_weekly: number;
-    origination_fee_percent: number;
+    processing_fee_percent: number;
+    processing_fee_fixed_bsk: number;
     late_fee_percent: number;
   } | null>(null);
 
@@ -342,33 +343,64 @@ export default function AdminBSKLoansNova() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Interest Rate (% weekly)</Label>
+                      <Label>Interest Rate (% annually)</Label>
                       <Input
                         type="number"
                         step="0.1"
-                        value={formValues.default_interest_rate_weekly}
+                        value={(formValues.default_interest_rate_weekly * 52).toFixed(2)}
                         onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, default_interest_rate_weekly: value });
+                          const annualRate = parseFloat(e.target.value);
+                          const weeklyRate = annualRate / 52;
+                          setFormValues({ ...formValues, default_interest_rate_weekly: weeklyRate });
                         }}
                         min="0"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Weekly: {formValues.default_interest_rate_weekly.toFixed(3)}%
+                      </p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Origination Fee (%)</Label>
+                      <Label>Loan Processing Fee (%)</Label>
                       <Input
                         type="number"
                         step="0.1"
-                        value={formValues.origination_fee_percent}
+                        value={formValues.processing_fee_percent}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, origination_fee_percent: value });
+                          setFormValues({ 
+                            ...formValues, 
+                            processing_fee_percent: value,
+                            processing_fee_fixed_bsk: 0 // Clear fixed fee when % is set
+                          });
                         }}
                         min="0"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Percentage of loan amount
+                      </p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Late Payment Fee (%)</Label>
+                      <Label>OR Fixed Processing Fee (BSK)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formValues.processing_fee_fixed_bsk}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value);
+                          setFormValues({ 
+                            ...formValues, 
+                            processing_fee_fixed_bsk: value,
+                            processing_fee_percent: 0 // Clear % fee when fixed is set
+                          });
+                        }}
+                        min="0"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Fixed BSK amount (alternative to percentage)
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Late Payment Fee (% of weekly payment)</Label>
                       <Input
                         type="number"
                         step="0.1"
@@ -379,6 +411,9 @@ export default function AdminBSKLoansNova() {
                         }}
                         min="0"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Charged on missed weekly payments
+                      </p>
                     </div>
                   </div>
 
@@ -455,7 +490,7 @@ export default function AdminBSKLoansNova() {
                   <p className="text-sm font-medium">{selectedApplication.interest_rate_weekly}% weekly</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Origination Fee</p>
+                  <p className="text-sm text-muted-foreground">Processing Fee</p>
                   <p className="text-sm font-medium">{Number(selectedApplication.origination_fee_bsk).toFixed(2)} BSK</p>
                 </div>
                 <div>

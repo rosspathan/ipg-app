@@ -1630,6 +1630,8 @@ export type Database = {
           per_user_exposure_cap_inr: number | null
           prepayment_allowed: boolean
           prepayment_penalty_percent: number
+          processing_fee_fixed_bsk: number | null
+          processing_fee_percent: number | null
           region_restrictions: Json
           schedule_denomination: string
           system_enabled: boolean
@@ -1657,6 +1659,8 @@ export type Database = {
           per_user_exposure_cap_inr?: number | null
           prepayment_allowed?: boolean
           prepayment_penalty_percent?: number
+          processing_fee_fixed_bsk?: number | null
+          processing_fee_percent?: number | null
           region_restrictions?: Json
           schedule_denomination?: string
           system_enabled?: boolean
@@ -1684,6 +1688,8 @@ export type Database = {
           per_user_exposure_cap_inr?: number | null
           prepayment_allowed?: boolean
           prepayment_penalty_percent?: number
+          processing_fee_fixed_bsk?: number | null
+          processing_fee_percent?: number | null
           region_restrictions?: Json
           schedule_denomination?: string
           system_enabled?: boolean

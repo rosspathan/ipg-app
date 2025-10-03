@@ -127,9 +127,11 @@ serve(async (req: Request) => {
     const rateSnapshot = bskRate.rate_inr_per_bsk;
     const principalBsk = amount_inr / rateSnapshot;
 
-    // Calculate fees
-    const originationFeeBsk = (principalBsk * settings.origination_fee_percent) / 100;
-    const netDisbursedBsk = principalBsk - originationFeeBsk;
+    // Calculate fees (either percentage or fixed)
+    const processingFeeBsk = settings.processing_fee_fixed_bsk > 0
+      ? settings.processing_fee_fixed_bsk
+      : (principalBsk * settings.processing_fee_percent) / 100;
+    const netDisbursedBsk = principalBsk - processingFeeBsk;
 
     // Calculate total due (0% interest by default)
     let totalDueBsk = principalBsk;
@@ -156,8 +158,8 @@ serve(async (req: Request) => {
         tenor_weeks: settings.default_tenor_weeks,
         interest_type: settings.interest_type,
         interest_rate_weekly: settings.default_interest_rate_weekly,
-        origination_fee_percent: settings.origination_fee_percent,
-        origination_fee_bsk: originationFeeBsk,
+        origination_fee_percent: settings.processing_fee_percent || settings.origination_fee_percent || 0,
+        origination_fee_bsk: processingFeeBsk,
         late_fee_percent: settings.late_fee_percent,
         grace_period_days: settings.grace_period_days,
         schedule_denomination: settings.schedule_denomination,
