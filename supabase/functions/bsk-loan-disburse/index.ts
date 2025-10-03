@@ -136,12 +136,18 @@ serve(async (req: Request) => {
       throw new Error('Failed to create installment schedule');
     }
 
-    // Credit user's BSK withdrawable balance
+    // Credit user's BSK HOLDING balance (not withdrawable until loan is repaid)
+    const { data: currentBalance } = await supabase
+      .from('user_bsk_balances')
+      .select('holding_balance')
+      .eq('user_id', loan.user_id)
+      .single();
+
     const { error: balanceError } = await supabase
       .from('user_bsk_balances')
       .upsert({
         user_id: loan.user_id,
-        withdrawable_balance: loan.net_disbursed_bsk
+        holding_balance: (currentBalance?.holding_balance || 0) + loan.net_disbursed_bsk
       }, {
         onConflict: 'user_id',
         ignoreDuplicates: false
@@ -165,7 +171,7 @@ serve(async (req: Request) => {
         amount_bsk: loan.net_disbursed_bsk,
         amount_inr: loan.amount_inr,
         rate_snapshot: loan.disbursal_rate_snapshot,
-        balance_type: 'withdrawable',
+        balance_type: 'holding',
         direction: 'credit',
         reference_id: loan.loan_number,
         notes: `Loan disbursal: ${loan.loan_number}`,
@@ -190,7 +196,7 @@ serve(async (req: Request) => {
           amount_bsk: loan.origination_fee_bsk,
           amount_inr: loan.origination_fee_bsk * loan.disbursal_rate_snapshot,
           rate_snapshot: loan.disbursal_rate_snapshot,
-          balance_type: 'withdrawable',
+          balance_type: 'holding',
           direction: 'debit',
           reference_id: loan.loan_number,
           notes: `Origination fee: ${loan.origination_fee_percent}%`,

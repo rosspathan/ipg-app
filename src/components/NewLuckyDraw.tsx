@@ -15,7 +15,7 @@ interface DrawConfig {
   title: string;
   description: string;
   pool_size: number;
-  ticket_price_inr: number;
+  ticket_price_bsk: number;
   per_user_ticket_cap: number;
   fee_percent: number;
   state: 'draft' | 'open' | 'full' | 'drawing' | 'completed' | 'expired' | 'refunding' | 'closed';
@@ -25,7 +25,7 @@ interface DrawConfig {
 
 interface DrawPrize {
   rank: 'first' | 'second' | 'third';
-  amount_inr: number;
+  amount_bsk: number;
 }
 
 interface DrawTicket {
@@ -85,7 +85,7 @@ const NewLuckyDraw = () => {
           .from('draw_prizes')
           .select('*')
           .eq('draw_id', draws[0].id)
-          .order('amount_inr', { ascending: false });
+          .order('amount_bsk', { ascending: false });
 
         if (prizesError) throw prizesError;
         setPrizes(prizesData || []);
@@ -240,7 +240,7 @@ const NewLuckyDraw = () => {
     );
   }
 
-  const totalCost = drawConfig.ticket_price_inr * ticketCount;
+  const totalCost = drawConfig.ticket_price_bsk * ticketCount;
   const totalBskCost = parseFloat(getBskEquivalent(totalCost));
   const spacesRemaining = drawConfig.pool_size - drawConfig.current_participants;
   const canPurchase = user && drawConfig.state === 'open' && spacesRemaining >= ticketCount && 
@@ -299,8 +299,8 @@ const NewLuckyDraw = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Ticket Price</p>
-              <p className="text-lg font-bold">₹{drawConfig.ticket_price_inr}</p>
-              <p className="text-xs text-muted-foreground">{getBskEquivalent(drawConfig.ticket_price_inr)} BSK</p>
+              <p className="text-lg font-bold">{drawConfig.ticket_price_bsk} BSK</p>
+              <p className="text-xs text-muted-foreground">≈ ₹{(drawConfig.ticket_price_bsk * bskRate).toFixed(2)}</p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Your Balance</p>
@@ -316,8 +316,8 @@ const NewLuckyDraw = () => {
               {prizes.map((prize) => (
                 <div key={prize.rank} className="text-center">
                   <div className="font-bold">{getRankEmoji(prize.rank)}</div>
-                  <div>₹{prize.amount_inr.toLocaleString()}</div>
-                  <div className="text-muted-foreground">{getBskEquivalent(prize.amount_inr)} BSK</div>
+                  <div>₹{(prize.amount_bsk * bskRate).toLocaleString()}</div>
+                  <div className="text-muted-foreground">{prize.amount_bsk.toFixed(2)} BSK</div>
                 </div>
               ))}
             </div>
@@ -453,16 +453,16 @@ const NewLuckyDraw = () => {
                     <div>
                       <p className="font-medium capitalize">{prize.rank} Place</p>
                       <p className="text-sm text-muted-foreground">
-                        Gross: ₹{prize.amount_inr.toLocaleString()} ({getBskEquivalent(prize.amount_inr)} BSK)
+                        Gross: {prize.amount_bsk.toFixed(2)} BSK (≈ ₹{(prize.amount_bsk * bskRate).toLocaleString()})
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-green-600">
-                      ₹{((prize.amount_inr * (100 - drawConfig.fee_percent)) / 100).toLocaleString()}
+                      {((prize.amount_bsk * (100 - drawConfig.fee_percent)) / 100).toFixed(2)} BSK
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {getBskEquivalent((prize.amount_inr * (100 - drawConfig.fee_percent)) / 100)} BSK net
+                      ≈ ₹{((prize.amount_bsk * (100 - drawConfig.fee_percent)) / 100 * bskRate).toLocaleString()}
                     </p>
                   </div>
                 </div>

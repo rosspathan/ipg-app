@@ -115,14 +115,14 @@ serve(async (req: Request) => {
       }
     }
 
-    // Check user's BSK balance
+    // Check user's BSK balance (holding balance for loan repayment)
     const { data: userBalance } = await supabase
       .from('user_bsk_balances')
-      .select('withdrawable_balance')
+      .select('holding_balance, withdrawable_balance')
       .eq('user_id', user.id)
       .single();
 
-    const availableBalance = userBalance?.withdrawable_balance || 0;
+    const availableBalance = userBalance?.holding_balance || 0;
     
     if (availableBalance < paymentAmountBsk) {
       return new Response(
@@ -136,11 +136,11 @@ serve(async (req: Request) => {
       );
     }
 
-    // Debit user's BSK balance
+    // Debit user's BSK holding balance
     const { error: balanceError } = await supabase
       .from('user_bsk_balances')
       .update({
-        withdrawable_balance: availableBalance - paymentAmountBsk
+        holding_balance: availableBalance - paymentAmountBsk
       })
       .eq('user_id', user.id);
 
@@ -149,15 +149,48 @@ serve(async (req: Request) => {
     }
 
     // Update loan paid amount and outstanding
+    const isLoanFullyPaid = payment_type === 'prepay_full' || (loan.outstanding_bsk - paymentAmountBsk) <= 0.01;
+    
     const { error: loanUpdateError } = await supabase
       .from('bsk_loans')
       .update({
         paid_bsk: loan.paid_bsk + paymentAmountBsk,
         outstanding_bsk: loan.outstanding_bsk - paymentAmountBsk,
-        status: payment_type === 'prepay_full' || (loan.outstanding_bsk - paymentAmountBsk) <= 0.01 ? 'closed' : 'active',
-        closed_at: payment_type === 'prepay_full' || (loan.outstanding_bsk - paymentAmountBsk) <= 0.01 ? new Date().toISOString() : null
+        status: isLoanFullyPaid ? 'closed' : 'active',
+        closed_at: isLoanFullyPaid ? new Date().toISOString() : null
       })
       .eq('id', loan.id);
+
+    // Transfer remaining holding balance to withdrawable when loan is fully paid
+    if (isLoanFullyPaid && userBalance) {
+      const remainingHolding = availableBalance - paymentAmountBsk;
+      await supabase
+        .from('user_bsk_balances')
+        .update({
+          holding_balance: 0,
+          withdrawable_balance: (userBalance.withdrawable_balance || 0) + remainingHolding
+        })
+        .eq('user_id', user.id);
+
+      // Log the transfer in ledger
+      await supabase
+        .from('bsk_loan_ledger')
+        .insert({
+          user_id: user.id,
+          loan_id: loan.id,
+          transaction_type: 'holding_to_withdrawable',
+          amount_bsk: remainingHolding,
+          amount_inr: remainingHolding * currentRate,
+          rate_snapshot: currentRate,
+          balance_type: 'withdrawable',
+          direction: 'credit',
+          reference_id: loan.loan_number,
+          notes: 'Loan fully repaid - holding balance transferred to withdrawable',
+          processed_by: user.id,
+          idempotency_key: `transfer-${loan.id}-${Date.now()}`,
+          metadata: { loan_closed: true }
+        });
+    }
 
     if (loanUpdateError) {
       throw new Error('Failed to update loan status');
@@ -202,7 +235,7 @@ serve(async (req: Request) => {
         amount_bsk: paymentAmountBsk,
         amount_inr: paymentAmountBsk * paymentRateSnapshot,
         rate_snapshot: paymentRateSnapshot,
-        balance_type: 'withdrawable',
+        balance_type: 'holding',
         direction: 'debit',
         reference_id: loan.loan_number,
         notes: payment_type === 'prepay_full' ? 'Full loan prepayment' : `EMI payment #${installment.installment_number}`,
