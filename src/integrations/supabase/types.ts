@@ -3547,8 +3547,10 @@ export type Database = {
           id: string
           is_enabled: boolean
           lifetime_spin_cap_per_user: number | null
+          max_bet_bsk: number
           max_bet_inr: number
           max_daily_liability_bsk: number | null
+          min_bet_bsk: number
           min_bet_inr: number
           post_free_fee_bsk: number
           post_free_fee_inr: number
@@ -3567,8 +3569,10 @@ export type Database = {
           id?: string
           is_enabled?: boolean
           lifetime_spin_cap_per_user?: number | null
+          max_bet_bsk?: number
           max_bet_inr?: number
           max_daily_liability_bsk?: number | null
+          min_bet_bsk?: number
           min_bet_inr?: number
           post_free_fee_bsk?: number
           post_free_fee_inr?: number
@@ -3587,8 +3591,10 @@ export type Database = {
           id?: string
           is_enabled?: boolean
           lifetime_spin_cap_per_user?: number | null
+          max_bet_bsk?: number
           max_bet_inr?: number
           max_daily_liability_bsk?: number | null
+          min_bet_bsk?: number
           min_bet_inr?: number
           post_free_fee_bsk?: number
           post_free_fee_inr?: number
