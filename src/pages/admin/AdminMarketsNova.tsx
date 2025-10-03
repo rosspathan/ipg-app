@@ -103,8 +103,6 @@ export default function AdminMarketsNova() {
   const [pairFormData, setPairFormData] = useState({
     base_asset_id: '',
     quote_asset_id: '',
-    tick_size: 0.01,
-    lot_size: 0.001,
     min_notional: 10,
     is_active: true,
   });
@@ -318,8 +316,6 @@ export default function AdminMarketsNova() {
     setPairFormData({
       base_asset_id: market.base_asset_id,
       quote_asset_id: market.quote_asset_id,
-      tick_size: market.tick_size,
-      lot_size: market.lot_size,
       min_notional: market.min_notional,
       is_active: market.is_active,
     });
@@ -383,8 +379,6 @@ export default function AdminMarketsNova() {
     setPairFormData({
       base_asset_id: '',
       quote_asset_id: '',
-      tick_size: 0.01,
-      lot_size: 0.001,
       min_notional: 10,
       is_active: true,
     });
@@ -1014,33 +1008,6 @@ export default function AdminMarketsNova() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="tick_size">Tick Size *</Label>
-                <Input
-                  id="tick_size"
-                  type="number"
-                  step="0.00000001"
-                  value={pairFormData.tick_size}
-                  onChange={(e) => setPairFormData({ ...pairFormData, tick_size: parseFloat(e.target.value) || 0 })}
-                  placeholder="0.01"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="lot_size">Lot Size *</Label>
-                <Input
-                  id="lot_size"
-                  type="number"
-                  step="0.00000001"
-                  value={pairFormData.lot_size}
-                  onChange={(e) => setPairFormData({ ...pairFormData, lot_size: parseFloat(e.target.value) || 0 })}
-                  placeholder="0.001"
-                  required
-                />
-              </div>
             </div>
 
             <div>
