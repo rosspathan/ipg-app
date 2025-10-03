@@ -279,20 +279,38 @@ export const useTeamReferrals = () => {
   // Update team referral settings
   const updateSettings = async (updates: Partial<TeamReferralSettings>) => {
     try {
-      const { data, error } = await supabase
-        .from('team_referral_settings')
-        .update(updates)
-        .eq('id', settings?.id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      setSettings(data as TeamReferralSettings);
+      let saved: TeamReferralSettings | null = null;
+
+      if (settings?.id) {
+        const { data, error } = await supabase
+          .from('team_referral_settings')
+          .update(updates)
+          .eq('id', settings.id)
+          .select()
+          .single();
+        if (error) throw error;
+        saved = data as TeamReferralSettings;
+      } else {
+        // No settings row exists yet — insert one with provided values (defaults filled by DB)
+        const { data, error } = await supabase
+          .from('team_referral_settings')
+          .insert({
+            ...updates,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        saved = data as TeamReferralSettings;
+      }
+
+      setSettings(saved);
       
       toast({
         title: "Success",
         description: "Team referral settings updated successfully",
       });
+
+      return saved;
     } catch (error) {
       console.error('Error updating settings:', error);
       toast({
@@ -300,6 +318,7 @@ export const useTeamReferrals = () => {
         description: "Failed to update team referral settings",
         variant: "destructive",
       });
+      throw error;
     }
   };
 

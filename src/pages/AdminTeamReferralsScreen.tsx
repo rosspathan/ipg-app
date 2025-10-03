@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,31 @@ const AdminTeamReferralsScreen = () => {
     cooloff_hours_for_clawback: settings?.cooloff_hours_for_clawback ?? 24,
     max_daily_direct_commission_bsk: settings?.max_daily_direct_commission_bsk ?? 100000
   });
+
+  // Keep form in sync when settings load/update
+  useEffect(() => {
+    if (!settings) return;
+    setFormData({
+      enabled: settings.enabled,
+      trigger_event: settings.trigger_event,
+      spillover_to_next_eligible_upline: settings.spillover_to_next_eligible_upline,
+      direct_referral_percent: settings.direct_referral_percent,
+      cooloff_hours: settings.cooloff_hours,
+      bsk_inr_rate: settings.bsk_inr_rate,
+      daily_cap_per_earner: settings.daily_cap_per_earner ?? '',
+      weekly_cap_per_earner: settings.weekly_cap_per_earner ?? '',
+      per_downline_event_cap: settings.per_downline_event_cap ?? '',
+      direct_commission_percent: settings.direct_commission_percent,
+      min_referrer_badge_required: settings.min_referrer_badge_required,
+      eligibility_policy: settings.eligibility_policy,
+      retro_window_hours: settings.retro_window_hours,
+      commission_scope: settings.commission_scope,
+      payout_destination: settings.payout_destination,
+      apply_requirement_to_vip_milestones: settings.apply_requirement_to_vip_milestones,
+      cooloff_hours_for_clawback: settings.cooloff_hours_for_clawback,
+      max_daily_direct_commission_bsk: settings.max_daily_direct_commission_bsk,
+    });
+  }, [settings]);
 
   const [editingLevels, setEditingLevels] = useState<Record<string, { bsk_reward: number; balance_type: string }>>({});
 
