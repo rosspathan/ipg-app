@@ -6224,6 +6224,7 @@ export type Database = {
       draw_status: "OPEN" | "CLOSED" | "COMPLETED" | "CANCELLED"
       insurance_type: "ACCIDENT" | "TRADING"
       invite_policy: "BLOCK_WHEN_FULL" | "WAITLIST"
+      kyc_status: "unverified" | "pending" | "verified" | "rejected"
       missed_day_policy: "forfeit" | "carry_forward"
       per_user_limit_type: "once" | "once_per_campaign" | "unlimited"
       policy_status: "ACTIVE" | "EXPIRED" | "CANCELLED"
@@ -6382,6 +6383,7 @@ export const Constants = {
       draw_status: ["OPEN", "CLOSED", "COMPLETED", "CANCELLED"],
       insurance_type: ["ACCIDENT", "TRADING"],
       invite_policy: ["BLOCK_WHEN_FULL", "WAITLIST"],
+      kyc_status: ["unverified", "pending", "verified", "rejected"],
       missed_day_policy: ["forfeit", "carry_forward"],
       per_user_limit_type: ["once", "once_per_campaign", "unlimited"],
       policy_status: ["ACTIVE", "EXPIRED", "CANCELLED"],

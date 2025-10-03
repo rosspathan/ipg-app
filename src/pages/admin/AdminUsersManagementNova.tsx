@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Users, UserCheck, UserX, Shield, TrendingUp, AlertTriangle, Wallet, History, Key, Lock, Unlock, Mail, RefreshCw, Eye, Edit, Ban, DollarSign, Plus, Minus, Award, CreditCard } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Users, UserCheck, UserX, Shield, TrendingUp, AlertTriangle, Wallet, History, Key, Lock, Unlock, Mail, RefreshCw, Eye, Edit, Ban, DollarSign, Plus, Minus, Award, CreditCard, CheckCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -34,6 +35,8 @@ export default function AdminUsersManagementNova() {
   const [balanceAsset, setBalanceAsset] = useState("BSK");
   const [balanceType, setBalanceType] = useState<'add' | 'subtract'>('add');
   const [selectedBalanceType, setSelectedBalanceType] = useState<'withdrawable' | 'holding'>('withdrawable');
+  const [kycNotes, setKycNotes] = useState("");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -96,6 +99,22 @@ export default function AdminUsersManagementNova() {
         .eq('user_id', selectedRecord.user_id)
         .maybeSingle();
       if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedRecord?.user_id
+  });
+
+  // Fetch KYC profile for selected user
+  const { data: kycProfile, refetch: refetchKyc } = useQuery({
+    queryKey: ['user-kyc', selectedRecord?.user_id],
+    queryFn: async () => {
+      if (!selectedRecord) return null;
+      const { data, error } = await supabase
+        .from('kyc_profiles')
+        .select('*')
+        .eq('user_id', selectedRecord.user_id)
+        .maybeSingle();
+      if (error) console.error('KYC fetch error:', error);
       return data;
     },
     enabled: !!selectedRecord?.user_id
@@ -504,10 +523,11 @@ export default function AdminUsersManagementNova() {
             </div>
 
             <Tabs defaultValue="profile" className="w-full">
-              <TabsList className="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-1 h-auto">
+              <TabsList className="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-1 h-auto">
                 <TabsTrigger value="profile" className="text-xs md:text-sm py-2">Profile</TabsTrigger>
                 <TabsTrigger value="crypto" className="text-xs md:text-sm py-2">Crypto</TabsTrigger>
                 <TabsTrigger value="bsk" className="text-xs md:text-sm py-2">BSK</TabsTrigger>
+                <TabsTrigger value="kyc" className="text-xs md:text-sm py-2">KYC</TabsTrigger>
                 <TabsTrigger value="subscriptions" className="text-xs md:text-sm py-2">Subs</TabsTrigger>
                 <TabsTrigger value="badges" className="text-xs md:text-sm py-2">Badges</TabsTrigger>
                 <TabsTrigger value="security" className="text-xs md:text-sm py-2">Security</TabsTrigger>
@@ -758,6 +778,207 @@ export default function AdminUsersManagementNova() {
                     </div>
                   </div>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="kyc" className="space-y-4 mt-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-3">
+                    <CardTitle className="text-base">KYC Verification</CardTitle>
+                    <Badge variant={
+                      kycProfile?.status === 'verified' ? 'default' :
+                      kycProfile?.status === 'pending' ? 'secondary' :
+                      kycProfile?.status === 'rejected' ? 'destructive' : 'outline'
+                    }>
+                      {kycProfile?.status || 'unverified'}
+                    </Badge>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {!kycProfile || kycProfile.status === 'unverified' ? (
+                      <p className="text-sm text-muted-foreground text-center py-6">No KYC submission yet</p>
+                    ) : (
+                      <>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-0.5">First Name</p>
+                            <p className="text-sm font-medium">{kycProfile.first_name || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-0.5">Last Name</p>
+                            <p className="text-sm font-medium">{kycProfile.last_name || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-0.5">ID Type</p>
+                            <p className="text-sm font-medium">{kycProfile.id_type || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-0.5">ID Number</p>
+                            <p className="text-sm font-medium">{kycProfile.id_number || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-0.5">Submitted</p>
+                            <p className="text-sm font-medium">
+                              {kycProfile.submitted_at ? new Date(kycProfile.submitted_at).toLocaleDateString() : 'N/A'}
+                            </p>
+                          </div>
+                          {kycProfile.reviewed_at && (
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-0.5">Reviewed</p>
+                              <p className="text-sm font-medium">
+                                {new Date(kycProfile.reviewed_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-medium">Uploaded Documents</h4>
+                          <div className="grid gap-3 sm:grid-cols-3">
+                            {kycProfile.id_front_url && (
+                              <div className="border rounded-lg p-3 space-y-2 bg-card">
+                                <p className="text-xs font-medium text-muted-foreground">ID Front</p>
+                                <img 
+                                  src={kycProfile.id_front_url} 
+                                  alt="ID Front" 
+                                  className="w-full h-28 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => setPreviewImage(kycProfile.id_front_url)}
+                                />
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="w-full h-8"
+                                  onClick={() => setPreviewImage(kycProfile.id_front_url)}
+                                >
+                                  <Eye className="h-3 w-3 mr-1.5" /> View Full
+                                </Button>
+                              </div>
+                            )}
+                            {kycProfile.id_back_url && (
+                              <div className="border rounded-lg p-3 space-y-2 bg-card">
+                                <p className="text-xs font-medium text-muted-foreground">ID Back</p>
+                                <img 
+                                  src={kycProfile.id_back_url} 
+                                  alt="ID Back" 
+                                  className="w-full h-28 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => setPreviewImage(kycProfile.id_back_url)}
+                                />
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="w-full h-8"
+                                  onClick={() => setPreviewImage(kycProfile.id_back_url)}
+                                >
+                                  <Eye className="h-3 w-3 mr-1.5" /> View Full
+                                </Button>
+                              </div>
+                            )}
+                            {kycProfile.selfie_url && (
+                              <div className="border rounded-lg p-3 space-y-2 bg-card">
+                                <p className="text-xs font-medium text-muted-foreground">Selfie</p>
+                                <img 
+                                  src={kycProfile.selfie_url} 
+                                  alt="Selfie" 
+                                  className="w-full h-28 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => setPreviewImage(kycProfile.selfie_url)}
+                                />
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="w-full h-8"
+                                  onClick={() => setPreviewImage(kycProfile.selfie_url)}
+                                >
+                                  <Eye className="h-3 w-3 mr-1.5" /> View Full
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {kycProfile.status === 'pending' && (
+                          <>
+                            <Separator />
+                            <div className="space-y-3">
+                              <h4 className="text-sm font-medium">Admin Review</h4>
+                              <div className="space-y-2">
+                                <Label htmlFor="kyc-notes" className="text-xs">Notes (optional)</Label>
+                                <textarea 
+                                  id="kyc-notes"
+                                  placeholder="Add review notes..."
+                                  value={kycNotes}
+                                  onChange={(e) => setKycNotes(e.target.value)}
+                                  rows={3}
+                                  className="w-full px-3 py-2 text-sm rounded-md border bg-background resize-none"
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm"
+                                  className="flex-1 gap-1.5"
+                                  onClick={async () => {
+                                    try {
+                                      const { error } = await supabase
+                                        .from('kyc_profiles')
+                                        .update({
+                                          status: 'verified',
+                                          notes: kycNotes,
+                                          reviewed_at: new Date().toISOString()
+                                        })
+                                        .eq('user_id', selectedRecord?.user_id);
+                                      if (error) throw error;
+                                      toast({ title: "Success", description: "KYC approved successfully" });
+                                      setKycNotes("");
+                                      refetchKyc();
+                                    } catch (error: any) {
+                                      toast({ title: "Error", description: error.message, variant: "destructive" });
+                                    }
+                                  }}
+                                >
+                                  <CheckCircle className="h-4 w-4" /> Approve
+                                </Button>
+                                <Button 
+                                  size="sm"
+                                  variant="destructive"
+                                  className="flex-1 gap-1.5"
+                                  onClick={async () => {
+                                    try {
+                                      const { error } = await supabase
+                                        .from('kyc_profiles')
+                                        .update({
+                                          status: 'rejected',
+                                          notes: kycNotes,
+                                          reviewed_at: new Date().toISOString()
+                                        })
+                                        .eq('user_id', selectedRecord?.user_id);
+                                      if (error) throw error;
+                                      toast({ title: "Success", description: "KYC rejected" });
+                                      setKycNotes("");
+                                      refetchKyc();
+                                    } catch (error: any) {
+                                      toast({ title: "Error", description: error.message, variant: "destructive" });
+                                    }
+                                  }}
+                                >
+                                  <XCircle className="h-4 w-4" /> Reject
+                                </Button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        {kycProfile.notes && (
+                          <>
+                            <Separator />
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Admin Notes</p>
+                              <p className="text-sm bg-muted/50 p-3 rounded">{kycProfile.notes}</p>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="subscriptions" className="space-y-4 mt-4">
@@ -1114,6 +1335,25 @@ export default function AdminUsersManagementNova() {
               Send Reset Email
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-3">
+            <DialogTitle>Document Preview</DialogTitle>
+            <DialogDescription className="sr-only">Full size document image</DialogDescription>
+          </DialogHeader>
+          {previewImage && (
+            <div className="p-4 pt-0">
+              <img 
+                src={previewImage} 
+                alt="Document" 
+                className="w-full h-auto rounded max-h-[70vh] object-contain bg-muted" 
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
