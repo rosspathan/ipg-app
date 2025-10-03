@@ -569,6 +569,51 @@ export type Database = {
         }
         Relationships: []
       }
+      badge_purchase_events: {
+        Row: {
+          commissionable_amount_bsk: number
+          created_at: string | null
+          event_type: string
+          from_badge: string | null
+          id: string
+          occurred_at: string
+          paid_amount_bsk: number
+          payment_method: string | null
+          payment_ref: string | null
+          rate_snapshot: number
+          to_badge: string
+          user_id: string
+        }
+        Insert: {
+          commissionable_amount_bsk: number
+          created_at?: string | null
+          event_type: string
+          from_badge?: string | null
+          id?: string
+          occurred_at?: string
+          paid_amount_bsk: number
+          payment_method?: string | null
+          payment_ref?: string | null
+          rate_snapshot: number
+          to_badge: string
+          user_id: string
+        }
+        Update: {
+          commissionable_amount_bsk?: number
+          created_at?: string | null
+          event_type?: string
+          from_badge?: string | null
+          id?: string
+          occurred_at?: string
+          paid_amount_bsk?: number
+          payment_method?: string | null
+          payment_ref?: string | null
+          rate_snapshot?: number
+          to_badge?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       badge_purchases: {
         Row: {
           badge_name: string
@@ -1986,6 +2031,127 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          eligibility_met: boolean | null
+          event_id: string | null
+          id: string
+          metadata: Json | null
+          reason: string | null
+          required_badge: string | null
+          sponsor_badge: string | null
+          sponsor_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          eligibility_met?: boolean | null
+          event_id?: string | null
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          required_badge?: string | null
+          sponsor_badge?: string | null
+          sponsor_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          eligibility_met?: boolean | null
+          event_id?: string | null
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          required_badge?: string | null
+          sponsor_badge?: string | null
+          sponsor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_audit_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "badge_purchase_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_payouts: {
+        Row: {
+          capped: boolean | null
+          clawed_back_at: string | null
+          commission_bsk: number
+          commission_percent: number
+          commissionable_bsk: number
+          created_at: string | null
+          destination: string
+          eligibility_met: boolean
+          event_id: string
+          id: string
+          idempotency_key: string
+          reason: string | null
+          referred_user_id: string
+          required_badge_at_event: string | null
+          settled_at: string | null
+          sponsor_badge_at_event: string | null
+          sponsor_id: string
+          status: string
+          voided_at: string | null
+        }
+        Insert: {
+          capped?: boolean | null
+          clawed_back_at?: string | null
+          commission_bsk: number
+          commission_percent: number
+          commissionable_bsk: number
+          created_at?: string | null
+          destination: string
+          eligibility_met?: boolean
+          event_id: string
+          id?: string
+          idempotency_key: string
+          reason?: string | null
+          referred_user_id: string
+          required_badge_at_event?: string | null
+          settled_at?: string | null
+          sponsor_badge_at_event?: string | null
+          sponsor_id: string
+          status?: string
+          voided_at?: string | null
+        }
+        Update: {
+          capped?: boolean | null
+          clawed_back_at?: string | null
+          commission_bsk?: number
+          commission_percent?: number
+          commissionable_bsk?: number
+          created_at?: string | null
+          destination?: string
+          eligibility_met?: boolean
+          event_id?: string
+          id?: string
+          idempotency_key?: string
+          reason?: string | null
+          referred_user_id?: string
+          required_badge_at_event?: string | null
+          settled_at?: string | null
+          sponsor_badge_at_event?: string | null
+          sponsor_id?: string
+          status?: string
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_payouts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "badge_purchase_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversions: {
         Row: {
           amount_from: number
@@ -2021,6 +2187,33 @@ export type Database = {
           id?: string
           rate?: number
           to_asset?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_commission_totals: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          total_commission_bsk: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          total_commission_bsk?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          total_commission_bsk?: number | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -4506,6 +4699,30 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_links: {
+        Row: {
+          created_at: string | null
+          id: string
+          locked_at: string
+          sponsor_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          locked_at?: string
+          sponsor_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          locked_at?: string
+          sponsor_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       referral_relationships: {
         Row: {
           created_at: string
@@ -5268,45 +5485,72 @@ export type Database = {
       }
       team_referral_settings: {
         Row: {
+          apply_requirement_to_vip_milestones: boolean | null
           bsk_inr_rate: number
+          commission_scope: string | null
           cooloff_hours: number
+          cooloff_hours_for_clawback: number | null
           created_at: string
           daily_cap_per_earner: number | null
+          direct_commission_percent: number | null
           direct_referral_percent: number
+          eligibility_policy: string | null
           enabled: boolean
           id: string
+          max_daily_direct_commission_bsk: number | null
+          min_referrer_badge_required: string | null
+          payout_destination: string | null
           per_downline_event_cap: number | null
           region_enabled: Json
+          retro_window_hours: number | null
           spillover_to_next_eligible_upline: boolean
           trigger_event: string
           updated_at: string
           weekly_cap_per_earner: number | null
         }
         Insert: {
+          apply_requirement_to_vip_milestones?: boolean | null
           bsk_inr_rate?: number
+          commission_scope?: string | null
           cooloff_hours?: number
+          cooloff_hours_for_clawback?: number | null
           created_at?: string
           daily_cap_per_earner?: number | null
+          direct_commission_percent?: number | null
           direct_referral_percent?: number
+          eligibility_policy?: string | null
           enabled?: boolean
           id?: string
+          max_daily_direct_commission_bsk?: number | null
+          min_referrer_badge_required?: string | null
+          payout_destination?: string | null
           per_downline_event_cap?: number | null
           region_enabled?: Json
+          retro_window_hours?: number | null
           spillover_to_next_eligible_upline?: boolean
           trigger_event?: string
           updated_at?: string
           weekly_cap_per_earner?: number | null
         }
         Update: {
+          apply_requirement_to_vip_milestones?: boolean | null
           bsk_inr_rate?: number
+          commission_scope?: string | null
           cooloff_hours?: number
+          cooloff_hours_for_clawback?: number | null
           created_at?: string
           daily_cap_per_earner?: number | null
+          direct_commission_percent?: number | null
           direct_referral_percent?: number
+          eligibility_policy?: string | null
           enabled?: boolean
           id?: string
+          max_daily_direct_commission_bsk?: number | null
+          min_referrer_badge_required?: string | null
+          payout_destination?: string | null
           per_downline_event_cap?: number | null
           region_enabled?: Json
+          retro_window_hours?: number | null
           spillover_to_next_eligible_upline?: boolean
           trigger_event?: string
           updated_at?: string
@@ -5508,6 +5752,48 @@ export type Database = {
           points_earned?: number
           unlocked?: boolean
           unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_badge_holdings: {
+        Row: {
+          created_at: string | null
+          current_badge: string
+          history: Json | null
+          id: string
+          payment_ref: string | null
+          previous_badge: string | null
+          price_bsk: number
+          price_inr: number | null
+          purchased_at: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_badge: string
+          history?: Json | null
+          id?: string
+          payment_ref?: string | null
+          previous_badge?: string | null
+          price_bsk: number
+          price_inr?: number | null
+          purchased_at?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_badge?: string
+          history?: Json | null
+          id?: string
+          payment_ref?: string | null
+          previous_badge?: string | null
+          price_bsk?: number
+          price_inr?: number | null
+          purchased_at?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -6212,6 +6498,10 @@ export type Database = {
         }
         Returns: number
       }
+      check_badge_eligibility: {
+        Args: { required_badge: string; sponsor_badge: string }
+        Returns: boolean
+      }
       convert_bsk_to_inr: {
         Args: { bsk_amount: number }
         Returns: number
@@ -6248,6 +6538,10 @@ export type Database = {
       get_badge_from_ipg_amount: {
         Args: { ipg_amount: number }
         Returns: string
+      }
+      get_badge_tier_value: {
+        Args: { badge_name: string }
+        Returns: number
       }
       get_current_bsk_rate: {
         Args: Record<PropertyKey, never>
