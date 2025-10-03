@@ -650,6 +650,8 @@ export default function AdminStakingNova() {
                   <p className="text-xs text-muted-foreground">Reward Distribution</p>
                   <p className="text-sm font-medium capitalize">
                     {selectedRecord.reward_distribution}
+                    {selectedRecord.reward_period_value && selectedRecord.reward_period_unit && 
+                      ` (${selectedRecord.reward_period_value} ${selectedRecord.reward_period_unit})`}
                   </p>
                 </div>
                 {selectedRecord.reward_period_value && selectedRecord.reward_period_unit && (
