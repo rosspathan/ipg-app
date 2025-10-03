@@ -69,7 +69,7 @@ export default function AdminBSKLoansNova() {
         .from('bsk_loans')
         .select(`
           *,
-          profiles!inner (email, full_name)
+          profiles(email, full_name)
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -249,6 +249,53 @@ export default function AdminBSKLoansNova() {
           </TabsList>
 
           <TabsContent value="applications" className="space-y-4 mt-4">
+            {/* Active Configuration Banner */}
+            {loanConfig && (
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">Active Loan Configuration</h3>
+                        <Badge variant={loanConfig.system_enabled ? "default" : "secondary"}>
+                          {loanConfig.system_enabled ? "Enabled" : "Disabled"}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Min Amount</p>
+                          <p className="font-mono font-medium">{loanConfig.min_amount_bsk} BSK</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Max Amount</p>
+                          <p className="font-mono font-medium">{loanConfig.max_amount_bsk} BSK</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Duration</p>
+                          <p className="font-medium">{loanConfig.default_tenor_weeks} weeks</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Interest Rate</p>
+                          <p className="font-medium">{(loanConfig.default_interest_rate_weekly * 52).toFixed(1)}% annually</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant={loanConfig.system_enabled ? "outline" : "default"}
+                        onClick={() => {
+                          updateConfig.mutate({ system_enabled: !loanConfig.system_enabled });
+                        }}
+                      >
+                        {loanConfig.system_enabled ? "Pause Program" : "Activate Program"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <DataGridAdaptive
               data={applications || []}
               columns={columns}
