@@ -188,6 +188,7 @@ const AdminReferralsNova = () => {
   const saveMilestone = async (milestone: Partial<VIPMilestone>) => {
     try {
       if (milestone.id) {
+        // Update existing milestone
         const { error } = await supabase
           .from('vip_milestones')
           .update({
@@ -197,11 +198,24 @@ const AdminReferralsNova = () => {
           })
           .eq('id', milestone.id);
         if (error) throw error;
+      } else {
+        // Create new milestone
+        const { error } = await supabase
+          .from('vip_milestones')
+          .insert({
+            vip_count_threshold: milestone.vip_count_threshold,
+            reward_inr_value: milestone.reward_inr_value,
+            reward_description: milestone.reward_description,
+            reward_type: milestone.reward_type || 'bsk',
+            requires_kyc: milestone.requires_kyc || false,
+            is_active: true,
+          });
+        if (error) throw error;
       }
 
       toast({
         title: "Success",
-        description: "Milestone updated successfully",
+        description: milestone.id ? "Milestone updated successfully" : "Milestone created successfully",
       });
       
       loadData();
@@ -211,6 +225,31 @@ const AdminReferralsNova = () => {
       toast({
         title: "Error",
         description: "Failed to save milestone",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteMilestone = async (milestoneId: string) => {
+    try {
+      const { error } = await supabase
+        .from('vip_milestones')
+        .update({ is_active: false })
+        .eq('id', milestoneId);
+      
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Milestone deleted successfully",
+      });
+      
+      loadData();
+    } catch (error) {
+      console.error('Error deleting milestone:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete milestone",
         variant: "destructive",
       });
     }
@@ -531,66 +570,190 @@ const AdminReferralsNova = () => {
         <TabsContent value="milestones" className="space-y-6">
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Gift className="w-5 h-5" />
-                VIP Direct-Referral Milestones
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="w-5 h-5" />
+                  VIP Direct-Referral Milestones
+                </CardTitle>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      size="sm" 
+                      onClick={() => setEditingMilestone({
+                        id: '',
+                        vip_count_threshold: 10,
+                        reward_inr_value: 10000,
+                        reward_description: 'BSK reward for VIP referrals',
+                        reward_type: 'bsk',
+                        requires_kyc: false,
+                        is_active: true,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                      } as VIPMilestone)}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Milestone
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{editingMilestone?.id ? 'Edit' : 'Add New'} VIP Milestone</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="vip_count">VIP Referral Count</Label>
+                        <Input
+                          id="vip_count"
+                          type="number"
+                          min="1"
+                          value={editingMilestone?.vip_count_threshold || 10}
+                          onChange={(e) => editingMilestone && setEditingMilestone({ 
+                            ...editingMilestone, 
+                            vip_count_threshold: parseInt(e.target.value) || 10 
+                          })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Number of direct VIP referrals required
+                        </p>
+                      </div>
+                      <div>
+                        <Label htmlFor="bsk_reward">BSK Reward Amount</Label>
+                        <Input
+                          id="bsk_reward"
+                          type="number"
+                          min="0"
+                          step="1000"
+                          value={editingMilestone?.reward_inr_value || 10000}
+                          onChange={(e) => editingMilestone && setEditingMilestone({ 
+                            ...editingMilestone, 
+                            reward_inr_value: parseFloat(e.target.value) || 10000 
+                          })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          BSK amount to reward when milestone is reached
+                        </p>
+                      </div>
+                      <div>
+                        <Label htmlFor="description">Description</Label>
+                        <Input
+                          id="description"
+                          placeholder="e.g., BSK reward for 10 VIP referrals"
+                          value={editingMilestone?.reward_description || ''}
+                          onChange={(e) => editingMilestone && setEditingMilestone({ 
+                            ...editingMilestone, 
+                            reward_description: e.target.value 
+                          })}
+                        />
+                      </div>
+                      <Button 
+                        onClick={() => editingMilestone && saveMilestone(editingMilestone)} 
+                        className="w-full gap-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        {editingMilestone?.id ? 'Update' : 'Create'} Milestone
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {vipMilestones.map((milestone) => (
-                  <div key={milestone.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="default">{milestone.vip_count_threshold} VIP Refs</Badge>
-                        <span className="text-sm font-medium">{milestone.reward_description}</span>
-                      </div>
-                      <p className="text-lg font-bold text-primary">
-                        {milestone.reward_inr_value.toLocaleString()} BSK
-                      </p>
-                    </div>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={() => setEditingMilestone(milestone)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit VIP Milestone</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label>VIP Referral Count</Label>
-                            <Input
-                              type="number"
-                              value={editingMilestone?.vip_count_threshold || milestone.vip_count_threshold}
-                              onChange={(e) => setEditingMilestone({ ...milestone, vip_count_threshold: parseInt(e.target.value) })}
-                            />
-                          </div>
-                          <div>
-                            <Label>BSK Reward</Label>
-                            <Input
-                              type="number"
-                              value={editingMilestone?.reward_inr_value || milestone.reward_inr_value}
-                              onChange={(e) => setEditingMilestone({ ...milestone, reward_inr_value: parseFloat(e.target.value) })}
-                            />
-                          </div>
-                          <div>
-                            <Label>Description</Label>
-                            <Input
-                              value={editingMilestone?.reward_description || milestone.reward_description}
-                              onChange={(e) => setEditingMilestone({ ...milestone, reward_description: e.target.value })}
-                            />
-                          </div>
-                          <Button onClick={() => editingMilestone && saveMilestone(editingMilestone)} className="w-full">
-                            Save Changes
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                {vipMilestones.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Gift className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No VIP milestones configured</p>
+                    <p className="text-sm">Click "Add Milestone" to create your first milestone</p>
                   </div>
-                ))}
+                ) : (
+                  vipMilestones.map((milestone) => (
+                    <div key={milestone.id} className="flex items-center gap-3 p-4 border border-border rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="default" className="bg-purple-500">
+                            {milestone.vip_count_threshold} VIPs
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">{milestone.reward_description}</span>
+                        </div>
+                        <p className="text-lg font-bold text-primary">
+                          {milestone.reward_inr_value.toLocaleString()} BSK
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => setEditingMilestone(milestone)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit VIP Milestone</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <Label htmlFor="edit_vip_count">VIP Referral Count</Label>
+                                <Input
+                                  id="edit_vip_count"
+                                  type="number"
+                                  min="1"
+                                  value={editingMilestone?.vip_count_threshold || milestone.vip_count_threshold}
+                                  onChange={(e) => setEditingMilestone({ 
+                                    ...milestone, 
+                                    vip_count_threshold: parseInt(e.target.value) || 10 
+                                  })}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="edit_bsk_reward">BSK Reward Amount</Label>
+                                <Input
+                                  id="edit_bsk_reward"
+                                  type="number"
+                                  min="0"
+                                  step="1000"
+                                  value={editingMilestone?.reward_inr_value || milestone.reward_inr_value}
+                                  onChange={(e) => setEditingMilestone({ 
+                                    ...milestone, 
+                                    reward_inr_value: parseFloat(e.target.value) || 10000 
+                                  })}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="edit_description">Description</Label>
+                                <Input
+                                  id="edit_description"
+                                  value={editingMilestone?.reward_description || milestone.reward_description}
+                                  onChange={(e) => setEditingMilestone({ 
+                                    ...milestone, 
+                                    reward_description: e.target.value 
+                                  })}
+                                />
+                              </div>
+                              <Button 
+                                onClick={() => editingMilestone && saveMilestone(editingMilestone)} 
+                                className="w-full gap-2"
+                              >
+                                <Save className="w-4 h-4" />
+                                Update Milestone
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => {
+                            if (confirm(`Delete milestone for ${milestone.vip_count_threshold} VIPs?`)) {
+                              deleteMilestone(milestone.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
