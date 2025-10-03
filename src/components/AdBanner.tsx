@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Coins, Eye, Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdBannerProps {
   ad: {
@@ -14,6 +15,7 @@ interface AdBannerProps {
     reward_bsk: number;
     required_view_time: number;
     placement: string;
+    media_type?: string;
   };
   className?: string;
   variant?: 'banner' | 'square';
@@ -29,13 +31,26 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   disabled = false
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [mediaUrl, setMediaUrl] = useState('');
   const imageUrl = variant === 'square' && ad.square_image_url ? ad.square_image_url : ad.image_url;
+
+  useEffect(() => {
+    // Get public URL from storage if not an external URL
+    if (imageUrl && !imageUrl.startsWith('http')) {
+      const { data } = supabase.storage.from('ad-media').getPublicUrl(imageUrl);
+      setMediaUrl(data.publicUrl);
+    } else {
+      setMediaUrl(imageUrl);
+    }
+  }, [imageUrl]);
 
   const handleClick = () => {
     if (!disabled && onAdClick) {
       onAdClick(ad.id);
     }
   };
+
+  const isVideo = ad.media_type === 'video';
 
   return (
     <Card 
@@ -50,22 +65,36 @@ export const AdBanner: React.FC<AdBannerProps> = ({
       )}
       onClick={handleClick}
     >
-      {/* Background Image */}
+      {/* Background Media */}
       <div className="absolute inset-0">
-        <img
-          src={imageUrl}
-          alt={ad.title}
-          className={cn(
-            "w-full h-full object-cover transition-opacity duration-300",
-            imageLoaded ? "opacity-100" : "opacity-0"
-          )}
-          onLoad={() => setImageLoaded(true)}
-          onError={(e) => {
-            const img = e.currentTarget as HTMLImageElement;
-            img.src = '/placeholder-crypto.svg';
-            setImageLoaded(true);
-          }}
-        />
+        {isVideo ? (
+          <video
+            src={mediaUrl}
+            className={cn(
+              "w-full h-full object-cover transition-opacity duration-300",
+              imageLoaded ? "opacity-100" : "opacity-0"
+            )}
+            onLoadedData={() => setImageLoaded(true)}
+            muted
+            loop
+            playsInline
+          />
+        ) : (
+          <img
+            src={mediaUrl}
+            alt={ad.title}
+            className={cn(
+              "w-full h-full object-cover transition-opacity duration-300",
+              imageLoaded ? "opacity-100" : "opacity-0"
+            )}
+            onLoad={() => setImageLoaded(true)}
+            onError={(e) => {
+              const img = e.currentTarget as HTMLImageElement;
+              img.src = '/placeholder-crypto.svg';
+              setImageLoaded(true);
+            }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       </div>
 

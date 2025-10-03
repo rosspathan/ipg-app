@@ -21,7 +21,11 @@ import {
   Calendar,
   Clock,
   DollarSign,
-  Settings
+  Settings,
+  Upload,
+  X,
+  Image as ImageIcon,
+  Video as VideoIcon
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +44,7 @@ interface AdData {
   start_at?: string;
   end_at?: string;
   max_impressions_per_user_per_day: number;
+  media_type?: string;
 }
 
 interface AdStats {
@@ -70,8 +75,16 @@ export const AdminAdsScreen: React.FC = () => {
     required_view_time: 10,
     placement: 'home_top',
     status: 'draft',
-    max_impressions_per_user_per_day: 0
+    max_impressions_per_user_per_day: 0,
+    media_type: 'image'
   });
+
+  // File upload states
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [squareFile, setSquareFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string>('');
+  const [squarePreview, setSquarePreview] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadAds();
@@ -190,29 +203,155 @@ export const AdminAdsScreen: React.FC = () => {
       required_view_time: 10,
       placement: 'home_top',
       status: 'draft',
-      max_impressions_per_user_per_day: 0
+      max_impressions_per_user_per_day: 0,
+      media_type: 'image'
     });
     setEditingAd(null);
+    setBannerFile(null);
+    setSquareFile(null);
+    setBannerPreview('');
+    setSquarePreview('');
   };
 
   const handleEdit = (ad: AdData & { id: string }) => {
     setFormData(ad);
     setEditingAd(ad);
+    // Set preview URLs for existing media
+    if (ad.image_url) {
+      const bannerUrl = ad.image_url.startsWith('http') 
+        ? ad.image_url 
+        : `${supabase.storage.from('ad-media').getPublicUrl(ad.image_url).data.publicUrl}`;
+      setBannerPreview(bannerUrl);
+    }
+    if (ad.square_image_url) {
+      const squareUrl = ad.square_image_url.startsWith('http')
+        ? ad.square_image_url
+        : `${supabase.storage.from('ad-media').getPublicUrl(ad.square_image_url).data.publicUrl}`;
+      setSquarePreview(squareUrl);
+    }
     setDialogOpen(true);
+  };
+
+  const uploadFile = async (file: File, path: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `${path}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('ad-media')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+    return filePath;
+  };
+
+  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload an image (JPG, PNG, WEBP, GIF) or video (MP4, WEBM, MOV)',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validate file size (50MB)
+    if (file.size > 52428800) {
+      toast({
+        title: 'File too large',
+        description: 'Please upload a file smaller than 50MB',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setBannerFile(file);
+    setFormData({
+      ...formData,
+      media_type: file.type.startsWith('video/') ? 'video' : 'image'
+    });
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setBannerPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSquareFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload an image (JPG, PNG, WEBP, GIF) or video (MP4, WEBM, MOV)',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (file.size > 52428800) {
+      toast({
+        title: 'File too large',
+        description: 'Please upload a file smaller than 50MB',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSquareFile(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSquarePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
     try {
+      setUploading(true);
+      
+      let bannerPath = formData.image_url;
+      let squarePath = formData.square_image_url;
+
+      // Upload banner file if new file selected
+      if (bannerFile) {
+        bannerPath = await uploadFile(bannerFile, 'banners');
+      }
+
+      // Upload square file if new file selected
+      if (squareFile) {
+        squarePath = await uploadFile(squareFile, 'squares');
+      }
+
+      const adData = {
+        ...formData,
+        image_url: bannerPath,
+        square_image_url: squarePath
+      };
+
       if (editingAd) {
         const { error } = await supabase
           .from('ads')
-          .update(formData)
+          .update(adData)
           .eq('id', editingAd.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('ads')
-          .insert(formData);
+          .insert(adData);
         if (error) throw error;
       }
 
@@ -231,6 +370,8 @@ export const AdminAdsScreen: React.FC = () => {
         description: "Failed to save ad",
         variant: "destructive"
       });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -423,20 +564,89 @@ export const AdminAdsScreen: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Banner Image URL (16:9)</Label>
-                  <Input
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                    placeholder="https://..."
-                  />
+                  <Label>Banner Media (16:9) *</Label>
+                  <div className="space-y-3">
+                    <Input
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={handleBannerFileChange}
+                      className="cursor-pointer"
+                    />
+                    {bannerPreview && (
+                      <div className="relative border border-border rounded-lg overflow-hidden bg-muted/30">
+                        {formData.media_type === 'video' ? (
+                          <video 
+                            src={bannerPreview} 
+                            className="w-full h-32 object-cover"
+                            controls
+                          />
+                        ) : (
+                          <img 
+                            src={bannerPreview} 
+                            alt="Banner preview" 
+                            className="w-full h-32 object-cover"
+                          />
+                        )}
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          className="absolute top-2 right-2 h-6 w-6"
+                          onClick={() => {
+                            setBannerFile(null);
+                            setBannerPreview('');
+                            setFormData({...formData, image_url: ''});
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {formData.media_type === 'video' ? <VideoIcon className="inline w-3 h-3 mr-1" /> : <ImageIcon className="inline w-3 h-3 mr-1" />}
+                      {formData.media_type === 'video' ? 'Video' : 'Image'} • Max 50MB
+                    </p>
+                  </div>
                 </div>
                 <div>
-                  <Label>Square Image URL (1:1)</Label>
-                  <Input
-                    value={formData.square_image_url || ''}
-                    onChange={(e) => setFormData({...formData, square_image_url: e.target.value})}
-                    placeholder="https://... (optional)"
-                  />
+                  <Label>Square Media (1:1)</Label>
+                  <div className="space-y-3">
+                    <Input
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={handleSquareFileChange}
+                      className="cursor-pointer"
+                    />
+                    {squarePreview && (
+                      <div className="relative border border-border rounded-lg overflow-hidden bg-muted/30">
+                        {formData.media_type === 'video' ? (
+                          <video 
+                            src={squarePreview} 
+                            className="w-full h-32 object-cover"
+                            controls
+                          />
+                        ) : (
+                          <img 
+                            src={squarePreview} 
+                            alt="Square preview" 
+                            className="w-full h-32 object-cover"
+                          />
+                        )}
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          className="absolute top-2 right-2 h-6 w-6"
+                          onClick={() => {
+                            setSquareFile(null);
+                            setSquarePreview('');
+                            setFormData({...formData, square_image_url: ''});
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">Optional • Max 50MB</p>
+                  </div>
                 </div>
               </div>
 
@@ -527,11 +737,18 @@ export const AdminAdsScreen: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={uploading}>
                   Cancel
                 </Button>
-                <Button onClick={handleSave}>
-                  {editingAd ? 'Update' : 'Create'} Ad
+                <Button onClick={handleSave} disabled={uploading || !formData.title || !bannerPreview}>
+                  {uploading ? (
+                    <>
+                      <Upload className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>{editingAd ? 'Update' : 'Create'} Ad</>
+                  )}
                 </Button>
               </div>
             </div>

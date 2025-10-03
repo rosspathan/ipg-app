@@ -288,6 +288,7 @@ export type Database = {
           id: string
           image_url: string
           max_impressions_per_user_per_day: number | null
+          media_type: string | null
           placement: string
           region_targeting: Json | null
           required_view_time: number
@@ -310,6 +311,7 @@ export type Database = {
           id?: string
           image_url: string
           max_impressions_per_user_per_day?: number | null
+          media_type?: string | null
           placement?: string
           region_targeting?: Json | null
           required_view_time?: number
@@ -332,6 +334,7 @@ export type Database = {
           id?: string
           image_url?: string
           max_impressions_per_user_per_day?: number | null
+          media_type?: string | null
           placement?: string
           region_targeting?: Json | null
           required_view_time?: number
