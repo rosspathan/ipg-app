@@ -273,6 +273,7 @@ function App() {
                 
                 {/* Markets Management */}
                 <Route path="markets" element={<AdminMarketsNova />} />
+                <Route path="trading-settings" element={<AdminTradingSettings />} />
                 
                 {/* BSK Management */}
                 <Route path="bsk" element={<AdminBSKManagementNova />} />
