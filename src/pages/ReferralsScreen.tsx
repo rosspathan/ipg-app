@@ -50,7 +50,7 @@ const ReferralsScreen = () => {
     if (userId) {
       const fetchCurrentBadge = async () => {
         try {
-          const { data } = await supabase.from('user_badge_status').select('current_badge').eq('user_id', userId).single();
+          const { data } = await supabase.from('user_badge_holdings').select('current_badge').eq('user_id', userId).maybeSingle();
           setCurrentBadge(data?.current_badge || 'None');
         } catch (error) {
           console.error('Error fetching current badge:', error);
@@ -452,31 +452,67 @@ const ReferralsScreen = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {/* VIP Badge Requirement Notice */}
+                <div className="p-4 border border-purple-500/20 rounded-lg bg-purple-500/5">
+                  <div className="flex items-start gap-3">
+                    <Zap className="w-5 h-5 text-purple-500 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-medium text-purple-500 mb-1">i-Smart VIP Badge Required</p>
+                      <p className="text-xs text-muted-foreground">
+                        You must hold an i-Smart VIP badge to claim VIP milestone rewards. 
+                        {currentBadge !== 'i-Smart VIP' && ' Upgrade to VIP to unlock these rewards!'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="text-center p-4 border border-border rounded-lg bg-muted/20">
                   <p className="text-2xl font-bold text-primary">{userVipMilestones?.direct_vip_count || 0}</p>
                   <p className="text-sm text-muted-foreground">Direct VIP i-SMART Referrals</p>
                 </div>
                 
                 {vipMilestones.map((milestone) => {
-                  const isEligible = (userVipMilestones?.direct_vip_count || 0) >= milestone.vip_count_threshold;
+                  const hasRequiredVipCount = (userVipMilestones?.direct_vip_count || 0) >= milestone.vip_count_threshold;
+                  const hasVipBadge = currentBadge === 'i-Smart VIP';
+                  const canClaim = hasRequiredVipCount && hasVipBadge;
                   const progress = Math.min(((userVipMilestones?.direct_vip_count || 0) / milestone.vip_count_threshold) * 100, 100);
                   
                   return (
                     <div key={milestone.id} className="p-4 border border-border rounded-lg">
                       <div className="flex items-center justify-between mb-3">
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium">{milestone.vip_count_threshold} VIP Referrals</p>
                           <p className="text-sm text-muted-foreground">{milestone.reward_description}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-primary">₹{milestone.reward_inr_value.toLocaleString()}</p>
-                          {isEligible && (
+                          {hasRequiredVipCount && !hasVipBadge && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              disabled
+                              className="mt-2"
+                            >
+                              Need VIP Badge
+                            </Button>
+                          )}
+                          {canClaim && (
                             <Button 
                               size="sm" 
                               onClick={() => handleVIPMilestoneClaim(milestone.id)}
                               className="mt-2"
                             >
                               Claim
+                            </Button>
+                          )}
+                          {!hasRequiredVipCount && (
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              disabled
+                              className="mt-2"
+                            >
+                              {userVipMilestones?.direct_vip_count || 0}/{milestone.vip_count_threshold}
                             </Button>
                           )}
                         </div>

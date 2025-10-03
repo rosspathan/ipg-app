@@ -387,6 +387,24 @@ export const useTeamReferrals = () => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error('User not authenticated');
 
+      // Check if user has i-Smart VIP badge
+      const { data: badgeData, error: badgeError } = await supabase
+        .from('user_badge_holdings')
+        .select('current_badge')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (badgeError) throw badgeError;
+
+      if (!badgeData || badgeData.current_badge !== 'i-Smart VIP') {
+        toast({
+          title: "VIP Badge Required",
+          description: "You must hold an i-Smart VIP badge to claim VIP milestone rewards",
+          variant: "destructive",
+        });
+        throw new Error('i-Smart VIP badge required');
+      }
+
       const { data, error } = await supabase
         .from('vip_milestone_claims')
         .insert({
@@ -411,7 +429,7 @@ export const useTeamReferrals = () => {
       console.error('Error claiming VIP milestone:', error);
       toast({
         title: "Error",
-        description: "Failed to claim VIP milestone",
+        description: error instanceof Error ? error.message : "Failed to claim VIP milestone",
         variant: "destructive",
       });
       throw error;
