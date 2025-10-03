@@ -1793,6 +1793,99 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_manual_purchase_requests: {
+        Row: {
+          admin_bep20_address: string
+          admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          bscscan_link: string
+          bsk_amount: number | null
+          created_at: string
+          email: string
+          id: string
+          purchase_amount: number
+          rejected_reason: string | null
+          screenshot_url: string | null
+          status: string
+          transaction_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_bep20_address: string
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          bscscan_link: string
+          bsk_amount?: number | null
+          created_at?: string
+          email: string
+          id?: string
+          purchase_amount: number
+          rejected_reason?: string | null
+          screenshot_url?: string | null
+          status?: string
+          transaction_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_bep20_address?: string
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          bscscan_link?: string
+          bsk_amount?: number | null
+          created_at?: string
+          email?: string
+          id?: string
+          purchase_amount?: number
+          rejected_reason?: string | null
+          screenshot_url?: string | null
+          status?: string
+          transaction_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bsk_purchase_settings: {
+        Row: {
+          admin_bep20_address: string
+          created_at: string
+          created_by: string | null
+          id: string
+          instructions: string | null
+          is_active: boolean
+          max_purchase_amount: number
+          min_purchase_amount: number
+          updated_at: string
+        }
+        Insert: {
+          admin_bep20_address: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          max_purchase_amount?: number
+          min_purchase_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_bep20_address?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          max_purchase_amount?: number
+          min_purchase_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bsk_rate_snapshots: {
         Row: {
           changed_by: string | null

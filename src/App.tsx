@@ -31,6 +31,8 @@ const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgr
 const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
 import AdminBSKManagementNova from "./pages/admin/AdminBSKManagementNova";
 import AdminBSKLoansNova from "./pages/admin/AdminBSKLoansNova";
+import AdminManualPurchasesScreen from "./pages/AdminManualPurchasesScreen";
+import ManualBSKPurchaseScreen from "./pages/ManualBSKPurchaseScreen";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -237,6 +239,7 @@ function App() {
                 <Route path="programs/staking" element={<StakingScreen />} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
+                <Route path="programs/bsk-purchase-manual" element={<ManualBSKPurchaseScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="programs/badge-subscription" element={<BadgeSubscriptionScreen />} />
                 
@@ -272,6 +275,7 @@ function App() {
                 {/* BSK Management */}
                 <Route path="bsk" element={<AdminBSKManagementNova />} />
                 <Route path="bsk-loans" element={<AdminBSKLoansNova />} />
+                <Route path="bsk-manual-purchases" element={<AdminManualPurchasesScreen />} />
                 
                 {/* Programs */}
                 <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />
