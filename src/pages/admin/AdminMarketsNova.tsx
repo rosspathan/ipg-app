@@ -1011,7 +1011,7 @@ export default function AdminMarketsNova() {
             </div>
 
             <div>
-              <Label htmlFor="min_notional">Min Notional *</Label>
+              <Label htmlFor="min_notional">Min Order Value (USDT) *</Label>
               <Input
                 id="min_notional"
                 type="number"
@@ -1021,6 +1021,7 @@ export default function AdminMarketsNova() {
                 placeholder="10"
                 required
               />
+              <p className="text-xs text-muted-foreground mt-1">Minimum total value for any trade (Quantity × Price)</p>
             </div>
 
             <div className="flex items-center space-x-2">
