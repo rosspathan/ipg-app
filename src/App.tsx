@@ -76,6 +76,7 @@ import ReferralsScreen from "./pages/ReferralsScreen";
 import BadgeSubscriptionScreen from "./pages/BadgeSubscriptionScreen";
 import StakingScreen from "./pages/StakingScreen";
 import StakingDetailScreen from "./pages/StakingDetailScreen";
+import StakingSubmissionScreen from "./pages/StakingSubmissionScreen";
 import NewLuckyDraw from "./components/NewLuckyDraw";
 
 import SpinHistoryScreen from "./pages/SpinHistoryScreen";
@@ -238,6 +239,7 @@ function App() {
                 <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
                 <Route path="programs/staking" element={<StakingScreen />} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
+                <Route path="programs/staking/:poolId/submit" element={<StakingSubmissionScreen />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
                 <Route path="programs/bsk-purchase-manual" element={<ManualBSKPurchaseScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />

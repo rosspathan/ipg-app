@@ -10,10 +10,14 @@ import { FormKit } from "@/components/admin/nova/FormKit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Coins, TrendingUp, Users, DollarSign, Plus, Edit } from "lucide-react";
+import { Coins, TrendingUp, Users, DollarSign, Plus, Edit, Check, X, Eye, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface StakingPool {
   id: string;
@@ -56,6 +60,8 @@ export default function AdminStakingNova() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPool, setEditingPool] = useState<StakingPool | null>(null);
   const [formChanges, setFormChanges] = useState<Record<string, boolean>>({});
+  const [bep20Address, setBep20Address] = useState("");
+  const [submissions, setSubmissions] = useState<any[]>([]);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -82,9 +88,15 @@ export default function AdminStakingNova() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [poolsResponse, assetsResponse] = await Promise.all([
+      const [poolsResponse, assetsResponse, settingsResponse, submissionsResponse] = await Promise.all([
         supabase.from("staking_pools").select("*").order("created_at", { ascending: false }),
         supabase.from("assets").select("id, symbol, name").eq("is_active", true),
+        supabase.from("system_settings").select("value").eq("key", "staking_admin_bep20_address").single(),
+        supabase.from("user_staking_submissions").select(`
+          *,
+          profiles(email, full_name),
+          staking_pools(name)
+        `).order("created_at", { ascending: false }),
       ]);
 
       if (poolsResponse.error) throw poolsResponse.error;
@@ -92,6 +104,8 @@ export default function AdminStakingNova() {
 
       setPools(poolsResponse.data || []);
       setAssets(assetsResponse.data || []);
+      setBep20Address(settingsResponse.data?.value || "");
+      setSubmissions(submissionsResponse.data || []);
     } catch (error: any) {
       toast({
         title: "Error loading data",
@@ -100,6 +114,56 @@ export default function AdminStakingNova() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateBep20Address = async () => {
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .update({ value: bep20Address })
+        .eq("key", "staking_admin_bep20_address");
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "BEP20 address updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReviewSubmission = async (submissionId: string, status: 'approved' | 'rejected', notes?: string) => {
+    try {
+      const { error } = await supabase
+        .from("user_staking_submissions")
+        .update({
+          status,
+          admin_notes: notes,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", submissionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Submission ${status} successfully`,
+      });
+
+      loadData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -329,67 +393,204 @@ export default function AdminStakingNova() {
         />
       </CardLane>
 
-      <div className="px-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-heading font-bold text-foreground">
-            Staking Pools
-          </h1>
-          <Button
-            size="sm"
-            onClick={() => {
-              resetForm();
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Pool
-          </Button>
-        </div>
+      <Tabs defaultValue="pools" className="px-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="pools">Staking Pools</TabsTrigger>
+          <TabsTrigger value="submissions">
+            User Submissions
+            {submissions.filter(s => s.status === 'pending').length > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {submissions.filter(s => s.status === 'pending').length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
 
-        <FilterChips
-          groups={filterGroups}
-          activeFilters={activeFilters}
-          onFiltersChange={setActiveFilters}
-          searchValue={searchValue}
-          onSearchChange={setSearchValue}
-        />
-
-        <DataGridAdaptive
-          data={pools}
-          columns={columns}
-          keyExtractor={(item) => item.id}
-          renderCard={(item, selected) => (
-            <RecordCard
-              id={item.id}
-              title={item.name}
-              subtitle={`${item.staking_type.toUpperCase()} • ${getAssetSymbol(item.asset_id)}`}
-              fields={[
-                { label: "APY", value: `${item.apy}%` },
-                {
-                  label: "Lock Period",
-                  value: item.has_lock_period ? `${item.lock_period_days} days` : "Flexible",
-                },
-                { label: "Min Stake", value: item.min_stake_amount.toString() },
-              ]}
-              status={{
-                label: item.active ? "Active" : "Inactive",
-                variant: item.active ? "success" : "default",
+        <TabsContent value="pools" className="space-y-4 mt-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-heading font-bold text-foreground">
+              Staking Pools
+            </h1>
+            <Button
+              size="sm"
+              onClick={() => {
+                resetForm();
+                setDialogOpen(true);
               }}
-              onClick={() => setSelectedRecord(item)}
-              selected={selected}
-              actions={[
-                {
-                  label: "Edit",
-                  icon: Edit,
-                  onClick: () => handleEdit(item),
-                },
-              ]}
-            />
-          )}
-          onRowClick={(row) => setSelectedRecord(row)}
-          selectable
-        />
-      </div>
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Pool
+            </Button>
+          </div>
+
+          <FilterChips
+            groups={filterGroups}
+            activeFilters={activeFilters}
+            onFiltersChange={setActiveFilters}
+            searchValue={searchValue}
+            onSearchChange={setSearchValue}
+          />
+
+          <DataGridAdaptive
+            data={pools}
+            columns={columns}
+            keyExtractor={(item) => item.id}
+            renderCard={(item, selected) => (
+              <RecordCard
+                id={item.id}
+                title={item.name}
+                subtitle={`${item.staking_type.toUpperCase()} • ${getAssetSymbol(item.asset_id)}`}
+                fields={[
+                  { label: "APY", value: `${item.apy}%` },
+                  {
+                    label: "Lock Period",
+                    value: item.has_lock_period ? `${item.lock_period_days} days` : "Flexible",
+                  },
+                  { label: "Min Stake", value: item.min_stake_amount.toString() },
+                ]}
+                status={{
+                  label: item.active ? "Active" : "Inactive",
+                  variant: item.active ? "success" : "default",
+                }}
+                onClick={() => setSelectedRecord(item)}
+                selected={selected}
+                actions={[
+                  {
+                    label: "Edit",
+                    icon: Edit,
+                    onClick: () => handleEdit(item),
+                  },
+                ]}
+              />
+            )}
+            onRowClick={(row) => setSelectedRecord(row)}
+            selectable
+          />
+        </TabsContent>
+
+        <TabsContent value="submissions" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Staking Submissions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {submissions.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No submissions yet</p>
+              ) : (
+                submissions.map((submission: any) => (
+                  <Card key={submission.id} className="p-4">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <p className="font-semibold">{submission.staking_pools?.name || "Unknown Pool"}</p>
+                        <p className="text-sm text-muted-foreground">{submission.user_email}</p>
+                      </div>
+                      <Badge
+                        variant={
+                          submission.status === "approved"
+                            ? "default"
+                            : submission.status === "rejected"
+                            ? "destructive"
+                            : "secondary"
+                        }
+                      >
+                        {submission.status}
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                      <div>
+                        <p className="text-muted-foreground">Amount</p>
+                        <p className="font-medium">{submission.stake_amount} {submission.currency}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Submitted</p>
+                        <p className="font-medium">{new Date(submission.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground">Transfer To</p>
+                        <p className="font-mono text-xs">{submission.admin_bep20_address}</p>
+                      </div>
+                    </div>
+
+                    {submission.screenshot_url && (
+                      <div className="mb-4">
+                        <a
+                          href={submission.screenshot_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline flex items-center gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View Transfer Screenshot
+                        </a>
+                      </div>
+                    )}
+
+                    {submission.status === "pending" && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => handleReviewSubmission(submission.id, "approved")}
+                        >
+                          <Check className="w-4 h-4 mr-2" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleReviewSubmission(submission.id, "rejected", "Rejected by admin")}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                  </Card>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin BEP20 Wallet Address</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>BEP20 Address</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={bep20Address}
+                    onChange={(e) => setBep20Address(e.target.value)}
+                    placeholder="0x..."
+                    className="font-mono"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(bep20Address);
+                      toast({ title: "Copied to clipboard" });
+                    }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  This is the wallet address where users will send their staking deposits
+                </p>
+              </div>
+              <Button onClick={handleUpdateBep20Address}>
+                Save BEP20 Address
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">

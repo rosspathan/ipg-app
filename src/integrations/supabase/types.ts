@@ -6394,6 +6394,65 @@ export type Database = {
         }
         Relationships: []
       }
+      user_staking_submissions: {
+        Row: {
+          admin_bep20_address: string
+          admin_notes: string | null
+          created_at: string | null
+          currency: string
+          id: string
+          pool_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          screenshot_url: string
+          stake_amount: number
+          status: string
+          updated_at: string | null
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          admin_bep20_address: string
+          admin_notes?: string | null
+          created_at?: string | null
+          currency: string
+          id?: string
+          pool_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screenshot_url: string
+          stake_amount: number
+          status?: string
+          updated_at?: string | null
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          admin_bep20_address?: string
+          admin_notes?: string | null
+          created_at?: string | null
+          currency?: string
+          id?: string
+          pool_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          screenshot_url?: string
+          stake_amount?: number
+          status?: string
+          updated_at?: string | null
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_staking_submissions_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "staking_pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_vip_milestones: {
         Row: {
           created_at: string

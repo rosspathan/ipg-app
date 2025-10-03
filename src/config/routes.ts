@@ -35,6 +35,7 @@ export const ROUTES = {
   APP_ADVERTISING: '/app/programs/advertising',
   APP_STAKING: '/app/staking',
   APP_STAKING_DETAIL: '/app/staking/:id',
+  APP_STAKING_SUBMIT: '/app/programs/staking/:poolId/submit',
   
   APP_PROFILE: '/app/profile',
   APP_SETTINGS: '/app/settings',
