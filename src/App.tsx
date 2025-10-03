@@ -220,12 +220,18 @@ function App() {
                   </UserRoute>
                 </AuthProviderUser>
               }>
-                <Route index element={<Navigate to="/app/home" replace />} />
-                <Route path="home" element={<HomePageRebuilt />} />
-                <Route path="wallet" element={<WalletPageRebuilt />} />
-                <Route path="programs" element={<ProgramsPageRebuilt />} />
-                <Route path="trade" element={<TradingScreenRebuilt />} />
-                <Route path="profile" element={<ProfilePageRebuilt />} />
+              <Route index element={<Navigate to="/app/home" replace />} />
+              <Route path="home" element={<HomePageRebuilt />} />
+              <Route path="wallet" element={<WalletPageRebuilt />} />
+              <Route path="wallet/deposit" element={<DepositScreen />} />
+              <Route path="wallet/withdraw" element={<WithdrawScreen />} />
+              <Route path="wallet/send" element={<SendScreen />} />
+              <Route path="wallet/transfer" element={<TransferScreen />} />
+              <Route path="wallet/history" element={<HistoryScreen />} />
+              <Route path="programs" element={<ProgramsPageRebuilt />} />
+              <Route path="trade" element={<TradingScreenRebuilt />} />
+              <Route path="profile" element={<ProfilePageRebuilt />} />
+              <Route path="swap" element={<SwapScreen />} />
                 
                 {/* Programs */}
                 <Route path="programs/insurance" element={<InsurancePage />} />

@@ -122,7 +122,7 @@ export function HomePageRebuilt() {
       icon: <Target className="h-6 w-6 text-warning" />,
       badge: "HOT" as const,
       progress: 78,
-      onPress: () => navigate("/app-legacy/lucky")
+      onPress: () => navigate("/app/programs/lucky-draw")
     },
     {
       title: "BSK Fortune Wheel",
@@ -148,16 +148,16 @@ export function HomePageRebuilt() {
   ]
 
   const quickActions = [
-    { id: "deposit", label: "Deposit", icon: <ArrowDownUp className="h-4 w-4" />, variant: "success" as const, onPress: () => navigate("/app-legacy/wallet/deposit") },
+    { id: "deposit", label: "Deposit", icon: <ArrowDownUp className="h-4 w-4" />, variant: "success" as const, onPress: () => navigate("/app/wallet/deposit") },
     { id: "trade", label: "Trade", icon: <Target className="h-4 w-4" />, variant: "primary" as const, onPress: () => navigate("/app/trade") },
-    { id: "withdraw", label: "Withdraw", icon: <ArrowUpRight className="h-4 w-4" />, variant: "warning" as const, onPress: () => navigate("/app-legacy/wallet/withdraw") },
-    { id: "swap", label: "Swap", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app-legacy/swap") }
+    { id: "withdraw", label: "Withdraw", icon: <ArrowUpRight className="h-4 w-4" />, variant: "warning" as const, onPress: () => navigate("/app/wallet/withdraw") },
+    { id: "swap", label: "Swap", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/swap") }
   ]
 
   const handleQuickSwitchAction = (action: string) => {
     switch (action) {
-      case "deposit": navigate("/app-legacy/wallet/deposit"); break
-      case "convert": navigate("/app-legacy/swap"); break
+      case "deposit": navigate("/app/wallet/deposit"); break
+      case "convert": navigate("/app/swap"); break
       case "trade": navigate("/app/trade"); break
       case "programs": navigate("/app/programs"); break
     }
@@ -175,7 +175,7 @@ export function HomePageRebuilt() {
         {/* Add Funds - Premium CTA */}
         <div className="px-3">
           <button
-            onClick={() => navigate("/app-legacy/wallet/deposit")}
+            onClick={() => navigate("/app/wallet/deposit")}
             className="w-full h-14 rounded-2xl relative overflow-hidden group
                        bg-gradient-to-r from-primary via-accent to-primary
                        text-primary-foreground font-bold tracking-wide
@@ -271,7 +271,7 @@ export function HomePageRebuilt() {
           <div className="flex items-center justify-between">
             <h2 className="font-heading text-base font-bold text-foreground">Recent Activity</h2>
             <button 
-              onClick={() => navigate("/app-legacy/wallet/history")}
+              onClick={() => navigate("/app/wallet/history")}
               className="text-xs font-medium text-accent hover:text-accent/80 transition-colors duration-[120ms]"
             >
               View All →
