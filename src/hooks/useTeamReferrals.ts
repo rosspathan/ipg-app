@@ -14,6 +14,16 @@ export interface TeamReferralSettings {
   daily_cap_per_earner?: number;
   weekly_cap_per_earner?: number;
   per_downline_event_cap?: number;
+  // NEW: Badge-holder eligibility fields
+  direct_commission_percent: number;
+  min_referrer_badge_required: 'ANY_BADGE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND' | 'VIP';
+  eligibility_policy: 'REQUIRE_AT_EVENT_NO_RETRO' | 'ALLOW_RETRO_WITHIN_WINDOW';
+  retro_window_hours: number;
+  commission_scope: 'BADGE_PURCHASES_ONLY' | 'BADGE_PURCHASES_AND_UPGRADES';
+  payout_destination: 'WITHDRAWABLE' | 'HOLDING';
+  apply_requirement_to_vip_milestones: boolean;
+  cooloff_hours_for_clawback: number;
+  max_daily_direct_commission_bsk: number;
   created_at: string;
   updated_at: string;
 }
@@ -314,18 +324,15 @@ export const useTeamReferrals = () => {
         }
       }
 
-      // Call edge function to process purchase
-      const { data, error } = await supabase.functions.invoke('team-referral-processor', {
+      // Call edge function to process purchase with eligibility check
+      const { data, error } = await supabase.functions.invoke('badge-commission-processor', {
         body: {
-          eventType: 'badge_purchase',
-          data: {
-            userId: user.id,
-            badgeName,
-            previousBadge,
-            bskAmount,
-            isUpgrade,
-            paymentRef: `badge_${Date.now()}`
-          }
+          userId: user.id,
+          toBadge: badgeName,
+          fromBadge: previousBadge,
+          paidAmountBSK: bskAmount,
+          paymentRef: `badge_${Date.now()}`,
+          paymentMethod: 'BSK'
         }
       });
 

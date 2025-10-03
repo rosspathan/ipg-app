@@ -13,6 +13,7 @@ import { ChevronLeft, Settings, Trophy, Gift, Users, TrendingUp, Save } from "lu
 import { useToast } from "@/hooks/use-toast";
 import { useTeamReferrals } from "@/hooks/useTeamReferrals";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import CommissionPreviewCalculator from "@/components/admin/CommissionPreviewCalculator";
 
 const AdminTeamReferralsScreen = () => {
   const navigate = useNavigate();
@@ -36,7 +37,17 @@ const AdminTeamReferralsScreen = () => {
     bsk_inr_rate: settings?.bsk_inr_rate ?? 1.0,
     daily_cap_per_earner: settings?.daily_cap_per_earner ?? '',
     weekly_cap_per_earner: settings?.weekly_cap_per_earner ?? '',
-    per_downline_event_cap: settings?.per_downline_event_cap ?? ''
+    per_downline_event_cap: settings?.per_downline_event_cap ?? '',
+    // NEW: Badge-holder eligibility
+    direct_commission_percent: settings?.direct_commission_percent ?? 10,
+    min_referrer_badge_required: settings?.min_referrer_badge_required ?? 'ANY_BADGE',
+    eligibility_policy: settings?.eligibility_policy ?? 'REQUIRE_AT_EVENT_NO_RETRO',
+    retro_window_hours: settings?.retro_window_hours ?? 0,
+    commission_scope: settings?.commission_scope ?? 'BADGE_PURCHASES_AND_UPGRADES',
+    payout_destination: settings?.payout_destination ?? 'WITHDRAWABLE',
+    apply_requirement_to_vip_milestones: settings?.apply_requirement_to_vip_milestones ?? true,
+    cooloff_hours_for_clawback: settings?.cooloff_hours_for_clawback ?? 24,
+    max_daily_direct_commission_bsk: settings?.max_daily_direct_commission_bsk ?? 100000
   });
 
   const handleSave = async () => {
@@ -184,17 +195,132 @@ const AdminTeamReferralsScreen = () => {
                 <p className="text-xs text-muted-foreground">Event that triggers team income distribution</p>
               </div>
 
-              {/* Direct Referral Percentage */}
+              {/* Direct Commission Percent */}
               <div className="space-y-2">
-                <Label htmlFor="direct_referral_percent">Direct Referral Percentage (%)</Label>
+                <Label htmlFor="direct_commission_percent">Direct Commission Percentage (0-50%)</Label>
                 <Input
-                  id="direct_referral_percent"
+                  id="direct_commission_percent"
                   type="number"
                   step="0.1"
-                  value={formData.direct_referral_percent}
-                  onChange={(e) => setFormData({...formData, direct_referral_percent: parseFloat(e.target.value)})}
+                  min="0"
+                  max="50"
+                  value={formData.direct_commission_percent}
+                  onChange={(e) => setFormData({...formData, direct_commission_percent: parseFloat(e.target.value)})}
                 />
-                <p className="text-xs text-muted-foreground">Percentage of badge purchase amount paid to direct referrer</p>
+                <p className="text-xs text-muted-foreground">
+                  Commission paid on badge purchases/upgrades (only if referrer holds required badge)
+                </p>
+              </div>
+
+              {/* Minimum Badge Required */}
+              <div className="space-y-2">
+                <Label htmlFor="min_badge">Minimum Referrer Badge Required</Label>
+                <Select 
+                  value={formData.min_referrer_badge_required} 
+                  onValueChange={(value) => setFormData({...formData, min_referrer_badge_required: value as any})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ANY_BADGE">Any Badge</SelectItem>
+                    <SelectItem value="SILVER">Silver or Higher</SelectItem>
+                    <SelectItem value="GOLD">Gold or Higher</SelectItem>
+                    <SelectItem value="PLATINUM">Platinum or Higher</SelectItem>
+                    <SelectItem value="DIAMOND">Diamond or Higher</SelectItem>
+                    <SelectItem value="VIP">VIP Only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Referrer must hold this badge (or higher) at event time to earn commission
+                </p>
+              </div>
+
+              {/* Commission Scope */}
+              <div className="space-y-2">
+                <Label htmlFor="commission_scope">Commission Scope</Label>
+                <Select 
+                  value={formData.commission_scope} 
+                  onValueChange={(value) => setFormData({...formData, commission_scope: value as any})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BADGE_PURCHASES_AND_UPGRADES">Purchases & Upgrades (pay on delta)</SelectItem>
+                    <SelectItem value="BADGE_PURCHASES_ONLY">Purchases Only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Upgrades pay only on incremental amount
+                </p>
+              </div>
+
+              {/* Payout Destination */}
+              <div className="space-y-2">
+                <Label htmlFor="payout_destination">Payout Destination</Label>
+                <Select 
+                  value={formData.payout_destination} 
+                  onValueChange={(value) => setFormData({...formData, payout_destination: value as any})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="WITHDRAWABLE">Withdrawable Balance</SelectItem>
+                    <SelectItem value="HOLDING">Holding Balance</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Where to credit commission BSK
+                </p>
+              </div>
+
+              <Separator />
+
+              {/* Daily Cap */}
+              <div className="space-y-2">
+                <Label htmlFor="max_daily_commission">Max Daily Direct Commission (BSK)</Label>
+                <Input
+                  id="max_daily_commission"
+                  type="number"
+                  step="1"
+                  placeholder="100000 (0 = no limit)"
+                  value={formData.max_daily_direct_commission_bsk}
+                  onChange={(e) => setFormData({...formData, max_daily_direct_commission_bsk: parseFloat(e.target.value) || 0})}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Per-user daily commission cap (set to 0 for no limit)
+                </p>
+              </div>
+
+              {/* Cooloff for Clawback */}
+              <div className="space-y-2">
+                <Label htmlFor="cooloff_clawback">Cool-off for Clawback (Hours)</Label>
+                <Input
+                  id="cooloff_clawback"
+                  type="number"
+                  value={formData.cooloff_hours_for_clawback}
+                  onChange={(e) => setFormData({...formData, cooloff_hours_for_clawback: parseInt(e.target.value)})}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Hours to allow clawback if payment refunded
+                </p>
+              </div>
+
+              {/* Apply to VIP Milestones */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="apply_vip">Apply Badge Requirement to VIP Milestones</Label>
+                  <p className="text-sm text-muted-foreground">
+                    If enabled, VIP milestone rewards also require badge eligibility
+                  </p>
+                </div>
+                <Switch
+                  id="apply_vip"
+                  checked={formData.apply_requirement_to_vip_milestones}
+                  onCheckedChange={(checked) => setFormData({...formData, apply_requirement_to_vip_milestones: checked})}
+                />
               </div>
 
               {/* BSK/INR Rate */}
@@ -273,6 +399,16 @@ const AdminTeamReferralsScreen = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Commission Preview Calculator */}
+          <CommissionPreviewCalculator 
+            settings={{
+              direct_commission_percent: formData.direct_commission_percent,
+              min_referrer_badge_required: formData.min_referrer_badge_required,
+              max_daily_direct_commission_bsk: formData.max_daily_direct_commission_bsk
+            }}
+            badges={badgeThresholds}
+          />
 
           {/* Team Income Levels */}
           <Card className="bg-gradient-card shadow-card border-0">

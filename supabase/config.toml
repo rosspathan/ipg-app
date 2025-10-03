@@ -21,6 +21,9 @@ verify_jwt = false
 [functions.send-verification-email]
 verify_jwt = false
 
+[functions.badge-commission-processor]
+verify_jwt = true
+
 # Temporarily disabled functions with TypeScript errors
 # [functions.provably-fair-commit]
 # verify_jwt = true
