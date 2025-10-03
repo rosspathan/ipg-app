@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +25,18 @@ export default function AdminBSKLoansNova() {
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
+  
+  // Local state for form values
+  const [formValues, setFormValues] = useState<{
+    id?: string;
+    is_enabled: boolean;
+    min_loan_amount: number;
+    max_loan_amount: number;
+    duration_weeks: number;
+    interest_rate_percent: number;
+    processing_fee_percent: number;
+    late_payment_fee: number;
+  } | null>(null);
 
   // Fetch loan configuration
   const { data: loanConfig, isLoading: configLoading } = useQuery({
@@ -40,6 +52,13 @@ export default function AdminBSKLoansNova() {
       return data;
     }
   });
+
+  // Initialize form values when config is loaded
+  useEffect(() => {
+    if (loanConfig && !formValues) {
+      setFormValues(loanConfig);
+    }
+  }, [loanConfig, formValues]);
 
   // Fetch loan applications
   const { data: applications, isLoading: appsLoading } = useQuery({
@@ -69,12 +88,17 @@ export default function AdminBSKLoansNova() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bsk-loan-config'] });
-      toast({ title: "Loan configuration updated" });
+      toast({ title: "Configuration saved successfully" });
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   });
+
+  const handleSaveConfig = () => {
+    if (!formValues) return;
+    updateConfig.mutate(formValues);
+  };
 
   // Approve loan mutation
   const approveLoan = useMutation({
@@ -251,7 +275,11 @@ export default function AdminBSKLoansNova() {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4 mt-4">
-            {loanConfig && (
+            {configLoading ? (
+              <div>Loading...</div>
+            ) : !loanConfig || !formValues ? (
+              <div>No configuration found</div>
+            ) : (
               <Card>
                 <CardHeader>
                   <CardTitle>Loan Configuration</CardTitle>
@@ -263,8 +291,10 @@ export default function AdminBSKLoansNova() {
                       <p className="text-sm text-muted-foreground">Allow users to apply for loans</p>
                     </div>
                     <Switch
-                      checked={loanConfig.is_enabled}
-                      onCheckedChange={(checked) => updateConfig.mutate({ is_enabled: checked })}
+                      checked={formValues.is_enabled}
+                      onCheckedChange={(checked) => {
+                        setFormValues({ ...formValues, is_enabled: checked });
+                      }}
                     />
                   </div>
 
@@ -275,10 +305,10 @@ export default function AdminBSKLoansNova() {
                       <Label>Minimum Loan Amount (BSK)</Label>
                       <Input
                         type="number"
-                        value={loanConfig.min_loan_amount}
+                        value={formValues.min_loan_amount}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          updateConfig.mutate({ min_loan_amount: value });
+                          setFormValues({ ...formValues, min_loan_amount: value });
                         }}
                         min="0"
                       />
@@ -287,10 +317,10 @@ export default function AdminBSKLoansNova() {
                       <Label>Maximum Loan Amount (BSK)</Label>
                       <Input
                         type="number"
-                        value={loanConfig.max_loan_amount}
+                        value={formValues.max_loan_amount}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          updateConfig.mutate({ max_loan_amount: value });
+                          setFormValues({ ...formValues, max_loan_amount: value });
                         }}
                         min="0"
                       />
@@ -299,10 +329,10 @@ export default function AdminBSKLoansNova() {
                       <Label>Duration (Weeks)</Label>
                       <Input
                         type="number"
-                        value={loanConfig.duration_weeks}
+                        value={formValues.duration_weeks}
                         onChange={(e) => {
                           const value = parseInt(e.target.value);
-                          updateConfig.mutate({ duration_weeks: value });
+                          setFormValues({ ...formValues, duration_weeks: value });
                         }}
                         min="1"
                       />
@@ -312,10 +342,10 @@ export default function AdminBSKLoansNova() {
                       <Input
                         type="number"
                         step="0.1"
-                        value={loanConfig.interest_rate_percent}
+                        value={formValues.interest_rate_percent}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          updateConfig.mutate({ interest_rate_percent: value });
+                          setFormValues({ ...formValues, interest_rate_percent: value });
                         }}
                         min="0"
                       />
@@ -325,10 +355,10 @@ export default function AdminBSKLoansNova() {
                       <Input
                         type="number"
                         step="0.1"
-                        value={loanConfig.processing_fee_percent}
+                        value={formValues.processing_fee_percent}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          updateConfig.mutate({ processing_fee_percent: value });
+                          setFormValues({ ...formValues, processing_fee_percent: value });
                         }}
                         min="0"
                       />
@@ -337,14 +367,25 @@ export default function AdminBSKLoansNova() {
                       <Label>Late Payment Fee (BSK)</Label>
                       <Input
                         type="number"
-                        value={loanConfig.late_payment_fee}
+                        value={formValues.late_payment_fee}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          updateConfig.mutate({ late_payment_fee: value });
+                          setFormValues({ ...formValues, late_payment_fee: value });
                         }}
                         min="0"
                       />
                     </div>
+                  </div>
+
+                   <Separator />
+
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={handleSaveConfig}
+                      disabled={updateConfig.isPending}
+                    >
+                      {updateConfig.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
