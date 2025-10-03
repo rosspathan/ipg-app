@@ -36,12 +36,8 @@ const AdminTeamReferralsScreen = () => {
     trigger_event: settings?.trigger_event ?? 'badge_purchase_or_upgrade',
     spillover_to_next_eligible_upline: settings?.spillover_to_next_eligible_upline ?? false,
     direct_referral_percent: settings?.direct_referral_percent ?? 10,
-    cooloff_hours: settings?.cooloff_hours ?? 24,
     bsk_inr_rate: settings?.bsk_inr_rate ?? 1.0,
-    daily_cap_per_earner: settings?.daily_cap_per_earner ?? '',
-    weekly_cap_per_earner: settings?.weekly_cap_per_earner ?? '',
-    per_downline_event_cap: settings?.per_downline_event_cap ?? '',
-    // NEW: Badge-holder eligibility
+    // Badge-holder eligibility
     direct_commission_percent: settings?.direct_commission_percent ?? 10,
     min_referrer_badge_required: settings?.min_referrer_badge_required ?? 'ANY_BADGE',
     eligibility_policy: settings?.eligibility_policy ?? 'REQUIRE_AT_EVENT_NO_RETRO',
@@ -61,11 +57,7 @@ const AdminTeamReferralsScreen = () => {
       trigger_event: settings.trigger_event,
       spillover_to_next_eligible_upline: settings.spillover_to_next_eligible_upline,
       direct_referral_percent: settings.direct_referral_percent,
-      cooloff_hours: settings.cooloff_hours,
       bsk_inr_rate: settings.bsk_inr_rate,
-      daily_cap_per_earner: settings.daily_cap_per_earner ?? '',
-      weekly_cap_per_earner: settings.weekly_cap_per_earner ?? '',
-      per_downline_event_cap: settings.per_downline_event_cap ?? '',
       direct_commission_percent: settings.direct_commission_percent,
       min_referrer_badge_required: settings.min_referrer_badge_required,
       eligibility_policy: settings.eligibility_policy,
@@ -83,12 +75,7 @@ const AdminTeamReferralsScreen = () => {
 
   const handleSave = async () => {
     try {
-      await updateSettings({
-        ...formData,
-    daily_cap_per_earner: formData.daily_cap_per_earner ? parseFloat(formData.daily_cap_per_earner.toString()) : null,
-    weekly_cap_per_earner: formData.weekly_cap_per_earner ? parseFloat(formData.weekly_cap_per_earner.toString()) : null,
-    per_downline_event_cap: formData.per_downline_event_cap ? parseFloat(formData.per_downline_event_cap.toString()) : null
-      });
+      await updateSettings(formData);
     } catch (error) {
       console.error('Failed to save settings:', error);
     }
@@ -378,55 +365,6 @@ const AdminTeamReferralsScreen = () => {
                   checked={formData.spillover_to_next_eligible_upline}
                   onCheckedChange={(checked) => setFormData({...formData, spillover_to_next_eligible_upline: checked})}
                 />
-              </div>
-
-              {/* Cool-off Period */}
-              <div className="space-y-2">
-                <Label htmlFor="cooloff_hours">Cool-off Period (Hours)</Label>
-                <Input
-                  id="cooloff_hours"
-                  type="number"
-                  value={formData.cooloff_hours}
-                  onChange={(e) => setFormData({...formData, cooloff_hours: parseInt(e.target.value)})}
-                />
-                <p className="text-xs text-muted-foreground">Hours before rewards are settled (allows for clawback)</p>
-              </div>
-
-              {/* Caps */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="daily_cap">Daily Cap per Earner (BSK)</Label>
-                  <Input
-                    id="daily_cap"
-                    type="number"
-                    step="0.01"
-                    placeholder="No limit"
-                    value={formData.daily_cap_per_earner}
-                    onChange={(e) => setFormData({...formData, daily_cap_per_earner: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weekly_cap">Weekly Cap per Earner (BSK)</Label>
-                  <Input
-                    id="weekly_cap"
-                    type="number"
-                    step="0.01"
-                    placeholder="No limit"
-                    value={formData.weekly_cap_per_earner}
-                    onChange={(e) => setFormData({...formData, weekly_cap_per_earner: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="event_cap">Per Downline Event Cap (BSK)</Label>
-                  <Input
-                    id="event_cap"
-                    type="number"
-                    step="0.01"
-                    placeholder="No limit"
-                    value={formData.per_downline_event_cap}
-                    onChange={(e) => setFormData({...formData, per_downline_event_cap: e.target.value})}
-                  />
-                </div>
               </div>
             </CardContent>
           </Card>
