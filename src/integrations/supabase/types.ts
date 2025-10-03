@@ -2475,7 +2475,7 @@ export type Database = {
           server_seed_hash: string | null
           start_mode: string
           state: Database["public"]["Enums"]["draw_state"] | null
-          ticket_price_inr: number
+          ticket_price_bsk: number
           title: string
           updated_at: string | null
           winners_determined_at: string | null
@@ -2502,7 +2502,7 @@ export type Database = {
           server_seed_hash?: string | null
           start_mode?: string
           state?: Database["public"]["Enums"]["draw_state"] | null
-          ticket_price_inr: number
+          ticket_price_bsk: number
           title: string
           updated_at?: string | null
           winners_determined_at?: string | null
@@ -2529,7 +2529,7 @@ export type Database = {
           server_seed_hash?: string | null
           start_mode?: string
           state?: Database["public"]["Enums"]["draw_state"] | null
-          ticket_price_inr?: number
+          ticket_price_bsk?: number
           title?: string
           updated_at?: string | null
           winners_determined_at?: string | null
@@ -2538,21 +2538,21 @@ export type Database = {
       }
       draw_prizes: {
         Row: {
-          amount_inr: number
+          amount_bsk: number
           created_at: string | null
           draw_id: string
           id: string
           rank: Database["public"]["Enums"]["winner_rank"]
         }
         Insert: {
-          amount_inr: number
+          amount_bsk: number
           created_at?: string | null
           draw_id: string
           id?: string
           rank: Database["public"]["Enums"]["winner_rank"]
         }
         Update: {
-          amount_inr?: number
+          amount_bsk?: number
           created_at?: string | null
           draw_id?: string
           id?: string
@@ -2622,7 +2622,7 @@ export type Database = {
           name: string
           pool_size: number
           prizes: Json
-          ticket_price_inr: number
+          ticket_price_bsk: number
           title: string
         }
         Insert: {
@@ -2634,7 +2634,7 @@ export type Database = {
           name: string
           pool_size: number
           prizes: Json
-          ticket_price_inr: number
+          ticket_price_bsk: number
           title: string
         }
         Update: {
@@ -2646,7 +2646,7 @@ export type Database = {
           name?: string
           pool_size?: number
           prizes?: Json
-          ticket_price_inr?: number
+          ticket_price_bsk?: number
           title?: string
         }
         Relationships: []
