@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Settings, Trophy, Gift, Users, TrendingUp, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useTeamReferrals } from "@/hooks/useTeamReferrals";
+import { useTeamReferrals, BadgeThreshold } from "@/hooks/useTeamReferrals";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import CommissionPreviewCalculator from "@/components/admin/CommissionPreviewCalculator";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,6 +79,7 @@ const AdminTeamReferralsScreen = () => {
   }, [settings]);
 
   const [editingLevels, setEditingLevels] = useState<Record<string, { bsk_reward: number; balance_type: string }>>({});
+  const [editingBadge, setEditingBadge] = useState<BadgeThreshold | null>(null);
 
   const handleSave = async () => {
     try {
@@ -603,33 +606,66 @@ const AdminTeamReferralsScreen = () => {
         <TabsContent value="badges" className="space-y-6">
           <Card className="bg-gradient-card shadow-card border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                <Trophy className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="truncate">Badge Thresholds</span>
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <Trophy className="w-4 h-4 md:w-5 md:h-5" />
+                  <span className="truncate">Badge Subscription Pricing</span>
+                </CardTitle>
+                <Button onClick={() => setEditingBadge({
+                  id: 'new',
+                  badge_name: '',
+                  bsk_threshold: 0,
+                  unlock_levels: 0,
+                  bonus_bsk_holding: 0,
+                  description: '',
+                  is_active: true,
+                  created_at: '',
+                  updated_at: ''
+                })}>
+                  Add New Badge
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Control badge subscription prices and benefits. Users subscribe via Badge Subscription screen.
+              </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {badgeThresholds.map((badge) => (
-                  <div key={badge.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border border-border rounded-lg gap-3">
-                    <div className="flex items-start md:items-center gap-2 md:gap-4">
-                      <Badge variant="secondary" className="text-xs md:text-sm shrink-0">
-                        {badge.badge_name}
-                      </Badge>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm md:text-base">{badge.bsk_threshold.toLocaleString()} BSK</p>
-                        <p className="text-xs md:text-sm text-muted-foreground">
-                          Unlocks L1-L{badge.unlock_levels}
-                        </p>
+                  <div key={badge.id} className="border border-border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="secondary" className="text-sm">
+                          {badge.badge_name}
+                        </Badge>
+                        <Badge variant={badge.is_active ? 'default' : 'outline'}>
+                          {badge.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
                       </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingBadge(badge)}
+                      >
+                        Edit
+                      </Button>
                     </div>
-                    <div className="text-left md:text-right">
-                      <p className="text-base md:text-lg font-bold text-primary">L1-L{badge.unlock_levels}</p>
-                      {badge.bonus_bsk_holding > 0 && (
-                        <p className="text-xs md:text-sm text-green-600">
-                          +{badge.bonus_bsk_holding.toLocaleString()} BSK Bonus
-                        </p>
-                      )}
+                    {badge.description && (
+                      <p className="text-sm text-muted-foreground mb-3">{badge.description}</p>
+                    )}
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Subscription Price</p>
+                        <p className="text-lg font-bold text-primary">{badge.bsk_threshold.toLocaleString()} BSK</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Unlocks Levels</p>
+                        <p className="text-lg font-bold">L1-L{badge.unlock_levels}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Bonus BSK (Holding)</p>
+                        <p className="text-lg font-bold text-green-600">+{badge.bonus_bsk_holding.toLocaleString()} BSK</p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -739,6 +775,124 @@ const AdminTeamReferralsScreen = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Badge Edit Dialog */}
+      <Dialog open={editingBadge !== null} onOpenChange={() => setEditingBadge(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingBadge?.id === 'new' ? 'Add New Badge' : 'Edit Badge'}</DialogTitle>
+            <DialogDescription>
+              Configure badge subscription pricing and benefits
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="badge_name">Badge Name</Label>
+              <Input
+                id="badge_name"
+                value={editingBadge?.badge_name || ''}
+                onChange={(e) => setEditingBadge(editingBadge ? {...editingBadge, badge_name: e.target.value} : null)}
+                placeholder="e.g., PLATINUM"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={editingBadge?.description || ''}
+                onChange={(e) => setEditingBadge(editingBadge ? {...editingBadge, description: e.target.value} : null)}
+                placeholder="Brief description of the badge benefits"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="bsk_threshold">Price (BSK)</Label>
+                <Input
+                  id="bsk_threshold"
+                  type="number"
+                  value={editingBadge?.bsk_threshold || 0}
+                  onChange={(e) => setEditingBadge(editingBadge ? {...editingBadge, bsk_threshold: parseFloat(e.target.value)} : null)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="unlock_levels">Unlock Levels (1-50)</Label>
+                <Input
+                  id="unlock_levels"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={editingBadge?.unlock_levels || 0}
+                  onChange={(e) => setEditingBadge(editingBadge ? {...editingBadge, unlock_levels: parseInt(e.target.value)} : null)}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="bonus_bsk">Bonus BSK (Holding)</Label>
+              <Input
+                id="bonus_bsk"
+                type="number"
+                value={editingBadge?.bonus_bsk_holding || 0}
+                onChange={(e) => setEditingBadge(editingBadge ? {...editingBadge, bonus_bsk_holding: parseFloat(e.target.value)} : null)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">One-time bonus added to holding balance on purchase</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="is_active">Active</Label>
+              <Switch
+                id="is_active"
+                checked={editingBadge?.is_active ?? true}
+                onCheckedChange={(checked) => setEditingBadge(editingBadge ? {...editingBadge, is_active: checked} : null)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingBadge(null)}>Cancel</Button>
+            <Button onClick={async () => {
+              if (!editingBadge) return;
+              
+              try {
+                if (editingBadge.id === 'new') {
+                  const { error } = await supabase
+                    .from('badge_thresholds')
+                    .insert({
+                      badge_name: editingBadge.badge_name,
+                      bsk_threshold: editingBadge.bsk_threshold,
+                      unlock_levels: editingBadge.unlock_levels,
+                      bonus_bsk_holding: editingBadge.bonus_bsk_holding,
+                      description: editingBadge.description,
+                      is_active: editingBadge.is_active,
+                    });
+                  
+                  if (error) throw error;
+                  toast({ title: "Success", description: "Badge created successfully" });
+                } else {
+                  const { error } = await supabase
+                    .from('badge_thresholds')
+                    .update({
+                      badge_name: editingBadge.badge_name,
+                      bsk_threshold: editingBadge.bsk_threshold,
+                      unlock_levels: editingBadge.unlock_levels,
+                      bonus_bsk_holding: editingBadge.bonus_bsk_holding,
+                      description: editingBadge.description,
+                      is_active: editingBadge.is_active,
+                    })
+                    .eq('id', editingBadge.id);
+                  
+                  if (error) throw error;
+                  toast({ title: "Success", description: "Badge updated successfully" });
+                }
+                
+                setEditingBadge(null);
+                window.location.reload();
+              } catch (error: any) {
+                toast({ title: "Error", description: error.message, variant: "destructive" });
+              }
+            }}>
+              Save Badge
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
