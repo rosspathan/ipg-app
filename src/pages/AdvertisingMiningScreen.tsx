@@ -1,3 +1,16 @@
+/**
+ * Advertising Mining Screen
+ * 
+ * Two earning methods:
+ * 1. FREE DAILY ADS: Watch 1 ad/day → Earn 1 BSK to Holding Balance
+ * 2. SUBSCRIPTION ADS: Purchase tiers (₹100-₹10,000 BSK) → Watch 1 ad/day per subscription
+ *    - Daily reward: 1% of subscription value (withdrawable)
+ *    - Duration: 100 days
+ *    - Example: ₹1,000 subscription = 10 BSK/day × 100 days = 1,000 BSK total (withdrawable)
+ * 
+ * Multiple subscriptions stack (e.g., 3 subscriptions = 3 ads/day possible)
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -154,6 +167,17 @@ const AdvertisingMiningScreen: React.FC = () => {
       return;
     }
 
+    // Check if user has already used their subscription ad views for today
+    const maxAdsPerDay = userSubscriptions.length * (settings.max_subscription_payout_per_day_per_tier || 1);
+    if ((dailyViews?.subscription_views_used || 0) >= maxAdsPerDay) {
+      toast({
+        title: 'Daily Limit Reached',
+        description: `You've used all ${maxAdsPerDay} subscription ad(s) for today (1 per active subscription)`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
     const ad = ads.find(a => a.id === adId);
     if (!ad) return;
 
@@ -243,7 +267,7 @@ const AdvertisingMiningScreen: React.FC = () => {
 
         toast({
           title: '🎉 Free Reward Earned!',
-          description: `You earned ${settings.free_daily_reward_bsk} BSK (Holding) for viewing this ad!`
+          description: `You earned ${settings.free_daily_reward_bsk} BSK to your Holding Balance!`
         });
       } else {
         // Subscription reward
@@ -299,7 +323,7 @@ const AdvertisingMiningScreen: React.FC = () => {
 
           toast({
             title: '🎉 Subscription Reward Earned!',
-            description: `You earned ${dailyReward} BSK (Withdrawable) for viewing this ad!`
+            description: `You earned ${dailyReward} BSK to your Withdrawable Balance!`
           });
         }
       }
@@ -434,6 +458,9 @@ const AdvertisingMiningScreen: React.FC = () => {
             {/* Available Ads for Free */}
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-white">Free Daily Ads</h2>
+              <p className="text-sm text-slate-400 mb-2">
+                Watch 1 free ad per day to earn 1 BSK to your Holding Balance
+              </p>
               
               {!user ? (
                 <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
@@ -541,7 +568,7 @@ const AdvertisingMiningScreen: React.FC = () => {
               <CardHeader>
                 <CardTitle className="text-white">Purchase Subscription Tiers</CardTitle>
                 <p className="text-slate-400 text-sm">
-                  Buy subscriptions with BSK to earn withdrawable rewards for 100 days
+                  Pay with BSK at 1:1 rate. Watch 1 ad daily per subscription to earn 1% daily (withdrawable) for 100 days.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -559,8 +586,8 @@ const AdvertisingMiningScreen: React.FC = () => {
                             <div className="text-sm text-slate-400">
                               {tier.daily_bsk} BSK/day × {tier.duration_days} days
                             </div>
-                            <div className="text-xs text-slate-500">
-                              Total potential: {tier.daily_bsk * tier.duration_days} BSK
+                            <div className="text-xs text-green-400">
+                              1 ad/day • Total: {tier.daily_bsk * tier.duration_days} BSK (Withdrawable)
                             </div>
                           </div>
                           <div className="text-right">
@@ -608,10 +635,33 @@ const AdvertisingMiningScreen: React.FC = () => {
             {/* Subscription Ads */}
             {userSubscriptions.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-white">Subscription Ads</h2>
-                <p className="text-sm text-slate-400">
-                  View ads daily to claim your subscription rewards
-                </p>
+                <div>
+                  <h2 className="text-lg font-semibold text-white mb-2">Subscription Ads</h2>
+                  <p className="text-sm text-slate-400">
+                    Watch 1 ad per subscription per day to earn your 1% daily returns (withdrawable)
+                  </p>
+                </div>
+                
+                {/* Daily Usage Tracker */}
+                {settings && (
+                  <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Today's Subscription Ads</span>
+                        <span className="text-sm text-slate-400">
+                          {dailyViews?.subscription_views_used || 0} / {userSubscriptions.length}
+                        </span>
+                      </div>
+                      <Progress 
+                        value={((dailyViews?.subscription_views_used || 0) / userSubscriptions.length) * 100} 
+                        className="h-2" 
+                      />
+                      <div className="mt-2 text-xs text-green-400">
+                        💰 Daily reward: {getActiveSubscriptionDailyReward()} BSK (Withdrawable)
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
                 
                 {ads.length === 0 ? (
                   <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
