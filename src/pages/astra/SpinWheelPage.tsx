@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { AstraCard } from "@/components/astra/AstraCard"
 import { KPIChip } from "@/components/astra/KPIChip"
 import { ProgressRing } from "@/components/ui/progress-ring"
+import { PremiumSpinWheel } from "@/components/premium-wheel/PremiumSpinWheel"
 import { cn } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
 
@@ -18,16 +19,71 @@ const MOCK_DATA = {
 }
 
 const WHEEL_SEGMENTS = [
-  { label: "WIN ×2", color: "success", multiplier: 2 },
-  { label: "LOSE", color: "danger", multiplier: 0 },
-  { label: "WIN ×2", color: "success", multiplier: 2 },
-  { label: "LOSE", color: "danger", multiplier: 0 },
+  { 
+    id: "win-1", 
+    label: "WIN ×2", 
+    multiplier: 2, 
+    weight: 25,
+    color_hex: "#2BD67B"
+  },
+  { 
+    id: "lose-1", 
+    label: "LOSE", 
+    multiplier: 0, 
+    weight: 25,
+    color_hex: "#FF5C5C"
+  },
+  { 
+    id: "win-2", 
+    label: "WIN ×3", 
+    multiplier: 3, 
+    weight: 15,
+    color_hex: "#FFB800"
+  },
+  { 
+    id: "lose-2", 
+    label: "LOSE", 
+    multiplier: 0, 
+    weight: 25,
+    color_hex: "#FF5C5C"
+  },
+  { 
+    id: "win-3", 
+    label: "WIN ×2", 
+    multiplier: 2, 
+    weight: 25,
+    color_hex: "#2BD67B"
+  },
+  { 
+    id: "lose-3", 
+    label: "LOSE", 
+    multiplier: 0, 
+    weight: 25,
+    color_hex: "#FF5C5C"
+  },
+  { 
+    id: "jackpot", 
+    label: "WIN ×5", 
+    multiplier: 5, 
+    weight: 5,
+    color_hex: "#8853FF"
+  },
+  { 
+    id: "lose-4", 
+    label: "LOSE", 
+    multiplier: 0, 
+    weight: 25,
+    color_hex: "#FF5C5C"
+  },
 ]
 
 export function SpinWheelPage() {
   const navigate = useNavigate()
   const [betAmount, setBetAmount] = React.useState(500)
   const [isSpinning, setIsSpinning] = React.useState(false)
+  const [winningSegmentIndex, setWinningSegmentIndex] = React.useState<number>()
+  const [showParticles, setShowParticles] = React.useState(false)
+  const [particleType, setParticleType] = React.useState<'win' | 'lose'>('win')
   const [spinHistory, setSpinHistory] = React.useState<any[]>([])
 
   const hasFreeSpins = MOCK_DATA.freeSpins > 0
@@ -37,26 +93,69 @@ export function SpinWheelPage() {
     if (isSpinning) return
     
     setIsSpinning(true)
+    setShowParticles(false)
+    setWinningSegmentIndex(undefined)
     
-    // Mock spin animation (3 seconds)
+    // Simulate server response delay
     setTimeout(() => {
-      const isWin = Math.random() > 0.5
+      // Weighted random selection based on segment weights
+      const totalWeight = WHEEL_SEGMENTS.reduce((sum, seg) => sum + seg.weight, 0)
+      let random = Math.random() * totalWeight
+      let selectedIndex = 0
+      
+      for (let i = 0; i < WHEEL_SEGMENTS.length; i++) {
+        random -= WHEEL_SEGMENTS[i].weight
+        if (random <= 0) {
+          selectedIndex = i
+          break
+        }
+      }
+      
+      const winningSegment = WHEEL_SEGMENTS[selectedIndex]
+      setWinningSegmentIndex(selectedIndex)
+      
+      const isWin = winningSegment.multiplier > 0
       const result = {
         amount: betAmount,
         isWin,
-        multiplier: isWin ? 2 : 0,
+        multiplier: winningSegment.multiplier,
+        segmentLabel: winningSegment.label,
         timestamp: new Date(),
         isFree: hasFreeSpins
       }
       
-      setSpinHistory(prev => [result, ...prev.slice(0, 9)])
-      setIsSpinning(false)
+      setParticleType(isWin ? 'win' : 'lose')
       
       // Update free spins if used
       if (hasFreeSpins) {
         MOCK_DATA.freeSpins -= 1
       }
-    }, 3000)
+    }, 500)
+  }
+
+  const handleSpinComplete = () => {
+    if (winningSegmentIndex !== undefined) {
+      const winningSegment = WHEEL_SEGMENTS[winningSegmentIndex]
+      const isWin = winningSegment.multiplier > 0
+      
+      const result = {
+        amount: betAmount,
+        isWin,
+        multiplier: winningSegment.multiplier,
+        segmentLabel: winningSegment.label,
+        timestamp: new Date(),
+        isFree: hasFreeSpins
+      }
+      
+      setSpinHistory(prev => [result, ...prev.slice(0, 9)])
+      setShowParticles(true)
+      setIsSpinning(false)
+      
+      // Hide particles after 2 seconds
+      setTimeout(() => {
+        setShowParticles(false)
+      }, 2000)
+    }
   }
 
   return (
@@ -119,44 +218,16 @@ export function SpinWheelPage() {
       </AstraCard>
 
       {/* Wheel Animation Area */}
-      <AstraCard variant="elevated" className="relative overflow-hidden">
-        <div className="aspect-square p-8 flex items-center justify-center bg-gradient-to-br from-primary/5 to-accent/5">
-          {/* Simplified wheel representation */}
-          <div className={cn(
-            "relative w-48 h-48 rounded-full border-4 border-border-subtle bg-card-secondary transition-transform duration-[3000ms] ease-out",
-            isSpinning && "rotate-[1800deg]"
-          )}>
-            {/* Wheel segments */}
-            {WHEEL_SEGMENTS.map((segment, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "absolute inset-0 rounded-full flex items-center justify-center text-xs font-semibold",
-                  segment.color === "success" && "text-success",
-                  segment.color === "danger" && "text-danger"
-                )}
-                style={{
-                  transform: `rotate(${index * 90}deg)`,
-                  clipPath: `polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%)`,
-                  background: segment.color === "success" 
-                    ? "linear-gradient(45deg, rgba(43, 214, 123, 0.1), rgba(43, 214, 123, 0.05))"
-                    : "linear-gradient(45deg, rgba(255, 92, 92, 0.1), rgba(255, 92, 92, 0.05))"
-                }}
-              >
-                <span style={{ transform: `rotate(-${index * 90}deg) translateY(-60px)` }}>
-                  {segment.label}
-                </span>
-              </div>
-            ))}
-            
-            {/* Center pointer */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-0 h-0 border-l-[12px] border-r-[12px] border-b-[20px] border-l-transparent border-r-transparent border-b-accent z-10" />
-            
-            {/* Center circle */}
-            <div className="absolute inset-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-primary rounded-full border-2 border-background z-10 flex items-center justify-center">
-              <Zap className="h-4 w-4 text-primary-foreground" />
-            </div>
-          </div>
+      <AstraCard variant="elevated" className="relative overflow-visible">
+        <div className="p-6">
+          <PremiumSpinWheel
+            segments={WHEEL_SEGMENTS}
+            isSpinning={isSpinning}
+            winningSegmentIndex={winningSegmentIndex}
+            onSpinComplete={handleSpinComplete}
+            showParticles={showParticles}
+            particleType={particleType}
+          />
         </div>
       </AstraCard>
 
@@ -299,7 +370,7 @@ export function SpinWheelPage() {
                     "text-sm font-semibold",
                     spin.isWin ? "text-success" : "text-danger"
                   )}>
-                    {spin.isWin ? `+₹${spin.amount * spin.multiplier}` : "LOSE"}
+                    {spin.isWin ? `${spin.segmentLabel} (+₹${spin.amount * spin.multiplier})` : spin.segmentLabel}
                   </div>
                 </div>
               ))}
