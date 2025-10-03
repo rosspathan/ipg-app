@@ -106,7 +106,6 @@ export type Database = {
         Row: {
           allow_multiple_subscriptions: boolean
           auto_credit_no_inventory: boolean
-          bsk_inr_rate: number
           carry_forward_days: number
           created_at: string
           daily_reset_timezone: string
@@ -121,7 +120,6 @@ export type Database = {
         Insert: {
           allow_multiple_subscriptions?: boolean
           auto_credit_no_inventory?: boolean
-          bsk_inr_rate?: number
           carry_forward_days?: number
           created_at?: string
           daily_reset_timezone?: string
@@ -136,7 +134,6 @@ export type Database = {
         Update: {
           allow_multiple_subscriptions?: boolean
           auto_credit_no_inventory?: boolean
-          bsk_inr_rate?: number
           carry_forward_days?: number
           created_at?: string
           daily_reset_timezone?: string
@@ -157,7 +154,8 @@ export type Database = {
           duration_days: number
           id: string
           is_active: boolean
-          tier_inr: number
+          tier_bsk: number
+          tier_bsk_legacy: number
           updated_at: string
         }
         Insert: {
@@ -166,7 +164,8 @@ export type Database = {
           duration_days?: number
           id?: string
           is_active?: boolean
-          tier_inr: number
+          tier_bsk?: number
+          tier_bsk_legacy: number
           updated_at?: string
         }
         Update: {
@@ -175,7 +174,8 @@ export type Database = {
           duration_days?: number
           id?: string
           is_active?: boolean
-          tier_inr?: number
+          tier_bsk?: number
+          tier_bsk_legacy?: number
           updated_at?: string
         }
         Relationships: []
