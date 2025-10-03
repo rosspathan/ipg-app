@@ -7,7 +7,6 @@ export interface AdMiningSettings {
   id: string;
   free_daily_enabled: boolean;
   free_daily_reward_bsk: number;
-  bsk_inr_rate: number;
   allow_multiple_subscriptions: boolean;
   missed_day_policy: 'forfeit' | 'carry_forward';
   carry_forward_days: number;
@@ -19,7 +18,7 @@ export interface AdMiningSettings {
 
 export interface SubscriptionTier {
   id: string;
-  tier_inr: number;
+  tier_bsk: number;
   duration_days: number;
   daily_bsk: number;
   is_active: boolean;
@@ -29,7 +28,7 @@ export interface UserSubscription {
   id: string;
   user_id: string;
   tier_id: string;
-  tier_inr: number;
+  tier_bsk: number;
   purchased_bsk: number;
   daily_bsk: number;
   start_date: string;
@@ -111,7 +110,7 @@ export const useAdMining = () => {
       .from('ad_subscription_tiers')
       .select('*')
       .eq('is_active', true)
-      .order('tier_inr', { ascending: true });
+      .order('tier_bsk', { ascending: true });
 
     if (error) throw error;
     setTiers(data || []);
@@ -187,7 +186,7 @@ export const useAdMining = () => {
     }
   };
 
-  const purchaseSubscription = async (tierId: string, tierINR: number) => {
+  const purchaseSubscription = async (tierId: string, tierBSK: number) => {
     if (!user?.id || !settings) {
       throw new Error('User not authenticated or settings not loaded');
     }
@@ -197,7 +196,7 @@ export const useAdMining = () => {
       throw new Error('Subscription tier not found');
     }
 
-    const requiredBSK = tierINR / settings.bsk_inr_rate;
+    const requiredBSK = tierBSK;
 
     // Check if user has enough BSK in their withdrawable balance
     if (!bskBalances || bskBalances.withdrawable_balance < requiredBSK) {
@@ -214,7 +213,7 @@ export const useAdMining = () => {
       .insert({
         user_id: user.id,
         tier_id: tierId,
-        tier_inr: tierINR,
+        tier_bsk: tierBSK,
         purchased_bsk: requiredBSK,
         daily_bsk: tier.daily_bsk,
         start_date: startDate,
@@ -244,19 +243,17 @@ export const useAdMining = () => {
       .insert({
         user_id: user.id,
         amount_bsk: -requiredBSK,
-        amount_inr: tierINR,
-        rate_snapshot: settings.bsk_inr_rate,
         tx_type: 'ad_subscription_purchase',
-        tx_subtype: `${tierINR}`,
+        tx_subtype: `${tierBSK}`,
         reference_id: data.id,
         balance_before: currentWithdrawable,
         balance_after: currentWithdrawable - requiredBSK,
-        notes: `Purchased subscription tier ₹${tierINR}`
+        notes: `Purchased ${tierBSK} BSK subscription tier`
       });
 
     toast({
       title: 'Subscription Purchased!',
-      description: `You've successfully purchased the ₹${tierINR} subscription tier for ${tier.duration_days} days.`
+      description: `You've successfully purchased the ${tierBSK} BSK subscription tier for ${tier.duration_days} days.`
     });
 
     // Reload data
@@ -264,7 +261,7 @@ export const useAdMining = () => {
   };
 
   const getCurrentBSKRate = () => {
-    return settings?.bsk_inr_rate || 1.0;
+    return 1.0; // Direct BSK pricing, no conversion needed
   };
 
   const canClaimFreeDaily = () => {

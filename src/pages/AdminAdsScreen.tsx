@@ -149,7 +149,7 @@ export const AdminAdsScreen: React.FC = () => {
       const { data, error } = await supabase
         .from('ad_subscription_tiers')
         .select('*')
-        .order('tier_inr', { ascending: true });
+        .order('tier_bsk', { ascending: true });
 
       if (error) throw error;
       setSubscriptionTiers(data || []);
@@ -872,11 +872,11 @@ export const AdminAdsScreen: React.FC = () => {
                       min="100"
                       max="10000"
                       step="100"
-                      defaultValue={editingTier?.tier_inr || 100}
+                      defaultValue={editingTier?.tier_bsk || 100}
                       onChange={(e) => {
                         const value = parseFloat(e.target.value);
                         const daily = value / 100; // Linear: amount / 100 days
-                        setEditingTier({ ...editingTier, tier_inr: value, daily_bsk: daily, duration_days: 100 });
+                        setEditingTier({ ...editingTier, tier_bsk: value, daily_bsk: daily, duration_days: 100 });
                       }}
                     />
                     <p className="text-xs text-muted-foreground mt-1">Min: 100 BSK, Max: 10,000 BSK</p>
@@ -894,7 +894,7 @@ export const AdminAdsScreen: React.FC = () => {
                     <Input
                       type="number"
                       step="0.1"
-                      value={editingTier?.daily_bsk || (editingTier?.tier_inr / 100 || 1)}
+                      value={editingTier?.daily_bsk || (editingTier?.tier_bsk / 100 || 1)}
                       readOnly
                       className="bg-muted"
                     />
@@ -919,10 +919,10 @@ export const AdminAdsScreen: React.FC = () => {
           <div className="grid gap-4">
             {subscriptionTiers.map((tier) => (
               <Card key={tier.id} className="p-4">
-                <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-semibold">{tier.tier_inr} BSK Subscription</h4>
+                      <h4 className="font-semibold">{tier.tier_bsk} BSK Subscription</h4>
                       <Badge variant={tier.is_active ? 'default' : 'secondary'}>
                         {tier.is_active ? 'Active' : 'Inactive'}
                       </Badge>
