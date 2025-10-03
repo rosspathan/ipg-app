@@ -36,7 +36,7 @@ interface AdData {
   title: string;
   image_url: string;
   square_image_url?: string;
-  target_url: string;
+  target_url: string | null;
   reward_bsk: number;
   required_view_time: number;
   placement: string;
@@ -70,7 +70,7 @@ export const AdminAdsScreen: React.FC = () => {
     title: '',
     image_url: '',
     square_image_url: '',
-    target_url: '',
+    target_url: null,
     reward_bsk: 1,
     required_view_time: 10,
     placement: 'home_top',
@@ -198,7 +198,7 @@ export const AdminAdsScreen: React.FC = () => {
       title: '',
       image_url: '',
       square_image_url: '',
-      target_url: '',
+      target_url: null,
       reward_bsk: 1,
       required_view_time: 10,
       placement: 'home_top',
@@ -651,12 +651,15 @@ export const AdminAdsScreen: React.FC = () => {
               </div>
 
               <div>
-                <Label>Target URL</Label>
+                <Label>Target URL (Optional)</Label>
                 <Input
-                  value={formData.target_url}
-                  onChange={(e) => setFormData({...formData, target_url: e.target.value})}
-                  placeholder="https://..."
+                  value={formData.target_url || ''}
+                  onChange={(e) => setFormData({...formData, target_url: e.target.value || null})}
+                  placeholder="https://... (leave empty for view-only ads)"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Leave empty for view-only ads where users watch to earn rewards without navigation
+                </p>
               </div>
 
               <div className="grid grid-cols-3 gap-4">

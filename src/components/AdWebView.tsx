@@ -12,7 +12,7 @@ interface AdWebViewProps {
   ad: {
     id: string;
     title: string;
-    target_url: string;
+    target_url: string | null;
     reward_bsk: number;
     required_view_time: number;
   };
@@ -227,12 +227,25 @@ export const AdWebView: React.FC<AdWebViewProps> = ({
 
         {/* WebView */}
         <div className="flex-1 min-h-[300px] bg-muted">
-          <iframe
-            src={ad.target_url}
-            className="w-full h-[300px] border-0"
-            title={ad.title}
-            sandbox="allow-scripts allow-same-origin allow-forms"
-          />
+          {ad.target_url ? (
+            <iframe
+              src={ad.target_url}
+              className="w-full h-[300px] border-0"
+              title={ad.title}
+              sandbox="allow-scripts allow-same-origin allow-forms"
+            />
+          ) : (
+            <div className="w-full h-[300px] flex items-center justify-center">
+              <div className="text-center space-y-2 p-6">
+                <p className="text-muted-foreground">
+                  Watch this ad for {ad.required_view_time} seconds to earn your reward
+                </p>
+                <p className="text-lg font-semibold text-primary">
+                  {ad.reward_bsk} BSK
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Claim Button */}

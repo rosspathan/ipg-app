@@ -297,7 +297,7 @@ export type Database = {
           square_image_url: string | null
           start_at: string | null
           status: string
-          target_url: string
+          target_url: string | null
           title: string
           updated_at: string
           verification_required: boolean
@@ -320,7 +320,7 @@ export type Database = {
           square_image_url?: string | null
           start_at?: string | null
           status?: string
-          target_url: string
+          target_url?: string | null
           title: string
           updated_at?: string
           verification_required?: boolean
@@ -343,7 +343,7 @@ export type Database = {
           square_image_url?: string | null
           start_at?: string | null
           status?: string
-          target_url?: string
+          target_url?: string | null
           title?: string
           updated_at?: string
           verification_required?: boolean
