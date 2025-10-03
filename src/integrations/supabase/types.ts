@@ -5259,6 +5259,8 @@ export type Database = {
           platform_fee: number
           region_restrictions: Json | null
           reward_distribution: string
+          reward_period_unit: string | null
+          reward_period_value: number | null
           staking_type: string
           terms_conditions: string | null
           updated_at: string
@@ -5283,6 +5285,8 @@ export type Database = {
           platform_fee?: number
           region_restrictions?: Json | null
           reward_distribution?: string
+          reward_period_unit?: string | null
+          reward_period_value?: number | null
           staking_type?: string
           terms_conditions?: string | null
           updated_at?: string
@@ -5307,6 +5311,8 @@ export type Database = {
           platform_fee?: number
           region_restrictions?: Json | null
           reward_distribution?: string
+          reward_period_unit?: string | null
+          reward_period_value?: number | null
           staking_type?: string
           terms_conditions?: string | null
           updated_at?: string

@@ -30,6 +30,8 @@ interface StakingPool {
   early_exit_penalty: number;
   platform_fee: number;
   reward_distribution: string;
+  reward_period_value: number | null;
+  reward_period_unit: string | null;
   compound_rewards: boolean;
   active: boolean;
   description: string | null;
@@ -69,6 +71,8 @@ export default function AdminStakingNova() {
     early_exit_penalty: "",
     platform_fee: "",
     reward_distribution: "daily",
+    reward_period_value: "",
+    reward_period_unit: "months",
     compound_rewards: false,
     active: true,
     description: "",
@@ -117,6 +121,8 @@ export default function AdminStakingNova() {
       early_exit_penalty: "",
       platform_fee: "",
       reward_distribution: "daily",
+      reward_period_value: "",
+      reward_period_unit: "months",
       compound_rewards: false,
       active: true,
       description: "",
@@ -141,6 +147,8 @@ export default function AdminStakingNova() {
       early_exit_penalty: pool.early_exit_penalty.toString(),
       platform_fee: pool.platform_fee.toString(),
       reward_distribution: pool.reward_distribution,
+      reward_period_value: pool.reward_period_value?.toString() || "",
+      reward_period_unit: pool.reward_period_unit || "months",
       compound_rewards: pool.compound_rewards,
       active: pool.active,
       description: pool.description || "",
@@ -164,6 +172,8 @@ export default function AdminStakingNova() {
         early_exit_penalty: parseFloat(formData.early_exit_penalty),
         platform_fee: parseFloat(formData.platform_fee),
         reward_distribution: formData.reward_distribution,
+        reward_period_value: formData.reward_period_value ? parseInt(formData.reward_period_value) : null,
+        reward_period_unit: formData.reward_period_unit || null,
         compound_rewards: formData.compound_rewards,
         active: formData.active,
         description: formData.description || null,
@@ -460,7 +470,27 @@ export default function AdminStakingNova() {
                   { value: "daily", label: "Daily" },
                   { value: "weekly", label: "Weekly" },
                   { value: "monthly", label: "Monthly" },
+                  { value: "yearly", label: "Yearly" },
                   { value: "maturity", label: "At Maturity" },
+                ],
+              },
+              {
+                id: "reward_period_value",
+                type: "number",
+                label: "Reward Period Duration",
+                value: formData.reward_period_value,
+                onChange: (v) => setFormData({ ...formData, reward_period_value: v }),
+                description: "How many months or years for rewards",
+              },
+              {
+                id: "reward_period_unit",
+                type: "select",
+                label: "Reward Period Unit",
+                value: formData.reward_period_unit,
+                onChange: (v) => setFormData({ ...formData, reward_period_unit: v }),
+                options: [
+                  { value: "months", label: "Months" },
+                  { value: "years", label: "Years" },
                 ],
               },
               {
@@ -622,6 +652,14 @@ export default function AdminStakingNova() {
                     {selectedRecord.reward_distribution}
                   </p>
                 </div>
+                {selectedRecord.reward_period_value && selectedRecord.reward_period_unit && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Reward Period</p>
+                    <p className="text-sm font-medium">
+                      {selectedRecord.reward_period_value} {selectedRecord.reward_period_unit}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-muted-foreground">Compound Rewards</p>
                   <p className="text-sm font-medium">
