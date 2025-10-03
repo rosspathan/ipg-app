@@ -210,13 +210,22 @@ const ReferralsScreen = () => {
       {/* Badge & Level Access Card */}
       <Card className="bg-gradient-card shadow-card border-0 mb-6">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {getBadgeIcon(currentBadge)}
-            <span>My Badge & Level Access</span>
-            <Badge variant={currentBadge === 'None' ? 'outline' : 'default'} className={getBadgeColor(currentBadge)}>
-              {currentBadge}
-            </Badge>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              {getBadgeIcon(currentBadge)}
+              <span>My Badge & Level Access</span>
+              <Badge variant={currentBadge === 'None' ? 'outline' : 'default'} className={getBadgeColor(currentBadge)}>
+                {currentBadge}
+              </Badge>
+            </CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/app/programs/badge-subscription')}
+            >
+              Subscribe / Upgrade
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">

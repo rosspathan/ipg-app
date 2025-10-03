@@ -71,6 +71,7 @@ import SwapScreen from "./pages/SwapScreen";
 import ProgramsScreen from "./pages/ProgramsScreen";
 import SubscriptionsScreen from "./pages/SubscriptionsScreen";
 import ReferralsScreen from "./pages/ReferralsScreen";
+import BadgeSubscriptionScreen from "./pages/BadgeSubscriptionScreen";
 import StakingScreen from "./pages/StakingScreen";
 import StakingDetailScreen from "./pages/StakingDetailScreen";
 import NewLuckyDraw from "./components/NewLuckyDraw";
@@ -237,6 +238,7 @@ function App() {
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
+                <Route path="programs/badge-subscription" element={<BadgeSubscriptionScreen />} />
                 
                 <Route path="design-review" element={<DesignReview />} />
                 {/* Unknown Astra sub-route */}
