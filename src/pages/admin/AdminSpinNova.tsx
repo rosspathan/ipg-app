@@ -25,15 +25,15 @@ import { cn } from "@/lib/utils";
 interface SpinConfig {
   id: string;
   is_enabled: boolean;
-  min_bet_inr: number;
-  max_bet_inr: number;
-  post_free_fee_inr: number;
+  min_bet_bsk: number;
+  max_bet_bsk: number;
+  min_bet_inr?: number;  // Legacy field
+  max_bet_inr?: number;  // Legacy field
   post_free_fee_bsk: number;
   winning_fee_percent: number;
   free_spins_count: number;
   daily_spin_cap_per_user: number | null;
   lifetime_spin_cap_per_user: number | null;
-  bsk_inr_rate: number;
 }
 
 interface SpinSegment {
@@ -98,7 +98,7 @@ export default function AdminSpinNova() {
         id: spin.id,
         user: spin.profiles?.email || 'Unknown',
         result: `${spin.result_bsk || 0} BSK`,
-        cost: `${spin.bet_inr} INR`,
+        cost: `${spin.bet_bsk || spin.bet_inr || 0} BSK`,
         status: spin.result_bsk > 0 ? 'Won' : 'Lost',
         timestamp: new Date(spin.created_at).toLocaleString(),
         txHash: spin.nonce?.toString() || 'N/A'
@@ -107,8 +107,8 @@ export default function AdminSpinNova() {
   });
 
   const [configForm, setConfigForm] = useState({
-    min_bet_inr: "",
-    max_bet_inr: "",
+    min_bet_bsk: "",
+    max_bet_bsk: "",
     post_free_fee_bsk: "",
     winning_fee_percent: "",
     free_spins_count: "",
@@ -125,13 +125,14 @@ export default function AdminSpinNova() {
 
   useEffect(() => {
     if (config) {
+      const configData = config as any; // Cast to handle dynamic fields
       setConfigForm({
-        min_bet_inr: config.min_bet_inr.toString(),
-        max_bet_inr: config.max_bet_inr.toString(),
-        post_free_fee_bsk: config.post_free_fee_bsk?.toString() || "10",
-        winning_fee_percent: config.winning_fee_percent?.toString() || "5",
-        free_spins_count: config.free_spins_count?.toString() || "5",
-        daily_spin_cap_per_user: config.daily_spin_cap_per_user?.toString() || "10"
+        min_bet_bsk: (configData.min_bet_bsk || configData.min_bet_inr || 10).toString(),
+        max_bet_bsk: (configData.max_bet_bsk || configData.max_bet_inr || 1000).toString(),
+        post_free_fee_bsk: (configData.post_free_fee_bsk || 10).toString(),
+        winning_fee_percent: (configData.winning_fee_percent || 5).toString(),
+        free_spins_count: (configData.free_spins_count || 5).toString(),
+        daily_spin_cap_per_user: (configData.daily_spin_cap_per_user || 10).toString()
       });
     }
   }, [config]);
@@ -153,8 +154,10 @@ export default function AdminSpinNova() {
       const { error } = await supabase
         .from('ismart_spin_config')
         .update({
-          min_bet_inr: parseFloat(data.min_bet_inr),
-          max_bet_inr: parseFloat(data.max_bet_inr),
+          min_bet_bsk: parseFloat(data.min_bet_bsk),
+          max_bet_bsk: parseFloat(data.max_bet_bsk),
+          min_bet_inr: parseFloat(data.min_bet_bsk),  // Keep for backward compatibility
+          max_bet_inr: parseFloat(data.max_bet_bsk),  // Keep for backward compatibility
           post_free_fee_bsk: parseFloat(data.post_free_fee_bsk),
           winning_fee_percent: parseFloat(data.winning_fee_percent),
           free_spins_count: parseInt(data.free_spins_count),
@@ -484,22 +487,22 @@ export default function AdminSpinNova() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Min Bet (INR)</Label>
+                <Label>Min Bet (BSK)</Label>
                 <Input
                   type="number"
                   step="1"
-                  value={configForm.min_bet_inr}
-                  onChange={(e) => setConfigForm({ ...configForm, min_bet_inr: e.target.value })}
+                  value={configForm.min_bet_bsk}
+                  onChange={(e) => setConfigForm({ ...configForm, min_bet_bsk: e.target.value })}
                   placeholder="10"
                 />
               </div>
               <div>
-                <Label>Max Bet (INR)</Label>
+                <Label>Max Bet (BSK)</Label>
                 <Input
                   type="number"
                   step="1"
-                  value={configForm.max_bet_inr}
-                  onChange={(e) => setConfigForm({ ...configForm, max_bet_inr: e.target.value })}
+                  value={configForm.max_bet_bsk}
+                  onChange={(e) => setConfigForm({ ...configForm, max_bet_bsk: e.target.value })}
                   placeholder="1000"
                 />
               </div>
