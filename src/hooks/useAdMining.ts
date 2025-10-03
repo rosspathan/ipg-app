@@ -130,7 +130,26 @@ export const useAdMining = () => {
       .eq('status', 'active');
 
     if (subError) throw subError;
-    setUserSubscriptions(subscriptions || []);
+    
+    // Map subscriptions to ensure tier_bsk is included at the top level
+    const mappedSubscriptions = (subscriptions || []).map((sub: any) => ({
+      id: sub.id,
+      user_id: sub.user_id,
+      tier_id: sub.tier_id,
+      tier_bsk: sub.purchased_bsk || (sub.tier as any)?.tier_bsk || 0,
+      purchased_bsk: sub.purchased_bsk || 0,
+      daily_bsk: sub.daily_bsk || 0,
+      start_date: sub.start_date,
+      end_date: sub.end_date,
+      days_total: sub.days_total || 0,
+      policy: sub.policy || 'carry_forward',
+      total_earned_bsk: sub.total_earned_bsk || 0,
+      total_missed_days: sub.total_missed_days || 0,
+      status: sub.status,
+      tier: sub.tier
+    })) as UserSubscription[];
+    
+    setUserSubscriptions(mappedSubscriptions);
 
     // Load BSK balances
     const { data: balances, error: balError } = await supabase
@@ -210,17 +229,17 @@ export const useAdMining = () => {
     // Create subscription
     const { data, error } = await supabase
       .from('ad_user_subscriptions')
-      .insert({
+      .insert([{
         user_id: user.id,
         tier_id: tierId,
-        tier_bsk: tierBSK,
+        tier_inr: tierBSK,  // Legacy field, same as BSK for now
         purchased_bsk: requiredBSK,
         daily_bsk: tier.daily_bsk,
         start_date: startDate,
         end_date: endDate,
         days_total: tier.duration_days,
         policy: settings.missed_day_policy
-      })
+      }])
       .select()
       .single();
 

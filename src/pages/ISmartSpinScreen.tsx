@@ -12,7 +12,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function ISmartSpinScreen() {
   const navigate = useNavigate()
-  const [betAmount, setBetAmount] = useState(100)
+  const [betAmount, setBetAmount] = useState(10)
   const [winningSegmentIndex, setWinningSegmentIndex] = useState<number>()
   
   const {
@@ -29,7 +29,7 @@ export default function ISmartSpinScreen() {
 
   useEffect(() => {
     if (config) {
-      setBetAmount(config.min_bet_inr)
+      setBetAmount(config.min_bet_bsk)
     }
   }, [config])
 
@@ -143,25 +143,22 @@ export default function ISmartSpinScreen() {
         {/* Bet Amount */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Bet Amount</CardTitle>
+            <CardTitle className="text-base">Bet Amount (BSK)</CardTitle>
             <CardDescription>
-              ₹{config.min_bet_inr} - ₹{config.max_bet_inr}
+              {config.min_bet_bsk} - {config.max_bet_bsk} BSK
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center">
-              <div className="text-2xl font-bold">₹{betAmount}</div>
-              <div className="text-sm text-muted-foreground">
-                ≈ {costs ? costs.betBsk.toFixed(2) : '0.00'} BSK
-              </div>
+              <div className="text-2xl font-bold">{betAmount} BSK</div>
             </div>
             
             <Slider
               value={[betAmount]}
               onValueChange={([value]) => setBetAmount(value)}
-              min={config.min_bet_inr}
-              max={config.max_bet_inr}
-              step={10}
+              min={config.min_bet_bsk}
+              max={config.max_bet_bsk}
+              step={1}
               className="w-full"
             />
 
@@ -226,7 +223,7 @@ export default function ISmartSpinScreen() {
             ) : costs?.isFree ? (
               'SPIN FOR FREE!'
             ) : (
-              `SPIN (₹${betAmount})`
+              `SPIN (${betAmount} BSK)`
             )}
           </Button>
 

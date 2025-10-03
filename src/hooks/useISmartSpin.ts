@@ -5,12 +5,16 @@ import { useToast } from '@/hooks/use-toast'
 interface SpinConfig {
   id: string
   is_enabled: boolean
-  min_bet_inr: number
-  max_bet_inr: number
+  min_bet_bsk: number
+  max_bet_bsk: number
+  min_bet_inr?: number  // Legacy field
+  max_bet_inr?: number  // Legacy field
   free_spins_count: number
-  post_free_fee_inr: number
+  post_free_fee_bsk: number
+  post_free_fee_inr?: number  // Legacy field
   risk_free_free_spins: boolean
-  bsk_inr_rate: number
+  bsk_inr_rate?: number  // Legacy field
+  [key: string]: any  // Allow additional fields from database
 }
 
 interface SpinSegment {
@@ -74,7 +78,15 @@ export function useISmartSpin() {
         return
       }
 
-      setConfig(configData)
+      // Fallback to legacy fields if BSK fields don't exist
+      const configWithDefaults: any = {
+        ...configData,
+        min_bet_bsk: (configData as any).min_bet_bsk || (configData as any).min_bet_inr || 10,
+        max_bet_bsk: (configData as any).max_bet_bsk || (configData as any).max_bet_inr || 1000,
+        post_free_fee_bsk: (configData as any).post_free_fee_bsk || (configData as any).post_free_fee_inr || 0
+      }
+      
+      setConfig(configWithDefaults as SpinConfig)
 
       // Get active segments
       const { data: segmentsData, error: segmentsError } = await supabase
@@ -161,7 +173,7 @@ export function useISmartSpin() {
   }
 
   // Perform spin
-  const performSpin = async (betInr: number): Promise<SpinResult | null> => {
+  const performSpin = async (betBsk: number): Promise<SpinResult | null> => {
     if (!config || isSpinning) return null
 
     try {
@@ -177,7 +189,7 @@ export function useISmartSpin() {
         'ismart-spin-commit',
         {
           body: {
-            bet_inr: betInr,
+            bet_bsk: betBsk,
             client_seed: clientSeed,
             idempotency_key: crypto.randomUUID()
           }
@@ -237,18 +249,15 @@ export function useISmartSpin() {
   }
 
   // Calculate costs for a bet
-  const calculateCosts = (betInr: number) => {
+  const calculateCosts = (betBsk: number) => {
     if (!config || !userLimits) return null
 
-    const betBsk = betInr / config.bsk_inr_rate
     const isFree = userLimits.free_spins_remaining > 0
-    const feeInr = isFree ? 0 : config.post_free_fee_inr
-    const feeBsk = feeInr / config.bsk_inr_rate
+    const feeBsk = isFree ? 0 : config.post_free_fee_bsk
     const totalCost = betBsk + feeBsk
 
     return {
       betBsk,
-      feeInr,
       feeBsk,
       totalCost,
       isFree,

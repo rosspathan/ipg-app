@@ -229,8 +229,8 @@ const AdvertisingMiningScreen: React.FC = () => {
           .insert({
             user_id: user.id,
             amount_bsk: settings.free_daily_reward_bsk,
-            amount_inr: settings.free_daily_reward_bsk * settings.bsk_inr_rate,
-            rate_snapshot: settings.bsk_inr_rate,
+            amount_inr: 0,
+            rate_snapshot: 1,
             tx_type: 'ad_free_view',
             tx_subtype: ad.id,
             reference_id: ad.id,
@@ -283,14 +283,14 @@ const AdvertisingMiningScreen: React.FC = () => {
               .insert({
                 user_id: user.id,
                 amount_bsk: amount,
-                amount_inr: amount * settings.bsk_inr_rate,
-                rate_snapshot: settings.bsk_inr_rate,
+                amount_inr: 0,
+                rate_snapshot: 1,
                 tx_type: 'ad_subscription_daily',
                 tx_subtype: subscription.id,
                 reference_id: subscription.id,
                 balance_before: runningBalance,
                 balance_after: runningBalance + amount,
-                notes: `Daily subscription reward for ₹${subscription.tier_inr} tier`
+                notes: `Daily subscription reward for ${subscription.tier_bsk} BSK tier`
               });
 
             if (ledgerError) throw ledgerError;
@@ -583,8 +583,8 @@ const AdvertisingMiningScreen: React.FC = () => {
                     <div key={sub.id} className="p-4 bg-slate-700/30 rounded-lg border border-slate-600/30">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <h4 className="font-semibold text-white">₹{sub.tier_inr} Tier</h4>
-                          <p className="text-sm text-slate-400">{sub.daily_bsk} BSK per day (1% of ₹{sub.tier_inr})</p>
+                          <h4 className="font-semibold text-white">{sub.tier_bsk} BSK Tier</h4>
+                          <p className="text-sm text-slate-400">{sub.daily_bsk} BSK per day (1% of {sub.tier_bsk} BSK)</p>
                         </div>
                         <Badge variant="secondary" className="bg-green-600/20 text-green-400 border-green-600/30">
                           Active
@@ -619,7 +619,7 @@ const AdvertisingMiningScreen: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="grid gap-3">
                   {tiers.map((tier) => {
-                    const requiredBSK = tier.tier_inr / (settings?.bsk_inr_rate || 1);
+                    const requiredBSK = tier.tier_bsk;
                     const canAfford = (bskBalances?.withdrawable_balance || 0) >= requiredBSK;
                     const isPurchasing = purchasingTier === tier.id;
                     
@@ -627,7 +627,7 @@ const AdvertisingMiningScreen: React.FC = () => {
                       <div key={tier.id} className="p-4 bg-slate-700/30 rounded-lg border border-slate-600">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="font-semibold text-lg">₹{tier.tier_inr} Tier</div>
+                            <div className="font-semibold text-lg">{tier.tier_bsk} BSK Tier</div>
                             <div className="text-sm text-slate-400">
                               {tier.daily_bsk} BSK/day × {tier.duration_days} days
                             </div>
@@ -642,7 +642,7 @@ const AdvertisingMiningScreen: React.FC = () => {
                             <Button
                               size="sm"
                               disabled={!canAfford || isPurchasing || !user}
-                              onClick={() => handlePurchaseSubscription(tier.id, tier.tier_inr)}
+                              onClick={() => handlePurchaseSubscription(tier.id, tier.tier_bsk)}
                               className={cn(
                                 "mt-2",
                                 canAfford 
@@ -668,10 +668,10 @@ const AdvertisingMiningScreen: React.FC = () => {
                   })}
                 </div>
 
-                {/* Current BSK Rate */}
+                {/* Payment Info */}
                 <div className="mt-4 p-3 bg-blue-600/10 rounded-lg border border-blue-600/20">
                   <div className="text-center text-sm text-slate-400">
-                    Current BSK Rate: 1 BSK = ₹{settings?.bsk_inr_rate || 1}
+                    All prices are in BSK tokens
                   </div>
                 </div>
               </CardContent>
