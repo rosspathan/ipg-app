@@ -1253,6 +1253,119 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_loan_applications: {
+        Row: {
+          applied_at: string
+          approved_at: string | null
+          approved_by: string | null
+          config_id: string | null
+          created_at: string
+          disbursed_at: string | null
+          duration_weeks: number
+          id: string
+          interest_rate_percent: number
+          loan_amount: number
+          notes: string | null
+          processing_fee: number
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["bsk_loan_status"]
+          total_repayment: number
+          updated_at: string
+          user_id: string
+          weekly_payment: number
+        }
+        Insert: {
+          applied_at?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          config_id?: string | null
+          created_at?: string
+          disbursed_at?: string | null
+          duration_weeks: number
+          id?: string
+          interest_rate_percent: number
+          loan_amount: number
+          notes?: string | null
+          processing_fee: number
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["bsk_loan_status"]
+          total_repayment: number
+          updated_at?: string
+          user_id: string
+          weekly_payment: number
+        }
+        Update: {
+          applied_at?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          config_id?: string | null
+          created_at?: string
+          disbursed_at?: string | null
+          duration_weeks?: number
+          id?: string
+          interest_rate_percent?: number
+          loan_amount?: number
+          notes?: string | null
+          processing_fee?: number
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["bsk_loan_status"]
+          total_repayment?: number
+          updated_at?: string
+          user_id?: string
+          weekly_payment?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_loan_applications_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loan_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_loan_configs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          duration_weeks: number
+          id: string
+          interest_rate_percent: number
+          is_enabled: boolean
+          late_payment_fee: number
+          max_loan_amount: number
+          min_loan_amount: number
+          processing_fee_percent: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          duration_weeks?: number
+          id?: string
+          interest_rate_percent?: number
+          is_enabled?: boolean
+          late_payment_fee?: number
+          max_loan_amount?: number
+          min_loan_amount?: number
+          processing_fee_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          duration_weeks?: number
+          id?: string
+          interest_rate_percent?: number
+          is_enabled?: boolean
+          late_payment_fee?: number
+          max_loan_amount?: number
+          min_loan_amount?: number
+          processing_fee_percent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bsk_loan_installments: {
         Row: {
           created_at: string
@@ -1386,6 +1499,56 @@ export type Database = {
             columns: ["loan_id"]
             isOneToOne: false
             referencedRelation: "bsk_loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_loan_payments: {
+        Row: {
+          created_at: string
+          due_date: string
+          id: string
+          late_fee: number | null
+          loan_id: string
+          paid_date: string | null
+          payment_amount: number
+          status: string
+          updated_at: string
+          user_id: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string
+          due_date: string
+          id?: string
+          late_fee?: number | null
+          loan_id: string
+          paid_date?: string | null
+          payment_amount: number
+          status?: string
+          updated_at?: string
+          user_id: string
+          week_number: number
+        }
+        Update: {
+          created_at?: string
+          due_date?: string
+          id?: string
+          late_fee?: number | null
+          loan_id?: string
+          paid_date?: string | null
+          payment_amount?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_loan_payments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loan_applications"
             referencedColumns: ["id"]
           },
         ]
@@ -6211,6 +6374,13 @@ export type Database = {
       bonus_destination: "withdrawable" | "holding"
       bonus_event_status: "pending" | "settled" | "void" | "clawed_back"
       bsk_balance_type: "withdrawable" | "holding"
+      bsk_loan_status:
+        | "pending"
+        | "approved"
+        | "active"
+        | "completed"
+        | "rejected"
+        | "defaulted"
       claim_status: "PENDING" | "APPROVED" | "REJECTED"
       draw_state:
         | "draft"
@@ -6369,6 +6539,14 @@ export const Constants = {
       bonus_destination: ["withdrawable", "holding"],
       bonus_event_status: ["pending", "settled", "void", "clawed_back"],
       bsk_balance_type: ["withdrawable", "holding"],
+      bsk_loan_status: [
+        "pending",
+        "approved",
+        "active",
+        "completed",
+        "rejected",
+        "defaulted",
+      ],
       claim_status: ["PENDING", "APPROVED", "REJECTED"],
       draw_state: [
         "draft",
