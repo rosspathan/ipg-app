@@ -13,7 +13,7 @@ export function DeepLinkResolver() {
   useEffect(() => {
     const attemptDeepLink = async () => {
       if (!code) {
-        window.location.href = '/welcome';
+        window.location.href = '/onboarding';
         return;
       }
 
@@ -30,7 +30,7 @@ export function DeepLinkResolver() {
       const settings = data[0];
 
       if (!settings) {
-        window.location.href = '/welcome';
+        window.location.href = '/onboarding';
         return;
       }
 

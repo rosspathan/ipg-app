@@ -18,8 +18,8 @@ export function ReferralResolver() {
       console.log('🔗 Resolving referral sponsorID:', code);
       
       if (!code) {
-        console.warn('No sponsorID provided, redirecting to welcome');
-        if (mounted) navigate('/welcome', { replace: true });
+        console.warn('No sponsorID provided, redirecting to onboarding');
+        if (mounted) navigate('/onboarding', { replace: true });
         return;
       }
 
@@ -55,14 +55,14 @@ export function ReferralResolver() {
           console.warn('⚠️ Sponsor not found, but storing referral anyway');
         }
 
-        // Always redirect to welcome with sponsor ID
+        // Always redirect to onboarding with sponsor ID
         if (mounted) {
-          console.log('Redirecting to welcome with sponsorID');
-          navigate(`/welcome?ref=${sponsorId}`, { replace: true });
+          console.log('Redirecting to onboarding with sponsorID');
+          navigate(`/onboarding?ref=${sponsorId}`, { replace: true });
         }
       } catch (error) {
         console.error('Error resolving referral:', error);
-        if (mounted) navigate(`/welcome?ref=${code}`, { replace: true });
+        if (mounted) navigate(`/onboarding?ref=${code}`, { replace: true });
       }
     };
 
