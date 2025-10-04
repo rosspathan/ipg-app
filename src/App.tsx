@@ -81,6 +81,8 @@ import StakingScreen from "./pages/StakingScreen";
 import StakingDetailScreen from "./pages/StakingDetailScreen";
 import StakingSubmissionScreen from "./pages/StakingSubmissionScreen";
 import NewLuckyDraw from "./components/NewLuckyDraw";
+import BSKWithdrawScreen from "@/pages/BSKWithdrawScreen";
+import AdminBSKWithdrawalsScreen from "@/pages/AdminBSKWithdrawalsScreen";
 
 import SpinHistoryScreen from "./pages/SpinHistoryScreen";
 import AdvertisingMiningScreen from "./pages/AdvertisingMiningScreen";
@@ -270,6 +272,7 @@ function App() {
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
                 <Route path="programs/bsk-purchase-manual" element={<ManualBSKPurchaseScreen />} />
                 <Route path="programs/crypto-conversion" element={<CryptoConversionScreen />} />
+                <Route path="programs/bsk-withdraw" element={<BSKWithdrawScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="programs/badge-subscription" element={<BadgeSubscriptionScreen />} />
                 
@@ -307,6 +310,7 @@ function App() {
                 <Route path="bsk-loans" element={<AdminBSKLoansNova />} />
                 <Route path="bsk-manual-purchases" element={<AdminManualPurchasesScreen />} />
                 <Route path="crypto-conversions" element={<AdminCryptoConversionsScreen />} />
+                <Route path="bsk-withdrawals" element={<AdminBSKWithdrawalsScreen />} />
                 
                 {/* Programs */}
                 <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />

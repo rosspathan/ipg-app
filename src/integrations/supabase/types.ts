@@ -2222,6 +2222,66 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_withdrawal_requests: {
+        Row: {
+          account_holder_name: string | null
+          account_number: string | null
+          admin_notes: string | null
+          amount_bsk: number
+          bank_name: string | null
+          created_at: string
+          crypto_address: string | null
+          crypto_network: string | null
+          crypto_symbol: string | null
+          id: string
+          ifsc_code: string | null
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          withdrawal_type: string
+        }
+        Insert: {
+          account_holder_name?: string | null
+          account_number?: string | null
+          admin_notes?: string | null
+          amount_bsk: number
+          bank_name?: string | null
+          created_at?: string
+          crypto_address?: string | null
+          crypto_network?: string | null
+          crypto_symbol?: string | null
+          id?: string
+          ifsc_code?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          withdrawal_type: string
+        }
+        Update: {
+          account_holder_name?: string | null
+          account_number?: string | null
+          admin_notes?: string | null
+          amount_bsk?: number
+          bank_name?: string | null
+          created_at?: string
+          crypto_address?: string | null
+          crypto_network?: string | null
+          crypto_symbol?: string | null
+          id?: string
+          ifsc_code?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          withdrawal_type?: string
+        }
+        Relationships: []
+      }
       commission_audit_log: {
         Row: {
           action: string
