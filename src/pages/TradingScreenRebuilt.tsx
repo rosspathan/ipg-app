@@ -2,10 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, TrendingUp, Info, Plus, BarChart3, Settings, MoreVertical } from "lucide-react";
 import { PairSelectorSheet } from "@/components/trading/PairSelectorSheet";
+import { PercentChipsPro } from "@/components/trading/PercentChipsPro";
+import { AmountSliderPro } from "@/components/trading/AmountSliderPro";
+import { AmountInputPro } from "@/components/trading/AmountInputPro";
+import { AllocationDonut } from "@/components/trading/AllocationDonut";
+import { ErrorHintBar, type ErrorHint } from "@/components/trading/ErrorHintBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -39,19 +43,97 @@ export default function TradingScreenRebuilt() {
   const [price, setPrice] = useState("1147.3");
   const [quantity, setQuantity] = useState("");
   const [percentage, setPercentage] = useState(0);
+  const [amountUnit, setAmountUnit] = useState<"base" | "quote">("base");
   const [tpslEnabled, setTpslEnabled] = useState(false);
   const [selectedTab, setSelectedTab] = useState("orders");
   const [chartEnabled, setChartEnabled] = useState(false);
   const [pairSelectorOpen, setPairSelectorOpen] = useState(false);
+  const [errors, setErrors] = useState<ErrorHint[]>([]);
 
   const availableBalance = 329.19972973;
   const pair = "BNB/USDT";
   const priceChange = "+0.33%";
+  const baseSymbol = "BNB";
+  const quoteSymbol = "USDT";
+  
+  // Trading limits
+  const stepSize = "0.001";
+  const minQty = "0.01";
+  const maxQty = "1000";
+  const minNotional = "10";
 
   const handlePercentageClick = (pct: number) => {
     setPercentage(pct);
-    const maxQty = availableBalance / parseFloat(price || "0");
-    setQuantity(((maxQty * pct) / 100).toFixed(4));
+    const currentPrice = orderType === "market" ? mockOrderBook.bids[0].price : parseFloat(price || "0");
+    const maxQty = availableBalance / currentPrice;
+    const newQty = (maxQty * pct) / 100;
+    setQuantity(newQty.toFixed(4));
+    validateAmount(newQty.toString(), currentPrice);
+  };
+
+  const handleAmountChange = (value: string) => {
+    setQuantity(value);
+    const qty = parseFloat(value) || 0;
+    const currentPrice = orderType === "market" ? mockOrderBook.bids[0].price : parseFloat(price || "0");
+    
+    if (currentPrice > 0) {
+      const pct = (qty / (availableBalance / currentPrice)) * 100;
+      setPercentage(Math.min(100, Math.max(0, pct)));
+    }
+    
+    validateAmount(value, currentPrice);
+  };
+
+  const handleUnitToggle = () => {
+    if (amountUnit === "base") {
+      // Convert to quote
+      const qty = parseFloat(quantity) || 0;
+      const currentPrice = orderType === "market" ? mockOrderBook.bids[0].price : parseFloat(price || "0");
+      setQuantity((qty * currentPrice).toFixed(2));
+      setAmountUnit("quote");
+    } else {
+      // Convert to base
+      const quoteAmt = parseFloat(quantity) || 0;
+      const currentPrice = orderType === "market" ? mockOrderBook.bids[0].price : parseFloat(price || "0");
+      setQuantity((quoteAmt / currentPrice).toFixed(4));
+      setAmountUnit("base");
+    }
+  };
+
+  const validateAmount = (value: string, currentPrice: number) => {
+    const newErrors: ErrorHint[] = [];
+    const qty = parseFloat(value) || 0;
+    
+    if (qty < parseFloat(minQty)) {
+      newErrors.push({
+        message: `Minimum quantity is ${minQty} ${baseSymbol}`,
+        severity: "error"
+      });
+    }
+    
+    if (qty > parseFloat(maxQty)) {
+      newErrors.push({
+        message: `Maximum quantity is ${maxQty} ${baseSymbol}`,
+        severity: "error"
+      });
+    }
+    
+    const notionalValue = qty * currentPrice;
+    if (notionalValue < parseFloat(minNotional) && qty > 0) {
+      newErrors.push({
+        message: `Order value must be at least ${minNotional} ${quoteSymbol}`,
+        severity: "warning"
+      });
+    }
+    
+    if (side === "buy" && notionalValue > availableBalance) {
+      newErrors.push({
+        message: "Insufficient balance",
+        severity: "error"
+      });
+    }
+    
+    setErrors(newErrors);
   };
 
   const handlePlaceOrder = () => {
@@ -258,74 +340,46 @@ export default function TradingScreenRebuilt() {
               </div>
             )}
 
-            {/* Amount Input */}
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Quantity</Label>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-10 w-10 p-0 border-border/50 hover:bg-muted/50"
-                  onClick={() => {
-                    const current = parseFloat(quantity) || 0;
-                    const step = 0.01;
-                    setQuantity(Math.max(0, current - step).toFixed(4));
-                  }}
-                >
-                  −
-                </Button>
-                <Input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  className="flex-1 h-10 text-base font-semibold bg-muted/30 border-border/50 font-mono"
-                  placeholder="0.00"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-10 w-10 p-0 border-border/50 hover:bg-muted/50"
-                  onClick={() => {
-                    const current = parseFloat(quantity) || 0;
-                    const step = 0.01;
-                    setQuantity((current + step).toFixed(4));
-                  }}
-                >
-                  +
-                </Button>
-                <span className="text-sm font-semibold text-foreground">BNB</span>
+            {/* Amount Control - Pro Version */}
+            <div className="space-y-4">
+              {/* Percent Chips */}
+              <PercentChipsPro
+                value={percentage}
+                onSelect={handlePercentageClick}
+              />
+              
+              {/* Amount Slider */}
+              <AmountSliderPro
+                value={percentage}
+                onChange={handlePercentageClick}
+                baseAmount={quantity || "0.00"}
+                quoteAmount={((parseFloat(quantity) || 0) * (orderType === "market" ? mockOrderBook.bids[0].price : parseFloat(price || "0"))).toFixed(2)}
+                baseSymbol={baseSymbol}
+                quoteSymbol={quoteSymbol}
+              />
+              
+              {/* Amount Input with Donut */}
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <AmountInputPro
+                    value={quantity}
+                    onChange={handleAmountChange}
+                    unit={amountUnit}
+                    onUnitToggle={handleUnitToggle}
+                    baseSymbol={baseSymbol}
+                    quoteSymbol={quoteSymbol}
+                    minNotional={`${minNotional} ${quoteSymbol}`}
+                    stepSize={stepSize}
+                  />
+                </div>
+                <div className="pt-3">
+                  <AllocationDonut percentage={percentage} />
+                </div>
               </div>
+              
+              {/* Error Hints */}
+              <ErrorHintBar errors={errors} />
             </div>
-
-            {/* Percentage Buttons */}
-            <div className="flex gap-1.5">
-              <button className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-[10px] font-medium hover:bg-muted/50 transition-colors">
-                0%
-              </button>
-              {[25, 50, 75, 100].map((pct) => (
-                <button
-                  key={pct}
-                  onClick={() => handlePercentageClick(pct)}
-                  className={cn(
-                    "flex-1 h-7 rounded-lg text-[10px] font-semibold transition-colors",
-                    percentage === pct
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/30 hover:bg-muted/50"
-                  )}
-                >
-                  {pct}%
-                </button>
-              ))}
-            </div>
-
-            {/* Slider */}
-            <Slider
-              value={[percentage]}
-              onValueChange={(v) => handlePercentageClick(v[0])}
-              max={100}
-              step={1}
-              className="py-1"
-            />
 
             {/* Order Value */}
             <div className="flex items-center justify-between py-2 px-3 bg-muted/20 rounded-lg">
