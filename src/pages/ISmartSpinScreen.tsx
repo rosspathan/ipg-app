@@ -185,7 +185,7 @@ export default function ISmartSpinScreen() {
                   {lastResult.multiplier > 0 ? (
                     <>
                       <p className="text-lg font-bold text-green-600">
-                        🎉 Won {lastResult.payout_bsk.toFixed(2)} BSK!
+                        🎉 Won {(lastResult.payout_bsk ?? 0).toFixed(2)} BSK!
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {lastResult.segment.label} • {lastResult.multiplier}× multiplier
@@ -202,8 +202,8 @@ export default function ISmartSpinScreen() {
                     </>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Net: {lastResult.net_change_bsk > 0 ? '+' : ''}
-                    {lastResult.net_change_bsk.toFixed(2)} BSK
+                    Net: {(lastResult.net_change_bsk ?? 0) > 0 ? '+' : ''}
+                    {(lastResult.net_change_bsk ?? 0).toFixed(2)} BSK
                   </p>
                 </div>
               </CardContent>
@@ -215,7 +215,7 @@ export default function ISmartSpinScreen() {
         <div className="mx-4 mb-4 p-3 bg-muted/50 rounded-lg">
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">Available Balance</span>
-            <span className="font-bold">{bskBalance.toFixed(2)} BSK</span>
+            <span className="font-bold">{(bskBalance ?? 0).toFixed(2)} BSK</span>
           </div>
         </div>
       </div>
