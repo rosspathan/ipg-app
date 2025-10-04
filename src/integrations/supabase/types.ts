@@ -572,6 +572,69 @@ export type Database = {
         }
         Relationships: []
       }
+      badge_card_config: {
+        Row: {
+          border_text: string | null
+          created_at: string
+          fields_visible: Json
+          id: string
+          logo_url: string | null
+          theme_colors: Json
+          updated_at: string
+          watermark_text: string | null
+        }
+        Insert: {
+          border_text?: string | null
+          created_at?: string
+          fields_visible?: Json
+          id?: string
+          logo_url?: string | null
+          theme_colors?: Json
+          updated_at?: string
+          watermark_text?: string | null
+        }
+        Update: {
+          border_text?: string | null
+          created_at?: string
+          fields_visible?: Json
+          id?: string
+          logo_url?: string | null
+          theme_colors?: Json
+          updated_at?: string
+          watermark_text?: string | null
+        }
+        Relationships: []
+      }
+      badge_cards_new: {
+        Row: {
+          card_data: Json
+          card_image_path: string | null
+          created_at: string
+          id: string
+          qr_code_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_data?: Json
+          card_image_path?: string | null
+          created_at?: string
+          id?: string
+          qr_code_path?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_data?: Json
+          card_image_path?: string | null
+          created_at?: string
+          id?: string
+          qr_code_path?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       badge_purchase_events: {
         Row: {
           commissionable_amount_bsk: number
@@ -3897,6 +3960,93 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_admin_config: {
+        Row: {
+          created_at: string
+          encrypt_at_rest: boolean
+          id: string
+          level_schemas: Json
+          liveness_required: boolean
+          manual_review_required: boolean
+          pii_export_enabled: boolean
+          region_rules: Json
+          required_levels: string[]
+          retention_days: number | null
+          selfie_match_threshold: number
+          storage_bucket: string
+          storage_prefix: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          encrypt_at_rest?: boolean
+          id?: string
+          level_schemas?: Json
+          liveness_required?: boolean
+          manual_review_required?: boolean
+          pii_export_enabled?: boolean
+          region_rules?: Json
+          required_levels?: string[]
+          retention_days?: number | null
+          selfie_match_threshold?: number
+          storage_bucket?: string
+          storage_prefix?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          encrypt_at_rest?: boolean
+          id?: string
+          level_schemas?: Json
+          liveness_required?: boolean
+          manual_review_required?: boolean
+          pii_export_enabled?: boolean
+          region_rules?: Json
+          required_levels?: string[]
+          retention_days?: number | null
+          selfie_match_threshold?: number
+          storage_bucket?: string
+          storage_prefix?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      kyc_documents_new: {
+        Row: {
+          created_at: string
+          doc_type: string
+          file_hash: string | null
+          file_size_bytes: number | null
+          id: string
+          level: string
+          mime_type: string | null
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doc_type: string
+          file_hash?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          level: string
+          mime_type?: string | null
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string
+          file_hash?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          level?: string
+          mime_type?: string | null
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       kyc_profiles: {
         Row: {
           created_at: string | null
@@ -3945,6 +4095,48 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_profiles_new: {
+        Row: {
+          created_at: string
+          data_json: Json
+          id: string
+          level: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_json?: Json
+          id?: string
+          level: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_json?: Json
+          id?: string
+          level?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       login_audit: {
         Row: {
           agent: string | null
@@ -3971,6 +4163,42 @@ export type Database = {
           event?: string
           id?: string
           ip?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      login_audit_new: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          ip_address: unknown | null
+          location_city: string | null
+          location_country: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          ip_address?: unknown | null
+          location_city?: string | null
+          location_country?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          ip_address?: unknown | null
+          location_city?: string | null
+          location_country?: string | null
+          success?: boolean
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
@@ -4209,6 +4437,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profile_completion_new: {
+        Row: {
+          completion_score: number
+          has_avatar: boolean
+          has_display_name: boolean
+          has_phone: boolean
+          kyc_level: string | null
+          last_calculated_at: string
+          user_id: string
+        }
+        Insert: {
+          completion_score?: number
+          has_avatar?: boolean
+          has_display_name?: boolean
+          has_phone?: boolean
+          kyc_level?: string | null
+          last_calculated_at?: string
+          user_id: string
+        }
+        Update: {
+          completion_score?: number
+          has_avatar?: boolean
+          has_display_name?: boolean
+          has_phone?: boolean
+          kyc_level?: string | null
+          last_calculated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -4597,6 +4855,51 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_admin_config: {
+        Row: {
+          android_package_id: string | null
+          android_sha256_fingerprint: string | null
+          app_host: string
+          created_at: string
+          deep_link_scheme: string
+          id: string
+          qr_code_size: number
+          ref_route_web: string
+          self_referral_prevention: boolean
+          sponsor_locking_policy: string
+          updated_at: string
+          whatsapp_support_url: string | null
+        }
+        Insert: {
+          android_package_id?: string | null
+          android_sha256_fingerprint?: string | null
+          app_host?: string
+          created_at?: string
+          deep_link_scheme?: string
+          id?: string
+          qr_code_size?: number
+          ref_route_web?: string
+          self_referral_prevention?: boolean
+          sponsor_locking_policy?: string
+          updated_at?: string
+          whatsapp_support_url?: string | null
+        }
+        Update: {
+          android_package_id?: string | null
+          android_sha256_fingerprint?: string | null
+          app_host?: string
+          created_at?: string
+          deep_link_scheme?: string
+          id?: string
+          qr_code_size?: number
+          ref_route_web?: string
+          self_referral_prevention?: boolean
+          sponsor_locking_policy?: string
+          updated_at?: string
+          whatsapp_support_url?: string | null
+        }
+        Relationships: []
+      }
       referral_balance_slabs: {
         Row: {
           balance_metric: Database["public"]["Enums"]["balance_metric"]
@@ -4853,6 +5156,45 @@ export type Database = {
           id?: string
           locked_at?: string
           sponsor_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_links_new: {
+        Row: {
+          created_at: string
+          id: string
+          locked_at: string | null
+          referral_code: string
+          source: string | null
+          sponsor_id: string | null
+          total_commissions: number
+          total_referrals: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          locked_at?: string | null
+          referral_code: string
+          source?: string | null
+          sponsor_id?: string | null
+          total_commissions?: number
+          total_referrals?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          locked_at?: string | null
+          referral_code?: string
+          source?: string | null
+          sponsor_id?: string | null
+          total_commissions?: number
+          total_referrals?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -5125,6 +5467,114 @@ export type Database = {
           spend_daily_limit?: number | null
           user_id?: string
           withdraw_whitelist_only?: boolean | null
+        }
+        Relationships: []
+      }
+      security_admin_config: {
+        Row: {
+          created_at: string
+          id: string
+          lockout_duration_minutes: number
+          max_failed_attempts: number
+          require_2fa_for_withdrawals: boolean
+          require_pin_on_open: boolean
+          session_timeout_minutes: number
+          transaction_approval_threshold: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lockout_duration_minutes?: number
+          max_failed_attempts?: number
+          require_2fa_for_withdrawals?: boolean
+          require_pin_on_open?: boolean
+          session_timeout_minutes?: number
+          transaction_approval_threshold?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lockout_duration_minutes?: number
+          max_failed_attempts?: number
+          require_2fa_for_withdrawals?: boolean
+          require_pin_on_open?: boolean
+          session_timeout_minutes?: number
+          transaction_approval_threshold?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      security_devices_new: {
+        Row: {
+          created_at: string
+          device_id: string
+          device_name: string | null
+          id: string
+          ip_address: unknown | null
+          last_seen: string
+          revoked_at: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          device_name?: string | null
+          id?: string
+          ip_address?: unknown | null
+          last_seen?: string
+          revoked_at?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          device_name?: string | null
+          id?: string
+          ip_address?: unknown | null
+          last_seen?: string
+          revoked_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      security_sessions_new: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          id: string
+          ip_address: unknown | null
+          last_seen: string
+          revoked_at: string | null
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          last_seen?: string
+          revoked_at?: string | null
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          last_seen?: string
+          revoked_at?: string | null
+          session_token?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -5734,6 +6184,36 @@ export type Database = {
         }
         Relationships: []
       }
+      totp_secrets_new: {
+        Row: {
+          backup_codes_encrypted: string[] | null
+          created_at: string
+          enabled: boolean
+          id: string
+          secret_encrypted: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backup_codes_encrypted?: string[] | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          secret_encrypted: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backup_codes_encrypted?: string[] | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          secret_encrypted?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trades: {
         Row: {
           buy_order_id: string
@@ -5892,6 +6372,39 @@ export type Database = {
           points_earned?: number
           unlocked?: boolean
           unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_avatars_new: {
+        Row: {
+          created_at: string
+          id: string
+          original_path: string
+          thumb_1x_path: string
+          thumb_2x_path: string | null
+          thumb_3x_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_path: string
+          thumb_1x_path: string
+          thumb_2x_path?: string | null
+          thumb_3x_path?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_path?: string
+          thumb_1x_path?: string
+          thumb_2x_path?: string | null
+          thumb_3x_path?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

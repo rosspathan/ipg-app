@@ -137,7 +137,13 @@ import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
 import { WalletPageRebuilt } from "@/pages/astra/WalletPageRebuilt";
 import { ProgramsPageRebuilt } from "@/pages/astra/ProgramsPageRebuilt";
 import { TradingPageRebuilt } from "@/pages/astra/TradingPageRebuilt";
-import { ProfilePageRebuilt } from "@/pages/astra/ProfilePageRebuilt";
+import { ProfileHub } from "@/pages/ProfileHub";
+import { KYCPage } from "@/pages/KYCPage";
+import { IDCardPage } from "@/pages/IDCardPage";
+import { SecurityPage } from "@/pages/SecurityPage";
+import { NotificationsPage } from "@/pages/NotificationsPage";
+import { SettingsPage } from "@/pages/SettingsPage";
+import { ReferralsPage } from "@/pages/ReferralsPage";
 import { InsurancePage } from "@/pages/astra/InsurancePage";
 import { SpinWheelPage } from "@/pages/astra/SpinWheelPage";
 import { AdvertiseMiningPage } from "@/pages/astra/AdvertiseMiningPage";
@@ -230,8 +236,16 @@ function App() {
               <Route path="wallet/history" element={<HistoryScreen />} />
               <Route path="programs" element={<ProgramsPageRebuilt />} />
               <Route path="trade" element={<TradingScreenRebuilt />} />
-              <Route path="profile" element={<ProfilePageRebuilt />} />
               <Route path="swap" element={<SwapScreen />} />
+              
+              {/* Profile Hub */}
+              <Route path="profile" element={<ProfileHub />} />
+              <Route path="profile/kyc" element={<KYCPage />} />
+              <Route path="profile/id-card" element={<IDCardPage />} />
+              <Route path="profile/security" element={<SecurityPage />} />
+              <Route path="profile/notify" element={<NotificationsPage />} />
+              <Route path="profile/settings" element={<SettingsPage />} />
+              <Route path="profile/referrals" element={<ReferralsPage />} />
                 
                 {/* Programs */}
                 <Route path="programs/insurance" element={<InsurancePage />} />
