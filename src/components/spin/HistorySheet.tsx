@@ -84,19 +84,21 @@ export function HistorySheet({
                         {spin.segment_label}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(spin.created_at), { addSuffix: true })}
+                        {spin.created_at && !isNaN(new Date(spin.created_at).getTime())
+                          ? formatDistanceToNow(new Date(spin.created_at), { addSuffix: true })
+                          : 'Just now'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs">Bet: {spin.bet_bsk.toFixed(2)} BSK</span>
+                      <span className="text-xs">Bet: {(spin.bet_bsk ?? 0).toFixed(2)} BSK</span>
                       <span className="text-xs">•</span>
                       <span
                         className={`text-xs font-medium ${
-                          spin.net_change_bsk > 0 ? 'text-green-500' : 'text-rose-500'
+                          (spin.net_change_bsk ?? 0) > 0 ? 'text-green-500' : 'text-rose-500'
                         }`}
                       >
-                        {spin.net_change_bsk > 0 ? '+' : ''}
-                        {spin.net_change_bsk.toFixed(2)} BSK
+                        {(spin.net_change_bsk ?? 0) > 0 ? '+' : ''}
+                        {(spin.net_change_bsk ?? 0).toFixed(2)} BSK
                       </span>
                     </div>
                   </div>
