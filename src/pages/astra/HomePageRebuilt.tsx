@@ -22,7 +22,27 @@ export function HomePageRebuilt() {
   const { navigate } = useNavigation()
   const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
 
-  // Mock data for demos
+  const handleKPIPress = (type: string) => {
+    switch (type) {
+      case "portfolio":
+        navigate("/app/wallet")
+        break
+      case "change":
+        navigate("/app/wallet")
+        break
+      case "status":
+        navigate("/app/profile")
+        break
+      default:
+        navigate("/app/wallet")
+    }
+  }
+
+  const handleAssetPress = (asset: any) => {
+    // Navigate to wallet with asset detail
+    navigate("/app/wallet")
+  }
+
   const mockAssets = [
     { id: "1", symbol: "BTC", name: "Bitcoin", balance: 0.0342, valueUSD: 1456.78, change24h: 2.4 },
     { id: "2", symbol: "ETH", name: "Ethereum", balance: 2.891, valueUSD: 4821.45, change24h: -1.2 },
@@ -153,15 +173,15 @@ export function HomePageRebuilt() {
       {/* Main Content */}
       <main className="pb-28 px-4 space-y-6 pt-4">
         {/* KPI Cluster */}
-        <KPICluster />
+        <KPICluster onTilePress={handleKPIPress} />
 
         {/* Add Funds CTA */}
-        <AddFundsCTA onPress={() => navigate("/app/deposit")} />
+        <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
 
         {/* Crypto Assets Panel */}
         <AssetsPanel
           assets={mockAssets}
-          onAssetPress={(asset) => console.log("Asset pressed:", asset)}
+          onAssetPress={handleAssetPress}
           onViewAll={() => navigate("/app/wallet")}
         />
 
@@ -169,7 +189,7 @@ export function HomePageRebuilt() {
         <BSKWithdrawCard
           onWithdraw={() => navigate("/programs/bsk-withdraw")}
           onTransfer={() => navigate("/programs/bsk-transfer")}
-          onHistory={() => navigate("/app-legacy/wallet/history")}
+          onHistory={() => navigate("/app/wallet/history")}
           onViewBreakdown={() => setShowRewardsBreakdown(true)}
         />
 
@@ -193,7 +213,7 @@ export function HomePageRebuilt() {
         {/* Activity Timeline */}
         <ActivityTimeline
           activities={activities}
-          onViewAll={() => navigate("/app-legacy/wallet/history")}
+          onViewAll={() => navigate("/app/wallet/history")}
         />
       </main>
 
