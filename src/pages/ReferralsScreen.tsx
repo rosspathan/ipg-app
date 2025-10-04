@@ -40,7 +40,7 @@ const ReferralsScreen = () => {
     loading: teamLoading
   } = useTeamReferrals();
 
-  const referralLink = user ? `${window.location.origin}/auth/register?ref=${user.id}` : "";
+  const referralLink = user ? `https://i-smartapp.com/auth/register?ref=${user.id}` : "";
   
   const [currentBadge, setCurrentBadge] = useState<string>('None');
   

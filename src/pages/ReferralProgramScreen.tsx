@@ -37,7 +37,7 @@ const ReferralProgramScreen = () => {
   } = useBalanceSlabs();
 
   const [referralLink, setReferralLink] = useState(
-    user ? `${window.location.origin}/auth/register?ref=${user.id}` : ''
+    user ? `https://i-smartapp.com/auth/register?ref=${user.id}` : ''
   );
 
   const handleCopyLink = async () => {

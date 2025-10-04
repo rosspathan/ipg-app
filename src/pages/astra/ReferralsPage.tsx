@@ -68,7 +68,7 @@ export default function ReferralsPage() {
   });
 
   const referralLink = user?.id
-    ? `${window.location.origin}/auth?ref=${user.id}`
+    ? `https://i-smartapp.com/auth?ref=${user.id}`
     : "";
 
   const handleCopyLink = async () => {
