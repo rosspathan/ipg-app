@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { AstraCard } from "../AstraCard"
 import { BalanceDisplay } from "@/components/ui/balance-display"
 import { QuickActionsRibbon } from "./QuickActionsRibbon"
+import { useNavigate } from "react-router-dom"
 
 interface BalanceClusterProps {
   className?: string
@@ -33,11 +34,12 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
   const [isPrivate, setIsPrivate] = useState(false)
   const [isCryptoExpanded, setIsCryptoExpanded] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const navigate = useNavigate()
 
   const withdrawActions = [
-    { id: "withdraw", label: "Withdraw", icon: <ArrowUpRight className="h-4 w-4" />, variant: "success" as const, onPress: () => {} },
-    { id: "transfer", label: "Transfer", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => {} },
-    { id: "history", label: "History", icon: <History className="h-4 w-4" />, variant: "default" as const, onPress: () => {} }
+    { id: "withdraw", label: "Withdraw", icon: <ArrowUpRight className="h-4 w-4" />, variant: "success" as const, onPress: () => navigate("/app/programs/bsk-withdraw") },
+    { id: "transfer", label: "Transfer", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/wallet/transfer") },
+    { id: "history", label: "History", icon: <History className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/wallet/history") }
   ]
 
   const filteredCryptoAssets = mockBalances.cryptoAssets.filter(asset =>

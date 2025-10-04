@@ -15,7 +15,7 @@ const actionConfig = {
   withdraw: {
     icon: ArrowUpCircle,
     label: "Withdraw", 
-    route: "/app/wallet/withdraw",
+    route: "/app/programs/bsk-withdraw",
     variant: "outline" as const,
     className: "text-danger hover:bg-danger/10"
   },
