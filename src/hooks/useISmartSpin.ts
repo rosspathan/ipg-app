@@ -71,6 +71,7 @@ export function useISmartSpin() {
         return
       }
 
+      console.log('Loaded spin config:', configData)
       setConfig(configData)
 
       // Get active segments
@@ -84,6 +85,7 @@ export function useISmartSpin() {
         console.error('Segments error:', segmentsError)
       }
 
+      console.log('Loaded segments:', segmentsData)
       setSegments(segmentsData || [])
 
       // Get user limits
