@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -51,6 +52,68 @@ export default function TradingScreenRebuilt() {
     setPercentage(pct);
     const maxQty = availableBalance / parseFloat(price || "0");
     setQuantity(((maxQty * pct) / 100).toFixed(4));
+  };
+
+  const handlePlaceOrder = () => {
+    // Validation
+    const qty = parseFloat(quantity);
+    const orderPrice = orderType === "market" ? mockOrderBook.bids[0].price : parseFloat(price);
+
+    if (!qty || qty <= 0) {
+      toast.error("Please enter a valid quantity");
+      return;
+    }
+
+    if (orderType === "limit" && (!orderPrice || orderPrice <= 0)) {
+      toast.error("Please enter a valid price");
+      return;
+    }
+
+    const totalValue = qty * orderPrice;
+    if (side === "buy" && totalValue > availableBalance) {
+      toast.error("Insufficient balance");
+      return;
+    }
+
+    // Create order object
+    const order = {
+      id: `order-${Date.now()}`,
+      pair,
+      side,
+      type: orderType,
+      price: orderPrice,
+      quantity: qty,
+      total: totalValue,
+      status: orderType === "market" ? "filled" : "pending",
+      timestamp: new Date().toISOString()
+    };
+
+    // For market orders, execute immediately
+    if (orderType === "market") {
+      toast.success(
+        `Market ${side} order filled: ${qty.toFixed(4)} BNB @ $${orderPrice.toFixed(2)}`,
+        {
+          description: `Total: $${totalValue.toFixed(2)}`
+        }
+      );
+    } else {
+      // For limit orders, show pending
+      toast.success(
+        `Limit ${side} order placed: ${qty.toFixed(4)} BNB @ $${orderPrice.toFixed(2)}`,
+        {
+          description: "Order is pending execution"
+        }
+      );
+    }
+
+    // Reset form
+    setQuantity("");
+    setPercentage(0);
+    if (orderType === "limit") {
+      setPrice("");
+    }
+
+    console.log("Order placed:", order);
   };
 
   return (
@@ -148,35 +211,52 @@ export default function TradingScreenRebuilt() {
               </Select>
             </div>
 
-            {/* Price Input */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="flex-1 h-12 text-xl font-bold bg-muted/30 border-border/50 font-mono"
-                  placeholder="0.00"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-12 px-4 border-border/50 hover:bg-muted/50 font-semibold"
-                  onClick={() => {
-                    // BBO = Best Bid/Offer - auto-fill from orderbook
-                    const bestPrice = side === "buy" 
-                      ? mockOrderBook.asks[mockOrderBook.asks.length - 1].price 
-                      : mockOrderBook.bids[0].price;
-                    setPrice(bestPrice.toFixed(1));
-                  }}
-                >
-                  BBO
-                </Button>
+            {/* Price Input - Only show for Limit orders */}
+            {orderType === "limit" && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    className="flex-1 h-12 text-xl font-bold bg-muted/30 border-border/50 font-mono"
+                    placeholder="0.00"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-12 px-4 border-border/50 hover:bg-muted/50 font-semibold"
+                    onClick={() => {
+                      // BBO = Best Bid/Offer - auto-fill from orderbook
+                      const bestPrice = side === "buy" 
+                        ? mockOrderBook.asks[mockOrderBook.asks.length - 1].price 
+                        : mockOrderBook.bids[0].price;
+                      setPrice(bestPrice.toFixed(1));
+                    }}
+                  >
+                    BBO
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  ≈ {(parseFloat(price) || 0).toLocaleString()} USD
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                ≈ {(parseFloat(price) || 0).toLocaleString()} USD
+            )}
+
+            {/* Market Order Price Display */}
+            {orderType === "market" && (
+              <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Market Price</span>
+                  <span className="text-base font-bold font-mono">
+                    ${mockOrderBook.bids[0].price.toFixed(2)}
+                  </span>
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  Order will execute at current market price
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Amount Input */}
             <div className="space-y-1">
@@ -284,6 +364,7 @@ export default function TradingScreenRebuilt() {
 
             {/* Submit Button */}
             <Button
+              onClick={handlePlaceOrder}
               className={cn(
                 "w-full h-12 text-base font-bold shadow-lg transition-all duration-200",
                 side === "buy"
