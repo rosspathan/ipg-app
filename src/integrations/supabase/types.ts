@@ -425,6 +425,54 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          announcement_type: string
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          display_order: number | null
+          end_date: string | null
+          id: string
+          images: Json | null
+          link_url: string | null
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          announcement_type?: string
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          id?: string
+          images?: Json | null
+          link_url?: string | null
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          announcement_type?: string
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          id?: string
+          images?: Json | null
+          link_url?: string | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string | null

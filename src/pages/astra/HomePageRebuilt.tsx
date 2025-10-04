@@ -8,7 +8,7 @@ import { KPIChipRow } from "@/components/astra/KPIChipRow"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { CardLane } from "@/components/astra/CardLane"
 import { ProgramTile } from "@/components/astra/grid/ProgramTile"
-import { AnnouncementsCarousel } from "@/components/astra/grid/AnnouncementsCarousel"
+import { AnnouncementCarousel } from "@/components/user/AnnouncementCarousel"
 import { Marquee } from "@/components/astra/grid/Marquee"
 import { ActivityGrid } from "@/components/astra/grid/ActivityGrid"
 import { QuickActionsRibbon } from "@/components/astra/grid/QuickActionsRibbon"
@@ -35,29 +35,6 @@ const kpiData = [
     label: "Status", 
     variant: "warning" as const, 
     trend: "neutral" as const 
-  }
-]
-
-const announcements = [
-  {
-    id: "1",
-    title: "New Staking Rewards",
-    message: "Earn up to 15% APY on BSK with enhanced staking program",
-    type: "promotion" as const,
-    actionLabel: "Stake Now",
-    region: ["global"],
-    startDate: new Date(Date.now() - 86400000),
-    endDate: new Date(Date.now() + 86400000 * 7)
-  },
-  {
-    id: "2",
-    title: "Lucky Draw #127 Live",
-    message: "₹50,000 prize pool now open! Get your tickets before it fills up",
-    type: "feature" as const,
-    actionLabel: "Join Draw",
-    region: ["india"],
-    startDate: new Date(Date.now() - 3600000),
-    endDate: new Date(Date.now() + 86400000 * 3)
   }
 ]
 
@@ -262,7 +239,7 @@ export function HomePageRebuilt() {
 
         {/* Announcements */}
         <div className="px-3">
-          <AnnouncementsCarousel announcements={announcements} />
+          <AnnouncementCarousel />
         </div>
 
 

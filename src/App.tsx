@@ -35,6 +35,7 @@ import AdminBSKLoansNova from "./pages/admin/AdminBSKLoansNova";
 import AdminManualPurchasesScreen from "./pages/AdminManualPurchasesScreen";
 import ManualBSKPurchaseScreen from "./pages/ManualBSKPurchaseScreen";
 import AdminCryptoConversionsScreen from "./pages/AdminCryptoConversionsScreen";
+import AdminAnnouncementsScreen from "./pages/AdminAnnouncementsScreen";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -311,6 +312,7 @@ function App() {
                 <Route path="bsk-manual-purchases" element={<AdminManualPurchasesScreen />} />
                 <Route path="crypto-conversions" element={<AdminCryptoConversionsScreen />} />
                 <Route path="bsk-withdrawals" element={<AdminBSKWithdrawalsScreen />} />
+                <Route path="announcements" element={<AdminAnnouncementsScreen />} />
                 
                 {/* Programs */}
                 <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />
