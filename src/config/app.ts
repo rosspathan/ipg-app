@@ -9,7 +9,7 @@ export const APP_CONFIG = {
   APP_TAGLINE: "World No. 1 Trusted Crypto Exchange",
   
   // Support
-  WHATSAPP_SUPPORT: "https://wa.me/919133444422?text=Hello%20iSmart%20support",
+  WHATSAPP_SUPPORT: "https://wa.me/919177755022?text=Hello%20iSmart%20support",
   
   // Logos
   LOGO_PRIMARY: "/src/assets/logo-primary.jpg",
