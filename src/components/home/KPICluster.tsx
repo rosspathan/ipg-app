@@ -1,5 +1,5 @@
 import * as React from "react"
-import { TrendingUp, TrendingDown, Award } from "lucide-react"
+import { TrendingUp, TrendingDown, Wallet, Activity, Award } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -58,28 +58,42 @@ export function KPICluster({ data, isLoading = false, onTilePress, className }: 
   const kpiData = data || defaultData
 
   const getIcon = (type: string) => {
+    const iconClass = "h-5 w-5"
     switch (type) {
       case "portfolio":
-        return "💰"
+        return <Wallet className={cn(iconClass, "text-success")} />
       case "change":
-        return "📈"
+        return <Activity className={cn(iconClass, "text-primary")} />
       case "status":
-        return "⭐"
+        return <Award className={cn(iconClass, "text-warning")} />
       default:
-        return "💎"
+        return <Wallet className={iconClass} />
     }
   }
 
   const getBgClass = (type: string) => {
     switch (type) {
       case "portfolio":
-        return "from-success/20 to-success/5"
+        return "from-success/15 via-success/8 to-transparent"
       case "change":
-        return "from-primary/20 to-primary/5"
+        return "from-primary/15 via-primary/8 to-transparent"
       case "status":
-        return "from-warning/20 to-warning/5"
+        return "from-warning/15 via-warning/8 to-transparent"
       default:
-        return "from-accent/20 to-accent/5"
+        return "from-accent/15 via-accent/8 to-transparent"
+    }
+  }
+
+  const getBorderGlow = (type: string) => {
+    switch (type) {
+      case "portfolio":
+        return "hover:shadow-[0_0_20px_rgba(43,214,123,0.3)]"
+      case "change":
+        return "hover:shadow-[0_0_20px_rgba(124,77,255,0.3)]"
+      case "status":
+        return "hover:shadow-[0_0_20px_rgba(247,165,59,0.3)]"
+      default:
+        return "hover:shadow-[0_0_20px_rgba(0,229,255,0.3)]"
     }
   }
 
@@ -104,67 +118,117 @@ export function KPICluster({ data, isLoading = false, onTilePress, className }: 
           key={kpi.type}
           onClick={() => onTilePress?.(kpi.type)}
           className={cn(
-            "relative p-3 rounded-2xl overflow-hidden",
-            "bg-card/60 backdrop-blur-xl border border-border/30",
-            "transition-all duration-[120ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-            "hover:scale-[1.03] hover:border-primary/40 active:scale-[0.98]",
+            "relative p-4 rounded-[20px] overflow-hidden",
+            "bg-gradient-to-br from-card/90 via-card/70 to-card/90",
+            "backdrop-blur-2xl border border-border/40",
+            "transition-all duration-[180ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            "hover:scale-[1.04] hover:border-primary/50 active:scale-[0.97]",
             "focus:outline-none focus:ring-2 focus:ring-primary/50",
-            "group"
+            "group cursor-pointer",
+            getBorderGlow(kpi.type)
           )}
           style={{
-            WebkitBackdropFilter: 'blur(16px)',
-            backdropFilter: 'blur(16px)',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+            WebkitBackdropFilter: 'blur(24px)',
+            backdropFilter: 'blur(24px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.2)'
           }}
         >
-          {/* Gradient background */}
+          {/* Animated gradient background */}
           <div 
             className={cn(
-              "absolute inset-0 bg-gradient-to-br opacity-40",
-              "transition-opacity duration-[220ms]",
-              "group-hover:opacity-60",
+              "absolute inset-0 bg-gradient-to-br opacity-0",
+              "transition-all duration-[320ms]",
+              "group-hover:opacity-100",
               getBgClass(kpi.type)
             )}
+            style={{
+              animation: 'gradient-shift 3s ease infinite',
+              backgroundSize: '200% 200%'
+            }}
+          />
+
+          {/* Top glow rim */}
+          <div 
+            className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[220ms]"
           />
 
           {/* Content */}
-          <div className="relative space-y-1.5">
-            {/* Icon */}
-            <div className="text-xl leading-none">{getIcon(kpi.type)}</div>
-
-            {/* Value */}
-            <div className={cn(
-              "font-[Space_Grotesk] font-bold text-foreground",
-              "transition-all duration-[120ms]",
-              kpi.type === "status" ? "text-sm" : "text-base tabular-nums"
-            )}>
-              {kpi.value}
+          <div className="relative space-y-2.5">
+            {/* Icon with glow */}
+            <div className="flex items-center justify-between">
+              <div className={cn(
+                "h-9 w-9 rounded-xl flex items-center justify-center",
+                "bg-gradient-to-br transition-all duration-[220ms]",
+                "group-hover:scale-110 group-hover:rotate-3",
+                kpi.type === "portfolio" && "from-success/20 to-success/10 group-hover:from-success/30 group-hover:to-success/15",
+                kpi.type === "change" && "from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/15",
+                kpi.type === "status" && "from-warning/20 to-warning/10 group-hover:from-warning/30 group-hover:to-warning/15"
+              )}>
+                {getIcon(kpi.type)}
+              </div>
+              
+              {/* Label - moved to top right */}
+              <span className="text-[9px] font-[Inter] font-medium text-muted-foreground/80 uppercase tracking-widest">
+                {kpi.label}
+              </span>
             </div>
 
-            {/* SubValue or Label */}
-            <div className="flex items-center gap-1 text-[10px] font-[Inter] font-medium">
-              {kpi.trend && (
-                kpi.trend === "up" ? (
-                  <TrendingUp className={cn("h-3 w-3", getTrendColor(kpi.trend))} />
-                ) : kpi.trend === "down" ? (
-                  <TrendingDown className={cn("h-3 w-3", getTrendColor(kpi.trend))} />
-                ) : null
-              )}
-              <span className={cn(
-                kpi.trend ? getTrendColor(kpi.trend) : "text-muted-foreground"
+            {/* Value with enhanced typography */}
+            <div className="space-y-0.5">
+              <div className={cn(
+                "font-[Space_Grotesk] font-bold text-foreground",
+                "transition-all duration-[180ms]",
+                "group-hover:text-primary-glow",
+                kpi.type === "status" ? "text-base" : "text-lg tabular-nums tracking-tight",
+                "leading-none"
               )}>
-                {kpi.subValue || kpi.label}
-              </span>
+                {kpi.value}
+              </div>
+
+              {/* SubValue with trend indicator */}
+              {kpi.subValue && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  {kpi.trend && (
+                    <div className={cn(
+                      "flex items-center gap-0.5 px-1.5 py-0.5 rounded-md",
+                      "transition-all duration-[180ms]",
+                      kpi.trend === "up" && "bg-success/15 text-success",
+                      kpi.trend === "down" && "bg-danger/15 text-danger"
+                    )}>
+                      {kpi.trend === "up" ? (
+                        <TrendingUp className="h-2.5 w-2.5" />
+                      ) : (
+                        <TrendingDown className="h-2.5 w-2.5" />
+                      )}
+                      <span className="text-[10px] font-[Inter] font-semibold tabular-nums">
+                        {kpi.subValue}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Shine effect on hover */}
+          {/* Premium shine sweep effect */}
           <div 
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-[320ms] pointer-events-none"
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-[500ms] pointer-events-none"
             style={{
-              background: 'linear-gradient(135deg, transparent 30%, rgba(124, 77, 255, 0.1) 50%, rgba(0, 229, 255, 0.1) 70%, transparent)',
-              animation: 'shine 2s ease-in-out infinite'
+              background: 'linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.1) 50%, transparent 75%)',
+              backgroundSize: '200% 100%',
+              animation: 'shine-sweep 2s ease-in-out infinite'
             }}
+          />
+
+          {/* Corner accent */}
+          <div 
+            className={cn(
+              "absolute top-0 right-0 w-12 h-12 opacity-20 blur-2xl transition-opacity duration-[320ms]",
+              "group-hover:opacity-40",
+              kpi.type === "portfolio" && "bg-success",
+              kpi.type === "change" && "bg-primary",
+              kpi.type === "status" && "bg-warning"
+            )}
           />
         </button>
       ))}
