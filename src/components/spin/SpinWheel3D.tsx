@@ -28,14 +28,15 @@ export function SpinWheel3D({
   const animationRef = useRef<number>()
 
   useEffect(() => {
-    if (isSpinning && winningSegmentIndex !== undefined) {
+    // Start animation whenever a target index is available
+    if (winningSegmentIndex !== undefined) {
       startSpinAnimation(winningSegmentIndex)
     } else if (!isSpinning) {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [isSpinning, winningSegmentIndex])
+  }, [winningSegmentIndex, isSpinning])
 
   const startSpinAnimation = (targetIndex: number) => {
     const totalWeight = segments.reduce((sum, s) => sum + s.weight, 0)
