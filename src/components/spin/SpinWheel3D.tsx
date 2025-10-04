@@ -88,6 +88,7 @@ export function SpinWheel3D({
   }
 
   useEffect(() => {
+    console.log('SpinWheel3D segments:', segments?.length, segments?.map(s => s.label))
     drawWheel()
   }, [segments, rotation, winningSegmentIndex])
 
