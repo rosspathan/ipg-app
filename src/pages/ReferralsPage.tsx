@@ -11,14 +11,23 @@ import { copyToClipboard } from "@/utils/clipboard";
 export function ReferralsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { referralLink, config, getReferralUrl, getDeepLink, shareReferral, loading } = useReferrals();
+  const { referralCode, settings, stats, getReferralUrl, getDeepLink, shareReferral, loading } = useReferrals();
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Early return with loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center" data-testid="page-referrals-loading">
         <div className="text-muted-foreground">Loading referral data...</div>
+      </div>
+    );
+  }
+
+  // If no code generated yet, show error
+  if (!referralCode || !settings) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center" data-testid="page-referrals-error">
+        <div className="text-destructive">Failed to generate referral code. Please try again.</div>
       </div>
     );
   }
@@ -34,8 +43,8 @@ export function ReferralsPage() {
   };
 
   const handleCopyCode = async () => {
-    if (!referralLink) return;
-    const success = await copyToClipboard(referralLink.referral_code);
+    if (!referralCode) return;
+    const success = await copyToClipboard(referralCode.code);
     if (success) {
       toast({ title: "Copied", description: "Referral code copied to clipboard" });
     }
@@ -74,7 +83,7 @@ export function ReferralsPage() {
                 <p className="text-xs text-muted-foreground">Total Referrals</p>
               </div>
               <p className="text-2xl font-bold text-foreground">
-                {referralLink?.total_referrals || 0}
+                {stats.total_referrals}
               </p>
             </div>
             
@@ -84,7 +93,7 @@ export function ReferralsPage() {
                 <p className="text-xs text-muted-foreground">Commissions</p>
               </div>
               <p className="text-2xl font-bold text-foreground">
-                ${referralLink?.total_commissions.toFixed(2) || '0.00'}
+                ${stats.total_commissions.toFixed(2)}
               </p>
             </div>
           </div>
@@ -99,11 +108,13 @@ export function ReferralsPage() {
           <div className="space-y-3">
             <div className="flex gap-2">
               <Input
-                value={referralLink?.referral_code || ''}
+                data-testid="ref-code"
+                value={referralCode.code}
                 readOnly
                 className="font-mono text-lg font-bold bg-muted text-center"
               />
               <Button
+                data-testid="ref-copy"
                 variant="outline"
                 size="icon"
                 onClick={handleCopyCode}
@@ -127,6 +138,7 @@ export function ReferralsPage() {
           <div className="space-y-3">
             <div className="flex gap-2">
               <Input
+                data-testid="ref-link"
                 value={url}
                 readOnly
                 className="font-mono text-sm bg-muted"
@@ -151,6 +163,7 @@ export function ReferralsPage() {
               </Button>
               
               <Button
+                data-testid="ref-whatsapp"
                 onClick={() => handleShare('whatsapp')}
                 className="h-12 bg-[#25D366] hover:bg-[#128C7E] text-white"
               >
@@ -169,10 +182,11 @@ export function ReferralsPage() {
             <QrCode className="h-5 w-5 text-primary" />
           </div>
 
-          <div className="flex items-center justify-center p-8 bg-white rounded-xl">
+          <div className="flex items-center justify-center p-8 bg-white rounded-xl" data-testid="ref-qr">
             {/* QR Code Canvas - would need QR generation library */}
             <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center">
               <QrCode className="h-24 w-24 text-muted-foreground" />
+              <span className="sr-only">{url}</span>
             </div>
           </div>
 

@@ -29,6 +29,7 @@ import AdminSettingsNova from "./pages/admin/AdminSettingsNova";
 const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNova"));
 const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
 const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
+const AdminMobileLinking = React.lazy(() => import("./pages/admin/AdminMobileLinking"));
 import AdminBSKManagementNova from "./pages/admin/AdminBSKManagementNova";
 import AdminBSKLoansNova from "./pages/admin/AdminBSKLoansNova";
 import AdminManualPurchasesScreen from "./pages/AdminManualPurchasesScreen";
@@ -144,6 +145,8 @@ import { SecurityPage } from "@/pages/SecurityPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { ReferralsPage } from "@/pages/ReferralsPage";
+import { ReferralResolver } from "@/pages/ReferralResolver";
+import { DeepLinkResolver } from "@/pages/DeepLinkResolver";
 import { InsurancePage } from "@/pages/astra/InsurancePage";
 import { SpinWheelPage } from "@/pages/astra/SpinWheelPage";
 import { AdvertiseMiningPage } from "@/pages/astra/AdvertiseMiningPage";
@@ -174,6 +177,8 @@ function App() {
               {/* Landing & Splash */}
               <Route path="/" element={<Navigate to="/onboarding" replace />} />
               <Route path="/splash" element={<SplashScreen />} />
+              <Route path="/r/:code" element={<ReferralResolver />} />
+              <Route path="/deeplink/r/:code" element={<DeepLinkResolver />} />
               <Route path="/welcome" element={<WelcomeScreen />} />
               <Route path="/welcome-1" element={<WelcomeScreen1 />} />
               <Route path="/welcome-2" element={<WelcomeScreen2 />} />
@@ -318,6 +323,7 @@ function App() {
                 <Route path="ads" element={<AdminAdsScreen />} />
                 <Route path="reports" element={<AdminReportsNova />} />
                 <Route path="settings" element={<AdminSettingsNova />} />
+                <Route path="mobile-linking" element={<React.Suspense fallback={<div>Loading...</div>}><AdminMobileLinking /></React.Suspense>} />
               </Route>
 
               {/* Legacy Admin Console removed */}

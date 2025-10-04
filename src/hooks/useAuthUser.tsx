@@ -36,9 +36,13 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Handle referral relationship creation after successful signup
+      // Handle NEW referral system capture after email verification
         if (event === 'SIGNED_IN' && session?.user) {
-          setTimeout(() => {
+          setTimeout(async () => {
+            // Import dynamically to avoid circular deps
+            const { captureReferralAfterEmailVerify } = await import('@/utils/referralCapture');
+            await captureReferralAfterEmailVerify(session.user.id);
+            // Legacy system (keep for backward compatibility)
             handlePendingReferral(session.user.id);
           }, 0);
         }

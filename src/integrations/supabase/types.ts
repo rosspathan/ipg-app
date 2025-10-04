@@ -4254,6 +4254,66 @@ export type Database = {
           },
         ]
       }
+      mobile_linking_settings: {
+        Row: {
+          allow_sponsor_change_before_lock: boolean
+          android_package_name_debug: string | null
+          android_package_name_release: string | null
+          capture_stage: string
+          code_length: number
+          created_at: string
+          custom_scheme: string
+          host: string
+          id: string
+          lock_policy: string
+          play_store_fallback_url: string | null
+          ref_base_path: string
+          self_referral_block: boolean
+          sha256_fingerprints_debug: string[] | null
+          sha256_fingerprints_release: string[] | null
+          updated_at: string
+          whatsapp_template: string
+        }
+        Insert: {
+          allow_sponsor_change_before_lock?: boolean
+          android_package_name_debug?: string | null
+          android_package_name_release?: string | null
+          capture_stage?: string
+          code_length?: number
+          created_at?: string
+          custom_scheme?: string
+          host?: string
+          id?: string
+          lock_policy?: string
+          play_store_fallback_url?: string | null
+          ref_base_path?: string
+          self_referral_block?: boolean
+          sha256_fingerprints_debug?: string[] | null
+          sha256_fingerprints_release?: string[] | null
+          updated_at?: string
+          whatsapp_template?: string
+        }
+        Update: {
+          allow_sponsor_change_before_lock?: boolean
+          android_package_name_debug?: string | null
+          android_package_name_release?: string | null
+          capture_stage?: string
+          code_length?: number
+          created_at?: string
+          custom_scheme?: string
+          host?: string
+          id?: string
+          lock_policy?: string
+          play_store_fallback_url?: string | null
+          ref_base_path?: string
+          self_referral_block?: boolean
+          sha256_fingerprints_debug?: string[] | null
+          sha256_fingerprints_release?: string[] | null
+          updated_at?: string
+          whatsapp_template?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string
@@ -4945,6 +5005,27 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       referral_configs: {
         Row: {
           bonus_currency: string | null
@@ -5162,7 +5243,9 @@ export type Database = {
       }
       referral_links_new: {
         Row: {
+          capture_stage: string | null
           created_at: string
+          first_touch_at: string | null
           id: string
           locked_at: string | null
           referral_code: string
@@ -5174,7 +5257,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          capture_stage?: string | null
           created_at?: string
+          first_touch_at?: string | null
           id?: string
           locked_at?: string | null
           referral_code: string
@@ -5186,7 +5271,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          capture_stage?: string | null
           created_at?: string
+          first_touch_at?: string | null
           id?: string
           locked_at?: string | null
           referral_code?: string
@@ -7243,6 +7330,10 @@ export type Database = {
         }
         Returns: Json
       }
+      generate_referral_code: {
+        Args: { code_length?: number }
+        Returns: string
+      }
       get_asset_logo_url: {
         Args: { asset_row: Database["public"]["Tables"]["assets"]["Row"] }
         Returns: string
@@ -7279,6 +7370,10 @@ export type Database = {
           p_wallet_address?: string
         }
         Returns: Json
+      }
+      get_or_create_referral_code: {
+        Args: { p_user_id: string }
+        Returns: string
       }
       get_pool_draw_stats: {
         Args: { p_config_id: string }

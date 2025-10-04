@@ -3,37 +3,40 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
 
-export interface ReferralLink {
+export interface ReferralCode {
   id: string;
   user_id: string;
-  referral_code: string;
-  sponsor_id?: string;
-  locked_at?: string;
-  source?: string;
-  total_referrals: number;
-  total_commissions: number;
+  code: string;
   created_at: string;
-  updated_at: string;
 }
 
-export interface ReferralConfig {
-  app_host: string;
-  ref_route_web: string;
-  deep_link_scheme: string;
-  android_package_id: string;
-  android_sha256_fingerprint?: string;
-  sponsor_locking_policy: 'first_touch' | 'manual_approval' | 'retro_allowed';
-  self_referral_prevention: boolean;
-  qr_code_size: number;
-  whatsapp_support_url: string;
+export interface MobileLinkingSettings {
+  id: string;
+  host: string;
+  ref_base_path: string;
+  capture_stage: 'on_first_open' | 'after_email_verify' | 'after_wallet_create';
+  lock_policy: 'email_verified' | 'first_touch_wins' | 'wallet_created';
+  allow_sponsor_change_before_lock: boolean;
+  self_referral_block: boolean;
+  code_length: number;
+  android_package_name_release?: string;
+  sha256_fingerprints_release?: string[];
+  android_package_name_debug?: string;
+  sha256_fingerprints_debug?: string[];
+  custom_scheme: string;
+  play_store_fallback_url?: string;
+  whatsapp_template: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export const useReferrals = () => {
   const { user } = useAuthUser();
   const { toast } = useToast();
-  const [referralLink, setReferralLink] = useState<ReferralLink | null>(null);
-  const [config, setConfig] = useState<ReferralConfig | null>(null);
+  const [referralCode, setReferralCode] = useState<ReferralCode | null>(null);
+  const [settings, setSettings] = useState<MobileLinkingSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total_referrals: 0, total_commissions: 0 });
 
   const fetchReferrals = async () => {
     if (!user) {
@@ -44,26 +47,47 @@ export const useReferrals = () => {
     try {
       setLoading(true);
       
-      // Fetch config
-      const { data: configData } = await supabase
-        .from('referral_admin_config')
+      // Fetch settings
+      const { data: settingsData } = await supabase
+        .from('mobile_linking_settings')
         .select('*')
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
       
-      if (configData) {
-        setConfig(configData as ReferralConfig);
+      if (settingsData) {
+        setSettings(settingsData as MobileLinkingSettings);
       }
 
-      // Fetch user's referral link
+      // Get or create referral code
+      const { data: codeData, error: codeError } = await supabase
+        .rpc('get_or_create_referral_code', { p_user_id: user.id });
+
+      if (codeError) throw codeError;
+
+      // Fetch the full code record
+      const { data: codeRecord } = await supabase
+        .from('referral_codes')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (codeRecord) {
+        setReferralCode(codeRecord as ReferralCode);
+      }
+
+      // Fetch stats from referral_links_new
       const { data: linkData } = await supabase
         .from('referral_links_new')
-        .select('*')
+        .select('total_referrals, total_commissions')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (linkData) {
-        setReferralLink(linkData as ReferralLink);
+        setStats({
+          total_referrals: linkData.total_referrals || 0,
+          total_commissions: linkData.total_commissions || 0
+        });
       }
     } catch (error) {
       console.error('Error fetching referrals:', error);
@@ -78,18 +102,19 @@ export const useReferrals = () => {
   };
 
   const getReferralUrl = () => {
-    if (!referralLink || !config) return '';
-    return `${config.app_host}${config.ref_route_web}/${referralLink.referral_code}`;
+    if (!referralCode || !settings) return '';
+    return `${settings.host}${settings.ref_base_path}/${referralCode.code}`;
   };
 
   const getDeepLink = () => {
-    if (!referralLink || !config) return '';
-    return `${config.deep_link_scheme}://r/${referralLink.referral_code}`;
+    if (!referralCode || !settings) return '';
+    return `${settings.custom_scheme}://r/${referralCode.code}`;
   };
 
   const shareReferral = async (method: 'whatsapp' | 'native') => {
     const url = getReferralUrl();
-    const text = `Join me on i-Smart! Use my referral code: ${referralLink?.referral_code}\n${url}`;
+    const template = settings?.whatsapp_template || 'Join me on IPG I-SMART! Use my link: {{link}} 🚀';
+    const text = template.replace('{{link}}', url);
 
     if (method === 'whatsapp') {
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
@@ -97,7 +122,7 @@ export const useReferrals = () => {
     } else if (method === 'native' && navigator.share) {
       try {
         await navigator.share({
-          title: 'Join i-Smart',
+          title: 'Join IPG I-SMART',
           text,
           url
         });
@@ -112,8 +137,9 @@ export const useReferrals = () => {
   }, [user]);
 
   return {
-    referralLink,
-    config,
+    referralCode,
+    settings,
+    stats,
     loading,
     getReferralUrl,
     getDeepLink,
