@@ -401,7 +401,7 @@ export function WheelRenderer({
         width="44"
         height="36"
         viewBox="0 0 44 36"
-        className="absolute -top-3 left-1/2 -translate-x-1/2 pointer-events-none"
+        className="absolute -top-6 left-1/2 -translate-x-1/2 pointer-events-none"
         style={{ zIndex: 10 }}
         aria-hidden
       >
@@ -414,8 +414,9 @@ export function WheelRenderer({
             <stop offset="100%" stopColor="#CC8800"/>
           </linearGradient>
         </defs>
-        <polygon points="22,2 2,34 42,34" fill="url(#goldGrad)" stroke="#FFA500" strokeWidth="2" />
-        <ellipse cx="22" cy="35" rx="5" ry="2" fill="rgba(0,0,0,0.25)" />
+        {/* Tip points DOWN toward the wheel */}
+        <polygon points="22,34 2,2 42,2" fill="url(#goldGrad)" stroke="#FFA500" strokeWidth="2" />
+        <ellipse cx="22" cy="34" rx="5" ry="2" fill="rgba(0,0,0,0.25)" />
       </svg>
     </div>
   )
