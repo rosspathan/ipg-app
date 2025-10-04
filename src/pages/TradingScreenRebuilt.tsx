@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { PairHeaderPro } from "@/components/trading/PairHeaderPro";
-import { KPIStatsRow } from "@/components/trading/KPIStatsRow";
+import { PairAppBar } from "@/components/trading/PairAppBar";
 import { PairPickerSheet, TradingPair } from "@/components/trading/PairPickerSheet";
-import { TFChipsAndToggle, Timeframe } from "@/components/trading/TFChipsAndToggle";
+import { PairControlsRow, Timeframe } from "@/components/trading/PairControlsRow";
+import { MicroStatsStrip } from "@/components/trading/MicroStatsStrip";
 import { ChartCardPro } from "@/components/trading/ChartCardPro";
-import { OrderTicketPro, OrderTicketData } from "@/components/trading/OrderTicketPro";
-import { DepthOrderBook, OrderBookEntry } from "@/components/trading/DepthOrderBook";
+import { OrderSheet, OrderTicketData } from "@/components/trading/OrderSheet";
+import { DepthOrderBook } from "@/components/trading/DepthOrderBook";
 import { TradesTapePro, Trade } from "@/components/trading/TradesTapePro";
 import { ExecStatusBar, ExecutionStatus } from "@/components/trading/ExecStatusBar";
 import { FeesBar } from "@/components/trading/FeesBar";
@@ -224,98 +224,91 @@ export default function TradingScreenRebuilt() {
     }
   };
 
+  const high24h = currentPair.lastPrice * 1.05;
+  const low24h = currentPair.lastPrice * 0.95;
+  const spread = ((high24h - low24h) / currentPair.lastPrice) * 100;
+
   return (
     <div 
       className="min-h-screen bg-background pb-32"
       data-testid="page-trade"
     >
-      {/* Pair Header with Mode Badge and Favorite */}
-      <PairHeaderPro
+      {/* Pair App Bar with KPI Integrated */}
+      <PairAppBar
         pair={selectedPair}
         mode={tradingMode}
-        isFavorite={currentPair.isFavorite}
-        onToggleFavorite={() => handleToggleFavorite(selectedPair)}
-        onOpenPairPicker={() => setPairPickerOpen(true)}
-      />
-
-      {/* KPI Stats Row - 3 Cards */}
-      <KPIStatsRow
         lastPrice={currentPair.lastPrice}
         priceChange24h={currentPair.priceChange24h}
         volume24h={currentPair.volume24h}
         currency="₹"
-        onPress={() => {
-          // TODO: Open MiniAnalytics modal with OHLC data
-          console.log("Open mini analytics");
-        }}
+        isFavorite={currentPair.isFavorite}
+        onToggleFavorite={() => handleToggleFavorite(selectedPair)}
+        onPairClick={() => setPairPickerOpen(true)}
       />
 
-      {/* Timeframe Chips + Candles Toggle */}
-      <TFChipsAndToggle
+      {/* Pair Controls - Pair pill + Timeframe chips + Candles Toggle */}
+      <PairControlsRow
+        pair={selectedPair}
         timeframe={timeframe}
         onTimeframeChange={setTimeframe}
         candlesEnabled={candlesEnabled}
         onCandlesToggle={handleCandlesToggle}
+        onPairClick={() => setPairPickerOpen(true)}
       />
 
       {/* Chart Panel - Only mounts when Candles ON */}
-      <ChartCardPro
-        symbol={selectedPair}
-        enabled={candlesEnabled}
+      {candlesEnabled && (
+        <ChartCardPro
+          symbol={selectedPair}
+          enabled={candlesEnabled}
+        />
+      )}
+
+      {/* Micro Stats Strip */}
+      <MicroStatsStrip
+        high24h={high24h}
+        low24h={low24h}
+        spread={spread}
+        currency="₹"
       />
 
-      {/* Order Ticket Pro */}
-      <div className="px-4 my-4">
-        <OrderTicketPro
-          pair={selectedPair}
-          currentPrice={currentPair.lastPrice}
-          availableBalance={{ base: 1000, quote: 100000 }}
-          makerFee={0.10}
-          takerFee={0.10}
-          bestBid={mockOrderBook.bids[0]?.price}
-          bestAsk={mockOrderBook.asks[0]?.price}
-          onSubmit={handleOrderSubmit}
-        />
-      </div>
-
-      {/* Depth Order Book */}
-      <div className="px-4 mb-4">
+      {/* Main Content Area */}
+      <div className="px-4 py-3 space-y-4 mb-96">
+        {/* Depth Order Book */}
         <DepthOrderBook
           bids={mockOrderBook.bids}
           asks={mockOrderBook.asks}
           onPriceClick={(price) => {
             console.log("Fill price:", price);
-            // TODO: Fill limit price in order ticket
+            // TODO: Fill limit price in order sheet
           }}
         />
-      </div>
 
-      {/* Trades Tape Pro */}
-      <div className="px-4 mb-4">
+        {/* Trades Tape Pro */}
         <TradesTapePro trades={mockTrades} />
-      </div>
 
-      {/* Fees Bar */}
-      <div className="px-4 mb-4">
+        {/* Fees Bar */}
         <FeesBar
           makerFee={0.10}
           takerFee={0.10}
           feeAsset="BSK"
+          bskDiscount={25}
           onLearnMore={() => navigate("/app/fees")}
         />
       </div>
 
-      {/* Risk Disclaimer */}
-      <div className="px-4 mb-4">
-        <div className="p-3 bg-muted/30 border border-border/50 rounded-lg flex items-start gap-2 text-xs text-muted-foreground">
-          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <p>
-            <strong className="text-foreground">Risk Warning:</strong> Trading crypto involves risk. 
-            {tradingMode === "SIM" && " You are in simulation mode - no real funds at risk."}
-            {tradingMode === "LIVE" && " You are trading with real funds. Trade responsibly."}
-          </p>
-        </div>
-      </div>
+      {/* Order Sheet - Bottom Sheet Pattern */}
+      <OrderSheet
+        pair={selectedPair}
+        currentPrice={currentPair.lastPrice}
+        availableBalance={100000}
+        makerFee={0.10}
+        takerFee={0.10}
+        bestBid={mockOrderBook.bids[0]?.price}
+        bestAsk={mockOrderBook.asks[0]?.price}
+        isLoading={false}
+        onSubmit={handleOrderSubmit}
+      />
 
       {/* Execution Status Bar */}
       <ExecStatusBar
