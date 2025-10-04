@@ -36,7 +36,7 @@ const actionConfig = {
   transfer: {
     icon: Send,
     label: "Transfer",
-    route: "/app/wallet/transfer",
+    route: "/app/programs/bsk-transfer",
     variant: "outline" as const,
     className: "text-primary hover:bg-primary/10"
   },

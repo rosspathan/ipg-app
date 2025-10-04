@@ -38,7 +38,7 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
 
   const withdrawActions = [
     { id: "withdraw", label: "Withdraw", icon: <ArrowUpRight className="h-4 w-4" />, variant: "success" as const, onPress: () => navigate("/app/programs/bsk-withdraw") },
-    { id: "transfer", label: "Transfer", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/wallet/transfer") },
+    { id: "transfer", label: "Transfer", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/programs/bsk-transfer") },
     { id: "history", label: "History", icon: <History className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/wallet/history") }
   ]
 

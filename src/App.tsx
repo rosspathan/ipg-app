@@ -36,6 +36,7 @@ import AdminManualPurchasesScreen from "./pages/AdminManualPurchasesScreen";
 import ManualBSKPurchaseScreen from "./pages/ManualBSKPurchaseScreen";
 import AdminCryptoConversionsScreen from "./pages/AdminCryptoConversionsScreen";
 import AdminAnnouncementsScreen from "./pages/AdminAnnouncementsScreen";
+import BSKTransferScreen from "./pages/BSKTransferScreen";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -274,6 +275,7 @@ function App() {
                 <Route path="programs/bsk-purchase-manual" element={<ManualBSKPurchaseScreen />} />
                 <Route path="programs/crypto-conversion" element={<CryptoConversionScreen />} />
                 <Route path="programs/bsk-withdraw" element={<BSKWithdrawScreen />} />
+                <Route path="programs/bsk-transfer" element={<BSKTransferScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="programs/badge-subscription" element={<BadgeSubscriptionScreen />} />
                 

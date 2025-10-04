@@ -2080,6 +2080,54 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_transfers: {
+        Row: {
+          amount_bsk: number
+          created_at: string | null
+          id: string
+          notes: string | null
+          recipient_balance_after: number
+          recipient_balance_before: number
+          recipient_id: string
+          sender_balance_after: number
+          sender_balance_before: number
+          sender_id: string
+          status: string
+          transaction_ref: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_bsk: number
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          recipient_balance_after: number
+          recipient_balance_before: number
+          recipient_id: string
+          sender_balance_after: number
+          sender_balance_before: number
+          sender_id: string
+          status?: string
+          transaction_ref?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_bsk?: number
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          recipient_balance_after?: number
+          recipient_balance_before?: number
+          recipient_id?: string
+          sender_balance_after?: number
+          sender_balance_before?: number
+          sender_id?: string
+          status?: string
+          transaction_ref?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       bsk_vesting_config: {
         Row: {
           anti_sybil_max_per_ip: number | null
