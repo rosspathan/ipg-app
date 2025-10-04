@@ -112,11 +112,20 @@ export function OrderSheet({
   const percentageChips = [25, 50, 75, 100];
 
   return (
-    <div 
-      data-testid="order-sheet"
-      className="fixed bottom-16 left-0 right-0 z-20 transition-transform duration-320 animate-fade-in"
-    >
-      <Card className="rounded-t-3xl border-t border-x border-border/30 bg-card/98 backdrop-blur-xl shadow-2xl">
+    <>
+      {isExpanded && (
+        <button
+          aria-label="Close order sheet"
+          onClick={() => setIsExpanded(false)}
+          className="fixed inset-0 z-[19] bg-background/60 backdrop-blur-sm animate-fade-in"
+        />
+      )}
+
+      <div 
+        data-testid="order-sheet"
+        className="fixed left-1/2 -translate-x-1/2 bottom-20 w-full max-w-[430px] z-40 transition-transform duration-320 pb-[env(safe-area-inset-bottom)] animate-fade-in"
+      >
+        <Card className="rounded-t-3xl border-t border-x border-border/30 bg-card/98 backdrop-blur-xl shadow-2xl pointer-events-auto">
         {/* Drag Handle */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -357,5 +366,6 @@ export function OrderSheet({
         )}
       </Card>
     </div>
+    </>
   );
 }
