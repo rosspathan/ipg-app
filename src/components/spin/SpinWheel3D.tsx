@@ -31,12 +31,8 @@ export function SpinWheel3D({
     // Start animation whenever a target index is available AND segments are loaded
     if (winningSegmentIndex !== undefined && segments.length > 0) {
       startSpinAnimation(winningSegmentIndex)
-    } else if (!isSpinning) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
     }
-  }, [winningSegmentIndex, isSpinning, segments])
+  }, [winningSegmentIndex, segments])
 
   const startSpinAnimation = (targetIndex: number) => {
     // Guard: ensure segments are loaded and index is valid
