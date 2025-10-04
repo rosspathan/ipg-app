@@ -1135,6 +1135,48 @@ export type Database = {
           },
         ]
       }
+      bsk_admin_settings: {
+        Row: {
+          created_at: string
+          daily_burn_limit: number
+          daily_mint_limit: number
+          id: string
+          max_withdrawal_amount: number
+          min_withdrawal_amount: number
+          notes: string | null
+          require_kyc_for_withdrawal: boolean
+          updated_at: string
+          withdrawal_enabled: boolean
+          withdrawal_fee_percent: number
+        }
+        Insert: {
+          created_at?: string
+          daily_burn_limit?: number
+          daily_mint_limit?: number
+          id?: string
+          max_withdrawal_amount?: number
+          min_withdrawal_amount?: number
+          notes?: string | null
+          require_kyc_for_withdrawal?: boolean
+          updated_at?: string
+          withdrawal_enabled?: boolean
+          withdrawal_fee_percent?: number
+        }
+        Update: {
+          created_at?: string
+          daily_burn_limit?: number
+          daily_mint_limit?: number
+          id?: string
+          max_withdrawal_amount?: number
+          min_withdrawal_amount?: number
+          notes?: string | null
+          require_kyc_for_withdrawal?: boolean
+          updated_at?: string
+          withdrawal_enabled?: boolean
+          withdrawal_fee_percent?: number
+        }
+        Relationships: []
+      }
       bsk_bonus_campaigns: {
         Row: {
           allow_stacking: boolean
@@ -3991,6 +4033,48 @@ export type Database = {
           monthly_fee?: number
           tier_name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ipg_admin_settings: {
+        Row: {
+          contract_address: string
+          created_at: string
+          decimals: number
+          id: string
+          is_verified: boolean
+          min_trade_amount: number
+          network: string
+          notes: string | null
+          trading_enabled: boolean
+          updated_at: string
+          withdrawal_enabled: boolean
+        }
+        Insert: {
+          contract_address: string
+          created_at?: string
+          decimals?: number
+          id?: string
+          is_verified?: boolean
+          min_trade_amount?: number
+          network?: string
+          notes?: string | null
+          trading_enabled?: boolean
+          updated_at?: string
+          withdrawal_enabled?: boolean
+        }
+        Update: {
+          contract_address?: string
+          created_at?: string
+          decimals?: number
+          id?: string
+          is_verified?: boolean
+          min_trade_amount?: number
+          network?: string
+          notes?: string | null
+          trading_enabled?: boolean
+          updated_at?: string
+          withdrawal_enabled?: boolean
         }
         Relationships: []
       }

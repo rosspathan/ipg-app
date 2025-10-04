@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, TrendingUp, Info, Plus, BarChart3, Settings, MoreVertical, BookOpen, X } from "lucide-react";
 import { PairSelectorSheet } from "@/components/trading/PairSelectorSheet";
@@ -7,6 +7,7 @@ import { AmountSliderPro } from "@/components/trading/AmountSliderPro";
 import { AmountInputPro } from "@/components/trading/AmountInputPro";
 import { AllocationDonut } from "@/components/trading/AllocationDonut";
 import { ErrorHintBar, type ErrorHint } from "@/components/trading/ErrorHintBar";
+import { useTradingPairs } from "@/hooks/useTradingPairs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +39,9 @@ const mockOrderBook = {
 
 export default function TradingScreenRebuilt() {
   const navigate = useNavigate();
+  const { data: allPairs = [], isLoading } = useTradingPairs();
+  
+  const [selectedPairSymbol, setSelectedPairSymbol] = useState("BNB ORIGINAL/USDT");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState("limit");
   const [price, setPrice] = useState("1147.3");
@@ -51,17 +55,19 @@ export default function TradingScreenRebuilt() {
   const [pairSelectorOpen, setPairSelectorOpen] = useState(false);
   const [errors, setErrors] = useState<ErrorHint[]>([]);
 
-  const availableBalance = 329.19972973;
-  const pair = "BNB/USDT";
-  const priceChange = "+0.33%";
-  const baseSymbol = "BNB";
-  const quoteSymbol = "USDT";
+  // Get current pair data
+  const currentPair = allPairs.find(p => p.symbol === selectedPairSymbol) || allPairs[0];
   
-  // Trading limits
-  const stepSize = "0.001";
+  const availableBalance = 329.19972973;
+  const baseSymbol = currentPair?.baseAsset || "BNB";
+  const quoteSymbol = currentPair?.quoteAsset || "USDT";
+  const priceChange = currentPair ? `${currentPair.change24h > 0 ? '+' : ''}${currentPair.change24h.toFixed(2)}%` : "+0.00%";
+  
+  // Trading limits from current pair
+  const stepSize = currentPair?.lotSize.toString() || "0.001";
   const minQty = "0.01";
   const maxQty = "1000";
-  const minNotional = "10";
+  const minNotional = currentPair?.minNotional.toString() || "10";
 
   const handlePercentageClick = (pct: number) => {
     setPercentage(pct);
@@ -161,7 +167,7 @@ export default function TradingScreenRebuilt() {
     // Create order object
     const order = {
       id: `order-${Date.now()}`,
-      pair,
+      pair: selectedPairSymbol,
       side,
       type: orderType,
       price: orderPrice,
@@ -211,8 +217,13 @@ export default function TradingScreenRebuilt() {
               className="flex items-center gap-2 hover:bg-muted/50 px-3 py-2 rounded-lg transition-colors"
             >
               <div className="text-left">
-                <div className="text-sm font-bold">{pair}</div>
-                <div className="text-[10px] font-semibold text-success">{priceChange}</div>
+                <div className="text-sm font-bold">{selectedPairSymbol}</div>
+                <div className={cn(
+                  "text-xs font-semibold",
+                  currentPair?.change24h >= 0 ? "text-success" : "text-danger"
+                )}>
+                  {priceChange}
+                </div>
               </div>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </button>
@@ -242,7 +253,7 @@ export default function TradingScreenRebuilt() {
         {chartEnabled && (
           <div className="animate-fade-in">
             <ChartCardPro
-              symbol={pair}
+              symbol={selectedPairSymbol}
               enabled={chartEnabled}
             />
           </div>
@@ -676,10 +687,13 @@ export default function TradingScreenRebuilt() {
       <PairSelectorSheet
         open={pairSelectorOpen}
         onOpenChange={setPairSelectorOpen}
-        currentPair={pair}
+        currentPair={selectedPairSymbol}
         onSelectPair={(newPair) => {
-          // Update pair - in production this would update state and fetch new data
-          console.log("Selected pair:", newPair);
+          setSelectedPairSymbol(newPair);
+          const selected = allPairs.find(p => p.symbol === newPair);
+          if (selected) {
+            setPrice(selected.price.toFixed(2));
+          }
         }}
       />
     </div>
