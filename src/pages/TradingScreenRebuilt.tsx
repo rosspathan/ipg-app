@@ -261,18 +261,18 @@ export default function TradingScreenRebuilt() {
 
         {/* Main Trading Interface */}
         <div className="relative">
-          {/* Order Entry Form - Full width on mobile, split on desktop */}
+          {/* Order Entry Form with inline Order Book */}
           <div className="border-t border-border/50 flex">
-            {/* Order Entry Form */}
-            <div className="flex-1 px-4 py-4 space-y-3">
+            {/* Order Entry Form - Left Side */}
+            <div className="flex-1 min-w-0 px-3 py-4 space-y-2.5">
             {/* Buy/Sell Tabs */}
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setSide("buy")}
                 className={cn(
-                  "h-11 rounded-xl font-bold text-sm transition-all duration-200 relative overflow-hidden",
+                  "h-9 rounded-lg font-semibold text-xs transition-all duration-200",
                   side === "buy"
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
                 )}
               >
@@ -281,9 +281,9 @@ export default function TradingScreenRebuilt() {
               <button
                 onClick={() => setSide("sell")}
                 className={cn(
-                  "h-11 rounded-xl font-bold text-sm transition-all duration-200",
+                  "h-9 rounded-lg font-semibold text-xs transition-all duration-200",
                   side === "sell"
-                    ? "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
                 )}
               >
@@ -293,11 +293,11 @@ export default function TradingScreenRebuilt() {
 
             {/* Order Type */}
             <div className="flex items-center gap-2">
-              <button className="p-1.5 rounded-full border border-border hover:bg-muted/50 transition-colors">
-                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+              <button className="p-1 rounded-full border border-border hover:bg-muted/50 transition-colors">
+                <Info className="h-3 w-3 text-muted-foreground" />
               </button>
               <Select value={orderType} onValueChange={setOrderType}>
-                <SelectTrigger className="h-9 bg-muted/30 border-border/50 text-sm">
+                <SelectTrigger className="h-8 bg-muted/30 border-border/50 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -315,13 +315,13 @@ export default function TradingScreenRebuilt() {
                     type="number"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    className="flex-1 h-12 text-xl font-bold bg-muted/30 border-border/50 font-mono"
+                    className="flex-1 h-10 text-base font-bold bg-muted/30 border-border/50 font-mono"
                     placeholder="0.00"
                   />
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-12 px-4 border-border/50 hover:bg-muted/50 font-semibold"
+                    className="h-10 px-3 border-border/50 hover:bg-muted/50 font-semibold text-xs"
                     onClick={() => {
                       // BBO = Best Bid/Offer - auto-fill from orderbook
                       const bestPrice = side === "buy" 
@@ -333,7 +333,7 @@ export default function TradingScreenRebuilt() {
                     BBO
                   </Button>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-[10px] text-muted-foreground">
                   ≈ {(parseFloat(price) || 0).toLocaleString()} USD
                 </div>
               </div>
@@ -341,21 +341,18 @@ export default function TradingScreenRebuilt() {
 
             {/* Market Order Price Display */}
             {orderType === "market" && (
-              <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
+              <div className="p-2 bg-muted/20 rounded-lg border border-border/50">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Market Price</span>
-                  <span className="text-base font-bold font-mono">
+                  <span className="text-[10px] text-muted-foreground">Market Price</span>
+                  <span className="text-sm font-bold font-mono">
                     ${mockOrderBook.bids[0].price.toFixed(2)}
                   </span>
-                </div>
-                <div className="text-[10px] text-muted-foreground mt-1">
-                  Order will execute at current market price
                 </div>
               </div>
             )}
 
-            {/* Amount Control - Pro Version */}
-            <div className="space-y-4">
+            {/* Amount Control - Compact */}
+            <div className="space-y-2">
               {/* Percent Chips */}
               <PercentChipsPro
                 value={percentage}
@@ -373,8 +370,8 @@ export default function TradingScreenRebuilt() {
               />
               
               {/* Amount Input with Donut */}
-              <div className="flex items-start gap-3">
-                <div className="flex-1">
+              <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
                   <AmountInputPro
                     value={quantity}
                     onChange={handleAmountChange}
@@ -386,7 +383,7 @@ export default function TradingScreenRebuilt() {
                     stepSize={stepSize}
                   />
                 </div>
-                <div className="pt-3">
+                <div className="pt-2">
                   <AllocationDonut percentage={percentage} />
                 </div>
               </div>
@@ -396,25 +393,25 @@ export default function TradingScreenRebuilt() {
             </div>
 
             {/* Order Value */}
-            <div className="flex items-center justify-between py-2 px-3 bg-muted/20 rounded-lg">
-              <span className="text-xs text-muted-foreground">Order value</span>
-              <span className="text-sm font-bold font-mono text-foreground">
+            <div className="flex items-center justify-between py-1.5 px-2 bg-muted/20 rounded-lg">
+              <span className="text-[10px] text-muted-foreground">Order value</span>
+              <span className="text-xs font-bold font-mono text-foreground">
                 {((parseFloat(quantity) || 0) * (orderType === "market" ? mockOrderBook.bids[0].price : parseFloat(price || "0"))).toFixed(2)} {quoteSymbol}
               </span>
             </div>
 
             {/* TP/SL */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="tpsl"
                   checked={tpslEnabled}
                   onCheckedChange={(checked) => setTpslEnabled(checked as boolean)}
-                  className="h-4 w-4"
+                  className="h-3.5 w-3.5"
                 />
                 <label
                   htmlFor="tpsl"
-                  className="text-xs font-medium cursor-pointer"
+                  className="text-[10px] font-medium cursor-pointer"
                 >
                   TP/SL
                 </label>
@@ -422,21 +419,21 @@ export default function TradingScreenRebuilt() {
 
               {/* TP/SL Input Fields */}
               {tpslEnabled && (
-                <div className="space-y-2 pl-6">
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground">Take Profit</label>
+                <div className="space-y-1.5 pl-5">
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] text-muted-foreground">Take Profit</label>
                     <Input
                       type="number"
                       placeholder="0.00"
-                      className="h-10 bg-muted/30 border-border/50 text-sm font-mono"
+                      className="h-8 bg-muted/30 border-border/50 text-xs font-mono"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground">Stop Loss</label>
+                  <div className="space-y-0.5">
+                    <label className="text-[9px] text-muted-foreground">Stop Loss</label>
                     <Input
                       type="number"
                       placeholder="0.00"
-                      className="h-10 bg-muted/30 border-border/50 text-sm font-mono"
+                      className="h-8 bg-muted/30 border-border/50 text-xs font-mono"
                     />
                   </div>
                 </div>
@@ -444,47 +441,37 @@ export default function TradingScreenRebuilt() {
             </div>
 
             {/* Available Balance */}
-            <div className="flex items-center justify-between py-2 px-3 bg-muted/10 rounded-lg">
-              <span className="text-xs text-muted-foreground">Available</span>
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold font-mono text-foreground">
+            <div className="flex items-center justify-between py-1.5 px-2 bg-muted/10 rounded-lg">
+              <span className="text-[10px] text-muted-foreground">Available</span>
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-bold font-mono text-foreground">
                   {availableBalance.toFixed(2)} {side === "buy" ? quoteSymbol : baseSymbol}
                 </span>
-                <button className="p-1 hover:bg-muted/50 rounded transition-colors">
-                  <Plus className="h-3.5 w-3.5" />
+                <button className="p-0.5 hover:bg-muted/50 rounded transition-colors">
+                  <Plus className="h-3 w-3" />
                 </button>
               </div>
             </div>
-            
-            {/* Selected Amount Info */}
-            {percentage > 0 && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Using {percentage}% of balance</span>
-                <span className="font-semibold text-primary">
-                  {((availableBalance * percentage) / 100).toFixed(2)} {side === "buy" ? quoteSymbol : baseSymbol}
-                </span>
-              </div>
-            )}
 
             {/* Submit Button */}
             <Button
               onClick={handlePlaceOrder}
               className={cn(
-                "w-full h-14 text-base font-bold shadow-lg transition-all duration-200 rounded-2xl",
+                "w-full h-11 text-sm font-bold shadow-lg transition-all duration-200 rounded-xl",
                 side === "buy"
-                  ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/30"
-                  : "bg-danger hover:bg-danger/90 text-danger-foreground shadow-danger/30"
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
+                  : "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20"
               )}
             >
-              {side === "buy" ? "Buy" : "Sell"} {baseSymbol}
+              {side === "buy" ? "Buy" : "Sell"} BNB
             </Button>
             </div>
 
-            {/* Desktop Order Book - Hidden on mobile */}
-            <div className="hidden lg:block w-[200px] py-4 pr-4 border-l border-border/50">
-              <div className="flex items-center justify-between mb-2 px-2">
-                <div className="text-[9px] font-semibold text-muted-foreground">Price (USDT)</div>
-                <div className="text-[9px] font-semibold text-muted-foreground">Quantity (BNB)</div>
+            {/* Order Book - Right Side (Always visible) */}
+            <div className="w-[145px] py-4 pr-3 pl-2 border-l border-border/50 flex-shrink-0">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <div className="text-[8px] font-semibold text-muted-foreground">Price<br/>(USDT)</div>
+                <div className="text-[8px] font-semibold text-muted-foreground text-right">Quantity<br/>(BNB)</div>
               </div>
 
             {/* Asks - 4 red entries */}
@@ -492,23 +479,22 @@ export default function TradingScreenRebuilt() {
               {mockOrderBook.asks.slice(-4).reverse().map((ask, idx) => (
                 <button
                   key={`ask-${idx}`}
-                  className="w-full flex items-center justify-between py-0.5 px-2 hover:bg-danger/5 rounded transition-colors"
+                  className="w-full flex items-center justify-between py-0.5 px-1 hover:bg-rose-500/5 rounded transition-colors"
                 >
-                  <span className="text-xs font-mono font-semibold text-danger">
+                  <span className="text-[10px] font-mono font-semibold text-rose-500">
                     {ask.price.toFixed(1)}
                   </span>
-                  <span className="text-[10px] font-mono text-muted-foreground">
-                    {ask.quantity}
+                  <span className="text-[9px] font-mono text-muted-foreground">
+                    {parseFloat(ask.quantity).toFixed(4)}
                   </span>
                 </button>
               ))}
             </div>
 
             {/* Current Price - 1 white entry */}
-            <div className="flex items-center justify-center gap-1.5 py-2 mb-2 bg-muted/20 rounded-lg">
-              <span className="text-sm font-bold font-mono text-foreground">{mockOrderBook.bids[0].price}</span>
-              <TrendingUp className="h-3 w-3 text-success" />
-              <span className="text-[9px] text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-0.5 py-1.5 mb-2 bg-muted/20 rounded-lg">
+              <span className="text-xs font-bold font-mono text-foreground">{mockOrderBook.bids[0].price}</span>
+              <span className="text-[8px] text-muted-foreground">
                 ≈${(mockOrderBook.bids[0].price * 1.002).toFixed(2)}
               </span>
             </div>
@@ -518,100 +504,21 @@ export default function TradingScreenRebuilt() {
               {mockOrderBook.bids.slice(0, 4).map((bid, idx) => (
                 <button
                   key={`bid-${idx}`}
-                  className="w-full flex items-center justify-between py-0.5 px-2 hover:bg-primary/5 rounded transition-colors"
+                  className="w-full flex items-center justify-between py-0.5 px-1 hover:bg-emerald-500/5 rounded transition-colors"
                 >
-                  <span className="text-xs font-mono font-semibold text-primary">
+                  <span className="text-[10px] font-mono font-semibold text-emerald-500">
                     {bid.price.toFixed(1)}
                   </span>
-                  <span className="text-[10px] font-mono text-muted-foreground">
-                    {bid.quantity}
+                  <span className="text-[9px] font-mono text-muted-foreground">
+                    {parseFloat(bid.quantity).toFixed(4)}
                   </span>
                 </button>
               ))}
             </div>
           </div>
         </div>
+        </div>
         
-        {/* Mobile Order Book Floating Button */}
-        <button
-          onClick={() => setShowOrderBook(!showOrderBook)}
-          className="lg:hidden fixed bottom-20 right-4 z-50 h-12 px-4 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center gap-2 font-semibold text-sm hover:scale-105 transition-transform"
-        >
-          <BookOpen className="h-4 w-4" />
-          Order Book
-        </button>
-
-        {/* Mobile Order Book Sheet */}
-        {showOrderBook && (
-          <div className="lg:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" onClick={() => setShowOrderBook(false)}>
-            <div 
-              className="absolute bottom-0 left-0 right-0 bg-background border-t border-border rounded-t-2xl max-h-[70vh] overflow-y-auto animate-slide-in-up"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="sticky top-0 bg-background border-b border-border px-4 py-3 flex items-center justify-between">
-                <h3 className="font-bold text-base">Order Book</h3>
-                <button 
-                  onClick={() => setShowOrderBook(false)}
-                  className="p-2 hover:bg-muted rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-3 px-2">
-                  <div className="text-xs font-semibold text-muted-foreground">Price (USDT)</div>
-                  <div className="text-xs font-semibold text-muted-foreground">Quantity (BNB)</div>
-                </div>
-
-                {/* Asks - 4 red entries */}
-                <div className="space-y-1 mb-3">
-                  {mockOrderBook.asks.slice(-4).reverse().map((ask, idx) => (
-                    <button
-                      key={`mobile-ask-${idx}`}
-                      className="w-full flex items-center justify-between py-2 px-3 hover:bg-danger/5 rounded-lg transition-colors"
-                    >
-                      <span className="text-sm font-mono font-bold text-danger">
-                        {ask.price.toFixed(1)}
-                      </span>
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {ask.quantity}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Current Price - 1 white entry */}
-                <div className="flex items-center justify-center gap-2 py-3 mb-3 bg-muted/20 rounded-lg">
-                  <span className="text-lg font-bold font-mono text-foreground">{mockOrderBook.bids[0].price}</span>
-                  <TrendingUp className="h-4 w-4 text-success" />
-                  <span className="text-xs text-muted-foreground">
-                    ≈${(mockOrderBook.bids[0].price * 1.002).toFixed(2)}
-                  </span>
-                </div>
-
-                {/* Bids - 4 green entries */}
-                <div className="space-y-1">
-                  {mockOrderBook.bids.slice(0, 4).map((bid, idx) => (
-                    <button
-                      key={`mobile-bid-${idx}`}
-                      className="w-full flex items-center justify-between py-2 px-3 hover:bg-primary/5 rounded-lg transition-colors"
-                    >
-                      <span className="text-sm font-mono font-bold text-primary">
-                        {bid.price.toFixed(1)}
-                      </span>
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {bid.quantity}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        </div> {/* Close relative div */}
-
         {/* Bottom Tabs */}
         <div className="border-t border-border/50 bg-background/95 backdrop-blur-xl">
           <div className="flex items-center gap-4 px-4 py-2 overflow-x-auto no-scrollbar">
