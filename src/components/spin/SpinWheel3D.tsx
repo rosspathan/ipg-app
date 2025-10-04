@@ -13,6 +13,7 @@ interface SpinWheel3DProps {
   segments: Segment[]
   isSpinning: boolean
   winningSegmentIndex?: number
+  spinId?: number
   onSpinComplete?: () => void
 }
 
@@ -20,6 +21,7 @@ export function SpinWheel3D({
   segments,
   isSpinning,
   winningSegmentIndex,
+  spinId,
   onSpinComplete
 }: SpinWheel3DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -32,7 +34,7 @@ export function SpinWheel3D({
     if (winningSegmentIndex !== undefined && segments.length > 0) {
       startSpinAnimation(winningSegmentIndex)
     }
-  }, [winningSegmentIndex, segments])
+  }, [winningSegmentIndex, segments, spinId])
 
   const startSpinAnimation = (targetIndex: number) => {
     // Guard: ensure segments are loaded and index is valid
@@ -40,12 +42,23 @@ export function SpinWheel3D({
       return
     }
 
+    // Cancel any in-flight animation to avoid races
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current)
+      animationRef.current = undefined
+    }
+    // Reset base rotation so each spin animates from 0 → target
+    setRotation(0)
+
     const totalWeight = segments.reduce((sum, s) => sum + s.weight, 0)
     const prevWeight = segments.slice(0, targetIndex).reduce((sum, s) => sum + s.weight, 0)
     const targetWeight = segments[targetIndex].weight
 
     const offsetFromTop = ((prevWeight + targetWeight / 2) / totalWeight) * 360
-    const targetRotation = 360 * 5 - offsetFromTop
+    const fullSpins = 5 // Premium feel – deterministic
+    const targetRotation = 360 * fullSpins - offsetFromTop
+
+    console.info('WHEEL_START', { targetIndex, targetRotation, spinId })
 
     const startTime = Date.now()
     const duration = settings.reducedMotion ? 1000 : 3500
@@ -65,6 +78,7 @@ export function SpinWheel3D({
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate)
       } else {
+        console.info('WHEEL_DONE', { targetIndex, spinId })
         onSpinComplete?.()
       }
     }

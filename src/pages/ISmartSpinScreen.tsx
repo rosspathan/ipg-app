@@ -13,6 +13,7 @@ import { HistorySheet } from '@/components/spin/HistorySheet'
 import { History } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
+import { useSpinMachine } from '@/hooks/useSpinMachine'
 
 export default function ISmartSpinScreen() {
   const navigate = useNavigate()
@@ -21,6 +22,8 @@ export default function ISmartSpinScreen() {
   const [winningSegmentIndex, setWinningSegmentIndex] = useState<number>()
   const [showHistory, setShowHistory] = useState(false)
   const [spinHistory, setSpinHistory] = useState<any[]>([])
+
+  const spinMachine = useSpinMachine()
   
   const {
     config,
@@ -54,7 +57,7 @@ export default function ISmartSpinScreen() {
   }, [lastResult])
 
   const handleSpin = async () => {
-    if (!config || isSpinning) return
+    if (!config || isSpinning || !spinMachine.isIdle) return
 
     const costs = calculateCosts(betAmount)
     if (!costs?.canAfford) {
@@ -67,16 +70,21 @@ export default function ISmartSpinScreen() {
     }
 
     setWinningSegmentIndex(undefined)
-    
+    spinMachine.send({ type: 'SPIN_CLICK' })
+
     const result = await performSpin(betAmount)
     if (result) {
       const segmentIndex = segments.findIndex(s => s.id === result.segment.id)
       setWinningSegmentIndex(segmentIndex)
+      spinMachine.send({ type: 'COMMIT_OK', outcomeIndex: segmentIndex })
+    } else {
+      spinMachine.send({ type: 'ERROR' })
     }
   }
 
   const handleSpinComplete = () => {
-    // Animation complete - additional logic can go here
+    console.info('SPIN_ANIM_COMPLETE', { outcomeIndex: winningSegmentIndex, spinId: spinMachine.spinId })
+    spinMachine.send({ type: 'SPIN_ANIM_DONE' })
   }
 
   if (isLoading) {
@@ -155,8 +163,9 @@ export default function ISmartSpinScreen() {
           <SpinWheel3D
             key={`premium-wheel-${segments.length}-${JSON.stringify(segments.map(s => s.label))}`}
             segments={segments}
-            isSpinning={isSpinning}
+            isSpinning={spinMachine.isSpinning}
             winningSegmentIndex={winningSegmentIndex}
+            spinId={spinMachine.spinId}
             onSpinComplete={handleSpinComplete}
           />
         )}
@@ -225,7 +234,7 @@ export default function ISmartSpinScreen() {
         bskEquivalent={costs?.betBsk || 0}
         spinFee={config.post_free_spin_fee_bsk}
         isFree={costs?.isFree || false}
-        isSpinning={isSpinning}
+        isSpinning={isSpinning || !spinMachine.isIdle}
         canAfford={costs?.canAfford || false}
         onSpin={handleSpin}
       />

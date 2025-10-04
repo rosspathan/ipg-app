@@ -87,6 +87,7 @@ export function BetCardPro({
         )}
 
         <Button
+          data-testid="spin-button"
           onClick={onSpin}
           disabled={isSpinning || !canAfford}
           className="w-full h-12 text-base font-bold bg-gradient-to-r from-[#7C4DFF] to-[#00E5FF] hover:from-[#6A3FD9] hover:to-[#00CCE6] disabled:opacity-50"

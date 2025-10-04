@@ -198,7 +198,7 @@ export function useISmartSpin() {
       if (result.multiplier > 0) {
         toast({
           title: "🎉 You Won!",
-          description: `${result.segment.label} - Won ${result.net_payout_bsk.toFixed(2)} BSK`,
+          description: `${result.segment.label} - Won ${Number(result.net_payout_bsk ?? 0).toFixed(2)} BSK`,
           variant: "default"
         })
       } else {
