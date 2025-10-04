@@ -6108,6 +6108,42 @@ export type Database = {
         }
         Relationships: []
       }
+      spin_config: {
+        Row: {
+          created_at: string
+          free_spins_per_user: number
+          id: string
+          is_active: boolean
+          max_bet_bsk: number
+          min_bet_bsk: number
+          post_free_spin_fee_bsk: number
+          updated_at: string
+          winner_profit_fee_percent: number
+        }
+        Insert: {
+          created_at?: string
+          free_spins_per_user?: number
+          id?: string
+          is_active?: boolean
+          max_bet_bsk?: number
+          min_bet_bsk?: number
+          post_free_spin_fee_bsk?: number
+          updated_at?: string
+          winner_profit_fee_percent?: number
+        }
+        Update: {
+          created_at?: string
+          free_spins_per_user?: number
+          id?: string
+          is_active?: boolean
+          max_bet_bsk?: number
+          min_bet_bsk?: number
+          post_free_spin_fee_bsk?: number
+          updated_at?: string
+          winner_profit_fee_percent?: number
+        }
+        Relationships: []
+      }
       spin_grants: {
         Row: {
           created_at: string | null
@@ -6149,6 +6185,71 @@ export type Database = {
           },
         ]
       }
+      spin_history: {
+        Row: {
+          bet_bsk: number
+          client_seed: string
+          created_at: string
+          id: string
+          multiplier: number
+          net_change_bsk: number
+          net_payout_bsk: number
+          nonce: number
+          payout_bsk: number
+          profit_fee_bsk: number
+          result_value: number
+          segment_id: string
+          server_seed_hash: string
+          spin_fee_bsk: number
+          user_id: string
+          was_free_spin: boolean
+        }
+        Insert: {
+          bet_bsk: number
+          client_seed: string
+          created_at?: string
+          id?: string
+          multiplier: number
+          net_change_bsk: number
+          net_payout_bsk?: number
+          nonce: number
+          payout_bsk?: number
+          profit_fee_bsk?: number
+          result_value: number
+          segment_id: string
+          server_seed_hash: string
+          spin_fee_bsk?: number
+          user_id: string
+          was_free_spin?: boolean
+        }
+        Update: {
+          bet_bsk?: number
+          client_seed?: string
+          created_at?: string
+          id?: string
+          multiplier?: number
+          net_change_bsk?: number
+          net_payout_bsk?: number
+          nonce?: number
+          payout_bsk?: number
+          profit_fee_bsk?: number
+          result_value?: number
+          segment_id?: string
+          server_seed_hash?: string
+          spin_fee_bsk?: number
+          user_id?: string
+          was_free_spin?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin_history_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "spin_segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spin_runs: {
         Row: {
           created_at: string | null
@@ -6182,6 +6283,72 @@ export type Database = {
           ticket_currency?: string | null
           user_id?: string
           wheel_id?: string | null
+        }
+        Relationships: []
+      }
+      spin_segments: {
+        Row: {
+          color_hex: string
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          multiplier: number
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          color_hex: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          multiplier?: number
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          color_hex?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          multiplier?: number
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      spin_user_limits: {
+        Row: {
+          created_at: string
+          free_spins_remaining: number
+          id: string
+          total_bet_bsk: number
+          total_spins: number
+          total_won_bsk: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          free_spins_remaining?: number
+          id?: string
+          total_bet_bsk?: number
+          total_spins?: number
+          total_won_bsk?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          free_spins_remaining?: number
+          id?: string
+          total_bet_bsk?: number
+          total_spins?: number
+          total_won_bsk?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
