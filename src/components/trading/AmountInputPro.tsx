@@ -79,12 +79,12 @@ export function AmountInputPro({
       </div>
       
       {/* Helper Text */}
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
+      <div className="flex items-center justify-between text-xs font-medium text-foreground/70 px-1 gap-3">
         {minNotional && (
-          <span>Min notional: {minNotional}</span>
+          <span className="whitespace-nowrap">Min notional: {minNotional}</span>
         )}
         {stepSize && (
-          <span>Step: {stepSize}</span>
+          <span className="whitespace-nowrap">Step: {stepSize}</span>
         )}
       </div>
     </div>
