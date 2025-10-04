@@ -162,6 +162,13 @@ export default function TradingScreenRebuilt() {
                   variant="outline"
                   size="sm"
                   className="h-12 px-4 border-border/50 hover:bg-muted/50 font-semibold"
+                  onClick={() => {
+                    // BBO = Best Bid/Offer - auto-fill from orderbook
+                    const bestPrice = side === "buy" 
+                      ? mockOrderBook.asks[mockOrderBook.asks.length - 1].price 
+                      : mockOrderBook.bids[0].price;
+                    setPrice(bestPrice.toFixed(1));
+                  }}
                 >
                   BBO
                 </Button>
@@ -175,6 +182,18 @@ export default function TradingScreenRebuilt() {
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Quantity</Label>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 w-10 p-0 border-border/50 hover:bg-muted/50"
+                  onClick={() => {
+                    const current = parseFloat(quantity) || 0;
+                    const step = 0.01;
+                    setQuantity(Math.max(0, current - step).toFixed(4));
+                  }}
+                >
+                  −
+                </Button>
                 <Input
                   type="number"
                   value={quantity}
@@ -182,6 +201,18 @@ export default function TradingScreenRebuilt() {
                   className="flex-1 h-10 text-base font-semibold bg-muted/30 border-border/50 font-mono"
                   placeholder="0.00"
                 />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 w-10 p-0 border-border/50 hover:bg-muted/50"
+                  onClick={() => {
+                    const current = parseFloat(quantity) || 0;
+                    const step = 0.01;
+                    setQuantity((current + step).toFixed(4));
+                  }}
+                >
+                  +
+                </Button>
                 <span className="text-sm font-semibold text-foreground">BNB</span>
               </div>
             </div>
