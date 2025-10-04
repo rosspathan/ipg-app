@@ -89,15 +89,25 @@ export function SpinWheel3D({
 
   useEffect(() => {
     console.log('SpinWheel3D segments:', segments?.length, segments?.map(s => s.label))
+    console.log('SpinWheel3D drawWheel called - about to draw wheel with segments:', segments)
     drawWheel()
   }, [segments, rotation, winningSegmentIndex])
 
   const drawWheel = () => {
+    console.log('🎯 DRAWING WHEEL START - segments:', segments?.length)
     const canvas = canvasRef.current
-    if (!canvas || !segments.length) return
+    if (!canvas || !segments.length) {
+      console.log('❌ Cannot draw wheel - canvas or segments missing:', { canvas: !!canvas, segmentsLength: segments?.length })
+      return
+    }
 
     const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {
+      console.log('❌ Cannot get canvas context')
+      return
+    }
+
+    console.log('✅ Drawing wheel with segments:', segments.map(s => s.label))
 
     const size = 320
     canvas.width = size * devicePixelRatio
