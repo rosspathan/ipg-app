@@ -1,331 +1,366 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { PairAppBar } from "@/components/trading/PairAppBar";
-import { PairPickerSheet, TradingPair } from "@/components/trading/PairPickerSheet";
-import { PairControlsRow, Timeframe } from "@/components/trading/PairControlsRow";
-import { MicroStatsStrip } from "@/components/trading/MicroStatsStrip";
-import { ChartCardPro } from "@/components/trading/ChartCardPro";
-import { OrderSheet, OrderTicketData } from "@/components/trading/OrderSheet";
-import { DepthOrderBook } from "@/components/trading/DepthOrderBook";
-import { TradesTapePro, Trade } from "@/components/trading/TradesTapePro";
-import { ExecStatusBar, ExecutionStatus } from "@/components/trading/ExecStatusBar";
-import { FeesBar } from "@/components/trading/FeesBar";
-import { AdapterFactory } from "@/lib/trading/AdapterFactory";
-import { ExchangeAdapter } from "@/lib/trading/ExchangeAdapter";
-import { AlertCircle } from "lucide-react";
+import { ChevronDown, TrendingUp, Info, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { DockNav } from "@/components/navigation/DockNav";
 
-// Mock trading pairs - in production, fetch from admin config
-const mockPairs: TradingPair[] = [
-  // Major pairs with USDT
-  { symbol: "BTC/USDT", baseAsset: "BTC", quoteAsset: "USDT", lastPrice: 43500.00, priceChange24h: 2.45, volume24h: 125000000, isFavorite: true, isListed: true },
-  { symbol: "ETH/USDT", baseAsset: "ETH", quoteAsset: "USDT", lastPrice: 2650.50, priceChange24h: 3.12, volume24h: 85000000, isFavorite: true, isListed: true },
-  { symbol: "BNB/USDT", baseAsset: "BNB", quoteAsset: "USDT", lastPrice: 315.75, priceChange24h: 1.87, volume24h: 45000000, isFavorite: true, isListed: true },
-  { symbol: "SOL/USDT", baseAsset: "SOL", quoteAsset: "USDT", lastPrice: 98.45, priceChange24h: 5.23, volume24h: 32000000, isFavorite: true, isListed: true },
-  { symbol: "XRP/USDT", baseAsset: "XRP", quoteAsset: "USDT", lastPrice: 0.5234, priceChange24h: -1.45, volume24h: 28000000, isListed: true },
-  { symbol: "ADA/USDT", baseAsset: "ADA", quoteAsset: "USDT", lastPrice: 0.4567, priceChange24h: 2.34, volume24h: 18000000, isListed: true },
-  { symbol: "DOGE/USDT", baseAsset: "DOGE", quoteAsset: "USDT", lastPrice: 0.0789, priceChange24h: -2.11, volume24h: 22000000, isListed: true },
-  { symbol: "AVAX/USDT", baseAsset: "AVAX", quoteAsset: "USDT", lastPrice: 36.78, priceChange24h: 4.56, volume24h: 15000000, isListed: true },
-  { symbol: "MATIC/USDT", baseAsset: "MATIC", quoteAsset: "USDT", lastPrice: 0.8765, priceChange24h: 1.23, volume24h: 12000000, isListed: true },
-  { symbol: "DOT/USDT", baseAsset: "DOT", quoteAsset: "USDT", lastPrice: 7.234, priceChange24h: -0.87, volume24h: 9500000, isListed: true },
-  { symbol: "TRX/USDT", baseAsset: "TRX", quoteAsset: "USDT", lastPrice: 0.1234, priceChange24h: 0.56, volume24h: 8900000, isListed: true },
-  { symbol: "LINK/USDT", baseAsset: "LINK", quoteAsset: "USDT", lastPrice: 14.567, priceChange24h: 3.45, volume24h: 11000000, isListed: true },
-  { symbol: "UNI/USDT", baseAsset: "UNI", quoteAsset: "USDT", lastPrice: 6.789, priceChange24h: -1.23, volume24h: 7800000, isListed: true },
-  { symbol: "ATOM/USDT", baseAsset: "ATOM", quoteAsset: "USDT", lastPrice: 9.876, priceChange24h: 2.11, volume24h: 6500000, isListed: true },
-  { symbol: "LTC/USDT", baseAsset: "LTC", quoteAsset: "USDT", lastPrice: 72.345, priceChange24h: 1.45, volume24h: 8200000, isListed: true },
-  { symbol: "APT/USDT", baseAsset: "APT", quoteAsset: "USDT", lastPrice: 8.456, priceChange24h: 6.78, volume24h: 9100000, isListed: true },
-  { symbol: "ARB/USDT", baseAsset: "ARB", quoteAsset: "USDT", lastPrice: 1.234, priceChange24h: -2.34, volume24h: 7200000, isListed: true },
-  { symbol: "OP/USDT", baseAsset: "OP", quoteAsset: "USDT", lastPrice: 2.345, priceChange24h: 3.21, volume24h: 5600000, isListed: true },
-  { symbol: "INJ/USDT", baseAsset: "INJ", quoteAsset: "USDT", lastPrice: 23.456, priceChange24h: 5.67, volume24h: 6800000, isListed: true },
-  { symbol: "SUI/USDT", baseAsset: "SUI", quoteAsset: "USDT", lastPrice: 0.9876, priceChange24h: 4.32, volume24h: 5200000, isListed: true },
-  { symbol: "SHIB/USDT", baseAsset: "SHIB", quoteAsset: "USDT", lastPrice: 0.00001234, priceChange24h: -3.45, volume24h: 8900000, isListed: true },
-  { symbol: "PEPE/USDT", baseAsset: "PEPE", quoteAsset: "USDT", lastPrice: 0.000009876, priceChange24h: 12.34, volume24h: 7800000, isListed: true },
-  { symbol: "FTM/USDT", baseAsset: "FTM", quoteAsset: "USDT", lastPrice: 0.456, priceChange24h: 2.78, volume24h: 4500000, isListed: true },
-  { symbol: "NEAR/USDT", baseAsset: "NEAR", quoteAsset: "USDT", lastPrice: 3.456, priceChange24h: -1.11, volume24h: 5800000, isListed: true },
-  { symbol: "IMX/USDT", baseAsset: "IMX", quoteAsset: "USDT", lastPrice: 1.789, priceChange24h: 3.89, volume24h: 4200000, isListed: true },
-  { symbol: "ALGO/USDT", baseAsset: "ALGO", quoteAsset: "USDT", lastPrice: 0.234, priceChange24h: 1.56, volume24h: 3800000, isListed: true },
-  
-  // Major pairs with BNB
-  { symbol: "BTC/BNB", baseAsset: "BTC", quoteAsset: "BNB", lastPrice: 137.89, priceChange24h: 0.67, volume24h: 8500000, isListed: true },
-  { symbol: "ETH/BNB", baseAsset: "ETH", quoteAsset: "BNB", lastPrice: 8.392, priceChange24h: 1.23, volume24h: 6200000, isListed: true },
-  { symbol: "SOL/BNB", baseAsset: "SOL", quoteAsset: "BNB", lastPrice: 0.3118, priceChange24h: 3.45, volume24h: 4500000, isListed: true },
-  { symbol: "XRP/BNB", baseAsset: "XRP", quoteAsset: "BNB", lastPrice: 0.001657, priceChange24h: -2.11, volume24h: 3200000, isListed: true },
-  { symbol: "ADA/BNB", baseAsset: "ADA", quoteAsset: "BNB", lastPrice: 0.001447, priceChange24h: 1.89, volume24h: 2800000, isListed: true },
-  { symbol: "DOGE/BNB", baseAsset: "DOGE", quoteAsset: "BNB", lastPrice: 0.0002499, priceChange24h: -1.67, volume24h: 3500000, isListed: true },
-  { symbol: "AVAX/BNB", baseAsset: "AVAX", quoteAsset: "BNB", lastPrice: 0.1165, priceChange24h: 2.98, volume24h: 2600000, isListed: true },
-  { symbol: "MATIC/BNB", baseAsset: "MATIC", quoteAsset: "BNB", lastPrice: 0.002776, priceChange24h: 0.78, volume24h: 2200000, isListed: true },
-  { symbol: "DOT/BNB", baseAsset: "DOT", quoteAsset: "BNB", lastPrice: 0.0229, priceChange24h: -0.56, volume24h: 1900000, isListed: true },
-  { symbol: "LINK/BNB", baseAsset: "LINK", quoteAsset: "BNB", lastPrice: 0.0461, priceChange24h: 2.34, volume24h: 2100000, isListed: true },
-  { symbol: "UNI/BNB", baseAsset: "UNI", quoteAsset: "BNB", lastPrice: 0.0215, priceChange24h: -0.89, volume24h: 1700000, isListed: true },
-  { symbol: "ATOM/BNB", baseAsset: "ATOM", quoteAsset: "BNB", lastPrice: 0.0313, priceChange24h: 1.67, volume24h: 1500000, isListed: true },
-  { symbol: "LTC/BNB", baseAsset: "LTC", quoteAsset: "BNB", lastPrice: 0.2292, priceChange24h: 0.98, volume24h: 1800000, isListed: true },
-  { symbol: "APT/BNB", baseAsset: "APT", quoteAsset: "BNB", lastPrice: 0.0268, priceChange24h: 5.12, volume24h: 1600000, isListed: true },
-  { symbol: "ARB/BNB", baseAsset: "ARB", quoteAsset: "BNB", lastPrice: 0.00391, priceChange24h: -1.78, volume24h: 1400000, isListed: true },
-  
-  // BSK and IPG pairs (original)
-  { symbol: "BSK/USDT", baseAsset: "BSK", quoteAsset: "USDT", lastPrice: 0.149, priceChange24h: 2.34, volume24h: 1250000, isListed: true },
-  { symbol: "IPG/USDT", baseAsset: "IPG", quoteAsset: "USDT", lastPrice: 0.544, priceChange24h: 5.12, volume24h: 750000, isListed: true },
-  { symbol: "BSK/BNB", baseAsset: "BSK", quoteAsset: "BNB", lastPrice: 0.000472, priceChange24h: 1.89, volume24h: 450000, isListed: true },
-  { symbol: "IPG/BNB", baseAsset: "IPG", quoteAsset: "BNB", lastPrice: 0.001723, priceChange24h: 4.56, volume24h: 320000, isListed: true }
-];
-
-// Mock order book data
+// Mock data for order book
 const mockOrderBook = {
-  bids: Array.from({ length: 15 }, (_, i) => ({
-    price: 12.45 - (i * 0.01),
-    quantity: Math.random() * 1000,
-    total: 0
-  })),
-  asks: Array.from({ length: 15 }, (_, i) => ({
-    price: 12.45 + (i * 0.01),
-    quantity: Math.random() * 1000,
-    total: 0
+  asks: Array.from({ length: 10 }, (_, i) => ({
+    price: 1148.5 - i * 0.1,
+    quantity: (Math.random() * 20).toFixed(4)
+  })).reverse(),
+  bids: Array.from({ length: 10 }, (_, i) => ({
+    price: 1147.8 - i * 0.1,
+    quantity: (Math.random() * 20).toFixed(4)
   }))
 };
 
-// Calculate totals
-mockOrderBook.bids.forEach((bid, i) => {
-  bid.total = mockOrderBook.bids.slice(0, i + 1).reduce((sum, b) => sum + (b.price * b.quantity), 0);
-});
-mockOrderBook.asks.forEach((ask, i) => {
-  ask.total = mockOrderBook.asks.slice(0, i + 1).reduce((sum, a) => sum + (a.price * a.quantity), 0);
-});
-
-// Mock recent trades
-const mockTrades: Trade[] = Array.from({ length: 30 }, (_, i) => ({
-  id: `trade-${i}`,
-  price: 12.45 + (Math.random() - 0.5) * 0.1,
-  quantity: Math.random() * 100,
-  side: Math.random() > 0.5 ? "buy" : "sell",
-  timestamp: Date.now() - (i * 60000)
-}));
-
 export default function TradingScreenRebuilt() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const [side, setSide] = useState<"buy" | "sell">("buy");
+  const [orderType, setOrderType] = useState("limit");
+  const [price, setPrice] = useState("1147.3");
+  const [quantity, setQuantity] = useState("");
+  const [percentage, setPercentage] = useState(0);
+  const [tpslEnabled, setTpslEnabled] = useState(false);
+  const [selectedTab, setSelectedTab] = useState("orders");
 
-  // Core state
-  const [selectedPair, setSelectedPair] = useState<string>("BTC/USDT");
-  const [tradingMode, setTradingMode] = useState<"LIVE" | "SIM">("SIM");
-  const [candlesEnabled, setCandlesEnabled] = useState(false); // Chart disabled by default
-  const [timeframe, setTimeframe] = useState<Timeframe>("1D");
-  const [pairs, setPairs] = useState<TradingPair[]>(mockPairs);
-  const [executionStatus, setExecutionStatus] = useState<ExecutionStatus | null>(null);
-  const [pairPickerOpen, setPairPickerOpen] = useState(false);
+  const availableBalance = 329.19972973;
+  const pair = "BNB/USDT";
+  const priceChange = "+0.33%";
 
-  // Exchange adapter
-  const [adapter, setAdapter] = useState<ExchangeAdapter | null>(null);
-
-  // Initialize adapter
-  useEffect(() => {
-    const exchangeAdapter = AdapterFactory.create({
-      mode: tradingMode,
-      // In production, these would come from admin settings
-      apiKey: undefined,
-      apiSecret: undefined,
-      endpoint: undefined
-    });
-    setAdapter(exchangeAdapter);
-
-    return () => {
-      exchangeAdapter.unsubscribe();
-    };
-  }, [tradingMode]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Ignore if user is typing in input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-      switch (e.key.toLowerCase()) {
-        case "/":
-          e.preventDefault();
-          setPairPickerOpen(true);
-          break;
-        case "c":
-          e.preventDefault();
-          setCandlesEnabled(prev => !prev);
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
-
-  // Get current pair data
-  const currentPair = pairs.find(p => p.symbol === selectedPair) || pairs[0];
-
-  // Handle pair selection
-  const handlePairSelect = (symbol: string) => {
-    setSelectedPair(symbol);
-    setCandlesEnabled(false); // Reset chart when switching pairs
+  const handlePercentageClick = (pct: number) => {
+    setPercentage(pct);
+    const maxQty = availableBalance / parseFloat(price || "0");
+    setQuantity(((maxQty * pct) / 100).toFixed(4));
   };
-
-  // Handle favorite toggle
-  const handleToggleFavorite = (symbol: string) => {
-    setPairs(prev => prev.map(p => 
-      p.symbol === symbol ? { ...p, isFavorite: !p.isFavorite } : p
-    ));
-  };
-
-  // Handle chart toggle - CRITICAL: Only enable when user explicitly toggles
-  const handleCandlesToggle = (enabled: boolean) => {
-    setCandlesEnabled(enabled);
-    console.log("[Trading] Candles", enabled ? "enabled" : "disabled", "- Chart will", enabled ? "mount" : "unmount");
-  };
-
-  // Handle order submission
-  const handleOrderSubmit = async (order: OrderTicketData) => {
-    if (!adapter) {
-      toast({
-        title: "Error",
-        description: "Trading adapter not initialized",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setExecutionStatus({
-      type: "processing",
-      message: `Placing ${order.side} order...`
-    });
-
-    try {
-      const response = await adapter.placeOrder({
-        pair: selectedPair,
-        side: order.side,
-        type: order.type,
-        amount: order.amount,
-        price: order.price
-      });
-
-      setExecutionStatus({
-        type: "success",
-        message: `Order ${response.status}!`,
-        details: `${order.side.toUpperCase()} ${order.amount} ${currentPair.baseAsset} @ ₹${response.averagePrice.toFixed(2)}`
-      });
-
-      setTimeout(() => setExecutionStatus(null), 5000);
-
-      toast({
-        title: "Order Executed",
-        description: `${order.side.toUpperCase()} order filled at ₹${response.averagePrice.toFixed(2)}`
-      });
-    } catch (error: any) {
-      setExecutionStatus({
-        type: "error",
-        message: "Order failed",
-        details: error.message
-      });
-
-      setTimeout(() => setExecutionStatus(null), 5000);
-    }
-  };
-
-  const high24h = currentPair.lastPrice * 1.05;
-  const low24h = currentPair.lastPrice * 0.95;
-  const spread = ((high24h - low24h) / currentPair.lastPrice) * 100;
 
   return (
-    <div 
-      className="min-h-screen bg-background pb-32"
-      data-testid="page-trade"
-    >
-      {/* Pair App Bar with KPI Integrated */}
-      <PairAppBar
-        pair={selectedPair}
-        mode={tradingMode}
-        lastPrice={currentPair.lastPrice}
-        priceChange24h={currentPair.priceChange24h}
-        volume24h={currentPair.volume24h}
-        currency="₹"
-        isFavorite={currentPair.isFavorite}
-        onToggleFavorite={() => handleToggleFavorite(selectedPair)}
-        onPairClick={() => setPairPickerOpen(true)}
-      />
-
-      {/* Pair Controls - Pair pill + Timeframe chips + Candles Toggle */}
-      <PairControlsRow
-        pair={selectedPair}
-        timeframe={timeframe}
-        onTimeframeChange={setTimeframe}
-        candlesEnabled={candlesEnabled}
-        onCandlesToggle={handleCandlesToggle}
-        onPairClick={() => setPairPickerOpen(true)}
-      />
-
-      {/* Chart Panel - Only mounts when Candles ON */}
-      {candlesEnabled && (
-        <ChartCardPro
-          symbol={selectedPair}
-          enabled={candlesEnabled}
-        />
-      )}
-
-      {/* Micro Stats Strip */}
-      <MicroStatsStrip
-        high24h={high24h}
-        low24h={low24h}
-        spread={spread}
-        currency="₹"
-      />
-
-      {/* Main Content Area */}
-      <div className="px-4 py-3 space-y-4 mb-96">
-        {/* Depth Order Book */}
-        <DepthOrderBook
-          bids={mockOrderBook.bids}
-          asks={mockOrderBook.asks}
-          spread={spread}
-          onPriceClick={(price) => {
-            console.log("Fill price:", price);
-            // TODO: Fill limit price in order sheet
-          }}
-        />
-
-        {/* Trades Tape Pro */}
-        <TradesTapePro trades={mockTrades} />
-
-        {/* Fees Bar */}
-        <FeesBar
-          makerFee={0.10}
-          takerFee={0.10}
-          feeToken="BSK"
-          discount={25}
-          onViewFees={() => navigate("/app/fees")}
-        />
+    <div className="min-h-screen bg-background pb-24" data-testid="page-trade">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 bg-background border-b border-border/50 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => {}}
+            className="flex items-center gap-2 hover:bg-muted/50 px-3 py-2 rounded-lg transition-colors"
+          >
+            <span className="text-xl font-bold">{pair}</span>
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <div className="flex items-center gap-3">
+            <button className="p-2 hover:bg-muted/50 rounded-lg transition-colors">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+            </button>
+            <button className="p-2 hover:bg-muted/50 rounded-lg transition-colors">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="mt-2 text-sm font-semibold text-success">{priceChange}</div>
       </div>
 
-      {/* Order Sheet - Bottom Sheet Pattern */}
-      <OrderSheet
-        pair={selectedPair}
-        currentPrice={currentPair.lastPrice}
-        availableBalance={100000}
-        makerFee={0.10}
-        takerFee={0.10}
-        bestBid={mockOrderBook.bids[0]?.price}
-        bestAsk={mockOrderBook.asks[0]?.price}
-        isLoading={false}
-        onSubmit={handleOrderSubmit}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+        {/* Left Side: Order Entry Form */}
+        <div className="px-4 py-4 space-y-4 border-r border-border/50">
+          {/* Buy/Sell Tabs */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setSide("buy")}
+              className={cn(
+                "h-12 rounded-lg font-semibold text-base transition-all duration-200",
+                side === "buy"
+                  ? "bg-cyan-500 text-white shadow-lg shadow-cyan-500/30"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              )}
+            >
+              Buy
+            </button>
+            <button
+              onClick={() => setSide("sell")}
+              className={cn(
+                "h-12 rounded-lg font-semibold text-base transition-all duration-200",
+                side === "sell"
+                  ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              )}
+            >
+              Sell
+            </button>
+          </div>
 
-      {/* Execution Status Bar */}
-      <ExecStatusBar
-        status={executionStatus}
-        onDismiss={() => setExecutionStatus(null)}
-      />
+          {/* Order Type */}
+          <div className="flex items-center gap-3">
+            <button className="p-2 rounded-full border border-border hover:bg-muted/50 transition-colors">
+              <Info className="h-4 w-4 text-muted-foreground" />
+            </button>
+            <Select value={orderType} onValueChange={setOrderType}>
+              <SelectTrigger className="w-[140px] h-11 bg-muted/30 border-border/50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="limit">Limit</SelectItem>
+                <SelectItem value="market">Market</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      {/* Pair Picker Sheet */}
-      <PairPickerSheet
-        open={pairPickerOpen}
-        onOpenChange={setPairPickerOpen}
-        pairs={pairs}
-        selectedPair={selectedPair}
-        onPairSelect={handlePairSelect}
-        onToggleFavorite={handleToggleFavorite}
-      />
+          {/* Price Input */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="flex-1 h-14 text-2xl font-semibold bg-muted/30 border-border/50"
+                placeholder="0.00"
+              />
+              <Button
+                variant="outline"
+                className="ml-2 h-14 px-6 border-border/50 hover:bg-muted/50"
+              >
+                BBO
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              ≈ {(parseFloat(price) || 0).toLocaleString()} USD
+            </div>
+          </div>
+
+          {/* Amount Input */}
+          <div className="space-y-2">
+            <Label className="text-sm text-muted-foreground">Quantity</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="flex-1 h-12 text-lg font-semibold bg-muted/30 border-border/50"
+                placeholder="0.00"
+              />
+              <span className="text-sm font-semibold text-foreground">BNB</span>
+            </div>
+          </div>
+
+          {/* Percentage Buttons */}
+          <div className="flex gap-2">
+            <button className="h-8 w-8 rounded-full border border-border flex items-center justify-center text-xs font-medium hover:bg-muted/50 transition-colors">
+              0%
+            </button>
+            {[25, 50, 75, 100].map((pct) => (
+              <button
+                key={pct}
+                onClick={() => handlePercentageClick(pct)}
+                className={cn(
+                  "flex-1 h-8 rounded-lg text-xs font-semibold transition-colors",
+                  percentage === pct
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/30 hover:bg-muted/50"
+                )}
+              >
+                {pct}%
+              </button>
+            ))}
+          </div>
+
+          {/* Slider */}
+          <Slider
+            value={[percentage]}
+            onValueChange={(v) => handlePercentageClick(v[0])}
+            max={100}
+            step={1}
+            className="py-2"
+          />
+
+          {/* Order Value */}
+          <div className="flex items-center justify-between py-3 px-4 bg-muted/20 rounded-lg">
+            <span className="text-sm text-muted-foreground">Order value</span>
+            <span className="text-sm font-semibold">USDT</span>
+          </div>
+
+          {/* TP/SL */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="tpsl"
+              checked={tpslEnabled}
+              onCheckedChange={(checked) => setTpslEnabled(checked as boolean)}
+            />
+            <label
+              htmlFor="tpsl"
+              className="text-sm font-medium cursor-pointer"
+            >
+              TP/SL
+            </label>
+          </div>
+
+          {/* Available Balance */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Available</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">
+                {availableBalance.toFixed(8)} USDT
+              </span>
+              <button className="p-1 hover:bg-muted/50 rounded transition-colors">
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <Button
+            className={cn(
+              "w-full h-14 text-base font-bold shadow-lg transition-all duration-200",
+              side === "buy"
+                ? "bg-cyan-500 hover:bg-cyan-600 text-white shadow-cyan-500/30"
+                : "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/30"
+            )}
+          >
+            {side === "buy" ? "Buy" : "Sell"} BNB
+          </Button>
+        </div>
+
+        {/* Right Side: Order Book */}
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs font-semibold text-muted-foreground">Price (USDT)</div>
+            <div className="text-xs font-semibold text-muted-foreground">Quantity (BNB)</div>
+          </div>
+
+          {/* Asks */}
+          <div className="space-y-0.5 mb-3">
+            {mockOrderBook.asks.map((ask, idx) => (
+              <button
+                key={`ask-${idx}`}
+                className="w-full flex items-center justify-between py-1 px-2 hover:bg-rose-500/5 rounded transition-colors group"
+              >
+                <span className="text-sm font-mono font-semibold text-rose-500">
+                  {ask.price.toFixed(1)}
+                </span>
+                <span className="text-sm font-mono text-muted-foreground">
+                  {ask.quantity}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Current Price */}
+          <div className="flex items-center justify-center gap-2 py-3 mb-3 bg-muted/20 rounded-lg">
+            <span className="text-lg font-bold font-mono">{mockOrderBook.bids[0].price}</span>
+            <TrendingUp className="h-4 w-4 text-success" />
+            <span className="text-xs text-muted-foreground">
+              ≈${(mockOrderBook.bids[0].price * 1.002).toFixed(2)}
+            </span>
+          </div>
+
+          {/* Bids */}
+          <div className="space-y-0.5">
+            {mockOrderBook.bids.map((bid, idx) => (
+              <button
+                key={`bid-${idx}`}
+                className="w-full flex items-center justify-between py-1 px-2 hover:bg-cyan-500/5 rounded transition-colors group"
+              >
+                <span className="text-sm font-mono font-semibold text-cyan-500">
+                  {bid.price.toFixed(1)}
+                </span>
+                <span className="text-sm font-mono text-muted-foreground">
+                  {bid.quantity}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Tabs */}
+      <div className="fixed bottom-16 left-0 right-0 border-t border-border/50 bg-background/95 backdrop-blur-xl">
+        <div className="flex items-center gap-4 px-4 py-3 overflow-x-auto">
+          <button
+            onClick={() => setSelectedTab("orders")}
+            className={cn(
+              "flex items-center gap-2 pb-2 border-b-2 transition-colors whitespace-nowrap",
+              selectedTab === "orders"
+                ? "border-primary text-primary font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Orders(0)
+            <ChevronDown className="h-3 w-3" />
+          </button>
+          <button
+            onClick={() => setSelectedTab("assets")}
+            className={cn(
+              "pb-2 border-b-2 transition-colors whitespace-nowrap",
+              selectedTab === "assets"
+                ? "border-primary text-primary font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Assets
+          </button>
+          <button
+            onClick={() => setSelectedTab("elite")}
+            className={cn(
+              "pb-2 border-b-2 transition-colors whitespace-nowrap",
+              selectedTab === "elite"
+                ? "border-primary text-primary font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Elite trades
+          </button>
+          <button
+            onClick={() => setSelectedTab("bots")}
+            className={cn(
+              "pb-2 border-b-2 transition-colors whitespace-nowrap",
+              selectedTab === "bots"
+                ? "border-primary text-primary font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Bots(0)
+          </button>
+          <button className="ml-auto p-2 hover:bg-muted/50 rounded-lg transition-colors">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="px-4 py-6 text-center">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Checkbox id="show-current" />
+              <label htmlFor="show-current" className="text-sm text-muted-foreground">
+                Show current
+              </label>
+            </div>
+            <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Cancel all
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground">No {selectedTab} yet</p>
+        </div>
+      </div>
+
+      {/* Bottom Navigation */}
+      <DockNav onNavigate={(path) => navigate(path)} />
     </div>
   );
 }
