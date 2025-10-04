@@ -212,8 +212,8 @@ export function HomePageRebuilt() {
 
         {/* BSK Withdrawable Card */}
         <BSKWithdrawCard
-          onWithdraw={() => navigate("/programs/bsk-withdraw")}
-          onTransfer={() => navigate("/programs/bsk-transfer")}
+          onWithdraw={() => navigate("/app/programs/bsk-withdraw")}
+          onTransfer={() => navigate("/app/programs/bsk-transfer")}
           onHistory={() => navigate("/app/wallet/history")}
           onViewBreakdown={() => setShowRewardsBreakdown(true)}
         />
