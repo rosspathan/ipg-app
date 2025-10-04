@@ -1,90 +1,58 @@
-import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, Clock } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils"
+import { TrendingUp, TrendingDown } from "lucide-react"
 
-export interface Trade {
-  id: string;
-  price: number;
-  quantity: number;
-  side: "buy" | "sell";
-  timestamp: number;
+interface Trade {
+  time: string
+  price: number
+  quantity: number
+  side: "buy" | "sell"
 }
 
 interface TradesTapeProps {
-  trades: Trade[];
+  trades: Trade[]
 }
 
 export function TradesTape({ trades }: TradesTapeProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
   return (
-    <Card className="bg-gradient-card" data-testid="trades-tape">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Recent Trades
-            <Badge variant="secondary" className="text-xs">{trades.length}</Badge>
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          >
-            {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-          </Button>
-        </div>
-      </CardHeader>
+    <div data-testid="trades-tape" className="bg-card/40 rounded-xl border border-border/30 overflow-hidden animate-fade-in" style={{ animationDelay: '280ms' }}>
+      {/* Header */}
+      <div className="grid grid-cols-3 gap-2 px-4 py-3 border-b border-border/30 bg-card/60">
+        <div className="text-xs font-semibold text-muted-foreground">Time</div>
+        <div className="text-xs font-semibold text-muted-foreground text-right">Price</div>
+        <div className="text-xs font-semibold text-muted-foreground text-right">Qty</div>
+      </div>
 
-      {!isCollapsed && (
-        <CardContent className="p-4 pt-0">
-          {/* Header */}
-          <div className="grid grid-cols-4 text-xs text-muted-foreground font-medium mb-2">
-            <div>Price (₹)</div>
-            <div className="text-right">Amount</div>
-            <div className="text-right">Side</div>
-            <div className="text-right">Time</div>
-          </div>
-
-          {/* Trades List */}
-          <div className="space-y-1 max-h-[300px] overflow-y-auto">
-            {trades.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-xs">
-                No recent trades
-              </div>
-            ) : (
-              trades.slice(0, 50).map((trade) => (
-                <div
-                  key={trade.id}
-                  className="grid grid-cols-4 text-xs py-1.5 px-2 rounded hover:bg-muted/50 transition-colors"
-                >
-                  <div className={`font-medium ${
-                    trade.side === "buy" ? "text-green-500" : "text-red-500"
-                  }`}>
-                    {trade.price.toFixed(2)}
-                  </div>
-                  <div className="text-right">{trade.quantity.toFixed(6)}</div>
-                  <div className="text-right">
-                    <Badge 
-                      variant={trade.side === "buy" ? "default" : "destructive"}
-                      className="h-5 text-xs"
-                    >
-                      {trade.side}
-                    </Badge>
-                  </div>
-                  <div className="text-right text-muted-foreground text-xs">
-                    {formatDistanceToNow(trade.timestamp, { addSuffix: false })}
-                  </div>
-                </div>
-              ))
+      {/* Trades List */}
+      <div className="max-h-64 overflow-y-auto">
+        {trades.map((trade, idx) => (
+          <div
+            key={idx}
+            className={cn(
+              "grid grid-cols-3 gap-2 px-4 py-2 transition-all duration-220",
+              "hover:bg-card/60 animate-fade-in"
             )}
+            style={{ animationDelay: `${idx * 30}ms` }}
+          >
+            <div className="flex items-center gap-1.5">
+              {trade.side === "buy" ? (
+                <TrendingUp className="h-3 w-3 text-success" />
+              ) : (
+                <TrendingDown className="h-3 w-3 text-danger" />
+              )}
+              <span className="text-xs font-mono text-muted-foreground">{trade.time}</span>
+            </div>
+            <span className={cn(
+              "text-sm font-mono tabular-nums text-right font-semibold",
+              trade.side === "buy" ? "text-success" : "text-danger"
+            )}>
+              {trade.price.toLocaleString('en-US', { minimumFractionDigits: 1 })}
+            </span>
+            <span className="text-sm font-mono tabular-nums text-right text-foreground/80">
+              {trade.quantity.toFixed(4)}
+            </span>
           </div>
-        </CardContent>
-      )}
-    </Card>
-  );
+        ))}
+      </div>
+    </div>
+  )
 }

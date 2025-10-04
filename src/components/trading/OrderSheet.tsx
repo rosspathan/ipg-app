@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { ChevronUp, Loader2 } from "lucide-react";
+import { ChevronUp, Loader2, TrendingUp, TrendingDown, Info } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export type OrderSide = "buy" | "sell";
 export type OrderType = "market" | "limit";
@@ -113,36 +114,50 @@ export function OrderSheet({
   return (
     <div 
       data-testid="order-sheet"
-      className="fixed bottom-16 left-0 right-0 z-20 transition-transform duration-320"
+      className="fixed bottom-16 left-0 right-0 z-20 transition-transform duration-320 animate-fade-in"
     >
-      <Card className="rounded-t-3xl border-t border-x border-border/50 bg-card/95 backdrop-blur-xl shadow-2xl">
+      <Card className="rounded-t-3xl border-t border-x border-border/30 bg-card/98 backdrop-blur-xl shadow-2xl">
         {/* Drag Handle */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex justify-center py-2 hover:bg-muted/30 transition-colors duration-120 rounded-t-3xl"
+          className="w-full flex justify-center py-3 hover:bg-muted/20 transition-all duration-220 rounded-t-3xl group"
           aria-label={isExpanded ? "Collapse order sheet" : "Expand order sheet"}
         >
-          <div className="w-10 h-1 rounded-full bg-border" />
+          <div className="w-12 h-1.5 rounded-full bg-border group-hover:bg-border/80 transition-colors duration-220" />
         </button>
 
         {/* Collapsed View */}
         {!isExpanded && (
-          <div className="px-4 pb-3">
+          <div className="px-4 pb-4 animate-fade-in">
             <div className="flex items-center justify-between">
-              <Tabs value={side} onValueChange={(v) => setSide(v as OrderSide)} className="w-auto">
-                <TabsList className="h-9">
-                  <TabsTrigger value="buy" className="px-6 data-[state=active]:bg-success data-[state=active]:text-white">
-                    Buy
-                  </TabsTrigger>
-                  <TabsTrigger value="sell" className="px-6 data-[state=active]:bg-destructive data-[state=active]:text-white">
-                    Sell
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <div className="grid grid-cols-2 gap-2 p-1 bg-card/40 rounded-xl border border-border/30">
+                <button
+                  onClick={() => setSide("buy")}
+                  className={cn(
+                    "h-10 px-6 rounded-lg font-semibold text-sm transition-all duration-220",
+                    side === "buy"
+                      ? "bg-success text-success-foreground shadow-md" 
+                      : "text-muted-foreground"
+                  )}
+                >
+                  Buy
+                </button>
+                <button
+                  onClick={() => setSide("sell")}
+                  className={cn(
+                    "h-10 px-6 rounded-lg font-semibold text-sm transition-all duration-220",
+                    side === "sell"
+                      ? "bg-danger text-danger-foreground shadow-md" 
+                      : "text-muted-foreground"
+                  )}
+                >
+                  Sell
+                </button>
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Price</span>
-                <span className="text-lg font-bold tabular-nums">₹{currentPrice.toFixed(2)}</span>
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xl font-bold tabular-nums">₹{currentPrice.toFixed(2)}</span>
+                <ChevronUp className="h-4 w-4 text-muted-foreground transition-transform duration-220 group-hover:-translate-y-0.5" />
               </div>
             </div>
           </div>
@@ -150,23 +165,39 @@ export function OrderSheet({
 
         {/* Expanded View */}
         {isExpanded && (
-          <div data-testid="order-ticket" className="px-4 pb-6 space-y-4">
+          <div data-testid="order-ticket" className="px-4 pb-6 space-y-4 animate-scale-in">
             {/* Side Tabs */}
-            <Tabs value={side} onValueChange={(v) => setSide(v as OrderSide)}>
-              <TabsList className="w-full h-11">
-                <TabsTrigger value="buy" className="flex-1 data-[state=active]:bg-success data-[state=active]:text-white">
-                  Buy
-                </TabsTrigger>
-                <TabsTrigger value="sell" className="flex-1 data-[state=active]:bg-destructive data-[state=active]:text-white">
-                  Sell
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-card/40 rounded-xl border border-border/30">
+              <button
+                onClick={() => setSide("buy")}
+                className={cn(
+                  "h-12 rounded-lg font-semibold text-base transition-all duration-220",
+                  "hover:scale-[1.02] active:scale-[0.98]",
+                  side === "buy"
+                    ? "bg-success text-success-foreground shadow-lg shadow-success/20" 
+                    : "text-muted-foreground hover:bg-card/60"
+                )}
+              >
+                Buy
+              </button>
+              <button
+                onClick={() => setSide("sell")}
+                className={cn(
+                  "h-12 rounded-lg font-semibold text-base transition-all duration-220",
+                  "hover:scale-[1.02] active:scale-[0.98]",
+                  side === "sell"
+                    ? "bg-danger text-danger-foreground shadow-lg shadow-danger/20" 
+                    : "text-muted-foreground hover:bg-card/60"
+                )}
+              >
+                Sell
+              </button>
+            </div>
 
             {/* Order Type */}
             <div className="flex items-center justify-between">
               <Select value={type} onValueChange={(v) => setType(v as OrderType)}>
-                <SelectTrigger className="w-32 h-9">
+                <SelectTrigger className="w-32 h-10 bg-card/60 border-border/40 transition-all duration-220 hover:border-border/60 focus:ring-2 focus:ring-primary/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -175,15 +206,16 @@ export function OrderSheet({
                 </SelectContent>
               </Select>
 
-              <div className="text-xs text-muted-foreground">
-                Available: <span className="font-semibold text-foreground">₹{availableBalance.toFixed(2)}</span>
+              <div className="text-sm">
+                <span className="text-muted-foreground">Available: </span>
+                <span className="font-semibold tabular-nums text-foreground">₹{availableBalance.toFixed(2)}</span>
               </div>
             </div>
 
             {/* Price (Limit Only) */}
             {type === "limit" && (
-              <div className="space-y-2">
-                <Label htmlFor="price" className="text-xs text-muted-foreground">
+              <div className="space-y-2 animate-scale-in">
+                <Label htmlFor="price" className="text-sm font-medium text-muted-foreground">
                   Price ({quoteCurrency})
                 </Label>
                 <div className="flex gap-2">
@@ -192,15 +224,23 @@ export function OrderSheet({
                     type="number"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    className="flex-1 h-11 text-base font-semibold tabular-nums"
+                    className="flex-1 h-12 text-lg font-mono bg-card/60 border-border/40 transition-all duration-220 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
                     placeholder="0.00"
                   />
+                  <Button 
+                    variant="outline" 
+                    className="h-12 px-4 transition-all duration-220 hover:scale-[1.02] active:scale-[0.98] hover:bg-card/80"
+                  >
+                    BBO
+                  </Button>
+                </div>
+                <div className="flex gap-2">
                   {bestBid && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setPrice(bestBid.toString())}
-                      className="h-11 px-3 text-xs"
+                      className="flex-1 h-9 text-xs transition-all duration-220 hover:scale-[1.02] active:scale-[0.98] hover:bg-success/10 hover:border-success/40 hover:text-success"
                     >
                       Bid {bestBid.toFixed(2)}
                     </Button>
@@ -210,7 +250,7 @@ export function OrderSheet({
                       variant="outline"
                       size="sm"
                       onClick={() => setPrice(bestAsk.toString())}
-                      className="h-11 px-3 text-xs"
+                      className="flex-1 h-9 text-xs transition-all duration-220 hover:scale-[1.02] active:scale-[0.98] hover:bg-danger/10 hover:border-danger/40 hover:text-danger"
                     >
                       Ask {bestAsk.toFixed(2)}
                     </Button>
@@ -221,7 +261,7 @@ export function OrderSheet({
 
             {/* Amount */}
             <div className="space-y-2">
-              <Label htmlFor="amount" className="text-xs text-muted-foreground">
+              <Label htmlFor="amount" className="text-sm font-medium text-muted-foreground">
                 Amount ({baseCurrency})
               </Label>
               <Input
@@ -229,20 +269,25 @@ export function OrderSheet({
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="h-11 text-base font-semibold tabular-nums"
+                className="h-12 text-lg font-mono bg-card/60 border-border/40 transition-all duration-220 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
                 placeholder="0.00"
               />
             </div>
 
             {/* Percentage Chips */}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {percentageChips.map((pct) => (
                 <Button
                   key={pct}
-                  variant={percentage === pct ? "default" : "outline"}
                   size="sm"
+                  variant="outline"
                   onClick={() => setPercentage(pct)}
-                  className="flex-1 h-8 text-xs font-semibold"
+                  className={cn(
+                    "h-9 text-xs font-semibold transition-all duration-220 hover:scale-[1.05] active:scale-[0.95]",
+                    percentage === pct 
+                      ? "bg-primary/20 border-primary/60 text-primary" 
+                      : "hover:bg-card/80"
+                  )}
                 >
                   {pct}%
                 </Button>
@@ -255,24 +300,26 @@ export function OrderSheet({
               onValueChange={(val) => setPercentage(val[0])}
               max={100}
               step={1}
-              className="py-2"
+              className="py-2 [&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:border-2 [&_[role=slider]]:transition-all [&_[role=slider]]:duration-220 [&_[role=slider]]:hover:scale-110"
             />
 
             {/* Fee Preview */}
-            <div className="space-y-1.5 p-3 rounded-lg bg-muted/20 border border-border/30">
-              <div className="flex justify-between text-xs">
+            <div className="rounded-xl border border-border/40 bg-card/40 p-4 space-y-2 transition-all duration-220 hover:border-border/60">
+              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Est. Total</span>
-                <span className="font-semibold tabular-nums">₹{calculateTotal().toFixed(2)}</span>
+                <span className="font-semibold tabular-nums text-foreground">₹{calculateTotal().toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground flex items-center gap-1">
                   Fee ({type === "market" ? "Taker" : "Maker"} {type === "market" ? takerFee : makerFee}%)
+                  <Info className="h-3 w-3" />
                 </span>
-                <span className="font-semibold tabular-nums">₹{calculateFee().toFixed(2)}</span>
+                <span className="font-semibold tabular-nums text-foreground">₹{calculateFee().toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-sm pt-1.5 border-t border-border/30">
-                <span className="font-semibold">Final Cost</span>
-                <span className="font-bold tabular-nums">₹{calculateFinalCost().toFixed(2)}</span>
+              <div className="h-px bg-border/40 my-2" />
+              <div className="flex justify-between text-base">
+                <span className="font-semibold text-foreground">Final Cost</span>
+                <span className="font-bold tabular-nums text-foreground">₹{calculateFinalCost().toFixed(2)}</span>
               </div>
             </div>
 
@@ -280,16 +327,30 @@ export function OrderSheet({
             <Button
               onClick={handleSubmit}
               disabled={!isValid() || isLoading}
-              className={`w-full h-12 text-base font-bold ${
+              className={cn(
+                "w-full h-14 text-base font-bold shadow-lg transition-all duration-220",
+                "hover:scale-[1.02] active:scale-[0.98]",
                 side === "buy" 
-                  ? "bg-success hover:bg-success/90" 
-                  : "bg-destructive hover:bg-destructive/90"
-              }`}
+                  ? "bg-gradient-to-r from-success to-success/90 hover:from-success/90 hover:to-success/80 text-success-foreground shadow-success/30" 
+                  : "bg-gradient-to-r from-danger to-danger/90 hover:from-danger/90 hover:to-danger/80 text-danger-foreground shadow-danger/30"
+              )}
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                `${side === "buy" ? "Buy" : "Sell"} ${baseCurrency}`
+                <>
+                  {side === "buy" ? (
+                    <>
+                      <TrendingUp className="w-5 h-5 mr-2" />
+                      Buy {baseCurrency}
+                    </>
+                  ) : (
+                    <>
+                      <TrendingDown className="w-5 h-5 mr-2" />
+                      Sell {baseCurrency}
+                    </>
+                  )}
+                </>
               )}
             </Button>
           </div>

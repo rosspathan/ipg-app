@@ -1,6 +1,8 @@
 import { BarChart3, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 export type Timeframe = "1H" | "4H" | "1D" | "1W";
 
@@ -25,51 +27,60 @@ export function PairControlsRow({
 
   return (
     <div 
-      data-testid="pair-controls"
-      className="flex items-center justify-between gap-2 px-4 py-3 bg-card/20 border-y border-border/50"
+      data-testid="pair-controls" 
+      className="flex items-center gap-2 px-4 py-3 bg-card/40 border-b border-border/30 animate-fade-in" 
+      style={{ animationDelay: '120ms' }}
     >
-      <button
+      {/* Pair Selector */}
+      <Button
+        variant="outline"
+        size="sm"
         onClick={onPairClick}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors duration-120"
-        aria-label="Open pair picker"
+        className="h-10 px-4 gap-2 transition-all duration-220 hover:scale-[1.02] active:scale-[0.98] hover:bg-card/80 hover:border-primary/40"
       >
-        <span className="text-xs font-semibold text-foreground">
-          {pair.split('/')[0]}
-        </span>
-        <ChevronDown className="h-3 w-3 text-muted-foreground" />
-      </button>
+        <span className="text-sm font-bold">{pair.split('/')[0]}</span>
+        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+      </Button>
 
-      <div className="flex items-center gap-1.5">
-        {timeframes.map((tf) => (
+      {/* Timeframe Chips */}
+      <div className="flex gap-1.5 flex-1">
+        {timeframes.map((tf, idx) => (
           <Button
             key={tf}
-            variant={timeframe === tf ? "default" : "ghost"}
+            variant="ghost"
             size="sm"
             onClick={() => onTimeframeChange(tf)}
             disabled={!candlesEnabled}
-            className={`h-7 px-2.5 text-xs font-semibold transition-all duration-120 ${
+            className={cn(
+              "h-10 px-3 text-xs font-bold transition-all duration-220",
+              "hover:scale-[1.05] active:scale-[0.95]",
               timeframe === tf 
-                ? "bg-primary text-primary-foreground" 
-                : "hover:bg-primary/10 text-muted-foreground"
-            } ${!candlesEnabled ? "opacity-40" : ""}`}
+                ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                : "hover:bg-card/80 text-muted-foreground",
+              !candlesEnabled && "opacity-40"
+            )}
+            style={{ animationDelay: `${160 + idx * 40}ms` }}
           >
             {tf}
           </Button>
         ))}
       </div>
 
-      <div 
-        data-testid="candle-toggle"
-        className="flex items-center gap-2"
-      >
-        <BarChart3 className={`h-4 w-4 transition-colors duration-220 ${
-          candlesEnabled ? "text-primary" : "text-muted-foreground"
-        }`} />
+      {/* Candles Toggle */}
+      <div data-testid="candle-toggle" className="flex items-center gap-2 pl-2 border-l border-border/40">
         <Switch
+          id="candles"
           checked={candlesEnabled}
           onCheckedChange={onCandlesToggle}
-          aria-label="Toggle candle chart"
+          className="data-[state=checked]:bg-primary transition-all duration-220"
         />
+        <Label htmlFor="candles" className="text-xs font-semibold cursor-pointer flex items-center gap-1.5 transition-colors duration-220 hover:text-foreground">
+          <BarChart3 className={cn(
+            "h-3.5 w-3.5 transition-all duration-220",
+            candlesEnabled && "text-primary"
+          )} />
+          <span className="hidden sm:inline">Candles</span>
+        </Label>
       </div>
     </div>
   );

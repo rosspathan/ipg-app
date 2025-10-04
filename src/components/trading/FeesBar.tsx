@@ -1,60 +1,40 @@
-import { Info } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface FeesBarProps {
-  makerFee: number;
-  takerFee: number;
-  feeAsset?: string;
-  bskDiscount?: number;
-  onLearnMore?: () => void;
+  makerFee: number
+  takerFee: number
+  feeToken?: string
+  discount?: number
+  onViewFees?: () => void
 }
 
-export function FeesBar({ 
-  makerFee, 
-  takerFee, 
-  feeAsset = "BSK",
-  bskDiscount,
-  onLearnMore 
-}: FeesBarProps) {
+export function FeesBar({ makerFee, takerFee, feeToken = "USDT", discount, onViewFees }: FeesBarProps) {
   return (
-    <Card 
-      data-testid="fees-bar"
-      className="bg-card/30 border border-border/50 p-3"
-    >
+    <div data-testid="fees-bar" className="px-4 py-3 bg-card/40 border-t border-border/30 animate-fade-in">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-1">
-          <Info className="h-4 w-4 text-primary flex-shrink-0" />
-          <div className="text-xs">
-            <span className="text-muted-foreground">Fees: </span>
-            <span className="font-semibold text-foreground">
-              Maker {makerFee.toFixed(2)}%
-            </span>
-            <span className="text-muted-foreground"> • </span>
-            <span className="font-semibold text-foreground">
-              Taker {takerFee.toFixed(2)}%
-            </span>
-            {bskDiscount && (
-              <>
-                <span className="text-muted-foreground"> • </span>
-                <span className="font-semibold text-success">
-                  {bskDiscount}% off with {feeAsset}
-                </span>
-              </>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Info className="h-3.5 w-3.5" />
+          <span>
+            Fees: <span className="font-semibold text-foreground">Maker {makerFee}%</span>
+            {" • "}
+            <span className="font-semibold text-foreground">Taker {takerFee}%</span>
+            {discount && (
+              <span className="ml-1 text-success">({discount}% BSK discount)</span>
             )}
-          </div>
+          </span>
         </div>
-        {onLearnMore && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onLearnMore}
-            className="h-7 px-2 text-xs font-medium"
+        {onViewFees && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onViewFees}
+            className="h-7 px-3 text-xs font-semibold transition-all duration-220 hover:scale-105 active:scale-95"
           >
             Learn More
           </Button>
         )}
       </div>
-    </Card>
-  );
+    </div>
+  )
 }

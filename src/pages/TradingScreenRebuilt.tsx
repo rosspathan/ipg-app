@@ -278,6 +278,7 @@ export default function TradingScreenRebuilt() {
         <DepthOrderBook
           bids={mockOrderBook.bids}
           asks={mockOrderBook.asks}
+          spread={spread}
           onPriceClick={(price) => {
             console.log("Fill price:", price);
             // TODO: Fill limit price in order sheet
@@ -291,9 +292,9 @@ export default function TradingScreenRebuilt() {
         <FeesBar
           makerFee={0.10}
           takerFee={0.10}
-          feeAsset="BSK"
-          bskDiscount={25}
-          onLearnMore={() => navigate("/app/fees")}
+          feeToken="BSK"
+          discount={25}
+          onViewFees={() => navigate("/app/fees")}
         />
       </div>
 
