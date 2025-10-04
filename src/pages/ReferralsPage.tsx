@@ -11,8 +11,17 @@ import { copyToClipboard } from "@/utils/clipboard";
 export function ReferralsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { referralLink, getReferralUrl, getDeepLink, shareReferral, loading } = useReferrals();
+  const { referralLink, config, getReferralUrl, getDeepLink, shareReferral, loading } = useReferrals();
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Early return with loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading referral data...</div>
+      </div>
+    );
+  }
 
   const handleBack = () => navigate("/app/profile");
 

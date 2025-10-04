@@ -150,7 +150,7 @@ import { AdvertiseMiningPage } from "@/pages/astra/AdvertiseMiningPage";
 import DesignReview from "@/pages/astra/DesignReview";
 
 // Phase 3 & 4 User Programs
-const ReferralsPage = React.lazy(() => import("./pages/astra/ReferralsPage"));
+const ReferralsPageAstra = React.lazy(() => import("./pages/astra/ReferralsPage"));
 const AdMiningPage = React.lazy(() => import("./pages/astra/AdMiningPage"));
 const LuckyDrawPage = React.lazy(() => import("./pages/astra/LuckyDrawPage"));
 const LoansPage = React.lazy(() => import("./pages/astra/LoansPage"));
@@ -252,7 +252,7 @@ function App() {
                 <Route path="programs/spin" element={<SpinWheelPage />} />
                 <Route path="programs/ads" element={<AdMiningPage />} />
                 <Route path="programs/advertising" element={<AdMiningPage />} />
-                <Route path="programs/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPage /></React.Suspense>} />
+                <Route path="programs/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPageAstra /></React.Suspense>} />
                 <Route path="programs/lucky-draw" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawPage /></React.Suspense>} />
                 <Route path="programs/loans" element={<React.Suspense fallback={<div>Loading...</div>}><LoansPage /></React.Suspense>} />
                 <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
