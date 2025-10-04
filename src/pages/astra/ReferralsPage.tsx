@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -103,17 +104,14 @@ export default function ReferralsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 pb-24">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-transparent p-6 border-b border-border/50">
-        <h1 className="text-2xl font-heading font-bold text-foreground mb-2">
-          Referral Program
-        </h1>
-        <p className="text-sm text-muted-foreground">
+      {/* Backlink */}
+      <BacklinkBar programName="Referral Program" />
+      
+      <div className="p-4 space-y-4">
+        {/* Subtitle */}
+        <p className="text-sm text-muted-foreground mb-4">
           Earn rewards by inviting friends
         </p>
-      </div>
-
-      <div className="p-4 space-y-4">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">

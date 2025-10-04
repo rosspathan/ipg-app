@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -92,17 +93,14 @@ export default function LoansPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 pb-24">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-transparent p-6 border-b border-border/50">
-        <h1 className="text-2xl font-heading font-bold text-foreground mb-2">
-          BSK Loans
-        </h1>
-        <p className="text-sm text-muted-foreground">
+      {/* Backlink */}
+      <BacklinkBar programName="BSK Loans" />
+      
+      <div className="p-4 space-y-4">
+        {/* Subtitle */}
+        <p className="text-sm text-muted-foreground mb-4">
           Borrow against your holdings at 0% interest
         </p>
-      </div>
-
-      <div className="p-4 space-y-4">
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">

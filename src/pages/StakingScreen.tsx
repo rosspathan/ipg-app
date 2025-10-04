@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, TrendingUp, Lock, Clock, ArrowRight } from "lucide-react";
+import { TrendingUp, Lock, Clock, ArrowRight } from "lucide-react";
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -62,23 +63,14 @@ const StakingScreen = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background px-6 py-8">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate("/app/home")}
-          className="mr-2"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <h1 className="text-xl font-semibold">Staking</h1>
-      </div>
-
-      <Tabs defaultValue="pools" className="flex-1">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="pools">Staking Pools</TabsTrigger>
-          <TabsTrigger value="active">My Submissions</TabsTrigger>
-        </TabsList>
+      <BacklinkBar programName="Staking Rewards" />
+      
+      <div className="mt-6">
+        <Tabs defaultValue="pools" className="flex-1">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="pools">Staking Pools</TabsTrigger>
+            <TabsTrigger value="active">My Submissions</TabsTrigger>
+          </TabsList>
 
         <TabsContent value="pools" className="space-y-4">
           {pools.length === 0 ? (
@@ -213,6 +205,7 @@ const StakingScreen = () => {
           )}
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 };

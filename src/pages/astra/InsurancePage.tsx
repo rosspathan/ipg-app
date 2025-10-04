@@ -1,8 +1,9 @@
 import * as React from "react"
-import { Shield, Heart, TrendingDown, FileText, Plus, ChevronLeft } from "lucide-react"
+import { Shield, Heart, TrendingDown, FileText, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AstraCard } from "@/components/astra/AstraCard"
 import { KPIChip } from "@/components/astra/KPIChip"
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar"
 import { cn } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
 
@@ -65,26 +66,17 @@ export function InsurancePage() {
   }
 
   return (
-    <div className="space-y-6 p-4" data-testid="page-insurance">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/app/home")}
-          className="h-9 w-9"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h2 className="font-heading text-xl font-bold text-foreground">Insurance Plans</h2>
-          <p className="text-sm text-muted-foreground mt-1">Protect your investments and lifestyle</p>
-        </div>
-      </div>
+    <div data-testid="page-insurance" className="min-h-screen bg-background pb-8">
+      {/* Backlink */}
+      <BacklinkBar programName="Insurance Plans" />
+      
+      <div className="space-y-6 p-4">
+        {/* Subtitle */}
+        <p className="text-sm text-muted-foreground">Protect your investments and lifestyle</p>
 
-      {/* Plan Cards */}
-      <div className="space-y-4">
-        {INSURANCE_PLANS.map((plan) => {
+        {/* Plan Cards */}
+        <div className="space-y-4">
+          {INSURANCE_PLANS.map((plan) => {
           const Icon = plan.icon
           const isSelected = selectedPlan === plan.id
           
@@ -172,10 +164,10 @@ export function InsurancePage() {
             </AstraCard>
           )
         })}
-      </div>
+        </div>
 
-      {/* Claims Center */}
-      <AstraCard variant="glass">
+        {/* Claims Center */}
+        <AstraCard variant="glass">
         <div className="p-6">
           <div className="mb-4">
             <h3 className="font-heading text-lg font-semibold text-foreground">Claims Center</h3>
@@ -206,13 +198,14 @@ export function InsurancePage() {
             </Button>
           </div>
         </div>
-      </AstraCard>
+        </AstraCard>
 
-      {/* Disclaimers */}
-      <div className="text-xs text-text-secondary bg-border-subtle/10 border border-border-subtle rounded-lg p-4 space-y-2">
-        <div><strong>Important:</strong> All insurance plans are subject to terms and conditions.</div>
-        <div>Claims are processed within 7-14 business days after document verification.</div>
-        <div>Premium payments are final and non-refundable after the cooling-off period.</div>
+        {/* Disclaimers */}
+        <div className="text-xs text-text-secondary bg-border-subtle/10 border border-border-subtle rounded-lg p-4 space-y-2">
+          <div><strong>Important:</strong> All insurance plans are subject to terms and conditions.</div>
+          <div>Claims are processed within 7-14 business days after document verification.</div>
+          <div>Premium payments are final and non-refundable after the cooling-off period.</div>
+        </div>
       </div>
     </div>
   )

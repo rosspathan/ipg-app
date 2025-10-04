@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Trophy, Calendar, Target, Flame } from "lucide-react";
+import { Trophy, Calendar, Target, Flame } from "lucide-react";
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { AchievementSystem } from "@/components/achievements/AchievementSystem";
 import { DailyRewards } from "@/components/gamification/DailyRewardsFixed";
 
@@ -13,24 +14,9 @@ const GamificationScreen = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <BacklinkBar programName="Achievements & Rewards" />
+      
       <div className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/app/home")}
-            className="hover:bg-muted"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Rewards & Achievements
-            </h1>
-            <p className="text-muted-foreground">Track your progress and claim rewards</p>
-          </div>
-        </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

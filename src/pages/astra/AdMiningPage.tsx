@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -125,17 +126,14 @@ export default function AdMiningPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 pb-24">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-warning/20 via-warning/10 to-transparent p-6 border-b border-border/50">
-        <h1 className="text-2xl font-heading font-bold text-foreground mb-2">
-          Ad Mining
-        </h1>
-        <p className="text-sm text-muted-foreground">
+      {/* Backlink */}
+      <BacklinkBar programName="Advertise Mining" />
+      
+      <div className="p-4 space-y-4">
+        {/* Subtitle */}
+        <p className="text-sm text-muted-foreground mb-4">
           Watch ads and earn BSK tokens
         </p>
-      </div>
-
-      <div className="p-4 space-y-4">
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">

@@ -1,10 +1,11 @@
 import * as React from "react"
-import { Zap, History, Lock, Coins, RotateCw, ChevronLeft } from "lucide-react"
+import { Zap, History, Lock, Coins, RotateCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AstraCard } from "@/components/astra/AstraCard"
 import { KPIChip } from "@/components/astra/KPIChip"
 import { ProgressRing } from "@/components/ui/progress-ring"
 import { PremiumSpinWheel } from "@/components/premium-wheel/PremiumSpinWheel"
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar"
 import { cn } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
 
@@ -159,28 +160,18 @@ export function SpinWheelPage() {
   }
 
   return (
-    <div className="space-y-6 p-4" data-testid="page-spin-wheel">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/app/home")}
-            className="h-9 w-9"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h2 className="font-heading text-xl font-bold text-foreground">i-SMART Spin</h2>
-            <p className="text-sm text-muted-foreground mt-1">Test your luck with provably fair spins</p>
-          </div>
-        </div>
+    <div data-testid="page-spin-wheel" className="min-h-screen bg-background pb-8">
+      {/* Backlink */}
+      <BacklinkBar programName="i-SMART Spin" />
+      
+      <div className="space-y-6 p-4">
+        {/* Subtitle */}
+        <p className="text-sm text-muted-foreground">Test your luck with provably fair spins</p>
         
         <Button
           variant="outline"
           size="sm"
-          className="border-accent/30 text-accent hover:bg-accent/10"
+          className="border-accent/30 text-accent hover:bg-accent/10 ml-auto"
         >
           <History className="h-4 w-4 mr-2" />
           History

@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { toast } from "sonner";
 
 export default function LuckyDrawPage() {
@@ -83,17 +84,14 @@ export default function LuckyDrawPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 pb-24">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-warning/20 via-warning/10 to-transparent p-6 border-b border-border/50">
-        <h1 className="text-2xl font-heading font-bold text-foreground mb-2">
-          Lucky Draw
-        </h1>
-        <p className="text-sm text-muted-foreground">
+      {/* Backlink */}
+      <BacklinkBar programName="Lucky Draw" />
+      
+      <div className="p-4 space-y-4">
+        {/* Subtitle */}
+        <p className="text-sm text-muted-foreground mb-4">
           Win big prizes with lucky draw tickets
         </p>
-      </div>
-
-      <div className="p-4 space-y-4">
         {/* User Stats */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
