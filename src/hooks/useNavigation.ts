@@ -196,9 +196,9 @@ export const useNavigation = (): NavigationHelpers => {
     }
   }, [location.pathname]);
 
-  // Debounced navigation functions
-  const debouncedNavigate = useDebounce(navigateWithOptions, 300);
-  const debouncedReplace = useDebounce(replaceWithOptions, 300);
+  // Debounced navigation functions - reduced delay for better UX
+  const debouncedNavigate = useDebounce(navigateWithOptions, 100);
+  const debouncedReplace = useDebounce(replaceWithOptions, 100);
 
   // Cleanup navigation locks on unmount
   useEffect(() => {

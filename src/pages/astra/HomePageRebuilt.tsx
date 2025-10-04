@@ -23,6 +23,7 @@ export function HomePageRebuilt() {
   const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
 
   const handleKPIPress = (type: string) => {
+    console.log("KPI pressed:", type)
     switch (type) {
       case "portfolio":
         navigate("/app/wallet")
@@ -39,7 +40,7 @@ export function HomePageRebuilt() {
   }
 
   const handleAssetPress = (asset: any) => {
-    // Navigate to wallet with asset detail
+    console.log("Asset pressed:", asset.symbol)
     navigate("/app/wallet")
   }
 
@@ -57,7 +58,10 @@ export function HomePageRebuilt() {
       subtitle: "Watch ads daily\nEarn BSK rewards",
       icon: <Gift className="h-6 w-6" />,
       badge: "DAILY" as const,
-      onPress: () => navigate("/app/advertising")
+      onPress: () => {
+        console.log("Program clicked: Advertise Mining")
+        navigate("/app/advertising")
+      }
     },
     {
       id: "2",
@@ -65,7 +69,10 @@ export function HomePageRebuilt() {
       subtitle: "Pool-based lottery\nWin big prizes",
       icon: <Target className="h-6 w-6" />,
       badge: "HOT" as const,
-      onPress: () => navigate("/app/lucky-draw")
+      onPress: () => {
+        console.log("Program clicked: Lucky Draw")
+        navigate("/app/lucky-draw")
+      }
     },
     {
       id: "3",
@@ -73,7 +80,10 @@ export function HomePageRebuilt() {
       subtitle: "Daily spins\nProvably fair",
       icon: <Zap className="h-6 w-6" />,
       badge: "LIVE" as const,
-      onPress: () => navigate("/app/spin")
+      onPress: () => {
+        console.log("Program clicked: Fortune Wheel")
+        navigate("/app/spin")
+      }
     },
     {
       id: "4",
@@ -81,35 +91,50 @@ export function HomePageRebuilt() {
       subtitle: "One-time bonus\nSpecial offers",
       icon: <Coins className="h-6 w-6" />,
       badge: "NEW" as const,
-      onPress: () => navigate("/programs/bsk-purchase")
+      onPress: () => {
+        console.log("Program clicked: BSK Purchase")
+        navigate("/programs/bsk-purchase")
+      }
     },
     {
       id: "5",
       title: "Referrals",
       subtitle: "Invite friends\nEarn together",
       icon: <Users className="h-6 w-6" />,
-      onPress: () => navigate("/app/referrals")
+      onPress: () => {
+        console.log("Program clicked: Referrals")
+        navigate("/app/referrals")
+      }
     },
     {
       id: "6",
       title: "Staking",
       subtitle: "12.4% APY\nFlexible terms",
       icon: <Star className="h-6 w-6" />,
-      onPress: () => navigate("/app/staking")
+      onPress: () => {
+        console.log("Program clicked: Staking")
+        navigate("/app/staking")
+      }
     },
     {
       id: "7",
       title: "Loans",
       subtitle: "0% interest\n16 weeks",
       icon: <TrendingUp className="h-6 w-6" />,
-      onPress: () => navigate("/programs/loans")
+      onPress: () => {
+        console.log("Program clicked: Loans")
+        navigate("/programs/loans")
+      }
     },
     {
       id: "8",
       title: "Insurance",
       subtitle: "Protect assets\n24/7 claims",
       icon: <Shield className="h-6 w-6" />,
-      onPress: () => navigate("/programs/insurance")
+      onPress: () => {
+        console.log("Program clicked: Insurance")
+        navigate("/programs/insurance")
+      }
     }
   ]
 
