@@ -378,11 +378,15 @@ export function SpinWheel3D({
   }
 
   const adjustBrightness = (hex: string, amount: number) => {
-    const rgb = parseInt(hex.slice(1), 16)
+    // Return HEX string to safely concatenate with alpha suffixes
+    const raw = hex.startsWith('#') ? hex.slice(1) : hex
+    const six = raw.length === 3 ? raw.split('').map(c => c + c).join('') : raw
+    const rgb = parseInt(six, 16)
     const r = Math.max(0, Math.min(255, ((rgb >> 16) & 0xff) + amount))
     const g = Math.max(0, Math.min(255, ((rgb >> 8) & 0xff) + amount))
     const b = Math.max(0, Math.min(255, (rgb & 0xff) + amount))
-    return `rgb(${r}, ${g}, ${b})`
+    const toHex = (n: number) => n.toString(16).padStart(2, '0')
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`
   }
 
   return (
