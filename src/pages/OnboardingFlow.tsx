@@ -45,6 +45,26 @@ const OnboardingFlow: React.FC = () => {
     setEmail(email);
     setStep('email-verification');
   };
+  
+  const handleResendCode = async () => {
+    if (!state.email) return;
+    
+    const { generateVerificationCode, storeVerificationCode } = await import('@/utils/security');
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    const verificationCode = generateVerificationCode();
+    storeVerificationCode(state.email, verificationCode);
+    
+    await supabase.functions.invoke('send-verification-email', {
+      body: {
+        email: state.email,
+        verificationCode,
+        userName: state.email.split('@')[0],
+        isOnboarding: true
+      }
+    });
+  };
+  
   const handleEmailVerified = () => {
     markEmailVerified();
     setStep('pin-setup');
@@ -112,7 +132,7 @@ const OnboardingFlow: React.FC = () => {
         <EmailVerificationScreen
           email={state.email || ''}
           onVerified={handleEmailVerified}
-          onResendCode={() => {/* Resend logic */}}
+          onResendCode={handleResendCode}
           onBack={() => setStep('email-input')}
         />
       );
