@@ -4,26 +4,19 @@ import { Gift, Star, Target, Coins, TrendingUp, Users, Shield, Zap } from "lucid
 import { useNavigation } from "@/hooks/useNavigation"
 import { DockNav } from "@/components/navigation/DockNav"
 import { ProgramsHeaderPro } from "@/components/programs-pro/ProgramsHeaderPro"
-import { ProgramGridPro } from "@/components/programs-pro/ProgramGridPro"
-import { ProgramTileUltra } from "@/components/programs-pro/ProgramTileUltra"
+import { ProgramGridCompact } from "@/components/programs-pro/ProgramGridCompact"
+import { ProgramTileCompact } from "@/components/programs-pro/ProgramTileCompact"
 import { QuickActionsSheet, type QuickAction } from "@/components/programs-pro/QuickActionsSheet"
-import { ProgramsHeroCarousel } from "@/components/programs-pro/ProgramsHeroCarousel"
 import { AnnouncementsBar } from "@/components/programs-pro/AnnouncementsBar"
-import { EmptyStatePro } from "@/components/programs-pro/EmptyStatePro"
-import { FilterSheetPro } from "@/components/programs-pro/FilterSheetPro"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 
 interface Program {
   id: string
   title: string
-  subtitle: string
   icon: React.ReactNode
   category: "earn" | "games" | "finance" | "network" | "trading"
   badge?: "NEW" | "HOT" | "DAILY" | "LIVE"
-  sparkline?: number[]
-  progress?: { value: number; label?: string }
-  streak?: { total: number; completed: number }
-  footer?: string
+  progress?: number // 0-100 for micro progress line
   route: string
   actions: QuickAction[]
   rulesLink?: string
@@ -33,11 +26,9 @@ const allPrograms: Program[] = [
   {
     id: "advertise-mining",
     title: "Advertise Mining",
-    subtitle: "Watch ads • Earn BSK",
     icon: <Gift className="h-5 w-5" />,
     category: "earn",
     badge: "DAILY",
-    streak: { total: 7, completed: 5 },
     route: "/app/programs/advertising",
     actions: [
       { id: "watch", label: "Watch Now", variant: "default", onPress: () => {} },
@@ -49,10 +40,8 @@ const allPrograms: Program[] = [
   {
     id: "staking-rewards",
     title: "Staking Rewards",
-    subtitle: "12.4% APY • Flexible",
     icon: <Star className="h-5 w-5" />,
     category: "earn",
-    streak: { total: 7, completed: 7 },
     route: "/app/programs/staking",
     actions: [
       { id: "stake", label: "Stake", variant: "default", onPress: () => {} },
@@ -64,7 +53,6 @@ const allPrograms: Program[] = [
   {
     id: "bsk-purchase",
     title: "BSK Purchase Bonus",
-    subtitle: "50% extra BSK • Limited",
     icon: <Coins className="h-5 w-5" />,
     category: "earn",
     badge: "NEW",
@@ -79,11 +67,10 @@ const allPrograms: Program[] = [
   {
     id: "lucky-draw",
     title: "Lucky Draw",
-    subtitle: "100 seats • Win big",
     icon: <Target className="h-5 w-5" />,
     category: "games",
     badge: "HOT",
-    progress: { value: 78, label: "Fill 78%" },
+    progress: 78,
     route: "/app/programs/lucky-draw",
     actions: [
       { id: "buy", label: "Buy Ticket", variant: "default", onPress: () => {} },
@@ -95,7 +82,6 @@ const allPrograms: Program[] = [
   {
     id: "spin-wheel",
     title: "i-SMART Spin",
-    subtitle: "5 free spins • Provably fair",
     icon: <Zap className="h-5 w-5" />,
     category: "games",
     badge: "LIVE",
@@ -110,7 +96,6 @@ const allPrograms: Program[] = [
   {
     id: "bsk-loans",
     title: "BSK Loans",
-    subtitle: "0% interest • 16 weeks",
     icon: <Coins className="h-5 w-5" />,
     category: "finance",
     route: "/app/programs/loans",
@@ -124,7 +109,6 @@ const allPrograms: Program[] = [
   {
     id: "insurance",
     title: "Insurance Plans",
-    subtitle: "Accident • Trading • Life",
     icon: <Shield className="h-5 w-5" />,
     category: "finance",
     route: "/app/programs/insurance",
@@ -138,11 +122,9 @@ const allPrograms: Program[] = [
   {
     id: "referrals",
     title: "Referral Program",
-    subtitle: "Badges unlock 50 levels",
     icon: <Users className="h-5 w-5" />,
     category: "network",
     badge: "NEW",
-    footer: "Badge: Silver",
     route: "/app/programs/referrals",
     actions: [
       { id: "invite", label: "Invite", variant: "default", onPress: () => {} },
@@ -154,7 +136,6 @@ const allPrograms: Program[] = [
   {
     id: "trading",
     title: "Trading",
-    subtitle: "Spot • Pro tools (Candles on-demand)",
     icon: <TrendingUp className="h-5 w-5" />,
     category: "trading",
     route: "/app/trade",
@@ -218,28 +199,21 @@ export function ProgramsPagePro() {
       {/* Announcements */}
       <AnnouncementsBar />
       
-      {/* Hero Carousel */}
-      <ProgramsHeroCarousel />
-      
       {/* Grid */}
-      <div className="px-4 pt-6 pb-8">
-        <ProgramGridPro>
+      <div className="px-4 pt-4 pb-8">
+        <ProgramGridCompact>
           {allPrograms.map((program) => (
-            <ProgramTileUltra
+            <ProgramTileCompact
               key={program.id}
               icon={program.icon}
               title={program.title}
-              subtitle={program.subtitle}
               badge={program.badge}
-              sparkline={program.sparkline}
               progress={program.progress}
-              streak={program.streak}
-              footer={program.footer}
               onPress={() => handleProgramPress(program)}
               onKebabPress={() => handleKebabPress(program)}
             />
           ))}
-        </ProgramGridPro>
+        </ProgramGridCompact>
       </div>
       
       {/* Bottom Navigation */}
