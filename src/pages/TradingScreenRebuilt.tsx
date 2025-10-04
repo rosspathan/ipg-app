@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { TradingHeader } from "@/components/trading/TradingHeader";
-import { MarketStatsRow } from "@/components/trading/MarketStatsRow";
-import { PairsGrid, TradingPair } from "@/components/trading/PairsGrid";
-import { CandleToggle, Timeframe } from "@/components/trading/CandleToggle";
-import { ChartPanel } from "@/components/trading/ChartPanel";
-import { OrderTicket, OrderTicketData } from "@/components/trading/OrderTicket";
-import { OrderBookDepth, OrderBookEntry } from "@/components/trading/OrderBookDepth";
-import { TradesTape, Trade } from "@/components/trading/TradesTape";
-import { ExecutionStatusBar, ExecutionStatus } from "@/components/trading/ExecutionStatusBar";
-import { FeeBar } from "@/components/trading/FeeBar";
+import { PairHeaderPro } from "@/components/trading/PairHeaderPro";
+import { KPIStatsRow } from "@/components/trading/KPIStatsRow";
+import { PairPickerSheet, TradingPair } from "@/components/trading/PairPickerSheet";
+import { TFChipsAndToggle, Timeframe } from "@/components/trading/TFChipsAndToggle";
+import { ChartCardPro } from "@/components/trading/ChartCardPro";
+import { OrderTicketPro, OrderTicketData } from "@/components/trading/OrderTicketPro";
+import { DepthOrderBook, OrderBookEntry } from "@/components/trading/DepthOrderBook";
+import { TradesTapePro, Trade } from "@/components/trading/TradesTapePro";
+import { ExecStatusBar, ExecutionStatus } from "@/components/trading/ExecStatusBar";
+import { FeesBar } from "@/components/trading/FeesBar";
 import { AdapterFactory } from "@/lib/trading/AdapterFactory";
 import { ExchangeAdapter } from "@/lib/trading/ExchangeAdapter";
 import { AlertCircle } from "lucide-react";
@@ -62,12 +62,12 @@ export default function TradingScreenRebuilt() {
 
   // Core state
   const [selectedPair, setSelectedPair] = useState<string>("BSK/INR");
-  const [tradingMode, setTradingMode] = useState<"LIVE" | "SIM">("SIM"); // Default to SIM
-  const [candlesEnabled, setCandlesEnabled] = useState(false); // CRITICAL: Chart disabled by default
+  const [tradingMode, setTradingMode] = useState<"LIVE" | "SIM">("SIM");
+  const [candlesEnabled, setCandlesEnabled] = useState(false); // Chart disabled by default
   const [timeframe, setTimeframe] = useState<Timeframe>("1D");
   const [pairs, setPairs] = useState<TradingPair[]>(mockPairs);
   const [executionStatus, setExecutionStatus] = useState<ExecutionStatus | null>(null);
-  const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
+  const [pairPickerOpen, setPairPickerOpen] = useState(false);
 
   // Exchange adapter
   const [adapter, setAdapter] = useState<ExchangeAdapter | null>(null);
@@ -97,17 +97,7 @@ export default function TradingScreenRebuilt() {
       switch (e.key.toLowerCase()) {
         case "/":
           e.preventDefault();
-          // Focus pair search
-          const searchInput = document.querySelector('[placeholder="Search pairs..."]') as HTMLInputElement;
-          searchInput?.focus();
-          break;
-        case "b":
-          e.preventDefault();
-          setOrderSide("buy");
-          break;
-        case "s":
-          e.preventDefault();
-          setOrderSide("sell");
+          setPairPickerOpen(true);
           break;
         case "c":
           e.preventDefault();
@@ -193,75 +183,77 @@ export default function TradingScreenRebuilt() {
   return (
     <div 
       className="min-h-screen bg-background pb-32"
-      data-testid="page-trading"
+      data-testid="page-trade"
     >
-      {/* Header */}
-      <TradingHeader 
-        pair={selectedPair} 
+      {/* Pair Header with Mode Badge and Favorite */}
+      <PairHeaderPro
+        pair={selectedPair}
         mode={tradingMode}
+        isFavorite={currentPair.isFavorite}
+        onToggleFavorite={() => handleToggleFavorite(selectedPair)}
+        onOpenPairPicker={() => setPairPickerOpen(true)}
       />
 
-      {/* Market Stats - 3 cards in grid */}
-      <div className="px-4 py-3">
-        <MarketStatsRow
-          lastPrice={currentPair.lastPrice}
-          priceChange24h={currentPair.priceChange24h}
-          volume24h={currentPair.volume24h}
-        />
-      </div>
+      {/* KPI Stats Row - 3 Cards */}
+      <KPIStatsRow
+        lastPrice={currentPair.lastPrice}
+        priceChange24h={currentPair.priceChange24h}
+        volume24h={currentPair.volume24h}
+        currency="₹"
+        onPress={() => {
+          // TODO: Open MiniAnalytics modal with OHLC data
+          console.log("Open mini analytics");
+        }}
+      />
 
-      {/* Pairs Grid with tabs */}
-      <div className="mb-4">
-        <PairsGrid
-          pairs={pairs}
-          onPairSelect={handlePairSelect}
-          onToggleFavorite={handleToggleFavorite}
-          selectedPair={selectedPair}
-        />
-      </div>
-
-      {/* Candle Toggle - Chart controls */}
-      <CandleToggle
-        enabled={candlesEnabled}
-        onToggle={handleCandlesToggle}
+      {/* Timeframe Chips + Candles Toggle */}
+      <TFChipsAndToggle
         timeframe={timeframe}
         onTimeframeChange={setTimeframe}
+        candlesEnabled={candlesEnabled}
+        onCandlesToggle={handleCandlesToggle}
       />
 
-      {/* Chart Panel - ONLY renders when candlesEnabled is true */}
-      <div className="px-4">
-        <ChartPanel
-          symbol={selectedPair}
-          timeframe={timeframe}
-          enabled={candlesEnabled}
-        />
-      </div>
+      {/* Chart Panel - Only mounts when Candles ON */}
+      <ChartCardPro
+        symbol={selectedPair}
+        enabled={candlesEnabled}
+      />
 
-      {/* Order Ticket */}
+      {/* Order Ticket Pro */}
       <div className="px-4 my-4">
-        <OrderTicket
+        <OrderTicketPro
           pair={selectedPair}
           currentPrice={currentPair.lastPrice}
           availableBalance={{ base: 1000, quote: 100000 }}
           makerFee={0.10}
           takerFee={0.10}
+          bestBid={mockOrderBook.bids[0]?.price}
+          bestAsk={mockOrderBook.asks[0]?.price}
           onSubmit={handleOrderSubmit}
         />
       </div>
 
-      {/* Order Book & Trades */}
-      <div className="px-4 space-y-4 mb-4">
-        <OrderBookDepth
+      {/* Depth Order Book */}
+      <div className="px-4 mb-4">
+        <DepthOrderBook
           bids={mockOrderBook.bids}
           asks={mockOrderBook.asks}
+          onPriceClick={(price) => {
+            console.log("Fill price:", price);
+            // TODO: Fill limit price in order ticket
+          }}
         />
-        
-        <TradesTape trades={mockTrades} />
       </div>
 
-      {/* Fee Bar */}
+      {/* Trades Tape Pro */}
       <div className="px-4 mb-4">
-        <FeeBar
+        <TradesTapePro trades={mockTrades} />
+      </div>
+
+      {/* Fees Bar */}
+      <div className="px-4 mb-4">
+        <FeesBar
           makerFee={0.10}
           takerFee={0.10}
           feeAsset="BSK"
@@ -281,10 +273,20 @@ export default function TradingScreenRebuilt() {
         </div>
       </div>
 
-      {/* Execution Status */}
-      <ExecutionStatusBar
+      {/* Execution Status Bar */}
+      <ExecStatusBar
         status={executionStatus}
         onDismiss={() => setExecutionStatus(null)}
+      />
+
+      {/* Pair Picker Sheet */}
+      <PairPickerSheet
+        open={pairPickerOpen}
+        onOpenChange={setPairPickerOpen}
+        pairs={pairs}
+        selectedPair={selectedPair}
+        onPairSelect={handlePairSelect}
+        onToggleFavorite={handleToggleFavorite}
       />
     </div>
   );
