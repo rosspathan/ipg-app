@@ -24,6 +24,9 @@ verify_jwt = false
 [functions.badge-commission-processor]
 verify_jwt = true
 
+[functions.fetch-crypto-prices]
+verify_jwt = false
+
 # Temporarily disabled functions with TypeScript errors
 # [functions.provably-fair-commit]
 # verify_jwt = true

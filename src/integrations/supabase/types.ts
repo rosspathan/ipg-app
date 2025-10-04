@@ -4557,6 +4557,62 @@ export type Database = {
         }
         Relationships: []
       }
+      market_prices: {
+        Row: {
+          created_at: string
+          current_price: number
+          high_24h: number
+          id: string
+          last_updated: string
+          low_24h: number
+          market_cap: number | null
+          market_id: string
+          price_change_24h: number
+          price_change_percentage_24h: number
+          symbol: string
+          updated_at: string
+          volume_24h: number
+        }
+        Insert: {
+          created_at?: string
+          current_price?: number
+          high_24h?: number
+          id?: string
+          last_updated?: string
+          low_24h?: number
+          market_cap?: number | null
+          market_id: string
+          price_change_24h?: number
+          price_change_percentage_24h?: number
+          symbol: string
+          updated_at?: string
+          volume_24h?: number
+        }
+        Update: {
+          created_at?: string
+          current_price?: number
+          high_24h?: number
+          id?: string
+          last_updated?: string
+          low_24h?: number
+          market_cap?: number | null
+          market_id?: string
+          price_change_24h?: number
+          price_change_percentage_24h?: number
+          symbol?: string
+          updated_at?: string
+          volume_24h?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_prices_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       markets: {
         Row: {
           base_asset_id: string
