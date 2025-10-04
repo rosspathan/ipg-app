@@ -85,9 +85,27 @@ export function useISmartSpin() {
         console.error('Segments error:', segmentsError)
       }
 
-      console.log('Loaded segments:', segmentsData)
-      setSegments(segmentsData || [])
-
+      // Normalize to exactly 4 segments in desired order
+      const desiredOrder = ['LOSE', 'WIN x2', 'LOSE', 'WIN x3'] as const
+      const byLabel = new Map<string, SpinSegment>()
+      ;(segmentsData || []).forEach((s: SpinSegment) => {
+        if (!byLabel.has(s.label)) byLabel.set(s.label, s)
+      })
+      const normalized: SpinSegment[] = desiredOrder.map((label, idx) => {
+        const seg = byLabel.get(label)
+        if (seg) return seg
+        // Fallback if missing: synthesize segment
+        return {
+          id: `synthetic-${label}-${idx}`,
+          label,
+          multiplier: label === 'WIN x2' ? 2 : label === 'WIN x3' ? 3 : 0,
+          weight: 1,
+          color_hex: label.startsWith('WIN') ? (label === 'WIN x2' ? '#22c55e' : '#f59e0b') : '#ef4444',
+          is_active: true,
+        }
+      })
+      console.log('Normalized segments (4):', normalized.map(s => s.label))
+      setSegments(normalized)
       // Get user limits
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
