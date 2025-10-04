@@ -22,6 +22,7 @@ interface PremiumSpinWheelProps {
   showParticles?: boolean
   particleType?: 'win' | 'lose'
   showSegmentInfo?: boolean
+  maxSize?: number
 }
 
 export function PremiumSpinWheel({ 
@@ -31,7 +32,8 @@ export function PremiumSpinWheel({
   onSpinComplete,
   showParticles = false,
   particleType = 'win',
-  showSegmentInfo = true
+  showSegmentInfo = true,
+  maxSize = 400
 }: PremiumSpinWheelProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<AnimationEngine | null>(null)
@@ -189,6 +191,7 @@ export function PremiumSpinWheel({
             centerGlow={!settings.reducedMotion}
             rimGlow={!settings.reducedMotion && isSpinning}
             specularHighlight={!settings.reducedMotion}
+            maxSize={maxSize}
           />
           
           {/* Particle System */}

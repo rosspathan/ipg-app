@@ -17,6 +17,7 @@ interface WheelRendererProps {
   centerGlow?: boolean
   rimGlow?: boolean
   specularHighlight?: boolean
+  maxSize?: number
 }
 
 export function WheelRenderer({
@@ -26,27 +27,28 @@ export function WheelRenderer({
   isSpinning,
   centerGlow = true,
   rimGlow = true,
-  specularHighlight = true
+  specularHighlight = true,
+  maxSize = 400
 }: WheelRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const { settings, deviceCapabilities } = useMotionSettings()
   const [dimensions, setDimensions] = useState({ width: 300, height: 300 })
   
-  // Responsive sizing
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        const size = Math.min(rect.width, 400, window.innerWidth * 0.8)
-        setDimensions({ width: size, height: size })
-      }
+// Responsive sizing
+useEffect(() => {
+  const updateDimensions = () => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      const size = Math.min(rect.width, maxSize, window.innerWidth * 0.9)
+      setDimensions({ width: size, height: size })
     }
+  }
 
-    updateDimensions()
-    window.addEventListener('resize', updateDimensions)
-    return () => window.removeEventListener('resize', updateDimensions)
-  }, [])
+  updateDimensions()
+  window.addEventListener('resize', updateDimensions)
+  return () => window.removeEventListener('resize', updateDimensions)
+}, [maxSize])
 
   // High-performance wheel rendering with GPU acceleration
   const canvasStyle = useMemo(() => ({

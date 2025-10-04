@@ -157,6 +157,7 @@ export default function ISmartSpinScreen() {
             showParticles={lastResult !== null && winningSegmentIndex !== undefined}
             particleType={lastResult?.multiplier > 0 ? 'win' : 'lose'}
             showSegmentInfo={false}
+            maxSize={260}
           />
         </div>
 
