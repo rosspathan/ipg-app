@@ -145,7 +145,6 @@ export default function ISmartSpinScreen() {
 
         {/* Spin Wheel */}
         <SpinWheel3D
-          key={`wheel-${segments.length}-${Date.now()}`}
           segments={segments}
           isSpinning={isSpinning}
           winningSegmentIndex={winningSegmentIndex}

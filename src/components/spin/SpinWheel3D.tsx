@@ -35,23 +35,7 @@ export function SpinWheel3D({
         cancelAnimationFrame(animationRef.current)
       }
     }
-
-    // Trigger confetti for wins
-    if (!isSpinning && winningSegmentIndex !== undefined) {
-      const segment = segments[winningSegmentIndex]
-      if (segment && segment.multiplier > 0) {
-        triggerWinAnimation()
-      }
-    }
   }, [isSpinning, winningSegmentIndex])
-
-  const triggerWinAnimation = () => {
-    // Emit confetti particles (simple implementation)
-    // In production, this could use react-confetti or similar
-    if (onSpinComplete) {
-      setTimeout(() => onSpinComplete(), 500)
-    }
-  }
 
   const startSpinAnimation = (targetIndex: number) => {
     const totalWeight = segments.reduce((sum, s) => sum + s.weight, 0)
@@ -68,7 +52,6 @@ export function SpinWheel3D({
       const elapsed = Date.now() - startTime
       const progress = Math.min(elapsed / duration, 1)
 
-      // Cubic bezier easing (0.1, 1, 0.3, 1)
       const t = progress
       const eased = t < 0.5
         ? 4 * t * t * t
@@ -88,26 +71,21 @@ export function SpinWheel3D({
   }
 
   useEffect(() => {
-    console.log('SpinWheel3D segments:', segments?.length, segments?.map(s => s.label))
-    console.log('SpinWheel3D drawWheel called - about to draw wheel with segments:', segments)
-    drawWheel()
+    // Force exactly 4 segments for rendering
+    const renderSegments = segments.slice(0, 4)
+    console.log('🎨 Rendering wheel with segments:', renderSegments.map(s => s.label))
+    drawWheel(renderSegments)
   }, [segments, rotation, winningSegmentIndex])
 
-  const drawWheel = () => {
-    console.log('🎯 DRAWING WHEEL START - segments:', segments?.length)
+  const drawWheel = (renderSegments: Segment[]) => {
     const canvas = canvasRef.current
-    if (!canvas || !segments.length) {
-      console.log('❌ Cannot draw wheel - canvas or segments missing:', { canvas: !!canvas, segmentsLength: segments?.length })
+    if (!canvas || renderSegments.length === 0) {
+      console.warn('⚠️ Cannot draw: missing canvas or segments')
       return
     }
 
     const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      console.log('❌ Cannot get canvas context')
-      return
-    }
-
-    console.log('✅ Drawing wheel with segments:', segments.map(s => s.label))
+    if (!ctx) return
 
     const size = 320
     canvas.width = size * devicePixelRatio
@@ -124,7 +102,7 @@ export function SpinWheel3D({
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = 'high'
 
-    // Outer glow for premium effect
+    // === OUTER GLOW ===
     const outerGlow = ctx.createRadialGradient(centerX, centerY, radius + 30, centerX, centerY, radius + 45)
     outerGlow.addColorStop(0, 'rgba(255, 215, 0, 0.3)')
     outerGlow.addColorStop(1, 'rgba(255, 215, 0, 0)')
@@ -133,14 +111,13 @@ export function SpinWheel3D({
     ctx.arc(centerX, centerY, radius + 45, 0, 2 * Math.PI)
     ctx.fill()
 
-    // Outer LED ring with glowing lights
+    // === LED LIGHTS (16 around the rim) ===
     const ledCount = 16
     for (let i = 0; i < ledCount; i++) {
       const angle = (i / ledCount) * 2 * Math.PI
       const ledX = centerX + Math.cos(angle) * (radius + 32)
       const ledY = centerY + Math.sin(angle) * (radius + 32)
 
-      // LED glow
       const glowGradient = ctx.createRadialGradient(ledX, ledY, 0, ledX, ledY, 10)
       glowGradient.addColorStop(0, 'rgba(255, 237, 78, 1)')
       glowGradient.addColorStop(0.3, 'rgba(255, 215, 0, 0.8)')
@@ -150,7 +127,6 @@ export function SpinWheel3D({
       ctx.arc(ledX, ledY, 10, 0, 2 * Math.PI)
       ctx.fill()
 
-      // LED core
       const ledGradient = ctx.createRadialGradient(ledX, ledY - 1, 0, ledX, ledY, 5)
       ledGradient.addColorStop(0, '#FFF8DC')
       ledGradient.addColorStop(0.5, '#FFED4E')
@@ -161,8 +137,7 @@ export function SpinWheel3D({
       ctx.fill()
     }
 
-    // Multi-layered golden rim for 3D effect
-    // Outer rim
+    // === GOLDEN RIM (Multi-layered) ===
     ctx.beginPath()
     ctx.arc(centerX, centerY, radius + 22, 0, 2 * Math.PI)
     ctx.arc(centerX, centerY, radius + 15, 0, 2 * Math.PI, true)
@@ -175,7 +150,6 @@ export function SpinWheel3D({
     ctx.fillStyle = outerRimGradient
     ctx.fill('evenodd')
 
-    // Middle rim with shadow
     ctx.beginPath()
     ctx.arc(centerX, centerY, radius + 15, 0, 2 * Math.PI)
     ctx.arc(centerX, centerY, radius + 10, 0, 2 * Math.PI, true)
@@ -186,7 +160,6 @@ export function SpinWheel3D({
     ctx.fillStyle = middleRimGradient
     ctx.fill('evenodd')
 
-    // Inner golden border
     ctx.beginPath()
     ctx.arc(centerX, centerY, radius + 10, 0, 2 * Math.PI)
     ctx.arc(centerX, centerY, radius + 5, 0, 2 * Math.PI, true)
@@ -197,7 +170,6 @@ export function SpinWheel3D({
     ctx.fillStyle = innerRimGradient
     ctx.fill('evenodd')
 
-    // Dark inner ring
     ctx.beginPath()
     ctx.arc(centerX, centerY, radius + 5, 0, 2 * Math.PI)
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, true)
@@ -208,11 +180,11 @@ export function SpinWheel3D({
     ctx.fillStyle = darkRing
     ctx.fill('evenodd')
 
-    // Draw segments with premium gradients
-    const totalWeight = segments.reduce((sum, s) => sum + s.weight, 0)
+    // === SEGMENTS (Exactly 4) ===
+    const totalWeight = renderSegments.reduce((sum, s) => sum + s.weight, 0)
     let currentAngle = -Math.PI / 2
 
-    segments.forEach((segment, index) => {
+    renderSegments.forEach((segment, index) => {
       const segmentAngle = (segment.weight / totalWeight) * 2 * Math.PI
 
       ctx.save()
@@ -222,7 +194,6 @@ export function SpinWheel3D({
       ctx.closePath()
       ctx.clip()
 
-      // Dark gradient background for segment
       const bgGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius)
       bgGradient.addColorStop(0, 'rgba(20, 20, 20, 0.95)')
       bgGradient.addColorStop(0.5, 'rgba(30, 30, 30, 0.9)')
@@ -230,7 +201,6 @@ export function SpinWheel3D({
       ctx.fillStyle = bgGradient
       ctx.fillRect(0, 0, size, size)
 
-      // Color overlay with radial gradient
       const colorGradient = ctx.createRadialGradient(
         centerX + Math.cos(currentAngle + segmentAngle / 2) * radius * 0.3,
         centerY + Math.sin(currentAngle + segmentAngle / 2) * radius * 0.3,
@@ -248,7 +218,7 @@ export function SpinWheel3D({
 
       ctx.restore()
 
-      // Golden separator lines
+      // Golden separator
       ctx.save()
       ctx.beginPath()
       ctx.moveTo(centerX, centerY)
@@ -269,7 +239,7 @@ export function SpinWheel3D({
       ctx.stroke()
       ctx.restore()
 
-      // Winning glow effect
+      // Winning glow
       if (winningSegmentIndex === index && !isSpinning) {
         ctx.save()
         ctx.beginPath()
@@ -284,7 +254,7 @@ export function SpinWheel3D({
         ctx.restore()
       }
 
-      // Text with premium styling
+      // Text
       const textAngle = currentAngle + segmentAngle / 2
       const textRadius = radius * 0.6
       const textX = centerX + Math.cos(textAngle) * textRadius
@@ -294,12 +264,10 @@ export function SpinWheel3D({
       ctx.translate(textX, textY)
       ctx.rotate(textAngle + Math.PI / 2)
       
-      // Text shadow for depth
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
       ctx.shadowBlur = 8
       ctx.shadowOffsetY = 2
       
-      // Golden text with gradient
       const textGradient = ctx.createLinearGradient(0, -10, 0, 10)
       textGradient.addColorStop(0, '#FFF8DC')
       textGradient.addColorStop(0.5, '#FFD700')
@@ -310,7 +278,6 @@ export function SpinWheel3D({
       ctx.textBaseline = 'middle'
       ctx.fillText(segment.label, 0, 0)
       
-      // Text outline for better contrast
       ctx.shadowBlur = 0
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'
       ctx.lineWidth = 3
@@ -321,8 +288,7 @@ export function SpinWheel3D({
       currentAngle += segmentAngle
     })
 
-    // Premium center hub
-    // Outer hub ring
+    // === CENTER HUB ===
     const hubOuterGradient = ctx.createRadialGradient(centerX, centerY - 5, 0, centerX, centerY, 50)
     hubOuterGradient.addColorStop(0, '#FFD700')
     hubOuterGradient.addColorStop(0.4, '#FFA500')
@@ -332,12 +298,10 @@ export function SpinWheel3D({
     ctx.arc(centerX, centerY, 50, 0, 2 * Math.PI)
     ctx.fill()
 
-    // Hub shadow for depth
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
     ctx.shadowBlur = 15
     ctx.shadowOffsetY = 3
 
-    // Middle hub ring
     const hubMiddleGradient = ctx.createRadialGradient(centerX, centerY - 3, 0, centerX, centerY, 42)
     hubMiddleGradient.addColorStop(0, '#8B7500')
     hubMiddleGradient.addColorStop(0.5, '#6B5500')
@@ -347,7 +311,6 @@ export function SpinWheel3D({
     ctx.arc(centerX, centerY, 42, 0, 2 * Math.PI)
     ctx.fill()
 
-    // Inner hub with metallic effect
     ctx.shadowBlur = 0
     const hubInnerGradient = ctx.createRadialGradient(centerX, centerY - 2, 0, centerX, centerY, 38)
     hubInnerGradient.addColorStop(0, '#3a3a3a')
@@ -358,7 +321,6 @@ export function SpinWheel3D({
     ctx.arc(centerX, centerY, 38, 0, 2 * Math.PI)
     ctx.fill()
 
-    // Golden border on inner hub
     ctx.beginPath()
     ctx.arc(centerX, centerY, 38, 0, 2 * Math.PI)
     const hubBorderGradient = ctx.createLinearGradient(centerX - 38, centerY, centerX + 38, centerY)
@@ -369,12 +331,11 @@ export function SpinWheel3D({
     ctx.lineWidth = 4
     ctx.stroke()
 
-    // Center spindle/cross with premium styling
+    // Spindle
     ctx.save()
     ctx.shadowColor = 'rgba(255, 215, 0, 0.8)'
     ctx.shadowBlur = 10
     
-    // Horizontal bar
     ctx.beginPath()
     ctx.moveTo(centerX - 20, centerY)
     ctx.lineTo(centerX + 20, centerY)
@@ -389,7 +350,6 @@ export function SpinWheel3D({
     ctx.lineCap = 'round'
     ctx.stroke()
     
-    // Vertical bar
     ctx.beginPath()
     ctx.moveTo(centerX, centerY - 20)
     ctx.lineTo(centerX, centerY + 20)
@@ -403,7 +363,6 @@ export function SpinWheel3D({
     ctx.lineWidth = 6
     ctx.stroke()
     
-    // Center orb
     ctx.shadowBlur = 15
     const orbGradient = ctx.createRadialGradient(centerX - 2, centerY - 2, 0, centerX, centerY, 12)
     orbGradient.addColorStop(0, '#FFF8DC')
@@ -433,7 +392,6 @@ export function SpinWheel3D({
       role="img"
       aria-label={isSpinning ? "Spinning wheel" : "Spin wheel ready"}
     >
-      {/* Premium glow effect */}
       <div
         className="absolute inset-0 rounded-full opacity-40 blur-3xl"
         style={{
@@ -441,7 +399,6 @@ export function SpinWheel3D({
         }}
       />
 
-      {/* Dark backdrop for contrast */}
       <div
         className="absolute rounded-full opacity-30"
         style={{
@@ -462,7 +419,6 @@ export function SpinWheel3D({
         <canvas ref={canvasRef} />
       </div>
 
-      {/* Premium golden pointer */}
       <svg
         width="50"
         height="50"
@@ -483,16 +439,13 @@ export function SpinWheel3D({
             <stop offset="100%" stopColor="rgba(255, 215, 0, 0)" />
           </radialGradient>
         </defs>
-        {/* Glow behind pointer */}
         <ellipse cx="25" cy="20" rx="20" ry="15" fill="url(#pointerGlow)" />
-        {/* Main pointer */}
         <polygon
           points="25,45 10,10 40,10"
           fill="url(#pointerGrad)"
           stroke="#8B7500"
           strokeWidth="2"
         />
-        {/* Highlight on pointer */}
         <polygon
           points="25,42 14,12 25,15"
           fill="rgba(255, 248, 220, 0.4)"
