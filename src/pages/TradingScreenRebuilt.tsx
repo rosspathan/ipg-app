@@ -113,7 +113,7 @@ export default function TradingScreenRebuilt() {
                 className={cn(
                   "h-10 rounded-lg font-semibold text-sm transition-all duration-200",
                   side === "buy"
-                    ? "bg-cyan-500 text-white shadow-lg shadow-cyan-500/20"
+                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
                 )}
               >
@@ -287,7 +287,7 @@ export default function TradingScreenRebuilt() {
               className={cn(
                 "w-full h-12 text-base font-bold shadow-lg transition-all duration-200",
                 side === "buy"
-                  ? "bg-cyan-500 hover:bg-cyan-600 text-white shadow-cyan-500/20"
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
                   : "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20"
               )}
             >
@@ -333,9 +333,9 @@ export default function TradingScreenRebuilt() {
               {mockOrderBook.bids.slice(0, 7).map((bid, idx) => (
                 <button
                   key={`bid-${idx}`}
-                  className="w-full flex items-center justify-between py-0.5 px-2 hover:bg-cyan-500/5 rounded transition-colors"
+                  className="w-full flex items-center justify-between py-0.5 px-2 hover:bg-emerald-500/5 rounded transition-colors"
                 >
-                  <span className="text-xs font-mono font-semibold text-cyan-500">
+                  <span className="text-xs font-mono font-semibold text-emerald-500">
                     {bid.price.toFixed(1)}
                   </span>
                   <span className="text-[10px] font-mono text-muted-foreground">
