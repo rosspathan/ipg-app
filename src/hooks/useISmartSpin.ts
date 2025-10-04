@@ -85,27 +85,43 @@ export function useISmartSpin() {
         console.error('Segments error:', segmentsError)
       }
 
-      // Normalize to exactly 4 segments in desired order
-      const desiredOrder = ['LOSE', 'WIN x2', 'LOSE', 'WIN x3'] as const
-      const byLabel = new Map<string, SpinSegment>()
-      ;(segmentsData || []).forEach((s: SpinSegment) => {
-        if (!byLabel.has(s.label)) byLabel.set(s.label, s)
-      })
-      const normalized: SpinSegment[] = desiredOrder.map((label, idx) => {
-        const seg = byLabel.get(label)
-        if (seg) return seg
-        // Fallback if missing: synthesize segment
-        return {
-          id: `synthetic-${label}-${idx}`,
-          label,
-          multiplier: label === 'WIN x2' ? 2 : label === 'WIN x3' ? 3 : 0,
+      // 🔥 FORCE exactly 4 segments with premium design
+      const forcedSegments: SpinSegment[] = [
+        {
+          id: 'force-1',
+          label: 'LOSE',
+          multiplier: 0,
           weight: 1,
-          color_hex: label.startsWith('WIN') ? (label === 'WIN x2' ? '#22c55e' : '#f59e0b') : '#ef4444',
+          color_hex: '#ef4444',
+          is_active: true,
+        },
+        {
+          id: 'force-2', 
+          label: 'WIN x2',
+          multiplier: 2,
+          weight: 1,
+          color_hex: '#22c55e',
+          is_active: true,
+        },
+        {
+          id: 'force-3',
+          label: 'LOSE', 
+          multiplier: 0,
+          weight: 1,
+          color_hex: '#ef4444',
+          is_active: true,
+        },
+        {
+          id: 'force-4',
+          label: 'WIN x3',
+          multiplier: 3, 
+          weight: 1,
+          color_hex: '#f59e0b',
           is_active: true,
         }
-      })
-      console.log('Normalized segments (4):', normalized.map(s => s.label))
-      setSegments(normalized)
+      ]
+      console.log('🔥 FORCING SEGMENTS:', forcedSegments.map(s => s.label))
+      setSegments(forcedSegments)
       // Get user limits
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {

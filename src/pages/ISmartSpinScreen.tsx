@@ -143,13 +143,16 @@ export default function ISmartSpinScreen() {
           />
         )}
 
-        {/* Spin Wheel */}
-        <SpinWheel3D
-          segments={segments}
-          isSpinning={isSpinning}
-          winningSegmentIndex={winningSegmentIndex}
-          onSpinComplete={handleSpinComplete}
-        />
+        {/* Spin Wheel - Force refresh */}
+        {segments.length > 0 && (
+          <SpinWheel3D
+            key={`premium-wheel-${segments.length}-${JSON.stringify(segments.map(s => s.label))}`}
+            segments={segments}
+            isSpinning={isSpinning}
+            winningSegmentIndex={winningSegmentIndex}
+            onSpinComplete={handleSpinComplete}
+          />
+        )}
 
         {/* Wheel Stats Row */}
         <WheelStatsRow
