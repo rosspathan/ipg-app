@@ -21,7 +21,7 @@ export default function BSKTransferScreen() {
         </div>
       </div>
 
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 max-w-2xl">
         <BSKTransferForm />
       </div>
     </div>
