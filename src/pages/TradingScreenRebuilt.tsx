@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, TrendingUp, Info, Plus, BarChart3, Settings, MoreVertical } from "lucide-react";
+import { ChevronDown, TrendingUp, Info, Plus, BarChart3, Settings, MoreVertical, BookOpen, X } from "lucide-react";
 import { PairSelectorSheet } from "@/components/trading/PairSelectorSheet";
 import { PercentChipsPro } from "@/components/trading/PercentChipsPro";
 import { AmountSliderPro } from "@/components/trading/AmountSliderPro";
@@ -45,6 +45,7 @@ export default function TradingScreenRebuilt() {
   const [percentage, setPercentage] = useState(0);
   const [amountUnit, setAmountUnit] = useState<"base" | "quote">("base");
   const [tpslEnabled, setTpslEnabled] = useState(false);
+  const [showOrderBook, setShowOrderBook] = useState(false);
   const [selectedTab, setSelectedTab] = useState("orders");
   const [chartEnabled, setChartEnabled] = useState(false);
   const [pairSelectorOpen, setPairSelectorOpen] = useState(false);
@@ -248,9 +249,11 @@ export default function TradingScreenRebuilt() {
         )}
 
         {/* Main Trading Interface */}
-        <div className="grid grid-cols-[1fr_auto] gap-0 border-t border-border/50">
-          {/* Left Side: Order Entry Form */}
-          <div className="px-4 py-4 space-y-3 border-r border-border/50">
+        <div className="relative">
+          {/* Mobile: Single column, Desktop: Two columns with order book */}
+          <div className="md:grid md:grid-cols-[1fr_200px] gap-0 border-t border-border/50">
+            {/* Order Entry Form */}
+            <div className="px-4 py-4 space-y-3 md:border-r border-border/50">
             {/* Buy/Sell Tabs */}
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -466,8 +469,8 @@ export default function TradingScreenRebuilt() {
             </Button>
           </div>
 
-          {/* Right Side: Order Book */}
-          <div className="w-[180px] py-4 pr-4">
+          {/* Order Book - Hidden on mobile, visible on desktop */}
+          <div className="hidden md:block py-4 pr-4">
             <div className="flex items-center justify-between mb-2 px-2">
               <div className="text-[9px] font-semibold text-muted-foreground">Price (USDT)</div>
               <div className="text-[9px] font-semibold text-muted-foreground">Quantity (BNB)</div>
@@ -517,6 +520,86 @@ export default function TradingScreenRebuilt() {
             </div>
           </div>
         </div>
+        
+        {/* Mobile Order Book Toggle Button */}
+        <button
+          onClick={() => setShowOrderBook(!showOrderBook)}
+          className="md:hidden fixed bottom-20 right-4 z-50 h-12 px-4 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center gap-2 font-semibold text-sm"
+        >
+          <BookOpen className="h-4 w-4" />
+          Order Book
+        </button>
+
+        {/* Mobile Order Book Sheet */}
+        {showOrderBook && (
+          <div className="md:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" onClick={() => setShowOrderBook(false)}>
+            <div 
+              className="absolute bottom-0 left-0 right-0 bg-background border-t border-border rounded-t-2xl max-h-[70vh] overflow-y-auto animate-slide-in-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-background border-b border-border px-4 py-3 flex items-center justify-between">
+                <h3 className="font-bold text-base">Order Book</h3>
+                <button 
+                  onClick={() => setShowOrderBook(false)}
+                  className="p-2 hover:bg-muted rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3 px-2">
+                  <div className="text-xs font-semibold text-muted-foreground">Price (USDT)</div>
+                  <div className="text-xs font-semibold text-muted-foreground">Quantity (BNB)</div>
+                </div>
+
+                {/* Asks */}
+                <div className="space-y-1 mb-3">
+                  {mockOrderBook.asks.slice(0, 10).map((ask, idx) => (
+                    <button
+                      key={`mobile-ask-${idx}`}
+                      className="w-full flex items-center justify-between py-2 px-3 hover:bg-rose-500/5 rounded-lg transition-colors"
+                    >
+                      <span className="text-sm font-mono font-bold text-rose-500">
+                        {ask.price.toFixed(1)}
+                      </span>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {ask.quantity}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Current Price */}
+                <div className="flex items-center justify-center gap-2 py-3 mb-3 bg-muted/20 rounded-lg">
+                  <span className="text-lg font-bold font-mono">{mockOrderBook.bids[0].price}</span>
+                  <TrendingUp className="h-4 w-4 text-success" />
+                  <span className="text-xs text-muted-foreground">
+                    ≈${(mockOrderBook.bids[0].price * 1.002).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Bids */}
+                <div className="space-y-1">
+                  {mockOrderBook.bids.slice(0, 10).map((bid, idx) => (
+                    <button
+                      key={`mobile-bid-${idx}`}
+                      className="w-full flex items-center justify-between py-2 px-3 hover:bg-emerald-500/5 rounded-lg transition-colors"
+                    >
+                      <span className="text-sm font-mono font-bold text-emerald-500">
+                        {bid.price.toFixed(1)}
+                      </span>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {bid.quantity}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        </div> {/* Close relative div */}
 
         {/* Bottom Tabs */}
         <div className="border-t border-border/50 bg-background/95 backdrop-blur-xl pb-16">
