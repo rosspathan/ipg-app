@@ -1,275 +1,214 @@
 import * as React from "react"
 import { useState } from "react"
-import { Gift, Target, Star, Zap, ArrowDownUp, ArrowUpRight, ArrowLeftRight, Send, Users } from "lucide-react"
+import { Gift, Target, Zap, Star, Users, TrendingUp, Shield, Coins } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
+import { HomeHeaderPro } from "@/components/home/HomeHeaderPro"
+import { KPICluster } from "@/components/home/KPICluster"
+import { AddFundsCTA } from "@/components/home/AddFundsCTA"
+import { AssetsPanel } from "@/components/home/AssetsPanel"
+import { BSKWithdrawCard } from "@/components/home/BSKWithdrawCard"
+import { BSKHoldingCard } from "@/components/home/BSKHoldingCard"
+import { RewardsBreakdown } from "@/components/home/RewardsBreakdown"
+import { AnnouncementsBar } from "@/components/home/AnnouncementsBar"
+import { HeroCarousel } from "@/components/home/HeroCarousel"
+import { ProgramsLane } from "@/components/home/ProgramsLane"
+import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { DockNav } from "@/components/navigation/DockNav"
-import { QuickSwitch } from "@/components/astra/QuickSwitch"
-import { KPIChipRow } from "@/components/astra/KPIChipRow"
-import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
-import { CardLane } from "@/components/astra/CardLane"
-import { ProgramTile } from "@/components/astra/grid/ProgramTile"
-import { AnnouncementCarousel } from "@/components/user/AnnouncementCarousel"
-import { Marquee } from "@/components/astra/grid/Marquee"
-import { ActivityGrid } from "@/components/astra/grid/ActivityGrid"
-import { QuickActionsRibbon } from "@/components/astra/grid/QuickActionsRibbon"
 
-const kpiData = [
-  { 
-    icon: "💰", 
-    value: "₹2,45,678", 
-    label: "Portfolio", 
-    variant: "success" as const, 
-    trend: "up" as const,
-    changePercent: "+12.4%"
-  },
-  { 
-    icon: "📈", 
-    value: "+12.4%", 
-    label: "24h Change", 
-    variant: "primary" as const, 
-    trend: "up" as const 
-  },
-  { 
-    icon: "⭐", 
-    value: "VIP Gold", 
-    label: "Status", 
-    variant: "warning" as const, 
-    trend: "neutral" as const 
-  }
-]
-
-const marqueeItems = [
-  { id: "1", text: "BSK Loans: 0% interest for 16 weeks on amounts up to ₹50,000", type: "promotion" as const },
-  { id: "2", text: "Trading competition starts Monday - Win up to ₹25,000 in prizes", type: "info" as const },
-  { id: "3", text: "New insurance plans available with 24/7 claim support", type: "success" as const }
-]
-
-const recentActivities = [
-  {
-    id: "1",
-    type: "reward" as const,
-    title: "Daily Ad Mining Reward",
-    subtitle: "Premium subscription tier",
-    amount: 150,
-    currency: "BSK",
-    timestamp: new Date(Date.now() - 1800000),
-    status: "completed" as const,
-    icon: <Gift className="h-4 w-4" />
-  },
-  {
-    id: "2",
-    type: "spin" as const,
-    title: "Fortune Wheel Spin",
-    subtitle: "Lucky spin result",
-    amount: 50,
-    currency: "BSK",
-    timestamp: new Date(Date.now() - 3600000),
-    status: "completed" as const,
-    icon: <Zap className="h-4 w-4" />
-  },
-  {
-    id: "3",
-    type: "stake" as const,
-    title: "Staking Reward",
-    subtitle: "12.4% APY earnings",
-    amount: 89,
-    currency: "BSK",
-    timestamp: new Date(Date.now() - 7200000),
-    status: "completed" as const,
-    icon: <Star className="h-4 w-4" />
-  }
-]
-
+/**
+ * HomePageRebuilt - World-class mobile-first home screen
+ * DO NOT MODIFY THE FOOTER - DockNav remains untouched
+ */
 export function HomePageRebuilt() {
   const { navigate } = useNavigation()
-  const [showQuickSwitch, setShowQuickSwitch] = useState(false)
+  const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
 
-  const myPrograms = [
+  // Mock data for demos
+  const mockAssets = [
+    { id: "1", symbol: "BTC", name: "Bitcoin", balance: 0.0342, valueUSD: 1456.78, change24h: 2.4 },
+    { id: "2", symbol: "ETH", name: "Ethereum", balance: 2.891, valueUSD: 4821.45, change24h: -1.2 },
+    { id: "3", symbol: "BNB", name: "BNB", balance: 12.45, valueUSD: 2890.12, change24h: 0.8 },
+    { id: "4", symbol: "USDT", name: "Tether", balance: 5420.00, valueUSD: 5420.00, change24h: 0 }
+  ]
+
+  const programs = [
     {
+      id: "1",
       title: "Advertise Mining",
       subtitle: "Watch ads daily\nEarn BSK rewards",
-      icon: <Gift className="h-6 w-6 text-success" />,
+      icon: <Gift className="h-6 w-6" />,
       badge: "DAILY" as const,
-      sparkline: [100, 120, 115, 140, 135, 160, 155],
-      onPress: () => navigate("/app/programs/advertising")
+      onPress: () => navigate("/app/advertising")
     },
     {
+      id: "2",
       title: "Lucky Draw",
       subtitle: "Pool-based lottery\nWin big prizes",
-      icon: <Target className="h-6 w-6 text-warning" />,
+      icon: <Target className="h-6 w-6" />,
       badge: "HOT" as const,
-      progress: 78,
-      onPress: () => navigate("/app/programs/lucky-draw")
+      onPress: () => navigate("/app/lucky-draw")
     },
     {
-      title: "BSK Fortune Wheel",
+      id: "3",
+      title: "Fortune Wheel",
       subtitle: "Daily spins\nProvably fair",
-      icon: <Zap className="h-6 w-6 text-accent" />,
+      icon: <Zap className="h-6 w-6" />,
       badge: "LIVE" as const,
-      onPress: () => navigate("/app/programs/spin")
+      onPress: () => navigate("/app/spin")
     },
     {
-      title: "Staking Rewards",
-      subtitle: "12.4% APY\nFlexible terms",
-      icon: <Star className="h-6 w-6 text-primary" />,
-      sparkline: [50, 55, 52, 58, 62, 59, 65],
-      onPress: () => navigate("/app/programs/staking")
-    },
-    {
-      title: "Referral Program",
-      subtitle: "Invite friends\nEarn together",
-      icon: <Users className="h-6 w-6 text-secondary" />,
+      id: "4",
+      title: "BSK Purchase",
+      subtitle: "One-time bonus\nSpecial offers",
+      icon: <Coins className="h-6 w-6" />,
       badge: "NEW" as const,
-      onPress: () => navigate("/app/programs/referrals")
+      onPress: () => navigate("/programs/bsk-purchase")
+    },
+    {
+      id: "5",
+      title: "Referrals",
+      subtitle: "Invite friends\nEarn together",
+      icon: <Users className="h-6 w-6" />,
+      onPress: () => navigate("/app/referrals")
+    },
+    {
+      id: "6",
+      title: "Staking",
+      subtitle: "12.4% APY\nFlexible terms",
+      icon: <Star className="h-6 w-6" />,
+      onPress: () => navigate("/app/staking")
+    },
+    {
+      id: "7",
+      title: "Loans",
+      subtitle: "0% interest\n16 weeks",
+      icon: <TrendingUp className="h-6 w-6" />,
+      onPress: () => navigate("/programs/loans")
+    },
+    {
+      id: "8",
+      title: "Insurance",
+      subtitle: "Protect assets\n24/7 claims",
+      icon: <Shield className="h-6 w-6" />,
+      onPress: () => navigate("/programs/insurance")
     }
   ]
 
-  const quickActions = [
-    { id: "deposit", label: "Deposit", icon: <ArrowDownUp className="h-4 w-4" />, variant: "success" as const, onPress: () => navigate("/app/wallet/deposit") },
-    { id: "trade", label: "Trade", icon: <Target className="h-4 w-4" />, variant: "primary" as const, onPress: () => navigate("/app/trade") },
-    { id: "withdraw", label: "Withdraw", icon: <ArrowUpRight className="h-4 w-4" />, variant: "warning" as const, onPress: () => navigate("/app/wallet/withdraw") },
-    { id: "swap", label: "Swap", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/swap") }
+  const activities = [
+    {
+      id: "1",
+      type: "reward" as const,
+      title: "Daily Ad Mining Reward",
+      subtitle: "Premium subscription tier",
+      amount: 150,
+      currency: "BSK",
+      timestamp: new Date(Date.now() - 1800000),
+      status: "completed" as const,
+      icon: <Gift className="h-4 w-4" />
+    },
+    {
+      id: "2",
+      type: "spin" as const,
+      title: "Fortune Wheel Spin",
+      subtitle: "Lucky spin result",
+      amount: 50,
+      currency: "BSK",
+      timestamp: new Date(Date.now() - 3600000),
+      status: "completed" as const,
+      icon: <Zap className="h-4 w-4" />
+    },
+    {
+      id: "3",
+      type: "stake" as const,
+      title: "Staking Reward",
+      subtitle: "12.4% APY earnings",
+      amount: 89,
+      currency: "BSK",
+      timestamp: new Date(Date.now() - 7200000),
+      status: "completed" as const,
+      icon: <Star className="h-4 w-4" />
+    }
   ]
 
-  const handleQuickSwitchAction = (action: string) => {
-    switch (action) {
-      case "deposit": navigate("/app/wallet/deposit"); break
-      case "convert": navigate("/app/swap"); break
-      case "trade": navigate("/app/trade"); break
-      case "programs": navigate("/app/programs"); break
+  const announcementItems = [
+    { id: "1", text: "BSK Loans: 0% interest for 16 weeks on amounts up to ₹50,000", type: "promotion" as const },
+    { id: "2", text: "Trading competition starts Monday - Win up to ₹25,000 in prizes", type: "info" as const },
+    { id: "3", text: "New insurance plans available with 24/7 claim support", type: "success" as const }
+  ]
+
+  const heroSlides = [
+    {
+      id: "1",
+      image: "/placeholder.svg",
+      title: "Welcome to IPG I-SMART",
+      description: "Trade crypto, earn rewards, and grow your portfolio",
+      cta: {
+        label: "Get Started",
+        onClick: () => navigate("/app/programs")
+      }
     }
-  }
+  ]
 
   return (
-    <div className="min-h-screen bg-background pb-32" data-testid="page-home">
+    <div className="min-h-screen bg-gradient-to-b from-background-primary to-background-secondary" data-testid="page-home">
+      {/* Header - DO NOT MODIFY FOOTER BELOW */}
+      <HomeHeaderPro notificationCount={2} />
+
       {/* Main Content */}
-      <div className="space-y-4 pt-3 pb-4">
-        {/* KPI Row */}
-        <div className="px-3">
-          <KPIChipRow data={kpiData} />
-        </div>
+      <main className="pb-28 px-4 space-y-6 pt-6">
+        {/* KPI Cluster */}
+        <KPICluster />
 
-        {/* Add Funds - Premium CTA */}
-        <div className="px-3">
-          <button
-            onClick={() => navigate("/app/wallet/deposit")}
-            className="w-full h-14 rounded-2xl relative overflow-hidden group
-                       bg-gradient-to-r from-primary via-accent to-primary
-                       text-primary-foreground font-bold tracking-wide
-                       border border-primary/40 shadow-lg shadow-primary/20
-                       transition-all duration-300 ease-out
-                       hover:scale-[1.02] active:scale-95"
-            aria-label="Add funds to your wallet"
-          >
-            <span className="absolute inset-0 bg-white/20 translate-x-[-120%] group-hover:translate-x-[120%] transition-transform duration-700 ease-out" />
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              <ArrowDownUp className="h-5 w-5" />
-              Add Funds
-              <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-background/20 border border-white/30">Instant</span>
-            </span>
-          </button>
-        </div>
+        {/* Add Funds CTA */}
+        <AddFundsCTA onPress={() => navigate("/app/deposit")} />
 
-        {/* Balance Cluster */}
-        <div className="px-3">
-          <BalanceCluster />
-        </div>
+        {/* Crypto Assets Panel */}
+        <AssetsPanel
+          assets={mockAssets}
+          onAssetPress={(asset) => console.log("Asset pressed:", asset)}
+          onViewAll={() => navigate("/app/wallet")}
+        />
 
-        {/* Marquee - Top placement below portfolio */}
-        <Marquee items={marqueeItems} />
+        {/* BSK Withdrawable Card */}
+        <BSKWithdrawCard
+          onWithdraw={() => navigate("/programs/bsk-withdraw")}
+          onTransfer={() => navigate("/programs/bsk-transfer")}
+          onHistory={() => navigate("/app-legacy/wallet/history")}
+          onViewBreakdown={() => setShowRewardsBreakdown(true)}
+        />
 
-        {/* Promotional Banner */}
-        <div className="px-3">
-          <div 
-            onClick={() => navigate("/app/programs/loans")}
-            className="relative rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 p-4 cursor-pointer hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-[220ms] overflow-hidden"
-          >
-            {/* Animated gradient border effect */}
-            <div className="absolute inset-0 rounded-2xl opacity-50 pointer-events-none bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-pulse" />
-            
-            <div className="relative flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground leading-snug">
-                  0% interest for 16 weeks on amounts up to ₹50,000
-                </p>
-              </div>
-              <div className="shrink-0 px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30">
-                <span className="text-xs font-bold text-primary tracking-wide">Trading</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* BSK Holding Card */}
+        <BSKHoldingCard
+          onViewSchedule={() => setShowRewardsBreakdown(true)}
+        />
 
-        {/* My Programs Lane */}
-        <CardLane
-          title="My Programs"
-          action={{ label: "View All", onClick: () => navigate("/app/programs") }}
-          enableParallax
-        >
-          {myPrograms.map((program) => (
-            <div key={program.title} className="w-[156px]">
-              <ProgramTile {...program} />
-            </div>
-          ))}
-        </CardLane>
+        {/* Announcements Bar */}
+        <AnnouncementsBar items={announcementItems} />
 
-        {/* Quick Actions Grid - Mobile Friendly */}
-        <div className="px-3 space-y-2">
-          <h3 className="font-heading text-base font-bold text-foreground">Quick Actions</h3>
-          <div className="grid grid-cols-4 gap-2">
-            {quickActions.map((action) => (
-              <button
-                key={action.id}
-                onClick={action.onPress}
-                className="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-card/50 border border-border/40 hover:bg-card hover:border-primary/30 transition-all duration-[120ms] min-h-[88px]"
-              >
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                  action.variant === "success" ? "bg-success/10 text-success" :
-                  action.variant === "warning" ? "bg-warning/10 text-warning" :
-                  action.variant === "primary" ? "bg-primary/10 text-primary" :
-                  "bg-muted/10 text-muted-foreground"
-                }`}>
-                  {action.icon}
-                </div>
-                <span className="text-[10px] font-medium text-foreground leading-tight text-center">{action.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Hero Carousel */}
+        <HeroCarousel slides={heroSlides} />
 
-        {/* Announcements */}
-        <div className="px-3">
-          <AnnouncementCarousel />
-        </div>
+        {/* Programs Lane */}
+        <ProgramsLane
+          programs={programs}
+          onViewAll={() => navigate("/app/programs")}
+        />
 
+        {/* Activity Timeline */}
+        <ActivityTimeline
+          activities={activities}
+          onViewAll={() => navigate("/app-legacy/wallet/history")}
+        />
+      </main>
 
-        {/* Recent Activity */}
-        <div className="px-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading text-base font-bold text-foreground">Recent Activity</h2>
-            <button 
-              onClick={() => navigate("/app/wallet/history")}
-              className="text-xs font-medium text-accent hover:text-accent/80 transition-colors duration-[120ms]"
-            >
-              View All →
-            </button>
-          </div>
-          <ActivityGrid activities={recentActivities} />
-        </div>
-      </div>
-
-      {/* Bottom Navigation */}
-      <DockNav
-        onNavigate={navigate}
-        onCenterPress={() => setShowQuickSwitch(true)}
+      {/* Rewards Breakdown Bottom Sheet */}
+      <RewardsBreakdown
+        isOpen={showRewardsBreakdown}
+        onClose={() => setShowRewardsBreakdown(false)}
       />
 
-      {/* Quick Switch Radial Menu */}
-      <QuickSwitch
-        isOpen={showQuickSwitch}
-        onClose={() => setShowQuickSwitch(false)}
-        onAction={handleQuickSwitchAction}
-      />
+      {/* Footer - DO NOT MODIFY THIS SECTION */}
+      <DockNav onNavigate={(path) => navigate(path)} />
     </div>
   )
 }

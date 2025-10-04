@@ -140,6 +140,7 @@ import BSKVestingScreen from "@/pages/BSKVestingScreen";
 import { BSKWalletPage } from "@/pages/astra/BSKWalletPage";
 
 import { AstraLayout } from "@/layouts/AstraLayout";
+import { HomePage } from "@/pages/astra/HomePage";
 import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
 import { WalletPageRebuilt } from "@/pages/astra/WalletPageRebuilt";
 import { ProgramsPageRebuilt } from "@/pages/astra/ProgramsPageRebuilt";
