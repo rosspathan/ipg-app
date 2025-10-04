@@ -384,37 +384,73 @@ export default function TradingScreenRebuilt() {
             {/* Order Value */}
             <div className="flex items-center justify-between py-2 px-3 bg-muted/20 rounded-lg">
               <span className="text-xs text-muted-foreground">Order value</span>
-              <span className="text-xs font-semibold">USDT</span>
+              <span className="text-sm font-bold font-mono text-foreground">
+                {((parseFloat(quantity) || 0) * (orderType === "market" ? mockOrderBook.bids[0].price : parseFloat(price || "0"))).toFixed(2)} {quoteSymbol}
+              </span>
             </div>
 
             {/* TP/SL */}
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="tpsl"
-                checked={tpslEnabled}
-                onCheckedChange={(checked) => setTpslEnabled(checked as boolean)}
-                className="h-4 w-4"
-              />
-              <label
-                htmlFor="tpsl"
-                className="text-xs font-medium cursor-pointer"
-              >
-                TP/SL
-              </label>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="tpsl"
+                  checked={tpslEnabled}
+                  onCheckedChange={(checked) => setTpslEnabled(checked as boolean)}
+                  className="h-4 w-4"
+                />
+                <label
+                  htmlFor="tpsl"
+                  className="text-xs font-medium cursor-pointer"
+                >
+                  TP/SL
+                </label>
+              </div>
+
+              {/* TP/SL Input Fields */}
+              {tpslEnabled && (
+                <div className="space-y-2 pl-6">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground">Take Profit</label>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      className="h-10 bg-muted/30 border-border/50 text-sm font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground">Stop Loss</label>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      className="h-10 bg-muted/30 border-border/50 text-sm font-mono"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Available Balance */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between py-2 px-3 bg-muted/10 rounded-lg">
               <span className="text-xs text-muted-foreground">Available</span>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-semibold">
-                  {availableBalance.toFixed(8)} USDT
+                <span className="text-sm font-bold font-mono text-foreground">
+                  {availableBalance.toFixed(2)} {side === "buy" ? quoteSymbol : baseSymbol}
                 </span>
                 <button className="p-1 hover:bg-muted/50 rounded transition-colors">
                   <Plus className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
+            
+            {/* Selected Amount Info */}
+            {percentage > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Using {percentage}% of balance</span>
+                <span className="font-semibold text-primary">
+                  {((availableBalance * percentage) / 100).toFixed(2)} {side === "buy" ? quoteSymbol : baseSymbol}
+                </span>
+              </div>
+            )}
 
             {/* Submit Button */}
             <Button
