@@ -2,7 +2,6 @@ import * as React from "react"
 import { useState } from "react"
 import { Gift, Target, Zap, Star, Users, TrendingUp, Shield, Coins } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
-import { HomeHeaderPro } from "@/components/home/HomeHeaderPro"
 import { KPICluster } from "@/components/home/KPICluster"
 import { AddFundsCTA } from "@/components/home/AddFundsCTA"
 import { AssetsPanel } from "@/components/home/AssetsPanel"
@@ -150,12 +149,9 @@ export function HomePageRebuilt() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background-primary to-background-secondary" data-testid="page-home">
-      {/* Header - DO NOT MODIFY FOOTER BELOW */}
-      <HomeHeaderPro notificationCount={2} />
-
+    <div className="min-h-screen" data-testid="page-home">
       {/* Main Content */}
-      <main className="pb-28 px-4 space-y-6 pt-6">
+      <main className="pb-28 px-4 space-y-6 pt-4">
         {/* KPI Cluster */}
         <KPICluster />
 
