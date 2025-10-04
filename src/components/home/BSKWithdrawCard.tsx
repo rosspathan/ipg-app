@@ -81,7 +81,8 @@ export function BSKWithdrawCard({
           variant="ghost"
           size="sm"
           onClick={() => setIsPrivate(!isPrivate)}
-          className="h-8 w-8 p-0 hover:bg-muted/20"
+          className="h-8 w-8 p-0 hover:bg-muted/20 transition-all duration-[120ms]"
+          aria-label={isPrivate ? "Show balance" : "Hide balance"}
         >
           {isPrivate ? (
             <EyeOff className="h-4 w-4 text-muted-foreground" />
