@@ -21,6 +21,7 @@ interface PremiumSpinWheelProps {
   onSpinComplete?: () => void
   showParticles?: boolean
   particleType?: 'win' | 'lose'
+  showSegmentInfo?: boolean
 }
 
 export function PremiumSpinWheel({ 
@@ -29,7 +30,8 @@ export function PremiumSpinWheel({
   winningSegmentIndex, 
   onSpinComplete,
   showParticles = false,
-  particleType = 'win'
+  particleType = 'win',
+  showSegmentInfo = true
 }: PremiumSpinWheelProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<AnimationEngine | null>(null)
@@ -215,42 +217,46 @@ export function PremiumSpinWheel({
         </div>
       </div>
 
-      {/* Segments Info */}
-      <div className="grid grid-cols-2 gap-2">
-        {segments.map((segment, index) => (
-          <div
-            key={segment.id}
-            className={`flex items-center gap-2 p-2 rounded-lg border transition-all duration-300 ${
-              winningSegmentIndex === index 
-                ? 'bg-primary/10 border-primary shadow-md scale-105' 
-                : 'bg-muted/50 hover:bg-muted/70'
-            }`}
-          >
-            <div
-              className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
-              style={{ backgroundColor: segment.color_hex }}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
-                {segment.label}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {getSegmentProbability(segment.weight)}% chance
-              </p>
+      {/* Segments Info - Optional */}
+      {showSegmentInfo && (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            {segments.map((segment, index) => (
+              <div
+                key={segment.id}
+                className={`flex items-center gap-2 p-2 rounded-lg border transition-all duration-300 ${
+                  winningSegmentIndex === index 
+                    ? 'bg-primary/10 border-primary shadow-md scale-105' 
+                    : 'bg-muted/50 hover:bg-muted/70'
+                }`}
+              >
+                <div
+                  className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                  style={{ backgroundColor: segment.color_hex }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {segment.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {getSegmentProbability(segment.weight)}% chance
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Provably Fair Badge */}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span className="text-xs font-medium text-green-700 dark:text-green-400">
+                Provably Fair
+              </span>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Provably Fair Badge */}
-      <div className="text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-          <span className="text-xs font-medium text-green-700 dark:text-green-400">
-            Provably Fair
-          </span>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   )
 }
