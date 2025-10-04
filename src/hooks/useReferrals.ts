@@ -59,22 +59,13 @@ export const useReferrals = () => {
         setSettings(settingsData as MobileLinkingSettings);
       }
 
-      // Get or create referral code
-      const { data: codeData, error: codeError } = await supabase
-        .rpc('get_or_create_referral_code', { p_user_id: user.id });
-
-      if (codeError) throw codeError;
-
-      // Fetch the full code record
-      const { data: codeRecord } = await supabase
-        .from('referral_codes')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (codeRecord) {
-        setReferralCode(codeRecord as ReferralCode);
-      }
+      // Use sponsor's user_id directly as referral code
+      setReferralCode({
+        id: user.id,
+        user_id: user.id,
+        code: user.id, // User ID is the referral code
+        created_at: new Date().toISOString()
+      });
 
       // Fetch stats from referral_links_new
       const { data: linkData } = await supabase

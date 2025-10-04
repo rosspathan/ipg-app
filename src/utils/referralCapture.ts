@@ -57,6 +57,8 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
   const pending = getPendingReferral();
   if (!pending) return;
 
+  console.log('📋 Capturing referral - sponsorID:', pending.sponsorId);
+
   try {
     // Get settings
     const { data: settings } = await supabase
@@ -76,9 +78,22 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       return; // Not the right stage yet
     }
 
-    // Check for self-referral
+    // Check for self-referral (sponsorId is now the user_id)
     if (settings.self_referral_block && userId === pending.sponsorId) {
-      console.warn('Self-referral blocked');
+      console.warn('❌ Self-referral blocked');
+      clearPendingReferral();
+      return;
+    }
+
+    // Validate sponsor exists in profiles table
+    const { data: sponsorProfile } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('user_id', pending.sponsorId)
+      .maybeSingle();
+
+    if (!sponsorProfile) {
+      console.warn('⚠️ Sponsor not found in profiles:', pending.sponsorId);
       clearPendingReferral();
       return;
     }
@@ -91,18 +106,18 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       .maybeSingle();
 
     if (existingLink && existingLink.locked_at) {
-      console.log('User already has locked sponsor');
+      console.log('User already has locked sponsor:', existingLink.sponsor_id);
       clearPendingReferral();
       return;
     }
 
-    // Create or update referral link
+    // Create or update referral link - using sponsor_id as the code
     const { error } = await supabase
       .from('referral_links_new')
       .upsert({
         user_id: userId,
         sponsor_id: pending.sponsorId,
-        referral_code: pending.code,
+        referral_code: pending.sponsorId, // Store sponsor ID as code
         locked_at: new Date().toISOString(),
         first_touch_at: new Date(pending.timestamp).toISOString(),
         source: 'applink',
@@ -112,11 +127,11 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       });
 
     if (error) {
-      console.error('Error locking referral:', error);
+      console.error('❌ Error locking referral:', error);
       return;
     }
 
-    console.log('Referral locked successfully');
+    console.log('✅ Referral locked to sponsor:', pending.sponsorId);
     clearPendingReferral();
   } catch (error) {
     console.error('Error capturing referral:', error);

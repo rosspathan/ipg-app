@@ -15,55 +15,54 @@ export function ReferralResolver() {
     let mounted = true;
 
     const resolveReferral = async () => {
-      console.log('🔗 Resolving referral code:', code);
+      console.log('🔗 Resolving referral sponsorID:', code);
       
       if (!code) {
-        console.warn('No code provided, redirecting to welcome');
+        console.warn('No sponsorID provided, redirecting to welcome');
         if (mounted) navigate('/welcome', { replace: true });
         return;
       }
 
       try {
-        // Store pending referral immediately (before DB lookup)
-        const pendingRef = {
-          code: code.toUpperCase(),
-          sponsorId: '', // Will be filled after lookup
-          timestamp: Date.now()
-        };
+        // Code is now the sponsor's user_id directly
+        const sponsorId = code;
         
-        console.log('Looking up referral code in database...');
+        console.log('Using sponsorID directly:', sponsorId);
         
-        // Look up referral code to get sponsor user_id
-        const { data: codeData, error } = await supabase
-          .from('referral_codes')
+        // Validate that sponsor exists in the database
+        const { data: profileData, error } = await supabase
+          .from('profiles')
           .select('user_id')
-          .eq('code', code.toUpperCase())
+          .eq('user_id', sponsorId)
           .maybeSingle();
 
         if (error) {
-          console.error('Database error looking up code:', error);
-          // Still redirect to welcome with ref param even if DB lookup fails
-          if (mounted) navigate(`/welcome?ref=${code.toUpperCase()}`, { replace: true });
-          return;
+          console.error('Database error validating sponsor:', error);
         }
 
-        if (codeData?.user_id) {
-          // Update pending referral with sponsor ID
-          pendingRef.sponsorId = codeData.user_id;
-          localStorage.setItem('ismart_pending_ref', JSON.stringify(pendingRef));
-          console.log('✅ Referral code found, sponsor:', codeData.user_id);
+        // Store pending referral with sponsor ID
+        const pendingRef = {
+          code: sponsorId,
+          sponsorId: sponsorId,
+          timestamp: Date.now()
+        };
+        
+        localStorage.setItem('ismart_pending_ref', JSON.stringify(pendingRef));
+        
+        if (profileData) {
+          console.log('✅ Valid sponsor found:', sponsorId);
         } else {
-          console.warn('Referral code not found in database:', code);
+          console.warn('⚠️ Sponsor not found, but storing referral anyway');
         }
 
-        // Always redirect to welcome with ref param
+        // Always redirect to welcome with sponsor ID
         if (mounted) {
-          console.log('Redirecting to welcome with ref param');
-          navigate(`/welcome?ref=${code.toUpperCase()}`, { replace: true });
+          console.log('Redirecting to welcome with sponsorID');
+          navigate(`/welcome?ref=${sponsorId}`, { replace: true });
         }
       } catch (error) {
         console.error('Error resolving referral:', error);
-        if (mounted) navigate(`/welcome?ref=${code.toUpperCase()}`, { replace: true });
+        if (mounted) navigate(`/welcome?ref=${code}`, { replace: true });
       }
     };
 
