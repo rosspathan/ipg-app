@@ -52,7 +52,8 @@ export function AmountInputPro({
             placeholder="0.00"
             className={cn(
               "h-14 pr-16 text-xl font-bold font-mono tabular-nums",
-              "bg-muted/30 border-border/50"
+              "bg-muted/30 border-border/50",
+              "text-foreground placeholder:text-muted-foreground"
             )}
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
