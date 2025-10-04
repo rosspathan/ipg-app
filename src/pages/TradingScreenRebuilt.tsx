@@ -250,10 +250,10 @@ export default function TradingScreenRebuilt() {
 
         {/* Main Trading Interface */}
         <div className="relative">
-          {/* Mobile: Single column, Desktop: Two columns with order book */}
-          <div className="md:grid md:grid-cols-[1fr_200px] gap-0 border-t border-border/50">
+          {/* Order Entry Form - Full width on mobile, split on desktop */}
+          <div className="border-t border-border/50 flex">
             {/* Order Entry Form */}
-            <div className="px-4 py-4 space-y-3 md:border-r border-border/50">
+            <div className="flex-1 px-4 py-4 space-y-3">
             {/* Buy/Sell Tabs */}
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -467,14 +467,14 @@ export default function TradingScreenRebuilt() {
             >
               {side === "buy" ? "Buy" : "Sell"} BNB
             </Button>
-          </div>
-
-          {/* Order Book - Hidden on mobile, visible on desktop */}
-          <div className="hidden md:block py-4 pr-4">
-            <div className="flex items-center justify-between mb-2 px-2">
-              <div className="text-[9px] font-semibold text-muted-foreground">Price (USDT)</div>
-              <div className="text-[9px] font-semibold text-muted-foreground">Quantity (BNB)</div>
             </div>
+
+            {/* Desktop Order Book - Hidden on mobile */}
+            <div className="hidden lg:block w-[200px] py-4 pr-4 border-l border-border/50">
+              <div className="flex items-center justify-between mb-2 px-2">
+                <div className="text-[9px] font-semibold text-muted-foreground">Price (USDT)</div>
+                <div className="text-[9px] font-semibold text-muted-foreground">Quantity (BNB)</div>
+              </div>
 
             {/* Asks */}
             <div className="space-y-0.5 mb-2">
@@ -521,10 +521,10 @@ export default function TradingScreenRebuilt() {
           </div>
         </div>
         
-        {/* Mobile Order Book Toggle Button */}
+        {/* Mobile Order Book Floating Button */}
         <button
           onClick={() => setShowOrderBook(!showOrderBook)}
-          className="md:hidden fixed bottom-20 right-4 z-50 h-12 px-4 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center gap-2 font-semibold text-sm"
+          className="lg:hidden fixed bottom-20 right-4 z-50 h-12 px-4 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center gap-2 font-semibold text-sm hover:scale-105 transition-transform"
         >
           <BookOpen className="h-4 w-4" />
           Order Book
@@ -532,7 +532,7 @@ export default function TradingScreenRebuilt() {
 
         {/* Mobile Order Book Sheet */}
         {showOrderBook && (
-          <div className="md:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" onClick={() => setShowOrderBook(false)}>
+          <div className="lg:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" onClick={() => setShowOrderBook(false)}>
             <div 
               className="absolute bottom-0 left-0 right-0 bg-background border-t border-border rounded-t-2xl max-h-[70vh] overflow-y-auto animate-slide-in-up"
               onClick={(e) => e.stopPropagation()}
