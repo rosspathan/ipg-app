@@ -4,7 +4,6 @@ import { Gift, Star, Target, Coins, TrendingUp, Users, Shield, Zap } from "lucid
 import { useNavigation } from "@/hooks/useNavigation"
 import { DockNav } from "@/components/navigation/DockNav"
 import { ProgramsHeaderPro } from "@/components/programs-pro/ProgramsHeaderPro"
-import { FilterToolbarPro, type CategoryFilter, type SortOption } from "@/components/programs-pro/FilterToolbarPro"
 import { ProgramGridPro } from "@/components/programs-pro/ProgramGridPro"
 import { ProgramTilePro } from "@/components/programs-pro/ProgramTilePro"
 import { QuickActionsSheet, type QuickAction } from "@/components/programs-pro/QuickActionsSheet"
@@ -19,7 +18,7 @@ interface Program {
   title: string
   subtitle: string
   icon: React.ReactNode
-  category: CategoryFilter
+  category: "earn" | "games" | "finance" | "network" | "trading"
   badge?: "NEW" | "HOT" | "DAILY" | "LIVE"
   sparkline?: number[]
   progress?: number
@@ -170,10 +169,6 @@ const allPrograms: Program[] = [
 
 export function ProgramsPagePro() {
   const { navigate } = useNavigation()
-  const [searchValue, setSearchValue] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all")
-  const [sortBy, setSortBy] = useState<SortOption>("most-used")
-  const [showFilters, setShowFilters] = useState(false)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null)
   const [scrollPosition, setScrollPosition] = useState(0)
@@ -194,22 +189,6 @@ export function ProgramsPagePro() {
     }
   }, [])
   
-  // Filter and sort programs
-  const filteredPrograms = allPrograms
-    .filter(program => {
-      if (selectedCategory !== "all" && program.category !== selectedCategory) return false
-      if (searchValue && !program.title.toLowerCase().includes(searchValue.toLowerCase())) return false
-      return true
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "a-z": return a.title.localeCompare(b.title)
-        case "new": return (b.badge === "NEW" ? 1 : 0) - (a.badge === "NEW" ? 1 : 0)
-        case "most-used":
-        default: return 0
-      }
-    })
-  
   const handleProgramPress = (program: Program) => {
     setScrollPosition(window.scrollY)
     navigate(program.route)
@@ -217,12 +196,6 @@ export function ProgramsPagePro() {
   
   const handleKebabPress = (program: Program) => {
     setSelectedProgram(program)
-  }
-  
-  const handleClearFilters = () => {
-    setSearchValue("")
-    setSelectedCategory("all")
-    setSortBy("most-used")
   }
   
   const handleQuickSwitchAction = (action: string) => {
@@ -248,22 +221,10 @@ export function ProgramsPagePro() {
       {/* Hero Carousel */}
       <ProgramsHeroCarousel />
       
-      {/* Toolbar */}
-      <FilterToolbarPro
-        searchValue={searchValue}
-        onSearchChange={setSearchValue}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        onOpenFilters={() => setShowFilters(true)}
-      />
-      
       {/* Grid */}
       <div className="px-4 pt-6 pb-8">
-        {filteredPrograms.length > 0 ? (
-          <ProgramGridPro>
-            {filteredPrograms.map((program) => (
+        <ProgramGridPro>
+          {allPrograms.map((program) => (
               <ProgramTilePro
                 key={program.id}
                 icon={program.icon}
@@ -277,10 +238,7 @@ export function ProgramsPagePro() {
                 onKebabPress={() => handleKebabPress(program)}
               />
             ))}
-          </ProgramGridPro>
-        ) : (
-          <EmptyStatePro onClearFilters={handleClearFilters} />
-        )}
+        </ProgramGridPro>
       </div>
       
       {/* Bottom Navigation */}
@@ -299,13 +257,6 @@ export function ProgramsPagePro() {
           rulesLink={selectedProgram.rulesLink}
         />
       )}
-      
-      {/* Filter Sheet */}
-      <FilterSheetPro
-        isOpen={showFilters}
-        onClose={() => setShowFilters(false)}
-        onReset={handleClearFilters}
-      />
       
       {/* Quick Switch */}
       <QuickSwitch
