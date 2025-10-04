@@ -144,6 +144,7 @@ import { HomePage } from "@/pages/astra/HomePage";
 import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
 import { WalletPageRebuilt } from "@/pages/astra/WalletPageRebuilt";
 import { ProgramsPageRebuilt } from "@/pages/astra/ProgramsPageRebuilt";
+import { ProgramsPagePro } from "@/pages/astra/ProgramsPagePro";
 import { TradingPageRebuilt } from "@/pages/astra/TradingPageRebuilt";
 import { ProfileHub } from "@/pages/ProfileHub";
 import { KYCPage } from "@/pages/KYCPage";
@@ -247,7 +248,7 @@ function App() {
               <Route path="wallet/send" element={<SendScreen />} />
               <Route path="wallet/transfer" element={<TransferScreen />} />
               <Route path="wallet/history" element={<HistoryScreen />} />
-              <Route path="programs" element={<ProgramsPageRebuilt />} />
+              <Route path="programs" element={<ProgramsPagePro />} />
               <Route path="trade" element={<TradingScreenRebuilt />} />
               <Route path="swap" element={<SwapScreen />} />
               
