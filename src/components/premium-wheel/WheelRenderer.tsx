@@ -80,24 +80,70 @@ export function WheelRenderer({
 
     const centerX = width / 2
     const centerY = height / 2
-    const radius = Math.min(centerX, centerY) - 10
-    const innerRadius = radius * 0.2
+    const radius = Math.min(centerX, centerY) - 35
+    const innerRadius = radius * 0.15
 
     // Clear canvas with anti-aliasing
     ctx.clearRect(0, 0, width, height)
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = 'high'
 
-    // Draw outer rim glow
-    if (rimGlow && !settings.reducedMotion) {
-      const gradient = ctx.createRadialGradient(centerX, centerY, radius - 5, centerX, centerY, radius + 10)
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)')
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
-      ctx.fillStyle = gradient
+    // Draw dark outer ring
+    ctx.beginPath()
+    ctx.arc(centerX, centerY, radius + 28, 0, 2 * Math.PI)
+    const outerRingGradient = ctx.createRadialGradient(centerX, centerY, radius + 20, centerX, centerY, radius + 28)
+    outerRingGradient.addColorStop(0, '#2a2a2a')
+    outerRingGradient.addColorStop(0.5, '#1a1a1a')
+    outerRingGradient.addColorStop(1, '#0a0a0a')
+    ctx.fillStyle = outerRingGradient
+    ctx.fill()
+
+    // Draw decorative golden lights around the outer ring
+    const lightCount = 8
+    for (let i = 0; i < lightCount; i++) {
+      const angle = (i / lightCount) * 2 * Math.PI
+      const lightX = centerX + Math.cos(angle) * (radius + 24)
+      const lightY = centerY + Math.sin(angle) * (radius + 24)
+      
+      // Golden glow
+      const glowGradient = ctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, 8)
+      glowGradient.addColorStop(0, '#FFD700')
+      glowGradient.addColorStop(0.3, '#FFA500')
+      glowGradient.addColorStop(1, 'rgba(255, 165, 0, 0)')
+      ctx.fillStyle = glowGradient
       ctx.beginPath()
-      ctx.arc(centerX, centerY, radius + 10, 0, 2 * Math.PI)
+      ctx.arc(lightX, lightY, 8, 0, 2 * Math.PI)
+      ctx.fill()
+      
+      // Golden ball
+      const ballGradient = ctx.createRadialGradient(lightX - 1, lightY - 1, 0, lightX, lightY, 5)
+      ballGradient.addColorStop(0, '#FFED4E')
+      ballGradient.addColorStop(0.5, '#FFD700')
+      ballGradient.addColorStop(1, '#FFA500')
+      ctx.fillStyle = ballGradient
+      ctx.beginPath()
+      ctx.arc(lightX, lightY, 5, 0, 2 * Math.PI)
       ctx.fill()
     }
+
+    // Draw golden rim border
+    ctx.beginPath()
+    ctx.arc(centerX, centerY, radius + 15, 0, 2 * Math.PI)
+    ctx.arc(centerX, centerY, radius + 8, 0, 2 * Math.PI, true)
+    const goldenRimGradient = ctx.createRadialGradient(centerX, centerY, radius + 8, centerX, centerY, radius + 15)
+    goldenRimGradient.addColorStop(0, '#FFD700')
+    goldenRimGradient.addColorStop(0.3, '#FFA500')
+    goldenRimGradient.addColorStop(0.6, '#FFD700')
+    goldenRimGradient.addColorStop(1, '#CC8800')
+    ctx.fillStyle = goldenRimGradient
+    ctx.fill('evenodd')
+
+    // Inner golden border
+    ctx.beginPath()
+    ctx.arc(centerX, centerY, radius + 5, 0, 2 * Math.PI)
+    ctx.strokeStyle = '#FFED4E'
+    ctx.lineWidth = 2
+    ctx.stroke()
 
     // Draw segments
     const totalWeight = segments.reduce((sum, segment) => sum + segment.weight, 0)
@@ -188,66 +234,116 @@ export function WheelRenderer({
       currentAngle += segmentAngle
     })
 
-    // Draw center circle with glow
-    if (centerGlow && !settings.reducedMotion) {
-      const centerGradient = ctx.createRadialGradient(
-        centerX, centerY, 0,
-        centerX, centerY, 40
-      )
-      centerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)')
-      centerGradient.addColorStop(0.7, 'rgba(200, 200, 200, 0.8)')
-      centerGradient.addColorStop(1, 'rgba(100, 100, 100, 0.6)')
-      ctx.fillStyle = centerGradient
-    } else {
-      ctx.fillStyle = '#1a1a1a'
-    }
+    // Draw dark center circle
+    const centerRadius = 40
     
+    // Dark background
     ctx.beginPath()
-    ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI)
+    ctx.arc(centerX, centerY, centerRadius, 0, 2 * Math.PI)
+    const centerBgGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, centerRadius)
+    centerBgGradient.addColorStop(0, '#2a2a2a')
+    centerBgGradient.addColorStop(1, '#0a0a0a')
+    ctx.fillStyle = centerBgGradient
     ctx.fill()
     
-    ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = 2
+    // Golden border
+    ctx.strokeStyle = '#FFD700'
+    ctx.lineWidth = 3
     ctx.stroke()
 
-    // Center text
-    ctx.fillStyle = '#ffffff'
-    ctx.font = `bold ${Math.max(10, radius * 0.05)}px Arial, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('SPIN', centerX, centerY)
+    // Draw golden pin design (cross pattern)
+    ctx.save()
+    ctx.strokeStyle = '#FFD700'
+    ctx.lineWidth = 4
+    ctx.lineCap = 'round'
+    
+    // Horizontal line
+    ctx.beginPath()
+    ctx.moveTo(centerX - 15, centerY)
+    ctx.lineTo(centerX + 15, centerY)
+    ctx.stroke()
+    
+    // Vertical line
+    ctx.beginPath()
+    ctx.moveTo(centerX, centerY - 15)
+    ctx.lineTo(centerX, centerY + 15)
+    ctx.stroke()
+    
+    // Corner circles
+    const cornerRadius = 3
+    const cornerDistance = 12
+    const corners = [
+      { x: centerX - cornerDistance, y: centerY - cornerDistance },
+      { x: centerX + cornerDistance, y: centerY - cornerDistance },
+      { x: centerX - cornerDistance, y: centerY + cornerDistance },
+      { x: centerX + cornerDistance, y: centerY + cornerDistance }
+    ]
+    
+    corners.forEach(corner => {
+      ctx.beginPath()
+      ctx.arc(corner.x, corner.y, cornerRadius, 0, 2 * Math.PI)
+      const cornerGradient = ctx.createRadialGradient(corner.x, corner.y, 0, corner.x, corner.y, cornerRadius)
+      cornerGradient.addColorStop(0, '#FFED4E')
+      cornerGradient.addColorStop(1, '#FFD700')
+      ctx.fillStyle = cornerGradient
+      ctx.fill()
+    })
+    
+    // Center golden dot
+    ctx.beginPath()
+    ctx.arc(centerX, centerY, 4, 0, 2 * Math.PI)
+    const centerDotGradient = ctx.createRadialGradient(centerX - 1, centerY - 1, 0, centerX, centerY, 4)
+    centerDotGradient.addColorStop(0, '#FFED4E')
+    centerDotGradient.addColorStop(1, '#FFA500')
+    ctx.fillStyle = centerDotGradient
+    ctx.fill()
+    
+    ctx.restore()
 
     // Draw pointer
     drawPointer(ctx, centerX, centerY - radius + 5)
   }
 
   const drawPointer = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
-    // Enhanced pointer with 3D effect
+    // Golden pointer with 3D effect
     ctx.save()
     
     // Pointer shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
-    ctx.shadowBlur = 5
-    ctx.shadowOffsetY = 2
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
+    ctx.shadowBlur = 8
+    ctx.shadowOffsetY = 3
     
     ctx.beginPath()
     ctx.moveTo(x, y)
-    ctx.lineTo(x - 12, y - 25)
-    ctx.lineTo(x + 12, y - 25)
+    ctx.lineTo(x - 15, y - 30)
+    ctx.lineTo(x + 15, y - 30)
     ctx.closePath()
     
-    // Pointer gradient for 3D effect
-    const pointerGradient = ctx.createLinearGradient(x - 12, y - 25, x + 12, y - 25)
-    pointerGradient.addColorStop(0, '#f0f0f0')
-    pointerGradient.addColorStop(0.5, '#ffffff')
-    pointerGradient.addColorStop(1, '#d0d0d0')
+    // Golden gradient for 3D effect
+    const pointerGradient = ctx.createLinearGradient(x - 15, y - 30, x + 15, y - 30)
+    pointerGradient.addColorStop(0, '#CC8800')
+    pointerGradient.addColorStop(0.3, '#FFD700')
+    pointerGradient.addColorStop(0.5, '#FFED4E')
+    pointerGradient.addColorStop(0.7, '#FFD700')
+    pointerGradient.addColorStop(1, '#CC8800')
     
     ctx.fillStyle = pointerGradient
     ctx.fill()
     
-    ctx.strokeStyle = '#333333'
+    // Golden border
+    ctx.strokeStyle = '#FFA500'
     ctx.lineWidth = 2
     ctx.stroke()
+    
+    // Highlight on top
+    ctx.shadowBlur = 0
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    ctx.lineTo(x - 6, y - 15)
+    ctx.lineTo(x + 6, y - 15)
+    ctx.closePath()
+    ctx.fillStyle = 'rgba(255, 237, 78, 0.6)'
+    ctx.fill()
     
     ctx.restore()
   }
@@ -281,9 +377,21 @@ export function WheelRenderer({
       className="relative flex justify-center items-center"
       style={{ width: '100%', maxWidth: '400px', aspectRatio: '1' }}
     >
+      {/* Golden pedestal effect */}
+      <div className="absolute bottom-0 w-3/4 h-8 rounded-[50%] opacity-40 blur-sm"
+        style={{
+          background: 'linear-gradient(90deg, #CC8800 0%, #FFD700 20%, #FFA500 50%, #FFD700 80%, #CC8800 100%)',
+          transform: 'translateY(120%)',
+          boxShadow: '0 4px 20px rgba(255, 215, 0, 0.6)'
+        }}
+      />
+      
       <canvas
         ref={canvasRef}
-        style={canvasStyle}
+        style={{
+          ...canvasStyle,
+          filter: settings.reducedMotion ? 'none' : 'drop-shadow(0 8px 24px rgba(0, 0, 0, 0.4))'
+        }}
         className={`transition-all duration-300 ${
           isSpinning ? 'will-change-transform' : ''
         }`}
