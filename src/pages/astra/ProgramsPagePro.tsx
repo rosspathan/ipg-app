@@ -5,7 +5,7 @@ import { useNavigation } from "@/hooks/useNavigation"
 import { DockNav } from "@/components/navigation/DockNav"
 import { ProgramsHeaderPro } from "@/components/programs-pro/ProgramsHeaderPro"
 import { ProgramGridPro } from "@/components/programs-pro/ProgramGridPro"
-import { ProgramTilePro } from "@/components/programs-pro/ProgramTilePro"
+import { ProgramTileUltra } from "@/components/programs-pro/ProgramTileUltra"
 import { QuickActionsSheet, type QuickAction } from "@/components/programs-pro/QuickActionsSheet"
 import { ProgramsHeroCarousel } from "@/components/programs-pro/ProgramsHeroCarousel"
 import { AnnouncementsBar } from "@/components/programs-pro/AnnouncementsBar"
@@ -21,7 +21,8 @@ interface Program {
   category: "earn" | "games" | "finance" | "network" | "trading"
   badge?: "NEW" | "HOT" | "DAILY" | "LIVE"
   sparkline?: number[]
-  progress?: number
+  progress?: { value: number; label?: string }
+  streak?: { total: number; completed: number }
   footer?: string
   route: string
   actions: QuickAction[]
@@ -36,8 +37,7 @@ const allPrograms: Program[] = [
     icon: <Gift className="h-5 w-5" />,
     category: "earn",
     badge: "DAILY",
-    sparkline: [100, 120, 115, 140, 135, 160, 155],
-    footer: "Streak: 5 days",
+    streak: { total: 7, completed: 5 },
     route: "/app/programs/advertising",
     actions: [
       { id: "watch", label: "Watch Now", variant: "default", onPress: () => {} },
@@ -52,7 +52,7 @@ const allPrograms: Program[] = [
     subtitle: "12.4% APY • Flexible",
     icon: <Star className="h-5 w-5" />,
     category: "earn",
-    sparkline: [50, 55, 52, 58, 62, 59, 65],
+    streak: { total: 7, completed: 7 },
     route: "/app/programs/staking",
     actions: [
       { id: "stake", label: "Stake", variant: "default", onPress: () => {} },
@@ -83,7 +83,7 @@ const allPrograms: Program[] = [
     icon: <Target className="h-5 w-5" />,
     category: "games",
     badge: "HOT",
-    progress: 78,
+    progress: { value: 78, label: "Fill 78%" },
     route: "/app/programs/lucky-draw",
     actions: [
       { id: "buy", label: "Buy Ticket", variant: "default", onPress: () => {} },
@@ -225,19 +225,20 @@ export function ProgramsPagePro() {
       <div className="px-4 pt-6 pb-8">
         <ProgramGridPro>
           {allPrograms.map((program) => (
-              <ProgramTilePro
-                key={program.id}
-                icon={program.icon}
-                title={program.title}
-                subtitle={program.subtitle}
-                badge={program.badge}
-                sparkline={program.sparkline}
-                progress={program.progress}
-                footer={program.footer}
-                onPress={() => handleProgramPress(program)}
-                onKebabPress={() => handleKebabPress(program)}
-              />
-            ))}
+            <ProgramTileUltra
+              key={program.id}
+              icon={program.icon}
+              title={program.title}
+              subtitle={program.subtitle}
+              badge={program.badge}
+              sparkline={program.sparkline}
+              progress={program.progress}
+              streak={program.streak}
+              footer={program.footer}
+              onPress={() => handleProgramPress(program)}
+              onKebabPress={() => handleKebabPress(program)}
+            />
+          ))}
         </ProgramGridPro>
       </div>
       

@@ -10,7 +10,7 @@ import { BSKHoldingCard } from "@/components/home/BSKHoldingCard"
 import { RewardsBreakdown } from "@/components/home/RewardsBreakdown"
 import { AnnouncementsBar } from "@/components/home/AnnouncementsBar"
 import { HeroCarousel } from "@/components/home/HeroCarousel"
-import { ProgramsLane } from "@/components/home/ProgramsLane"
+import { ProgramsLaneUltra } from "@/components/programs-pro/ProgramsLaneUltra"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { DockNav } from "@/components/navigation/DockNav"
 
@@ -230,7 +230,7 @@ export function HomePageRebuilt() {
         <HeroCarousel slides={heroSlides} />
 
         {/* Programs Lane */}
-        <ProgramsLane
+        <ProgramsLaneUltra
           programs={programs}
           onViewAll={() => navigate("/app/programs")}
         />
