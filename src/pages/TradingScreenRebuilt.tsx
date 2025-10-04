@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, TrendingUp, Info, Plus, BarChart3, Settings, MoreVertical } from "lucide-react";
+import { PairSelectorSheet } from "@/components/trading/PairSelectorSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,7 @@ export default function TradingScreenRebuilt() {
   const [tpslEnabled, setTpslEnabled] = useState(false);
   const [selectedTab, setSelectedTab] = useState("orders");
   const [chartEnabled, setChartEnabled] = useState(false);
+  const [pairSelectorOpen, setPairSelectorOpen] = useState(false);
 
   const availableBalance = 329.19972973;
   const pair = "BNB/USDT";
@@ -59,10 +61,13 @@ export default function TradingScreenRebuilt() {
         <div className="sticky top-0 z-30 bg-background border-b border-border/50 px-4 py-3">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => {}}
+              onClick={() => setPairSelectorOpen(true)}
               className="flex items-center gap-2 hover:bg-muted/50 px-3 py-2 rounded-lg transition-colors"
             >
-              <span className="text-xl font-bold">{pair}</span>
+              <div className="text-left">
+                <div className="text-sm font-bold">{pair}</div>
+                <div className="text-[10px] font-semibold text-success">{priceChange}</div>
+              </div>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </button>
             <div className="flex items-center gap-2">
@@ -85,7 +90,6 @@ export default function TradingScreenRebuilt() {
               </button>
             </div>
           </div>
-          <div className="mt-2 text-sm font-semibold text-success">{priceChange}</div>
         </div>
 
         {/* Chart - Conditional */}
@@ -382,6 +386,17 @@ export default function TradingScreenRebuilt() {
 
       {/* Bottom Navigation */}
       <DockNav onNavigate={(path) => navigate(path)} />
+
+      {/* Pair Selector */}
+      <PairSelectorSheet
+        open={pairSelectorOpen}
+        onOpenChange={setPairSelectorOpen}
+        currentPair={pair}
+        onSelectPair={(newPair) => {
+          // Update pair - in production this would update state and fetch new data
+          console.log("Selected pair:", newPair);
+        }}
+      />
     </div>
   );
 }
