@@ -71,7 +71,6 @@ export function useISmartSpin() {
         return
       }
 
-      console.log('Loaded spin config:', configData)
       setConfig(configData)
 
       // Get active segments
@@ -85,43 +84,18 @@ export function useISmartSpin() {
         console.error('Segments error:', segmentsError)
       }
 
-      // 🔥 FORCE exactly 4 segments with premium design
-      const forcedSegments: SpinSegment[] = [
-        {
-          id: 'force-1',
-          label: 'LOSE',
-          multiplier: 0,
-          weight: 1,
-          color_hex: '#ef4444',
-          is_active: true,
-        },
-        {
-          id: 'force-2', 
-          label: 'WIN x2',
-          multiplier: 2,
-          weight: 1,
-          color_hex: '#22c55e',
-          is_active: true,
-        },
-        {
-          id: 'force-3',
-          label: 'LOSE', 
-          multiplier: 0,
-          weight: 1,
-          color_hex: '#ef4444',
-          is_active: true,
-        },
-        {
-          id: 'force-4',
-          label: 'WIN x3',
-          multiplier: 3, 
-          weight: 1,
-          color_hex: '#f59e0b',
-          is_active: true,
-        }
-      ]
-      console.log('🔥 FORCING SEGMENTS:', forcedSegments.map(s => s.label))
-      setSegments(forcedSegments)
+      // Use database segments (admin-configurable)
+      const normalizedSegments = (segmentsData || []).map((s: any) => ({
+        id: s.id,
+        label: s.label,
+        multiplier: s.multiplier,
+        weight: s.weight,
+        color_hex: s.color_hex,
+        is_active: s.is_active
+      }))
+      
+      setSegments(normalizedSegments)
+      
       // Get user limits
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {

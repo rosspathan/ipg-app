@@ -41,10 +41,6 @@ export function SpinWheel3D({
   const startSpinAnimation = (targetIndex: number) => {
     // Guard: ensure segments are loaded and index is valid
     if (!segments.length || targetIndex < 0 || targetIndex >= segments.length) {
-      console.warn('⚠️ Cannot start spin animation: invalid segments or index', { 
-        segmentsLength: segments.length, 
-        targetIndex 
-      })
       return
     }
 
@@ -81,16 +77,15 @@ export function SpinWheel3D({
   }
 
   useEffect(() => {
-    // Force exactly 4 segments for rendering
-    const renderSegments = segments.slice(0, 4)
-    console.log('🎨 Rendering wheel with segments:', renderSegments.map(s => s.label))
-    drawWheel(renderSegments)
+    const renderSegments = segments
+    if (renderSegments.length > 0) {
+      drawWheel(renderSegments)
+    }
   }, [segments, rotation, winningSegmentIndex])
 
   const drawWheel = (renderSegments: Segment[]) => {
     const canvas = canvasRef.current
     if (!canvas || renderSegments.length === 0) {
-      console.warn('⚠️ Cannot draw: missing canvas or segments')
       return
     }
 
@@ -190,7 +185,7 @@ export function SpinWheel3D({
     ctx.fillStyle = darkRing
     ctx.fill('evenodd')
 
-    // === SEGMENTS (Exactly 4) ===
+    // === SEGMENTS (Dynamic count based on admin configuration) ===
     const totalWeight = renderSegments.reduce((sum, s) => sum + s.weight, 0)
     let currentAngle = -Math.PI / 2
 
