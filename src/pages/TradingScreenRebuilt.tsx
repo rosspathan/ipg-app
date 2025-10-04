@@ -487,9 +487,9 @@ export default function TradingScreenRebuilt() {
                 <div className="text-[9px] font-semibold text-muted-foreground">Quantity (BNB)</div>
               </div>
 
-            {/* Asks */}
+            {/* Asks - 4 red entries */}
             <div className="space-y-0.5 mb-2">
-              {mockOrderBook.asks.slice(0, 7).map((ask, idx) => (
+              {mockOrderBook.asks.slice(-4).reverse().map((ask, idx) => (
                 <button
                   key={`ask-${idx}`}
                   className="w-full flex items-center justify-between py-0.5 px-2 hover:bg-rose-500/5 rounded transition-colors"
@@ -504,18 +504,18 @@ export default function TradingScreenRebuilt() {
               ))}
             </div>
 
-            {/* Current Price */}
+            {/* Current Price - 1 white entry */}
             <div className="flex items-center justify-center gap-1.5 py-2 mb-2 bg-muted/20 rounded-lg">
-              <span className="text-sm font-bold font-mono">{mockOrderBook.bids[0].price}</span>
+              <span className="text-sm font-bold font-mono text-foreground">{mockOrderBook.bids[0].price}</span>
               <TrendingUp className="h-3 w-3 text-success" />
               <span className="text-[9px] text-muted-foreground">
                 ≈${(mockOrderBook.bids[0].price * 1.002).toFixed(2)}
               </span>
             </div>
 
-            {/* Bids */}
+            {/* Bids - 4 green entries */}
             <div className="space-y-0.5">
-              {mockOrderBook.bids.slice(0, 7).map((bid, idx) => (
+              {mockOrderBook.bids.slice(0, 4).map((bid, idx) => (
                 <button
                   key={`bid-${idx}`}
                   className="w-full flex items-center justify-between py-0.5 px-2 hover:bg-emerald-500/5 rounded transition-colors"
@@ -564,9 +564,9 @@ export default function TradingScreenRebuilt() {
                   <div className="text-xs font-semibold text-muted-foreground">Quantity (BNB)</div>
                 </div>
 
-                {/* Asks */}
+                {/* Asks - 4 red entries */}
                 <div className="space-y-1 mb-3">
-                  {mockOrderBook.asks.slice(0, 10).map((ask, idx) => (
+                  {mockOrderBook.asks.slice(-4).reverse().map((ask, idx) => (
                     <button
                       key={`mobile-ask-${idx}`}
                       className="w-full flex items-center justify-between py-2 px-3 hover:bg-rose-500/5 rounded-lg transition-colors"
@@ -581,18 +581,18 @@ export default function TradingScreenRebuilt() {
                   ))}
                 </div>
 
-                {/* Current Price */}
+                {/* Current Price - 1 white entry */}
                 <div className="flex items-center justify-center gap-2 py-3 mb-3 bg-muted/20 rounded-lg">
-                  <span className="text-lg font-bold font-mono">{mockOrderBook.bids[0].price}</span>
+                  <span className="text-lg font-bold font-mono text-foreground">{mockOrderBook.bids[0].price}</span>
                   <TrendingUp className="h-4 w-4 text-success" />
                   <span className="text-xs text-muted-foreground">
                     ≈${(mockOrderBook.bids[0].price * 1.002).toFixed(2)}
                   </span>
                 </div>
 
-                {/* Bids */}
+                {/* Bids - 4 green entries */}
                 <div className="space-y-1">
-                  {mockOrderBook.bids.slice(0, 10).map((bid, idx) => (
+                  {mockOrderBook.bids.slice(0, 4).map((bid, idx) => (
                     <button
                       key={`mobile-bid-${idx}`}
                       className="w-full flex items-center justify-between py-2 px-3 hover:bg-emerald-500/5 rounded-lg transition-colors"
