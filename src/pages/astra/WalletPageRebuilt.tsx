@@ -54,34 +54,34 @@ export function WalletPageRebuilt() {
       label: "Deposit", 
       icon: <ArrowDownUp className="h-6 w-6" />, 
       color: "bg-success/20 text-success border border-success/30",
-      onPress: () => navigate("/app-legacy/wallet/deposit")
+      onPress: () => navigate("/app/wallet/deposit")
     },
     { 
       id: "withdraw", 
       label: "Withdraw", 
       icon: <ArrowUpRight className="h-6 w-6" />, 
       color: "bg-warning/20 text-warning border border-warning/30",
-      onPress: () => navigate("/app-legacy/wallet/withdraw")
+      onPress: () => navigate("/app/wallet/withdraw")
     },
     { 
       id: "swap", 
       label: "Swap", 
       icon: <ArrowLeftRight className="h-6 w-6" />, 
       color: "bg-accent/20 text-accent border border-accent/30",
-      onPress: () => navigate("/app-legacy/swap")
+      onPress: () => navigate("/app/swap")
     },
     { 
       id: "send", 
       label: "Send", 
       icon: <Send className="h-6 w-6" />, 
       color: "bg-primary/20 text-primary border border-primary/30",
-      onPress: () => navigate("/app-legacy/wallet/send")
+      onPress: () => navigate("/app/wallet/send")
     }
   ]
 
   const handleQuickSwitchAction = (action: string) => {
     switch (action) {
-      case "deposit": navigate("/app/deposit"); break
+      case "deposit": navigate("/app/wallet/deposit"); break
       case "convert": navigate("/app/swap"); break
       case "trade": navigate("/app/trade"); break
       case "programs": navigate("/app/programs"); break
