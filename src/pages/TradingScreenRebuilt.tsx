@@ -270,9 +270,9 @@ export default function TradingScreenRebuilt() {
               <button
                 onClick={() => setSide("buy")}
                 className={cn(
-                  "h-10 rounded-lg font-semibold text-sm transition-all duration-200",
+                  "h-11 rounded-xl font-bold text-sm transition-all duration-200 relative overflow-hidden",
                   side === "buy"
-                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
                 )}
               >
@@ -281,9 +281,9 @@ export default function TradingScreenRebuilt() {
               <button
                 onClick={() => setSide("sell")}
                 className={cn(
-                  "h-10 rounded-lg font-semibold text-sm transition-all duration-200",
+                  "h-11 rounded-xl font-bold text-sm transition-all duration-200",
                   side === "sell"
-                    ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
+                    ? "bg-muted/50 text-muted-foreground hover:bg-muted"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
                 )}
               >
@@ -470,13 +470,13 @@ export default function TradingScreenRebuilt() {
             <Button
               onClick={handlePlaceOrder}
               className={cn(
-                "w-full h-12 text-base font-bold shadow-lg transition-all duration-200",
+                "w-full h-14 text-base font-bold shadow-lg transition-all duration-200 rounded-2xl",
                 side === "buy"
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
-                  : "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20"
+                  ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/30"
+                  : "bg-danger hover:bg-danger/90 text-danger-foreground shadow-danger/30"
               )}
             >
-              {side === "buy" ? "Buy" : "Sell"} BNB
+              {side === "buy" ? "Buy" : "Sell"} {baseSymbol}
             </Button>
             </div>
 
@@ -492,9 +492,9 @@ export default function TradingScreenRebuilt() {
               {mockOrderBook.asks.slice(-4).reverse().map((ask, idx) => (
                 <button
                   key={`ask-${idx}`}
-                  className="w-full flex items-center justify-between py-0.5 px-2 hover:bg-rose-500/5 rounded transition-colors"
+                  className="w-full flex items-center justify-between py-0.5 px-2 hover:bg-danger/5 rounded transition-colors"
                 >
-                  <span className="text-xs font-mono font-semibold text-rose-500">
+                  <span className="text-xs font-mono font-semibold text-danger">
                     {ask.price.toFixed(1)}
                   </span>
                   <span className="text-[10px] font-mono text-muted-foreground">
@@ -518,9 +518,9 @@ export default function TradingScreenRebuilt() {
               {mockOrderBook.bids.slice(0, 4).map((bid, idx) => (
                 <button
                   key={`bid-${idx}`}
-                  className="w-full flex items-center justify-between py-0.5 px-2 hover:bg-emerald-500/5 rounded transition-colors"
+                  className="w-full flex items-center justify-between py-0.5 px-2 hover:bg-primary/5 rounded transition-colors"
                 >
-                  <span className="text-xs font-mono font-semibold text-emerald-500">
+                  <span className="text-xs font-mono font-semibold text-primary">
                     {bid.price.toFixed(1)}
                   </span>
                   <span className="text-[10px] font-mono text-muted-foreground">
@@ -569,9 +569,9 @@ export default function TradingScreenRebuilt() {
                   {mockOrderBook.asks.slice(-4).reverse().map((ask, idx) => (
                     <button
                       key={`mobile-ask-${idx}`}
-                      className="w-full flex items-center justify-between py-2 px-3 hover:bg-rose-500/5 rounded-lg transition-colors"
+                      className="w-full flex items-center justify-between py-2 px-3 hover:bg-danger/5 rounded-lg transition-colors"
                     >
-                      <span className="text-sm font-mono font-bold text-rose-500">
+                      <span className="text-sm font-mono font-bold text-danger">
                         {ask.price.toFixed(1)}
                       </span>
                       <span className="text-xs font-mono text-muted-foreground">
@@ -595,9 +595,9 @@ export default function TradingScreenRebuilt() {
                   {mockOrderBook.bids.slice(0, 4).map((bid, idx) => (
                     <button
                       key={`mobile-bid-${idx}`}
-                      className="w-full flex items-center justify-between py-2 px-3 hover:bg-emerald-500/5 rounded-lg transition-colors"
+                      className="w-full flex items-center justify-between py-2 px-3 hover:bg-primary/5 rounded-lg transition-colors"
                     >
-                      <span className="text-sm font-mono font-bold text-emerald-500">
+                      <span className="text-sm font-mono font-bold text-primary">
                         {bid.price.toFixed(1)}
                       </span>
                       <span className="text-xs font-mono text-muted-foreground">
