@@ -300,8 +300,7 @@ export function WheelRenderer({
     
     ctx.restore()
 
-    // Draw pointer
-    drawPointer(ctx, centerX, centerY - radius + 5)
+    // Pointer moved to overlay element (not drawn on rotating canvas)
   }
 
   const drawPointer = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
@@ -396,6 +395,28 @@ export function WheelRenderer({
           isSpinning ? 'will-change-transform' : ''
         }`}
       />
+
+      {/* Static overlay pointer (does not rotate) */}
+      <svg
+        width="44"
+        height="36"
+        viewBox="0 0 44 36"
+        className="absolute -top-3 left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{ zIndex: 10 }}
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#CC8800"/>
+            <stop offset="30%" stopColor="#FFD700"/>
+            <stop offset="60%" stopColor="#FFED4E"/>
+            <stop offset="85%" stopColor="#FFD700"/>
+            <stop offset="100%" stopColor="#CC8800"/>
+          </linearGradient>
+        </defs>
+        <polygon points="22,2 2,34 42,34" fill="url(#goldGrad)" stroke="#FFA500" strokeWidth="2" />
+        <ellipse cx="22" cy="35" rx="5" ry="2" fill="rgba(0,0,0,0.25)" />
+      </svg>
     </div>
   )
 }
