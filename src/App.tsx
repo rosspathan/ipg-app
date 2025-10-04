@@ -33,7 +33,9 @@ const AdminMobileLinking = React.lazy(() => import("./pages/admin/AdminMobileLin
 import AdminBSKManagementNova from "./pages/admin/AdminBSKManagementNova";
 import AdminBSKLoansNova from "./pages/admin/AdminBSKLoansNova";
 import AdminManualPurchasesScreen from "./pages/AdminManualPurchasesScreen";
+import AdminCryptoConversionsScreen from "./pages/AdminCryptoConversionsScreen";
 import ManualBSKPurchaseScreen from "./pages/ManualBSKPurchaseScreen";
+import CryptoConversionScreen from "./pages/CryptoConversionScreen";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -267,6 +269,7 @@ function App() {
                 <Route path="programs/staking/:poolId/submit" element={<StakingSubmissionScreen />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
                 <Route path="programs/bsk-purchase-manual" element={<ManualBSKPurchaseScreen />} />
+                <Route path="programs/crypto-conversion" element={<CryptoConversionScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="programs/badge-subscription" element={<BadgeSubscriptionScreen />} />
                 
@@ -303,6 +306,7 @@ function App() {
                 <Route path="bsk" element={<AdminBSKManagementNova />} />
                 <Route path="bsk-loans" element={<AdminBSKLoansNova />} />
                 <Route path="bsk-manual-purchases" element={<AdminManualPurchasesScreen />} />
+                <Route path="crypto-conversions" element={<AdminCryptoConversionsScreen />} />
                 
                 {/* Programs */}
                 <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />

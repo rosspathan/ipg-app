@@ -2382,6 +2382,120 @@ export type Database = {
         }
         Relationships: []
       }
+      crypto_conversion_requests: {
+        Row: {
+          admin_notes: string | null
+          admin_wallet_address: string
+          approved_at: string | null
+          blockchain_explorer_link: string | null
+          bsk_amount: number
+          created_at: string
+          crypto_amount: number
+          crypto_symbol: string
+          email: string
+          id: string
+          rejected_at: string | null
+          reviewed_by: string | null
+          screenshot_url: string | null
+          status: string
+          transaction_hash: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          admin_wallet_address: string
+          approved_at?: string | null
+          blockchain_explorer_link?: string | null
+          bsk_amount: number
+          created_at?: string
+          crypto_amount: number
+          crypto_symbol: string
+          email: string
+          id?: string
+          rejected_at?: string | null
+          reviewed_by?: string | null
+          screenshot_url?: string | null
+          status?: string
+          transaction_hash: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          admin_wallet_address?: string
+          approved_at?: string | null
+          blockchain_explorer_link?: string | null
+          bsk_amount?: number
+          created_at?: string
+          crypto_amount?: number
+          crypto_symbol?: string
+          email?: string
+          id?: string
+          rejected_at?: string | null
+          reviewed_by?: string | null
+          screenshot_url?: string | null
+          status?: string
+          transaction_hash?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crypto_conversion_settings: {
+        Row: {
+          admin_wallet_address: string
+          conversion_rate_bsk: number
+          created_at: string
+          created_by: string | null
+          crypto_name: string
+          crypto_symbol: string
+          fee_fixed: number
+          fee_percent: number
+          id: string
+          instructions: string | null
+          is_active: boolean
+          max_amount: number
+          min_amount: number
+          network: string
+          updated_at: string
+        }
+        Insert: {
+          admin_wallet_address: string
+          conversion_rate_bsk?: number
+          created_at?: string
+          created_by?: string | null
+          crypto_name: string
+          crypto_symbol: string
+          fee_fixed?: number
+          fee_percent?: number
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          max_amount?: number
+          min_amount?: number
+          network: string
+          updated_at?: string
+        }
+        Update: {
+          admin_wallet_address?: string
+          conversion_rate_bsk?: number
+          created_at?: string
+          created_by?: string | null
+          crypto_name?: string
+          crypto_symbol?: string
+          fee_fixed?: number
+          fee_percent?: number
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          max_amount?: number
+          min_amount?: number
+          network?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_commission_totals: {
         Row: {
           created_at: string | null
