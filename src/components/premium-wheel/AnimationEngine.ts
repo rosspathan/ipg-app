@@ -46,23 +46,29 @@ export class AnimationEngine {
     options: {
       durationRange: { min: number; max: number }
       reducedMotion: boolean
+      weights?: number[]
       onPhaseChange?: (phase: AnimationPhase) => void
       onTick?: (velocity: number, rotation: number) => void
       onComplete?: () => void
     }
   ): SpinAnimation {
-    // Calculate target rotation - ensure pointer lands on segment CENTER
-    const segmentAngle = 360 / segmentCount
-    
-    // Calculate the center of the target segment
-    // Segments start at top (0°), so segment 0 center is at segmentAngle/2
-    const segmentCenterAngle = targetSegmentIndex * segmentAngle + segmentAngle / 2
-    
+    // Compute exact rotation so the pointer at TOP (-90deg) hits the CENTER
+    const weights = options.weights && options.weights.length === segmentCount
+      ? options.weights
+      : Array(segmentCount).fill(1)
+
+    const totalWeight = weights.reduce((a, b) => a + b, 0)
+    const prevWeight = weights.slice(0, targetSegmentIndex).reduce((a, b) => a + b, 0)
+    const targetWeight = weights[targetSegmentIndex]
+
+    // Offset from TOP (pointer position at -90deg) to the target center
+    const offsetFromTop = ((prevWeight + targetWeight / 2) / totalWeight) * 360
+
     // Add multiple full rotations for dramatic effect
     const baseRotations = options.reducedMotion ? 1 : 4 + Math.random() * 2
-    
-    // Final rotation must land exactly on segment center (round to avoid floating point errors)
-    const targetRotation = Math.round((baseRotations * 360 + segmentCenterAngle) * 100) / 100
+
+    // Positive clockwise rotation; subtract offset to align target center to top
+    const targetRotation = Math.round((baseRotations * 360 - offsetFromTop) * 100) / 100
     
     if (options.reducedMotion) {
       // Simple animation for reduced motion

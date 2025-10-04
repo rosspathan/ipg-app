@@ -75,6 +75,7 @@ export function PremiumSpinWheel({
             ? config.duration 
             : { min: config.duration, max: config.duration },
           reducedMotion: settings.reducedMotion,
+          weights: segments.map(s => s.weight),
           onPhaseChange: (phase) => {
             setCurrentPhase(phase)
             
