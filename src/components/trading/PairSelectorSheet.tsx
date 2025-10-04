@@ -169,10 +169,10 @@ function PairRow({ pair, isCurrent, isFavorite, onToggleFavorite, onSelect }: Pa
 
       <button
         onClick={() => onSelect(pair.symbol)}
-        className="flex-1 flex items-center justify-between"
+        className="flex-1 flex items-center justify-between min-w-0"
       >
-        <div className="text-left">
-          <div className="text-sm font-bold">{pair.symbol}</div>
+        <div className="text-left min-w-0 flex-shrink">
+          <div className="text-sm font-bold truncate">{pair.symbol}</div>
           <div className="text-xs text-muted-foreground font-mono">
             Vol ${(pair.volume24h / 1000000).toFixed(2)}M
           </div>
