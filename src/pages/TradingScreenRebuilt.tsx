@@ -206,9 +206,9 @@ export default function TradingScreenRebuilt() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24" data-testid="page-trade">
+    <div className="min-h-screen bg-background flex flex-col" data-testid="page-trade">
       {/* Mobile Container */}
-      <div className="w-full max-w-[430px] mx-auto">
+      <div className="w-full max-w-[430px] mx-auto flex-1 flex flex-col pb-24">
         {/* Top Bar */}
         <div className="sticky top-0 z-30 bg-background border-b border-border/50 px-4 py-3">
           <div className="flex items-center justify-between">
@@ -613,8 +613,8 @@ export default function TradingScreenRebuilt() {
         </div> {/* Close relative div */}
 
         {/* Bottom Tabs */}
-        <div className="border-t border-border/50 bg-background/95 backdrop-blur-xl pb-16">
-          <div className="flex items-center gap-4 px-4 py-2 overflow-x-auto">
+        <div className="border-t border-border/50 bg-background/95 backdrop-blur-xl">
+          <div className="flex items-center gap-4 px-4 py-2 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setSelectedTab("orders")}
               className={cn(
@@ -663,7 +663,7 @@ export default function TradingScreenRebuilt() {
           </div>
 
           {/* Tab Content */}
-          <div className="px-4 py-4 text-center">
+          <div className="px-4 py-4 pb-2 text-center">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Checkbox id="show-current" className="h-3.5 w-3.5" />
