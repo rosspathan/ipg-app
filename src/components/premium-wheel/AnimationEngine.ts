@@ -51,13 +51,18 @@ export class AnimationEngine {
       onComplete?: () => void
     }
   ): SpinAnimation {
-    // Calculate target rotation
+    // Calculate target rotation - ensure pointer lands on segment CENTER
     const segmentAngle = 360 / segmentCount
+    
+    // Calculate the center of the target segment
+    // Segments start at top (0°), so segment 0 center is at segmentAngle/2
     const segmentCenterAngle = targetSegmentIndex * segmentAngle + segmentAngle / 2
     
     // Add multiple full rotations for dramatic effect
     const baseRotations = options.reducedMotion ? 1 : 4 + Math.random() * 2
-    const targetRotation = baseRotations * 360 + segmentCenterAngle
+    
+    // Final rotation must land exactly on segment center (round to avoid floating point errors)
+    const targetRotation = Math.round((baseRotations * 360 + segmentCenterAngle) * 100) / 100
     
     if (options.reducedMotion) {
       // Simple animation for reduced motion
@@ -176,7 +181,9 @@ export class AnimationEngine {
     }
 
     if (!currentPhase) {
-      // Animation complete
+      // Animation complete - ensure we land EXACTLY on target
+      const finalRotation = this.currentAnimation.targetRotation
+      this.currentAnimation.onTick?.(0, finalRotation)
       this.currentAnimation.onComplete?.()
       this.stop()
       return
@@ -195,12 +202,17 @@ export class AnimationEngine {
     const rotationDelta = velocity * (deltaTime / 1000) * 360
     this.accumulatedRotation += rotationDelta
 
-    // For the final phase, interpolate directly to target
+    // For the final phase, interpolate directly to target to ensure exact landing
     let currentRotation = this.accumulatedRotation
     if (currentPhase.name === 'settle') {
       const settleProgress = easedProgress
       const rotationGap = this.currentAnimation.targetRotation - this.accumulatedRotation
       currentRotation = this.accumulatedRotation + rotationGap * settleProgress
+      
+      // At the very end of settle phase, snap to exact target
+      if (phaseProgress >= 0.99) {
+        currentRotation = this.currentAnimation.targetRotation
+      }
     }
 
     // Notify callbacks
