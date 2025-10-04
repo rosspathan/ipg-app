@@ -35,11 +35,7 @@ function ChartPlaceholder() {
 
 export function ChartCardPro({ symbol, enabled }: ChartCardProProps) {
   if (!enabled) {
-    return (
-      <div data-testid="chart-panel" className="px-4 py-3">
-        <ChartPlaceholder />
-      </div>
-    );
+    return null;
   }
 
   return (
