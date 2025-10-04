@@ -1,3 +1,7 @@
+// ⚠️ LEGACY – NOT USED – Replaced by ISmartSpinScreen
+// This file uses PremiumSpinWheel (8 segments) instead of SpinWheel3D (4 segments)
+// Keep for reference only - DO NOT IMPORT
+
 import * as React from "react"
 import { Zap, History, Lock, Coins, RotateCw } from "lucide-react"
 import { Button } from "@/components/ui/button"

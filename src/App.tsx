@@ -156,7 +156,6 @@ import { ReferralsPage } from "@/pages/ReferralsPage";
 import { ReferralResolver } from "@/pages/ReferralResolver";
 import { DeepLinkResolver } from "@/pages/DeepLinkResolver";
 import { InsurancePage } from "@/pages/astra/InsurancePage";
-import { SpinWheelPage } from "@/pages/astra/SpinWheelPage";
 import { AdvertiseMiningPage } from "@/pages/astra/AdvertiseMiningPage";
 import DesignReview from "@/pages/astra/DesignReview";
 
@@ -166,6 +165,7 @@ const AdMiningPage = React.lazy(() => import("./pages/astra/AdMiningPage"));
 const LuckyDrawPage = React.lazy(() => import("./pages/astra/LuckyDrawPage"));
 const LoansPage = React.lazy(() => import("./pages/astra/LoansPage"));
 
+// ✅ V3 Spin Wheel with SpinWheel3D (4 segments, premium design)
 const ISmartSpinScreen = React.lazy(() => import("@/pages/ISmartSpinScreen"));
 
 const queryClient = new QueryClient();
@@ -263,7 +263,9 @@ function App() {
                 
                 {/* Programs */}
                 <Route path="programs/insurance" element={<InsurancePage />} />
-                <Route path="programs/spin" element={<SpinWheelPage />} />
+                <Route path="programs/spin" element={<React.Suspense fallback={<div>Loading...</div>}><ISmartSpinScreen /></React.Suspense>} />
+                <Route path="spin/history" element={<SpinHistoryScreen />} />
+                <Route path="spin/verify" element={<SpinVerifyScreen />} />
                 <Route path="programs/ads" element={<AdMiningPage />} />
                 <Route path="programs/advertising" element={<AdMiningPage />} />
                 <Route path="programs/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPageAstra /></React.Suspense>} />

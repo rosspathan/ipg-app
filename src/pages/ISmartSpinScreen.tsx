@@ -34,6 +34,12 @@ export default function ISmartSpinScreen() {
     calculateCosts
   } = useISmartSpin()
 
+  // 🎯 PROOF MARKER: Log on mount to verify V3 is rendering
+  useEffect(() => {
+    console.log('✅ ISmartSpinScreen V3 MOUNTED - SpinWheel3D Active')
+    console.log('📊 Segments loaded:', segments.length, segments.map(s => s.label))
+  }, [segments])
+
   useEffect(() => {
     if (config) {
       setBetAmount(Math.max(config.min_bet_bsk, 100))
@@ -107,9 +113,14 @@ export default function ISmartSpinScreen() {
 
   return (
     <div 
-      data-testid="page-spin"
+      data-testid="page-spin-v3"
       className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-48"
     >
+      {/* 🎯 PROOF MARKER: Visible banner to confirm V3 is rendering */}
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-green-500 text-white text-center py-1 text-xs font-bold">
+        ✅ V3 ACTIVE - SpinWheel3D (4 Segments)
+      </div>
+      
       <SpinHeaderPro />
 
       <div className="max-w-md mx-auto">
