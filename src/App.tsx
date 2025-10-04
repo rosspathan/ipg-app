@@ -33,9 +33,8 @@ const AdminMobileLinking = React.lazy(() => import("./pages/admin/AdminMobileLin
 import AdminBSKManagementNova from "./pages/admin/AdminBSKManagementNova";
 import AdminBSKLoansNova from "./pages/admin/AdminBSKLoansNova";
 import AdminManualPurchasesScreen from "./pages/AdminManualPurchasesScreen";
-import AdminCryptoConversionsScreen from "./pages/AdminCryptoConversionsScreen";
 import ManualBSKPurchaseScreen from "./pages/ManualBSKPurchaseScreen";
-import CryptoConversionScreen from "./pages/CryptoConversionScreen";
+import AdminCryptoConversionsScreen from "./pages/AdminCryptoConversionsScreen";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -83,6 +82,7 @@ import StakingSubmissionScreen from "./pages/StakingSubmissionScreen";
 import NewLuckyDraw from "./components/NewLuckyDraw";
 import BSKWithdrawScreen from "@/pages/BSKWithdrawScreen";
 import AdminBSKWithdrawalsScreen from "@/pages/AdminBSKWithdrawalsScreen";
+import CryptoConversionScreen from "./pages/CryptoConversionScreen";
 
 import SpinHistoryScreen from "./pages/SpinHistoryScreen";
 import AdvertisingMiningScreen from "./pages/AdvertisingMiningScreen";
