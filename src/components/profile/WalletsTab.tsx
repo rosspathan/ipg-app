@@ -1,69 +1,83 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { QrCode, Plus, Edit2, Trash2, Star, Loader2 } from "lucide-react";
-import { useWallets } from "@/hooks/useWallets";
+import { Copy, Loader2, Shield, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuthUser } from "@/hooks/useAuthUser";
+import QRCode from "qrcode";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export const WalletsTab = () => {
-  const { wallets, loading, addWallet, updateWallet, removeWallet, setPrimary } = useWallets();
+  const { user } = useAuthUser();
   const { toast } = useToast();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingWallet, setEditingWallet] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    chain: '',
-    address: '',
-    label: ''
-  });
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [qrCode, setQrCode] = useState<string>('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Fetch wallet address from profiles table
+  useEffect(() => {
+    const fetchWalletAddress = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('wallet_address')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+        
+        if (data?.wallet_address) {
+          setWalletAddress(data.wallet_address);
+        }
+      } catch (error) {
+        console.error('Error fetching wallet address:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWalletAddress();
+  }, [user]);
+
+  // Generate QR code for wallet address
+  useEffect(() => {
+    if (walletAddress) {
+      QRCode.toDataURL(walletAddress, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff',
+        },
+      })
+        .then(setQrCode)
+        .catch(console.error);
+    }
+  }, [walletAddress]);
+
+  const copyToClipboard = async () => {
+    if (!walletAddress) return;
     
     try {
-      if (editingWallet) {
-        await updateWallet(editingWallet.id, formData);
-      } else {
-        await addWallet(formData);
-      }
-      
-      setDialogOpen(false);
-      setEditingWallet(null);
-      setFormData({ chain: '', address: '', label: '' });
+      await navigator.clipboard.writeText(walletAddress);
+      toast({
+        title: "Copied!",
+        description: "Wallet address copied to clipboard",
+      });
     } catch (error) {
-      // Error handled in hook
+      toast({
+        title: "Error",
+        description: "Failed to copy address",
+        variant: "destructive",
+      });
     }
-  };
-
-  const handleEdit = (wallet: any) => {
-    setEditingWallet(wallet);
-    setFormData({
-      chain: wallet.chain,
-      address: wallet.address,
-      label: wallet.label || ''
-    });
-    setDialogOpen(true);
-  };
-
-  const handleSetPrimary = async (walletId: string, chain: string) => {
-    try {
-      await setPrimary(walletId, chain);
-    } catch (error) {
-      // Error handled in hook
-    }
-  };
-
-  const validateAddress = (address: string, chain: string) => {
-    // Basic validation - in a real app, use proper address validation
-    if (chain === 'BEP20' || chain === 'ERC20') {
-      return /^0x[a-fA-F0-9]{40}$/.test(address);
-    }
-    return address.length > 20; // Basic check
   };
 
   if (loading) {
@@ -74,173 +88,134 @@ export const WalletsTab = () => {
     );
   }
 
+  if (!walletAddress) {
+    return (
+      <div className="space-y-6">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            No wallet found. Please create or import a wallet from the onboarding process.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>My Wallets</span>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Wallet
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingWallet ? 'Edit Wallet' : 'Add New Wallet'}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Blockchain</Label>
-                    <Select 
-                      value={formData.chain} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, chain: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select blockchain" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="BEP20">BNB Smart Chain (BEP20)</SelectItem>
-                        <SelectItem value="ERC20">Ethereum (ERC20)</SelectItem>
-                        <SelectItem value="TRC20">Tron (TRC20)</SelectItem>
-                        <SelectItem value="BTC">Bitcoin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Wallet Address</Label>
-                    <Input
-                      value={formData.address}
-                      onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                      placeholder="Enter wallet address"
-                      required
-                    />
-                    {formData.address && formData.chain && !validateAddress(formData.address, formData.chain) && (
-                      <p className="text-sm text-destructive">Invalid address format</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Label (Optional)</Label>
-                    <Input
-                      value={formData.label}
-                      onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
-                      placeholder="e.g., Main Wallet"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit">
-                      {editingWallet ? 'Update' : 'Add'} Wallet
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {wallets.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No wallets added yet</p>
-              <p className="text-sm text-muted-foreground">Add your first wallet to get started</p>
+      {/* Main BEP20 Wallet Card */}
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-gradient-to-br from-primary/10 to-primary/5 border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                My BEP20 Wallet
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Generated from your 12-word recovery phrase
+              </p>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Chain</TableHead>
-                  <TableHead>Address</TableHead>
-                  <TableHead>Label</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {wallets.map((wallet) => (
-                  <TableRow key={wallet.id}>
-                    <TableCell>
-                      <Badge variant="outline">{wallet.chain}</Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
-                    </TableCell>
-                    <TableCell>{wallet.label || 'Unnamed'}</TableCell>
-                    <TableCell>
-                      {wallet.is_primary && (
-                        <Badge className="bg-yellow-100 text-yellow-800">
-                          <Star className="h-3 w-3 mr-1" />
-                          Primary
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {!wallet.is_primary && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleSetPrimary(wallet.id, wallet.chain)}
-                          >
-                            <Star className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(wallet)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removeWallet(wallet.id)}
-                          disabled={wallet.is_primary}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <QrCode className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Wallet Information</CardTitle>
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+              BNB Smart Chain
+            </Badge>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-muted/50 rounded-lg p-4">
-            <h4 className="font-medium mb-2">Supported Networks</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <Badge variant="outline">BNB Smart Chain</Badge>
-              <Badge variant="outline">Ethereum</Badge>
-              <Badge variant="outline">Tron</Badge>
-              <Badge variant="outline">Bitcoin</Badge>
+        <CardContent className="pt-6 space-y-6">
+          {/* QR Code */}
+          {qrCode && (
+            <div className="flex justify-center">
+              <div className="bg-white p-4 rounded-lg border-2 border-border shadow-sm">
+                <img 
+                  src={qrCode} 
+                  alt="Wallet Address QR Code" 
+                  className="w-64 h-64"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Wallet Address */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">
+              Wallet Address
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-muted/50 rounded-lg p-3 border border-border">
+                <p className="font-mono text-sm break-all">
+                  {walletAddress}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={copyToClipboard}
+                className="shrink-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p>• You can have one primary wallet per blockchain</p>
-            <p>• Primary wallets are used as default for deposits</p>
-            <p>• All addresses are validated for format correctness</p>
-            <p>• Use the QR code to share your receive address</p>
+          {/* Network Info */}
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+            <div>
+              <p className="text-sm text-muted-foreground">Network</p>
+              <p className="font-medium">BNB Smart Chain</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Standard</p>
+              <p className="font-medium">BEP20</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Security Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Security Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <div className="flex gap-2">
+            <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <p>This is your primary wallet address generated from your recovery phrase</p>
+          </div>
+          <div className="flex gap-2">
+            <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <p>Never share your 12-word recovery phrase with anyone</p>
+          </div>
+          <div className="flex gap-2">
+            <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <p>Always verify the address before sending funds</p>
+          </div>
+          <div className="flex gap-2">
+            <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <p>Use the QR code to share your address securely</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Compatible Networks */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Compatible Networks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              Your BEP20 address is compatible with the following networks:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="bg-primary/5">BNB Smart Chain (BEP20)</Badge>
+              <Badge variant="outline" className="bg-primary/5">Ethereum (ERC20)</Badge>
+            </div>
+            <Alert className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                This address format is compatible with both BEP20 and ERC20 tokens. However, always ensure you're using the correct network when receiving or sending funds.
+              </AlertDescription>
+            </Alert>
           </div>
         </CardContent>
       </Card>
