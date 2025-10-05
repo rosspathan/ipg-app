@@ -1,108 +1,120 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Star, Users, PiggyBank, Gift, Shield, Trophy } from "lucide-react";
+import { ChevronLeft, Star, Users, PiggyBank, Gift, Shield, Trophy, Target, TrendingUp } from "lucide-react";
+import { ProgramGridCompact } from "@/components/programs-pro/ProgramGridCompact";
+import { ProgramTileUltra, type TileBadgeType } from "@/components/programs-pro/ProgramTileUltra";
 
 const ProgramsScreen = () => {
   const navigate = useNavigate();
 
   const programs = [
     {
-      title: "BSK Purchase Bonus",
-      description: "Get 50% extra BSK on your first purchase! Limited time offer",
-      icon: Gift,
-      color: "text-purple-500",
-      route: "/app/programs/bsk-bonus"
-    },
-    {
-      title: "Advertising Mining", 
-      description: "Watch ads and earn BSK rewards with premium subscriptions",
-      icon: Users,
-      color: "text-blue-500",
+      id: "advertising",
+      title: "Advertising",
+      subtitle: "Watch ads & earn",
+      icon: <Users className="w-5 h-5" />,
+      badge: "DAILY" as TileBadgeType,
       route: "/app/programs/advertising"
     },
     {
-      title: "BSK Fortune Wheel",
-      description: "Spin to win or lose BSK Coins! Futuristic wheel with premium design",
-      icon: Gift,
-      color: "text-green-500",
-      route: "/app/programs/spin"
-    },
-    {
-      title: "Subscriptions",
-      description: "Get premium benefits with our subscription plans",
-      icon: Star,
-      color: "text-yellow-500",
-      route: "/app/programs/subscriptions"
-    },
-    {
-      title: "Referrals",
-      description: "Earn commissions by referring friends",
-      icon: Users,
-      color: "text-blue-500",
-      route: "/app/programs/referrals"
-    },
-    {
+      id: "staking",
       title: "Staking",
-      description: "Stake your crypto and earn rewards",
-      icon: PiggyBank,
-      color: "text-green-500",
+      subtitle: "Earn passive rewards",
+      icon: <PiggyBank className="w-5 h-5" />,
       route: "/app/programs/staking"
     },
     {
-      title: "Achievements",
-      description: "Track progress and unlock rewards",
-      icon: Trophy,
-      color: "text-yellow-500",
-      route: "/app/programs/achievements"
+      id: "bsk-bonus",
+      title: "BSK Bonus",
+      subtitle: "Get 50% extra!",
+      icon: <Gift className="w-5 h-5" />,
+      badge: "NEW" as TileBadgeType,
+      route: "/app/programs/bsk-bonus"
     },
     {
+      id: "lucky-spin",
+      title: "Lucky Spin",
+      subtitle: "Win big prizes",
+      icon: <Target className="w-5 h-5" />,
+      badge: "HOT" as TileBadgeType,
+      route: "/app/programs/spin"
+    },
+    {
+      id: "i-smart",
+      title: "i-SMART",
+      subtitle: "Smart trading",
+      icon: <TrendingUp className="w-5 h-5" />,
+      badge: "LIVE" as TileBadgeType,
+      route: "/app/programs/spin"
+    },
+    {
+      id: "insurance",
       title: "Insurance",
-      description: "Protect your assets with insurance plans",
-      icon: Shield,
-      color: "text-red-500",
+      subtitle: "Protect assets",
+      icon: <Shield className="w-5 h-5" />,
       route: "/app/programs/insurance"
+    },
+    {
+      id: "referrals",
+      title: "Referrals",
+      subtitle: "Earn commissions",
+      icon: <Users className="w-5 h-5" />,
+      badge: "NEW" as TileBadgeType,
+      route: "/app/programs/referrals"
+    },
+    {
+      id: "trading",
+      title: "Trading",
+      subtitle: "Trade markets",
+      icon: <TrendingUp className="w-5 h-5" />,
+      route: "/app/programs/trading"
     }
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background px-6 py-8">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="mr-2"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <h1 className="text-xl font-semibold">Programs</h1>
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/30">
+        <div className="flex items-center px-4 py-3">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="mr-2"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-[var(--font-heading)] font-bold text-foreground">Programs</h1>
+            <p className="text-xs text-muted-foreground">Explore all programs</p>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        {programs.map((program) => (
-          <Card 
-            key={program.title}
-            className="bg-gradient-card shadow-card border-0 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => navigate(program.route)}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center">
-                  <program.icon className={`w-6 h-6 ${program.color}`} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">
-                    {program.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {program.description}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Banner */}
+      <div className="mx-4 mt-4 p-4 rounded-xl bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30">
+        <div className="flex items-center gap-2">
+          <Gift className="w-4 h-4 text-primary" />
+          <p className="text-sm font-medium text-foreground">
+            <span className="font-bold">New:</span> BSK Purchase Bonus - Get 50% extra!
+          </p>
+        </div>
+      </div>
+
+      {/* Programs Grid */}
+      <div className="px-4 py-6 flex-1">
+        <ProgramGridCompact>
+          {programs.map((program) => (
+            <ProgramTileUltra
+              key={program.id}
+              icon={program.icon}
+              title={program.title}
+              subtitle={program.subtitle}
+              badge={program.badge}
+              onPress={() => navigate(program.route)}
+            />
+          ))}
+        </ProgramGridCompact>
       </div>
     </div>
   );
