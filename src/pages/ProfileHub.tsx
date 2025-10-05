@@ -128,14 +128,16 @@ export function ProfileHub() {
 
       {/* Main Content */}
       <div className="space-y-6 pt-6 px-4">
-        {/* Mini ID Card Preview */}
-        <MiniIdCardPreview
-          avatarUrl={avatarUrl || undefined}
-          displayName={displayName}
-          email={user?.email || ''}
-          badge={badge}
-          userId={user?.id || ''}
-        />
+        {/* Premium Glassmorphic ID Card Preview */}
+        {user && (
+          <MiniIdCardPreview
+            avatarUrl={avatarUrl || undefined}
+            displayName={displayName}
+            email={user.email || ''}
+            badge={badge}
+            userId={user.id || ''}
+          />
+        )}
 
         {/* Profile Completion */}
         <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
