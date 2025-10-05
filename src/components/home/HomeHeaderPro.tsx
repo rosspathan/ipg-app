@@ -33,7 +33,7 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
   }, [])
 
   const handleWhatsAppSupport = () => {
-    window.open("https://wa.me/919177755022?text=Hello%20iSmart%20support", '_blank')
+    window.open("https://web.whatsapp.com/send?phone=919177755022&text=Hello%20iSmart%20support", '_blank')
   }
 
   const getGreeting = () => {
