@@ -70,10 +70,10 @@ export function BSKWithdrawCard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-[Space_Grotesk] font-bold text-sm text-foreground">
+          <h3 className="font-[Space_Grotesk] font-bold text-xs text-foreground">
             BSK — Withdrawable
           </h3>
-          <p className="font-[Inter] text-xs text-muted-foreground mt-0.5">
+          <p className="font-[Inter] text-[10px] text-muted-foreground mt-0.5">
             Tradable / Transferable
           </p>
         </div>
@@ -94,10 +94,10 @@ export function BSKWithdrawCard({
 
       {/* Balance */}
       <div>
-        <div className="font-[Space_Grotesk] font-bold text-3xl text-success tabular-nums">
-          {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`} <span className="text-lg text-success/70">BSK</span>
+        <div className="font-[Space_Grotesk] font-bold text-2xl text-success tabular-nums">
+          {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`} <span className="text-base text-success/70">BSK</span>
         </div>
-        <div className="font-[Inter] text-sm text-muted-foreground tabular-nums mt-1">
+        <div className="font-[Inter] text-xs text-muted-foreground tabular-nums mt-1">
           {isPrivate ? "••••••" : `≈ ₹${fiatValue.toLocaleString()}`}
         </div>
       </div>
@@ -114,8 +114,8 @@ export function BSKWithdrawCard({
             "focus:ring-2 focus:ring-success/30"
           )}
         >
-          <ArrowUpRight className="h-4 w-4 text-success" />
-          <span className="text-xs font-[Inter] font-medium text-success">Withdraw</span>
+          <ArrowUpRight className="h-3.5 w-3.5 text-success" />
+          <span className="text-[10px] font-[Inter] font-semibold text-success">Withdraw</span>
         </Button>
 
         <Button
@@ -128,8 +128,8 @@ export function BSKWithdrawCard({
             "focus:ring-2 focus:ring-accent/30"
           )}
         >
-          <ArrowLeftRight className="h-4 w-4 text-accent" />
-          <span className="text-xs font-[Inter] font-medium text-accent">Transfer</span>
+          <ArrowLeftRight className="h-3.5 w-3.5 text-accent" />
+          <span className="text-[10px] font-[Inter] font-semibold text-accent">Transfer</span>
         </Button>
 
         <Button
@@ -142,8 +142,8 @@ export function BSKWithdrawCard({
             "focus:ring-2 focus:ring-muted/30"
           )}
         >
-          <History className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-[Inter] font-medium text-muted-foreground">History</span>
+          <History className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[10px] font-[Inter] font-semibold text-muted-foreground">History</span>
         </Button>
       </div>
 

@@ -168,7 +168,7 @@ export function KPICluster({ data, isLoading = false, onTilePress, className }: 
               </div>
               
               {/* Label - moved to top right */}
-              <span className="text-[9px] font-[Inter] font-medium text-muted-foreground/80 uppercase tracking-widest">
+              <span className="text-[8px] font-[Inter] font-semibold text-muted-foreground/70 uppercase tracking-[0.08em]">
                 {kpi.label}
               </span>
             </div>
@@ -179,7 +179,7 @@ export function KPICluster({ data, isLoading = false, onTilePress, className }: 
                 "font-[Space_Grotesk] font-bold text-foreground",
                 "transition-all duration-[180ms]",
                 "group-hover:text-primary-glow",
-                kpi.type === "status" ? "text-base" : "text-lg tabular-nums tracking-tight",
+                kpi.type === "status" ? "text-sm" : "text-base tabular-nums tracking-tight",
                 "leading-none"
               )}>
                 {kpi.value}
@@ -196,11 +196,11 @@ export function KPICluster({ data, isLoading = false, onTilePress, className }: 
                       kpi.trend === "down" && "bg-danger/15 text-danger"
                     )}>
                       {kpi.trend === "up" ? (
-                        <TrendingUp className="h-2.5 w-2.5" />
+                        <TrendingUp className="h-2 w-2" />
                       ) : (
-                        <TrendingDown className="h-2.5 w-2.5" />
+                        <TrendingDown className="h-2 w-2" />
                       )}
-                      <span className="text-[10px] font-[Inter] font-semibold tabular-nums">
+                      <span className="text-[9px] font-[Inter] font-bold tabular-nums">
                         {kpi.subValue}
                       </span>
                     </div>

@@ -189,10 +189,10 @@ export function ProgramTileUltra({
 
         {/* Title & Subtitle */}
         <div className="text-center mb-4">
-          <h3 className="font-[Space_Grotesk] font-bold text-sm text-foreground mb-1 line-clamp-1">
+          <h3 className="font-[Space_Grotesk] font-bold text-xs text-foreground mb-1 line-clamp-1">
             {title}
           </h3>
-          <p className="font-[Inter] text-xs text-muted-foreground leading-tight line-clamp-2">
+          <p className="font-[Inter] text-[10px] text-muted-foreground leading-tight line-clamp-2">
             {subtitle}
           </p>
         </div>

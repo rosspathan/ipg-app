@@ -61,7 +61,7 @@ export function AssetsPanel({
     <div className={cn("space-y-3", className)} data-testid="assets-panel">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="font-[Space_Grotesk] font-bold text-base text-foreground">
+        <h2 className="font-[Space_Grotesk] font-bold text-sm text-foreground">
           Crypto Assets
         </h2>
         {onViewAll && (
@@ -69,7 +69,7 @@ export function AssetsPanel({
             variant="ghost"
             size="sm"
             onClick={onViewAll}
-            className="text-xs text-accent hover:text-accent-glow font-[Inter] font-medium"
+            className="text-[10px] text-accent hover:text-accent-glow font-[Inter] font-semibold"
           >
             View All →
           </Button>
@@ -113,15 +113,15 @@ export function AssetsPanel({
             >
               <div className="flex items-center justify-between">
                 {/* Left: Icon + Name */}
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center font-[Space_Grotesk] font-bold text-sm">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center font-[Space_Grotesk] font-bold text-xs">
                     {asset.symbol.charAt(0)}
                   </div>
                   <div className="text-left">
-                    <div className="font-[Space_Grotesk] font-bold text-sm text-foreground">
+                    <div className="font-[Space_Grotesk] font-bold text-xs text-foreground">
                       {asset.symbol}
                     </div>
-                    <div className="font-[Inter] text-xs text-muted-foreground">
+                    <div className="font-[Inter] text-[10px] text-muted-foreground">
                       {asset.name}
                     </div>
                   </div>
@@ -129,10 +129,10 @@ export function AssetsPanel({
 
                 {/* Right: Balance + Value */}
                 <div className="text-right">
-                  <div className="font-[Space_Grotesk] font-bold text-sm text-foreground tabular-nums">
+                  <div className="font-[Space_Grotesk] font-bold text-xs text-foreground tabular-nums">
                     {asset.balance.toFixed(4)}
                   </div>
-                  <div className="font-[Inter] text-xs text-muted-foreground tabular-nums">
+                  <div className="font-[Inter] text-[10px] text-muted-foreground tabular-nums">
                     ${asset.valueUSD.toFixed(2)}
                   </div>
                 </div>

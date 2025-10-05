@@ -67,12 +67,12 @@ export function BSKHoldingCard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Lock className="h-4 w-4 text-warning" />
+          <Lock className="h-3.5 w-3.5 text-warning" />
           <div>
-            <h3 className="font-[Space_Grotesk] font-bold text-sm text-foreground">
+            <h3 className="font-[Space_Grotesk] font-bold text-xs text-foreground">
               BSK — Holding
             </h3>
-            <p className="font-[Inter] text-xs text-muted-foreground">
+            <p className="font-[Inter] text-[10px] text-muted-foreground">
               Locked
             </p>
           </div>
@@ -94,10 +94,10 @@ export function BSKHoldingCard({
 
       {/* Balance */}
       <div>
-        <div className="font-[Space_Grotesk] font-bold text-3xl text-primary tabular-nums">
-          {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`} <span className="text-lg text-primary/70">BSK</span>
+        <div className="font-[Space_Grotesk] font-bold text-2xl text-primary tabular-nums">
+          {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`} <span className="text-base text-primary/70">BSK</span>
         </div>
-        <div className="font-[Inter] text-sm text-muted-foreground tabular-nums mt-1">
+        <div className="font-[Inter] text-xs text-muted-foreground tabular-nums mt-1">
           {isPrivate ? "••••••" : `≈ ₹${fiatValue.toLocaleString()}`}
         </div>
       </div>
@@ -108,12 +108,12 @@ export function BSKHoldingCard({
           <div
             key={index}
             className={cn(
-              "px-2.5 py-1 rounded-full text-xs font-[Inter] font-medium",
+              "px-2 py-0.5 rounded-full text-[10px] font-[Inter] font-semibold",
               "bg-card/80 border border-border/30",
-              "flex items-center gap-1.5"
+              "flex items-center gap-1"
             )}
           >
-            <div className={cn("h-1.5 w-1.5 rounded-full", source.color)} />
+            <div className={cn("h-1 w-1 rounded-full", source.color)} />
             <span className="text-foreground">{source.label}</span>
             <span className="text-muted-foreground tabular-nums">
               {(source.amount / 1000).toFixed(1)}K

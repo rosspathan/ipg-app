@@ -66,7 +66,7 @@ export function ActivityTimeline({
     <div className={cn("space-y-3", className)} data-testid="activity-timeline">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="font-[Space_Grotesk] font-bold text-base text-foreground">
+        <h2 className="font-[Space_Grotesk] font-bold text-sm text-foreground">
           Recent Activity
         </h2>
         {onViewAll && (
@@ -74,7 +74,7 @@ export function ActivityTimeline({
             variant="ghost"
             size="sm"
             onClick={onViewAll}
-            className="text-xs text-accent hover:text-accent-glow font-[Inter] font-medium"
+            className="text-[10px] text-accent hover:text-accent-glow font-[Inter] font-semibold"
           >
             View All →
           </Button>
@@ -93,38 +93,38 @@ export function ActivityTimeline({
           >
             <div className="flex items-center gap-3">
               {/* Icon */}
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary flex-shrink-0">
-                {activity.icon}
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary flex-shrink-0">
+                {React.cloneElement(activity.icon as React.ReactElement, { className: "h-3.5 w-3.5" })}
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="font-[Inter] text-sm font-medium text-foreground truncate">
+                    <p className="font-[Inter] text-xs font-semibold text-foreground truncate">
                       {activity.title}
                     </p>
-                    <p className="font-[Inter] text-xs text-muted-foreground truncate">
+                    <p className="font-[Inter] text-[10px] text-muted-foreground truncate">
                       {activity.subtitle}
                     </p>
                   </div>
                   {activity.amount && (
                     <div className="text-right flex-shrink-0">
                       <p className={cn(
-                        "font-[Space_Grotesk] font-bold text-sm tabular-nums",
+                        "font-[Space_Grotesk] font-bold text-xs tabular-nums",
                         statusColors[activity.status]
                       )}>
                         +{activity.amount}
                       </p>
                       {activity.currency && (
-                        <p className="font-[Inter] text-xs text-muted-foreground">
+                        <p className="font-[Inter] text-[10px] text-muted-foreground">
                           {activity.currency}
                         </p>
                       )}
                     </div>
                   )}
                 </div>
-                <p className="font-[Inter] text-[10px] text-muted-foreground mt-1">
+                <p className="font-[Inter] text-[9px] text-muted-foreground mt-0.5">
                   {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
                 </p>
               </div>
