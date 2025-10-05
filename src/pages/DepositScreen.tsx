@@ -6,7 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, QrCode } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useWeb3 } from "@/contexts/Web3Context";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { useCatalog } from "@/hooks/useCatalog";
 import AssetLogo from "@/components/AssetLogo";
 import QRCode from "qrcode";
@@ -16,11 +17,43 @@ import { copyToClipboard } from "@/utils/clipboard";
 const DepositScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { wallet, network } = useWeb3();
-  const { assetsList, loading } = useCatalog();
+  const { user } = useAuthUser();
+  const { assetsList, loading: assetsLoading } = useCatalog();
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [loading, setLoading] = useState(true);
   const [selectedAsset, setSelectedAsset] = useState("");
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+
+  // Fetch wallet address from profiles table
+  useEffect(() => {
+    const fetchWalletAddress = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('wallet_address')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+        
+        if (data?.wallet_address) {
+          setWalletAddress(data.wallet_address);
+        }
+      } catch (error) {
+        console.error('Error fetching wallet address:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWalletAddress();
+  }, [user]);
 
   // Filter assets that have deposit enabled
   const depositableAssets = assetsList.filter(asset => 
@@ -38,9 +71,10 @@ const DepositScreen = () => {
 
   const currentAsset = depositableAssets.find(asset => asset.symbol === selectedAsset);
 
+  // Generate QR code when wallet address is available
   useEffect(() => {
-    if (wallet?.address) {
-      QRCode.toDataURL(wallet.address, {
+    if (walletAddress) {
+      QRCode.toDataURL(walletAddress, {
         width: 200,
         margin: 2,
         color: {
@@ -49,16 +83,16 @@ const DepositScreen = () => {
         }
       }).then(setQrCodeDataUrl).catch(console.error);
     }
-  }, [wallet?.address]);
+  }, [walletAddress]);
 
   const depositInfo = {
-    address: wallet?.address || "Connect wallet to see address",
+    address: walletAddress || "No wallet found",
     minDeposit: currentAsset ? `${currentAsset.min_withdraw_amount} ${currentAsset.symbol}` : "N/A",
     confirmations: "12",
     fee: currentAsset ? `${currentAsset.withdraw_fee} ${currentAsset.symbol}` : "Free"
   };
 
-  if (loading) {
+  if (loading || assetsLoading) {
     return (
       <div className="min-h-screen bg-background px-6 py-8">
         <div className="max-w-sm mx-auto w-full space-y-6">
@@ -80,21 +114,21 @@ const DepositScreen = () => {
   }
 
   const copyAddress = async () => {
-    if (!wallet?.address) {
+    if (!walletAddress) {
       toast({
-        title: "No Wallet Connected",
-        description: "Please connect your wallet first",
+        title: "No Wallet Found",
+        description: "Please create a wallet first",
         variant: "destructive"
       });
       return;
     }
     
-    const success = await copyToClipboard(wallet.address);
+    const success = await copyToClipboard(walletAddress);
     
     if (success) {
       toast({
         title: "Address Copied",
-        description: "Your BSC wallet address has been copied to clipboard",
+        description: "Your BEP20 wallet address has been copied to clipboard",
       });
     } else {
       toast({
@@ -184,11 +218,11 @@ const DepositScreen = () => {
             {/* QR Code */}
             <div className="flex justify-center">
               <div className="p-4 bg-white rounded-lg">
-                {qrCodeDataUrl && wallet?.address ? (
+                {qrCodeDataUrl && walletAddress ? (
                   <div className="text-center space-y-2">
                     <img 
                       src={qrCodeDataUrl} 
-                      alt="BSC Wallet Address QR Code" 
+                      alt="BEP20 Wallet Address QR Code" 
                       className="w-48 h-48 mx-auto"
                     />
                     <p className="text-xs text-muted-foreground">Scan to get BSC wallet address</p>
@@ -197,7 +231,7 @@ const DepositScreen = () => {
                   <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center">
                     <div className="text-center">
                       <QrCode className="w-24 h-24 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">Connect wallet to generate QR</p>
+                      <p className="text-sm text-muted-foreground">No wallet found</p>
                     </div>
                   </div>
                 )}
@@ -210,16 +244,16 @@ const DepositScreen = () => {
               <div className="flex items-center space-x-2">
                 <div className="flex-1 p-3 bg-muted rounded-lg">
                   <p className="text-sm font-mono break-all">
-                    {wallet?.address || "Connect wallet to see address"}
+                    {walletAddress || "No wallet found. Please create a wallet first."}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={copyAddress}>
+                <Button variant="outline" size="sm" onClick={copyAddress} disabled={!walletAddress}>
                   <Copy className="w-4 h-4" />
                 </Button>
               </div>
-              {wallet?.address && (
+              {walletAddress && (
                 <p className="text-xs text-muted-foreground">
-                  Network: {network.name} ({network.chainId})
+                  Network: Binance Smart Chain (56)
                 </p>
               )}
             </div>

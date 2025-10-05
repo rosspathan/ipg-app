@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useState, useEffect } from "react"
 import { Copy, ExternalLink, QrCode, Eye, EyeOff, ChevronDown, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
@@ -8,15 +9,51 @@ import { BalanceCluster } from "@/components/astra/BalanceCluster"
 import { QuickActionsRibbon } from "@/components/astra/grid/QuickActionsRibbon"
 import { useNavigation } from "@/hooks/useNavigation"
 import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
-
-const MOCK_WALLET_ADDRESS = "0x742d35Cc6135C5C8C91b8f54534d7134E6faE9A2"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuthUser } from "@/hooks/useAuthUser"
 
 export function WalletPage() {
   const { navigate } = useNavigation()
-  const [showAddress, setShowAddress] = React.useState(false)
+  const { user } = useAuthUser()
+  const [walletAddress, setWalletAddress] = useState<string>('')
+  const [showAddress, setShowAddress] = useState(false)
+
+  // Fetch wallet address from profiles table
+  useEffect(() => {
+    const fetchWalletAddress = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('wallet_address')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+        
+        if (data?.wallet_address) {
+          setWalletAddress(data.wallet_address);
+        }
+      } catch (error) {
+        console.error('Error fetching wallet address:', error);
+      }
+    };
+
+    fetchWalletAddress();
+  }, [user]);
 
   const handleCopyAddress = async () => {
-    const success = await copyToClipboard(MOCK_WALLET_ADDRESS)
+    if (!walletAddress) {
+      toast({
+        title: "No Wallet",
+        description: "No wallet address found",
+        variant: "destructive",
+      })
+      return;
+    }
+    
+    const success = await copyToClipboard(walletAddress)
     toast({
       title: success ? "Address Copied" : "Error",
       description: success ? "Wallet address copied to clipboard" : "Failed to copy address",
@@ -96,7 +133,7 @@ export function WalletPage() {
 
             <div className="bg-background/50 rounded-xl p-4 border border-border/30">
               <p className="font-mono text-sm break-all text-foreground">
-                {showAddress ? MOCK_WALLET_ADDRESS : "••••••••••••••••••••••••••••••••••••••••"}
+                {showAddress ? (walletAddress || "No wallet found") : "••••••••••••••••••••••••••••••••••••••••"}
               </p>
             </div>
 
@@ -123,7 +160,7 @@ export function WalletPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open(`https://bscscan.com/address/${MOCK_WALLET_ADDRESS}`, '_blank')}
+                onClick={() => walletAddress && window.open(`https://bscscan.com/address/${walletAddress}`, '_blank')}
                 className="flex-1 border-accent/30 text-accent hover:bg-accent/10"
               >
                 <ExternalLink className="h-3 w-3 mr-1" />

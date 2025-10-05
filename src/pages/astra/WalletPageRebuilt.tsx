@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Copy, ExternalLink, QrCode, Eye, EyeOff, ArrowDownUp, ArrowUpRight, ArrowLeftRight, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
@@ -10,19 +10,55 @@ import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import QRCode from "qrcode"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-
-const MOCK_WALLET_ADDRESS = "0x742d35Cc6135C5C8C91b8f54534d7134E6faE9A2"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuthUser } from "@/hooks/useAuthUser"
 
 export function WalletPageRebuilt() {
   const { navigate } = useNavigation()
+  const { user } = useAuthUser()
+  const [walletAddress, setWalletAddress] = useState<string>('')
   const [showAddress, setShowAddress] = useState(false)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState<string>("")
   const [qrLoading, setQrLoading] = useState(false)
 
+  // Fetch wallet address from profiles table
+  useEffect(() => {
+    const fetchWalletAddress = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('wallet_address')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+        
+        if (data?.wallet_address) {
+          setWalletAddress(data.wallet_address);
+        }
+      } catch (error) {
+        console.error('Error fetching wallet address:', error);
+      }
+    };
+
+    fetchWalletAddress();
+  }, [user]);
+
   const handleCopyAddress = async () => {
-    const success = await copyToClipboard(MOCK_WALLET_ADDRESS)
+    if (!walletAddress) {
+      toast({
+        title: "No Wallet",
+        description: "No wallet address found",
+        variant: "destructive",
+      })
+      return;
+    }
+    
+    const success = await copyToClipboard(walletAddress)
     toast({
       title: success ? "Address Copied" : "Error",
       description: success ? "Wallet address copied to clipboard" : "Failed to copy address",
@@ -31,10 +67,19 @@ export function WalletPageRebuilt() {
   }
 
   const openQR = async () => {
+    if (!walletAddress) {
+      toast({
+        title: "No Wallet",
+        description: "No wallet address found",
+        variant: "destructive",
+      })
+      return;
+    }
+    
     try {
       setQrLoading(true)
       setShowQR(true)
-      const dataUrl = await QRCode.toDataURL(MOCK_WALLET_ADDRESS, {
+      const dataUrl = await QRCode.toDataURL(walletAddress, {
         width: 512,
         margin: 1,
         color: { dark: "#000000", light: "#FFFFFF" }
@@ -119,7 +164,7 @@ export function WalletPageRebuilt() {
 
             <div className="bg-background/50 rounded-xl p-4 border border-border/30">
               <p className="font-mono text-sm break-all text-foreground tabular-nums">
-                {showAddress ? MOCK_WALLET_ADDRESS : "••••••••••••••••••••••••••••••••••••••••"}
+                {showAddress ? (walletAddress || "No wallet found") : "••••••••••••••••••••••••••••••••••••••••"}
               </p>
             </div>
 
@@ -147,7 +192,7 @@ export function WalletPageRebuilt() {
               <Button
                 variant="outline"
                 size="default"
-                onClick={() => window.open(`https://bscscan.com/address/${MOCK_WALLET_ADDRESS}`, '_blank')}
+                onClick={() => walletAddress && window.open(`https://bscscan.com/address/${walletAddress}`, '_blank')}
                 className="flex flex-col items-center gap-2 h-20 border-warning/30 text-warning hover:bg-warning/10 hover:border-warning/50 transition-all duration-[120ms]"
               >
                 <ExternalLink className="h-5 w-5" />
@@ -228,7 +273,7 @@ export function WalletPageRebuilt() {
             ) : (
               <img src={qrDataUrl} alt="Wallet Address QR Code" className="w-56 h-56 rounded-xl bg-background p-2" />
             )}
-            <p className="font-mono text-xs break-all text-center text-muted-foreground">{MOCK_WALLET_ADDRESS}</p>
+            <p className="font-mono text-xs break-all text-center text-muted-foreground">{walletAddress}</p>
             <Button size="sm" variant="secondary" onClick={handleCopyAddress}>Copy Address</Button>
           </div>
         </DialogContent>
