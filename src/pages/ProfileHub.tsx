@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { DockNav } from "@/components/navigation/DockNav";
 import { QuickSwitch } from "@/components/astra/QuickSwitch";
+import { MiniIdCardPreview } from "@/components/profile/MiniIdCardPreview";
 
 const profileSections = [
   {
@@ -127,51 +128,27 @@ export function ProfileHub() {
 
       {/* Main Content */}
       <div className="space-y-6 pt-6 px-4">
-        {/* Profile Header Card */}
-        <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20 border-4 border-primary/20">
-              <AvatarImage src={avatarUrl || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
-                {displayName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1">
-              <h2 className="font-heading text-xl font-bold text-foreground mb-1">
-                {displayName}
-              </h2>
-              <p className="text-sm text-muted-foreground font-mono mb-2">
-                {user?.email}
-              </p>
-              <div className="flex items-center gap-2">
-                {badge && badge !== 'None' && (
-                  <Badge variant="outline" className="bg-warning/20 text-warning border-warning/30">
-                    {badge}
-                  </Badge>
-                )}
-                {completion?.kyc_level && (
-                  <Badge variant="outline" className="bg-accent/20 text-accent border-accent/30">
-                    KYC {completion.kyc_level}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
+        {/* Mini ID Card Preview */}
+        <MiniIdCardPreview
+          avatarUrl={avatarUrl || undefined}
+          displayName={displayName}
+          email={user?.email || ''}
+          badge={badge}
+          userId={user?.id || ''}
+        />
 
-          {/* Profile Completion */}
-          <div className="mt-4 pt-4 border-t border-border/20">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-foreground">
-                Profile Completion
-              </span>
-              <span className="text-sm font-bold text-primary">{completionScore}%</span>
-            </div>
-            <Progress value={completionScore} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-2">
-              Complete your profile to unlock all features
-            </p>
+        {/* Profile Completion */}
+        <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-foreground">
+              Profile Completion
+            </span>
+            <span className="text-sm font-bold text-primary">{completionScore}%</span>
           </div>
+          <Progress value={completionScore} className="h-2" />
+          <p className="text-xs text-muted-foreground mt-2">
+            Complete your profile to unlock all features
+          </p>
         </Card>
 
         {/* Profile Sections */}
