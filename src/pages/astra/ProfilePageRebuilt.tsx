@@ -3,6 +3,7 @@ import { useState } from "react"
 import { User, Mail, Phone, Shield, Bell, Settings, LogOut, ChevronRight } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useAuthUser } from "@/hooks/useAuthUser"
+import { useUserBadge } from "@/hooks/useUserBadge"
 import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -35,6 +36,7 @@ const profileSections = [
 export function ProfilePageRebuilt() {
   const { navigate } = useNavigation()
   const { user } = useAuthUser()
+  const { badge } = useUserBadge()
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const [openSheet, setOpenSheet] = useState<string | null>(null)
 
@@ -72,11 +74,13 @@ export function ProfilePageRebuilt() {
                   {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
                 </h2>
                 <p className="text-sm text-muted-foreground font-mono">{user?.email}</p>
-                <div className="mt-2">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-warning/20 text-warning border border-warning/30">
-                    VIP Gold
-                  </span>
-                </div>
+                {badge && badge !== 'None' && (
+                  <div className="mt-2">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-warning/20 text-warning border border-warning/30">
+                      {badge}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </Card>

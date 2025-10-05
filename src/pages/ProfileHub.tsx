@@ -8,6 +8,7 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useAvatar } from "@/hooks/useAvatar";
+import { useUserBadge } from "@/hooks/useUserBadge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -75,6 +76,7 @@ export function ProfileHub() {
   const { userApp } = useProfile();
   const { completion } = useProfileCompletion();
   const { getAvatarUrl } = useAvatar();
+  const { badge } = useUserBadge();
   const [showQuickSwitch, setShowQuickSwitch] = useState(false);
 
   const handleBack = () => {
@@ -143,9 +145,11 @@ export function ProfileHub() {
                 {user?.email}
               </p>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-warning/20 text-warning border-warning/30">
-                  VIP Gold
-                </Badge>
+                {badge && badge !== 'None' && (
+                  <Badge variant="outline" className="bg-warning/20 text-warning border-warning/30">
+                    {badge}
+                  </Badge>
+                )}
                 {completion?.kyc_level && (
                   <Badge variant="outline" className="bg-accent/20 text-accent border-accent/30">
                     KYC {completion.kyc_level}
