@@ -50,7 +50,7 @@ export function KPICluster({ data, isLoading = false, onTilePress, className }: 
     },
     {
       label: "Status",
-      value: "VIP Gold",
+      value: "VIP",
       type: "status"
     }
   ]

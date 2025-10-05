@@ -33,7 +33,7 @@ const kpiData = [
   },
   { 
     icon: "⭐", 
-    value: "VIP Gold", 
+    value: "VIP", 
     label: "Status", 
     variant: "warning" as const, 
     trend: "neutral" as const 
