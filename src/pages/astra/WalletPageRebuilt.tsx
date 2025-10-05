@@ -170,16 +170,16 @@ export function WalletPageRebuilt() {
 
             {/* Action Buttons - Larger, more visible */}
             <div className="grid grid-cols-3 gap-3">
-              <Button
-                variant="outline"
-                size="default"
-                onClick={handleCopyAddress}
-                className="flex flex-col items-center gap-2 h-20 border-accent/30 text-accent hover:bg-accent/10 hover:border-accent/50 transition-all duration-[120ms]"
-                disabled={!showAddress}
-              >
-                <Copy className="h-5 w-5" />
-                <span className="text-xs font-semibold font-heading">Copy</span>
-              </Button>
+            <Button
+              variant="outline"
+              size="default"
+              onClick={handleCopyAddress}
+              className="flex flex-col items-center gap-2 h-20 border-accent/30 text-accent hover:bg-accent/10 hover:border-accent/50 transition-all duration-[120ms]"
+              disabled={!walletAddress}
+            >
+              <Copy className="h-5 w-5" />
+              <span className="text-xs font-semibold font-heading">Copy</span>
+            </Button>
               <Button
                 variant="outline"
                 size="default"
