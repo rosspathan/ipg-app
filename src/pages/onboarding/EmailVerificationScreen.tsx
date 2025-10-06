@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -25,6 +25,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   const [canResend, setCanResend] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(60);
   const { toast } = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Countdown timer for resend
   useEffect(() => {
@@ -39,13 +40,13 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   }, [resendCountdown]);
 
   const handleVerifyCode = async () => {
-    const cleaned = (code || '').replace(/\D/g, '').trim();
-
-    // Try verification with the latest input to avoid false negatives
-    if (!cleaned) {
+    const raw = inputRef.current?.value ?? code;
+    const cleaned = (raw || '').replace(/\D/g, '').trim();
+    if (cleaned.length !== 6) {
       toast({
-        title: "Enter Code",
-        description: "Type your 6-digit verification code",
+        title: "Invalid Code",
+        description: "Please enter the 6-digit verification code",
+        variant: "destructive"
       });
       return;
     }
@@ -103,7 +104,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && code.length > 0) {
+    if (e.key === 'Enter') {
       handleVerifyCode();
     }
   };
@@ -218,6 +219,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                       Verification Code
                     </label>
                     <Input
+                      ref={inputRef}
                       type="text"
                       value={code}
                       onChange={(e) => handleCodeChange(e.target.value)}
@@ -245,7 +247,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
                   <Button
                     onClick={handleVerifyCode}
-                    disabled={isVerifying || code.length === 0}
+                    disabled={isVerifying || code.length !== 6}
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 font-semibold py-3 rounded-xl"
                   >
                     {isVerifying ? (
