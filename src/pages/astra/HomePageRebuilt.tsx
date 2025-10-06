@@ -237,11 +237,11 @@ export function HomePageRebuilt() {
         onClose={() => setShowRewardsBreakdown(false)}
       />
 
-      {/* Floating WhatsApp Support Button */}
+      {/* Floating WhatsApp Support Button - Fixed above footer */}
       <SupportLinkWhatsApp
-        className="fixed bottom-24 right-4 z-30 h-14 w-14 rounded-full bg-success shadow-lg shadow-success/30 hover:shadow-xl hover:shadow-success/40 hover:scale-110 transition-all duration-300 border-2 border-success/20"
+        className="fixed bottom-20 right-5 z-30 h-12 w-12 rounded-full bg-success shadow-lg shadow-success/30 hover:shadow-xl hover:shadow-success/40 hover:scale-105 active:scale-95 transition-all duration-300 border-2 border-background"
       >
-        <MessageCircle className="h-6 w-6 text-white" />
+        <MessageCircle className="h-5 w-5 text-white" />
       </SupportLinkWhatsApp>
 
       {/* Footer - DO NOT MODIFY THIS SECTION */}
