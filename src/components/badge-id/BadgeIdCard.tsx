@@ -40,7 +40,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
         ref={ref}
         className={cn(
           "relative rounded-[24px] overflow-hidden",
-          "aspect-[3/5] w-full max-w-[360px]",
+          "w-full max-w-[360px]",
           "transform-gpu transition-all duration-500",
           "hover:scale-[1.02] hover:shadow-2xl",
           className
