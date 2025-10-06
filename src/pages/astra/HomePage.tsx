@@ -216,7 +216,7 @@ export function HomePage() {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate("/app/programs")}
-                className="text-accent hover:text-accent-glow"
+                className="text-text-secondary hover:text-text-primary"
               >
                 View All →
               </Button>
@@ -253,7 +253,7 @@ export function HomePage() {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate("/app-legacy/wallet/history")}
-                className="text-accent hover:text-accent-glow"
+                className="text-text-secondary hover:text-text-primary"
               >
                 View All →
               </Button>

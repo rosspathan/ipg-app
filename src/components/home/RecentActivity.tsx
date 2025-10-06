@@ -108,7 +108,7 @@ export function RecentActivity() {
     <div className="px-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-heading text-lg font-semibold">Recent Activity</h2>
-        <button className="text-sm text-accent hover:text-accent-glow transition-colors">
+        <button className="text-sm text-text-secondary hover:text-text-primary transition-colors">
           View All
         </button>
       </div>

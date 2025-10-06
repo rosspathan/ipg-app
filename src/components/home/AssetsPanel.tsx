@@ -69,7 +69,7 @@ export function AssetsPanel({
             variant="ghost"
             size="sm"
             onClick={onViewAll}
-            className="text-[10px] text-accent hover:text-accent-glow font-[Inter] font-semibold"
+            className="text-[10px] text-text-secondary hover:text-text-primary font-[Inter] font-semibold"
           >
             View All →
           </Button>
@@ -148,7 +148,7 @@ export function AssetsPanel({
           variant="ghost"
           size="sm"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full text-sm font-[Inter] font-medium text-accent hover:text-accent-glow"
+          className="w-full text-sm font-[Inter] font-medium text-text-secondary hover:text-text-primary"
         >
           {isExpanded ? (
             <>

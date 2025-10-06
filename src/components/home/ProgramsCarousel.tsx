@@ -90,9 +90,9 @@ export function ProgramsCarousel() {
     <div className="px-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-heading text-lg font-semibold">My Programs</h2>
-        <button 
+        <button
           onClick={() => navigate("/app/programs")}
-          className="text-sm text-accent hover:text-accent-glow transition-colors"
+          className="text-sm text-text-secondary hover:text-text-primary transition-colors"
         >
           View All
         </button>
