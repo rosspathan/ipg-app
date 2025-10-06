@@ -1,0 +1,270 @@
+import * as React from "react"
+import { Eye, EyeOff, Lock, ArrowDownToLine, ArrowRightLeft, History, Calendar, Info } from "lucide-react"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+
+interface BonusMetrics {
+  today: number
+  week: number
+  lifetime: number
+}
+
+interface Source {
+  label: string
+  amount: number
+}
+
+interface BskCardCompactProps {
+  variant: "withdrawable" | "holding"
+  balance?: number
+  fiatValue?: number
+  bonusMetrics?: BonusMetrics
+  sources?: Source[]
+  isLoading?: boolean
+  onWithdraw?: () => void
+  onTransfer?: () => void
+  onHistory?: () => void
+  onViewBreakdown?: () => void
+  onViewSchedule?: () => void
+  className?: string
+}
+
+const defaultSources: Source[] = [
+  { label: "Ads", amount: 25000 },
+  { label: "Refs", amount: 18500 },
+  { label: "Spin", amount: 12000 },
+  { label: "Draw", amount: 8000 },
+  { label: "One-time", amount: 20000 },
+  { label: "Other", amount: 6000 }
+]
+
+/**
+ * BskCardCompact - Compact BSK balance card for side-by-side layout
+ */
+export function BskCardCompact({
+  variant,
+  balance = variant === "withdrawable" ? 125000 : 89500,
+  fiatValue = variant === "withdrawable" ? 12500 : 8950,
+  bonusMetrics = { today: 150, week: 1250, lifetime: 125000 },
+  sources = defaultSources,
+  isLoading = false,
+  onWithdraw,
+  onTransfer,
+  onHistory,
+  onViewBreakdown,
+  onViewSchedule,
+  className
+}: BskCardCompactProps) {
+  const [isPrivate, setIsPrivate] = useState(false)
+
+  const isWithdrawable = variant === "withdrawable"
+
+  if (isLoading) {
+    return (
+      <div className={cn("space-y-2", className)} data-testid="bsk-card">
+        <Skeleton className="h-64 rounded-2xl" />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={cn(
+        "p-3 rounded-2xl border border-border/30 space-y-3",
+        "transition-all duration-[220ms]",
+        "flex flex-col h-full",
+        isWithdrawable 
+          ? "bg-success/5 backdrop-blur-xl" 
+          : "bg-primary/5 backdrop-blur-xl",
+        className
+      )}
+      style={{
+        WebkitBackdropFilter: 'blur(16px)',
+        backdropFilter: 'blur(16px)',
+        boxShadow: isWithdrawable 
+          ? '0 4px 20px rgba(34, 197, 94, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+          : '0 4px 20px rgba(124, 77, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+      }}
+      data-testid="bsk-card"
+    >
+      {/* Header Row */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {!isWithdrawable && <Lock className="h-3 w-3 text-warning flex-shrink-0" />}
+          <div className="min-w-0">
+            <h3 className="font-[Space_Grotesk] font-bold text-[11px] text-foreground truncate">
+              BSK — {isWithdrawable ? "Withdrawable" : "Holding"}
+            </h3>
+            <p className="font-[Inter] text-[9px] text-muted-foreground">
+              {isWithdrawable ? "Tradable / Transferable" : "Locked"}
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsPrivate(!isPrivate)}
+          className="h-6 w-6 p-0 hover:bg-muted/20 transition-all duration-[120ms] flex-shrink-0"
+          aria-label={isPrivate ? "Show balance" : "Hide balance"}
+        >
+          {isPrivate ? (
+            <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+        </Button>
+      </div>
+
+      {/* Amount Row */}
+      <div>
+        <div className={cn(
+          "font-[Space_Grotesk] font-bold text-xl tabular-nums",
+          isWithdrawable ? "text-success" : "text-primary"
+        )}>
+          {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`}{" "}
+          <span className={cn(
+            "text-sm",
+            isWithdrawable ? "text-success/70" : "text-primary/70"
+          )}>BSK</span>
+        </div>
+        <div className="font-[Inter] text-[10px] text-muted-foreground tabular-nums mt-0.5">
+          {isPrivate ? "••••••" : `≈ ₹${fiatValue.toLocaleString()}`}
+        </div>
+      </div>
+
+      {/* Actions Row */}
+      {isWithdrawable ? (
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={onWithdraw}
+            variant="outline"
+            size="sm"
+            className={cn(
+              "flex-1 h-9 px-2",
+              "border-success/30 hover:border-success/50 hover:bg-success/10",
+              "text-success font-[Inter] font-medium text-[10px]",
+              "focus:ring-2 focus:ring-success/30"
+            )}
+          >
+            <ArrowDownToLine className="h-3.5 w-3.5 mr-1" />
+            Withdraw
+          </Button>
+          <Button
+            onClick={onTransfer}
+            variant="outline"
+            size="sm"
+            className={cn(
+              "flex-1 h-9 px-2",
+              "border-primary/30 hover:border-primary/50 hover:bg-primary/10",
+              "text-primary font-[Inter] font-medium text-[10px]",
+              "focus:ring-2 focus:ring-primary/30"
+            )}
+          >
+            <ArrowRightLeft className="h-3.5 w-3.5 mr-1" />
+            Transfer
+          </Button>
+          <Button
+            onClick={onHistory}
+            variant="outline"
+            size="sm"
+            className={cn(
+              "h-9 w-9 p-0",
+              "border-border/30 hover:border-border/50 hover:bg-muted/20",
+              "text-foreground",
+              "focus:ring-2 focus:ring-border/30"
+            )}
+          >
+            <History className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ) : (
+        <Button
+          onClick={onViewSchedule}
+          variant="outline"
+          size="sm"
+          className={cn(
+            "w-full h-9",
+            "border-primary/30 hover:border-primary/50 hover:bg-primary/10",
+            "text-primary font-[Inter] font-medium text-[10px]",
+            "focus:ring-2 focus:ring-primary/30"
+          )}
+        >
+          <Calendar className="h-3.5 w-3.5 mr-1.5" />
+          View Schedule
+        </Button>
+      )}
+
+      {/* Metrics Row */}
+      <div className="flex-1 flex flex-col justify-end">
+        {isWithdrawable ? (
+          <div className="grid grid-cols-3 gap-2 py-2 border-t border-border/20">
+            <div className="text-center">
+              <div className="font-[Inter] text-[9px] text-muted-foreground uppercase">Today</div>
+              <div className="font-[Space_Grotesk] font-bold text-sm text-success tabular-nums">
+                +{bonusMetrics.today}
+              </div>
+            </div>
+            <div className="text-center border-l border-r border-border/20">
+              <div className="font-[Inter] text-[9px] text-muted-foreground uppercase">7 Days</div>
+              <div className="font-[Space_Grotesk] font-bold text-sm text-success tabular-nums">
+                +{bonusMetrics.week.toLocaleString()}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="font-[Inter] text-[9px] text-muted-foreground uppercase">Lifetime</div>
+              <div className="font-[Space_Grotesk] font-bold text-sm text-foreground tabular-nums">
+                {(bonusMetrics.lifetime / 1000).toFixed(1)}K
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-1.5 py-2 border-t border-border/20">
+            {sources.map((source, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "px-2 py-0.5 rounded-full text-[9px] font-[Inter] font-semibold",
+                  "bg-card/80 border border-border/30",
+                  "text-foreground"
+                )}
+              >
+                {source.label} {(source.amount / 1000).toFixed(1)}K
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer Link */}
+      {isWithdrawable ? (
+        <button
+          onClick={onViewBreakdown}
+          className={cn(
+            "w-full text-center text-[10px] font-[Inter] font-medium",
+            "text-primary hover:text-primary/80",
+            "transition-colors duration-[120ms]",
+            "flex items-center justify-center gap-1"
+          )}
+        >
+          <Info className="h-3 w-3" />
+          View Breakdown
+        </button>
+      ) : (
+        <button
+          onClick={onViewSchedule}
+          className={cn(
+            "w-full text-center text-[10px] font-[Inter] font-medium",
+            "text-primary hover:text-primary/80",
+            "transition-colors duration-[120ms]",
+            "flex items-center justify-center gap-1"
+          )}
+        >
+          <Calendar className="h-3 w-3" />
+          View Schedule
+        </button>
+      )}
+    </div>
+  )
+}

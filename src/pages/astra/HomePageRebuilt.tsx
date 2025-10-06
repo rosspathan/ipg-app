@@ -5,8 +5,8 @@ import { useNavigation } from "@/hooks/useNavigation"
 import { KPICardUnified } from "@/components/home/KPICardUnified"
 import { AddFundsCTA } from "@/components/home/AddFundsCTA"
 import { AssetsPanel } from "@/components/home/AssetsPanel"
-import { BSKWithdrawCard } from "@/components/home/BSKWithdrawCard"
-import { BSKHoldingCard } from "@/components/home/BSKHoldingCard"
+import { BalanceDuoGrid } from "@/components/home/BalanceDuoGrid"
+import { BskCardCompact } from "@/components/home/BskCardCompact"
 import { RewardsBreakdown } from "@/components/home/RewardsBreakdown"
 import { AnnouncementsBar } from "@/components/home/AnnouncementsBar"
 import { HeroCarousel } from "@/components/home/HeroCarousel"
@@ -207,18 +207,26 @@ export function HomePageRebuilt() {
           onViewAll={() => navigate("/app/wallet")}
         />
 
-        {/* BSK Withdrawable Card */}
-        <BSKWithdrawCard
-          onWithdraw={() => navigate("/app/programs/bsk-withdraw")}
-          onTransfer={() => navigate("/app/programs/bsk-transfer")}
-          onHistory={() => navigate("/app/wallet/history")}
-          onViewBreakdown={() => setShowRewardsBreakdown(true)}
-        />
-
-        {/* BSK Holding Card */}
-        <BSKHoldingCard
-          onViewSchedule={() => setShowRewardsBreakdown(true)}
-        />
+        {/* BSK Balance Cards - Side by Side */}
+        <BalanceDuoGrid>
+          <BskCardCompact
+            variant="withdrawable"
+            balance={125000}
+            fiatValue={12500}
+            bonusMetrics={{ today: 150, week: 1250, lifetime: 125000 }}
+            onWithdraw={() => navigate("/app/programs/bsk-withdraw")}
+            onTransfer={() => navigate("/app/programs/bsk-transfer")}
+            onHistory={() => navigate("/app/wallet/history")}
+            onViewBreakdown={() => setShowRewardsBreakdown(true)}
+          />
+          
+          <BskCardCompact
+            variant="holding"
+            balance={89500}
+            fiatValue={8950}
+            onViewSchedule={() => setShowRewardsBreakdown(true)}
+          />
+        </BalanceDuoGrid>
 
         {/* Announcements Bar */}
         <AnnouncementsBar items={announcementItems} />
