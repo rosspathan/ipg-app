@@ -4,6 +4,7 @@ import { QrLinkBuilder } from './QrLinkBuilder';
 import { BadgeTheme } from './BadgeIdThemeRegistry';
 import { MetalTexture, ClipOverlay } from './MetalTexture';
 import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
 
 interface BadgeIdCardProps {
   user: {
@@ -336,7 +337,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
 
 
           {/* QR Block - Premium Glass */}
-          <div className="px-6 pb-6 mt-auto">
+          <div className="px-6 pb-4 mt-auto">
             <div 
               className="flex items-center gap-4 p-4 rounded-xl backdrop-blur-xl"
               style={{
@@ -372,6 +373,36 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
               >
                 <QrLinkBuilder code={qrCode} size={76} />
               </div>
+            </div>
+          </div>
+
+          {/* I-SMART Verified Badge */}
+          <div className="px-6 pb-6">
+            <div 
+              className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg backdrop-blur-sm"
+              style={{
+                background: `linear-gradient(135deg, ${theme.colors.primary}15, ${theme.colors.secondary}10)`,
+                border: `1px solid ${theme.colors.primary}25`,
+              }}
+            >
+              <div 
+                className="rounded-full p-0.5 flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                  boxShadow: `0 0 12px ${theme.colors.glow}60`,
+                }}
+              >
+                <Check size={12} className="text-white" strokeWidth={3} />
+              </div>
+              <span 
+                className="text-[10px] font-bold uppercase tracking-wider"
+                style={{
+                  color: theme.colors.primary,
+                  textShadow: `0 0 8px ${theme.colors.glow}`,
+                }}
+              >
+                I-SMART Verified
+              </span>
             </div>
           </div>
         </div>
