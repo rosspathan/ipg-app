@@ -67,6 +67,13 @@ const ProgramsScreen = () => {
       subtitle: "Protect assets",
       icon: <Shield className="w-5 h-5" />,
       route: "/app/programs/insurance"
+    },
+    {
+      id: "trading",
+      title: "Trade",
+      subtitle: "Trade markets",
+      icon: <TrendingUp className="w-5 h-5" />,
+      route: "/app/programs/trading"
     }
   ];
 
