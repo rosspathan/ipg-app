@@ -1,8 +1,8 @@
 import { FC, forwardRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { QrLinkBuilder } from './QrLinkBuilder';
-import { HoloFx } from './HoloFx';
 import { BadgeTheme } from './BadgeIdThemeRegistry';
+import { MetalTexture, ClipOverlay } from './MetalTexture';
 import { cn } from '@/lib/utils';
 
 interface BadgeIdCardProps {
@@ -17,207 +17,285 @@ interface BadgeIdCardProps {
   qrCode: string;
   theme: BadgeTheme;
   reducedMotion?: boolean;
+  signatureUrl?: string;
   className?: string;
 }
 
 export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
-  ({ user, tier, qrCode, theme, reducedMotion = false, className = '' }, ref) => {
-    const maskEmail = (email: string) => {
-      const [localPart, domain] = email.split('@');
-      if (localPart.length <= 2) return `${localPart[0]}***@${domain}`;
-      return `${localPart.slice(0, 2)}***@${domain}`;
+  ({ user, tier, qrCode, theme, reducedMotion = false, signatureUrl, className = '' }, ref) => {
+    const formatUID = (id: string) => {
+      return `...${id.slice(-4).toLowerCase()}`;
     };
 
-    const formatUID = (id: string) => {
-      return `...${id.slice(-8).toUpperCase()}`;
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toISOString().split('T')[0];
+    };
+
+    const getSerialNumber = () => {
+      return `ISM-${user.id.slice(0, 8).toUpperCase()}`;
     };
 
     return (
       <div
         ref={ref}
         className={cn(
-          "relative rounded-[20px] overflow-hidden",
+          "relative rounded-[20px] overflow-hidden shadow-2xl",
           "aspect-[3/5] w-full max-w-[360px]",
           className
         )}
         style={{
           background: theme.gradients.card,
+          border: '1px solid rgba(42,47,66,0.16)',
         }}
         data-testid="badge-id-card"
       >
-        {/* Background effects */}
-        <HoloFx 
-          intensity={theme.effects.holoIntensity} 
-          disabled={reducedMotion}
-        />
-        
-        {/* Edge glow */}
-        <div 
-          className="absolute inset-0 rounded-[20px] pointer-events-none"
-          style={{
-            boxShadow: `inset 0 0 0 1px ${theme.colors.primary}40, 0 0 40px ${theme.colors.glow}20`,
-          }}
-        />
+        {/* Metal texture */}
+        <MetalTexture opacity={0.06} pattern={theme.effects.pattern} />
 
-        {/* Content wrapper */}
-        <div className="relative z-10 h-full flex flex-col p-6">
-          {/* Header: Logo + Tier Ribbon */}
-          <div className="flex items-start justify-between mb-6">
-            <img 
-              src="/brand/export/wordmark.svg" 
-              alt="I-SMART" 
-              className="h-8 opacity-90"
-            />
-            <div 
-              className="px-4 py-2 rounded-full text-xs font-bold tracking-wider shadow-lg"
-              style={{
-                background: theme.gradients.ribbon,
-                color: theme.colors.text,
-                textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-              }}
-            >
-              {tier}
+        {/* Shine effect */}
+        {!reducedMotion && (
+          <div 
+            className="absolute inset-0 pointer-events-none animate-shine-sweep"
+            style={{
+              background: theme.gradients.foil,
+              backgroundSize: '200% 100%',
+            }}
+          />
+        )}
+
+        {/* Content */}
+        <div className="relative z-10 h-full flex flex-col">
+          {/* Top Rail with Clip */}
+          <div className="relative">
+            <ClipOverlay className="absolute top-0 left-0 right-0" />
+            <div className="relative flex items-center justify-between px-6 h-12">
+              <img 
+                src="/brand/export/logo_mark.svg" 
+                alt="I-SMART" 
+                className="h-6 opacity-80"
+                style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
+              />
+              <div 
+                className="text-sm font-bold px-3 py-1 rounded-full"
+                style={{
+                  background: theme.colors.primary,
+                  color: theme.colors.text,
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                }}
+              >
+                {theme.badge.glyph}
+              </div>
             </div>
           </div>
 
-          {/* Profile section */}
-          <div className="flex flex-col items-center mb-6">
-            <div className="relative mb-4">
-              <div 
-                className="absolute inset-0 rounded-full animate-pulse"
-                style={{
-                  background: `radial-gradient(circle, ${theme.colors.glow}40 0%, transparent 70%)`,
-                  filter: 'blur(8px)',
-                }}
-              />
+          {/* Medallion Portrait */}
+          <div className="flex justify-center mt-8 mb-6">
+            <div className="relative">
+              {/* Outer glow */}
+              {!reducedMotion && (
+                <div 
+                  className="absolute inset-0 rounded-full animate-pulse-slow"
+                  style={{
+                    background: `radial-gradient(circle, ${theme.colors.glow}40 0%, transparent 70%)`,
+                    filter: 'blur(8px)',
+                    transform: 'scale(1.3)',
+                  }}
+                />
+              )}
+              
+              {/* Concentric rings */}
               <div 
                 className="relative rounded-full p-1"
                 style={{
-                  background: theme.gradients.ribbon,
-                  boxShadow: `0 0 20px ${theme.colors.glow}60`,
+                  background: `conic-gradient(from 0deg, ${theme.colors.primary}, ${theme.colors.secondary}, ${theme.colors.primary})`,
+                  boxShadow: `0 4px 12px ${theme.colors.glow}40, inset 0 1px 2px rgba(255,255,255,0.3)`,
                 }}
               >
-                <Avatar className="h-28 w-28 border-4 border-background">
-                  <AvatarImage src={user.avatarUrl} />
-                  <AvatarFallback 
-                    className="text-3xl font-bold"
-                    style={{ 
-                      background: theme.colors.primary,
-                      color: theme.colors.text 
+                <div 
+                  className="rounded-full p-0.5"
+                  style={{
+                    background: theme.gradients.card,
+                  }}
+                >
+                  <div 
+                    className="rounded-full p-1"
+                    style={{
+                      background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
                     }}
                   >
-                    {user.displayName.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                    <Avatar className="h-32 w-32 border-2 border-white/80">
+                      <AvatarImage src={user.avatarUrl} />
+                      <AvatarFallback 
+                        className="text-4xl font-bold"
+                        style={{ 
+                          background: theme.colors.primary,
+                          color: theme.colors.text 
+                        }}
+                      >
+                        {user.displayName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                </div>
               </div>
             </div>
-
-            <h3 
-              className="text-2xl font-bold mb-1 text-center font-heading"
-              style={{ color: theme.colors.text }}
-            >
-              {user.displayName}
-            </h3>
-            <p 
-              className="text-xs font-mono opacity-70"
-              style={{ color: theme.colors.textSecondary }}
-            >
-              {formatUID(user.id)}
-            </p>
           </div>
 
-          {/* Info grid */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <div>
-              <p className="text-[10px] uppercase tracking-wider opacity-60 mb-1" style={{ color: theme.colors.textSecondary }}>
-                Email
-              </p>
-              <p className="text-xs font-mono" style={{ color: theme.colors.text }}>
-                {maskEmail(user.email)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider opacity-60 mb-1" style={{ color: theme.colors.textSecondary }}>
-                Member Since
-              </p>
-              <p className="text-xs" style={{ color: theme.colors.text }}>
-                {new Date(user.joinDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-              </p>
-            </div>
+          {/* Tier Title - Engraved Style */}
+          <div className="text-center mb-8 px-6">
+            <h2 
+              className="text-2xl font-bold tracking-wide mb-1"
+              style={{
+                color: theme.colors.text,
+                textShadow: `0 2px 4px rgba(0,0,0,0.15), 0 -1px 1px rgba(255,255,255,0.5)`,
+                background: `linear-gradient(180deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 100%)`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {theme.name}
+            </h2>
           </div>
 
-          {/* Security band */}
+          {/* ID Band */}
           <div 
-            className="h-6 mb-6 overflow-hidden relative rounded"
+            className="mx-6 mb-6 px-4 py-2 rounded-lg flex items-center justify-between"
             style={{
-              background: `linear-gradient(90deg, ${theme.colors.primary}10, ${theme.colors.secondary}10)`,
-              borderTop: `1px solid ${theme.colors.primary}20`,
-              borderBottom: `1px solid ${theme.colors.primary}20`,
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.8) 100%)',
+              border: '1px solid rgba(255,255,255,0.1)',
             }}
           >
-            <div className="absolute inset-0 flex items-center whitespace-nowrap animate-marquee">
+            <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider">ID</span>
+            <span className="font-mono text-sm text-white/90 tabular-nums tracking-widest">
+              {formatUID(user.id)}
+            </span>
+            <svg className="h-4 w-4 text-white/40" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            </svg>
+          </div>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-2 gap-4 px-6 mb-6">
+            <div>
+              <p className="text-[9px] uppercase tracking-widest mb-1" style={{ color: theme.colors.textSecondary }}>
+                Name
+              </p>
+              <p className="text-xs font-medium" style={{ color: theme.colors.text }}>
+                {user.displayName}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-widest mb-1" style={{ color: theme.colors.textSecondary }}>
+                Member Since
+              </p>
+              <p className="text-xs font-mono tabular-nums" style={{ color: theme.colors.text }}>
+                {formatDate(user.joinDate)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-widest mb-1" style={{ color: theme.colors.textSecondary }}>
+                Card No.
+              </p>
+              <p className="text-xs font-mono tabular-nums" style={{ color: theme.colors.text }}>
+                {getSerialNumber()}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-widest mb-1" style={{ color: theme.colors.textSecondary }}>
+                Level
+              </p>
+              <p className="text-xs font-medium" style={{ color: theme.colors.text }}>
+                {tier}
+              </p>
+            </div>
+          </div>
+
+          {/* Signature Line */}
+          <div className="px-6 mb-6">
+            <p className="text-[9px] uppercase tracking-widest mb-2" style={{ color: theme.colors.textSecondary }}>
+              Signature
+            </p>
+            <div className="relative h-12">
+              {signatureUrl ? (
+                <img src={signatureUrl} alt="Signature" className="h-full object-contain object-left" />
+              ) : (
+                <div className="h-full flex items-center text-xs italic opacity-40" style={{ color: theme.colors.textSecondary }}>
+                  — Sign to personalize —
+                </div>
+              )}
+              <div 
+                className="absolute bottom-0 left-0 right-0 h-px"
+                style={{
+                  background: `linear-gradient(90deg, ${theme.colors.primary} 0%, transparent 100%)`,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Security Band */}
+          <div 
+            className="h-8 mx-6 mb-6 overflow-hidden relative rounded"
+            style={{
+              background: `repeating-linear-gradient(45deg, ${theme.colors.primary}08, ${theme.colors.primary}08 10px, ${theme.colors.secondary}08 10px, ${theme.colors.secondary}08 20px)`,
+              border: `1px solid ${theme.colors.primary}20`,
+            }}
+          >
+            <div className="absolute inset-0 flex items-center whitespace-nowrap animate-marquee-slow">
               <span 
-                className="text-[8px] font-mono tracking-widest opacity-40 px-2"
+                className="text-[7px] font-mono tracking-[0.3em] opacity-30 px-2"
                 style={{ color: theme.colors.textSecondary }}
               >
-                I-SMART EXCHANGE • VERIFIED MEMBER • I-SMART EXCHANGE • VERIFIED MEMBER •
+                I-SMART • VERIFIED MEMBER • OFFICIAL BADGE ID • I-SMART • VERIFIED MEMBER • OFFICIAL BADGE ID •
               </span>
             </div>
           </div>
 
-          {/* QR + Footer */}
-          <div className="mt-auto">
-            <div className="flex items-center justify-between">
+          {/* QR Block */}
+          <div className="px-6 pb-6 mt-auto">
+            <div className="flex items-end justify-between">
               <div className="flex-1">
-                <p className="text-[10px] uppercase tracking-wider mb-1 opacity-60" style={{ color: theme.colors.textSecondary }}>
+                <p className="text-[9px] uppercase tracking-widest mb-2 opacity-60" style={{ color: theme.colors.textSecondary }}>
                   Referral Link
                 </p>
-                <p className="text-xs opacity-80" style={{ color: theme.colors.text }}>
-                  Scan or visit link
+                <p className="text-[10px] font-mono opacity-70 break-all" style={{ color: theme.colors.text }}>
+                  i-smartapp.com/r/{qrCode.slice(0, 8)}...
                 </p>
               </div>
               <div 
-                className="p-2 rounded-lg"
+                className="p-2 rounded-xl ml-4"
                 style={{
                   background: 'rgba(255,255,255,0.95)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 }}
               >
-                <QrLinkBuilder code={qrCode} size={80} />
+                <QrLinkBuilder code={qrCode} size={72} />
               </div>
             </div>
-
-            {/* Badge glyph */}
-            {theme.badge.position === 'bottom-right' && (
-              <div 
-                className="absolute bottom-4 right-4 text-4xl opacity-20"
-                style={{ color: theme.colors.primary }}
-              >
-                {theme.badge.glyph}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Hologram seal */}
-        <div 
-          className="absolute bottom-6 left-6 w-12 h-12 rounded-full"
-          style={{
-            background: `radial-gradient(circle, ${theme.colors.glow}60, transparent)`,
-            boxShadow: `0 0 20px ${theme.colors.glow}80`,
-          }}
-        >
-          <div className="w-full h-full flex items-center justify-center text-xl opacity-70" style={{ color: theme.colors.primary }}>
-            ✓
           </div>
         </div>
 
         <style>{`
-          @keyframes marquee {
+          @keyframes shine-sweep {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+          .animate-shine-sweep {
+            animation: shine-sweep 8s ease-in-out infinite;
+          }
+          @keyframes pulse-slow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 0.9; }
+          }
+          .animate-pulse-slow {
+            animation: pulse-slow 3s ease-in-out infinite;
+          }
+          @keyframes marquee-slow {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
           }
-          .animate-marquee {
-            animation: marquee 20s linear infinite;
+          .animate-marquee-slow {
+            animation: marquee-slow 30s linear infinite;
           }
         `}</style>
       </div>

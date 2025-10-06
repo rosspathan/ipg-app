@@ -1,10 +1,11 @@
 import { FC, useState, useRef } from 'react';
-import { Download, Share2, Copy, Check } from 'lucide-react';
+import { Download, Share2, Copy, Check, Pen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { BadgeIdCard } from './BadgeIdCard';
 import { BadgeIdCardBack } from './BadgeIdCardBack';
 import { ProfileAvatarUploader } from './ProfileAvatarUploader';
+import { SignaturePad } from './SignaturePad';
 import { BadgeIdExporter } from './BadgeIdExporter';
 import { getThemeForTier, getAllTiers, BadgeTier } from './BadgeIdThemeRegistry';
 import { buildReferralLink } from './QrLinkBuilder';
@@ -36,6 +37,8 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
   const [showBack, setShowBack] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [signatureUrl, setSignatureUrl] = useState<string | undefined>();
   const frontCardRef = useRef<HTMLDivElement>(null);
   const backCardRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +149,15 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
     }
   };
 
+  const handleSaveSignature = (dataUrl: string) => {
+    setSignatureUrl(dataUrl);
+    setShowSignaturePad(false);
+    toast({
+      title: "Success",
+      description: "Signature added to your badge",
+    });
+  };
+
   return (
     <div className="space-y-6" data-testid="badge-id-card-sheet">
       {/* Avatar Upload Section */}
@@ -207,6 +219,7 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
                 qrCode={qrCode}
                 theme={theme}
                 reducedMotion={reducedMotion}
+                signatureUrl={signatureUrl}
               />
             ) : (
               <BadgeIdCardBack
@@ -221,51 +234,71 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
       </div>
 
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          variant="outline"
-          onClick={handleSavePNG}
-          disabled={exporting}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Save PNG
-        </Button>
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setShowSignaturePad(true)}
+          >
+            <Pen className="h-4 w-4 mr-2" />
+            {signatureUrl ? 'Edit' : 'Add'} Signature
+          </Button>
 
-        <Button
-          variant="outline"
-          onClick={handleSavePDF}
-          disabled={exporting}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Save PDF
-        </Button>
+          <Button
+            variant="outline"
+            onClick={handleCopyLink}
+          >
+            {copied ? (
+              <Check className="h-4 w-4 mr-2" />
+            ) : (
+              <Copy className="h-4 w-4 mr-2" />
+            )}
+            {copied ? 'Copied!' : 'Copy Link'}
+          </Button>
+        </div>
 
-        <Button
-          variant="outline"
-          onClick={handleShare}
-          disabled={exporting}
-        >
-          <Share2 className="h-4 w-4 mr-2" />
-          Share
-        </Button>
+        <div className="grid grid-cols-3 gap-3">
+          <Button
+            variant="outline"
+            onClick={handleSavePNG}
+            disabled={exporting}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            PNG
+          </Button>
 
-        <Button
-          variant="outline"
-          onClick={handleCopyLink}
-        >
-          {copied ? (
-            <Check className="h-4 w-4 mr-2" />
-          ) : (
-            <Copy className="h-4 w-4 mr-2" />
-          )}
-          {copied ? 'Copied!' : 'Copy Link'}
-        </Button>
+          <Button
+            variant="outline"
+            onClick={handleSavePDF}
+            disabled={exporting}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={handleShare}
+            disabled={exporting}
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Share
+          </Button>
+        </div>
       </div>
 
       {exporting && (
         <div className="text-center text-sm text-muted-foreground">
           Generating high-quality export...
         </div>
+      )}
+
+      {/* Signature Pad Modal */}
+      {showSignaturePad && (
+        <SignaturePad
+          onSave={handleSaveSignature}
+          onCancel={() => setShowSignaturePad(false)}
+        />
       )}
     </div>
   );
