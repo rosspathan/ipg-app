@@ -7,7 +7,7 @@ interface UserAuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, referralCode?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -68,16 +68,31 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, referralCode?: string) => {
     const redirectUrl = `${window.location.origin}/app/home`;
+    
+    // Get referral code from parameter, localStorage, or URL
+    const refCode = referralCode || 
+                    localStorage.getItem('pending_referral') || 
+                    new URLSearchParams(window.location.search).get('ref') || 
+                    '';
     
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl
+        emailRedirectTo: redirectUrl,
+        data: {
+          referral_code: refCode // Store in user metadata for handle_new_user function
+        }
       }
     });
+    
+    // Clear pending referral after successful signup
+    if (!error) {
+      localStorage.removeItem('pending_referral');
+    }
+    
     return { error };
   };
 

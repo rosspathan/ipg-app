@@ -15,54 +15,43 @@ export function ReferralResolver() {
     let mounted = true;
 
     const resolveReferral = async () => {
-      console.log('🔗 Resolving referral sponsorID:', code);
+      console.log('🔗 Resolving referral code:', code);
       
       if (!code) {
-        console.warn('No sponsorID provided, redirecting to onboarding');
-        if (mounted) navigate('/onboarding', { replace: true });
+        console.warn('No referral code provided, redirecting to landing');
+        if (mounted) navigate('/', { replace: true });
         return;
       }
 
       try {
-        // Code is now the sponsor's user_id directly
-        const sponsorId = code;
-        
-        console.log('Using sponsorID directly:', sponsorId);
-        
-        // Validate that sponsor exists in the database
-        const { data: profileData, error } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('user_id', sponsorId)
+        // Validate that referral code exists
+        const { data: referralCodeData, error } = await supabase
+          .from('referral_codes')
+          .select('user_id, code')
+          .eq('code', code)
           .maybeSingle();
 
         if (error) {
-          console.error('Database error validating sponsor:', error);
+          console.error('Database error validating referral code:', error);
         }
 
-        // Store pending referral with sponsor ID
-        const pendingRef = {
-          code: sponsorId,
-          sponsorId: sponsorId,
-          timestamp: Date.now()
-        };
+        // Store pending referral code
+        localStorage.setItem('pending_referral', code);
         
-        localStorage.setItem('ismart_pending_ref', JSON.stringify(pendingRef));
-        
-        if (profileData) {
-          console.log('✅ Valid sponsor found:', sponsorId);
+        if (referralCodeData) {
+          console.log('✅ Valid referral code found:', code);
         } else {
-          console.warn('⚠️ Sponsor not found, but storing referral anyway');
+          console.warn('⚠️ Referral code not found, but storing anyway');
         }
 
-        // Always redirect to onboarding with sponsor ID
+        // Redirect to registration with referral code in URL
         if (mounted) {
-          console.log('Redirecting to onboarding with sponsorID');
-          navigate(`/onboarding?ref=${sponsorId}`, { replace: true });
+          console.log('Redirecting to registration with referral code');
+          navigate(`/auth/register?ref=${code}`, { replace: true });
         }
       } catch (error) {
         console.error('Error resolving referral:', error);
-        if (mounted) navigate(`/onboarding?ref=${code}`, { replace: true });
+        if (mounted) navigate(`/auth/register?ref=${code}`, { replace: true });
       }
     };
 
