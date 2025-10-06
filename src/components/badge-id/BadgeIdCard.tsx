@@ -346,8 +346,12 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
             >
               <div className="flex-1">
                 <p 
-                  className="text-[8px] uppercase tracking-[0.2em] mb-2 font-bold"
-                  style={{ color: theme.colors.textSecondary }}
+                  className="text-[7px] uppercase tracking-[0.25em] mb-2 font-black"
+                  style={{ 
+                    color: theme.colors.primary,
+                    textShadow: `0 0 10px ${theme.colors.glow}, 0 0 20px ${theme.colors.primary}80, 0 0 30px ${theme.colors.primary}40`,
+                    filter: `drop-shadow(0 0 8px ${theme.colors.glow})`,
+                  }}
                 >
                   Scan QR Code
                 </p>
