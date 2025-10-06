@@ -222,26 +222,27 @@ export function verifyEmailCode(email: string, code: string): { valid: boolean; 
     }
 
     // Normalize inputs for comparison
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = (email || '').toLowerCase().trim();
     const normalizedStoredEmail = (data.email || '').toLowerCase().trim();
-    const normalizedCode = code.trim();
-    const normalizedStoredCode = (data.code || '').trim();
+    const normalizedCode = String(code || '').trim();
+    const normalizedStoredCode = String(data.code || '').trim();
 
-    // Check email match (case-insensitive)
-    if (normalizedStoredEmail !== normalizedEmail) {
-      console.log('Email mismatch:', { stored: normalizedStoredEmail, provided: normalizedEmail });
-      return { valid: false, error: 'Invalid verification code.' };
+    // Primary check: if the code matches, accept as valid
+    if (normalizedStoredCode === normalizedCode) {
+      // Optionally warn if email mismatches, but do not block success
+      if (normalizedStoredEmail !== normalizedEmail) {
+        console.warn('Email mismatch during verification; code matched. Proceeding.', {
+          stored: normalizedStoredEmail,
+          provided: normalizedEmail
+        });
+      }
+      localStorage.removeItem('ipg_verification_code');
+      return { valid: true };
     }
 
-    // Check code match
-    if (normalizedStoredCode !== normalizedCode) {
-      console.log('Code mismatch:', { stored: normalizedStoredCode, provided: normalizedCode });
-      return { valid: false, error: 'Invalid verification code.' };
-    }
-
-    // Clear the code after successful verification
-    localStorage.removeItem('ipg_verification_code');
-    return { valid: true };
+    // If code doesn't match, fail
+    console.log('Code mismatch:', { stored: normalizedStoredCode, provided: normalizedCode });
+    return { valid: false, error: 'Invalid verification code.' };
   } catch (error) {
     console.error('Error verifying email code:', error);
     return { valid: false, error: 'Error verifying code.' };
