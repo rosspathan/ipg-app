@@ -130,7 +130,7 @@ const AppHomeScreen = () => {
   };
 
   const handleWhatsAppSupport = () => {
-    window.open("https://web.whatsapp.com/send?phone=919177755022&text=Hello%20iSmart%20support", '_blank');
+    window.open("https://web.whatsapp.com/send?phone=919133444422&text=Hello%20iSmart%20support", '_blank');
   };
 
   return (
