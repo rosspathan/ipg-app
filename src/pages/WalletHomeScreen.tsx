@@ -29,11 +29,11 @@ const WalletHomeScreen = () => {
 
   // Mock user balances - in a real app, this would come from user balance data
   const mockBalances = {
-    BTC: { balance: 0.25 },
-    ETH: { balance: 5.75 },
-    USDT: { balance: 2500.00 },
-    BNB: { balance: 15.3 },
-    INR: { balance: 50000 },
+    BTC: { balance: 0 },
+    ETH: { balance: 0 },
+    USDT: { balance: 0 },
+    BNB: { balance: 0 },
+    INR: { balance: 0 },
   };
 
   // Combine assets with mock balances and convert to display currency
