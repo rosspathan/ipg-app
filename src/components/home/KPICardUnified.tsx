@@ -60,11 +60,11 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
     <button
       onClick={onCardPress}
       className={cn(
-        "relative w-full px-4 py-3 rounded-[20px] overflow-hidden",
-        "bg-gradient-to-br from-card/95 via-card/85 to-card/95",
+        "relative w-full px-5 py-3.5 rounded-[20px] overflow-hidden",
+        "bg-gradient-to-br from-card/95 via-card/90 to-card/95",
         "backdrop-blur-xl border border-border/50",
         "transition-all duration-300 ease-out",
-        "hover:border-primary/40 hover:shadow-[0_8px_32px_rgba(124,77,255,0.15)]",
+        "hover:border-primary/40 hover:shadow-[0_8px_32px_rgba(124,77,255,0.12)]",
         "active:scale-[0.99]",
         "focus:outline-none focus:ring-2 focus:ring-primary/30",
         "group cursor-pointer",
@@ -76,92 +76,114 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
       }}
       data-testid="kpi-card-unified"
     >
-      {/* Main content - Single horizontal line with stacked percentage */}
-      <div className="relative flex items-center justify-between gap-4">
-        {/* Left: Portfolio Icon + Value with stacked percentage */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Icon */}
+      {/* Main content grid - Clear sections */}
+      <div className="relative grid grid-cols-[auto_1px_auto_1px_auto] items-center gap-4">
+        
+        {/* Section 1: Portfolio Value */}
+        <div className="flex items-center gap-3">
           <div className={cn(
-            "h-9 w-9 rounded-[14px] flex items-center justify-center",
-            "bg-gradient-to-br from-success/20 to-success/5",
-            "transition-all duration-300 group-hover:scale-105 group-hover:from-success/25"
+            "h-10 w-10 rounded-[14px] flex items-center justify-center",
+            "bg-gradient-to-br from-success/25 to-success/5",
+            "transition-all duration-300 group-hover:scale-105"
           )}>
-            <Wallet className="h-4.5 w-4.5 text-success" />
+            <Wallet className="h-5 w-5 text-success" />
           </div>
-
-          {/* Portfolio Value with percentage below */}
+          
           <div className="flex flex-col gap-0.5">
-            <span className="font-[Space_Grotesk] font-bold text-lg text-foreground tabular-nums leading-none tracking-tight">
-              {portfolioData?.value || "₹0"}
+            <span className="text-[9px] font-[Inter] font-semibold text-muted-foreground/60 uppercase tracking-wider leading-none">
+              Portfolio
             </span>
-            {portfolioData?.subValue && (
-              <span className="text-[11px] font-[Inter] font-semibold text-success tabular-nums leading-none">
-                {portfolioData.subValue}
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-[Space_Grotesk] font-bold text-xl text-foreground tabular-nums leading-none tracking-tight">
+                {portfolioData?.value || "₹0"}
               </span>
-            )}
+              {portfolioData?.subValue && (
+                <span className="text-xs font-[Inter] font-bold text-success tabular-nums leading-none">
+                  {portfolioData.subValue}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Center: 24h Change Section */}
-        <div className="flex items-center gap-3">
-          {/* 24h Change Value */}
-          {changeData && (
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] font-[Inter] font-semibold text-muted-foreground/50 uppercase tracking-wider leading-none">
-                  24H CHANGE
-                </span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className={cn(
-                    "font-[Space_Grotesk] font-bold text-sm tabular-nums leading-none",
-                    changeData?.trend === "up" ? "text-success" : "text-danger"
-                  )}>
-                    {changeData.value}
-                  </span>
-                  {changeData.subValue && (
-                    <span className="text-[10px] font-[Inter] font-medium text-muted-foreground/60 tabular-nums leading-none">
-                      {changeData.subValue}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Divider 1 */}
+        <div className="h-10 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent" />
 
+        {/* Section 2: 24h Change */}
+        <div className="flex items-center gap-2.5">
+          <div className={cn(
+            "h-8 w-8 rounded-[12px] flex items-center justify-center",
+            "bg-gradient-to-br from-primary/20 to-primary/5",
+            "transition-all duration-300 group-hover:scale-105"
+          )}>
+            <Activity className="h-4 w-4 text-primary" />
+          </div>
+          
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[9px] font-[Inter] font-semibold text-muted-foreground/60 uppercase tracking-wider leading-none">
+              24h Change
+            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className={cn(
+                "font-[Space_Grotesk] font-bold text-base tabular-nums leading-none",
+                changeData?.trend === "up" ? "text-success" : "text-danger"
+              )}>
+                {changeData?.value || "+0%"}
+              </span>
+              {changeData?.subValue && (
+                <span className="text-[10px] font-[Inter] font-medium text-muted-foreground/70 tabular-nums leading-none">
+                  {changeData.subValue}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Divider 2 */}
+        <div className="h-10 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent" />
+
+        {/* Section 3: Status & Trend */}
+        <div className="flex items-center gap-2">
           {/* Trend Badge */}
           {changeData?.trend && (
             <div className={cn(
-              "flex items-center gap-1 px-2.5 py-1 rounded-lg",
+              "flex items-center gap-1 px-2.5 py-1.5 rounded-lg",
               "transition-all duration-300",
-              changeData.trend === "up" && "bg-success/10 text-success group-hover:bg-success/15",
-              changeData.trend === "down" && "bg-danger/10 text-danger group-hover:bg-danger/15"
+              changeData.trend === "up" && "bg-success/15 text-success group-hover:bg-success/20",
+              changeData.trend === "down" && "bg-danger/15 text-danger group-hover:bg-danger/20"
             )}>
+              {changeData.trend === "up" ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
               <span className="text-[10px] font-[Inter] font-bold leading-none">
                 {changeData.trend === "up" ? "Bullish" : "Bearish"}
               </span>
             </div>
           )}
+
+          {/* Status Badge */}
+          <div className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
+            "bg-gradient-to-r from-warning/25 to-warning/10",
+            "border border-warning/40",
+            "transition-all duration-300 group-hover:border-warning/50"
+          )}>
+            <Award className="h-3.5 w-3.5 text-warning" />
+            <span className="text-[11px] font-[Space_Grotesk] font-bold text-warning leading-none">
+              {statusData?.value || "Member"}
+            </span>
+          </div>
         </div>
 
-        {/* Right: Status Badge */}
-        <div className={cn(
-          "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
-          "bg-gradient-to-r from-warning/20 to-warning/10",
-          "border border-warning/30",
-          "transition-all duration-300 group-hover:border-warning/40 group-hover:from-warning/25"
-        )}>
-          <Award className="h-3.5 w-3.5 text-warning" />
-          <span className="text-[11px] font-[Space_Grotesk] font-bold text-warning leading-none">
-            {statusData?.value || "Member"}
-          </span>
-        </div>
       </div>
 
       {/* Subtle gradient overlay on hover */}
       <div 
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
         style={{
-          background: 'linear-gradient(120deg, transparent 25%, rgba(255, 255, 255, 0.05) 50%, transparent 75%)',
+          background: 'linear-gradient(120deg, transparent 25%, rgba(255, 255, 255, 0.04) 50%, transparent 75%)',
           backgroundSize: '200% 100%',
           animation: 'shine-sweep 3s ease-in-out infinite'
         }}
