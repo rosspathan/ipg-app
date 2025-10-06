@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
 import { copyToClipboard } from "@/utils/clipboard"
 import { useNavigation } from "@/hooks/useNavigation"
-import { DockNav } from "@/components/navigation/DockNav"
+import { FloatingActionButton } from "@/components/ui/floating-action-button"
+import { QuickSwitchMenu } from "@/components/navigation/QuickSwitchMenu"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import QRCode from "qrcode"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -17,10 +18,10 @@ export function WalletPageRebuilt() {
   const { user } = useAuthUser()
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [showAddress, setShowAddress] = useState(false)
-  const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState<string>("")
   const [qrLoading, setQrLoading] = useState(false)
+  const [showQuickMenu, setShowQuickMenu] = useState(false)
 
   // Fetch wallet address from profiles table
   useEffect(() => {
@@ -123,14 +124,6 @@ export function WalletPageRebuilt() {
     }
   ]
 
-  const handleQuickSwitchAction = (action: string) => {
-    switch (action) {
-      case "deposit": navigate("/app/wallet/deposit"); break
-      case "convert": navigate("/app/swap"); break
-      case "trade": navigate("/app/trade"); break
-      case "programs": navigate("/app/programs"); break
-    }
-  }
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-wallet">
@@ -246,18 +239,16 @@ export function WalletPageRebuilt() {
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <DockNav
-        onNavigate={navigate}
-        onCenterPress={() => setShowQuickSwitch(true)}
-      />
+      {/* Radial Menu Trigger */}
+      <FloatingActionButton
+        onClick={() => setShowQuickMenu(true)}
+        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40"
+      >
+        <ArrowLeftRight className="h-6 w-6" />
+      </FloatingActionButton>
 
-      {/* Quick Switch */}
-      <QuickSwitch
-        isOpen={showQuickSwitch}
-        onClose={() => setShowQuickSwitch(false)}
-        onAction={handleQuickSwitchAction}
-      />
+      {/* Radial Menu */}
+      <QuickSwitchMenu isOpen={showQuickMenu} onClose={() => setShowQuickMenu(false)} />
 
       {/* QR Modal */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
