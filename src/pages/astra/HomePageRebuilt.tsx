@@ -2,7 +2,7 @@ import * as React from "react"
 import { useState } from "react"
 import { Gift, Target, Zap, Star, Users, TrendingUp, Shield, Coins } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
-import { KPICluster } from "@/components/home/KPICluster"
+import { KPICardUnified } from "@/components/home/KPICardUnified"
 import { AddFundsCTA } from "@/components/home/AddFundsCTA"
 import { AssetsPanel } from "@/components/home/AssetsPanel"
 import { BSKWithdrawCard } from "@/components/home/BSKWithdrawCard"
@@ -22,21 +22,9 @@ export function HomePageRebuilt() {
   const { navigate } = useNavigation()
   const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
 
-  const handleKPIPress = (type: string) => {
-    console.log("KPI pressed:", type)
-    switch (type) {
-      case "portfolio":
-        navigate("/app/wallet")
-        break
-      case "change":
-        navigate("/app/wallet")
-        break
-      case "status":
-        navigate("/app/profile")
-        break
-      default:
-        navigate("/app/wallet")
-    }
+  const handleKPIPress = () => {
+    console.log("KPI card pressed")
+    navigate("/app/wallet")
   }
 
   const handleAssetPress = (asset: any) => {
@@ -197,8 +185,8 @@ export function HomePageRebuilt() {
     <div className="min-h-screen" data-testid="page-home">
       {/* Main Content */}
       <main className="pb-28 px-4 space-y-6 pt-4">
-        {/* KPI Cluster */}
-        <KPICluster onTilePress={handleKPIPress} />
+        {/* KPI Card Unified */}
+        <KPICardUnified onCardPress={handleKPIPress} />
 
         {/* Add Funds CTA */}
         <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
