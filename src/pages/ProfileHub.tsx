@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   User, Shield, CreditCard, Bell, Settings, 
-  Users, ChevronRight, ChevronLeft, MessageCircle 
+  Users, ChevronRight, ChevronLeft
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useProfile } from "@/hooks/useProfile";
@@ -120,19 +120,7 @@ export function ProfileHub() {
             <ChevronLeft className="h-5 w-5" />
           </button>
           
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-foreground">{displayName}</span>
-            <button 
-              onClick={() => window.open('https://wa.me/1234567890', '_blank')}
-              className="p-2 rounded-xl hover:bg-primary/10 transition-colors"
-            >
-              <MessageCircle className="h-5 w-5 text-primary" />
-            </button>
-            <button className="p-2 rounded-xl hover:bg-primary/10 transition-colors relative">
-              <Bell className="h-5 w-5 text-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full" />
-            </button>
-          </div>
+          <span className="text-sm font-medium text-foreground">{displayName}</span>
         </div>
       </div>
 
