@@ -8064,14 +8064,6 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_user_referral_code: {
-        Args: { p_user_id: string }
-        Returns: string
-      }
-      get_user_referral_stats: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
       get_user_slab: {
         Args: { p_user_id: string }
         Returns: string

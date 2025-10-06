@@ -38,7 +38,6 @@ export default function AuthUnified() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [referralCode, setReferralCode] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -47,19 +46,12 @@ export default function AuthUnified() {
   // Capture referral code from URL on component mount
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const urlReferralCode = params.get('ref');
+    const referralCode = params.get('ref');
     
-    if (urlReferralCode) {
-      // Store referral code and pre-fill the input
-      localStorage.setItem('pending_referral', urlReferralCode);
-      setReferralCode(urlReferralCode);
-      console.log('📌 Referral code captured:', urlReferralCode);
-    } else {
-      // Check if there's a stored referral code
-      const storedRef = localStorage.getItem('pending_referral');
-      if (storedRef) {
-        setReferralCode(storedRef);
-      }
+    if (referralCode) {
+      // Store referral code for use after signup/verification
+      localStorage.setItem('pending_referral', referralCode);
+      console.log('📌 Referral code captured:', referralCode);
     }
   }, [location.search]);
 
@@ -100,7 +92,7 @@ export default function AuthUnified() {
 
     setIsLoading(true);
     try {
-      const { error: signUpError } = await signUp(email, password, referralCode);
+      const { error: signUpError } = await signUp(email, password);
       if (signUpError) {
         setError(signUpError.message || "Failed to create account");
       } else {
@@ -262,28 +254,6 @@ export default function AuthUnified() {
                       className="transition-all"
                       autoComplete="new-password"
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="referral-code" className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Referral Code (Optional)
-                    </Label>
-                    <Input
-                      id="referral-code"
-                      type="text"
-                      value={referralCode}
-                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                      placeholder="Enter referral code"
-                      disabled={isLoading}
-                      className="transition-all uppercase"
-                      maxLength={12}
-                    />
-                    {referralCode && (
-                      <p className="text-xs text-green-600 dark:text-green-400">
-                        ✓ Referral code will be applied
-                      </p>
-                    )}
                   </div>
 
                   <Button type="submit" className="w-full mt-6 group" disabled={isLoading}>

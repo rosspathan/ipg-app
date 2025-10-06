@@ -44,7 +44,6 @@ import AdminRouteNew from "@/components/AdminRouteNew";
 
 // Landing & Auth Pages
 import SplashScreen from "./pages/SplashScreen";
-import LandingPage from "./pages/LandingPage";
 import WelcomeScreen from "./pages/WelcomeScreen";
 import WelcomeScreen1 from "./pages/WelcomeScreen1";
 import WelcomeScreen2 from "./pages/WelcomeScreen2";
@@ -185,7 +184,7 @@ function App() {
           <BrowserRouter>
             <Routes>
               {/* Landing & Splash */}
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<Navigate to="/onboarding" replace />} />
               <Route path="/splash" element={<SplashScreen />} />
               <Route path="/r/:code" element={<ReferralResolver />} />
               <Route path="/deeplink/r/:code" element={<DeepLinkResolver />} />
