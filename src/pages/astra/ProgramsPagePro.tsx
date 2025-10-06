@@ -1,9 +1,11 @@
 import * as React from "react"
+import { useState } from "react"
 import { ArrowLeft, Gift, Target, Zap, Star, Users, TrendingUp, Shield, Coins } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { DockNav } from "@/components/navigation/DockNav"
+import { QuickSwitch } from "@/components/astra/QuickSwitch"
 
 interface Program {
   id: string
@@ -23,7 +25,7 @@ const allPrograms: Program[] = [
     icon: <Gift className="h-6 w-6" />,
     badge: "DAILY",
     badgeColor: "bg-success/20 text-success",
-    route: "/app/advertising"
+    route: "/app/programs/advertising"
   },
   {
     id: "2",
@@ -32,7 +34,7 @@ const allPrograms: Program[] = [
     icon: <Target className="h-6 w-6" />,
     badge: "HOT",
     badgeColor: "bg-danger/20 text-danger",
-    route: "/app/lucky-draw"
+    route: "/app/programs/lucky-draw"
   },
   {
     id: "3",
@@ -41,7 +43,7 @@ const allPrograms: Program[] = [
     icon: <Zap className="h-6 w-6" />,
     badge: "LIVE",
     badgeColor: "bg-warning/20 text-warning",
-    route: "/app/spin"
+    route: "/app/programs/spin"
   },
   {
     id: "4",
@@ -50,35 +52,35 @@ const allPrograms: Program[] = [
     icon: <Coins className="h-6 w-6" />,
     badge: "NEW",
     badgeColor: "bg-primary/20 text-primary",
-    route: "/programs/bsk-purchase"
+    route: "/app/programs/bsk-purchase-manual"
   },
   {
     id: "5",
     title: "Referrals",
     description: "Invite friends and earn together",
     icon: <Users className="h-6 w-6" />,
-    route: "/app/referrals"
+    route: "/app/programs/referrals"
   },
   {
     id: "6",
     title: "Staking",
     description: "12.4% APY with flexible terms",
     icon: <Star className="h-6 w-6" />,
-    route: "/app/staking"
+    route: "/app/programs/staking"
   },
   {
     id: "7",
     title: "Loans",
     description: "0% interest for 16 weeks",
     icon: <TrendingUp className="h-6 w-6" />,
-    route: "/programs/loans"
+    route: "/app/programs/loans"
   },
   {
     id: "8",
     title: "Insurance",
     description: "Protect assets with 24/7 claims",
     icon: <Shield className="h-6 w-6" />,
-    route: "/programs/insurance"
+    route: "/app/programs/insurance"
   }
 ]
 
@@ -87,6 +89,7 @@ const allPrograms: Program[] = [
  */
 export function ProgramsPagePro() {
   const { navigate } = useNavigation()
+  const [showQuickSwitch, setShowQuickSwitch] = useState(false)
 
   return (
     <div 
@@ -169,8 +172,33 @@ export function ProgramsPagePro() {
         </div>
       </main>
 
+      {/* Quick Switch Radial Menu */}
+      <QuickSwitch
+        isOpen={showQuickSwitch}
+        onClose={() => setShowQuickSwitch(false)}
+        onAction={(action) => {
+          switch (action) {
+            case "deposit":
+              navigate("/app/wallet/deposit")
+              break
+            case "convert":
+              navigate("/app/swap")
+              break
+            case "trade":
+              navigate("/app/trade")
+              break
+            case "programs":
+              navigate("/app/programs")
+              break
+          }
+        }}
+      />
+
       {/* Bottom Navigation */}
-      <DockNav onNavigate={(path) => navigate(path)} />
+      <DockNav 
+        onNavigate={(path) => navigate(path)} 
+        onCenterPress={() => setShowQuickSwitch(true)} 
+      />
     </div>
   )
 }
