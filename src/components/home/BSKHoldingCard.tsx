@@ -130,9 +130,9 @@ export function BSKHoldingCard({
           size="sm"
           className={cn(
             "w-full h-10",
-            "border-primary/30 hover:border-primary/50 hover:bg-primary/10",
-            "text-primary font-[Inter] font-medium",
-            "focus:ring-2 focus:ring-primary/30"
+            "border-border/30 hover:border-border/50 hover:bg-card/80",
+            "text-foreground font-[Inter] font-medium",
+            "focus:ring-2 focus:ring-border/30"
           )}
         >
           <Calendar className="h-4 w-4 mr-2" />

@@ -74,7 +74,7 @@ const CurvedBottomNav: React.FC = () => {
                     isAfterCenter && index === 2 && "ml-8",
                     active 
                       ? "text-primary bg-primary/12 shadow-button" 
-                      : "text-muted-foreground hover:text-primary hover:bg-muted/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
                   )}
                 >
                   <Icon className={cn(

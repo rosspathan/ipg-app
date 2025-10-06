@@ -88,7 +88,7 @@ export function ActivityTimeline({
             key={activity.id}
             className={cn(
               "p-3 rounded-xl bg-card/60 backdrop-blur-xl border border-border/30",
-              "transition-all duration-[120ms] hover:border-primary/30 hover:bg-card/80"
+              "transition-all duration-[120ms] hover:border-border/50 hover:bg-card/80"
             )}
           >
             <div className="flex items-center gap-3">

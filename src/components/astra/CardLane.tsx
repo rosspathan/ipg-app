@@ -60,7 +60,7 @@ export function CardLane({
           {action && (
             <button
               onClick={action.onClick}
-              className="text-sm font-medium text-accent hover:text-accent/80 transition-colors duration-[120ms]"
+              className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors duration-[120ms]"
             >
               {action.label} →
             </button>

@@ -110,8 +110,8 @@ export function BSKWithdrawCard({
           size="sm"
           className={cn(
             "h-12 flex flex-col items-center justify-center gap-1",
-            "border-success/30 hover:border-success/50 hover:bg-success/10",
-            "focus:ring-2 focus:ring-success/30"
+            "border-border/30 hover:border-border/50 hover:bg-card/80",
+            "focus:ring-2 focus:ring-border/30"
           )}
         >
           <ArrowUpRight className="h-3.5 w-3.5 text-success" />
@@ -124,8 +124,8 @@ export function BSKWithdrawCard({
           size="sm"
           className={cn(
             "h-12 flex flex-col items-center justify-center gap-1",
-            "border-accent/30 hover:border-accent/50 hover:bg-accent/10",
-            "focus:ring-2 focus:ring-accent/30"
+            "border-border/30 hover:border-border/50 hover:bg-card/80",
+            "focus:ring-2 focus:ring-border/30"
           )}
         >
           <ArrowLeftRight className="h-3.5 w-3.5 text-accent" />
@@ -138,8 +138,8 @@ export function BSKWithdrawCard({
           size="sm"
           className={cn(
             "h-12 flex flex-col items-center justify-center gap-1",
-            "border-muted/30 hover:border-muted/50 hover:bg-muted/10",
-            "focus:ring-2 focus:ring-muted/30"
+            "border-border/30 hover:border-border/50 hover:bg-card/80",
+            "focus:ring-2 focus:ring-border/30"
           )}
         >
           <History className="h-3.5 w-3.5 text-muted-foreground" />
@@ -180,7 +180,7 @@ export function BSKWithdrawCard({
           onClick={onViewBreakdown}
           variant="ghost"
           size="sm"
-          className="w-full mt-3 text-xs font-[Inter] font-medium text-accent hover:text-accent-glow"
+          className="w-full mt-3 text-xs font-[Inter] font-medium text-text-secondary hover:text-text-primary"
         >
           <TrendingUp className="h-3 w-3 mr-1" />
           View Breakdown
