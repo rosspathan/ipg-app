@@ -185,36 +185,7 @@ export function BskCardCompact({
 
       {/* Metrics Row - Removed per user request */}
 
-      {/* Footer Link */}
-      {isWithdrawable ? (
-        <button
-          onClick={onViewBreakdown}
-          className={cn(
-            "w-full py-2 text-center text-[11px] font-[Inter] font-medium",
-            "text-primary hover:text-primary/80",
-            "transition-colors duration-[120ms]",
-            "flex items-center justify-center gap-1.5",
-            "border-t border-border/20 -mx-3 px-3"
-          )}
-        >
-          <Info className="h-3.5 w-3.5" />
-          View Breakdown
-        </button>
-      ) : (
-        <button
-          onClick={onViewSchedule}
-          className={cn(
-            "w-full py-2 text-center text-[11px] font-[Inter] font-medium",
-            "text-primary hover:text-primary/80",
-            "transition-colors duration-[120ms]",
-            "flex items-center justify-center gap-1.5",
-            "border-t border-border/20 -mx-3 px-3"
-          )}
-        >
-          <Calendar className="h-3.5 w-3.5" />
-          View Schedule
-        </button>
-      )}
+      {/* Footer Link - Removed per user request */}
     </div>
   )
 }
