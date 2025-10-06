@@ -1,7 +1,8 @@
 import * as React from "react"
-import { Wallet, Activity, Award, TrendingUp, TrendingDown } from "lucide-react"
+import { Wallet, TrendingUp, Award } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useUserBadge } from "@/hooks/useUserBadge"
 
 interface KPIData {
   label: string
@@ -19,13 +20,14 @@ interface KPICardUnifiedProps {
 }
 
 /**
- * KPICardUnified - Single premium card showing all key metrics
- * Portfolio / 24h Change / Status in one beautiful design
+ * KPICardUnified - Compact mobile-optimized card showing portfolio metrics and user badge
  */
 export function KPICardUnified({ data, isLoading = false, onCardPress, className }: KPICardUnifiedProps) {
+  const { badge, loading: badgeLoading } = useUserBadge()
+  
   if (isLoading) {
     return (
-      <Skeleton className="h-32 rounded-3xl" data-testid="kpi-card-unified" />
+      <Skeleton className="h-20 rounded-2xl" data-testid="kpi-card-unified" />
     )
   }
 
@@ -40,7 +42,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
     {
       label: "24h Change",
       value: "+12.4%",
-      subValue: "+₹27,450",
+      subValue: "+₹2,721",
       trend: "up",
       type: "change"
     },
@@ -54,51 +56,47 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
   const kpiData = data || defaultData
   const portfolioData = kpiData.find(k => k.type === "portfolio")
   const changeData = kpiData.find(k => k.type === "change")
-  const statusData = kpiData.find(k => k.type === "status")
+  const userBadge = badge || "None"
 
   return (
     <button
       onClick={onCardPress}
       className={cn(
-        "relative w-full px-5 py-3.5 rounded-[20px] overflow-hidden",
-        "bg-gradient-to-br from-card/95 via-card/90 to-card/95",
-        "backdrop-blur-xl border border-border/50",
+        "relative w-full px-4 py-3 rounded-2xl overflow-hidden",
+        "bg-gradient-to-br from-card/90 via-card/80 to-card/90",
+        "backdrop-blur-xl border border-border/60",
         "transition-all duration-300 ease-out",
-        "hover:border-primary/40 hover:shadow-[0_8px_32px_rgba(124,77,255,0.12)]",
-        "active:scale-[0.99]",
+        "hover:border-primary/50 hover:shadow-[0_8px_24px_rgba(124,77,255,0.15)]",
+        "active:scale-[0.98]",
         "focus:outline-none focus:ring-2 focus:ring-primary/30",
         "group cursor-pointer",
         className
       )}
-      style={{
-        WebkitBackdropFilter: 'blur(24px)',
-        backdropFilter: 'blur(24px)',
-      }}
       data-testid="kpi-card-unified"
     >
-      {/* Main content grid - Clear sections */}
-      <div className="relative grid grid-cols-[auto_1px_auto_1px_auto] items-center gap-4">
+      {/* Compact mobile-first layout */}
+      <div className="relative flex items-center justify-between gap-3">
         
-        {/* Section 1: Portfolio Value */}
-        <div className="flex items-center gap-3">
+        {/* Left: Portfolio Section */}
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <div className={cn(
-            "h-10 w-10 rounded-[14px] flex items-center justify-center",
+            "h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0",
             "bg-gradient-to-br from-success/25 to-success/5",
-            "transition-all duration-300 group-hover:scale-105"
+            "transition-transform duration-300 group-hover:scale-105"
           )}>
-            <Wallet className="h-5 w-5 text-success" />
+            <Wallet className="h-4 w-4 text-success" />
           </div>
           
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[9px] font-[Inter] font-semibold text-muted-foreground/60 uppercase tracking-wider leading-none">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-[8px] font-semibold text-muted-foreground/70 uppercase tracking-wide leading-none">
               Portfolio
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="font-[Space_Grotesk] font-bold text-xl text-foreground tabular-nums leading-none tracking-tight">
+              <span className="font-heading font-bold text-lg text-foreground tabular-nums leading-none">
                 {portfolioData?.value || "₹0"}
               </span>
               {portfolioData?.subValue && (
-                <span className="text-xs font-[Inter] font-bold text-success tabular-nums leading-none">
+                <span className="text-[10px] font-bold text-success tabular-nums leading-none">
                   {portfolioData.subValue}
                 </span>
               )}
@@ -106,86 +104,60 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
           </div>
         </div>
 
-        {/* Divider 1 */}
-        <div className="h-10 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent" />
+        {/* Center: Vertical Divider */}
+        <div className="h-12 w-px bg-gradient-to-b from-transparent via-border/60 to-transparent flex-shrink-0" />
 
-        {/* Section 2: 24h Change */}
-        <div className="flex items-center gap-2.5">
-          <div className={cn(
-            "h-8 w-8 rounded-[12px] flex items-center justify-center",
-            "bg-gradient-to-br from-primary/20 to-primary/5",
-            "transition-all duration-300 group-hover:scale-105"
-          )}>
-            <Activity className="h-4 w-4 text-primary" />
-          </div>
-          
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[9px] font-[Inter] font-semibold text-muted-foreground/60 uppercase tracking-wider leading-none">
-              24h Change
-            </span>
-            <div className="flex items-baseline gap-1.5">
-              <span className={cn(
-                "font-[Space_Grotesk] font-bold text-base tabular-nums leading-none",
-                changeData?.trend === "up" ? "text-success" : "text-danger"
-              )}>
-                {changeData?.value || "+0%"}
+        {/* Right: 24H Change + Badge Section */}
+        <div className="flex flex-col gap-1.5 flex-shrink-0">
+          {/* 24H Change */}
+          <div className="flex items-center gap-1.5">
+            <TrendingUp className={cn(
+              "h-3 w-3 flex-shrink-0",
+              changeData?.trend === "up" ? "text-success" : "text-danger"
+            )} />
+            <div className="flex flex-col gap-0">
+              <span className="text-[7px] font-semibold text-muted-foreground/70 uppercase tracking-wide leading-none">
+                24H Change
               </span>
-              {changeData?.subValue && (
-                <span className="text-[10px] font-[Inter] font-medium text-muted-foreground/70 tabular-nums leading-none">
-                  {changeData.subValue}
+              <div className="flex items-baseline gap-1">
+                <span className={cn(
+                  "font-heading font-bold text-sm tabular-nums leading-none",
+                  changeData?.trend === "up" ? "text-success" : "text-danger"
+                )}>
+                  {changeData?.value || "+0%"}
                 </span>
-              )}
+                {changeData?.subValue && (
+                  <span className="text-[9px] font-medium text-muted-foreground/80 tabular-nums leading-none">
+                    {changeData.subValue}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Divider 2 */}
-        <div className="h-10 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent" />
-
-        {/* Section 3: Status & Trend */}
-        <div className="flex items-center gap-2">
-          {/* Trend Badge */}
-          {changeData?.trend && (
-            <div className={cn(
-              "flex items-center gap-1 px-2.5 py-1.5 rounded-lg",
-              "transition-all duration-300",
-              changeData.trend === "up" && "bg-success/15 text-success group-hover:bg-success/20",
-              changeData.trend === "down" && "bg-danger/15 text-danger group-hover:bg-danger/20"
-            )}>
-              {changeData.trend === "up" ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : (
-                <TrendingDown className="h-3 w-3" />
-              )}
-              <span className="text-[10px] font-[Inter] font-bold leading-none">
-                {changeData.trend === "up" ? "Bullish" : "Bearish"}
-              </span>
-            </div>
-          )}
-
-          {/* Status Badge */}
+          {/* User Badge */}
           <div className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
-            "bg-gradient-to-r from-warning/25 to-warning/10",
+            "flex items-center gap-1 px-2 py-0.5 rounded-full self-start",
+            "bg-gradient-to-r from-warning/20 to-warning/10",
             "border border-warning/40",
-            "transition-all duration-300 group-hover:border-warning/50"
+            "transition-all duration-300 group-hover:border-warning/60"
           )}>
-            <Award className="h-3.5 w-3.5 text-warning" />
-            <span className="text-[11px] font-[Space_Grotesk] font-bold text-warning leading-none">
-              {statusData?.value || "Member"}
+            <Award className="h-2.5 w-2.5 text-warning flex-shrink-0" />
+            <span className="text-[9px] font-heading font-bold text-warning leading-none whitespace-nowrap">
+              {badgeLoading ? "..." : userBadge}
             </span>
           </div>
         </div>
 
       </div>
 
-      {/* Subtle gradient overlay on hover */}
+      {/* Subtle shine effect on hover */}
       <div 
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
         style={{
-          background: 'linear-gradient(120deg, transparent 25%, rgba(255, 255, 255, 0.04) 50%, transparent 75%)',
+          background: 'linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.03) 50%, transparent 70%)',
           backgroundSize: '200% 100%',
-          animation: 'shine-sweep 3s ease-in-out infinite'
+          animation: 'shine-sweep 2.5s ease-in-out infinite'
         }}
       />
 
