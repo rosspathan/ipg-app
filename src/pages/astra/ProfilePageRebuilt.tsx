@@ -14,6 +14,7 @@ import { AccountTab } from "@/components/profile/AccountTab"
 import SecurityTab from "@/components/profile/SecurityTab"
 import { NotificationsTab } from "@/components/profile/NotificationsTab"
 import { PreferencesTab } from "@/components/profile/PreferencesTab"
+import { BadgeCard } from "@/components/profile/BadgeCard"
 
 const profileSections = [
   {
@@ -84,6 +85,11 @@ export function ProfilePageRebuilt() {
               </div>
             </div>
           </Card>
+        </div>
+
+        {/* Badge Card */}
+        <div className="px-4">
+          <BadgeCard />
         </div>
 
         {/* Profile Sections */}
