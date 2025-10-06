@@ -77,13 +77,17 @@ const badgeConfigs: Record<string, BadgeConfig> = {
 export function BadgeCard() {
   const { badge, loading } = useUserBadge()
   
+  // For demo purposes - show I-SMART VIP if no badge data exists
+  // Remove this override when real badge data is available
+  const displayBadge = badge || "I-SMART VIP"
+  
   if (loading) {
     return (
       <Skeleton className="w-full h-48 rounded-3xl" />
     )
   }
 
-  const config = badgeConfigs[badge || "None"] || badgeConfigs["None"]
+  const config = badgeConfigs[displayBadge] || badgeConfigs["None"]
   
   return (
     <div className="relative w-full">
