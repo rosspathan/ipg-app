@@ -10,7 +10,7 @@ import { BskCardCompact } from "@/components/home/BskCardCompact"
 import { RewardsBreakdown } from "@/components/home/RewardsBreakdown"
 import { AnnouncementsBar } from "@/components/home/AnnouncementsBar"
 import { HeroCarousel } from "@/components/home/HeroCarousel"
-import { ProgramsLaneUltra } from "@/components/programs-pro/ProgramsLaneUltra"
+import { ProgramsGrid } from "@/components/programs-pro/ProgramsGrid"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { DockNav } from "@/components/navigation/DockNav"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
@@ -45,87 +45,51 @@ export function HomePageRebuilt() {
   const programs = [
     {
       id: "1",
-      title: "Advertise Mining",
-      subtitle: "Watch ads daily\nEarn BSK rewards",
-      icon: <Gift className="h-6 w-6" />,
-      badge: "DAILY" as const,
-      onPress: () => {
-        console.log("Program clicked: Advertise Mining")
-        navigate("/app/advertising")
-      }
+      title: "Ad Mining",
+      icon: <Gift className="h-5 w-5" />,
+      onPress: () => navigate("/app/advertising")
     },
     {
       id: "2",
       title: "Lucky Draw",
-      subtitle: "Pool-based lottery\nWin big prizes",
-      icon: <Target className="h-6 w-6" />,
-      badge: "HOT" as const,
-      onPress: () => {
-        console.log("Program clicked: Lucky Draw")
-        navigate("/app/lucky-draw")
-      }
+      icon: <Target className="h-5 w-5" />,
+      onPress: () => navigate("/app/lucky-draw")
     },
     {
       id: "3",
-      title: "Fortune Wheel",
-      subtitle: "Daily spins\nProvably fair",
-      icon: <Zap className="h-6 w-6" />,
-      badge: "LIVE" as const,
-      onPress: () => {
-        console.log("Program clicked: Fortune Wheel")
-        navigate("/app/spin")
-      }
+      title: "Spin Wheel",
+      icon: <Zap className="h-5 w-5" />,
+      onPress: () => navigate("/app/spin")
     },
     {
       id: "4",
-      title: "BSK Purchase",
-      subtitle: "One-time bonus\nSpecial offers",
-      icon: <Coins className="h-6 w-6" />,
-      badge: "NEW" as const,
-      onPress: () => {
-        console.log("Program clicked: BSK Purchase")
-        navigate("/programs/bsk-purchase")
-      }
+      title: "Purchase",
+      icon: <Coins className="h-5 w-5" />,
+      onPress: () => navigate("/programs/bsk-purchase")
     },
     {
       id: "5",
       title: "Referrals",
-      subtitle: "Invite friends\nEarn together",
-      icon: <Users className="h-6 w-6" />,
-      onPress: () => {
-        console.log("Program clicked: Referrals")
-        navigate("/app/referrals")
-      }
+      icon: <Users className="h-5 w-5" />,
+      onPress: () => navigate("/app/referrals")
     },
     {
       id: "6",
       title: "Staking",
-      subtitle: "12.4% APY\nFlexible terms",
-      icon: <Star className="h-6 w-6" />,
-      onPress: () => {
-        console.log("Program clicked: Staking")
-        navigate("/app/staking")
-      }
+      icon: <Star className="h-5 w-5" />,
+      onPress: () => navigate("/app/staking")
     },
     {
       id: "7",
       title: "Loans",
-      subtitle: "0% interest\n16 weeks",
-      icon: <TrendingUp className="h-6 w-6" />,
-      onPress: () => {
-        console.log("Program clicked: Loans")
-        navigate("/programs/loans")
-      }
+      icon: <TrendingUp className="h-5 w-5" />,
+      onPress: () => navigate("/programs/loans")
     },
     {
       id: "8",
       title: "Insurance",
-      subtitle: "Protect assets\n24/7 claims",
-      icon: <Shield className="h-6 w-6" />,
-      onPress: () => {
-        console.log("Program clicked: Insurance")
-        navigate("/programs/insurance")
-      }
+      icon: <Shield className="h-5 w-5" />,
+      onPress: () => navigate("/programs/insurance")
     }
   ]
 
@@ -234,8 +198,8 @@ export function HomePageRebuilt() {
         {/* Hero Carousel */}
         <HeroCarousel slides={heroSlides} />
 
-        {/* Programs Lane */}
-        <ProgramsLaneUltra
+        {/* Programs Grid */}
+        <ProgramsGrid
           programs={programs}
           onViewAll={() => navigate("/app/programs")}
         />
