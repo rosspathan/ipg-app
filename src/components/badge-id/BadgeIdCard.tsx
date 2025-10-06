@@ -304,59 +304,35 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
             ))}
           </div>
 
-          {/* Signature Line - Premium */}
-          <div className="px-6 mb-3">
-            <div 
-              className="p-3 rounded-xl backdrop-blur-sm"
-              style={{
-                background: `linear-gradient(135deg, ${theme.colors.primary}08, ${theme.colors.secondary}05)`,
-                border: `1px solid ${theme.colors.primary}15`,
-              }}
-            >
-              <p 
-                className="text-[8px] uppercase tracking-[0.2em] mb-2 font-bold"
-                style={{ color: theme.colors.textSecondary }}
+          {/* Signature Line - Premium (only if provided) */}
+          {signatureUrl && (
+            <div className="px-6 mb-3">
+              <div 
+                className="p-3 rounded-xl backdrop-blur-sm"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.colors.primary}08, ${theme.colors.secondary}05)`,
+                  border: `1px solid ${theme.colors.primary}15`,
+                }}
               >
-                Authorized Signature
-              </p>
-              <div className="relative h-10">
-                {signatureUrl ? (
+                <p 
+                  className="text-[8px] uppercase tracking-[0.2em] mb-2 font-bold"
+                  style={{ color: theme.colors.textSecondary }}
+                >
+                  Authorized Signature
+                </p>
+                <div className="relative h-10">
                   <img src={signatureUrl} alt="Signature" className="h-full object-contain object-left" />
-                ) : (
                   <div 
-                    className="h-full flex items-center text-xs italic"
-                    style={{ color: theme.colors.textSecondary, opacity: 0.4 }}
-                  >
-                    — Tap to sign and personalize —
-                  </div>
-                )}
-                <div 
-                  className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-                  style={{
-                    background: `linear-gradient(90deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 100%)`,
-                  }}
-                />
+                    className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
+                    style={{
+                      background: `linear-gradient(90deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 100%)`,
+                    }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Security Band - Animated */}
-          <div 
-            className="h-8 mx-6 mb-3 overflow-hidden relative rounded-xl backdrop-blur-sm"
-            style={{
-              background: `linear-gradient(135deg, ${theme.colors.primary}10, ${theme.colors.secondary}10)`,
-              border: `1px solid ${theme.colors.primary}25`,
-            }}
-          >
-            <div className="absolute inset-0 flex items-center whitespace-nowrap animate-marquee-slow">
-              <span 
-                className="text-[7px] font-mono tracking-[0.3em] font-bold px-2"
-                style={{ color: theme.colors.textSecondary, opacity: 0.4 }}
-              >
-                ★ VERIFIED MEMBER ★ I-SMART OFFICIAL ★ PREMIUM BADGE ★ VERIFIED MEMBER ★ I-SMART OFFICIAL ★ PREMIUM BADGE ★
-              </span>
-            </div>
-          </div>
 
           {/* QR Block - Premium Glass */}
           <div className="px-6 pb-6 mt-auto">
