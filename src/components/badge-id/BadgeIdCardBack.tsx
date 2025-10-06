@@ -2,7 +2,9 @@ import { FC, forwardRef } from 'react';
 import { BadgeTheme } from './BadgeIdThemeRegistry';
 import { HoloFx } from './HoloFx';
 import { cn } from '@/lib/utils';
-import { Shield, Users, TrendingUp, Gift } from 'lucide-react';
+import { Shield, Users, TrendingUp, Gift, MessageCircle } from 'lucide-react';
+import { APP_CONFIG } from '@/config/app';
+import { openWhatsApp } from '@/lib/openWhatsApp';
 
 interface BadgeIdCardBackProps {
   tier: string;
@@ -154,7 +156,22 @@ export const BadgeIdCardBack = forwardRef<HTMLDivElement, BadgeIdCardBackProps>(
           </div>
 
           {/* Footer */}
-          <div className="text-center space-y-1">
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => openWhatsApp(APP_CONFIG.WHATSAPP_PHONE, "Hello iSmart support")}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md"
+                style={{
+                  background: `${theme.colors.primary}15`,
+                  border: `1px solid ${theme.colors.primary}30`,
+                  color: theme.colors.text
+                }}
+              >
+                <MessageCircle className="h-3 w-3" />
+                <span className="text-[10px] font-medium">{APP_CONFIG.WHATSAPP_PHONE}</span>
+              </button>
+            </div>
             <p 
               className="text-[10px] opacity-60"
               style={{ color: theme.colors.textSecondary }}
@@ -168,7 +185,7 @@ export const BadgeIdCardBack = forwardRef<HTMLDivElement, BadgeIdCardBackProps>(
               www.i-smartapp.com
             </p>
             <p 
-              className="text-[9px] opacity-40 mt-2"
+              className="text-[9px] opacity-40 mt-1"
               style={{ color: theme.colors.textSecondary }}
             >
               This card is the exclusive property of the member.
