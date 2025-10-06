@@ -11,7 +11,6 @@ import { useNavigation } from "@/hooks/useNavigation"
 import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuthUser } from "@/hooks/useAuthUser"
-import { DockNav } from "@/components/navigation/DockNav"
 
 export function WalletPage() {
   const { navigate } = useNavigation()
@@ -105,8 +104,7 @@ export function WalletPage() {
   )
 
   return (
-    <>
-      <AppShellGlass topBar={topBar} data-testid="page-wallet">
+    <AppShellGlass topBar={topBar} data-testid="page-wallet">
       <div className="space-y-6 pb-24">
         {/* Address Panel with Network Badge */}
         <div 
@@ -183,9 +181,5 @@ export function WalletPage() {
         </div>
       </div>
     </AppShellGlass>
-
-    {/* Bottom Navigation */}
-    <DockNav onNavigate={navigate} />
-  </>
-)
+  )
 }

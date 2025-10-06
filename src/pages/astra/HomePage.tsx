@@ -13,7 +13,6 @@ import { GroupHeader } from "@/components/astra/grid/GroupHeader"
 import { ActivityGrid } from "@/components/astra/grid/ActivityGrid"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
-import { DockNav } from "@/components/navigation/DockNav"
 
 // Enhanced KPI data with trends
 const kpiData = [
@@ -183,8 +182,7 @@ export function HomePage() {
   )
 
   return (
-    <>
-      <AppShellGlass topBar={topBar} data-testid="page-home">
+    <AppShellGlass topBar={topBar} data-testid="page-home">
       <div className="space-y-6 pb-24">
         {/* KPI Row - New Component */}
         <div className="px-4 pt-4">
@@ -263,9 +261,5 @@ export function HomePage() {
         </div>
       </div>
     </AppShellGlass>
-
-    {/* Bottom Navigation */}
-    <DockNav onNavigate={navigate} />
-  </>
-)
+  )
 }
