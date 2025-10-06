@@ -53,7 +53,7 @@ const OnboardingFlow: React.FC = () => {
     const { supabase } = await import('@/integrations/supabase/client');
     
     const verificationCode = generateVerificationCode();
-    storeVerificationCode(state.email, verificationCode);
+    storeVerificationCode((state.email || '').trim().toLowerCase(), verificationCode);
     
     await supabase.functions.invoke('send-verification-email', {
       body: {

@@ -51,7 +51,7 @@ const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
       const verificationCode = generateVerificationCode();
       
       // Store code locally for verification
-      storeVerificationCode(email.trim(), verificationCode);
+      storeVerificationCode(email.trim().toLowerCase(), verificationCode);
 
       // Send email via our edge function
       const { data, error } = await supabase.functions.invoke('send-verification-email', {

@@ -196,8 +196,8 @@ export function generateVerificationCode(): string {
  */
 export function storeVerificationCode(email: string, code: string): void {
   const data = {
-    code,
-    email,
+    code: String(code).trim(),
+    email: (email || '').toLowerCase().trim(),
     expiresAt: Date.now() + (10 * 60 * 1000) // 10 minutes
   };
   localStorage.setItem('ipg_verification_code', JSON.stringify(data));

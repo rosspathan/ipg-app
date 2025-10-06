@@ -39,7 +39,8 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   }, [resendCountdown]);
 
   const handleVerifyCode = async () => {
-    if (!code.trim() || code.length !== 6) {
+    const cleaned = (code || '').replace(/\D/g, '').trim();
+    if (!cleaned || cleaned.length !== 6) {
       toast({
         title: "Invalid Code",
         description: "Please enter the 6-digit verification code",
@@ -50,8 +51,8 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
     setIsVerifying(true);
     try {
-      const result = verifyEmailCode(email, code.trim());
-      
+      const result = verifyEmailCode(email, cleaned);
+
       if (result.valid) {
         toast({
           title: "Email Verified!",
