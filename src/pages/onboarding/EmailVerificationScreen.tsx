@@ -40,11 +40,12 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
   const handleVerifyCode = async () => {
     const cleaned = (code || '').replace(/\D/g, '').trim();
-    if (!cleaned || cleaned.length !== 6) {
+
+    // Try verification with the latest input to avoid false negatives
+    if (!cleaned) {
       toast({
-        title: "Invalid Code",
-        description: "Please enter the 6-digit verification code",
-        variant: "destructive"
+        title: "Enter Code",
+        description: "Type your 6-digit verification code",
       });
       return;
     }
@@ -102,7 +103,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && code.length === 6) {
+    if (e.key === 'Enter' && code.length > 0) {
       handleVerifyCode();
     }
   };
@@ -244,7 +245,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
                   <Button
                     onClick={handleVerifyCode}
-                    disabled={isVerifying || code.length !== 6}
+                    disabled={isVerifying || code.length === 0}
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 font-semibold py-3 rounded-xl"
                   >
                     {isVerifying ? (
