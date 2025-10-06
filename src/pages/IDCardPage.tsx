@@ -21,7 +21,7 @@ export function IDCardPage() {
   }
 
   const avatarUrl = getAvatarUrl('1x');
-  const displayName = userApp?.full_name || user?.email?.split('@')[0] || 'User';
+  const displayName = user?.email?.split('@')[0] || 'User';
   
   // For now, default to Gold tier - this should come from user's actual tier
   const currentTier: BadgeTier = 'Gold';

@@ -6,7 +6,6 @@ import { useAuthUser } from "@/hooks/useAuthUser"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useLocation } from "react-router-dom"
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
-import { useProfile } from "@/hooks/useProfile"
 
 
 interface AppTopBarProps {
@@ -15,13 +14,12 @@ interface AppTopBarProps {
 
 export function AppTopBar({ className }: AppTopBarProps) {
   const { user } = useAuthUser()
-  const { userApp } = useProfile()
   const { navigate } = useNavigation()
   const location = useLocation()
 
   const notificationCount = 3 // Mock data
 
-  const userName = userApp?.full_name || user?.email?.split("@")[0] || "User"
+  const userName = user?.email?.split("@")[0] || "User"
 
   return (
     <header 

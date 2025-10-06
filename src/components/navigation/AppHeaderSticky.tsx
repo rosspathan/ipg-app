@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
 import { useAuthUser } from "@/hooks/useAuthUser"
-import { useProfile } from "@/hooks/useProfile"
 
 interface AppHeaderStickyProps {
   onProfileClick?: () => void
@@ -25,9 +24,8 @@ export function AppHeaderSticky({
   className
 }: AppHeaderStickyProps) {
   const { user } = useAuthUser()
-  const { userApp } = useProfile()
   
-  const userName = userApp?.full_name || user?.email?.split("@")[0] || "User"
+  const userName = user?.email?.split("@")[0] || "User"
   return (
     <header
       className={cn(
