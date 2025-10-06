@@ -185,6 +185,12 @@ export function HomePageRebuilt() {
         {/* Announcement Carousel */}
         <AnnouncementCarousel />
 
+        {/* Programs Grid */}
+        <ProgramsGrid
+          programs={programs}
+          onViewAll={() => navigate("/app/programs")}
+        />
+
         {/* Crypto Assets Panel */}
         <AssetsPanel
           assets={mockAssets}
@@ -197,12 +203,6 @@ export function HomePageRebuilt() {
 
         {/* Hero Carousel */}
         <HeroCarousel slides={heroSlides} />
-
-        {/* Programs Grid */}
-        <ProgramsGrid
-          programs={programs}
-          onViewAll={() => navigate("/app/programs")}
-        />
 
         {/* Activity Timeline */}
         <ActivityTimeline
