@@ -136,19 +136,19 @@ export function BskCardCompact({
 
       {/* Actions Row */}
       {isWithdrawable ? (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Button
             onClick={onWithdraw}
             variant="outline"
             size="sm"
             className={cn(
-              "flex-1 h-9 px-3",
+              "flex-1 h-8 px-2",
               "border-success/30 hover:border-success/50 hover:bg-success/10",
-              "text-success font-[Inter] font-medium text-[11px]",
+              "text-success font-[Inter] font-medium text-[9px]",
               "focus:ring-2 focus:ring-success/30"
             )}
           >
-            <ArrowDownToLine className="h-3.5 w-3.5 mr-1.5" />
+            <ArrowDownToLine className="h-3 w-3 mr-1" />
             Withdraw
           </Button>
           <Button
@@ -156,13 +156,13 @@ export function BskCardCompact({
             variant="outline"
             size="sm"
             className={cn(
-              "flex-1 h-9 px-3",
+              "flex-1 h-8 px-2",
               "border-primary/30 hover:border-primary/50 hover:bg-primary/10",
-              "text-primary font-[Inter] font-medium text-[11px]",
+              "text-primary font-[Inter] font-medium text-[9px]",
               "focus:ring-2 focus:ring-primary/30"
             )}
           >
-            <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
+            <ArrowRightLeft className="h-3 w-3 mr-1" />
             Transfer
           </Button>
         </div>
@@ -172,13 +172,13 @@ export function BskCardCompact({
           variant="outline"
           size="sm"
           className={cn(
-            "w-full h-9",
+            "w-full h-8",
             "border-primary/30 hover:border-primary/50 hover:bg-primary/10",
-            "text-primary font-[Inter] font-medium text-[11px]",
+            "text-primary font-[Inter] font-medium text-[9px]",
             "focus:ring-2 focus:ring-primary/30"
           )}
         >
-          <Calendar className="h-3.5 w-3.5 mr-1.5" />
+          <Calendar className="h-3 w-3 mr-1" />
           View Schedule
         </Button>
       )}
