@@ -33,7 +33,7 @@ export function AppTopBar({ className }: AppTopBarProps) {
     >
       {/* Left: Logo */}
       <div className="flex items-center gap-3">
-        <HeaderLogoFlipper size="sm" />
+        <HeaderLogoFlipper size="md" />
       </div>
 
       {/* Right: Profile name + Notifications */}

@@ -8,7 +8,7 @@ import logoPrimary from "@/assets/logo-primary.jpg"
 import logoAlt from "@/assets/logo-alt.jpg"
 
 interface HeaderLogoFlipperProps {
-  size?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg" | "xl"
   settings?: Partial<LogoMotionSettings>
   onRefresh?: boolean
   onSuccess?: boolean
@@ -42,9 +42,10 @@ export function HeaderLogoFlipper({
   const motion = useLogoMotionFX(settings)
   
   const sizeMap = {
-    sm: { container: 32, logo: 28 },
-    md: { container: 36, logo: 32 },
-    lg: { container: 44, logo: 40 }
+    sm: { container: 40, logo: 36 },
+    md: { container: 48, logo: 44 },
+    lg: { container: 56, logo: 52 },
+    xl: { container: 64, logo: 60 }
   }
   const dimensions = sizeMap[size]
 

@@ -41,10 +41,10 @@ export function AppHeaderSticky({
       }}
       data-testid="header-sticky"
     >
-      <div className="flex items-center justify-between px-3 py-2 h-14">
+      <div className="flex items-center justify-between px-4 py-2 h-16">
         {/* Left: Logo */}
         <div className="flex-shrink-0">
-          <HeaderLogoFlipper size="sm" />
+          <HeaderLogoFlipper size="lg" />
         </div>
 
         {/* Spacer */}
