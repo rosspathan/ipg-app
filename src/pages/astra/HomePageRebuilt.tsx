@@ -194,19 +194,6 @@ export function HomePageRebuilt() {
         {/* KPI Card Unified */}
         <KPICardUnified onCardPress={handleKPIPress} />
 
-        {/* Scrolling Announcement */}
-        <ScrollingAnnouncement />
-
-        {/* Announcement Carousel */}
-        <AnnouncementCarousel />
-
-        {/* Crypto Assets Panel */}
-        <AssetsPanel
-          assets={mockAssets}
-          onAssetPress={handleAssetPress}
-          onViewAll={() => navigate("/app/wallet")}
-        />
-
         {/* BSK Balance Cards - Side by Side */}
         <BalanceDuoGrid>
           <BskCardCompact
@@ -227,6 +214,19 @@ export function HomePageRebuilt() {
             onViewSchedule={() => setShowRewardsBreakdown(true)}
           />
         </BalanceDuoGrid>
+
+        {/* Scrolling Announcement */}
+        <ScrollingAnnouncement />
+
+        {/* Announcement Carousel */}
+        <AnnouncementCarousel />
+
+        {/* Crypto Assets Panel */}
+        <AssetsPanel
+          assets={mockAssets}
+          onAssetPress={handleAssetPress}
+          onViewAll={() => navigate("/app/wallet")}
+        />
 
         {/* Announcements Bar */}
         <AnnouncementsBar items={announcementItems} />
