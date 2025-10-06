@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState } from "react"
-import { Gift, Target, Zap, Star, Users, TrendingUp, Shield, Coins } from "lucide-react"
+import { Gift, Target, Zap, Star, Users, TrendingUp, Shield, Coins, MessageCircle } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
 import { KPICardUnified } from "@/components/home/KPICardUnified"
 import { AddFundsCTA } from "@/components/home/AddFundsCTA"
@@ -13,6 +13,7 @@ import { HeroCarousel } from "@/components/home/HeroCarousel"
 import { ProgramsLaneUltra } from "@/components/programs-pro/ProgramsLaneUltra"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { DockNav } from "@/components/navigation/DockNav"
+import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 
 /**
  * HomePageRebuilt - World-class mobile-first home screen
@@ -235,6 +236,13 @@ export function HomePageRebuilt() {
         isOpen={showRewardsBreakdown}
         onClose={() => setShowRewardsBreakdown(false)}
       />
+
+      {/* Floating WhatsApp Support Button */}
+      <SupportLinkWhatsApp
+        className="fixed bottom-24 right-4 z-30 h-14 w-14 rounded-full bg-success shadow-lg shadow-success/30 hover:shadow-xl hover:shadow-success/40 hover:scale-110 transition-all duration-300 border-2 border-success/20"
+      >
+        <MessageCircle className="h-6 w-6 text-white" />
+      </SupportLinkWhatsApp>
 
       {/* Footer - DO NOT MODIFY THIS SECTION */}
       <DockNav onNavigate={(path) => navigate(path)} />

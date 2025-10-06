@@ -1,13 +1,12 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
-import { Bell, MessageCircle } from "lucide-react"
+import { Bell, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useProfile } from "@/hooks/useProfile"
 import { cn } from "@/lib/utils"
 import ipgLogo from "@/assets/ipg-logo.jpg"
 import logoAlt from "@/assets/logo-alt.jpg"
-import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 
 interface HomeHeaderProProps {
   notificationCount?: number
@@ -104,14 +103,8 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
         </h1>
       </div>
 
-      {/* Right: Support + Notifications */}
+      {/* Right: Notifications */}
       <div className="flex items-center gap-2">
-        <SupportLinkWhatsApp
-          className="h-9 w-9 p-0 rounded-full hover:bg-success/10 focus:ring-2 focus:ring-success/50"
-        >
-          <MessageCircle className="h-4.5 w-4.5 text-success" />
-        </SupportLinkWhatsApp>
-
         <Button
           variant="ghost"
           size="sm"
