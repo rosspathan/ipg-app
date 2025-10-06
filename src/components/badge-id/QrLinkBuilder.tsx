@@ -25,9 +25,9 @@ export const QrLinkBuilder: FC<QrLinkBuilderProps> = ({
         value={referralUrl}
         size={size}
         level="H"
-        includeMargin={false}
-        fgColor="hsl(var(--foreground))"
-        bgColor="transparent"
+        includeMargin={true}
+        fgColor="hsl(0 0% 6%)"
+        bgColor="#ffffff"
         imageSettings={{
           src: logoUrl,
           height: size * 0.2,
