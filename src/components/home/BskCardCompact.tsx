@@ -142,13 +142,13 @@ export function BskCardCompact({
             variant="outline"
             size="sm"
             className={cn(
-              "flex-1 h-9 px-2",
+              "flex-1 h-9 px-3",
               "border-success/30 hover:border-success/50 hover:bg-success/10",
-              "text-success font-[Inter] font-medium text-[10px]",
+              "text-success font-[Inter] font-medium text-[11px]",
               "focus:ring-2 focus:ring-success/30"
             )}
           >
-            <ArrowDownToLine className="h-3.5 w-3.5 mr-1" />
+            <ArrowDownToLine className="h-3.5 w-3.5 mr-1.5" />
             Withdraw
           </Button>
           <Button
@@ -156,27 +156,14 @@ export function BskCardCompact({
             variant="outline"
             size="sm"
             className={cn(
-              "flex-1 h-9 px-2",
+              "flex-1 h-9 px-3",
               "border-primary/30 hover:border-primary/50 hover:bg-primary/10",
-              "text-primary font-[Inter] font-medium text-[10px]",
+              "text-primary font-[Inter] font-medium text-[11px]",
               "focus:ring-2 focus:ring-primary/30"
             )}
           >
-            <ArrowRightLeft className="h-3.5 w-3.5 mr-1" />
+            <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
             Transfer
-          </Button>
-          <Button
-            onClick={onHistory}
-            variant="outline"
-            size="sm"
-            className={cn(
-              "h-9 w-9 p-0",
-              "border-border/30 hover:border-border/50 hover:bg-muted/20",
-              "text-foreground",
-              "focus:ring-2 focus:ring-border/30"
-            )}
-          >
-            <History className="h-3.5 w-3.5" />
           </Button>
         </div>
       ) : (
@@ -187,7 +174,7 @@ export function BskCardCompact({
           className={cn(
             "w-full h-9",
             "border-primary/30 hover:border-primary/50 hover:bg-primary/10",
-            "text-primary font-[Inter] font-medium text-[10px]",
+            "text-primary font-[Inter] font-medium text-[11px]",
             "focus:ring-2 focus:ring-primary/30"
           )}
         >
@@ -242,26 +229,28 @@ export function BskCardCompact({
         <button
           onClick={onViewBreakdown}
           className={cn(
-            "w-full text-center text-[10px] font-[Inter] font-medium",
+            "w-full py-2 text-center text-[11px] font-[Inter] font-medium",
             "text-primary hover:text-primary/80",
             "transition-colors duration-[120ms]",
-            "flex items-center justify-center gap-1"
+            "flex items-center justify-center gap-1.5",
+            "border-t border-border/20 -mx-3 px-3"
           )}
         >
-          <Info className="h-3 w-3" />
+          <Info className="h-3.5 w-3.5" />
           View Breakdown
         </button>
       ) : (
         <button
           onClick={onViewSchedule}
           className={cn(
-            "w-full text-center text-[10px] font-[Inter] font-medium",
+            "w-full py-2 text-center text-[11px] font-[Inter] font-medium",
             "text-primary hover:text-primary/80",
             "transition-colors duration-[120ms]",
-            "flex items-center justify-center gap-1"
+            "flex items-center justify-center gap-1.5",
+            "border-t border-border/20 -mx-3 px-3"
           )}
         >
-          <Calendar className="h-3 w-3" />
+          <Calendar className="h-3.5 w-3.5" />
           View Schedule
         </button>
       )}
