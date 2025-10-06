@@ -225,29 +225,29 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
             </div>
           </div>
 
-          {/* Tier Title - 3D Embossed with Glow */}
-          <div className="text-center mb-4 px-6">
+          {/* Tier Title - Neon Rank Label */}
+          <div className="text-center mb-3 px-6">
             <div className="relative inline-block">
               {!reducedMotion && (
                 <div 
-                  className="absolute inset-0 blur-xl opacity-60 animate-pulse-glow"
+                  className="absolute inset-0 blur-xl opacity-70 animate-pulse-glow"
                   style={{
-                    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                    background: `radial-gradient(50% 50% at 50% 50%, ${theme.colors.glow}60 0%, transparent 70%)`,
                   }}
                 />
               )}
               <h2 
-                className="relative text-xl font-black tracking-tight uppercase"
+                className="relative text-[11px] font-extrabold tracking-[0.25em] uppercase px-2 py-1 rounded-md"
                 style={{
-                  background: `linear-gradient(180deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 50%, ${theme.colors.primary} 100%)`,
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  textShadow: `0 0 15px ${theme.colors.glow}, 0 0 30px ${theme.colors.primary}80, 0 0 45px ${theme.colors.primary}40`,
-                  filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 12px ${theme.colors.glow})`,
+                  color: theme.colors.primary,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.16)',
+                  textShadow: `0 0 6px ${theme.colors.glow}, 0 0 14px ${theme.colors.glow}`,
+                  boxShadow: '0 0 18px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.25)',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))',
                 }}
               >
-                {theme.name}
+                {`${theme.name} Rank`}
               </h2>
             </div>
           </div>
