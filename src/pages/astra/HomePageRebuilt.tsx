@@ -197,18 +197,6 @@ export function HomePageRebuilt() {
           onAssetPress={handleAssetPress}
           onViewAll={() => navigate("/app/wallet")}
         />
-
-        {/* Announcements Bar */}
-        <AnnouncementsBar items={announcementItems} />
-
-        {/* Hero Carousel */}
-        <HeroCarousel slides={heroSlides} />
-
-        {/* Activity Timeline */}
-        <ActivityTimeline
-          activities={activities}
-          onViewAll={() => navigate("/app/wallet/history")}
-        />
       </main>
 
       {/* Rewards Breakdown Bottom Sheet */}
