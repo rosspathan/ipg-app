@@ -25,10 +25,10 @@ const mainActions: QuickSwitchMenuItem[] = [
 ]
 
 const quickActions: QuickSwitchMenuItem[] = [
-  { id: "send", label: "Send", icon: Send, path: "/app/wallet?action=send", color: "text-primary" },
-  { id: "receive", label: "Receive", icon: ArrowDownToLine, path: "/app/wallet?action=receive", color: "text-accent" },
-  { id: "deposit", label: "Deposit", icon: ArrowUpFromLine, path: "/app/wallet?action=deposit", color: "text-success" },
-  { id: "swap", label: "Swap", icon: Repeat, path: "/app/wallet?action=swap", color: "text-secondary" }
+  { id: "send", label: "Send", icon: Send, path: "/app/wallet/send", color: "text-primary" },
+  { id: "receive", label: "Receive", icon: ArrowDownToLine, path: "/app/wallet/receive", color: "text-accent" },
+  { id: "deposit", label: "Deposit", icon: ArrowUpFromLine, path: "/app/wallet/deposit", color: "text-success" },
+  { id: "swap", label: "Swap", icon: Repeat, path: "/app/swap", color: "text-secondary" }
 ]
 
 const programShortcuts: QuickSwitchMenuItem[] = [
