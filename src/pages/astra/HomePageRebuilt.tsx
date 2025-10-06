@@ -15,6 +15,7 @@ import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { DockNav } from "@/components/navigation/DockNav"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
+import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
 
 /**
  * HomePageRebuilt - World-class mobile-first home screen
@@ -195,6 +196,9 @@ export function HomePageRebuilt() {
 
         {/* Scrolling Announcement */}
         <ScrollingAnnouncement />
+
+        {/* Announcement Carousel */}
+        <AnnouncementCarousel />
 
         {/* Crypto Assets Panel */}
         <AssetsPanel
