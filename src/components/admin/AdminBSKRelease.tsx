@@ -29,10 +29,8 @@ interface UserBalance {
   user_id: string;
   holding_balance: number;
   withdrawable_balance: number;
-  profiles?: {
-    email?: string;
-    full_name?: string;
-  };
+  email?: string;
+  full_name?: string;
 }
 
 interface ReleaseHistory {
@@ -42,13 +40,9 @@ interface ReleaseHistory {
   percentage: number;
   released_by: string;
   created_at: string;
-  profiles?: {
-    email?: string;
-    full_name?: string;
-  };
-  admin_profiles?: {
-    email?: string;
-  };
+  email?: string;
+  full_name?: string;
+  admin_email?: string;
 }
 
 export function AdminBSKRelease() {
@@ -73,20 +67,28 @@ export function AdminBSKRelease() {
       setLoading(true);
       const { data, error } = await supabase
         .from('user_bsk_balances')
-        .select(`
-          user_id,
-          holding_balance,
-          withdrawable_balance,
-          profiles:user_id (
-            email,
-            full_name
-          )
-        `)
+        .select('user_id, holding_balance, withdrawable_balance')
         .gt('holding_balance', 0)
         .order('holding_balance', { ascending: false });
 
       if (error) throw error;
-      setBalances(data || []);
+
+      // Fetch profile data separately
+      const userIds = (data || []).map(b => b.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, email, full_name')
+        .in('user_id', userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      const enrichedBalances = (data || []).map(balance => ({
+        ...balance,
+        email: profileMap.get(balance.user_id)?.email,
+        full_name: profileMap.get(balance.user_id)?.full_name,
+      }));
+
+      setBalances(enrichedBalances);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -102,21 +104,33 @@ export function AdminBSKRelease() {
     try {
       const { data, error } = await supabase
         .from('bsk_release_history')
-        .select(`
-          *,
-          profiles:user_id (
-            email,
-            full_name
-          ),
-          admin_profiles:released_by (
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setHistory(data || []);
+
+      // Fetch profile data separately
+      if (data && data.length > 0) {
+        const userIds = data.map(h => h.user_id);
+        const adminIds = data.map(h => h.released_by);
+        
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, email, full_name')
+          .in('user_id', [...userIds, ...adminIds]);
+
+        const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+        const enrichedHistory = data.map(record => ({
+          ...record,
+          email: profileMap.get(record.user_id)?.email,
+          full_name: profileMap.get(record.user_id)?.full_name,
+          admin_email: profileMap.get(record.released_by)?.email,
+        }));
+
+        setHistory(enrichedHistory);
+      }
     } catch (error: any) {
       console.error('Error loading history:', error);
     }
@@ -144,8 +158,8 @@ export function AdminBSKRelease() {
   const getFilteredBalances = () => {
     if (!searchEmail) return balances;
     return balances.filter(b => 
-      b.profiles?.email?.toLowerCase().includes(searchEmail.toLowerCase()) ||
-      b.profiles?.full_name?.toLowerCase().includes(searchEmail.toLowerCase())
+      b.email?.toLowerCase().includes(searchEmail.toLowerCase()) ||
+      b.full_name?.toLowerCase().includes(searchEmail.toLowerCase())
     );
   };
 
@@ -379,9 +393,9 @@ export function AdminBSKRelease() {
                           />
                         </TableCell>
                         <TableCell className="font-medium">
-                          {balance.profiles?.full_name || 'Unknown'}
+                          {balance.full_name || 'Unknown'}
                         </TableCell>
-                        <TableCell>{balance.profiles?.email || 'N/A'}</TableCell>
+                        <TableCell>{balance.email || 'N/A'}</TableCell>
                         <TableCell className="text-right">
                           {balance.holding_balance.toFixed(2)}
                         </TableCell>
@@ -434,12 +448,12 @@ export function AdminBSKRelease() {
                           {new Date(record.created_at).toLocaleString()}
                         </TableCell>
                         <TableCell>
-                          {record.profiles?.email || 'Unknown'}
+                          {record.email || 'Unknown'}
                         </TableCell>
                         <TableCell>{record.amount_released.toFixed(2)}</TableCell>
                         <TableCell>{record.percentage}%</TableCell>
                         <TableCell>
-                          {record.admin_profiles?.email || 'Admin'}
+                          {record.admin_email || 'Admin'}
                         </TableCell>
                       </TableRow>
                     ))

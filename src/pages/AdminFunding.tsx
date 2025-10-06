@@ -1,13 +1,11 @@
-import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import AdminINRAccounts from "@/components/AdminINRAccounts";
 import AdminINRDeposits from "@/components/AdminINRDeposits";
 import AdminINRWithdrawals from "@/components/AdminINRWithdrawals";
 import AdminCryptoControls from "@/components/AdminCryptoControls";
 import AdminBSKBalances from "@/components/AdminBSKBalances";
 import AdminINRSettings from "@/components/AdminINRSettings";
+import { AdminBSKRelease } from "@/components/admin/AdminBSKRelease";
 
 const AdminFunding = () => {
 
@@ -18,7 +16,7 @@ const AdminFunding = () => {
       </div>
 
       <Tabs defaultValue="inr-settings" className="w-full">
-        <TabsList className="w-full grid grid-cols-3 md:grid-cols-7 gap-1 h-auto">
+        <TabsList className="w-full grid grid-cols-3 md:grid-cols-8 gap-1 h-auto">
           <TabsTrigger value="inr-settings" className="text-xs md:text-sm py-2">Settings</TabsTrigger>
           <TabsTrigger value="inr-accounts" className="text-xs md:text-sm py-2">INR Accounts</TabsTrigger>
           <TabsTrigger value="inr-deposits" className="text-xs md:text-sm py-2">INR Deposits</TabsTrigger>
@@ -26,6 +24,7 @@ const AdminFunding = () => {
           <TabsTrigger value="crypto" className="text-xs md:text-sm py-2">Crypto Controls</TabsTrigger>
           <TabsTrigger value="bsk-withdrawable" className="text-xs md:text-sm py-2">BSK Withdrawable</TabsTrigger>
           <TabsTrigger value="bsk-holding" className="text-xs md:text-sm py-2">BSK Holding</TabsTrigger>
+          <TabsTrigger value="bsk-release" className="text-xs md:text-sm py-2">BSK Release</TabsTrigger>
         </TabsList>
 
         <TabsContent value="inr-settings" className="mt-4">
@@ -54,6 +53,10 @@ const AdminFunding = () => {
 
         <TabsContent value="bsk-holding" className="mt-4">
           <AdminBSKBalances balanceType="holding" />
+        </TabsContent>
+
+        <TabsContent value="bsk-release" className="mt-4">
+          <AdminBSKRelease />
         </TabsContent>
       </Tabs>
     </div>

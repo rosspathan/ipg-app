@@ -2122,6 +2122,48 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_release_history: {
+        Row: {
+          amount_released: number
+          created_at: string
+          holding_after: number
+          holding_before: number
+          id: string
+          notes: string | null
+          percentage: number
+          released_by: string
+          user_id: string
+          withdrawable_after: number
+          withdrawable_before: number
+        }
+        Insert: {
+          amount_released: number
+          created_at?: string
+          holding_after: number
+          holding_before: number
+          id?: string
+          notes?: string | null
+          percentage: number
+          released_by: string
+          user_id: string
+          withdrawable_after: number
+          withdrawable_before: number
+        }
+        Update: {
+          amount_released?: number
+          created_at?: string
+          holding_after?: number
+          holding_before?: number
+          id?: string
+          notes?: string | null
+          percentage?: number
+          released_by?: string
+          user_id?: string
+          withdrawable_after?: number
+          withdrawable_before?: number
+        }
+        Relationships: []
+      }
       bsk_transfers: {
         Row: {
           amount_bsk: number
