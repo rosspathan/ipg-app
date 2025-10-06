@@ -135,7 +135,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
           </div>
 
           {/* Medallion Portrait - Premium 3D Effect */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-4">
             <div className="relative group">
               {/* Outer animated glow */}
               {!reducedMotion && (
@@ -183,7 +183,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
                   >
                     {/* White separator */}
                     <div className="rounded-full p-[2px] bg-white/90">
-                      <Avatar className="h-36 w-36 border-none shadow-2xl">
+                      <Avatar className="h-28 w-28 border-none shadow-2xl">
                         <AvatarImage src={user.avatarUrl} />
                         <AvatarFallback 
                           className="text-5xl font-black"
@@ -226,7 +226,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
           </div>
 
           {/* Tier Title - 3D Embossed with Glow */}
-          <div className="text-center mb-6 px-6">
+          <div className="text-center mb-4 px-6">
             <div className="relative inline-block">
               {!reducedMotion && (
                 <div 
@@ -253,7 +253,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
 
           {/* ID Band - Glassmorphic */}
           <div 
-            className="mx-6 mb-5 px-4 py-3 rounded-xl flex items-center justify-between backdrop-blur-xl"
+            className="mx-6 mb-3 px-4 py-3 rounded-xl flex items-center justify-between backdrop-blur-xl"
             style={{
               background: 'linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.9) 100%)',
               border: '1px solid rgba(255,255,255,0.15)',
@@ -270,7 +270,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
           </div>
 
           {/* Details Grid - Enhanced */}
-          <div className="grid grid-cols-2 gap-3 px-6 mb-5">
+          <div className="grid grid-cols-2 gap-3 px-6 mb-3">
             {[
               { label: 'Name', value: user.displayName },
               { label: 'Member Since', value: formatDate(user.joinDate), mono: true },
@@ -305,7 +305,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
           </div>
 
           {/* Signature Line - Premium */}
-          <div className="px-6 mb-5">
+          <div className="px-6 mb-3">
             <div 
               className="p-3 rounded-xl backdrop-blur-sm"
               style={{
@@ -342,7 +342,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
 
           {/* Security Band - Animated */}
           <div 
-            className="h-8 mx-6 mb-5 overflow-hidden relative rounded-xl backdrop-blur-sm"
+            className="h-8 mx-6 mb-3 overflow-hidden relative rounded-xl backdrop-blur-sm"
             style={{
               background: `linear-gradient(135deg, ${theme.colors.primary}10, ${theme.colors.secondary}10)`,
               border: `1px solid ${theme.colors.primary}25`,
@@ -389,7 +389,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
                   boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                 }}
               >
-                <QrLinkBuilder code={qrCode} size={70} />
+                <QrLinkBuilder code={qrCode} size={76} />
               </div>
             </div>
           </div>
