@@ -107,46 +107,40 @@ export async function openWhatsAppLink(
   const schemeUrl = buildSchemeUrl(phone, text, finalConfig.custom_scheme);
   const intentUrl = buildIntentUrl(phone, text);
   
-  console.info('WA_LINK_PRIMARY', waMeUrl);
   console.info('WA_LINK_SCHEME', schemeUrl);
+  console.info('WA_LINK_PRIMARY', waMeUrl);
   console.info('WA_LINK_FALLBACK', finalConfig.web_fallback_url);
   
-  // Strategy 1: Try wa.me (universal link)
-  // This works on all platforms and opens the app if installed
+  // Strategy 1: Try Custom Scheme first to bypass web blocks (opens app directly if installed)
   try {
-    if (finalConfig.open_target === '_blank') {
-      window.open(waMeUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      window.location.href = waMeUrl;
-    }
-    
+    window.location.href = schemeUrl;
+
     // Wait to see if the app opens
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    
-    // Strategy 2: If page is still visible, try custom scheme
+    await new Promise(resolve => setTimeout(resolve, 900));
+
+    // Strategy 2: On Android (older devices), try Intent URL
+    if (!document.hidden && platform.isAndroid) {
+      window.location.href = intentUrl;
+      await new Promise(resolve => setTimeout(resolve, 900));
+    }
+
+    // Strategy 3: If still visible, use wa.me universal link (opens Web/Desktop)
     if (!document.hidden) {
-      console.info('WA_LINK_TRYING_SCHEME');
-      
-      if (platform.isAndroid && !platform.isTWA) {
-        // Use Intent URL for Android
-        window.location.href = intentUrl;
+      if (finalConfig.open_target === '_blank') {
+        window.open(waMeUrl, '_blank', 'noopener,noreferrer');
       } else {
-        // Use custom scheme for iOS and TWA
-        window.location.href = schemeUrl;
+        window.location.href = waMeUrl;
       }
-      
+
       // Wait again
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      
-      // Strategy 3: Final fallback
+      await new Promise(resolve => setTimeout(resolve, 900));
+
+      // Strategy 4: Final fallback
       if (!document.hidden) {
         console.info('WA_LINK_USING_FALLBACK');
-        
         if (platform.isAndroid) {
-          // Direct to Play Store on Android
           window.open(finalConfig.play_fallback_url, '_blank', 'noopener,noreferrer');
         } else {
-          // Use web fallback for others
           if (finalConfig.web_fallback_url.startsWith('http')) {
             window.open(finalConfig.web_fallback_url, '_blank', 'noopener,noreferrer');
           } else {
