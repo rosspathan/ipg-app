@@ -207,9 +207,9 @@ export function HomePageRebuilt() {
 
       {/* Floating WhatsApp Support Button - Fixed above footer */}
       <SupportLinkWhatsApp
-        className="fixed bottom-20 right-5 z-30 h-12 w-12 rounded-full bg-success shadow-lg shadow-success/30 hover:shadow-xl hover:shadow-success/40 hover:scale-105 active:scale-95 transition-all duration-300 border-2 border-background"
+        className="fixed bottom-20 right-5 z-30 h-14 w-14 rounded-full bg-[#25D366] shadow-lg shadow-[#25D366]/40 hover:shadow-xl hover:shadow-[#25D366]/50 hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center"
       >
-        <MessageCircle className="h-5 w-5 text-white" />
+        <MessageCircle className="h-7 w-7 text-white fill-white" />
       </SupportLinkWhatsApp>
 
       {/* Footer - DO NOT MODIFY THIS SECTION */}
