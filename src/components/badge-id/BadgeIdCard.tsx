@@ -237,13 +237,14 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
                 />
               )}
               <h2 
-                className="relative text-3xl font-black tracking-tight"
+                className="relative text-xl font-black tracking-tight uppercase"
                 style={{
                   background: `linear-gradient(180deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 50%, ${theme.colors.primary} 100%)`,
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
-                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 -1px 2px rgba(255,255,255,0.8))',
+                  textShadow: `0 0 15px ${theme.colors.glow}, 0 0 30px ${theme.colors.primary}80, 0 0 45px ${theme.colors.primary}40`,
+                  filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 12px ${theme.colors.glow})`,
                 }}
               >
                 {theme.name}
