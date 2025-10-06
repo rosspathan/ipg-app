@@ -1,13 +1,12 @@
 import * as React from "react"
 import { useState } from "react"
-import { Eye, EyeOff, ChevronDown, ChevronUp, ArrowUpRight, History, ArrowLeftRight, Search } from "lucide-react"
+import { ChevronDown, ChevronUp, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AstraCard } from "../AstraCard"
-import { BalanceDisplay } from "@/components/ui/balance-display"
-import { QuickActionsRibbon } from "./QuickActionsRibbon"
-import { useNavigate } from "react-router-dom"
+import { BSKWithdrawableCard } from "./BSKWithdrawableCard"
+import { BSKHoldingCard } from "./BSKHoldingCard"
 
 interface BalanceClusterProps {
   className?: string
@@ -31,16 +30,8 @@ const quickActions = [
 ]
 
 export function BalanceCluster({ className }: BalanceClusterProps) {
-  const [isPrivate, setIsPrivate] = useState(false)
   const [isCryptoExpanded, setIsCryptoExpanded] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const navigate = useNavigate()
-
-  const withdrawActions = [
-    { id: "withdraw", label: "Withdraw", icon: <ArrowUpRight className="h-4 w-4" />, variant: "success" as const, onPress: () => navigate("/app/programs/bsk-withdraw") },
-    { id: "transfer", label: "Transfer", icon: <ArrowLeftRight className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/programs/bsk-transfer") },
-    { id: "history", label: "History", icon: <History className="h-4 w-4" />, variant: "default" as const, onPress: () => navigate("/app/wallet/history") }
-  ]
 
   const filteredCryptoAssets = mockBalances.cryptoAssets.filter(asset =>
     searchTerm ? asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) : true
@@ -106,44 +97,11 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
         )}
       </AstraCard>
 
-      {/* BSK Withdrawable - SECOND per spec */}
-      <AstraCard variant="elevated" className="p-4" data-testid="bsk-withdrawable-card">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-heading font-semibold text-sm text-success">BSK — Withdrawable</h3>
-          <Button variant="ghost" size="sm" onClick={() => setIsPrivate(!isPrivate)} className="h-6 w-6 p-0">
-            {isPrivate ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-          </Button>
-        </div>
-        <BalanceDisplay 
-          amount={mockBalances.withdrawable} 
-          currency="BSK" 
-          size="lg" 
-          isPrivate={isPrivate}
-          gradient 
-        />
-        <div className="mt-3">
-          <QuickActionsRibbon actions={withdrawActions} compact />
-        </div>
-      </AstraCard>
+      {/* BSK Withdrawable - New Design */}
+      <BSKWithdrawableCard balance={mockBalances.withdrawable} />
 
-      {/* BSK Holding - THIRD per spec */}
-      <AstraCard variant="glass" className="p-4" data-testid="bsk-holding-card">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h3 className="font-heading font-semibold text-sm text-warning">BSK — Holding</h3>
-            <span className="text-xs text-muted-foreground">(Locked)</span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => setIsPrivate(!isPrivate)} className="h-6 w-6 p-0">
-            {isPrivate ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-          </Button>
-        </div>
-        <BalanceDisplay 
-          amount={mockBalances.holding} 
-          currency="BSK" 
-          size="lg" 
-          isPrivate={isPrivate}
-        />
-      </AstraCard>
+      {/* BSK Holding - New Design */}
+      <BSKHoldingCard balance={mockBalances.holding} />
     </div>
   )
 }
