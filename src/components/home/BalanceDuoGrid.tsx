@@ -14,9 +14,7 @@ export function BalanceDuoGrid({ children, className }: BalanceDuoGridProps) {
   return (
     <div
       className={cn(
-        "grid gap-3",
-        "grid-cols-1 min-[340px]:grid-cols-2",
-        "w-full",
+        "grid grid-cols-2 gap-3 w-full",
         className
       )}
       data-testid="bsk-duo-grid"
