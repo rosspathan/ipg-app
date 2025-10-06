@@ -104,10 +104,9 @@ export function ProfileHub() {
         <div className="flex items-center justify-between h-14 px-4">
           <button
             onClick={handleBack}
-            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
+            className="p-2 rounded-xl hover:bg-primary/10 transition-colors"
           >
             <ChevronLeft className="h-5 w-5" />
-            <span className="font-medium">Back</span>
           </button>
           
           <div className="flex items-center gap-3">
