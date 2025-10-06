@@ -47,49 +47,49 @@ export function HomePageRebuilt() {
       id: "1",
       title: "Ad Mining",
       icon: <Gift className="h-5 w-5" />,
-      onPress: () => navigate("/app/advertising")
+      onPress: () => navigate("/app/programs/advertising")
     },
     {
       id: "2",
       title: "Lucky Draw",
       icon: <Target className="h-5 w-5" />,
-      onPress: () => navigate("/app/lucky-draw")
+      onPress: () => navigate("/app/programs/lucky-draw")
     },
     {
       id: "3",
       title: "Spin Wheel",
       icon: <Zap className="h-5 w-5" />,
-      onPress: () => navigate("/app/spin")
+      onPress: () => navigate("/app/programs/spin")
     },
     {
       id: "4",
       title: "Purchase",
       icon: <Coins className="h-5 w-5" />,
-      onPress: () => navigate("/programs/bsk-purchase")
+      onPress: () => navigate("/app/programs/bsk-purchase-manual")
     },
     {
       id: "5",
       title: "Referrals",
       icon: <Users className="h-5 w-5" />,
-      onPress: () => navigate("/app/referrals")
+      onPress: () => navigate("/app/programs/referrals")
     },
     {
       id: "6",
       title: "Staking",
       icon: <Star className="h-5 w-5" />,
-      onPress: () => navigate("/app/staking")
+      onPress: () => navigate("/app/programs/staking")
     },
     {
       id: "7",
       title: "Loans",
       icon: <TrendingUp className="h-5 w-5" />,
-      onPress: () => navigate("/programs/loans")
+      onPress: () => navigate("/app/programs/loans")
     },
     {
       id: "8",
       title: "Insurance",
       icon: <Shield className="h-5 w-5" />,
-      onPress: () => navigate("/programs/insurance")
+      onPress: () => navigate("/app/programs/insurance")
     }
   ]
 
