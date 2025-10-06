@@ -1,244 +1,176 @@
 import * as React from "react"
-import { useState, useEffect } from "react"
-import { Gift, Star, Target, Coins, TrendingUp, Users, Shield, Zap } from "lucide-react"
+import { ArrowLeft, Gift, Target, Zap, Star, Users, TrendingUp, Shield, Coins } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { DockNav } from "@/components/navigation/DockNav"
-import { ProgramsHeaderPro } from "@/components/programs-pro/ProgramsHeaderPro"
-import { ProgramGridCompact } from "@/components/programs-pro/ProgramGridCompact"
-import { ProgramTileCompact } from "@/components/programs-pro/ProgramTileCompact"
-import { QuickActionsSheet, type QuickAction } from "@/components/programs-pro/QuickActionsSheet"
-import { AnnouncementsBar } from "@/components/programs-pro/AnnouncementsBar"
-import { QuickSwitch } from "@/components/astra/QuickSwitch"
 
 interface Program {
   id: string
   title: string
+  description: string
   icon: React.ReactNode
-  category: "earn" | "games" | "finance" | "network" | "trading"
-  badge?: "NEW" | "HOT" | "DAILY" | "LIVE"
-  progress?: number // 0-100 for micro progress line
+  badge?: string
+  badgeColor?: string
   route: string
-  actions: QuickAction[]
-  rulesLink?: string
 }
 
 const allPrograms: Program[] = [
   {
-    id: "advertise-mining",
-    title: "Advertise Mining",
-    icon: <Gift className="h-5 w-5" />,
-    category: "earn",
+    id: "1",
+    title: "Ad Mining",
+    description: "Watch ads daily and earn BSK rewards",
+    icon: <Gift className="h-6 w-6" />,
     badge: "DAILY",
-    route: "/app/programs/advertising",
-    actions: [
-      { id: "watch", label: "Watch Now", variant: "default", onPress: () => {} },
-      { id: "subscribe", label: "Subscribe", variant: "secondary", onPress: () => {} },
-      { id: "plan", label: "View Plan", variant: "outline", onPress: () => {} }
-    ],
-    rulesLink: "#"
+    badgeColor: "bg-success/20 text-success",
+    route: "/app/advertising"
   },
   {
-    id: "staking-rewards",
-    title: "Staking Rewards",
-    icon: <Star className="h-5 w-5" />,
-    category: "earn",
-    route: "/app/programs/staking",
-    actions: [
-      { id: "stake", label: "Stake", variant: "default", onPress: () => {} },
-      { id: "unstake", label: "Unstake", variant: "secondary", onPress: () => {} },
-      { id: "portfolio", label: "Portfolio", variant: "outline", onPress: () => {} }
-    ],
-    rulesLink: "#"
-  },
-  {
-    id: "bsk-purchase",
-    title: "BSK Purchase Bonus",
-    icon: <Coins className="h-5 w-5" />,
-    category: "earn",
-    badge: "NEW",
-    route: "/app/programs/bsk-bonus",
-    actions: [
-      { id: "buy1k", label: "Buy 1k BSK", variant: "default", onPress: () => {} },
-      { id: "buy10k", label: "Buy 10k BSK", variant: "default", onPress: () => {} },
-      { id: "rules", label: "Offer Rules", variant: "outline", onPress: () => {} }
-    ],
-    rulesLink: "#"
-  },
-  {
-    id: "lucky-draw",
+    id: "2",
     title: "Lucky Draw",
-    icon: <Target className="h-5 w-5" />,
-    category: "games",
+    description: "Pool-based lottery with big prizes",
+    icon: <Target className="h-6 w-6" />,
     badge: "HOT",
-    progress: 78,
-    route: "/app/programs/lucky-draw",
-    actions: [
-      { id: "buy", label: "Buy Ticket", variant: "default", onPress: () => {} },
-      { id: "tickets", label: "My Tickets", variant: "secondary", onPress: () => {} },
-      { id: "results", label: "Results", variant: "outline", onPress: () => {} }
-    ],
-    rulesLink: "#"
+    badgeColor: "bg-danger/20 text-danger",
+    route: "/app/lucky-draw"
   },
   {
-    id: "spin-wheel",
-    title: "i-SMART Spin",
-    icon: <Zap className="h-5 w-5" />,
-    category: "games",
+    id: "3",
+    title: "Spin Wheel",
+    description: "Daily spins - provably fair",
+    icon: <Zap className="h-6 w-6" />,
     badge: "LIVE",
-    route: "/app/programs/spin",
-    actions: [
-      { id: "spin", label: "Spin Now", variant: "default", onPress: () => {} },
-      { id: "buy", label: "Buy Spins", variant: "secondary", onPress: () => {} },
-      { id: "verify", label: "Verify", variant: "outline", onPress: () => {} }
-    ],
-    rulesLink: "#"
+    badgeColor: "bg-warning/20 text-warning",
+    route: "/app/spin"
   },
   {
-    id: "bsk-loans",
-    title: "BSK Loans",
-    icon: <Coins className="h-5 w-5" />,
-    category: "finance",
-    route: "/app/programs/loans",
-    actions: [
-      { id: "apply", label: "Apply", variant: "default", onPress: () => {} },
-      { id: "emi", label: "Pay EMI", variant: "secondary", onPress: () => {} },
-      { id: "schedule", label: "Schedule", variant: "outline", onPress: () => {} }
-    ],
-    rulesLink: "#"
-  },
-  {
-    id: "insurance",
-    title: "Insurance Plans",
-    icon: <Shield className="h-5 w-5" />,
-    category: "finance",
-    route: "/app/programs/insurance",
-    actions: [
-      { id: "plan", label: "Get Plan", variant: "default", onPress: () => {} },
-      { id: "claim", label: "Claim", variant: "secondary", onPress: () => {} },
-      { id: "policies", label: "My Policies", variant: "outline", onPress: () => {} }
-    ],
-    rulesLink: "#"
-  },
-  {
-    id: "referrals",
-    title: "Referral Program",
-    icon: <Users className="h-5 w-5" />,
-    category: "network",
+    id: "4",
+    title: "Purchase",
+    description: "One-time bonus & special offers",
+    icon: <Coins className="h-6 w-6" />,
     badge: "NEW",
-    route: "/app/programs/referrals",
-    actions: [
-      { id: "invite", label: "Invite", variant: "default", onPress: () => {} },
-      { id: "earnings", label: "My Earnings", variant: "secondary", onPress: () => {} },
-      { id: "rules", label: "Rules", variant: "outline", onPress: () => {} }
-    ],
-    rulesLink: "#"
+    badgeColor: "bg-primary/20 text-primary",
+    route: "/programs/bsk-purchase"
   },
   {
-    id: "trading",
-    title: "Trading",
-    icon: <TrendingUp className="h-5 w-5" />,
-    category: "trading",
-    route: "/app/trade",
-    actions: [
-      { id: "markets", label: "Open Markets", variant: "default", onPress: () => {} },
-      { id: "favorites", label: "Favorites", variant: "secondary", onPress: () => {} },
-      { id: "fees", label: "Fees", variant: "outline", onPress: () => {} }
-    ],
-    rulesLink: "#"
+    id: "5",
+    title: "Referrals",
+    description: "Invite friends and earn together",
+    icon: <Users className="h-6 w-6" />,
+    route: "/app/referrals"
+  },
+  {
+    id: "6",
+    title: "Staking",
+    description: "12.4% APY with flexible terms",
+    icon: <Star className="h-6 w-6" />,
+    route: "/app/staking"
+  },
+  {
+    id: "7",
+    title: "Loans",
+    description: "0% interest for 16 weeks",
+    icon: <TrendingUp className="h-6 w-6" />,
+    route: "/programs/loans"
+  },
+  {
+    id: "8",
+    title: "Insurance",
+    description: "Protect assets with 24/7 claims",
+    icon: <Shield className="h-6 w-6" />,
+    route: "/programs/insurance"
   }
 ]
 
+/**
+ * ProgramsPagePro - Full grid view of all programs
+ */
 export function ProgramsPagePro() {
   const { navigate } = useNavigation()
-  const [showQuickSwitch, setShowQuickSwitch] = useState(false)
-  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null)
-  const [scrollPosition, setScrollPosition] = useState(0)
-  
-  // Save scroll position
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollPosition(window.scrollY)
-    }
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-  
-  // Restore scroll position
-  useEffect(() => {
-    if (scrollPosition > 0) {
-      window.scrollTo(0, scrollPosition)
-    }
-  }, [])
-  
-  const handleProgramPress = (program: Program) => {
-    setScrollPosition(window.scrollY)
-    navigate(program.route)
-  }
-  
-  const handleKebabPress = (program: Program) => {
-    setSelectedProgram(program)
-  }
-  
-  const handleQuickSwitchAction = (action: string) => {
-    switch (action) {
-      case "deposit": navigate("/app/deposit"); break
-      case "convert": navigate("/app/swap"); break
-      case "trade": navigate("/app/trade"); break
-      case "programs": navigate("/app/programs"); break
-    }
-  }
-  
+
   return (
     <div 
       data-testid="page-programs"
       className="min-h-screen bg-background pb-28"
     >
       {/* Header */}
-      <ProgramsHeaderPro />
-      
-      {/* Announcements */}
-      <AnnouncementsBar />
-      
-      {/* Grid */}
-      <div className="px-4 pt-4 pb-8">
-        <ProgramGridCompact>
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-xl border-b border-border/40 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/app/home")}
+            className="h-9 w-9 p-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="font-[Space_Grotesk] font-bold text-xl text-foreground">
+            My Programs
+          </h1>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="px-4 py-6 space-y-4">
+        {/* Grid */}
+        <div className="grid grid-cols-2 gap-4">
           {allPrograms.map((program) => (
-            <ProgramTileCompact
+            <button
               key={program.id}
-              icon={program.icon}
-              title={program.title}
-              badge={program.badge}
-              progress={program.progress}
-              onPress={() => handleProgramPress(program)}
-              onKebabPress={() => handleKebabPress(program)}
-            />
+              onClick={() => navigate(program.route)}
+              className={cn(
+                "p-4 rounded-2xl",
+                "bg-card/60 backdrop-blur-xl border border-border/30",
+                "transition-all duration-200",
+                "hover:bg-card/80 hover:scale-[1.02] active:scale-95",
+                "flex flex-col items-start gap-3"
+              )}
+              style={{
+                WebkitBackdropFilter: 'blur(16px)',
+                backdropFilter: 'blur(16px)',
+                boxShadow: '0 4px 20px rgba(124, 77, 255, 0.1)'
+              }}
+            >
+              {/* Icon & Badge */}
+              <div className="flex items-start justify-between w-full">
+                <div
+                  className={cn(
+                    "h-14 w-14 rounded-full",
+                    "bg-primary/10 border border-primary/20",
+                    "flex items-center justify-center",
+                    "text-primary"
+                  )}
+                >
+                  {program.icon}
+                </div>
+                {program.badge && (
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded-full text-[9px] font-[Inter] font-bold uppercase",
+                      program.badgeColor
+                    )}
+                  >
+                    {program.badge}
+                  </span>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="text-left w-full">
+                <h3 className="font-[Space_Grotesk] font-bold text-sm text-foreground mb-1">
+                  {program.title}
+                </h3>
+                <p className="font-[Inter] text-[11px] text-muted-foreground leading-tight">
+                  {program.description}
+                </p>
+              </div>
+            </button>
           ))}
-        </ProgramGridCompact>
-      </div>
-      
+        </div>
+      </main>
+
       {/* Bottom Navigation */}
-      <DockNav
-        onNavigate={navigate}
-        onCenterPress={() => setShowQuickSwitch(true)}
-      />
-      
-      {/* Quick Actions Sheet */}
-      {selectedProgram && (
-        <QuickActionsSheet
-          isOpen={!!selectedProgram}
-          onClose={() => setSelectedProgram(null)}
-          programTitle={selectedProgram.title}
-          actions={selectedProgram.actions}
-          rulesLink={selectedProgram.rulesLink}
-        />
-      )}
-      
-      {/* Quick Switch */}
-      <QuickSwitch
-        isOpen={showQuickSwitch}
-        onClose={() => setShowQuickSwitch(false)}
-        onAction={handleQuickSwitchAction}
-      />
+      <DockNav onNavigate={(path) => navigate(path)} />
     </div>
   )
 }
