@@ -60,145 +60,112 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
     <button
       onClick={onCardPress}
       className={cn(
-        "relative w-full px-4 py-3 rounded-2xl overflow-hidden",
-        "bg-gradient-to-br from-card/95 via-card/85 to-card/95",
-        "backdrop-blur-2xl border border-border/50",
+        "relative w-full px-4 py-2.5 rounded-2xl overflow-hidden",
+        "bg-gradient-to-br from-card/90 via-card/80 to-card/90",
+        "backdrop-blur-xl border border-border/40",
         "transition-all duration-300 ease-out",
-        "hover:scale-[1.01] hover:border-primary/60 active:scale-[0.99]",
-        "hover:shadow-[0_8px_30px_rgba(124,77,255,0.2)]",
-        "focus:outline-none focus:ring-2 focus:ring-primary/50",
+        "hover:border-primary/50 active:scale-[0.99]",
+        "hover:shadow-[0_4px_20px_rgba(124,77,255,0.15)]",
+        "focus:outline-none focus:ring-2 focus:ring-primary/40",
         "group cursor-pointer",
         className
       )}
       style={{
-        WebkitBackdropFilter: 'blur(32px)',
-        backdropFilter: 'blur(32px)',
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+        WebkitBackdropFilter: 'blur(24px)',
+        backdropFilter: 'blur(24px)',
       }}
       data-testid="kpi-card-unified"
     >
-      {/* Animated gradient overlay */}
-      <div 
-        className={cn(
-          "absolute inset-0 opacity-0 group-hover:opacity-100",
-          "bg-gradient-to-br from-primary/10 via-accent/10 to-success/10",
-          "transition-opacity duration-500"
-        )}
-      />
-
-      {/* Main content - Single horizontal line */}
-      <div className="relative flex items-center justify-between gap-3">
-        {/* Left: Portfolio */}
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+      {/* Main content - Single clean horizontal line */}
+      <div className="relative flex items-center gap-3">
+        {/* Left: Portfolio Icon + Value */}
+        <div className="flex items-center gap-2.5 flex-shrink-0">
           {/* Icon */}
           <div className={cn(
-            "h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0",
-            "bg-gradient-to-br from-success/25 to-success/10",
-            "transition-all duration-300",
-            "group-hover:scale-105 group-hover:from-success/35 group-hover:to-success/15"
+            "h-7 w-7 rounded-xl flex items-center justify-center",
+            "bg-gradient-to-br from-success/20 to-success/10",
+            "transition-all duration-300 group-hover:scale-105"
           )}>
-            <Wallet className="h-4 w-4 text-success" />
+            <Wallet className="h-3.5 w-3.5 text-success" />
           </div>
 
-          {/* Portfolio Value */}
-          <div className="min-w-0">
-            <div className="text-[9px] font-[Inter] font-semibold text-muted-foreground/50 uppercase tracking-wider leading-none mb-0.5">
-              {portfolioData?.label || "Portfolio"}
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-[Space_Grotesk] font-bold text-lg text-foreground tabular-nums leading-none group-hover:text-primary transition-colors">
-                {portfolioData?.value || "₹0"}
+          {/* Portfolio Value + Change */}
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-[Space_Grotesk] font-bold text-base text-foreground tabular-nums leading-none">
+              {portfolioData?.value || "₹0"}
+            </span>
+            {portfolioData?.subValue && (
+              <span className="text-xs font-[Inter] font-bold text-success tabular-nums leading-none">
+                {portfolioData.subValue}
               </span>
-              {portfolioData?.subValue && (
-                <span className="text-[10px] font-[Inter] font-bold text-success tabular-nums leading-none">
-                  {portfolioData.subValue}
-                </span>
-              )}
-            </div>
+            )}
           </div>
         </div>
+
+        {/* Vertical divider */}
+        <div className="h-5 w-px bg-border/40" />
 
         {/* Center: 24h Change */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Change Icon */}
-          <div className={cn(
-            "h-7 w-7 rounded-lg flex items-center justify-center",
-            "bg-gradient-to-br from-primary/20 to-primary/10",
-            "transition-all duration-300",
-            "group-hover:scale-105 group-hover:from-primary/30 group-hover:to-primary/15"
-          )}>
-            <Activity className="h-3.5 w-3.5 text-primary" />
-          </div>
-
-          {/* Change Value */}
-          <div>
-            <div className="text-[8px] font-[Inter] font-semibold text-muted-foreground/40 uppercase tracking-wider leading-none mb-0.5">
-              {changeData?.label || "24h Change"}
-            </div>
+        {changeData?.subValue && (
+          <>
             <div className="flex items-baseline gap-1">
               <span className={cn(
-                "font-[Space_Grotesk] font-bold text-sm tabular-nums leading-none",
+                "font-[Space_Grotesk] font-semibold text-sm tabular-nums leading-none",
                 changeData?.trend === "up" ? "text-success" : "text-danger"
               )}>
-                {changeData?.value || "+0%"}
+                {changeData.value}
               </span>
-              {changeData?.subValue && (
-                <span className="text-[9px] font-[Inter] font-medium text-muted-foreground/60 tabular-nums leading-none">
-                  {changeData.subValue}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Status & Trend */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Trend Badge */}
-          {changeData?.trend && (
-            <div className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded-lg",
-              "transition-all duration-300",
-              changeData.trend === "up" && "bg-success/10 text-success group-hover:bg-success/20",
-              changeData.trend === "down" && "bg-danger/10 text-danger group-hover:bg-danger/20"
-            )}>
-              {changeData.trend === "up" ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : (
-                <TrendingDown className="h-3 w-3" />
-              )}
-              <span className="text-[10px] font-[Inter] font-bold leading-none">
-                {changeData.trend === "up" ? "Bullish" : "Bearish"}
+              <span className="text-[10px] font-[Inter] font-medium text-muted-foreground/60 tabular-nums leading-none">
+                {changeData.subValue}
               </span>
             </div>
-          )}
 
-          {/* Status Badge */}
+            {/* Vertical divider */}
+            <div className="h-5 w-px bg-border/40" />
+          </>
+        )}
+
+        {/* Trend Badge */}
+        {changeData?.trend && (
           <div className={cn(
-            "flex items-center gap-1.5 px-2.5 py-1 rounded-full",
-            "bg-gradient-to-r from-warning/20 to-warning/10",
-            "border border-warning/30",
+            "flex items-center gap-1 px-2 py-1 rounded-lg flex-shrink-0",
             "transition-all duration-300",
-            "group-hover:from-warning/30 group-hover:to-warning/15 group-hover:border-warning/50"
+            changeData.trend === "up" && "bg-success/10 text-success",
+            changeData.trend === "down" && "bg-danger/10 text-danger"
           )}>
-            <Award className="h-3 w-3 text-warning" />
-            <span className="text-[10px] font-[Space_Grotesk] font-bold text-warning leading-none">
-              {statusData?.value || "Member"}
+            <span className="text-[10px] font-[Inter] font-bold leading-none">
+              {changeData.trend === "up" ? "Bullish" : "Bearish"}
             </span>
           </div>
+        )}
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Right: Status Badge */}
+        <div className={cn(
+          "flex items-center gap-1.5 px-2.5 py-1 rounded-full flex-shrink-0",
+          "bg-gradient-to-r from-warning/15 to-warning/10",
+          "border border-warning/25",
+          "transition-all duration-300 group-hover:border-warning/40"
+        )}>
+          <Award className="h-3 w-3 text-warning" />
+          <span className="text-[10px] font-[Space_Grotesk] font-bold text-warning leading-none">
+            {statusData?.value || "Member"}
+          </span>
         </div>
       </div>
 
-      {/* Premium shine effect */}
+      {/* Subtle hover shine */}
       <div 
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
         style={{
-          background: 'linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.1) 50%, transparent 75%)',
+          background: 'linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%)',
           backgroundSize: '200% 100%',
-          animation: 'shine-sweep 2.5s ease-in-out infinite'
+          animation: 'shine-sweep 2s ease-in-out infinite'
         }}
       />
 
-      {/* Animated gradient keyframes */}
       <style>{`
         @keyframes shine-sweep {
           0% { background-position: -200% 0; }
