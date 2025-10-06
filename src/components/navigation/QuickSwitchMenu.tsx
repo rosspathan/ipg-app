@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { 
   Home, Wallet, TrendingUp, Grid3x3, User, 
   Repeat, Send, ArrowDownToLine, ArrowUpFromLine,
-  Gift, Shield, Sparkles, Users, Zap, ArrowLeft
+  Gift, Shield, Sparkles, Users, Zap
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -17,7 +17,6 @@ interface QuickSwitchMenuItem {
 }
 
 const mainActions: QuickSwitchMenuItem[] = [
-  { id: "back", label: "Back", icon: ArrowLeft, path: "BACK", color: "text-muted-foreground" },
   { id: "home", label: "Home", icon: Home, path: "/app/home", color: "text-primary" },
   { id: "wallet", label: "Wallet", icon: Wallet, path: "/app/wallet", color: "text-accent" },
   { id: "trade", label: "Trade", icon: TrendingUp, path: "/app/trade", color: "text-success" },
@@ -59,11 +58,6 @@ export function QuickSwitchMenu({ isOpen, onClose, triggerPosition }: QuickSwitc
   const location = useLocation()
 
   const handleItemClick = (path: string) => {
-    if (path === "BACK") {
-      navigate(-1)
-      onClose()
-      return
-    }
     navigate(path)
     onClose()
   }

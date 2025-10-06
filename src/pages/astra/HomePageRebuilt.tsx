@@ -12,11 +12,10 @@ import { AnnouncementsBar } from "@/components/home/AnnouncementsBar"
 import { HeroCarousel } from "@/components/home/HeroCarousel"
 import { ProgramsGrid } from "@/components/programs-pro/ProgramsGrid"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
-import { QuickSwitchMenu } from "@/components/navigation/QuickSwitchMenu"
-import { FloatingActionButton } from "@/components/ui/floating-action-button"
+import { DockNav } from "@/components/navigation/DockNav"
+import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
-import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 
 /**
  * HomePageRebuilt - World-class mobile-first home screen
@@ -25,7 +24,6 @@ import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 export function HomePageRebuilt() {
   const { navigate } = useNavigation()
   const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
-  const [showQuickMenu, setShowQuickMenu] = useState(false)
 
   const handleKPIPress = () => {
     console.log("KPI card pressed")
@@ -207,23 +205,15 @@ export function HomePageRebuilt() {
         onClose={() => setShowRewardsBreakdown(false)}
       />
 
-      {/* Radial Menu Trigger (Center) */}
-      <FloatingActionButton
-        onClick={() => setShowQuickMenu(true)}
-        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40"
-      >
-        <Gift className="h-6 w-6" />
-      </FloatingActionButton>
-
-      {/* Radial Menu */}
-      <QuickSwitchMenu isOpen={showQuickMenu} onClose={() => setShowQuickMenu(false)} />
-
       {/* Floating WhatsApp Support Button - Fixed above footer */}
       <SupportLinkWhatsApp
         className="fixed bottom-20 right-5 z-30 h-14 w-14 rounded-full bg-[#25D366] shadow-lg shadow-[#25D366]/40 hover:shadow-xl hover:shadow-[#25D366]/50 hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center"
       >
         <MessageCircle className="h-7 w-7 text-white fill-white" />
       </SupportLinkWhatsApp>
+
+      {/* Footer - DO NOT MODIFY THIS SECTION */}
+      <DockNav onNavigate={(path) => navigate(path)} />
     </div>
   )
 }
