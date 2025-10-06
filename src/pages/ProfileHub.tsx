@@ -84,6 +84,17 @@ export function ProfileHub() {
     navigate("/app/home");
   };
 
+  const handleSignOut = async () => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.auth.signOut();
+      navigate("/");
+    } catch (error) {
+      console.error('Error signing out:', error);
+      navigate("/");
+    }
+  };
+
   const handleQuickSwitchAction = (action: string) => {
     switch (action) {
       case "deposit": navigate("/app/wallet/deposit"); break;
@@ -199,7 +210,7 @@ export function ProfileHub() {
         <div className="pt-4 pb-6">
           <Button
             variant="outline"
-            onClick={() => navigate("/auth/login")}
+            onClick={handleSignOut}
             className="w-full h-12 border-danger/30 text-danger hover:bg-danger/10 hover:border-danger/50"
           >
             Sign Out
