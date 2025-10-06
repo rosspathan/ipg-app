@@ -185,11 +185,11 @@ export function HomePageRebuilt() {
     <div className="min-h-screen" data-testid="page-home">
       {/* Main Content */}
       <main className="pb-28 px-4 space-y-6 pt-4">
-        {/* KPI Card Unified */}
-        <KPICardUnified onCardPress={handleKPIPress} />
-
         {/* Add Funds CTA */}
         <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
+
+        {/* KPI Card Unified */}
+        <KPICardUnified onCardPress={handleKPIPress} />
 
         {/* Crypto Assets Panel */}
         <AssetsPanel
