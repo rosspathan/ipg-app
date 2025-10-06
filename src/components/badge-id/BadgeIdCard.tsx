@@ -39,48 +39,94 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
       <div
         ref={ref}
         className={cn(
-          "relative rounded-[20px] overflow-hidden shadow-2xl",
+          "relative rounded-[24px] overflow-hidden",
           "aspect-[3/5] w-full max-w-[360px]",
+          "transform-gpu transition-all duration-500",
+          "hover:scale-[1.02] hover:shadow-2xl",
           className
         )}
         style={{
           background: theme.gradients.card,
-          border: '1px solid rgba(42,47,66,0.16)',
+          border: '2px solid rgba(255,255,255,0.2)',
+          boxShadow: `0 20px 60px -15px ${theme.colors.glow}40, 0 0 0 1px rgba(42,47,66,0.08)`,
         }}
         data-testid="badge-id-card"
       >
-        {/* Metal texture */}
-        <MetalTexture opacity={0.06} pattern={theme.effects.pattern} />
+        {/* Animated background gradient */}
+        <div 
+          className="absolute inset-0 opacity-30"
+          style={{
+            background: `radial-gradient(circle at 20% 20%, ${theme.colors.glow}40 0%, transparent 50%),
+                         radial-gradient(circle at 80% 80%, ${theme.colors.secondary}30 0%, transparent 50%)`,
+          }}
+        />
 
-        {/* Shine effect */}
+        {/* Metal texture */}
+        <MetalTexture opacity={0.08} pattern={theme.effects.pattern} />
+
+        {/* Animated shine sweep */}
         {!reducedMotion && (
-          <div 
-            className="absolute inset-0 pointer-events-none animate-shine-sweep"
-            style={{
-              background: theme.gradients.foil,
-              backgroundSize: '200% 100%',
-            }}
-          />
+          <>
+            <div 
+              className="absolute inset-0 pointer-events-none animate-shine-sweep"
+              style={{
+                background: theme.gradients.foil,
+                backgroundSize: '200% 100%',
+              }}
+            />
+            {/* Rotating glow */}
+            <div 
+              className="absolute inset-0 pointer-events-none animate-spin-slow opacity-20"
+              style={{
+                background: `conic-gradient(from 0deg, transparent 0%, ${theme.colors.glow}60 10%, transparent 20%, transparent 80%, ${theme.colors.glow}60 90%, transparent 100%)`,
+              }}
+            />
+          </>
         )}
 
         {/* Content */}
         <div className="relative z-10 h-full flex flex-col">
-          {/* Top Rail with Clip */}
-          <div className="relative">
-            <ClipOverlay className="absolute top-0 left-0 right-0" />
+          {/* Top Rail with Clip - Enhanced */}
+          <div className="relative mb-4">
+            <div 
+              className="absolute inset-0 opacity-40"
+              style={{
+                background: `linear-gradient(180deg, ${theme.colors.primary}40 0%, transparent 100%)`,
+                filter: 'blur(20px)',
+              }}
+            />
+            <ClipOverlay className="relative" />
             <div className="relative flex items-center justify-between px-6 h-12">
-              <img 
-                src="/brand/export/logo_mark.svg" 
-                alt="I-SMART" 
-                className="h-6 opacity-80"
-                style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
-              />
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-8 h-8 rounded-lg flex items-center justify-center backdrop-blur-sm"
+                  style={{
+                    background: `linear-gradient(135deg, ${theme.colors.primary}60, ${theme.colors.secondary}60)`,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  <img 
+                    src="/brand/export/logo_mark.svg" 
+                    alt="I-SMART" 
+                    className="h-5 w-5 opacity-90"
+                  />
+                </div>
+                <span 
+                  className="text-[10px] font-bold uppercase tracking-wider"
+                  style={{ 
+                    color: theme.colors.text,
+                    textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  I-SMART
+                </span>
+              </div>
               <div 
-                className="text-sm font-bold px-3 py-1 rounded-full"
+                className="text-lg font-black px-3 py-1 rounded-full animate-pulse-glow"
                 style={{
-                  background: theme.colors.primary,
+                  background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
                   color: theme.colors.text,
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  boxShadow: `0 4px 12px ${theme.colors.glow}60, inset 0 1px 2px rgba(255,255,255,0.4)`,
                 }}
               >
                 {theme.badge.glyph}
@@ -88,188 +134,262 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
             </div>
           </div>
 
-          {/* Medallion Portrait */}
-          <div className="flex justify-center mt-8 mb-6">
-            <div className="relative">
-              {/* Outer glow */}
+          {/* Medallion Portrait - Premium 3D Effect */}
+          <div className="flex justify-center mb-6">
+            <div className="relative group">
+              {/* Outer animated glow */}
               {!reducedMotion && (
-                <div 
-                  className="absolute inset-0 rounded-full animate-pulse-slow"
-                  style={{
-                    background: `radial-gradient(circle, ${theme.colors.glow}40 0%, transparent 70%)`,
-                    filter: 'blur(8px)',
-                    transform: 'scale(1.3)',
-                  }}
-                />
+                <>
+                  <div 
+                    className="absolute inset-0 rounded-full animate-pulse-slow"
+                    style={{
+                      background: `radial-gradient(circle, ${theme.colors.glow}60 0%, ${theme.colors.primary}40 40%, transparent 70%)`,
+                      filter: 'blur(24px)',
+                      transform: 'scale(1.4)',
+                    }}
+                  />
+                  <div 
+                    className="absolute inset-0 rounded-full animate-spin-slow"
+                    style={{
+                      background: `conic-gradient(from 0deg, ${theme.colors.primary}80, ${theme.colors.secondary}80, ${theme.colors.primary}80)`,
+                      filter: 'blur(16px)',
+                      transform: 'scale(1.3)',
+                    }}
+                  />
+                </>
               )}
               
-              {/* Concentric rings */}
+              {/* Outer ring with shimmer */}
               <div 
-                className="relative rounded-full p-1"
+                className="relative rounded-full p-[3px] group-hover:scale-105 transition-transform duration-500"
                 style={{
-                  background: `conic-gradient(from 0deg, ${theme.colors.primary}, ${theme.colors.secondary}, ${theme.colors.primary})`,
-                  boxShadow: `0 4px 12px ${theme.colors.glow}40, inset 0 1px 2px rgba(255,255,255,0.3)`,
+                  background: `conic-gradient(from 0deg, ${theme.colors.primary}, ${theme.colors.glow}, ${theme.colors.secondary}, ${theme.colors.glow}, ${theme.colors.primary})`,
+                  boxShadow: `0 8px 32px ${theme.colors.glow}60, inset 0 2px 4px rgba(255,255,255,0.4)`,
                 }}
               >
+                {/* Middle ring */}
                 <div 
-                  className="rounded-full p-0.5"
+                  className="rounded-full p-1"
                   style={{
                     background: theme.gradients.card,
                   }}
                 >
+                  {/* Inner ring with gradient */}
                   <div 
-                    className="rounded-full p-1"
+                    className="rounded-full p-[2px]"
                     style={{
                       background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
                     }}
                   >
-                    <Avatar className="h-32 w-32 border-2 border-white/80">
-                      <AvatarImage src={user.avatarUrl} />
-                      <AvatarFallback 
-                        className="text-4xl font-bold"
-                        style={{ 
-                          background: theme.colors.primary,
-                          color: theme.colors.text 
-                        }}
-                      >
-                        {user.displayName.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    {/* White separator */}
+                    <div className="rounded-full p-[2px] bg-white/90">
+                      <Avatar className="h-36 w-36 border-none shadow-2xl">
+                        <AvatarImage src={user.avatarUrl} />
+                        <AvatarFallback 
+                          className="text-5xl font-black"
+                          style={{ 
+                            background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                            color: theme.colors.text 
+                          }}
+                        >
+                          {user.displayName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
                   </div>
                 </div>
+              </div>
+              
+              {/* Sparkle effects */}
+              {!reducedMotion && (
+                <>
+                  <div 
+                    className="absolute top-0 right-0 w-3 h-3 animate-ping"
+                    style={{
+                      background: theme.colors.glow,
+                      borderRadius: '50%',
+                      boxShadow: `0 0 20px ${theme.colors.glow}`,
+                    }}
+                  />
+                  <div 
+                    className="absolute bottom-4 left-2 w-2 h-2 animate-ping-slow"
+                    style={{
+                      background: theme.colors.secondary,
+                      borderRadius: '50%',
+                      boxShadow: `0 0 15px ${theme.colors.secondary}`,
+                      animationDelay: '1s',
+                    }}
+                  />
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Tier Title - 3D Embossed with Glow */}
+          <div className="text-center mb-6 px-6">
+            <div className="relative inline-block">
+              {!reducedMotion && (
+                <div 
+                  className="absolute inset-0 blur-xl opacity-60 animate-pulse-glow"
+                  style={{
+                    background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
+                  }}
+                />
+              )}
+              <h2 
+                className="relative text-3xl font-black tracking-tight"
+                style={{
+                  background: `linear-gradient(180deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 50%, ${theme.colors.primary} 100%)`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 -1px 2px rgba(255,255,255,0.8))',
+                }}
+              >
+                {theme.name}
+              </h2>
+            </div>
+          </div>
+
+          {/* ID Band - Glassmorphic */}
+          <div 
+            className="mx-6 mb-5 px-4 py-3 rounded-xl flex items-center justify-between backdrop-blur-xl"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.9) 100%)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.1)',
+            }}
+          >
+            <span className="text-[9px] font-black text-white/50 uppercase tracking-[0.2em]">MEMBER ID</span>
+            <span className="font-mono text-sm text-white font-bold tabular-nums tracking-[0.3em]">
+              {formatUID(user.id)}
+            </span>
+            <svg className="h-5 w-5 text-white/30" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+            </svg>
+          </div>
+
+          {/* Details Grid - Enhanced */}
+          <div className="grid grid-cols-2 gap-3 px-6 mb-5">
+            {[
+              { label: 'Name', value: user.displayName },
+              { label: 'Member Since', value: formatDate(user.joinDate), mono: true },
+              { label: 'Card No.', value: getSerialNumber(), mono: true },
+              { label: 'Level', value: tier },
+            ].map((item, idx) => (
+              <div 
+                key={idx}
+                className="p-3 rounded-xl backdrop-blur-sm"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.colors.primary}08, ${theme.colors.secondary}05)`,
+                  border: `1px solid ${theme.colors.primary}15`,
+                }}
+              >
+                <p 
+                  className="text-[8px] uppercase tracking-[0.2em] mb-1.5 font-bold"
+                  style={{ color: theme.colors.textSecondary }}
+                >
+                  {item.label}
+                </p>
+                <p 
+                  className={cn(
+                    "text-xs font-bold",
+                    item.mono && "font-mono tabular-nums"
+                  )}
+                  style={{ color: theme.colors.text }}
+                >
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Signature Line - Premium */}
+          <div className="px-6 mb-5">
+            <div 
+              className="p-3 rounded-xl backdrop-blur-sm"
+              style={{
+                background: `linear-gradient(135deg, ${theme.colors.primary}08, ${theme.colors.secondary}05)`,
+                border: `1px solid ${theme.colors.primary}15`,
+              }}
+            >
+              <p 
+                className="text-[8px] uppercase tracking-[0.2em] mb-2 font-bold"
+                style={{ color: theme.colors.textSecondary }}
+              >
+                Authorized Signature
+              </p>
+              <div className="relative h-10">
+                {signatureUrl ? (
+                  <img src={signatureUrl} alt="Signature" className="h-full object-contain object-left" />
+                ) : (
+                  <div 
+                    className="h-full flex items-center text-xs italic"
+                    style={{ color: theme.colors.textSecondary, opacity: 0.4 }}
+                  >
+                    — Tap to sign and personalize —
+                  </div>
+                )}
+                <div 
+                  className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 100%)`,
+                  }}
+                />
               </div>
             </div>
           </div>
 
-          {/* Tier Title - Engraved Style */}
-          <div className="text-center mb-8 px-6">
-            <h2 
-              className="text-2xl font-bold tracking-wide mb-1"
-              style={{
-                color: theme.colors.text,
-                textShadow: `0 2px 4px rgba(0,0,0,0.15), 0 -1px 1px rgba(255,255,255,0.5)`,
-                background: `linear-gradient(180deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              {theme.name}
-            </h2>
-          </div>
-
-          {/* ID Band */}
+          {/* Security Band - Animated */}
           <div 
-            className="mx-6 mb-6 px-4 py-2 rounded-lg flex items-center justify-between"
+            className="h-8 mx-6 mb-5 overflow-hidden relative rounded-xl backdrop-blur-sm"
             style={{
-              background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.8) 100%)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          >
-            <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider">ID</span>
-            <span className="font-mono text-sm text-white/90 tabular-nums tracking-widest">
-              {formatUID(user.id)}
-            </span>
-            <svg className="h-4 w-4 text-white/40" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-            </svg>
-          </div>
-
-          {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-4 px-6 mb-6">
-            <div>
-              <p className="text-[9px] uppercase tracking-widest mb-1" style={{ color: theme.colors.textSecondary }}>
-                Name
-              </p>
-              <p className="text-xs font-medium" style={{ color: theme.colors.text }}>
-                {user.displayName}
-              </p>
-            </div>
-            <div>
-              <p className="text-[9px] uppercase tracking-widest mb-1" style={{ color: theme.colors.textSecondary }}>
-                Member Since
-              </p>
-              <p className="text-xs font-mono tabular-nums" style={{ color: theme.colors.text }}>
-                {formatDate(user.joinDate)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[9px] uppercase tracking-widest mb-1" style={{ color: theme.colors.textSecondary }}>
-                Card No.
-              </p>
-              <p className="text-xs font-mono tabular-nums" style={{ color: theme.colors.text }}>
-                {getSerialNumber()}
-              </p>
-            </div>
-            <div>
-              <p className="text-[9px] uppercase tracking-widest mb-1" style={{ color: theme.colors.textSecondary }}>
-                Level
-              </p>
-              <p className="text-xs font-medium" style={{ color: theme.colors.text }}>
-                {tier}
-              </p>
-            </div>
-          </div>
-
-          {/* Signature Line */}
-          <div className="px-6 mb-6">
-            <p className="text-[9px] uppercase tracking-widest mb-2" style={{ color: theme.colors.textSecondary }}>
-              Signature
-            </p>
-            <div className="relative h-12">
-              {signatureUrl ? (
-                <img src={signatureUrl} alt="Signature" className="h-full object-contain object-left" />
-              ) : (
-                <div className="h-full flex items-center text-xs italic opacity-40" style={{ color: theme.colors.textSecondary }}>
-                  — Sign to personalize —
-                </div>
-              )}
-              <div 
-                className="absolute bottom-0 left-0 right-0 h-px"
-                style={{
-                  background: `linear-gradient(90deg, ${theme.colors.primary} 0%, transparent 100%)`,
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Security Band */}
-          <div 
-            className="h-8 mx-6 mb-6 overflow-hidden relative rounded"
-            style={{
-              background: `repeating-linear-gradient(45deg, ${theme.colors.primary}08, ${theme.colors.primary}08 10px, ${theme.colors.secondary}08 10px, ${theme.colors.secondary}08 20px)`,
-              border: `1px solid ${theme.colors.primary}20`,
+              background: `linear-gradient(135deg, ${theme.colors.primary}10, ${theme.colors.secondary}10)`,
+              border: `1px solid ${theme.colors.primary}25`,
             }}
           >
             <div className="absolute inset-0 flex items-center whitespace-nowrap animate-marquee-slow">
               <span 
-                className="text-[7px] font-mono tracking-[0.3em] opacity-30 px-2"
-                style={{ color: theme.colors.textSecondary }}
+                className="text-[7px] font-mono tracking-[0.3em] font-bold px-2"
+                style={{ color: theme.colors.textSecondary, opacity: 0.4 }}
               >
-                I-SMART • VERIFIED MEMBER • OFFICIAL BADGE ID • I-SMART • VERIFIED MEMBER • OFFICIAL BADGE ID •
+                ★ VERIFIED MEMBER ★ I-SMART OFFICIAL ★ PREMIUM BADGE ★ VERIFIED MEMBER ★ I-SMART OFFICIAL ★ PREMIUM BADGE ★
               </span>
             </div>
           </div>
 
-          {/* QR Block */}
+          {/* QR Block - Premium Glass */}
           <div className="px-6 pb-6 mt-auto">
-            <div className="flex items-end justify-between">
+            <div 
+              className="flex items-center gap-4 p-4 rounded-xl backdrop-blur-xl"
+              style={{
+                background: `linear-gradient(135deg, ${theme.colors.primary}12, ${theme.colors.secondary}08)`,
+                border: `1px solid ${theme.colors.primary}30`,
+                boxShadow: `0 4px 24px ${theme.colors.glow}15`,
+              }}
+            >
               <div className="flex-1">
-                <p className="text-[9px] uppercase tracking-widest mb-2 opacity-60" style={{ color: theme.colors.textSecondary }}>
-                  Referral Link
+                <p 
+                  className="text-[8px] uppercase tracking-[0.2em] mb-2 font-bold"
+                  style={{ color: theme.colors.textSecondary }}
+                >
+                  Scan QR Code
                 </p>
-                <p className="text-[10px] font-mono opacity-70 break-all" style={{ color: theme.colors.text }}>
-                  i-smartapp.com/r/{qrCode.slice(0, 8)}...
+                <p 
+                  className="text-[9px] font-mono font-bold break-all"
+                  style={{ color: theme.colors.text, opacity: 0.7 }}
+                >
+                  i-smartapp.com/r/{qrCode.slice(0, 6)}...
                 </p>
               </div>
               <div 
-                className="p-2 rounded-xl ml-4"
+                className="p-2.5 rounded-xl shrink-0"
                 style={{
-                  background: 'rgba(255,255,255,0.95)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  background: 'rgba(255,255,255,0.98)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                 }}
               >
-                <QrLinkBuilder code={qrCode} size={72} />
+                <QrLinkBuilder code={qrCode} size={70} />
               </div>
             </div>
           </div>
@@ -281,21 +401,41 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
             100% { background-position: 200% 0; }
           }
           .animate-shine-sweep {
-            animation: shine-sweep 8s ease-in-out infinite;
+            animation: shine-sweep 6s ease-in-out infinite;
           }
           @keyframes pulse-slow {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 0.9; }
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
           }
           .animate-pulse-slow {
             animation: pulse-slow 3s ease-in-out infinite;
+          }
+          @keyframes pulse-glow {
+            0%, 100% { filter: brightness(1) drop-shadow(0 0 8px currentColor); }
+            50% { filter: brightness(1.2) drop-shadow(0 0 16px currentColor); }
+          }
+          .animate-pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+          }
+          @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          .animate-spin-slow {
+            animation: spin-slow 15s linear infinite;
           }
           @keyframes marquee-slow {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
           }
           .animate-marquee-slow {
-            animation: marquee-slow 30s linear infinite;
+            animation: marquee-slow 25s linear infinite;
+          }
+          @keyframes ping-slow {
+            75%, 100% { transform: scale(2); opacity: 0; }
+          }
+          .animate-ping-slow {
+            animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
           }
         `}</style>
       </div>

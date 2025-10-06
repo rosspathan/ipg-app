@@ -45,7 +45,7 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
   const theme = getThemeForTier(selectedTier);
   const allTiers = getAllTiers();
   const currentTierIndex = allTiers.indexOf(currentTier);
-  const availableTiers = allTiers.slice(0, currentTierIndex + 1);
+  const availableTiers = allTiers; // Show all tiers for preview
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -172,28 +172,39 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
 
       {/* Tier Selector */}
       <div className="space-y-3">
-        <label className="text-sm font-medium">Select Tier</label>
+        <label className="text-sm font-medium">Select Tier to Preview</label>
         <div className="flex flex-wrap gap-2">
-          {availableTiers.map((tier) => (
-            <button
-              key={tier}
-              onClick={() => setSelectedTier(tier)}
-              className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                selectedTier === tier
-                  ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                  : "bg-muted hover:bg-muted/80"
-              )}
-            >
-              {tier}
-            </button>
-          ))}
+          {availableTiers.map((tier) => {
+            const tierTheme = getThemeForTier(tier);
+            return (
+              <button
+                key={tier}
+                onClick={() => setSelectedTier(tier)}
+                className={cn(
+                  "px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                  "hover:scale-105 hover:shadow-lg",
+                  selectedTier === tier
+                    ? "shadow-xl scale-105"
+                    : "hover:shadow-md"
+                )}
+                style={{
+                  background: selectedTier === tier 
+                    ? tierTheme.gradients.ribbon 
+                    : `${tierTheme.colors.primary}20`,
+                  color: selectedTier === tier ? tierTheme.colors.text : tierTheme.colors.primary,
+                  boxShadow: selectedTier === tier 
+                    ? `0 8px 24px ${tierTheme.colors.glow}40, 0 0 0 2px ${tierTheme.colors.primary}60`
+                    : undefined,
+                }}
+              >
+                {tier}
+              </button>
+            );
+          })}
         </div>
-        {currentTierIndex < allTiers.length - 1 && (
-          <p className="text-xs text-muted-foreground">
-            Upgrade your account to unlock {allTiers[currentTierIndex + 1]} and higher tiers
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">
+          Preview all membership tiers • Current tier: <span className="font-semibold">{currentTier}</span>
+        </p>
       </div>
 
       {/* Card Preview */}
