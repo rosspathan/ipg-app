@@ -44,7 +44,7 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
       className={cn(
         "sticky top-0 z-40 bg-card/95 backdrop-blur-xl border-b border-border/40",
         "transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-        "h-14 flex items-center justify-between px-4",
+        "h-12 flex items-center justify-between px-4",
         className
       )}
       style={{
@@ -56,7 +56,7 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
       {/* Left: Animated Brand Logo */}
       <button
         onClick={() => navigate("/app/home")}
-        className="relative h-10 w-10 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/50"
+        className="relative h-12 w-12 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/50"
         style={{ perspective: '1000px' }}
       >
         <div
