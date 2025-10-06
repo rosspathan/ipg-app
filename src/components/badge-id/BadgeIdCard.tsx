@@ -106,9 +106,9 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
                   }}
                 >
                   <img 
-                    src="/brand/export/logo_mark.svg" 
+                    src="/lovable-uploads/a9cfc5de-7126-4662-923b-cc0348077e3d.png" 
                     alt="I-SMART" 
-                    className="h-5 w-5 opacity-90"
+                    className="h-5 w-5 opacity-90 object-contain"
                   />
                 </div>
                 <span 
