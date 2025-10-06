@@ -14,6 +14,7 @@ import { ProgramsLaneUltra } from "@/components/programs-pro/ProgramsLaneUltra"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { DockNav } from "@/components/navigation/DockNav"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
+import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 
 /**
  * HomePageRebuilt - World-class mobile-first home screen
@@ -191,6 +192,9 @@ export function HomePageRebuilt() {
 
         {/* KPI Card Unified */}
         <KPICardUnified onCardPress={handleKPIPress} />
+
+        {/* Scrolling Announcement */}
+        <ScrollingAnnouncement />
 
         {/* Crypto Assets Panel */}
         <AssetsPanel
