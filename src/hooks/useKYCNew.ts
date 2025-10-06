@@ -168,8 +168,8 @@ export const useKYCNew = () => {
     level: KYCLevel,
     data: Record<string, any>,
     status?: KYCStatus
-  ) => {
-    if (!user) return;
+  ): Promise<KYCProfile> => {
+    if (!user) throw new Error('User not authenticated');
 
     try {
       const existing = profiles[level];
@@ -192,6 +192,8 @@ export const useKYCNew = () => {
           ...prev,
           [level]: updated as KYCProfile
         }));
+        
+        return updated as KYCProfile;
       } else {
         const { data: created, error } = await supabase
           .from('kyc_profiles_new')
@@ -210,6 +212,8 @@ export const useKYCNew = () => {
           ...prev,
           [level]: created as KYCProfile
         }));
+        
+        return created as KYCProfile;
       }
     } catch (error) {
       console.error('Error updating KYC level:', error);
@@ -222,26 +226,35 @@ export const useKYCNew = () => {
     }
   };
 
-  const submitKYCLevel = async (level: KYCLevel) => {
+  const submitKYCLevel = async (level: KYCLevel, profileId: string) => {
+    if (!user) throw new Error('User not authenticated');
+
     try {
-      await updateKYCLevel(level, profiles[level]?.data_json || {}, 'submitted');
-      
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('kyc_profiles_new')
         .update({
           submitted_at: new Date().toISOString(),
           status: 'submitted'
         })
-        .eq('user_id', user?.id)
-        .eq('level', level);
+        .eq('id', profileId)
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: `KYC Level ${level} submitted for review`,
-      });
+      setProfiles(prev => ({
+        ...prev,
+        [level]: data as KYCProfile
+      }));
+
+      await fetchKYC();
     } catch (error) {
+      console.error('Error submitting KYC:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit KYC for review",
+        variant: "destructive",
+      });
       throw error;
     }
   };

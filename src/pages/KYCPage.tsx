@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Upload, CheckCircle, XCircle, Clock, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -27,6 +27,16 @@ export function KYCPage() {
   const { profiles, config, uploadDocument, updateKYCLevel, submitKYCLevel, loading, uploading } = useKYCNew();
   const [activeLevel, setActiveLevel] = useState<'L0' | 'L1' | 'L2'>('L0');
   const [formData, setFormData] = useState<Record<string, any>>({});
+
+  // Load form data when profile or level changes
+  useEffect(() => {
+    const currentProfile = profiles[activeLevel];
+    if (currentProfile?.data_json) {
+      setFormData(currentProfile.data_json);
+    } else {
+      setFormData({});
+    }
+  }, [activeLevel, profiles]);
 
   const handleBack = () => navigate("/app/profile");
 
@@ -66,13 +76,64 @@ export function KYCPage() {
     }
   };
 
+  const validateForm = () => {
+    if (activeLevel === 'L0') {
+      const required = ['legal_name', 'dob', 'nationality', 'phone', 'city', 'postal_code'];
+      const missing = required.filter(field => !formData[field]);
+      if (missing.length > 0) {
+        toast({ 
+          title: "Validation Error", 
+          description: "Please fill in all required fields",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } else if (activeLevel === 'L1') {
+      const required = ['id_type', 'id_number', 'id_front', 'id_back', 'selfie'];
+      const missing = required.filter(field => !formData[field]);
+      if (missing.length > 0) {
+        toast({ 
+          title: "Validation Error", 
+          description: "Please fill in all required fields and upload all documents",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } else if (activeLevel === 'L2') {
+      const required = ['source_of_funds', 'occupation'];
+      const missing = required.filter(field => !formData[field]);
+      if (missing.length > 0) {
+        toast({ 
+          title: "Validation Error", 
+          description: "Please fill in all required fields",
+          variant: "destructive"
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) return;
+
     try {
-      await updateKYCLevel(activeLevel, formData, 'draft');
-      await submitKYCLevel(activeLevel);
-      toast({ title: "Success", description: `KYC Level ${activeLevel} submitted for review` });
-    } catch (error) {
-      // Error handled in hook
+      // First save as draft and get the profile
+      const profile = await updateKYCLevel(activeLevel, formData, 'draft');
+      
+      // Then submit it
+      await submitKYCLevel(activeLevel, profile.id);
+      
+      toast({ 
+        title: "Success", 
+        description: `KYC Level ${activeLevel} submitted for review` 
+      });
+    } catch (error: any) {
+      toast({
+        title: "Submission Error",
+        description: error?.message || "Failed to submit KYC. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
