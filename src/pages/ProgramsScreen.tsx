@@ -10,42 +10,56 @@ const ProgramsScreen = () => {
   const programs = [
     {
       id: "advertising",
-      title: "Advertising",
+      title: "Ad Mining",
       subtitle: "Watch ads & earn",
       icon: <Users className="w-5 h-5" />,
       badge: "DAILY" as TileBadgeType,
       route: "/app/programs/advertising"
     },
     {
-      id: "staking",
-      title: "Staking",
-      subtitle: "Earn passive rewards",
-      icon: <PiggyBank className="w-5 h-5" />,
-      route: "/app/programs/staking"
+      id: "lucky-draw",
+      title: "Lucky Draw",
+      subtitle: "Win big prizes",
+      icon: <Target className="w-5 h-5" />,
+      badge: "HOT" as TileBadgeType,
+      route: "/app/programs/lucky-draw"
     },
     {
-      id: "bsk-bonus",
-      title: "BSK Bonus",
+      id: "spin-wheel",
+      title: "Spin Wheel",
+      subtitle: "Daily spins",
+      icon: <Trophy className="w-5 h-5" />,
+      badge: "LIVE" as TileBadgeType,
+      route: "/app/programs/spin"
+    },
+    {
+      id: "purchase",
+      title: "Purchase",
       subtitle: "Get 50% extra!",
       icon: <Gift className="w-5 h-5" />,
       badge: "NEW" as TileBadgeType,
       route: "/app/programs/bsk-bonus"
     },
     {
-      id: "lucky-spin",
-      title: "Lucky Spin",
-      subtitle: "Win big prizes",
-      icon: <Target className="w-5 h-5" />,
-      badge: "HOT" as TileBadgeType,
-      route: "/app/programs/spin"
+      id: "referrals",
+      title: "Referrals",
+      subtitle: "Earn commissions",
+      icon: <Users className="w-5 h-5" />,
+      route: "/app/programs/referrals"
     },
     {
-      id: "i-smart",
-      title: "i-SMART",
-      subtitle: "Smart trading",
+      id: "staking",
+      title: "Staking",
+      subtitle: "Earn passive rewards",
+      icon: <Star className="w-5 h-5" />,
+      route: "/app/programs/staking"
+    },
+    {
+      id: "loans",
+      title: "Loans",
+      subtitle: "0% interest",
       icon: <TrendingUp className="w-5 h-5" />,
-      badge: "LIVE" as TileBadgeType,
-      route: "/app/programs/spin"
+      route: "/app/programs/loans"
     },
     {
       id: "insurance",
@@ -53,21 +67,6 @@ const ProgramsScreen = () => {
       subtitle: "Protect assets",
       icon: <Shield className="w-5 h-5" />,
       route: "/app/programs/insurance"
-    },
-    {
-      id: "referrals",
-      title: "Referrals",
-      subtitle: "Earn commissions",
-      icon: <Users className="w-5 h-5" />,
-      badge: "NEW" as TileBadgeType,
-      route: "/app/programs/referrals"
-    },
-    {
-      id: "trading",
-      title: "Trading",
-      subtitle: "Trade markets",
-      icon: <TrendingUp className="w-5 h-5" />,
-      route: "/app/programs/trading"
     }
   ];
 
