@@ -7,6 +7,8 @@ import { useProfile } from "@/hooks/useProfile"
 import { cn } from "@/lib/utils"
 import ipgLogo from "@/assets/ipg-logo.jpg"
 import logoAlt from "@/assets/logo-alt.jpg"
+import { APP_CONFIG } from "@/config/app"
+import { openWhatsApp } from "@/lib/openWhatsApp"
 
 interface HomeHeaderProProps {
   notificationCount?: number
@@ -33,7 +35,7 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
   }, [])
 
   const handleWhatsAppSupport = () => {
-    window.open("https://web.whatsapp.com/send?phone=919133444422&text=Hello%20iSmart%20support", '_blank')
+    openWhatsApp(APP_CONFIG.WHATSAPP_PHONE, "Hello iSmart support")
   }
 
   const getGreeting = () => {

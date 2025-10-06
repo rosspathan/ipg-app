@@ -18,6 +18,8 @@ import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
 import ipgLogo from "@/assets/ipg-logo.jpg";
+import { APP_CONFIG } from "@/config/app";
+import { openWhatsApp } from "@/lib/openWhatsApp";
 
 const AppHomeScreen = () => {
   console.log('AppHomeScreen: Component rendering...');
@@ -130,7 +132,7 @@ const AppHomeScreen = () => {
   };
 
   const handleWhatsAppSupport = () => {
-    window.open("https://web.whatsapp.com/send?phone=919133444422&text=Hello%20iSmart%20support", '_blank');
+    openWhatsApp(APP_CONFIG.WHATSAPP_PHONE, "Hello iSmart support");
   };
 
   return (

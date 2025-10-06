@@ -13,6 +13,8 @@ import { GroupHeader } from "@/components/astra/grid/GroupHeader"
 import { ActivityGrid } from "@/components/astra/grid/ActivityGrid"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { FloatingActionButton } from "@/components/ui/floating-action-button"
+import { APP_CONFIG } from "@/config/app"
+import { openWhatsApp } from "@/lib/openWhatsApp"
 
 // Enhanced KPI data with trends
 const kpiData = [
@@ -148,7 +150,7 @@ export function HomePage() {
   }
 
   const handleWhatsAppSupport = () => {
-    window.open("https://web.whatsapp.com/send?phone=919133444422&text=Hello%20iSmart%20support", '_blank')
+    openWhatsApp(APP_CONFIG.WHATSAPP_PHONE, "Hello iSmart support")
   }
 
   // Premium glass top bar
