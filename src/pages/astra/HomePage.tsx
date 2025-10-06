@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState } from "react"
-import { Bell, User, Gift, Target, Star, TrendingUp, Users, Coins, Shield, Zap, Plus, MessageCircle } from "lucide-react"
+import { Bell, User, Gift, Target, Star, TrendingUp, Users, Coins, Shield, Zap, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useNavigation } from "@/hooks/useNavigation"
 import { AppShellGlass } from "@/components/astra/AppShellGlass"
@@ -12,7 +12,6 @@ import { ProgramTile } from "@/components/astra/grid/ProgramTile"
 import { GroupHeader } from "@/components/astra/grid/GroupHeader"
 import { ActivityGrid } from "@/components/astra/grid/ActivityGrid"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
-import { FloatingActionButton } from "@/components/ui/floating-action-button"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 
 // Enhanced KPI data with trends
@@ -144,10 +143,6 @@ export function HomePage() {
   const { navigate } = useNavigation()
   const [showAllPrograms, setShowAllPrograms] = useState(false)
 
-  const handleFABAction = () => {
-    navigate("/app/wallet")
-  }
-
   // Premium glass top bar
   const topBar = (
     <div className="flex items-center justify-between p-4">
@@ -265,14 +260,6 @@ export function HomePage() {
           </div>
         </div>
       </div>
-
-      {/* FAB - Premium positioning */}
-      <FloatingActionButton
-        onClick={handleFABAction}
-        className="fixed bottom-24 right-6 shadow-fab hover:shadow-neon"
-      >
-        <Plus className="h-6 w-6" />
-      </FloatingActionButton>
     </AppShellGlass>
   )
 }
