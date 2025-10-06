@@ -14,7 +14,7 @@ const REF_BASE_PATH = "/r";
 export const QrLinkBuilder: FC<QrLinkBuilderProps> = ({
   code,
   size = 120,
-  logoUrl = "/brand/export/logo_mark.svg",
+  logoUrl = "/lovable-uploads/a9cfc5de-7126-4662-923b-cc0348077e3d.png",
   className = ""
 }) => {
   const referralUrl = `${APP_HOST}${REF_BASE_PATH}/${code}`;
