@@ -2,10 +2,10 @@ import * as React from "react"
 import { Bell, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { useAuthUser } from "@/hooks/useAuthUser"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useLocation } from "react-router-dom"
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
+import { useDisplayName } from "@/hooks/useDisplayName"
 
 
 interface AppTopBarProps {
@@ -13,13 +13,12 @@ interface AppTopBarProps {
 }
 
 export function AppTopBar({ className }: AppTopBarProps) {
-  const { user } = useAuthUser()
   const { navigate } = useNavigation()
   const location = useLocation()
 
   const notificationCount = 3 // Mock data
 
-  const userName = user?.email?.split("@")[0] || "User"
+  const userName = useDisplayName();
 
   return (
     <header 

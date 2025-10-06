@@ -3,7 +3,7 @@ import { Bell, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
-import { useAuthUser } from "@/hooks/useAuthUser"
+import { useDisplayName } from "@/hooks/useDisplayName"
 
 interface AppHeaderStickyProps {
   onProfileClick?: () => void
@@ -23,9 +23,7 @@ export function AppHeaderSticky({
   notificationCount = 0,
   className
 }: AppHeaderStickyProps) {
-  const { user } = useAuthUser()
-  
-  const userName = user?.email?.split("@")[0] || "User"
+  const userName = useDisplayName()
   return (
     <header
       className={cn(
