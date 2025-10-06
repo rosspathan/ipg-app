@@ -247,7 +247,7 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
                   filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))',
                 }}
               >
-                {`${theme.name} Rank`}
+                {theme.name}
               </h2>
             </div>
           </div>
