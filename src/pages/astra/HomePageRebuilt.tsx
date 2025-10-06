@@ -13,10 +13,10 @@ import { HeroCarousel } from "@/components/home/HeroCarousel"
 import { ProgramsGrid } from "@/components/programs-pro/ProgramsGrid"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { DockNav } from "@/components/navigation/DockNav"
+import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
-
 /**
  * HomePageRebuilt - World-class mobile-first home screen
  * DO NOT MODIFY THE FOOTER - DockNav remains untouched
@@ -24,6 +24,7 @@ import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
 export function HomePageRebuilt() {
   const { navigate } = useNavigation()
   const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
+  const [showQuickSwitch, setShowQuickSwitch] = useState(false)
 
   const handleKPIPress = () => {
     console.log("KPI card pressed")
@@ -212,8 +213,30 @@ export function HomePageRebuilt() {
         <MessageCircle className="h-7 w-7 text-white fill-white" />
       </SupportLinkWhatsApp>
 
+      {/* Quick Switch Radial Menu */}
+      <QuickSwitch
+        isOpen={showQuickSwitch}
+        onClose={() => setShowQuickSwitch(false)}
+        onAction={(action) => {
+          switch (action) {
+            case "deposit":
+              navigate("/app/wallet/deposit")
+              break
+            case "convert":
+              navigate("/app/swap")
+              break
+            case "trade":
+              navigate("/app/trade")
+              break
+            case "programs":
+              navigate("/app/programs")
+              break
+          }
+        }}
+      />
+
       {/* Footer - DO NOT MODIFY THIS SECTION */}
-      <DockNav onNavigate={(path) => navigate(path)} />
+      <DockNav onNavigate={(path) => navigate(path)} onCenterPress={() => setShowQuickSwitch(true)} />
     </div>
   )
 }
