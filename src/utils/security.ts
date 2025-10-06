@@ -221,8 +221,21 @@ export function verifyEmailCode(email: string, code: string): { valid: boolean; 
       return { valid: false, error: 'Verification code has expired.' };
     }
 
-    // Check email and code
-    if (data.email !== email || data.code !== code) {
+    // Normalize inputs for comparison
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedStoredEmail = (data.email || '').toLowerCase().trim();
+    const normalizedCode = code.trim();
+    const normalizedStoredCode = (data.code || '').trim();
+
+    // Check email match (case-insensitive)
+    if (normalizedStoredEmail !== normalizedEmail) {
+      console.log('Email mismatch:', { stored: normalizedStoredEmail, provided: normalizedEmail });
+      return { valid: false, error: 'Invalid verification code.' };
+    }
+
+    // Check code match
+    if (normalizedStoredCode !== normalizedCode) {
+      console.log('Code mismatch:', { stored: normalizedStoredCode, provided: normalizedCode });
       return { valid: false, error: 'Invalid verification code.' };
     }
 
