@@ -19,6 +19,7 @@ import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
 import ipgLogo from "@/assets/ipg-logo.jpg";
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp";
+import CurvedBottomNav from "@/components/CurvedBottomNav";
 
 const AppHomeScreen = () => {
   console.log('AppHomeScreen: Component rendering...');
@@ -387,6 +388,9 @@ const AppHomeScreen = () => {
         </CyberCard>
       </div>
       </div>
+
+      {/* Bottom Navigation with Radial Speed Dial */}
+      <CurvedBottomNav />
     </div>
   );
 };
