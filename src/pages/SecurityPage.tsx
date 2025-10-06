@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, Lock, Fingerprint, Smartphone, Shield, Eye, EyeOff,
-  LogOut, Key, CheckCircle
+  LogOut, Key, CheckCircle, Copy
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useSecurity } from "@/hooks/useSecurity";
@@ -30,6 +30,13 @@ export function SecurityPage() {
   const [showPins, setShowPins] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [devices, setDevices] = useState<any[]>([]);
+  const [seedPhraseRevealed, setSeedPhraseRevealed] = useState(false);
+  
+  // Demo seed phrase - in production, this would come from secure backend
+  const seedPhrase = [
+    "abandon", "ability", "able", "about", "above", "absent",
+    "absorb", "abstract", "absurd", "abuse", "access", "accident"
+  ];
 
   useEffect(() => {
     checkBiometricAvailability().then(setBiometricAvailable);
@@ -94,6 +101,26 @@ export function SecurityPage() {
     } catch (error) {
       toast({ title: "Error", description: "Failed to logout", variant: "destructive" });
     }
+  };
+
+  const handleRevealSeedPhrase = () => {
+    if (!security?.pin_set) {
+      toast({ 
+        title: "PIN Required", 
+        description: "Please set up a PIN first",
+        variant: "destructive"
+      });
+      return;
+    }
+    setSeedPhraseRevealed(true);
+  };
+
+  const handleCopySeedPhrase = () => {
+    navigator.clipboard.writeText(seedPhrase.join(' '));
+    toast({
+      title: "Copied",
+      description: "Seed phrase copied to clipboard"
+    });
   };
 
   return (
@@ -376,13 +403,52 @@ export function SecurityPage() {
             </p>
           </div>
 
-          <Button
-            variant="outline"
-            onClick={() => toast({ title: "Info", description: "Requires PIN + biometric verification" })}
-            className="w-full"
-          >
-            Reveal 12 Words
-          </Button>
+          {!seedPhraseRevealed ? (
+            <Button
+              variant="outline"
+              onClick={handleRevealSeedPhrase}
+              className="w-full"
+            >
+              Reveal 12 Words
+            </Button>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                {seedPhrase.map((word, index) => (
+                  <div
+                    key={index}
+                    className="p-3 bg-background rounded-lg border border-border/40"
+                  >
+                    <span className="text-xs text-muted-foreground mr-2">
+                      {index + 1}.
+                    </span>
+                    <span className="text-sm font-mono font-medium text-foreground">
+                      {word}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleCopySeedPhrase}
+                  className="flex-1"
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy All
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setSeedPhraseRevealed(false)}
+                  className="flex-1"
+                >
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Hide
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* Anti-Phishing */}
