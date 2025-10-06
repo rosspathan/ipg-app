@@ -183,46 +183,7 @@ export function BskCardCompact({
         </Button>
       )}
 
-      {/* Metrics Row */}
-      <div className="flex-1 flex flex-col justify-end">
-        {isWithdrawable ? (
-          <div className="grid grid-cols-3 gap-2 py-2 border-t border-border/20">
-            <div className="text-center">
-              <div className="font-[Inter] text-[9px] text-muted-foreground uppercase">Today</div>
-              <div className="font-[Space_Grotesk] font-bold text-sm text-success tabular-nums">
-                +{bonusMetrics.today}
-              </div>
-            </div>
-            <div className="text-center border-l border-r border-border/20">
-              <div className="font-[Inter] text-[9px] text-muted-foreground uppercase">7 Days</div>
-              <div className="font-[Space_Grotesk] font-bold text-sm text-success tabular-nums">
-                +{bonusMetrics.week.toLocaleString()}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="font-[Inter] text-[9px] text-muted-foreground uppercase">Lifetime</div>
-              <div className="font-[Space_Grotesk] font-bold text-sm text-foreground tabular-nums">
-                {(bonusMetrics.lifetime / 1000).toFixed(1)}K
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-1.5 py-2 border-t border-border/20">
-            {sources.map((source, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "px-2 py-0.5 rounded-full text-[9px] font-[Inter] font-semibold",
-                  "bg-card/80 border border-border/30",
-                  "text-foreground"
-                )}
-              >
-                {source.label} {(source.amount / 1000).toFixed(1)}K
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Metrics Row - Removed per user request */}
 
       {/* Footer Link */}
       {isWithdrawable ? (
