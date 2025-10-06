@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,13 +22,24 @@ export const AccountTab = () => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   
-  const { register, handleSubmit, formState: { errors } } = useForm<AccountFormData>({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<AccountFormData>({
     defaultValues: {
       display_name: userApp?.full_name || '',
       email: userApp?.email || '',
       phone: userApp?.phone || '',
     }
   });
+
+  // Update form when userApp changes
+  useEffect(() => {
+    if (userApp) {
+      reset({
+        display_name: userApp.full_name || '',
+        email: userApp.email || '',
+        phone: userApp.phone || '',
+      });
+    }
+  }, [userApp, reset]);
 
   const onSubmit = async (data: AccountFormData) => {
     try {

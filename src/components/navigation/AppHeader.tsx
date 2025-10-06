@@ -7,6 +7,7 @@ import { StatChip } from "@/components/ui/stat-chip"
 import { BalanceDisplay } from "@/components/ui/balance-display"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useNavigation } from "@/hooks/useNavigation"
+import { useProfile } from "@/hooks/useProfile"
 
 interface AppHeaderProps {
   title?: string
@@ -31,6 +32,7 @@ export function AppHeader({
 }: AppHeaderProps) {
   const { user } = useAuthUser()
   const { navigate } = useNavigation()
+  const { userApp } = useProfile()
 
   return (
     <header className={cn(
@@ -48,7 +50,7 @@ export function AppHeader({
           <Avatar className="h-10 w-10 border-2 border-accent/20">
             <AvatarImage src={user?.user_metadata?.avatar_url} />
             <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {user?.email?.charAt(0).toUpperCase() || "U"}
+              {userApp?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
         </Button>

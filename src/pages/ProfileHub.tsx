@@ -105,7 +105,7 @@ export function ProfileHub() {
   };
 
   const avatarUrl = getAvatarUrl('1x');
-  const displayName = "I-SMART EXCHANGE";
+  const displayName = userApp?.full_name || user?.email?.split('@')[0] || "User";
   const completionScore = completion?.completion_score || 0;
 
   return (
