@@ -99,7 +99,7 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
           {getGreeting()}
         </p>
         <h1 className="text-sm font-[Space_Grotesk] font-bold text-foreground truncate">
-          {userApp?.full_name || userApp?.email?.split('@')[0] || 'User'}
+          {userApp?.email?.split('@')[0] || userApp?.full_name || 'User'}
         </h1>
       </div>
 

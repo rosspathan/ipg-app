@@ -105,7 +105,7 @@ export function ProfileHub() {
   };
 
   const avatarUrl = getAvatarUrl('1x');
-  const displayName = userApp?.full_name || user?.email?.split('@')[0] || "User";
+  const displayName = user?.email?.split('@')[0] || userApp?.full_name || "User";
   const completionScore = completion?.completion_score || 0;
 
   return (
