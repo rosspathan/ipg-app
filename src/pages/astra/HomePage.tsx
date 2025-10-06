@@ -13,8 +13,7 @@ import { GroupHeader } from "@/components/astra/grid/GroupHeader"
 import { ActivityGrid } from "@/components/astra/grid/ActivityGrid"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { FloatingActionButton } from "@/components/ui/floating-action-button"
-import { APP_CONFIG } from "@/config/app"
-import { openWhatsApp } from "@/lib/openWhatsApp"
+import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 
 // Enhanced KPI data with trends
 const kpiData = [
@@ -149,10 +148,6 @@ export function HomePage() {
     navigate("/app/wallet")
   }
 
-  const handleWhatsAppSupport = () => {
-    openWhatsApp(APP_CONFIG.WHATSAPP_PHONE, "Hello iSmart support")
-  }
-
   // Premium glass top bar
   const topBar = (
     <div className="flex items-center justify-between p-4">
@@ -171,16 +166,11 @@ export function HomePage() {
       </div>
       
       <div className="flex items-center gap-2">
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <SupportLinkWhatsApp 
           className="h-10 w-10 p-0 rounded-full hover:bg-success/10"
-          onClick={handleWhatsAppSupport}
-          title="WhatsApp Support"
-          data-testid="whatsapp-support"
         >
           <MessageCircle className="h-5 w-5 text-success" />
-        </Button>
+        </SupportLinkWhatsApp>
         <Button 
           variant="ghost" 
           size="sm" 

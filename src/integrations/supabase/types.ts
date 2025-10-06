@@ -6516,6 +6516,54 @@ export type Database = {
         }
         Relationships: []
       }
+      support_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_scheme: string
+          default_message: string
+          host: string
+          id: string
+          is_active: boolean
+          open_target: string
+          play_fallback_url: string
+          updated_at: string
+          updated_by: string | null
+          web_fallback_url: string
+          whatsapp_phone_e164: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_scheme?: string
+          default_message?: string
+          host?: string
+          id?: string
+          is_active?: boolean
+          open_target?: string
+          play_fallback_url?: string
+          updated_at?: string
+          updated_by?: string | null
+          web_fallback_url?: string
+          whatsapp_phone_e164?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_scheme?: string
+          default_message?: string
+          host?: string
+          id?: string
+          is_active?: boolean
+          open_target?: string
+          play_fallback_url?: string
+          updated_at?: string
+          updated_by?: string | null
+          web_fallback_url?: string
+          whatsapp_phone_e164?: string
+        }
+        Relationships: []
+      }
       support_messages: {
         Row: {
           attachment_url: string | null

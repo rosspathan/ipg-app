@@ -6,7 +6,7 @@ import { useAuthUser } from "@/hooks/useAuthUser"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useLocation } from "react-router-dom"
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
-import { APP_CONFIG } from "@/config/app"
+import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 
 
 interface AppTopBarProps {
@@ -40,16 +40,11 @@ export function AppTopBar({ className }: AppTopBarProps) {
       {/* Right: Profile name + Notifications + WhatsApp */}
       <div className="flex items-center gap-2">
         {/* WhatsApp Support */}
-        <Button
-          variant="ghost"
-          size="icon"
+        <SupportLinkWhatsApp
           className="h-10 w-10 rounded-full hover:bg-success/10 hover:scale-105 transition-all"
-          onClick={() => window.open(APP_CONFIG.WHATSAPP_SUPPORT, '_blank')}
-          data-testid="whatsapp-support"
-          title="Contact Support"
         >
           <MessageCircle className="h-5 w-5 text-success" />
-        </Button>
+        </SupportLinkWhatsApp>
 
         <Button
           variant="ghost"

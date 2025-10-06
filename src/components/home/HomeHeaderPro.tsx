@@ -7,8 +7,7 @@ import { useProfile } from "@/hooks/useProfile"
 import { cn } from "@/lib/utils"
 import ipgLogo from "@/assets/ipg-logo.jpg"
 import logoAlt from "@/assets/logo-alt.jpg"
-import { APP_CONFIG } from "@/config/app"
-import { openWhatsApp } from "@/lib/openWhatsApp"
+import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 
 interface HomeHeaderProProps {
   notificationCount?: number
@@ -33,10 +32,6 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
     }, 5000)
     return () => clearInterval(interval)
   }, [])
-
-  const handleWhatsAppSupport = () => {
-    openWhatsApp(APP_CONFIG.WHATSAPP_PHONE, "Hello iSmart support")
-  }
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -111,15 +106,11 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
 
       {/* Right: Support + Notifications */}
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
+        <SupportLinkWhatsApp
           className="h-9 w-9 p-0 rounded-full hover:bg-success/10 focus:ring-2 focus:ring-success/50"
-          onClick={handleWhatsAppSupport}
-          title="WhatsApp Support"
         >
           <MessageCircle className="h-4.5 w-4.5 text-success" />
-        </Button>
+        </SupportLinkWhatsApp>
 
         <Button
           variant="ghost"

@@ -18,8 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
 import ipgLogo from "@/assets/ipg-logo.jpg";
-import { APP_CONFIG } from "@/config/app";
-import { openWhatsApp } from "@/lib/openWhatsApp";
+import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp";
 
 const AppHomeScreen = () => {
   console.log('AppHomeScreen: Component rendering...');
@@ -131,10 +130,6 @@ const AppHomeScreen = () => {
     }
   };
 
-  const handleWhatsAppSupport = () => {
-    openWhatsApp(APP_CONFIG.WHATSAPP_PHONE, "Hello iSmart support");
-  };
-
   return (
     <div className="min-h-screen w-full animate-slide-in-right">
       {/* Content */}
@@ -147,16 +142,11 @@ const AppHomeScreen = () => {
           kpis={kpis}
           actions={
             <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="sm"
+              <SupportLinkWhatsApp
                 className="relative p-2 hover:bg-success/10"
-                onClick={handleWhatsAppSupport}
-                title="WhatsApp Support"
-                data-testid="whatsapp-support"
               >
                 <MessageCircle className="h-5 w-5 text-success" />
-              </Button>
+              </SupportLinkWhatsApp>
               <Button 
                 variant="ghost" 
                 size="sm"

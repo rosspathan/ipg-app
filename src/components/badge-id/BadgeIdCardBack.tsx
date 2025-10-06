@@ -3,8 +3,7 @@ import { BadgeTheme } from './BadgeIdThemeRegistry';
 import { HoloFx } from './HoloFx';
 import { cn } from '@/lib/utils';
 import { Shield, Users, TrendingUp, Gift, MessageCircle } from 'lucide-react';
-import { APP_CONFIG } from '@/config/app';
-import { openWhatsApp } from '@/lib/openWhatsApp';
+import { SupportLinkWhatsApp } from '@/components/support/SupportLinkWhatsApp';
 
 interface BadgeIdCardBackProps {
   tier: string;
@@ -158,9 +157,7 @@ export const BadgeIdCardBack = forwardRef<HTMLDivElement, BadgeIdCardBackProps>(
           {/* Footer */}
           <div className="text-center space-y-2">
             <div className="flex items-center justify-center">
-              <button
-                type="button"
-                onClick={() => openWhatsApp(APP_CONFIG.WHATSAPP_PHONE, "Hello iSmart support")}
+              <SupportLinkWhatsApp
                 className="inline-flex items-center gap-1 px-2 py-1 rounded-md"
                 style={{
                   background: `${theme.colors.primary}15`,
@@ -169,8 +166,8 @@ export const BadgeIdCardBack = forwardRef<HTMLDivElement, BadgeIdCardBackProps>(
                 }}
               >
                 <MessageCircle className="h-3 w-3" />
-                <span className="text-[10px] font-medium">{APP_CONFIG.WHATSAPP_PHONE}</span>
-              </button>
+                <span className="text-[10px] font-medium">+91 91334 44118</span>
+              </SupportLinkWhatsApp>
             </div>
             <p 
               className="text-[10px] opacity-60"

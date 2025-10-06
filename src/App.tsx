@@ -158,6 +158,7 @@ import { DeepLinkResolver } from "@/pages/DeepLinkResolver";
 import { InsurancePage } from "@/pages/astra/InsurancePage";
 import { AdvertiseMiningPage } from "@/pages/astra/AdvertiseMiningPage";
 import DesignReview from "@/pages/astra/DesignReview";
+import { SupportPage } from "@/pages/SupportPage";
 
 // Phase 3 & 4 User Programs
 const ReferralsPageAstra = React.lazy(() => import("./pages/astra/ReferralsPage"));
@@ -260,6 +261,7 @@ function App() {
               <Route path="profile/notify" element={<NotificationsPage />} />
               <Route path="profile/settings" element={<SettingsPage />} />
               <Route path="profile/referrals" element={<ReferralsPage />} />
+              <Route path="support" element={<SupportPage />} />
                 
                 {/* Programs */}
                 <Route path="programs/insurance" element={<InsurancePage />} />
