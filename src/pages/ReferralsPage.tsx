@@ -20,19 +20,29 @@ export function ReferralsPage() {
 
   // Generate QR code
   useEffect(() => {
-    if (qrCanvasRef.current && url) {
-      QRCode.toCanvas(qrCanvasRef.current, url, {
-        width: 256,
-        margin: 2,
-        color: {
-          dark: '#1a1a1a',
-          light: '#ffffff'
+    const generateQR = async () => {
+      if (qrCanvasRef.current && url && referralCode) {
+        try {
+          console.log('Generating QR code for URL:', url);
+          await QRCode.toCanvas(qrCanvasRef.current, url, {
+            width: 256,
+            margin: 2,
+            color: {
+              dark: '#1a1a1a',
+              light: '#ffffff'
+            }
+          });
+          console.log('QR code generated successfully');
+        } catch (err) {
+          console.error('QR Code generation error:', err);
         }
-      }).catch(err => {
-        console.error('QR Code generation error:', err);
-      });
-    }
-  }, [url]);
+      } else {
+        console.log('QR code not ready:', { hasCanvas: !!qrCanvasRef.current, url, hasReferralCode: !!referralCode });
+      }
+    };
+    
+    generateQR();
+  }, [url, referralCode]);
 
   // Early return with loading state
   if (loading) {
