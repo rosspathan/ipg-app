@@ -7,6 +7,7 @@ import { ChevronLeft, Mail, RefreshCw, CheckCircle } from 'lucide-react';
 import { verifyEmailCode } from '@/utils/security';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { storeEvmAddress } from '@/lib/wallet/evmAddress';
 import { useNavigate } from 'react-router-dom';
 
 interface EmailVerificationScreenProps {
@@ -74,14 +75,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       // Step 2: Create Supabase user account
       const tempPassword = `${cleaned}${email}${Date.now()}`; // Temporary secure password
       
-      // Prepare wallet addresses in JSONB format
-      const walletAddresses = walletAddress ? {
-        evm: {
-          mainnet: walletAddress,
-          bsc: walletAddress // Same address for both EVM networks
-        }
-      } : {};
-      
+      // Do NOT send wallet metadata during sign up to avoid unique constraint conflicts
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password: tempPassword,
@@ -89,9 +83,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
           emailRedirectTo: `${window.location.origin}/app/home`,
           data: {
             email_verified: true,
-            onboarding_completed: true,
-            wallet_address: walletAddress, // Legacy single address
-            wallet_addresses: walletAddresses // New JSONB structure
+            onboarding_completed: true
           }
         }
       });
@@ -164,6 +156,16 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
         setIsVerifying(false);
         return;
+      }
+
+      // Persist wallet address after successful auth (post-signup)
+      try {
+        const { data: { user: authedUser } } = await supabase.auth.getUser();
+        if (authedUser && walletAddress) {
+          await storeEvmAddress(authedUser.id, walletAddress);
+        }
+      } catch (e) {
+        console.warn('[EVM] Wallet store failed:', e);
       }
 
       toast({
