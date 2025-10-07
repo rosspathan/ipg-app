@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Copy, Share2, QrCode, Users, TrendingUp } from "lucide-react";
 import { useReferrals } from "@/hooks/useReferrals";
@@ -7,12 +7,32 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
+import QRCode from 'qrcode';
 
 export function ReferralsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { referralCode, settings, stats, getReferralUrl, getDeepLink, shareReferral, loading } = useReferrals();
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  const url = getReferralUrl();
+  const deepLink = getDeepLink();
+
+  // Generate QR code
+  useEffect(() => {
+    if (qrCanvasRef.current && url) {
+      QRCode.toCanvas(qrCanvasRef.current, url, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#1a1a1a',
+          light: '#ffffff'
+        }
+      }).catch(err => {
+        console.error('QR Code generation error:', err);
+      });
+    }
+  }, [url]);
 
   // Early return with loading state
   if (loading) {
@@ -53,9 +73,6 @@ export function ReferralsPage() {
   const handleShare = (method: 'whatsapp' | 'native') => {
     shareReferral(method);
   };
-
-  const url = getReferralUrl();
-  const deepLink = getDeepLink();
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-referrals">
@@ -183,11 +200,11 @@ export function ReferralsPage() {
           </div>
 
           <div className="flex items-center justify-center p-8 bg-white rounded-xl" data-testid="ref-qr">
-            {/* QR Code Canvas - would need QR generation library */}
-            <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center">
-              <QrCode className="h-24 w-24 text-muted-foreground" />
-              <span className="sr-only">{url}</span>
-            </div>
+            <canvas 
+              ref={qrCanvasRef} 
+              className="rounded-lg"
+              style={{ imageRendering: 'pixelated' }}
+            />
           </div>
 
           <p className="text-xs text-muted-foreground text-center mt-4">
