@@ -6,6 +6,7 @@ import { useNavigation } from "@/hooks/useNavigation"
 import { useLocation } from "react-router-dom"
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
 import { useDisplayName } from "@/hooks/useDisplayName"
+import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 
 
 interface AppTopBarProps {
@@ -19,6 +20,7 @@ export function AppTopBar({ className }: AppTopBarProps) {
   const notificationCount = 3 // Mock data
 
   const userName = useDisplayName();
+  useUsernameBackfill(); // Backfill username if missing
 
   return (
     <header 

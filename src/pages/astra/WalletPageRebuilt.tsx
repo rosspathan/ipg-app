@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useWeb3 } from "@/contexts/Web3Context"
 import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress"
+import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 
 export function WalletPageRebuilt() {
   const { navigate } = useNavigation()
@@ -24,6 +25,17 @@ export function WalletPageRebuilt() {
   const [showQR, setShowQR] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState<string>("")
   const [qrLoading, setQrLoading] = useState(false)
+
+  useUsernameBackfill(); // Backfill username if missing
+
+  // Debug marker with masked data
+  React.useEffect(() => {
+    if (user?.email && walletAddress) {
+      const maskedEmail = user.email.slice(0, 2) + '***@' + user.email.split('@')[1];
+      const maskedAddr = walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'none';
+      console.info('USR_WALLET_PATCH_OK', { email: maskedEmail, address: maskedAddr });
+    }
+  }, [user?.email, walletAddress]);
 
   // Fetch wallet address from profiles table
   useEffect(() => {
@@ -132,7 +144,12 @@ export function WalletPageRebuilt() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32" data-testid="page-wallet">
+    <div className="min-h-screen bg-background pb-32" data-testid="page-wallet" data-version="usr+wallet-v1">
+      {/* Dev Ribbon */}
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white pointer-events-none">
+        USR+WALLET v1
+      </div>
+
       {/* Main Content */}
       <div className="space-y-6 pt-4">
         {/* Address Panel */}

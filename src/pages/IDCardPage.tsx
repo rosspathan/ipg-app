@@ -7,6 +7,7 @@ import { useReferrals } from "@/hooks/useReferrals";
 import { BadgeIdCardSheet } from "@/components/badge-id/BadgeIdCardSheet";
 import { BadgeTier } from "@/components/badge-id/BadgeIdThemeRegistry";
 import { useDisplayName } from "@/hooks/useDisplayName";
+import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
 
 export function IDCardPage() {
   const navigate = useNavigate();
@@ -14,6 +15,8 @@ export function IDCardPage() {
   const { userApp } = useProfile();
   const { uploadAvatar, getAvatarUrl, uploading } = useAvatar();
   const { referralCode } = useReferrals();
+
+  useUsernameBackfill(); // Backfill username if missing
 
   const handleBack = () => navigate("/app/profile");
 

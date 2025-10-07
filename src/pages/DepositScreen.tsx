@@ -13,6 +13,7 @@ import QRCode from "qrcode";
 import INRDepositScreen from "./INRDepositScreen";
 import { copyToClipboard } from "@/utils/clipboard";
 import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress";
+import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
 
 const DepositScreen = () => {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ const DepositScreen = () => {
   const [selectedAsset, setSelectedAsset] = useState("");
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+
+  useUsernameBackfill(); // Backfill username if missing
 
   // Fetch wallet address from profiles table
   useEffect(() => {
