@@ -74,7 +74,7 @@ export function ActivityTimeline({
             variant="ghost"
             size="sm"
             onClick={onViewAll}
-            className="text-[10px] text-text-secondary hover:text-text-primary font-[Inter] font-semibold"
+            className="text-[10px] text-text-secondary font-[Inter] font-semibold"
           >
             View All →
           </Button>

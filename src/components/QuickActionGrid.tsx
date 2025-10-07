@@ -92,13 +92,8 @@ const QuickActionGrid: React.FC<QuickActionGridProps> = ({
         return (
           <GlassCard
             key={action.id}
-            hover="glow"
             className={cn(
               "p-0 border-border/30 cursor-pointer",
-              "transition-all duration-normal",
-              "hover:shadow-neon hover:-translate-y-1",
-              "active:scale-95",
-              `animate-fade-in-scale`,
               action.gradient && `bg-gradient-to-br ${action.gradient}`
             )}
             style={{ 
@@ -109,8 +104,7 @@ const QuickActionGrid: React.FC<QuickActionGridProps> = ({
           >
             <GlassCardContent className="p-4 flex flex-col items-center gap-2">
               <div className={cn(
-                "ripple rounded-full p-3 bg-background/20 border border-border/30",
-                "transition-all duration-normal group-hover:shadow-button"
+                "ripple rounded-full p-3 bg-background/20 border border-border/30"
               )}>
                 <Icon className={cn("h-5 w-5", action.color)} />
               </div>

@@ -139,7 +139,6 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
             onClick={onAddFunds}
             className={cn(
               "ripple bg-gradient-primary border border-primary/30",
-              "hover:shadow-neon transition-all duration-normal",
               "text-primary-foreground font-medium px-6"
             )}
           >

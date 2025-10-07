@@ -92,7 +92,7 @@ export function ProgramsCarousel() {
         <h2 className="font-heading text-lg font-semibold">My Programs</h2>
         <button
           onClick={() => navigate("/app/programs")}
-          className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+          className="text-sm text-text-secondary"
         >
           View All
         </button>

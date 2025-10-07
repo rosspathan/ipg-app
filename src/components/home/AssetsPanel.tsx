@@ -69,7 +69,7 @@ export function AssetsPanel({
             variant="ghost"
             size="sm"
             onClick={onViewAll}
-            className="text-[10px] text-text-secondary hover:text-text-primary font-[Inter] font-semibold"
+            className="text-[10px] text-text-secondary font-[Inter] font-semibold"
           >
             View All →
           </Button>
@@ -105,7 +105,6 @@ export function AssetsPanel({
               onClick={() => onAssetPress?.(asset)}
               className={cn(
                 "w-full p-3 rounded-xl bg-card/60 backdrop-blur-xl border border-border/30",
-                "hover:border-border/50 hover:bg-card/80",
                 "transition-all duration-200",
                 "focus:outline-none focus:ring-2 focus:ring-border/50"
               )}
@@ -147,7 +146,7 @@ export function AssetsPanel({
           variant="ghost"
           size="sm"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full text-sm font-[Inter] font-medium text-text-secondary hover:text-text-primary"
+          className="w-full text-sm font-[Inter] font-medium text-text-secondary"
         >
           {isExpanded ? (
             <>

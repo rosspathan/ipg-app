@@ -359,7 +359,7 @@ const AppHomeScreen = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate("/app-legacy/wallet/history")}
-                className="text-text-secondary hover:text-text-primary transition-colors text-sm font-medium"
+                className="text-text-secondary text-sm font-medium"
               >
                 View All →
               </Button>
