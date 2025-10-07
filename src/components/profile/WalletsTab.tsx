@@ -162,6 +162,29 @@ export const WalletsTab = () => {
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
+            {/* Explorer Links */}
+            <div className="flex items-center gap-3 pt-2">
+              <a
+                href={getExplorerUrl(walletAddress, 'bsc')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm underline underline-offset-2 flex items-center gap-1 hover:text-primary"
+                data-testid="wallet-explorer"
+              >
+                <ExternalLink className="h-3 w-3" />
+                BscScan
+              </a>
+              <span className="text-muted-foreground">•</span>
+              <a
+                href={getExplorerUrl(walletAddress, 'ethereum')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm underline underline-offset-2 flex items-center gap-1 hover:text-primary"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Etherscan
+              </a>
+            </div>
           </div>
 
           {/* Network Info */}
