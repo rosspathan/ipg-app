@@ -151,9 +151,31 @@ const BadgeSubscriptionScreen = () => {
         description: `${selectedBadge.isUpgrade ? 'Upgraded to' : 'Purchased'} ${selectedBadge.name} badge. Your referrer earned 10% commission.`
       });
 
-      // Refresh data
-      setCurrentBadge(selectedBadge.name);
-      setBskBalance(prev => prev - costToPay);
+      // Refresh data from server
+      const { data: badgeData } = await supabase
+        .from('user_badge_holdings')
+        .select('current_badge')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (badgeData) {
+        setCurrentBadge(badgeData.current_badge);
+      } else {
+        setCurrentBadge(selectedBadge.name);
+      }
+
+      const { data: balanceData } = await supabase
+        .from('user_bsk_balances')
+        .select('withdrawable_balance, holding_balance')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (balanceData) {
+        setBskBalance(Number(balanceData.withdrawable_balance) + Number(balanceData.holding_balance));
+      } else {
+        setBskBalance(prev => prev - costToPay);
+      }
+      
       setSelectedBadge(null);
       
     } catch (error: any) {
@@ -268,10 +290,10 @@ const BadgeSubscriptionScreen = () => {
                         <p className="text-muted-foreground">Full Price</p>
                         <p className="font-bold">{badge.bsk_threshold} BSK</p>
                       </div>
-                      {isUpgrade && (
-                        <div>
-                          <p className="text-muted-foreground">Upgrade Cost</p>
-                          <p className="font-bold text-green-500">{displayCost} BSK</p>
+                      {isUpgrade && displayCost !== badge.bsk_threshold && (
+                        <div className="bg-green-500/10 p-2 rounded-lg border border-green-500/20">
+                          <p className="text-muted-foreground text-xs">Upgrade Cost (You Save {badge.bsk_threshold - displayCost} BSK)</p>
+                          <p className="font-bold text-green-500 text-lg">{displayCost} BSK</p>
                         </div>
                       )}
                       <div>
