@@ -47,23 +47,23 @@ const EmailVerifiedScreen = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="relative">
-              <CheckCircle className="h-16 w-16 text-green-500" />
+              <CheckCircle className="h-16 w-16 text-success" />
               <div className="absolute inset-0 animate-ping">
-                <CheckCircle className="h-16 w-16 text-green-500 opacity-30" />
+                <CheckCircle className="h-16 w-16 text-success opacity-30" />
               </div>
             </div>
           </div>
-          <CardTitle className="text-2xl text-green-700">Email Verified!</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl text-success">Email Verified!</CardTitle>
+          <CardDescription className="text-success/90">
             Your email has been successfully verified
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 text-center">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-green-800 font-medium">
+          <div className="bg-success/10 border border-success/30 rounded-lg p-4">
+            <p className="text-success font-medium">
               Welcome to IPG i-SMART! 🎉
             </p>
-            <p className="text-green-700 text-sm mt-2">
+            <p className="text-success/90 text-sm mt-2">
               You can now access all features including trading, deposits, withdrawals, and more.
             </p>
           </div>
