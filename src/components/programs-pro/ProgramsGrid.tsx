@@ -35,7 +35,7 @@ export function ProgramsGrid({
         {onViewAll && (
           <button
             onClick={onViewAll}
-            className="flex items-center gap-1 text-primary font-[Inter] text-sm font-medium hover:text-primary/80 transition-colors"
+            className="flex items-center gap-1 text-primary font-[Inter] text-sm font-medium hover:opacity-80 transition-opacity"
           >
             View All
             <ChevronRight className="h-4 w-4" />
@@ -52,7 +52,7 @@ export function ProgramsGrid({
             className={cn(
               "flex flex-col items-center gap-2 p-2 rounded-xl",
               "transition-all duration-200",
-              "hover:bg-muted/20 active:scale-95"
+              "hover:bg-muted/20"
             )}
           >
             {/* Icon Circle */}

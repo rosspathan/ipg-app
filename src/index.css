@@ -305,11 +305,11 @@ All colors MUST be HSL.
   }
 
   .glass-card:hover::before {
-    opacity: 0.3;
+    opacity: 0.15;
   }
 
   .glow-primary {
-    box-shadow: var(--shadow-neon);
+    box-shadow: none;
   }
 
   .glow-hover {
@@ -317,8 +317,7 @@ All colors MUST be HSL.
   }
 
   .glow-hover:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: var(--shadow-neon);
+    opacity: 0.9;
   }
 
   /* Counter animations */
@@ -343,12 +342,11 @@ All colors MUST be HSL.
   }
 
   .fab:hover {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: var(--shadow-fab), var(--shadow-neon);
+    opacity: 0.9;
   }
 
   .fab:active {
-    transform: scale(0.95);
+    transform: scale(0.98);
   }
 
   .fab::before {

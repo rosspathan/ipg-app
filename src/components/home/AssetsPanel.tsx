@@ -106,8 +106,7 @@ export function AssetsPanel({
               className={cn(
                 "w-full p-3 rounded-xl bg-card/60 backdrop-blur-xl border border-border/30",
                 "hover:border-border/50 hover:bg-card/80",
-                "transition-all duration-[120ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-                "active:scale-[0.98]",
+                "transition-all duration-200",
                 "focus:outline-none focus:ring-2 focus:ring-border/50"
               )}
             >

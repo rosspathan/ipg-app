@@ -20,14 +20,13 @@ export function AddFundsCTA({ onPress, className }: AddFundsCTAProps) {
         "bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%]",
         "text-white font-[Space_Grotesk] font-bold text-base",
         "transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-        "hover:bg-[position:100%_0] hover:shadow-neon hover:-translate-y-0.5",
-        "active:scale-[0.98] active:translate-y-0",
+        "hover:bg-[position:100%_0] hover:opacity-90",
         "focus:outline-none focus:ring-2 focus:ring-primary/50",
         "group",
         className
       )}
       style={{
-        boxShadow: '0 8px 24px rgba(124, 77, 255, 0.4), 0 0 40px rgba(0, 229, 255, 0.2)'
+        boxShadow: '0 8px 24px rgba(124, 77, 255, 0.4)'
       }}
       data-testid="add-funds-cta"
     >

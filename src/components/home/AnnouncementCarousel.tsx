@@ -96,8 +96,7 @@ export function AnnouncementCarousel({ slides, className }: AnnouncementCarousel
                   "bg-gradient-to-br from-card/95 via-card/90 to-card/95",
                   "border border-border/50",
                   "transition-all duration-300 ease-out",
-                  "hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10",
-                  "active:scale-[0.98]",
+                  "hover:border-border/70",
                   "group cursor-pointer"
                 )}
               >
@@ -124,16 +123,6 @@ export function AnnouncementCarousel({ slides, className }: AnnouncementCarousel
                     </p>
                   )}
                 </div>
-
-                {/* Shine effect on hover */}
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                  style={{
-                    background: 'linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.08) 50%, transparent 75%)',
-                    backgroundSize: '200% 100%',
-                    animation: 'shine-sweep 2s ease-in-out infinite'
-                  }}
-                />
               </button>
             </div>
           ))}
@@ -148,8 +137,8 @@ export function AnnouncementCarousel({ slides, className }: AnnouncementCarousel
           "h-8 w-8 rounded-full",
           "bg-background/80 backdrop-blur-sm border border-border/50",
           "flex items-center justify-center",
-          "transition-all duration-300",
-          "hover:bg-background hover:scale-110 active:scale-95",
+          "transition-opacity duration-300",
+          "hover:bg-background hover:opacity-80",
           "shadow-lg"
         )}
         aria-label="Previous slide"
@@ -164,8 +153,8 @@ export function AnnouncementCarousel({ slides, className }: AnnouncementCarousel
           "h-8 w-8 rounded-full",
           "bg-background/80 backdrop-blur-sm border border-border/50",
           "flex items-center justify-center",
-          "transition-all duration-300",
-          "hover:bg-background hover:scale-110 active:scale-95",
+          "transition-opacity duration-300",
+          "hover:bg-background hover:opacity-80",
           "shadow-lg"
         )}
         aria-label="Next slide"
@@ -189,13 +178,6 @@ export function AnnouncementCarousel({ slides, className }: AnnouncementCarousel
           />
         ))}
       </div>
-
-      <style>{`
-        @keyframes shine-sweep {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-      `}</style>
     </div>
   )
 }

@@ -69,8 +69,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
           "bg-gradient-to-br from-card/90 via-card/80 to-card/90",
           "backdrop-blur-xl border border-border/60",
           "transition-all duration-300 ease-out",
-          "hover:border-primary/50 hover:shadow-[0_8px_24px_rgba(124,77,255,0.15)]",
-          "active:scale-[0.98]",
+          "hover:border-primary/50",
           "focus:outline-none focus:ring-2 focus:ring-primary/30",
           "group cursor-pointer",
           className
@@ -84,8 +83,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
             <div className={cn(
               "h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0",
-              "bg-gradient-to-br from-success/25 to-success/5",
-              "transition-transform duration-300 group-hover:scale-105"
+              "bg-gradient-to-br from-success/25 to-success/5"
             )}>
               <Wallet className="h-4 w-4 text-success" />
             </div>
@@ -153,23 +151,6 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
           </div>
 
         </div>
-
-        {/* Subtle shine effect on hover */}
-        <div 
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-          style={{
-            background: 'linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.03) 50%, transparent 70%)',
-            backgroundSize: '200% 100%',
-            animation: 'shine-sweep 2.5s ease-in-out infinite'
-          }}
-        />
-
-        <style>{`
-          @keyframes shine-sweep {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-          }
-        `}</style>
       </button>
 
       {/* Eye/EyeOff Toggle Button - Dedicated space top right */}
@@ -181,8 +162,8 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
         className={cn(
           "absolute top-1/2 -translate-y-1/2 right-3 z-10",
           "p-1.5",
-          "transition-all duration-200",
-          "hover:scale-110 active:scale-95",
+          "transition-opacity duration-200",
+          "hover:opacity-70",
           "focus:outline-none"
         )}
         aria-label={showBalance ? "Hide portfolio" : "Show portfolio"}
