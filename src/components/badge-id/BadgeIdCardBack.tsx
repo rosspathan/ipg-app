@@ -4,6 +4,7 @@ import { MetalTexture } from './MetalTexture';
 import { cn } from '@/lib/utils';
 import { Shield, Users, TrendingUp, Gift, MessageCircle, Award } from 'lucide-react';
 import { SupportLinkWhatsApp } from '@/components/support/SupportLinkWhatsApp';
+import whatsappIcon from "@/assets/whatsapp-icon.png";
 
 interface BadgeIdCardBackProps {
   tier: string;
@@ -170,7 +171,7 @@ export const BadgeIdCardBack = forwardRef<HTMLDivElement, BadgeIdCardBackProps>(
                   color: theme.colors.text
                 }}
               >
-                <MessageCircle className="h-3 w-3" />
+                <img src={whatsappIcon} alt="WhatsApp" className="h-3 w-3" />
                 <span className="text-[10px] font-semibold">+91 91334 44118</span>
               </SupportLinkWhatsApp>
             </div>

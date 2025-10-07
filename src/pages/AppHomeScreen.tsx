@@ -18,6 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
 import ipgLogo from "@/assets/ipg-logo.jpg";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp";
 import CurvedBottomNav from "@/components/CurvedBottomNav";
 
@@ -146,7 +147,7 @@ const AppHomeScreen = () => {
               <SupportLinkWhatsApp
                 className="relative p-2 hover:bg-success/10"
               >
-                <MessageCircle className="h-5 w-5 text-success" />
+                <img src={whatsappIcon} alt="WhatsApp" className="h-5 w-5" />
               </SupportLinkWhatsApp>
               <Button 
                 variant="ghost" 
