@@ -17,14 +17,26 @@ export function useUsernameBackfill() {
       if (!user?.email) return;
 
       try {
-        // Check current username in profiles
         const { data } = await supabase
           .from('profiles')
-          .select('username')
+          .select('username, wallet_addresses, email')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        const needsBackfill = !data || !(data as any).username || (data as any).username === 'User';
+        const currentUsername = (data as any)?.username;
+        const walletAddresses = (data as any)?.wallet_addresses;
+
+        // Pre-flight masked console snapshot
+        const maskedEmail = user.email.slice(0, 2) + '***@' + user.email.split('@')[1];
+        const maskedAddr = walletAddresses?.evm
+          ? (walletAddresses.evm.bsc || walletAddresses.evm.mainnet || walletAddresses.evm)
+          : null;
+        const maskedEvm = typeof maskedAddr === 'string' && maskedAddr.startsWith('0x')
+          ? maskedAddr.slice(0, 6) + '...' + maskedAddr.slice(-4)
+          : 'none';
+        console.info('[USR_PREFLIGHT]', { email: maskedEmail, username: currentUsername || '—', evm: maskedEvm });
+
+        const needsBackfill = !data || !currentUsername || currentUsername === 'User';
         
         if (needsBackfill) {
           const username = extractUsernameFromEmail(user.email, user.id);

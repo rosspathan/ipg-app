@@ -14,13 +14,15 @@ import { useAuthUser } from "@/hooks/useAuthUser"
 import { useWeb3 } from "@/contexts/Web3Context"
 import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress"
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
+import { useDisplayName } from "@/hooks/useDisplayName"
 
 export function WalletPageRebuilt() {
   const { navigate } = useNavigation()
   const { user } = useAuthUser()
   const { wallet } = useWeb3()
+  const displayName = useDisplayName()
   const [walletAddress, setWalletAddress] = useState<string>('')
-  const [showAddress, setShowAddress] = useState(false)
+  const [showAddress, setShowAddress] = useState(true)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState<string>("")
@@ -33,9 +35,9 @@ export function WalletPageRebuilt() {
     if (user?.email && walletAddress) {
       const maskedEmail = user.email.slice(0, 2) + '***@' + user.email.split('@')[1];
       const maskedAddr = walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'none';
-      console.info('USR_WALLET_PATCH_OK', { email: maskedEmail, address: maskedAddr });
+      console.info('USR_WALLET_PATCH_OK', { username: displayName, email: maskedEmail, evm: maskedAddr });
     }
-  }, [user?.email, walletAddress]);
+  }, [user?.email, walletAddress, displayName]);
 
   // Fetch wallet address from profiles table
   useEffect(() => {
