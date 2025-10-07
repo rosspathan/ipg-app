@@ -65,7 +65,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
       <button
         onClick={onCardPress}
         className={cn(
-          "relative w-full px-4 py-3 rounded-2xl overflow-hidden",
+          "relative w-full px-4 py-3 pr-10 rounded-2xl overflow-hidden",
           "bg-gradient-to-br from-card/90 via-card/80 to-card/90",
           "backdrop-blur-xl border border-border/60",
           "transition-all duration-300 ease-out",
@@ -111,7 +111,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
           <div className="h-12 w-px bg-gradient-to-b from-transparent via-border/60 to-transparent flex-shrink-0" />
 
           {/* Right: 24H Change + Badge Section */}
-          <div className="flex flex-col gap-1.5 flex-shrink-0">
+          <div className="flex flex-col gap-1.5 flex-shrink-0 pr-2">
             {/* 24H Change */}
             <div className="flex items-center gap-1.5">
               <TrendingUp className={cn(
@@ -172,26 +172,26 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
         `}</style>
       </button>
 
-      {/* Eye/EyeOff Toggle Button - Clean icon only */}
+      {/* Eye/EyeOff Toggle Button - Dedicated space top right */}
       <button
         onClick={(e) => {
           e.stopPropagation()
           setShowBalance(!showBalance)
         }}
         className={cn(
-          "absolute top-3 right-3 z-10",
-          "p-1",
+          "absolute top-1/2 -translate-y-1/2 right-3 z-10",
+          "p-1.5",
           "transition-all duration-200",
-          "hover:opacity-70 active:opacity-50",
+          "hover:scale-110 active:scale-95",
           "focus:outline-none"
         )}
         aria-label={showBalance ? "Hide portfolio" : "Show portfolio"}
         title={showBalance ? "Hide portfolio" : "Show portfolio"}
       >
         {showBalance ? (
-          <EyeOff className="h-4 w-4 text-muted-foreground/60" />
+          <EyeOff className="h-4 w-4 text-muted-foreground/50 hover:text-muted-foreground" />
         ) : (
-          <Eye className="h-4 w-4 text-muted-foreground/60" />
+          <Eye className="h-4 w-4 text-muted-foreground/50 hover:text-muted-foreground" />
         )}
       </button>
     </div>
