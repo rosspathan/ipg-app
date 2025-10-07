@@ -4,7 +4,6 @@ import { Gift, Target, Zap, Star, Users, TrendingUp, Shield, Coins, MessageCircl
 import { useNavigation } from "@/hooks/useNavigation"
 import { KPICardUnified } from "@/components/home/KPICardUnified"
 import { AddFundsCTA } from "@/components/home/AddFundsCTA"
-import { AssetsPanel } from "@/components/home/AssetsPanel"
 import { BalanceDuoGrid } from "@/components/home/BalanceDuoGrid"
 import { BskCardCompact } from "@/components/home/BskCardCompact"
 import { RewardsBreakdown } from "@/components/home/RewardsBreakdown"
@@ -30,18 +29,6 @@ export function HomePageRebuilt() {
     console.log("KPI card pressed")
     navigate("/app/wallet")
   }
-
-  const handleAssetPress = (asset: any) => {
-    console.log("Asset pressed:", asset.symbol)
-    navigate("/app/wallet")
-  }
-
-  const mockAssets = [
-    { id: "1", symbol: "BTC", name: "Bitcoin", balance: 0.0342, valueUSD: 1456.78, change24h: 2.4 },
-    { id: "2", symbol: "ETH", name: "Ethereum", balance: 2.891, valueUSD: 4821.45, change24h: -1.2 },
-    { id: "3", symbol: "BNB", name: "BNB", balance: 12.45, valueUSD: 2890.12, change24h: 0.8 },
-    { id: "4", symbol: "USDT", name: "Tether", balance: 5420.00, valueUSD: 5420.00, change24h: 0 }
-  ]
 
   const programs = [
     {
@@ -190,13 +177,6 @@ export function HomePageRebuilt() {
         <ProgramsGrid
           programs={programs}
           onViewAll={() => navigate("/app/programs")}
-        />
-
-        {/* Crypto Assets Panel */}
-        <AssetsPanel
-          assets={mockAssets}
-          onAssetPress={handleAssetPress}
-          onViewAll={() => navigate("/app/wallet")}
         />
       </main>
 
