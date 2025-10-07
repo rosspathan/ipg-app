@@ -16,8 +16,6 @@ import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
-import { AppTopBar } from "@/components/astra/AppTopBar"
-
 /**
  * HomePageRebuilt - World-class mobile-first home screen
  * DO NOT MODIFY THE FOOTER - DockNav remains untouched
@@ -139,10 +137,7 @@ export function HomePageRebuilt() {
   ]
 
   return (
-    <div className="min-h-screen" data-testid="page-home" data-version="usr-wallet-v2">
-      {/* App Top Bar with Username */}
-      <AppTopBar />
-      
+    <div className="min-h-screen" data-testid="page-home">
       {/* Main Content */}
       <main className="pb-28 px-4 space-y-6 pt-4">
         {/* Add Funds CTA */}

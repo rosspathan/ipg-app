@@ -146,13 +146,8 @@ const DepositScreen = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background px-6 py-8" data-testid="page-deposit" data-version="usr-wallet-v2">
-      {/* Dev Ribbon */}
-      <div className="fixed top-0 left-0 right-0 z-[100] bg-purple-600 text-white text-[10px] text-center py-0.5 font-mono">
-        USR+WALLET v2
-      </div>
-      
-      <div className="max-w-sm mx-auto w-full space-y-6 mt-4">
+    <div className="min-h-screen bg-background px-6 py-8">
+      <div className="max-w-sm mx-auto w-full space-y-6">
         {/* Header */}
         <div className="flex items-center space-x-4">
           <Button
@@ -341,6 +336,9 @@ const DepositScreen = () => {
             </p>
           </CardContent>
         </Card>
+        <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white">
+          USR+WALLET v1
+        </div>
           </TabsContent>
 
           <TabsContent value="inr">

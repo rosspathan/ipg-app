@@ -21,28 +21,16 @@ export function AppTopBar({ className }: AppTopBarProps) {
 
   const userName = useDisplayName();
   useUsernameBackfill(); // Backfill username if missing
-  
-  // Console debug
-  React.useEffect(() => {
-    console.info('[AppTopBar] displayName:', userName?.slice(0, 3) + '***');
-  }, [userName]);
 
   return (
-    <>
-      {/* Dev Ribbon - USR+WALLET v2 */}
-      <div className="fixed top-0 left-0 right-0 z-[100] bg-purple-600 text-white text-[10px] text-center py-0.5 font-mono">
-        USR+WALLET v2
-      </div>
-      
     <header 
       className={cn(
         "flex items-center justify-between p-4 bg-background/95 backdrop-blur-2xl border-b border-border/60",
-        "sticky top-0 z-50 shadow-lg shadow-primary/5 mt-4",
+        "sticky top-0 z-50 shadow-lg shadow-primary/5",
         "transition-all duration-300 ease-in-out",
         className
       )}
       data-testid="app-top-bar"
-      data-version="usr-wallet-v2"
     >
       {/* Left: Logo */}
       <div className="flex items-center gap-3">
@@ -109,7 +97,9 @@ export function AppTopBar({ className }: AppTopBarProps) {
           )}
         </div>
       </div>
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white">
+        USR+WALLET v1
+      </div>
     </header>
-    </>
   )
 }
