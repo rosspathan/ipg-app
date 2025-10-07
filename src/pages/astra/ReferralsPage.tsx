@@ -11,6 +11,8 @@ import {
   Gift,
   ChevronRight,
   Check,
+  Shield,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,10 +20,14 @@ import { Badge } from "@/components/ui/badge";
 import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { useTeamReferrals } from "@/hooks/useTeamReferrals";
 
 export default function ReferralsPage() {
   const { user } = useAuthUser();
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const { badgeThresholds } = useTeamReferrals();
 
   // Fetch referral data
   const { data: referralData } = useQuery({
@@ -160,6 +166,45 @@ export default function ReferralsPage() {
                 ${earnings?.totalUSD.toFixed(2) || "0.00"}
               </span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Badge Subscription Card */}
+        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Crown className="w-5 h-5 text-purple-500" />
+              Unlock More Levels
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Purchase badges to unlock deeper referral levels and earn more commissions
+            </p>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                <span className="text-xs text-muted-foreground">Available Badges</span>
+                <span className="text-sm font-bold text-foreground">
+                  {badgeThresholds.length} tiers
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                <span className="text-xs text-muted-foreground">Starting From</span>
+                <span className="text-sm font-bold text-foreground">
+                  {badgeThresholds[0]?.bsk_threshold || 0} BSK
+                </span>
+              </div>
+            </div>
+
+            <Button 
+              onClick={() => navigate('/app/badge-subscription')}
+              className="w-full gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+            >
+              <Shield className="w-4 h-4" />
+              View & Buy Badges
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </CardContent>
         </Card>
 
