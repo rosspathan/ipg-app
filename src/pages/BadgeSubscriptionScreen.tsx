@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Shield, Star, Crown, Gem, Sparkles, ArrowUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigation } from "@/hooks/useNavigation";
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useTeamReferrals } from '@/hooks/useTeamReferrals';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const BadgeSubscriptionScreen = () => {
-  const navigate = useNavigate();
+  const { goBack } = useNavigation();
   const { toast } = useToast();
   const { user } = useAuthUser();
   const { badgeThresholds, loading } = useTeamReferrals();
@@ -209,7 +209,7 @@ const BadgeSubscriptionScreen = () => {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="flex items-center gap-4 px-6 py-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/app/programs')}>
+          <Button variant="ghost" size="icon" onClick={goBack}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div>
