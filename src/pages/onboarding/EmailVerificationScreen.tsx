@@ -86,11 +86,37 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
       if (signUpError) {
         console.error('Supabase signup error:', signUpError);
-        toast({
-          title: "Account Creation Failed",
-          description: signUpError.message || "Failed to create your account",
-          variant: "destructive"
-        });
+        const msg = (signUpError.message || '').toLowerCase();
+
+        // If the user already exists, send a magic sign-in link instead
+        if (msg.includes('already') || msg.includes('exists') || msg.includes('registered')) {
+          const { error: otpError } = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+              emailRedirectTo: `${window.location.origin}/app/home`
+            }
+          });
+
+          if (!otpError) {
+            toast({
+              title: 'Sign-in link sent',
+              description: 'Check your email to finish signing in and complete onboarding.'
+            });
+          } else {
+            toast({
+              title: 'Sign-in failed',
+              description: otpError.message || 'Could not send a sign-in link. Please try again.',
+              variant: 'destructive'
+            });
+          }
+        } else {
+          toast({
+            title: 'Account Creation Failed',
+            description: signUpError.message || 'Failed to create your account',
+            variant: 'destructive'
+          });
+        }
+
         setIsVerifying(false);
         return;
       }
@@ -103,7 +129,29 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
       if (signInError) {
         console.error('Auto sign-in failed:', signInError);
-        // Even if auto sign-in fails, account was created successfully
+        // Fallback: send magic link to complete sign-in
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/app/home`
+          }
+        });
+
+        if (!otpError) {
+          toast({
+            title: 'Sign-in link sent',
+            description: 'Check your email to finish signing in.'
+          });
+        } else {
+          toast({
+            title: 'Sign-in required',
+            description: otpError.message || 'Please verify your email to sign in.',
+            variant: 'destructive'
+          });
+        }
+
+        setIsVerifying(false);
+        return;
       }
 
       toast({
