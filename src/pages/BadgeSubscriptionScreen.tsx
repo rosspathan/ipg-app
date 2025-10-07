@@ -209,7 +209,7 @@ const BadgeSubscriptionScreen = () => {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="flex items-center gap-4 px-6 py-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/app/programs')}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div>
