@@ -56,13 +56,16 @@ export function AppTopBar({ className }: AppTopBarProps) {
           <Sparkles className="h-3.5 w-3.5 mr-2 text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:rotate-12" />
           
           {/* Username with gradient text */}
-          <span className={cn(
-            "text-sm font-bold max-w-[140px] truncate relative z-10",
-            "bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text",
-            "group-hover:from-primary group-hover:via-accent group-hover:to-primary",
-            "transition-all duration-500",
-            "animate-fade-in"
-          )}>
+          <span 
+            className={cn(
+              "text-sm font-bold max-w-[140px] truncate relative z-10",
+              "bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text",
+              "group-hover:from-primary group-hover:via-accent group-hover:to-primary",
+              "transition-all duration-500",
+              "animate-fade-in"
+            )}
+            data-testid="header-username"
+          >
             {userName}
           </span>
 
