@@ -284,6 +284,7 @@ function App() {
                 <Route path="programs/bsk-transfer" element={<BSKTransferScreen />} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="programs/badge-subscription" element={<BadgeSubscriptionScreen />} />
+                <Route path="badge-subscription" element={<BadgeSubscriptionScreen />} />
                 
                 <Route path="design-review" element={<DesignReview />} />
                 {/* Unknown Astra sub-route */}
