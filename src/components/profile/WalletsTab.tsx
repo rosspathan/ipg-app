@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Loader2, Shield, AlertCircle } from "lucide-react";
+import { Copy, Loader2, Shield, AlertCircle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import QRCode from "qrcode";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress";
 
 export const WalletsTab = () => {
   const { user } = useAuthUser();
@@ -25,17 +25,8 @@ export const WalletsTab = () => {
       }
 
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('wallet_address')
-          .eq('user_id', user.id)
-          .single();
-
-        if (error) throw error;
-        
-        if (data?.wallet_address) {
-          setWalletAddress(data.wallet_address);
-        }
+        const addr = await getStoredEvmAddress(user.id);
+        if (addr) setWalletAddress(addr);
       } catch (error) {
         console.error('Error fetching wallet address:', error);
       } finally {
@@ -94,9 +85,22 @@ export const WalletsTab = () => {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            No wallet found. Please create or import a wallet from the onboarding process.
+            No wallet found. Please create your EVM wallet to receive deposits.
           </AlertDescription>
         </Alert>
+        <Button
+          onClick={async () => {
+            try {
+              const addr = await ensureWalletAddressOnboarded();
+              setWalletAddress(addr);
+              toast({ title: "Wallet Created", description: "Your EVM address is ready" });
+            } catch (e) {
+              toast({ title: "Wallet setup required", description: "Please complete wallet onboarding in Security", variant: "destructive" });
+            }
+          }}
+        >
+          Create Wallet
+        </Button>
       </div>
     );
   }
@@ -130,6 +134,7 @@ export const WalletsTab = () => {
                   src={qrCode} 
                   alt="Wallet Address QR Code" 
                   className="w-64 h-64"
+                  data-testid="wallet-qr"
                 />
               </div>
             </div>
@@ -142,8 +147,8 @@ export const WalletsTab = () => {
             </label>
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-muted/50 rounded-lg p-3 border border-border">
-                <p className="font-mono text-sm break-all">
-                  {walletAddress}
+                <p className="font-mono text-sm break-all" data-testid="wallet-evm-address">
+                  {formatAddress(walletAddress)}
                 </p>
               </div>
               <Button
@@ -151,6 +156,8 @@ export const WalletsTab = () => {
                 variant="outline"
                 onClick={copyToClipboard}
                 className="shrink-0"
+                data-testid="wallet-copy"
+                aria-live="polite"
               >
                 <Copy className="h-4 w-4" />
               </Button>

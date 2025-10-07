@@ -6,6 +6,7 @@ import { useAvatar } from "@/hooks/useAvatar";
 import { useReferrals } from "@/hooks/useReferrals";
 import { BadgeIdCardSheet } from "@/components/badge-id/BadgeIdCardSheet";
 import { BadgeTier } from "@/components/badge-id/BadgeIdThemeRegistry";
+import { useDisplayName } from "@/hooks/useDisplayName";
 
 export function IDCardPage() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export function IDCardPage() {
   }
 
   const avatarUrl = getAvatarUrl('1x');
-  const displayName = user?.email?.split('@')[0] || 'User';
+  const displayName = useDisplayName();
   
   // For now, default to Gold tier - this should come from user's actual tier
   const currentTier: BadgeTier = 'Gold';
@@ -61,6 +62,9 @@ export function IDCardPage() {
             <p className="text-sm text-muted-foreground">
               Generate and export your premium membership card
             </p>
+            <span data-testid="idcard-username" className="text-sm font-semibold">
+              {displayName}
+            </span>
           </div>
 
           <BadgeIdCardSheet

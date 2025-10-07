@@ -15,9 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function getStoredEvmAddress(userId: string): Promise<string | null> {
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('wallet_addresses')
+    const { data, error } = await (supabase as any)
+      .from('profiles' as any)
+      .select('wallet_addresses' as any)
       .eq('user_id', userId)
       .maybeSingle();
 
