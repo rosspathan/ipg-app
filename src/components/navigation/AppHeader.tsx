@@ -8,6 +8,7 @@ import { BalanceDisplay } from "@/components/ui/balance-display"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useProfile } from "@/hooks/useProfile"
+import { useDisplayName } from "@/hooks/useDisplayName"
 
 interface AppHeaderProps {
   title?: string
@@ -33,6 +34,7 @@ export function AppHeader({
   const { user } = useAuthUser()
   const { navigate } = useNavigation()
   const { userApp } = useProfile()
+  const displayName = useDisplayName()
 
   return (
     <header className={cn(
@@ -54,6 +56,8 @@ export function AppHeader({
             </AvatarFallback>
           </Avatar>
         </Button>
+        
+        <span className="text-sm font-semibold">{displayName}</span>
         
         {showPortfolio && (
           <div className="flex flex-col">
