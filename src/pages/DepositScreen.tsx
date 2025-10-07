@@ -14,11 +14,13 @@ import INRDepositScreen from "./INRDepositScreen";
 import { copyToClipboard } from "@/utils/clipboard";
 import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress";
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
+import { useDisplayName } from "@/hooks/useDisplayName";
 
 const DepositScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthUser();
+  const displayName = useDisplayName();
   const { assetsList, loading: assetsLoading } = useCatalog();
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -78,6 +80,16 @@ const DepositScreen = () => {
       }).then(setQrCodeDataUrl).catch(console.error);
     }
   }, [walletAddress]);
+
+  // Debug marker with masked data
+  useEffect(() => {
+    if (user?.email && walletAddress) {
+      const maskedEmail = user.email.slice(0, 2) + '***@' + user.email.split('@')[1];
+      const maskedAddr = walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'none';
+      console.info('USR_WALLET_PATCH_OK', { username: displayName, email: maskedEmail, evm: maskedAddr });
+    }
+  }, [user?.email, walletAddress, displayName]);
+
 
   const depositInfo = {
     address: walletAddress || "No wallet found",
@@ -325,7 +337,7 @@ const DepositScreen = () => {
           </CardContent>
         </Card>
         <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white">
-          USERNAME+WALLET PATCH
+          USR+WALLET v1
         </div>
           </TabsContent>
 
