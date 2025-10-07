@@ -36,13 +36,13 @@ const handler = async (req: Request): Promise<Response> => {
     // Get environment variables and sanitize sender
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const rawFromEmail = Deno.env.get("SMTP_FROM") || "info@i-smartapp.com";
-    const fromNameRaw = Deno.env.get("SMTP_NAME") || "IPG iSmart Exchange";
+    const fromNameRaw = Deno.env.get("SMTP_NAME") || "IPG I-SMART EXCHANGE";
 
     // Sanitize: trim quotes/spaces and extract pure email if provided as "Name <email>"
     const trimmed = String(rawFromEmail).trim().replace(/^['\"]|['\"]$/g, "");
     const extracted = trimmed.includes("<") ? trimmed.replace(/^.*<([^>]+)>.*/, "$1") : trimmed;
     const fromEmail = extracted.trim();
-    const fromName = String(fromNameRaw).trim() || "IPG iSmart Exchange";
+    const fromName = String(fromNameRaw).trim() || "IPG I-SMART EXCHANGE";
 
     console.log("DEBUG - Resend API Key exists:", !!resendApiKey);
     console.log("DEBUG - From email (raw):", rawFromEmail);
@@ -58,12 +58,12 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Validate email format; if invalid, fallback to verified default
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const fromAddress = emailRegex.test(fromEmail) ? `${fromName} <${fromEmail}>` : `IPG iSmart Exchange <info@i-smartapp.com>`;
+    const fromAddress = emailRegex.test(fromEmail) ? `${fromName} <${fromEmail}>` : `IPG I-SMART EXCHANGE <info@i-smartapp.com>`;
 
     const emailData = {
       from: fromAddress,
       to: [email],
-      subject: isOnboarding ? "Welcome to IPG iSmart Exchange - Verify Your Email" : "Verify Your Email - IPG iSmart",
+      subject: isOnboarding ? "Welcome to IPG I-SMART EXCHANGE - Verify Your Email" : "Verify Your Email - IPG I-SMART EXCHANGE",
       html: emailContent,
     };
     
@@ -114,7 +114,7 @@ function getOnboardingEmailTemplate(userName: string, verificationCode: string):
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Email Verification - IPG iSmart Exchange</title>
+        <title>Email Verification - IPG I-SMART EXCHANGE</title>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -180,25 +180,24 @@ function getOnboardingEmailTemplate(userName: string, verificationCode: string):
             border-top: 1px solid #e2e8f0;
           }
           .logo {
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             margin-bottom: 16px;
-            border-radius: 50%;
-            box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+            object-fit: contain;
           }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://ocblgldglqhlrmtnynmu.supabase.co/storage/v1/object/public/assets/ipg-logo-email.png" alt="IPG iSmart Exchange" class="logo" />
-            <h1>IPG iSmart Exchange</h1>
+            <img src="https://ocblgldglqhlrmtnynmu.supabase.co/storage/v1/object/public/storage-assets/ipg-logo-email.png" alt="IPG I-SMART EXCHANGE" class="logo" onerror="this.style.display='none'" />
+            <h1>IPG I-SMART EXCHANGE</h1>
             <p>Welcome to the Future of Trading</p>
           </div>
           
           <div class="content">
             <h2>Hello ${userName}!</h2>
-            <p>Welcome to IPG iSmart Exchange! Please verify your email address to complete your registration.</p>
+            <p>Welcome to IPG I-SMART EXCHANGE! Please verify your email address to complete your registration.</p>
             
             <div class="verification-code">
               ${verificationCode}
@@ -206,7 +205,7 @@ function getOnboardingEmailTemplate(userName: string, verificationCode: string):
             
             <div class="instructions">
               <h3>📱 How to verify:</h3>
-              <p>1. Return to the IPG iSmart Exchange app</p>
+              <p>1. Return to the IPG I-SMART EXCHANGE app</p>
               <p>2. Enter the verification code above</p>
               <p>3. Complete your security setup</p>
             </div>
@@ -227,7 +226,7 @@ function getOnboardingEmailTemplate(userName: string, verificationCode: string):
           
           <div class="footer">
             <p>If you didn't request this verification, please ignore this email.</p>
-            <p>© 2024 IPG iSmart Exchange. All rights reserved.</p>
+            <p>© 2024 IPG I-SMART EXCHANGE. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -246,7 +245,8 @@ function getRegularEmailTemplate(confirmationUrl: string): string {
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="margin: 0; font-size: 28px;">Welcome to IPG iSmart</h1>
+        <img src="https://ocblgldglqhlrmtnynmu.supabase.co/storage/v1/object/public/storage-assets/ipg-logo-email.png" alt="IPG I-SMART EXCHANGE" style="width: 120px; height: 120px; object-fit: contain; margin-bottom: 16px;" onerror="this.style.display='none'" />
+        <h1 style="margin: 0; font-size: 28px;">Welcome to IPG I-SMART EXCHANGE</h1>
         <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Your Digital Wallet & Trading Platform</p>
       </div>
       
@@ -292,7 +292,7 @@ function getRegularEmailTemplate(confirmationUrl: string): string {
             <a href="mailto:support@ipg-app.com" style="color: #667eea;">support@ipg-app.com</a>
           </p>
           <p style="color: #999; font-size: 12px; margin: 10px 0 0 0;">
-            © 2024 IPG iSmart. All rights reserved.
+            © 2024 IPG I-SMART EXCHANGE. All rights reserved.
           </p>
         </div>
       </div>
