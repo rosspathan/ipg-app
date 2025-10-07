@@ -12,10 +12,12 @@ import QRCode from "qrcode"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuthUser } from "@/hooks/useAuthUser"
+import { useWeb3 } from "@/contexts/Web3Context"
 
 export function WalletPageRebuilt() {
   const { navigate } = useNavigation()
   const { user } = useAuthUser()
+  const { wallet } = useWeb3()
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [showAddress, setShowAddress] = useState(false)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
@@ -33,20 +35,22 @@ export function WalletPageRebuilt() {
           .from('profiles')
           .select('wallet_address')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (error) throw error;
-        
+        if (error) console.warn('No profile wallet found or error:', error);
         if (data?.wallet_address) {
           setWalletAddress(data.wallet_address);
+        } else if (wallet?.address) {
+          setWalletAddress(wallet.address);
         }
       } catch (error) {
         console.error('Error fetching wallet address:', error);
+        if (wallet?.address) setWalletAddress(wallet.address);
       }
     };
 
     fetchWalletAddress();
-  }, [user]);
+  }, [user, wallet?.address]);
 
   const handleCopyAddress = async () => {
     if (!walletAddress) {
