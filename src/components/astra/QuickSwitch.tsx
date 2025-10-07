@@ -51,7 +51,7 @@ export function QuickSwitch({ isOpen, onClose, onAction, className }: QuickSwitc
           {/* Radial Menu */}
           <div
             className={cn(
-              "fixed bottom-20 left-1/2 -translate-x-1/2 z-50",
+              "fixed bottom-36 left-1/2 -translate-x-1/2 z-50",
               "w-64 h-64 flex items-center justify-center",
               className
             )}
