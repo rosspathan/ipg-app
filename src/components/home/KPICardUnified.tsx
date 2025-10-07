@@ -172,29 +172,26 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
         `}</style>
       </button>
 
-      {/* Eye/EyeOff Toggle Button - Positioned on top right */}
+      {/* Eye/EyeOff Toggle Button - Clean icon only */}
       <button
         onClick={(e) => {
           e.stopPropagation()
           setShowBalance(!showBalance)
         }}
         className={cn(
-          "absolute top-2 right-2 z-10",
-          "h-7 w-7 rounded-full",
-          "bg-background/80 backdrop-blur-sm border border-border/50",
-          "flex items-center justify-center",
-          "transition-all duration-300",
-          "hover:bg-background hover:scale-110 active:scale-95",
-          "shadow-md",
-          "focus:outline-none focus:ring-2 focus:ring-primary/30"
+          "absolute top-3 right-3 z-10",
+          "p-1",
+          "transition-all duration-200",
+          "hover:opacity-70 active:opacity-50",
+          "focus:outline-none"
         )}
         aria-label={showBalance ? "Hide portfolio" : "Show portfolio"}
         title={showBalance ? "Hide portfolio" : "Show portfolio"}
       >
         {showBalance ? (
-          <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+          <EyeOff className="h-4 w-4 text-muted-foreground/60" />
         ) : (
-          <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+          <Eye className="h-4 w-4 text-muted-foreground/60" />
         )}
       </button>
     </div>
