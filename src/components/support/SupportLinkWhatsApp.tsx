@@ -1,7 +1,7 @@
 import { FC, ReactNode, MouseEvent } from 'react';
-import { MessageCircle } from 'lucide-react';
 import { openWhatsAppLink, WaSupportConfig, DEFAULT_WA_CONFIG } from '@/lib/support/wa';
 import { cn } from '@/lib/utils';
+import whatsappIcon from '@/assets/whatsapp-icon.png';
 
 interface SupportLinkWhatsAppProps {
   /** Phone number in E.164 format (optional, uses admin default if not provided) */
@@ -79,7 +79,7 @@ export const SupportLinkWhatsApp: FC<SupportLinkWhatsAppProps> = ({
     >
       {children || (
         <>
-          <MessageCircle className="h-4 w-4" />
+          <img src={whatsappIcon} alt="WhatsApp" className="h-5 w-5" />
           <span>Support</span>
         </>
       )}
