@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { ChevronLeft, Mail, RefreshCw, CheckCircle } from 'lucide-react';
 import { verifyEmailCode } from '@/utils/security';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface EmailVerificationScreenProps {
   email: string;
@@ -25,6 +27,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   const [canResend, setCanResend] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(60);
   const { toast } = useToast();
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Countdown timer for resend
@@ -53,26 +56,73 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
     setIsVerifying(true);
     try {
+      // Step 1: Verify the local code
       const result = verifyEmailCode(email, cleaned);
 
-      if (result.valid) {
-        toast({
-          title: "Email Verified!",
-          description: "Your email has been successfully verified",
-          className: "bg-success/10 border-success/50 text-success",
-        });
-        onVerified();
-      } else {
+      if (!result.valid) {
         toast({
           title: "Invalid Code",
           description: result.error || "Please check your code and try again",
           variant: "destructive"
         });
+        setIsVerifying(false);
+        return;
       }
+
+      // Step 2: Create Supabase user account
+      const tempPassword = `${cleaned}${email}${Date.now()}`; // Temporary secure password
+      
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: tempPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/app/home`,
+          data: {
+            email_verified: true,
+            onboarding_completed: true
+          }
+        }
+      });
+
+      if (signUpError) {
+        console.error('Supabase signup error:', signUpError);
+        toast({
+          title: "Account Creation Failed",
+          description: signUpError.message || "Failed to create your account",
+          variant: "destructive"
+        });
+        setIsVerifying(false);
+        return;
+      }
+
+      // Step 3: Auto sign in the user
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: tempPassword
+      });
+
+      if (signInError) {
+        console.error('Auto sign-in failed:', signInError);
+        // Even if auto sign-in fails, account was created successfully
+      }
+
+      toast({
+        title: "Account Created!",
+        description: "Your account has been successfully created",
+        className: "bg-success/10 border-success/50 text-success",
+      });
+
+      // Small delay for toast to show
+      setTimeout(() => {
+        onVerified();
+        navigate('/app/home');
+      }, 1000);
+
     } catch (error) {
+      console.error('Verification error:', error);
       toast({
         title: "Verification Failed",
-        description: "An error occurred while verifying your code",
+        description: "An error occurred while creating your account",
         variant: "destructive"
       });
     } finally {
