@@ -92,27 +92,12 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         console.error('Supabase signup error:', signUpError);
         const msg = (signUpError.message || '').toLowerCase();
 
-        // If the user already exists, send a magic sign-in link instead
+        // If the user already exists, instruct to check email or use login
         if (msg.includes('already') || msg.includes('exists') || msg.includes('registered')) {
-          const { error: otpError } = await supabase.auth.signInWithOtp({
-            email,
-            options: {
-              emailRedirectTo: `${window.location.origin}/app/home`
-            }
+          toast({
+            title: 'Account already exists',
+            description: 'Please check your email for a previous confirmation link or use the login option.',
           });
-
-          if (!otpError) {
-            toast({
-              title: 'Sign-in link sent',
-              description: 'Check your email to finish signing in and complete onboarding.'
-            });
-          } else {
-            toast({
-              title: 'Sign-in failed',
-              description: otpError.message || 'Could not send a sign-in link. Please try again.',
-              variant: 'destructive'
-            });
-          }
         } else {
           toast({
             title: 'Account Creation Failed',
@@ -133,23 +118,17 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
       if (signInError) {
         console.error('Auto sign-in failed:', signInError);
-        // Fallback: send magic link to complete sign-in
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            emailRedirectTo: `${window.location.origin}/app/home`
-          }
-        });
+        const msg2 = (signInError as any)?.message?.toLowerCase?.() || '';
 
-        if (!otpError) {
+        if (msg2.includes('email not confirmed') || (signInError as any)?.code === 'email_not_confirmed') {
           toast({
-            title: 'Sign-in link sent',
-            description: 'Check your email to finish signing in.'
+            title: 'Confirm your email',
+            description: 'Open the confirmation email from Supabase to complete sign-in.',
           });
         } else {
           toast({
             title: 'Sign-in required',
-            description: otpError.message || 'Please verify your email to sign in.',
+            description: (signInError as any)?.message || 'Please confirm your email to sign in.',
             variant: 'destructive'
           });
         }

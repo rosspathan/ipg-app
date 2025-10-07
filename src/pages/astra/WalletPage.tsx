@@ -12,6 +12,7 @@ import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useWeb3 } from "@/contexts/Web3Context"
+import { getStoredEvmAddress } from "@/lib/wallet/evmAddress"
 
 export function WalletPage() {
   const { navigate } = useNavigation()
@@ -25,23 +26,17 @@ export function WalletPage() {
     const fetchWalletAddress = async () => {
       if (!user) return;
 
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('wallet_address')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (error) console.warn('No profile wallet found or error:', error);
-        if (data?.wallet_address) {
-          setWalletAddress(data.wallet_address);
-        } else if (wallet?.address) {
-          setWalletAddress(wallet.address);
+        try {
+          const addr = await getStoredEvmAddress(user.id);
+          if (addr) {
+            setWalletAddress(addr);
+          } else if (wallet?.address) {
+            setWalletAddress(wallet.address);
+          }
+        } catch (error) {
+          console.error('Error fetching wallet address:', error);
+          if (wallet?.address) setWalletAddress(wallet.address);
         }
-      } catch (error) {
-        console.error('Error fetching wallet address:', error);
-        if (wallet?.address) setWalletAddress(wallet.address);
-      }
     };
 
     fetchWalletAddress();
