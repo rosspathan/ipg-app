@@ -40,9 +40,14 @@ export function IDCardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32" data-testid="page-idcard">
+    <div className="min-h-screen bg-background pb-32" data-testid="page-idcard" data-version="usr-wallet-v2">
+      {/* Dev Ribbon */}
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-purple-600 text-white text-[10px] text-center py-0.5 font-mono">
+        USR+WALLET v2
+      </div>
+      
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40 safe-top">
+      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40 safe-top mt-4">
         <div className="flex items-center justify-between h-14 px-4">
           <button
             onClick={handleBack}

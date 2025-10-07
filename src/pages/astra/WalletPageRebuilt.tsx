@@ -146,14 +146,14 @@ export function WalletPageRebuilt() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32" data-testid="page-wallet" data-version="usr+wallet-v1">
-      {/* Dev Ribbon */}
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white pointer-events-none">
-        USR+WALLET v1
+    <div className="min-h-screen bg-background pb-32" data-testid="page-wallet" data-version="usr-wallet-v2">
+      {/* Dev Ribbon - USR+WALLET v2 */}
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-purple-600 text-white text-[10px] text-center py-0.5 font-mono">
+        USR+WALLET v2
       </div>
 
       {/* Main Content */}
-      <div className="space-y-6 pt-4">
+      <div className="space-y-6 pt-6 mt-4">
         {/* Address Panel */}
         <div 
           className="mx-4 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 transition-all duration-[220ms]"
