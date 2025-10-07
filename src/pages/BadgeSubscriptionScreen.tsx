@@ -177,7 +177,7 @@ const BadgeSubscriptionScreen = () => {
   }
 
   const activeBadges = badgeThresholds
-    .filter(b => b.is_active && b.bsk_threshold > 0) // Only show paid badges
+    .filter(b => b.is_active && b.bsk_threshold > 0 && !(b.description || '').toLowerCase().includes('default badge'))
     .sort((a, b) => {
       return badgeOrder.indexOf(a.badge_name.toUpperCase()) - badgeOrder.indexOf(b.badge_name.toUpperCase());
     });
@@ -303,9 +303,11 @@ const BadgeSubscriptionScreen = () => {
                       </Button>
                     )}
                     
-                    <p className="text-xs text-muted-foreground text-center">
-                      ✨ Your referrer earns 10% commission on this purchase
-                    </p>
+                    {displayCost > 0 && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        ✨ Your referrer earns 10% commission on this purchase
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
