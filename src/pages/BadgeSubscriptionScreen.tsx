@@ -176,9 +176,11 @@ const BadgeSubscriptionScreen = () => {
     );
   }
 
-  const activeBadges = badgeThresholds.filter(b => b.is_active).sort((a, b) => {
-    return badgeOrder.indexOf(a.badge_name.toUpperCase()) - badgeOrder.indexOf(b.badge_name.toUpperCase());
-  });
+  const activeBadges = badgeThresholds
+    .filter(b => b.is_active && b.bsk_threshold > 0) // Only show paid badges
+    .sort((a, b) => {
+      return badgeOrder.indexOf(a.badge_name.toUpperCase()) - badgeOrder.indexOf(b.badge_name.toUpperCase());
+    });
 
   return (
     <div className="min-h-screen bg-background">
