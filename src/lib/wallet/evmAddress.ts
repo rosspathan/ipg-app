@@ -17,7 +17,7 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
   try {
     const { data, error } = await (supabase as any)
       .from('profiles' as any)
-      .select('wallet_addresses' as any)
+      .select('wallet_addresses, wallet_address' as any)
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -36,6 +36,11 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
 
     if (typeof evmAddress === 'string' && evmAddress.startsWith('0x')) {
       return evmAddress;
+    }
+
+    // Backward-compat: legacy column wallet_address (text)
+    if (typeof (data as any).wallet_address === 'string' && (data as any).wallet_address.startsWith('0x')) {
+      return (data as any).wallet_address;
     }
 
     return null;

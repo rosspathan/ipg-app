@@ -10,9 +10,9 @@ import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import QRCode from "qrcode"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { supabase } from "@/integrations/supabase/client"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useWeb3 } from "@/contexts/Web3Context"
+import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress"
 
 export function WalletPageRebuilt() {
   const { navigate } = useNavigation()
@@ -31,21 +31,15 @@ export function WalletPageRebuilt() {
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('wallet_address')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (error) console.warn('No profile wallet found or error:', error);
-        if (data?.wallet_address) {
-          setWalletAddress(data.wallet_address);
+        const addr = await getStoredEvmAddress(user.id)
+        if (addr) {
+          setWalletAddress(addr)
         } else if (wallet?.address) {
-          setWalletAddress(wallet.address);
+          setWalletAddress(wallet.address)
         }
       } catch (error) {
-        console.error('Error fetching wallet address:', error);
-        if (wallet?.address) setWalletAddress(wallet.address);
+        console.error('Error fetching wallet address:', error)
+        if (wallet?.address) setWalletAddress(wallet.address)
       }
     };
 
@@ -167,8 +161,8 @@ export function WalletPageRebuilt() {
             </div>
 
             <div className="bg-background/50 rounded-xl p-4 border border-border/30">
-              <p className="font-mono text-sm break-all text-foreground tabular-nums">
-                {showAddress ? (walletAddress || "No wallet found") : "••••••••••••••••••••••••••••••••••••••••"}
+              <p className="font-mono text-sm break-all text-foreground tabular-nums" data-testid="wallet-evm-address">
+                {showAddress ? (walletAddress ? formatAddress(walletAddress) : "No wallet found") : "••••••••••••••••••••••••••••••••••••••••"}
               </p>
             </div>
 
@@ -180,6 +174,8 @@ export function WalletPageRebuilt() {
               onClick={handleCopyAddress}
               className="flex flex-col items-center gap-2 h-20 border-accent/30 text-accent hover:bg-accent/10 hover:border-accent/50 transition-all duration-[120ms]"
               disabled={!walletAddress}
+              data-testid="wallet-copy"
+              aria-live="polite"
             >
               <Copy className="h-5 w-5" />
               <span className="text-xs font-semibold font-heading">Copy</span>
@@ -189,6 +185,7 @@ export function WalletPageRebuilt() {
                 size="default"
                 onClick={openQR}
                 className="flex flex-col items-center gap-2 h-20 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all duration-[120ms]"
+                data-testid="wallet-qr"
               >
                 <QrCode className="h-5 w-5" />
                 <span className="text-xs font-semibold font-heading">QR Code</span>
@@ -196,13 +193,31 @@ export function WalletPageRebuilt() {
               <Button
                 variant="outline"
                 size="default"
-                onClick={() => walletAddress && window.open(`https://bscscan.com/address/${walletAddress}`, '_blank')}
+                onClick={() => walletAddress && window.open(getExplorerUrl(walletAddress, 'bsc'), '_blank')}
                 className="flex flex-col items-center gap-2 h-20 border-warning/30 text-warning hover:bg-warning/10 hover:border-warning/50 transition-all duration-[120ms]"
+                data-testid="wallet-explorer"
               >
                 <ExternalLink className="h-5 w-5" />
                 <span className="text-xs font-semibold font-heading">Explorer</span>
               </Button>
             </div>
+            {!walletAddress && (
+              <div className="pt-3">
+                <Button
+                  onClick={async () => {
+                    try {
+                      const addr = await ensureWalletAddressOnboarded();
+                      setWalletAddress(addr);
+                      toast({ title: 'Wallet Created', description: 'Your EVM address is ready' });
+                    } catch (e) {
+                      toast({ title: 'Wallet setup required', description: 'Please complete wallet onboarding in Security', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  Create Wallet
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -275,7 +290,7 @@ export function WalletPageRebuilt() {
             {qrLoading ? (
               <div className="w-56 h-56 rounded-xl bg-border/40 animate-pulse" />
             ) : (
-              <img src={qrDataUrl} alt="Wallet Address QR Code" className="w-56 h-56 rounded-xl bg-background p-2" />
+              <img src={qrDataUrl} alt="Wallet Address QR Code" className="w-56 h-56 rounded-xl bg-background p-2" data-testid="wallet-qr" />
             )}
             <p className="font-mono text-xs break-all text-center text-muted-foreground">{walletAddress}</p>
             <Button size="sm" variant="secondary" onClick={handleCopyAddress}>Copy Address</Button>
