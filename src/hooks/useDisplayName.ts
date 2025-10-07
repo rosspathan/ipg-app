@@ -19,13 +19,19 @@ export function useDisplayName() {
     if (user?.email) {
       return extractUsernameFromEmail(user.email, user.id);
     }
+
+    // Priority 2: Profile username (persisted)
+    const profileUsername = (userApp as any)?.username as string | undefined;
+    if (profileUsername && profileUsername !== 'User') {
+      return profileUsername;
+    }
     
-    // Priority 2: Profile full_name (if set by migration)
+    // Priority 3: Profile full_name (if set)
     if (userApp?.full_name && userApp.full_name !== 'User') {
       return userApp.full_name;
     }
     
-    // Priority 3: Profile email
+    // Priority 4: Profile email
     if (userApp?.email) {
       return extractUsernameFromEmail(userApp.email, user?.id);
     }
@@ -36,7 +42,7 @@ export function useDisplayName() {
     }
     
     return "User";
-  }, [user?.email, user?.id, userApp?.email, userApp?.full_name]);
+  }, [user?.email, user?.id, userApp?.email, userApp?.full_name, (userApp as any)?.username]);
 
   return displayName;
 }
