@@ -4984,11 +4984,13 @@ export type Database = {
         Row: {
           account_status: string | null
           created_at: string | null
+          display_name: string | null
           email: string | null
           full_name: string | null
           id: string
           kyc_status: string | null
           phone: string | null
+          referral_code: string | null
           two_fa_enabled: boolean | null
           updated_at: string | null
           user_id: string
@@ -5000,11 +5002,13 @@ export type Database = {
         Insert: {
           account_status?: string | null
           created_at?: string | null
+          display_name?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           kyc_status?: string | null
           phone?: string | null
+          referral_code?: string | null
           two_fa_enabled?: boolean | null
           updated_at?: string | null
           user_id: string
@@ -5016,11 +5020,13 @@ export type Database = {
         Update: {
           account_status?: string | null
           created_at?: string | null
+          display_name?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           kyc_status?: string | null
           phone?: string | null
+          referral_code?: string | null
           two_fa_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string

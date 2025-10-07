@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface EmailVerificationScreenProps {
   email: string;
+  walletAddress?: string; // EVM address from onboarding
   onVerified: () => void;
   onResendCode: () => void;
   onBack: () => void;
@@ -18,6 +19,7 @@ interface EmailVerificationScreenProps {
 
 const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   email,
+  walletAddress,
   onVerified,
   onResendCode,
   onBack
@@ -72,6 +74,14 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       // Step 2: Create Supabase user account
       const tempPassword = `${cleaned}${email}${Date.now()}`; // Temporary secure password
       
+      // Prepare wallet addresses in JSONB format
+      const walletAddresses = walletAddress ? {
+        evm: {
+          mainnet: walletAddress,
+          bsc: walletAddress // Same address for both EVM networks
+        }
+      } : {};
+      
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password: tempPassword,
@@ -79,7 +89,9 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
           emailRedirectTo: `${window.location.origin}/app/home`,
           data: {
             email_verified: true,
-            onboarding_completed: true
+            onboarding_completed: true,
+            wallet_address: walletAddress, // Legacy single address
+            wallet_addresses: walletAddresses // New JSONB structure
           }
         }
       });

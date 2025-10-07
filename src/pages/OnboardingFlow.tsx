@@ -131,6 +131,7 @@ const OnboardingFlow: React.FC = () => {
       return (
         <EmailVerificationScreen
           email={state.email || ''}
+          walletAddress={state.walletInfo?.address}
           onVerified={handleEmailVerified}
           onResendCode={handleResendCode}
           onBack={() => setStep('email-input')}
