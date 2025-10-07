@@ -15,7 +15,6 @@ import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
-import whatsappIcon from "@/assets/whatsapp-icon.png"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
 /**
@@ -209,10 +208,9 @@ export function HomePageRebuilt() {
 
       {/* Floating WhatsApp Support Button - Fixed above footer */}
       <SupportLinkWhatsApp
-        className="fixed bottom-20 right-5 z-30 h-14 w-14 rounded-full bg-[#25D366] shadow-lg shadow-[#25D366]/40 hover:shadow-xl hover:shadow-[#25D366]/50 hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center"
-      >
-        <img src={whatsappIcon} alt="WhatsApp" className="h-7 w-7" />
-      </SupportLinkWhatsApp>
+        variant="fab"
+        className="fixed bottom-20 right-5 z-30"
+      />
 
       {/* Quick Switch Radial Menu */}
       <QuickSwitch

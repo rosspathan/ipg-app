@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigation } from "@/hooks/useNavigation";
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp";
-import whatsappIcon from "@/assets/whatsapp-icon.png";
 
 /**
  * Support Page - Fallback when WhatsApp links are blocked
@@ -38,7 +37,7 @@ export function SupportPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <img src={whatsappIcon} alt="WhatsApp" className="h-5 w-5" />
+              <SupportLinkWhatsApp variant="inline" />
               WhatsApp Support
             </CardTitle>
             <CardDescription>
@@ -46,15 +45,12 @@ export function SupportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SupportLinkWhatsApp
-              className="w-full justify-center bg-success hover:bg-success/90 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              <img src={whatsappIcon} alt="WhatsApp" className="h-5 w-5" />
-              Open WhatsApp Chat
-            </SupportLinkWhatsApp>
-            <p className="text-sm text-muted-foreground mt-3 text-center">
-              Available 24/7 • +91 91334 44118
-            </p>
+            <div className="text-center space-y-4">
+              <SupportLinkWhatsApp variant="fab" className="mx-auto" />
+              <p className="text-sm text-muted-foreground">
+                Available 24/7 • +91 91334 44118
+              </p>
+            </div>
           </CardContent>
         </Card>
 

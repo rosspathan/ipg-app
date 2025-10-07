@@ -1,21 +1,19 @@
-import { FC, ReactNode, MouseEvent } from 'react';
+import { FC, MouseEvent } from 'react';
 import { openWhatsAppLink, WaSupportConfig, DEFAULT_WA_CONFIG } from '@/lib/support/wa';
-import { cn } from '@/lib/utils';
-import whatsappIcon from '@/assets/whatsapp-icon.png';
+import { IconButton } from '@/components/ui/icon-button';
+import IconWhatsApp from '@/components/icons/IconWhatsApp';
 
 interface SupportLinkWhatsAppProps {
+  /** Visual variant - inline (transparent) or fab (filled) */
+  variant?: 'inline' | 'fab';
   /** Phone number in E.164 format (optional, uses admin default if not provided) */
   phone?: string;
   /** Message text (optional, uses admin default if not provided) */
   text?: string;
-  /** Custom children (optional, defaults to icon + "Support") */
-  children?: ReactNode;
   /** Additional CSS classes */
   className?: string;
   /** Custom config (optional, merges with admin defaults) */
   config?: Partial<WaSupportConfig>;
-  /** Additional props to pass to the button */
-  [key: string]: any;
 }
 
 /**
@@ -28,27 +26,24 @@ interface SupportLinkWhatsAppProps {
  * 
  * Usage:
  * ```tsx
- * // Default (uses admin settings)
- * <SupportLinkWhatsApp />
+ * // Default inline (header)
+ * <SupportLinkWhatsApp variant="inline" />
+ * 
+ * // Floating action button
+ * <SupportLinkWhatsApp variant="fab" />
  * 
  * // Custom phone/message
  * <SupportLinkWhatsApp phone="+919133444118" text="Help needed" />
- * 
- * // Custom children
- * <SupportLinkWhatsApp>
- *   <IconHelp /> Get Help
- * </SupportLinkWhatsApp>
  * ```
  */
 export const SupportLinkWhatsApp: FC<SupportLinkWhatsAppProps> = ({
+  variant = 'inline',
   phone,
   text,
-  children,
   className,
   config,
-  ...props
 }) => {
-  const handleClick = async (e: MouseEvent<HTMLButtonElement>) => {
+  const handleClick = async (e: MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -64,25 +59,23 @@ export const SupportLinkWhatsApp: FC<SupportLinkWhatsAppProps> = ({
     await openWhatsAppLink(finalPhone, finalText, finalConfig);
   };
 
+  // Build wa.me link for href (fallback)
+  const finalPhone = phone || DEFAULT_WA_CONFIG.whatsapp_phone_e164;
+  const finalText = text || DEFAULT_WA_CONFIG.default_message;
+  const waLink = `https://wa.me/${finalPhone.replace(/\D/g, '')}?text=${encodeURIComponent(finalText)}`;
+
   return (
-    <button
-      type="button"
+    <IconButton
+      as="a"
+      variant={variant}
+      href={waLink}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Support on WhatsApp"
+      className={className}
       onClick={handleClick}
-      className={cn(
-        "inline-flex items-center gap-2",
-        "transition-colors duration-200",
-        className
-      )}
-      data-testid="wa-support-link"
-      title="WhatsApp Support"
-      {...props}
     >
-      {children || (
-        <>
-          <img src={whatsappIcon} alt="WhatsApp" className="h-5 w-5" />
-          <span>Support</span>
-        </>
-      )}
-    </button>
+      <IconWhatsApp className={variant === 'inline' ? 'w-6 h-6' : 'w-7 h-7'} />
+    </IconButton>
   );
 };

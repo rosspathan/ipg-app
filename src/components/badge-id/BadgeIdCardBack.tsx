@@ -4,7 +4,6 @@ import { MetalTexture } from './MetalTexture';
 import { cn } from '@/lib/utils';
 import { Shield, Users, TrendingUp, Gift, MessageCircle, Award } from 'lucide-react';
 import { SupportLinkWhatsApp } from '@/components/support/SupportLinkWhatsApp';
-import whatsappIcon from "@/assets/whatsapp-icon.png";
 
 interface BadgeIdCardBackProps {
   tier: string;
@@ -163,17 +162,13 @@ export const BadgeIdCardBack = forwardRef<HTMLDivElement, BadgeIdCardBackProps>(
           {/* Footer */}
           <div className="space-y-2">
             <div className="flex items-center justify-center">
-              <SupportLinkWhatsApp
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-                style={{
-                  background: `${theme.colors.primary}18`,
-                  border: `1px solid ${theme.colors.primary}35`,
-                  color: theme.colors.text
-                }}
-              >
-                <img src={whatsappIcon} alt="WhatsApp" className="h-3 w-3" />
-                <span className="text-[10px] font-semibold">+91 91334 44118</span>
-              </SupportLinkWhatsApp>
+              <SupportLinkWhatsApp 
+                variant="inline"
+                className="text-[10px]"
+              />
+              <span className="text-[10px] font-semibold ml-1.5" style={{ color: theme.colors.text }}>
+                +91 91334 44118
+              </span>
             </div>
             
             <div className="text-center">

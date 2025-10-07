@@ -13,7 +13,6 @@ import { GroupHeader } from "@/components/astra/grid/GroupHeader"
 import { ActivityGrid } from "@/components/astra/grid/ActivityGrid"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
-import whatsappIcon from "@/assets/whatsapp-icon.png"
 
 // Enhanced KPI data with trends
 const kpiData = [
@@ -162,12 +161,8 @@ export function HomePage() {
       </div>
       
       <div className="flex items-center gap-2">
-        <SupportLinkWhatsApp 
-          className="h-10 w-10 p-0 rounded-full hover:bg-success/10"
-        >
-          <img src={whatsappIcon} alt="WhatsApp" className="h-5 w-5" />
-        </SupportLinkWhatsApp>
-        <Button 
+        <SupportLinkWhatsApp variant="inline" />
+        <Button
           variant="ghost" 
           size="sm" 
           className="h-10 w-10 p-0 rounded-full relative hover:bg-accent/10"
