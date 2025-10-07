@@ -59,6 +59,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         toast({
           title: "Email Verified!",
           description: "Your email has been successfully verified",
+          className: "bg-success/10 border-success/50 text-success",
         });
         onVerified();
       } else {
