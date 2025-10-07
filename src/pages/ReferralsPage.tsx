@@ -7,42 +7,18 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
-import QRCode from 'qrcode';
+import { QRCodeCanvas } from 'qrcode.react';
 
 export function ReferralsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { referralCode, settings, stats, getReferralUrl, getDeepLink, shareReferral, loading } = useReferrals();
-  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+  
 
   const url = getReferralUrl();
   const deepLink = getDeepLink();
 
-  // Generate QR code
-  useEffect(() => {
-    const generateQR = async () => {
-      if (qrCanvasRef.current && url && referralCode) {
-        try {
-          console.log('Generating QR code for URL:', url);
-          await QRCode.toCanvas(qrCanvasRef.current, url, {
-            width: 256,
-            margin: 2,
-            color: {
-              dark: '#1a1a1a',
-              light: '#ffffff'
-            }
-          });
-          console.log('QR code generated successfully');
-        } catch (err) {
-          console.error('QR Code generation error:', err);
-        }
-      } else {
-        console.log('QR code not ready:', { hasCanvas: !!qrCanvasRef.current, url, hasReferralCode: !!referralCode });
-      }
-    };
-    
-    generateQR();
-  }, [url, referralCode]);
+  // QR rendered via QRCodeCanvas component
 
   // Early return with loading state
   if (loading) {
@@ -210,11 +186,17 @@ export function ReferralsPage() {
           </div>
 
           <div className="flex items-center justify-center p-8 bg-white rounded-xl" data-testid="ref-qr">
-            <canvas 
-              ref={qrCanvasRef} 
-              className="rounded-lg"
-              style={{ imageRendering: 'pixelated' }}
-            />
+            {url ? (
+              <QRCodeCanvas
+                value={url}
+                size={256}
+                bgColor="#ffffff"
+                fgColor="#1a1a1a"
+                includeMargin
+              />
+            ) : (
+              <div className="text-muted-foreground text-xs">No referral link</div>
+            )}
           </div>
 
           <p className="text-xs text-muted-foreground text-center mt-4">
