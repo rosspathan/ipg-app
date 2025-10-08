@@ -29,8 +29,8 @@ const mockBalances: BalanceItem[] = [
     id: "bsk-withdrawable",
     symbol: "BSK",
     name: "BSK Withdrawable",
-    balance: 2500.50,
-    valueUSD: 2500.50,
+    balance: 0,
+    valueUSD: 0,
     category: "withdrawable",
     isLocked: false
   },
@@ -38,8 +38,8 @@ const mockBalances: BalanceItem[] = [
     id: "bsk-holding",
     symbol: "BSK", 
     name: "BSK Holding",
-    balance: 1200.25,
-    valueUSD: 1200.25,
+    balance: 0,
+    valueUSD: 0,
     category: "holding",
     isLocked: true
   },
@@ -47,24 +47,24 @@ const mockBalances: BalanceItem[] = [
     id: "btc",
     symbol: "BTC",
     name: "Bitcoin",
-    balance: 0.025,
-    valueUSD: 1250.00,
+    balance: 0,
+    valueUSD: 0,
     category: "crypto"
   },
   {
     id: "eth",
     symbol: "ETH", 
     name: "Ethereum",
-    balance: 2.5,
-    valueUSD: 4000.00,
+    balance: 0,
+    valueUSD: 0,
     category: "crypto"
   },
   {
     id: "usdt",
     symbol: "USDT",
     name: "Tether USD",
-    balance: 500.00,
-    valueUSD: 500.00,
+    balance: 0,
+    valueUSD: 0,
     category: "crypto"
   }
 ]
@@ -116,11 +116,11 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
         <div className="mt-4 flex items-center gap-2 text-sm text-text-secondary">
           <span className="inline-flex items-center gap-1">
             <div className="w-2 h-2 bg-success rounded-full"></div>
-            Available: {showPrivate ? "$12,250" : "••••"}
+            Available: {showPrivate ? "$0.00" : "••••"}
           </span>
           <span className="inline-flex items-center gap-1">
             <div className="w-2 h-2 bg-warning rounded-full"></div>
-            Locked: {showPrivate ? "$1,200" : "••••"}
+            Locked: {showPrivate ? "$0.00" : "••••"}
           </span>
         </div>
       </AstraCard>
