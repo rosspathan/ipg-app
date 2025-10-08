@@ -9,12 +9,11 @@ import { BadgeIdCardSheet } from "@/components/badge-id/BadgeIdCardSheet";
 import { BadgeTier } from "@/components/badge-id/BadgeIdThemeRegistry";
 import { useDisplayName } from "@/hooks/useDisplayName";
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
-import { extractUsernameFromEmail } from "@/lib/user/username";
 
 export function IDCardPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
-  const { userApp, refetch: refetchProfile } = useProfile();
+  const { userApp } = useProfile();
   const { uploadAvatar, getAvatarUrl, uploading } = useAvatar();
   const { referralCode } = useReferrals();
 
@@ -22,23 +21,11 @@ export function IDCardPage() {
 
   const handleBack = () => navigate("/app/profile");
 
-  // Listen for profile updates and refresh
-  React.useEffect(() => {
-    const onUpd = () => refetchProfile?.();
-    window.addEventListener('profile:updated', onUpd);
-    return () => window.removeEventListener('profile:updated', onUpd);
-  }, [refetchProfile]);
-
-  React.useEffect(() => {
-    console.info('USERNAME_FIX_V3_APPLIED');
-  }, []);
-
   if (!user) {
     return null;
   }
 
   const avatarUrl = getAvatarUrl('1x');
-  
   const displayName = useDisplayName();
   
   // For now, default to Gold tier - this should come from user's actual tier
@@ -54,20 +41,8 @@ export function IDCardPage() {
   };
 
   React.useEffect(() => {
-    const mask = (e?: string | null) => {
-      if (!e) return '***@***.***';
-      const [n, d] = (e || '').split('@');
-      return `${(n||'').slice(0,2)}***@***${d ? d.slice(-3) : ''}`;
-    };
-    const emailLocal = user?.email ? extractUsernameFromEmail(user.email) : '';
-    const profileUsername = (userApp as any)?.username ?? null;
-    console.info('[USERNAME_DEBUG_IDCARD]', {
-      maskedEmail: mask(user?.email),
-      emailLocal,
-      profileUsername,
-      displayName
-    });
-  }, [user?.email, (userApp as any)?.username, displayName]);
+    console.info('CLEAN_SLATE_APPLIED');
+  }, []);
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-idcard" data-version="clean-slate-v1">
@@ -109,8 +84,8 @@ export function IDCardPage() {
           />
         </div>
       </div>
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="username-fix-v3">
-        USERNAME FIX v3
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="clean-slate-v1">
+        CLEAN-SLATE v1
       </div>
     </div>
   );

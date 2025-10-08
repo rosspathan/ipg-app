@@ -9,10 +9,8 @@ import { useDisplayName } from "@/hooks/useDisplayName"
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { Badge } from "@/components/ui/badge"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { useProfile } from "@/hooks/useProfile"
-import { extractUsernameFromEmail } from "@/lib/user/username"
 
 
 interface AppTopBarProps {
@@ -23,42 +21,15 @@ export function AppTopBar({ className }: AppTopBarProps) {
   const { navigate } = useNavigation()
   const location = useLocation()
   const { user } = useAuthUser()
-  const { userApp, refetch: refetchProfile } = useProfile()
-  const queryClient = useQueryClient()
 
   const notificationCount = 3 // Mock data
 
+  const userName = useDisplayName();
   useUsernameBackfill(); // Backfill username if missing
 
-  // Use robust display name hook with multiple fallbacks
-  const displayName = useDisplayName();
-
   React.useEffect(() => {
-    const mask = (e?: string | null) => {
-      if (!e) return '***@***.***';
-      const [n, d] = e.split('@');
-      return `${(n||'').slice(0,2)}***@***${d ? d.slice(-3) : ''}`;
-    };
-    const emailLocal = user?.email ? extractUsernameFromEmail(user.email) : '';
-    const storedUsername = (userApp as any)?.username ?? userApp?.full_name ?? null;
-    console.info('USERNAME_FIX_V3_APPLIED');
-    console.info('[APP_TOP_BAR]', { displayName, userId: user?.id });
-    console.info('[USERNAME_DEBUG]', {
-      maskedEmail: mask(user?.email),
-      emailLocal,
-      profileUsername: storedUsername
-    });
-  }, [displayName, user?.id, user?.email, (userApp as any)?.username, userApp?.full_name]);
-
-  // Listen for profile updates and refresh
-  React.useEffect(() => {
-    const onUpd = () => {
-      refetchProfile?.();
-      queryClient.invalidateQueries({ queryKey: ['user-badge', user?.id] });
-    };
-    window.addEventListener('profile:updated', onUpd);
-    return () => window.removeEventListener('profile:updated', onUpd);
-  }, [refetchProfile, queryClient, user?.id]);
+    console.info('[APP_TOP_BAR]', { userName, userId: user?.id });
+  }, [userName, user?.id]);
 
   // Fetch user badge
   const { data: userBadge } = useQuery({
@@ -121,7 +92,7 @@ export function AppTopBar({ className }: AppTopBarProps) {
             )}
             data-testid="header-username"
           >
-            {displayName}
+            {userName}
           </span>
 
           {/* Badge Display */}
@@ -160,8 +131,8 @@ export function AppTopBar({ className }: AppTopBarProps) {
           )}
         </div>
       </div>
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="username-fix-v3">
-        USERNAME FIX v3
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="clean-slate-v1">
+        CLEAN-SLATE v1
       </div>
     </header>
   )
