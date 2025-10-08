@@ -27,6 +27,10 @@ export function AppTopBar({ className }: AppTopBarProps) {
   const userName = useDisplayName();
   useUsernameBackfill(); // Backfill username if missing
 
+  React.useEffect(() => {
+    console.info('[APP_TOP_BAR]', { userName, userId: user?.id });
+  }, [userName, user?.id]);
+
   // Fetch user badge
   const { data: userBadge } = useQuery({
     queryKey: ['user-badge', user?.id],
