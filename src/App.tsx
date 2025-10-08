@@ -138,11 +138,11 @@ import DebugFunding from "@/pages/DebugFunding";
 import SpinVerifyScreen from "@/pages/SpinVerifyScreen"; 
 import BSKVestingScreen from "@/pages/BSKVestingScreen";
 import { BSKWalletPage } from "@/pages/astra/BSKWalletPage";
+import { WalletPage } from "@/pages/astra/WalletPage";
 
 import { AstraLayout } from "@/layouts/AstraLayout";
 import { HomePage } from "@/pages/astra/HomePage";
 import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
-import { WalletPageRebuilt } from "@/pages/astra/WalletPageRebuilt";
 import { ProgramsPageRebuilt } from "@/pages/astra/ProgramsPageRebuilt";
 import { ProgramsPagePro } from "@/pages/astra/ProgramsPagePro";
 import { TradingPageRebuilt } from "@/pages/astra/TradingPageRebuilt";
@@ -243,7 +243,7 @@ function App() {
               }>
               <Route index element={<Navigate to="/app/home" replace />} />
               <Route path="home" element={<HomePageRebuilt />} />
-              <Route path="wallet" element={<WalletPageRebuilt />} />
+              <Route path="wallet" element={<WalletPage />} />
               <Route path="wallet/deposit" element={<DepositScreen />} />
               <Route path="wallet/withdraw" element={<WithdrawScreen />} />
               <Route path="wallet/send" element={<SendScreen />} />

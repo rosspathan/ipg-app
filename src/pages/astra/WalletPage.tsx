@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
-import { Copy, ExternalLink, QrCode, Eye, EyeOff, ChevronDown, Plus } from "lucide-react"
+import { Copy, ExternalLink, QrCode, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
 import { copyToClipboard } from "@/utils/clipboard"
@@ -9,34 +9,42 @@ import { BalanceCluster } from "@/components/astra/BalanceCluster"
 import { QuickActionsRibbon } from "@/components/astra/grid/QuickActionsRibbon"
 import { useNavigation } from "@/hooks/useNavigation"
 import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
-import { supabase } from "@/integrations/supabase/client"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useWeb3 } from "@/contexts/Web3Context"
-import { getStoredEvmAddress } from "@/lib/wallet/evmAddress"
+import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress"
+import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
+import { useDisplayName } from "@/hooks/useDisplayName"
 
 export function WalletPage() {
   const { navigate } = useNavigation()
   const { user } = useAuthUser()
   const { wallet } = useWeb3()
+  const displayName = useDisplayName()
   const [walletAddress, setWalletAddress] = useState<string>('')
-  const [showAddress, setShowAddress] = useState(false)
+  const [showAddress, setShowAddress] = useState(true)
+
+  useUsernameBackfill(); // Backfill username if missing
+
+  React.useEffect(() => {
+    console.info('CLEAN_SLATE_APPLIED');
+  }, []);
 
   // Fetch wallet address from profiles table
   useEffect(() => {
     const fetchWalletAddress = async () => {
       if (!user) return;
 
-        try {
-          const addr = await getStoredEvmAddress(user.id);
-          if (addr) {
-            setWalletAddress(addr);
-          } else if (wallet?.address) {
-            setWalletAddress(wallet.address);
-          }
-        } catch (error) {
-          console.error('Error fetching wallet address:', error);
-          if (wallet?.address) setWalletAddress(wallet.address);
+      try {
+        const addr = await getStoredEvmAddress(user.id);
+        if (addr) {
+          setWalletAddress(addr);
+        } else if (wallet?.address) {
+          setWalletAddress(wallet.address);
         }
+      } catch (error) {
+        console.error('Error fetching wallet address:', error);
+        if (wallet?.address) setWalletAddress(wallet.address);
+      }
     };
 
     fetchWalletAddress();
@@ -64,30 +72,30 @@ export function WalletPage() {
     { 
       id: "deposit", 
       label: "Deposit", 
-      icon: <Plus className="h-4 w-4" />, 
+      icon: React.createElement('span', { className: "text-lg" }, "↓"),
       variant: "primary" as const,
-      onPress: () => navigate("/app-legacy/wallet/deposit")
+      onPress: () => navigate("/app/wallet/deposit")
     },
     { 
       id: "withdraw", 
       label: "Withdraw", 
-      icon: <Copy className="h-4 w-4" />, 
+      icon: React.createElement('span', { className: "text-lg" }, "↑"),
       variant: "default" as const,
-      onPress: () => navigate("/app-legacy/wallet/withdraw")
+      onPress: () => navigate("/app/wallet/withdraw")
     },
     { 
       id: "send", 
       label: "Send", 
-      icon: <ExternalLink className="h-4 w-4" />, 
+      icon: React.createElement('span', { className: "text-lg" }, "→"),
       variant: "default" as const,
-      onPress: () => navigate("/app-legacy/wallet/send")
+      onPress: () => navigate("/app/wallet/send")
     },
     { 
       id: "swap", 
       label: "Swap", 
-      icon: <ChevronDown className="h-4 w-4" />, 
+      icon: React.createElement('span', { className: "text-lg" }, "⇄"),
       variant: "default" as const,
-      onPress: () => navigate("/app-legacy/swap")
+      onPress: () => navigate("/app/swap")
     }
   ]
 
@@ -103,7 +111,8 @@ export function WalletPage() {
   )
 
   return (
-    <AppShellGlass topBar={topBar} data-testid="page-wallet">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20" data-version="clean-slate-v1">
+      <AppShellGlass topBar={topBar} data-testid="page-wallet">
       <div className="space-y-6 pb-24">
         {/* Address Panel with Network Badge */}
         <div 
@@ -118,54 +127,81 @@ export function WalletPage() {
 
           {/* Address Display */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Your Wallet Address</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAddress(!showAddress)}
-                className="h-6 px-2 text-xs"
-              >
-                {showAddress ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              </Button>
-            </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-muted-foreground">Your EVM Address (BEP20/ERC20)</p>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAddress(!showAddress)}
+                    className="h-7 px-2"
+                  >
+                    {showAddress ? (
+                      <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+              </div>
 
-            <div className="bg-background/50 rounded-xl p-4 border border-border/30">
-              <p className="font-mono text-sm break-all text-foreground">
-                {showAddress ? (walletAddress || "No wallet found") : "••••••••••••••••••••••••••••••••••••••••"}
-              </p>
-            </div>
+              <div className="bg-muted/40 backdrop-blur-sm rounded-xl p-3 border border-border/40">
+                <p className="font-mono text-xs break-all text-foreground/90 leading-relaxed" data-testid="wallet-evm-address">
+                  {showAddress ? (walletAddress ? formatAddress(walletAddress) : 'No wallet connected') : '••••••••••••••••••••••••••••••••••'}
+                </p>
+              </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyAddress}
-                className="flex-1 border-accent/30 text-accent hover:bg-accent/10"
-                disabled={!showAddress}
-              >
-                <Copy className="h-3 w-3 mr-1" />
-                Copy
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 border-accent/30 text-accent hover:bg-accent/10"
-              >
-                <QrCode className="h-3 w-3 mr-1" />
-                QR
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => walletAddress && window.open(`https://bscscan.com/address/${walletAddress}`, '_blank')}
-                className="flex-1 border-accent/30 text-accent hover:bg-accent/10"
-              >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Explorer
-              </Button>
-            </div>
+              {/* Action Buttons */}
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyAddress}
+                  className="flex flex-col items-center gap-1 h-auto py-2 bg-background/60 hover:bg-primary/10 hover:border-primary/40 transition-colors"
+                  data-testid="wallet-copy"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium">Copy</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {/* QR modal logic */}}
+                  className="flex flex-col items-center gap-1 h-auto py-2 bg-background/60 hover:bg-primary/10 hover:border-primary/40 transition-colors"
+                  data-testid="wallet-qr"
+                >
+                  <QrCode className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium">QR</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(getExplorerUrl(walletAddress, 'bsc'), '_blank')}
+                  className="flex flex-col items-center gap-1 h-auto py-2 bg-background/60 hover:bg-primary/10 hover:border-primary/40 transition-colors"
+                  disabled={!walletAddress}
+                  data-testid="wallet-explorer"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium">BSC</span>
+                </Button>
+              </div>
+            {!walletAddress && (
+              <div className="pt-3">
+                <Button
+                  onClick={async () => {
+                    try {
+                      const addr = await ensureWalletAddressOnboarded();
+                      setWalletAddress(addr);
+                      toast({ title: 'Wallet Created', description: 'Your EVM address is ready' });
+                    } catch (e) {
+                      toast({ title: 'Wallet setup required', description: 'Please complete wallet onboarding in Security', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  Create Wallet
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -176,9 +212,13 @@ export function WalletPage() {
 
         {/* Balance Cluster with Crypto Assets Grid */}
         <div className="px-4">
-          <BalanceCluster />
+        <BalanceCluster />
         </div>
       </div>
-    </AppShellGlass>
+      </AppShellGlass>
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="clean-slate-v1">
+        CLEAN-SLATE v1
+      </div>
+    </div>
   )
 }

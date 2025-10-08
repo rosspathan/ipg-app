@@ -97,8 +97,8 @@ export function AppTopBar({ className }: AppTopBarProps) {
           )}
         </div>
       </div>
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white">
-        USR+WALLET v1
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="clean-slate-v1">
+        CLEAN-SLATE v1
       </div>
     </header>
   )

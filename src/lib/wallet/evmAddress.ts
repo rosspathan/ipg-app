@@ -51,9 +51,40 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
 }
 
 /**
+ * Derive EVM address from mnemonic on-device (m/44'/60'/0'/0/0)
+ * and store only the public address
+ */
+async function deriveEvmAddressFromMnemonic(): Promise<string> {
+  // Check if we have a stored mnemonic in the recovery phrase storage
+  const storedData = localStorage.getItem('wallet_data_recovery');
+  if (!storedData) {
+    throw new Error('No wallet mnemonic found. Please complete wallet setup first.');
+  }
+
+  try {
+    const parsed = JSON.parse(storedData);
+    const mnemonic = parsed.mnemonic;
+    
+    if (!mnemonic) {
+      throw new Error('Invalid wallet data');
+    }
+
+    // Import ethers for wallet derivation
+    const { Wallet } = await import('ethers');
+    
+    // Derive HD wallet from mnemonic (ETH path: m/44'/60'/0'/0/0)
+    const hdWallet = Wallet.fromPhrase(mnemonic);
+    
+    return hdWallet.address;
+  } catch (err) {
+    console.error('Failed to derive EVM address:', err);
+    throw new Error('Could not derive wallet address from mnemonic');
+  }
+}
+
+/**
  * Ensure user has an EVM wallet address onboarded
- * If not present, this triggers the onboarding flow to derive the address
- * from the user's seed phrase (handled on-device only)
+ * Derives address on-device if needed and stores it
  * 
  * @returns The EVM address after ensuring it exists
  * @throws Error if wallet generation fails
@@ -66,18 +97,18 @@ export async function ensureWalletAddressOnboarded(): Promise<string> {
   }
 
   // Check if address already exists
-  const existing = await getStoredEvmAddress(user.id);
+  let existing = await getStoredEvmAddress(user.id);
   if (existing) {
     return existing;
   }
 
-  // If no address exists, we need to trigger wallet creation
-  // This should call the existing onboarding logic to:
-  // 1. Retrieve the seed phrase (with PIN/biometric auth)
-  // 2. Derive the address using path m/44'/60'/0'/0/0
-  // 3. Store only the public address back to Supabase
+  // Derive new address from mnemonic
+  const address = await deriveEvmAddressFromMnemonic();
   
-  throw new Error('WALLET_NOT_ONBOARDED: Please complete wallet setup first');
+  // Store the public address
+  await storeEvmAddress(user.id, address);
+  
+  return address;
 }
 
 /**

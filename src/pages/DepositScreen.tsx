@@ -83,6 +83,7 @@ const DepositScreen = () => {
 
   // Debug marker with masked data
   useEffect(() => {
+    console.info('CLEAN_SLATE_APPLIED');
     if (user?.email && walletAddress) {
       const maskedEmail = user.email.slice(0, 2) + '***@' + user.email.split('@')[1];
       const maskedAddr = walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'none';
@@ -336,8 +337,8 @@ const DepositScreen = () => {
             </p>
           </CardContent>
         </Card>
-        <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white">
-          USR+WALLET v1
+        <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="clean-slate-v1">
+          CLEAN-SLATE v1
         </div>
           </TabsContent>
 

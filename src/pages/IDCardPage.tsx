@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -39,8 +40,12 @@ export function IDCardPage() {
     joinDate: userApp?.created_at || new Date().toISOString(),
   };
 
+  React.useEffect(() => {
+    console.info('CLEAN_SLATE_APPLIED');
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background pb-32" data-testid="page-idcard">
+    <div className="min-h-screen bg-background pb-32" data-testid="page-idcard" data-version="clean-slate-v1">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40 safe-top">
         <div className="flex items-center justify-between h-14 px-4">
@@ -78,6 +83,9 @@ export function IDCardPage() {
             uploadingAvatar={uploading}
           />
         </div>
+      </div>
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="clean-slate-v1">
+        CLEAN-SLATE v1
       </div>
     </div>
   );

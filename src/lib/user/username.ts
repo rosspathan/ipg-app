@@ -14,27 +14,24 @@ export function extractUsernameFromEmail(email: string | null | undefined, userI
     if (userId) {
       return `user${userId.slice(0, 6)}`;
     }
-    return "user";
+    return `user${Math.random().toString(36).slice(2, 6)}`;
   }
 
   // Extract local part (before @)
   const localPart = email.split('@')[0] || '';
   
-  // Convert to lowercase
-  let username = localPart.toLowerCase();
-  
-  // Keep only letters, numbers, underscore, and dot
-  username = username.replace(/[^a-z0-9_.]/g, '');
-  
-  // Trim to 20 characters
-  username = username.slice(0, 20);
+  // Convert to lowercase and sanitize
+  let username = localPart
+    .toLowerCase()
+    .replace(/[^a-z0-9_.]/g, '')
+    .slice(0, 20);
   
   // If empty after sanitization, use fallback
   if (!username) {
     if (userId) {
       return `user${userId.slice(0, 6)}`;
     }
-    return "user";
+    return `user${Math.random().toString(36).slice(2, 6)}`;
   }
   
   return username;
