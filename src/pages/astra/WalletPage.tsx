@@ -18,7 +18,7 @@ import { useDisplayName } from "@/hooks/useDisplayName"
 export function WalletPage() {
   const { navigate } = useNavigation()
   const { user } = useAuthUser()
-  const { wallet } = useWeb3()
+  const { wallet, connectMetaMask } = useWeb3()
   const displayName = useDisplayName()
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [showAddress, setShowAddress] = useState(true)
@@ -195,19 +195,35 @@ export function WalletPage() {
                 </Button>
               </div>
             {!walletAddress && (
-              <div className="pt-3">
+              <div className="pt-3 grid grid-cols-2 gap-2">
                 <Button
+                  variant="default"
                   onClick={async () => {
                     try {
                       const addr = await ensureWalletAddressOnboarded();
                       setWalletAddress(addr);
                       toast({ title: 'Wallet Created', description: 'Your EVM address is ready' });
                     } catch (e) {
-                      toast({ title: 'Wallet setup required', description: 'Please complete wallet onboarding in Security', variant: 'destructive' });
+                      toast({ title: 'Wallet setup required', description: 'Please complete wallet onboarding or connect MetaMask', variant: 'destructive' });
                     }
                   }}
                 >
                   Create Wallet
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      await connectMetaMask();
+                      // WalletPage effect will pick up wallet.address, but we set directly too
+                      if (wallet?.address) setWalletAddress(wallet.address);
+                      toast({ title: 'Wallet Connected', description: 'MetaMask address linked' });
+                    } catch (e) {
+                      toast({ title: 'MetaMask', description: (e as any)?.message || 'Failed to connect', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  Connect MetaMask
                 </Button>
               </div>
             )}

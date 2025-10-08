@@ -381,6 +381,21 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setWallet(walletData);
       localStorage.setItem('cryptoflow_metamask_wallet', JSON.stringify(walletData));
+
+      // Persist address to profiles for retrieval elsewhere
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const walletAddresses = { evm: { mainnet: address, bsc: address } };
+          await supabase
+            .from('profiles')
+            .update({ wallet_address: address, wallet_addresses: walletAddresses })
+            .eq('user_id', user.id);
+        }
+      } catch (persistErr) {
+        console.warn('Could not persist MetaMask address to profile:', persistErr);
+      }
     } catch (error: any) {
       console.error('MetaMask connection error:', error);
       throw new Error(error.message || 'Failed to connect to MetaMask');
