@@ -58,10 +58,18 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   useEffect(() => {
     const send = async () => {
       try {
-        const { error } = await supabase.auth.signInWithOtp({
+        // Attempt OTP with account creation; if signups are disabled, retry without creating
+        let { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { shouldCreateUser: true } // OTP only, no magic link
+          options: { shouldCreateUser: true }
         });
+        if (error && /signups not allowed/i.test(error.message || '')) {
+          const retry = await supabase.auth.signInWithOtp({
+            email,
+            options: { shouldCreateUser: false }
+          });
+            error = retry.error;
+        }
         if (error) throw error;
       } catch (e) {
         console.warn('Initial OTP send failed', e);
@@ -198,10 +206,18 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     setCanResend(false);
     
     try {
-      const { error } = await supabase.auth.signInWithOtp({
+      let { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { shouldCreateUser: true } // OTP only
+        options: { shouldCreateUser: true }
       });
+
+      if (error && /signups not allowed/i.test(error.message || '')) {
+        const retry = await supabase.auth.signInWithOtp({
+          email,
+          options: { shouldCreateUser: false }
+        });
+        error = retry.error;
+      }
 
       if (error) throw error;
 
