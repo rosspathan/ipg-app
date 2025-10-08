@@ -103,7 +103,7 @@ export function WalletPage() {
     <div className="flex items-center justify-between p-4">
       <BrandHeaderLogo size="medium" />
       <div className="text-center flex-1">
-        <h1 className="font-bold text-lg text-foreground font-heading">My Wallet</h1>
+        <h1 className="font-bold text-lg text-foreground font-heading">{displayName}'s Wallet</h1>
         <p className="text-xs text-muted-foreground">Manage assets securely</p>
       </div>
       <div className="w-8" />
@@ -147,7 +147,7 @@ export function WalletPage() {
 
               <div className="bg-muted/40 backdrop-blur-sm rounded-xl p-3 border border-border/40">
                 <p className="font-mono text-xs break-all text-foreground/90 leading-relaxed" data-testid="wallet-evm-address">
-                  {showAddress ? (walletAddress ? formatAddress(walletAddress) : 'No wallet connected') : '••••••••••••••••••••••••••••••••••'}
+                  {showAddress ? (walletAddress || 'No wallet connected') : '••••••••••••••••••••••••••••••••••'}
                 </p>
               </div>
 

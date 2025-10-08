@@ -13,12 +13,12 @@ interface BalanceClusterProps {
 }
 
 const mockBalances = {
-  withdrawable: 125000,
-  holding: 89500,
+  withdrawable: 0,
+  holding: 0,
   cryptoAssets: [
-    { symbol: "BTC", name: "Bitcoin", balance: 0.0342, valueUSD: 1456.78, logo: "₿" },
-    { symbol: "ETH", name: "Ethereum", balance: 2.891, valueUSD: 4821.45, logo: "Ξ" },
-    { symbol: "BNB", name: "BNB", balance: 12.45, valueUSD: 2890.12, logo: "🔶" }
+    { symbol: "BTC", name: "Bitcoin", balance: 0, valueUSD: 0, logo: "₿" },
+    { symbol: "ETH", name: "Ethereum", balance: 0, valueUSD: 0, logo: "Ξ" },
+    { symbol: "BNB", name: "BNB", balance: 0, valueUSD: 0, logo: "🔶" }
   ]
 }
 
