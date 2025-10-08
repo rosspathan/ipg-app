@@ -83,26 +83,33 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
  * and store only the public address
  */
 async function deriveEvmAddressFromMnemonic(): Promise<string> {
-  // Check if we have a stored mnemonic in the recovery phrase storage
-  const storedData = localStorage.getItem('wallet_data_recovery');
-  if (!storedData) {
+  // Try multiple local storage locations for mnemonic set during onboarding
+  const recovery = localStorage.getItem('wallet_data_recovery');
+  const internal = localStorage.getItem('cryptoflow_wallet');
+
+  let mnemonic: string | null = null;
+  try {
+    if (recovery) {
+      const parsed = JSON.parse(recovery);
+      mnemonic = parsed?.mnemonic || parsed?.seedPhrase || null;
+    }
+  } catch {}
+
+  if (!mnemonic && internal) {
+    try {
+      const parsed = JSON.parse(internal);
+      mnemonic = parsed?.seedPhrase || parsed?.mnemonic || null;
+    } catch {}
+  }
+
+  if (!mnemonic) {
     throw new Error('No wallet mnemonic found. Please complete wallet setup first.');
   }
 
   try {
-    const parsed = JSON.parse(storedData);
-    const mnemonic = parsed.mnemonic;
-    
-    if (!mnemonic) {
-      throw new Error('Invalid wallet data');
-    }
-
     // Import ethers for wallet derivation
     const { Wallet } = await import('ethers');
-    
-    // Derive HD wallet from mnemonic (ETH path: m/44'/60'/0'/0/0)
     const hdWallet = Wallet.fromPhrase(mnemonic);
-    
     return hdWallet.address;
   } catch (err) {
     console.error('Failed to derive EVM address:', err);
