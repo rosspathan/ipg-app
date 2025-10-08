@@ -144,7 +144,8 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       
       // Code is valid, proceed with onboarding
       sessionStorage.removeItem('verificationCode');
-      sessionStorage.removeItem('verificationEmail');
+      // Keep verificationEmail to allow display fallback until profile is saved
+      // sessionStorage.removeItem('verificationEmail');
       
       toast({
         title: "Email Verified!",

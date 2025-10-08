@@ -39,22 +39,7 @@ export function IDCardPage() {
 
   const avatarUrl = getAvatarUrl('1x');
   
-  // Compute display name with robust fallback (email local-part, profile username/display_name, session storage)
-  const displayName = React.useMemo(() => {
-    const emailLocal = user?.email ? extractUsernameFromEmail(user.email) : '';
-    let verifyLocal = '';
-    try {
-      const v = sessionStorage.getItem('verificationEmail');
-      if (v) verifyLocal = extractUsernameFromEmail(v);
-    } catch {}
-
-    return (userApp as any)?.display_name
-      || (userApp as any)?.username
-      || userApp?.full_name
-      || emailLocal
-      || verifyLocal
-      || 'User';
-  }, [user?.email, userApp?.full_name, (userApp as any)?.display_name, (userApp as any)?.username]);
+  const displayName = useDisplayName();
   
   // For now, default to Gold tier - this should come from user's actual tier
   const currentTier: BadgeTier = 'Gold';
