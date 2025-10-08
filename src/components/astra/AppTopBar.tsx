@@ -30,18 +30,25 @@ export function AppTopBar({ className }: AppTopBarProps) {
 
   useUsernameBackfill(); // Backfill username if missing
 
-  // Compute display name with robust fallback
-  const emailLocal = user?.email ? extractUsernameFromEmail(user.email) : '';
-  const displayName = (userApp as any)?.display_name
-    || (userApp as any)?.username
-    || userApp?.full_name
-    || emailLocal
-    || 'User';
+  // Use robust display name hook with multiple fallbacks
+  const displayName = useDisplayName();
 
   React.useEffect(() => {
+    const mask = (e?: string | null) => {
+      if (!e) return '***@***.***';
+      const [n, d] = e.split('@');
+      return `${(n||'').slice(0,2)}***@***${d ? d.slice(-3) : ''}`;
+    };
+    const emailLocal = user?.email ? extractUsernameFromEmail(user.email) : '';
+    const storedUsername = (userApp as any)?.username ?? userApp?.full_name ?? null;
     console.info('USERNAME_FIX_V3_APPLIED');
     console.info('[APP_TOP_BAR]', { displayName, userId: user?.id });
-  }, [displayName, user?.id]);
+    console.info('[USERNAME_DEBUG]', {
+      maskedEmail: mask(user?.email),
+      emailLocal,
+      profileUsername: storedUsername
+    });
+  }, [displayName, user?.id, user?.email, (userApp as any)?.username, userApp?.full_name]);
 
   // Listen for profile updates and refresh
   React.useEffect(() => {
