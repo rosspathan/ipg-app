@@ -118,6 +118,29 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         throw new Error('Invalid verification code');
       }
       
+      // Set username from email if not already set
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          if (!profile?.username || profile.username === 'User') {
+            const username = extractUsernameFromEmail(email, user.id);
+            await supabase
+              .from('profiles')
+              .update({ username })
+              .eq('user_id', user.id);
+            console.info('USR_WALLET_LINK_V3', { user: user.id, username });
+          }
+        }
+      } catch (err) {
+        console.warn('[VERIFY] Failed to set username:', err);
+      }
+      
       // Code is valid, proceed with onboarding
       sessionStorage.removeItem('verificationCode');
       sessionStorage.removeItem('verificationEmail');

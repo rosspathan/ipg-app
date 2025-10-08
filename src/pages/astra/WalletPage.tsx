@@ -38,6 +38,7 @@ export function WalletPage() {
           const addr = await getStoredEvmAddress(user.id);
           if (addr) {
             setWalletAddress(addr);
+            console.info('USR_WALLET_LINK_V3', { user: user.id, address: addr.slice(0, 8) + '...' });
             return;
           }
         }
@@ -67,6 +68,16 @@ export function WalletPage() {
     };
 
     fetchWalletAddress();
+
+    // Listen for EVM address updates
+    const handleAddressUpdate = () => {
+      fetchWalletAddress();
+    };
+    window.addEventListener('evm:address:updated', handleAddressUpdate);
+    
+    return () => {
+      window.removeEventListener('evm:address:updated', handleAddressUpdate);
+    };
   }, [user?.id, wallet?.address]);
 
   const handleCopyAddress = async () => {
@@ -139,7 +150,7 @@ export function WalletPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20" data-version="clean-slate-v1">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20" data-version="usr-wallet-link-v3">
       <AppShellGlass topBar={topBar} data-testid="page-wallet">
       <div className="space-y-6 pb-24">
         {/* Address Panel with Network Badge */}
@@ -244,8 +255,8 @@ export function WalletPage() {
         </div>
       </div>
       </AppShellGlass>
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="clean-slate-v1">
-        CLEAN-SLATE v1
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-amber-600/80 text-white">
+        USR-WALLET LINK v3
       </div>
     </div>
   )

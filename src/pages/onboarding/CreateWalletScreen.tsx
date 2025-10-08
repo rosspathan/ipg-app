@@ -87,7 +87,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
     });
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!wallet) return;
     
     if (!hasConfirmedBackup) {
@@ -97,6 +97,22 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
         variant: "destructive"
       });
       return;
+    }
+
+    // Persist EVM address to Supabase if user is authenticated
+    if (wallet?.address) {
+      try {
+        const { persistEvmAddress } = await import('@/lib/wallet/evmAddress');
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user?.id) {
+          await persistEvmAddress(user.id, wallet.address);
+          console.info('USR_WALLET_LINK_V3', { user: user.id, address: wallet.address.slice(0, 8) + '...' });
+        }
+      } catch (err) {
+        console.warn('[CREATE] Failed to persist EVM address:', err);
+      }
     }
 
     onWalletCreated(wallet);

@@ -17,6 +17,7 @@ import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
 import { useDisplayName } from "@/hooks/useDisplayName"
+import { supabase } from "@/integrations/supabase/client"
 /**
  * HomePageRebuilt - World-class mobile-first home screen
  * DO NOT MODIFY THE FOOTER - DockNav remains untouched
@@ -26,6 +27,14 @@ export function HomePageRebuilt() {
   const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const displayName = useDisplayName()
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        console.info('USR_WALLET_LINK_V3', { user: data.user.id });
+      }
+    });
+  }, []);
 
   const handleKPIPress = () => {
     console.log("KPI card pressed")
@@ -139,7 +148,29 @@ export function HomePageRebuilt() {
   ]
 
   return (
-    <div className="min-h-screen" data-testid="page-home">
+    <div className="min-h-screen" data-testid="page-home" data-version="usr-wallet-link-v3">
+      {/* Dev ribbon */}
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-primary/80 text-primary-foreground">
+        USR-WALLET LINK v3
+      </div>
+      
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/40">
+        <div className="flex items-center justify-between p-4">
+          {/* Left: Avatar + Name */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+              {displayName?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Welcome back</p>
+              <p className="text-sm font-semibold" data-testid="header-username">{displayName}</p>
+            </div>
+          </div>
+          <div className="w-8" />
+        </div>
+      </div>
+
       {/* Main Content */}
       <main className="pb-28 px-4 space-y-6 pt-4">
         {/* Add Funds CTA */}

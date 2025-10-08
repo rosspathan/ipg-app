@@ -142,7 +142,6 @@ import { BSKWalletPage } from "@/pages/astra/BSKWalletPage";
 import { WalletPage } from "@/pages/astra/WalletPage";
 
 import { AstraLayout } from "@/layouts/AstraLayout";
-import { HomePage } from "@/pages/astra/HomePage";
 import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
 import { ProgramsPageRebuilt } from "@/pages/astra/ProgramsPageRebuilt";
 import { ProgramsPagePro } from "@/pages/astra/ProgramsPagePro";

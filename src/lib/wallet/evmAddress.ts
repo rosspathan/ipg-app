@@ -185,7 +185,15 @@ export async function storeEvmAddress(userId: string, address: string): Promise<
     console.error('[EVM] Failed to store wallet address:', error);
     throw error;
   }
+
+  // Dispatch event to notify components
+  window.dispatchEvent(new CustomEvent('evm:address:updated', { detail: { address } }));
 }
+
+/**
+ * Alias for storeEvmAddress - persists EVM address to Supabase
+ */
+export const persistEvmAddress = storeEvmAddress;
 
 /**
  * Get the appropriate block explorer URL for an address
