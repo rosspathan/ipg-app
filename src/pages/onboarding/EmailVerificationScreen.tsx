@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { storeEvmAddress } from '@/lib/wallet/evmAddress';
 import { extractUsernameFromEmail } from '@/lib/user/username';
+import { ensureProfileRowAndUsername } from '@/lib/user/profile';
 import { useNavigate } from 'react-router-dom';
 
 // Mask email for display
@@ -52,6 +53,20 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   // Log OTP mode
   useEffect(() => {
     console.info('OTP_EMAIL_V1_ACTIVE');
+    console.info('USERNAME_FIX_V3_APPLIED');
+  }, []);
+
+  // Ensure username is set on auth state changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
+        supabase.auth.getUser().then(({ data }) => {
+          ensureProfileRowAndUsername(supabase, data.user);
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Send initial verification email via custom edge function
@@ -118,27 +133,13 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         throw new Error('Invalid verification code');
       }
       
-      // Set username from email if not already set
+      // Ensure profile row and username are set
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          
-          if (!profile?.username || profile.username === 'User') {
-            const username = extractUsernameFromEmail(email, user.id);
-            await supabase
-              .from('profiles')
-              .update({ username })
-              .eq('user_id', user.id);
-            console.info('USR_WALLET_LINK_V3', { user: user.id, username });
-          }
-        }
+        await ensureProfileRowAndUsername(supabase, user);
+        console.info('USR_WALLET_LINK_V3', { user: user?.id, username: extractUsernameFromEmail(email, user?.id) });
       } catch (err) {
-        console.warn('[VERIFY] Failed to set username:', err);
+        console.warn('[VERIFY] Failed to ensure profile/username:', err);
       }
       
       // Code is valid, proceed with onboarding
@@ -230,8 +231,8 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 relative overflow-hidden">
       {/* Dev ribbon */}
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-indigo-600/80 text-white">
-        OTP EMAIL v1
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white">
+        USERNAME FIX v3
       </div>
       
       {/* Background elements */}

@@ -9,11 +9,12 @@ import { BadgeIdCardSheet } from "@/components/badge-id/BadgeIdCardSheet";
 import { BadgeTier } from "@/components/badge-id/BadgeIdThemeRegistry";
 import { useDisplayName } from "@/hooks/useDisplayName";
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
+import { extractUsernameFromEmail } from "@/lib/user/username";
 
 export function IDCardPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
-  const { userApp } = useProfile();
+  const { userApp, refetch: refetchProfile } = useProfile();
   const { uploadAvatar, getAvatarUrl, uploading } = useAvatar();
   const { referralCode } = useReferrals();
 
@@ -21,12 +22,30 @@ export function IDCardPage() {
 
   const handleBack = () => navigate("/app/profile");
 
+  // Listen for profile updates and refresh
+  React.useEffect(() => {
+    const onUpd = () => refetchProfile?.();
+    window.addEventListener('profile:updated', onUpd);
+    return () => window.removeEventListener('profile:updated', onUpd);
+  }, [refetchProfile]);
+
+  React.useEffect(() => {
+    console.info('USERNAME_FIX_V3_APPLIED');
+  }, []);
+
   if (!user) {
     return null;
   }
 
   const avatarUrl = getAvatarUrl('1x');
-  const displayName = useDisplayName();
+  
+  // Compute display name with robust fallback
+  const emailLocal = user?.email ? extractUsernameFromEmail(user.email) : '';
+  const displayName = (userApp as any)?.display_name
+    || (userApp as any)?.username
+    || userApp?.full_name
+    || emailLocal
+    || 'User';
   
   // For now, default to Gold tier - this should come from user's actual tier
   const currentTier: BadgeTier = 'Gold';
@@ -84,8 +103,8 @@ export function IDCardPage() {
           />
         </div>
       </div>
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="clean-slate-v1">
-        CLEAN-SLATE v1
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="username-fix-v3">
+        USERNAME FIX v3
       </div>
     </div>
   );

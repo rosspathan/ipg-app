@@ -9,8 +9,10 @@ import { useDisplayName } from "@/hooks/useDisplayName"
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { Badge } from "@/components/ui/badge"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
+import { useProfile } from "@/hooks/useProfile"
+import { extractUsernameFromEmail } from "@/lib/user/username"
 
 
 interface AppTopBarProps {
@@ -21,15 +23,35 @@ export function AppTopBar({ className }: AppTopBarProps) {
   const { navigate } = useNavigation()
   const location = useLocation()
   const { user } = useAuthUser()
+  const { userApp, refetch: refetchProfile } = useProfile()
+  const queryClient = useQueryClient()
 
   const notificationCount = 3 // Mock data
 
-  const userName = useDisplayName();
   useUsernameBackfill(); // Backfill username if missing
 
+  // Compute display name with robust fallback
+  const emailLocal = user?.email ? extractUsernameFromEmail(user.email) : '';
+  const displayName = (userApp as any)?.display_name
+    || (userApp as any)?.username
+    || userApp?.full_name
+    || emailLocal
+    || 'User';
+
   React.useEffect(() => {
-    console.info('[APP_TOP_BAR]', { userName, userId: user?.id });
-  }, [userName, user?.id]);
+    console.info('USERNAME_FIX_V3_APPLIED');
+    console.info('[APP_TOP_BAR]', { displayName, userId: user?.id });
+  }, [displayName, user?.id]);
+
+  // Listen for profile updates and refresh
+  React.useEffect(() => {
+    const onUpd = () => {
+      refetchProfile?.();
+      queryClient.invalidateQueries({ queryKey: ['user-badge', user?.id] });
+    };
+    window.addEventListener('profile:updated', onUpd);
+    return () => window.removeEventListener('profile:updated', onUpd);
+  }, [refetchProfile, queryClient, user?.id]);
 
   // Fetch user badge
   const { data: userBadge } = useQuery({
@@ -92,7 +114,7 @@ export function AppTopBar({ className }: AppTopBarProps) {
             )}
             data-testid="header-username"
           >
-            {userName}
+            {displayName}
           </span>
 
           {/* Badge Display */}
@@ -131,8 +153,8 @@ export function AppTopBar({ className }: AppTopBarProps) {
           )}
         </div>
       </div>
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="clean-slate-v1">
-        CLEAN-SLATE v1
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-emerald-600/80 text-white" data-version="username-fix-v3">
+        USERNAME FIX v3
       </div>
     </header>
   )
