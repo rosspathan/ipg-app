@@ -7948,6 +7948,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_reset_all_user_balances: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       calculate_provable_spin_result: {
         Args: {
           p_client_seed: string
