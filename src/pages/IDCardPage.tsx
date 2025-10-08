@@ -39,13 +39,22 @@ export function IDCardPage() {
 
   const avatarUrl = getAvatarUrl('1x');
   
-  // Compute display name with robust fallback
-  const emailLocal = user?.email ? extractUsernameFromEmail(user.email) : '';
-  const displayName = (userApp as any)?.display_name
-    || (userApp as any)?.username
-    || userApp?.full_name
-    || emailLocal
-    || 'User';
+  // Compute display name with robust fallback (email local-part, profile username/display_name, session storage)
+  const displayName = React.useMemo(() => {
+    const emailLocal = user?.email ? extractUsernameFromEmail(user.email) : '';
+    let verifyLocal = '';
+    try {
+      const v = sessionStorage.getItem('verificationEmail');
+      if (v) verifyLocal = extractUsernameFromEmail(v);
+    } catch {}
+
+    return (userApp as any)?.display_name
+      || (userApp as any)?.username
+      || userApp?.full_name
+      || emailLocal
+      || verifyLocal
+      || 'User';
+  }, [user?.email, userApp?.full_name, (userApp as any)?.display_name, (userApp as any)?.username]);
   
   // For now, default to Gold tier - this should come from user's actual tier
   const currentTier: BadgeTier = 'Gold';
@@ -60,8 +69,20 @@ export function IDCardPage() {
   };
 
   React.useEffect(() => {
-    console.info('CLEAN_SLATE_APPLIED');
-  }, []);
+    const mask = (e?: string | null) => {
+      if (!e) return '***@***.***';
+      const [n, d] = (e || '').split('@');
+      return `${(n||'').slice(0,2)}***@***${d ? d.slice(-3) : ''}`;
+    };
+    const emailLocal = user?.email ? extractUsernameFromEmail(user.email) : '';
+    const profileUsername = (userApp as any)?.username ?? null;
+    console.info('[USERNAME_DEBUG_IDCARD]', {
+      maskedEmail: mask(user?.email),
+      emailLocal,
+      profileUsername,
+      displayName
+    });
+  }, [user?.email, (userApp as any)?.username, displayName]);
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-idcard" data-version="clean-slate-v1">
