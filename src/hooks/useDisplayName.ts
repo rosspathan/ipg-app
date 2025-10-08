@@ -36,7 +36,15 @@ export function useDisplayName() {
       return extractUsernameFromEmail(userApp.email, user?.id);
     }
 
-    // Priority 5: Onboarding email stored locally (pre-auth)
+    // Priority 5: Email captured during verification (standalone flow)
+    try {
+      const verifyEmail = sessionStorage.getItem('verificationEmail');
+      if (verifyEmail) {
+        return extractUsernameFromEmail(verifyEmail, user?.id);
+      }
+    } catch {}
+
+    // Priority 6: Onboarding email stored locally (pre-auth)
     try {
       const raw = localStorage.getItem('ipg_onboarding_state');
       if (raw) {
