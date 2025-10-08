@@ -88,6 +88,14 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
 
   const totalValue = mockBalances.reduce((sum, item) => sum + item.valueUSD, 0)
 
+  // Debug: verify which BalanceCluster renders and values
+  console.info('[BALANCE_CLUSTER_RENDER]', {
+    variant: 'astra',
+    totals: { totalValue },
+    withdrawable: withdrawableBalance?.balance ?? null,
+    holding: holdingBalance?.balance ?? null,
+    cryptoCount: cryptoAssets.length,
+  });
   return (
     <div className={cn("space-y-4", className)} data-testid="balance-cluster">
       {/* Portfolio Overview */}

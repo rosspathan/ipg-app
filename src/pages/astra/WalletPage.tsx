@@ -68,6 +68,15 @@ export function WalletPage() {
     })
   }
 
+  // Debug: wallet page context
+  React.useEffect(() => {
+    console.info('[WALLET_PAGE_RENDER]', {
+      displayName,
+      walletAddress: walletAddress ? walletAddress.slice(0, 6) + '...' : null,
+      route: '/app/wallet',
+    });
+  }, [displayName, walletAddress]);
+
   const quickActions = [
     { 
       id: "deposit", 

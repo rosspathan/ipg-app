@@ -37,6 +37,13 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
     searchTerm ? asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) : true
   )
 
+  // Debug: verify which GRID BalanceCluster renders and values
+  console.info('[BALANCE_CLUSTER_RENDER]', {
+    variant: 'grid',
+    withdrawable: mockBalances.withdrawable,
+    holding: mockBalances.holding,
+    cryptoCount: mockBalances.cryptoAssets.length,
+  });
   return (
     <div className={cn("space-y-4", className)} data-testid="balance-cluster">
       {/* Crypto Assets Grid - FIRST per spec */}
