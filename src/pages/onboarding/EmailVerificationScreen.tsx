@@ -3,11 +3,11 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, Mail, RefreshCw, CheckCircle } from 'lucide-react';
-import { verifyEmailCode } from '@/utils/security';
+import { ChevronLeft, Mail, RefreshCw, CheckCircle, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { storeEvmAddress } from '@/lib/wallet/evmAddress';
+import { extractUsernameFromEmail } from '@/lib/user/username';
 import { useNavigate } from 'react-router-dom';
 
 interface EmailVerificationScreenProps {
@@ -28,10 +28,16 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   const [code, setCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [canResend, setCanResend] = useState(false);
-  const [resendCountdown, setResendCountdown] = useState(60);
+  const [resendCountdown, setResendCountdown] = useState(600); // 10 minutes
+  const [showMagicLink, setShowMagicLink] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Log OTP mode
+  useEffect(() => {
+    console.info('OTP_EMAIL_V1_ACTIVE');
+  }, []);
 
   // Countdown timer for resend
   useEffect(() => {
@@ -59,129 +65,155 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
     setIsVerifying(true);
     try {
-      // Step 1: Verify the local code
-      const result = verifyEmailCode(email, cleaned);
+      // Verify OTP with Supabase
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: cleaned,
+        type: 'email'
+      });
 
-      if (!result.valid) {
-        toast({
-          title: "Invalid Code",
-          description: result.error || "Please check your code and try again",
-          variant: "destructive"
-        });
-        setIsVerifying(false);
-        return;
+      if (error) {
+        const errorMsg = error.message.toLowerCase();
+        
+        // Handle expired/invalid codes by auto-resending
+        if (errorMsg.includes('expired') || errorMsg.includes('invalid') || errorMsg.includes('token')) {
+          toast({
+            title: "Code Expired",
+            description: "We sent a new code to your email",
+          });
+          await handleResendCode();
+          setIsVerifying(false);
+          return;
+        }
+
+        // If it's a configuration issue, show magic link fallback
+        if (errorMsg.includes('email_provider') || errorMsg.includes('disabled')) {
+          setShowMagicLink(true);
+          toast({
+            title: "Configuration Issue",
+            description: "Please use the magic link option below",
+            variant: "destructive"
+          });
+          setIsVerifying(false);
+          return;
+        }
+
+        throw error;
       }
 
-      // Step 2: Create Supabase user account
-      const tempPassword = `${cleaned}${email}${Date.now()}`; // Temporary secure password
-      
-      // Do NOT send wallet metadata during sign up to avoid unique constraint conflicts
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: tempPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/app/home`,
-          data: {
-            email_verified: true,
-            onboarding_completed: true
+      // Success! We have a session
+      if (data.session) {
+        const user = data.session.user;
+        
+        // Backfill username from email if needed
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (!profile?.username) {
+            const username = extractUsernameFromEmail(user.email, user.id);
+            await supabase
+              .from('profiles')
+              .update({ username })
+              .eq('user_id', user.id);
+          }
+        } catch (e) {
+          console.warn('Username backfill failed:', e);
+        }
+
+        // Store wallet address if provided
+        if (walletAddress) {
+          try {
+            await storeEvmAddress(user.id, walletAddress);
+          } catch (e) {
+            console.warn('Wallet store failed:', e);
           }
         }
-      });
 
-      if (signUpError) {
-        console.error('Supabase signup error:', signUpError);
-        const msg = (signUpError.message || '').toLowerCase();
+        toast({
+          title: "Email Verified!",
+          description: "Your account is ready",
+          className: "bg-success/10 border-success/50 text-success",
+        });
 
-        // If the user already exists, instruct to check email or use login
-        if (msg.includes('already') || msg.includes('exists') || msg.includes('registered')) {
-          toast({
-            title: 'Account already exists',
-            description: 'Please check your email for a previous confirmation link or use the login option.',
-          });
-        } else {
-          toast({
-            title: 'Account Creation Failed',
-            description: signUpError.message || 'Failed to create your account',
-            variant: 'destructive'
-          });
-        }
-
-        setIsVerifying(false);
-        return;
+        setTimeout(() => {
+          onVerified();
+          navigate('/app/home');
+        }, 800);
       }
 
-      // Step 3: Auto sign in the user
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: tempPassword
-      });
-
-      if (signInError) {
-        console.error('Auto sign-in failed:', signInError);
-        const msg2 = (signInError as any)?.message?.toLowerCase?.() || '';
-
-        if (msg2.includes('email not confirmed') || (signInError as any)?.code === 'email_not_confirmed') {
-          toast({
-            title: 'Confirm your email',
-            description: 'Open the confirmation email from Supabase to complete sign-in.',
-          });
-        } else {
-          toast({
-            title: 'Sign-in required',
-            description: (signInError as any)?.message || 'Please confirm your email to sign in.',
-            variant: 'destructive'
-          });
-        }
-
-        setIsVerifying(false);
-        return;
-      }
-
-      // Persist wallet address after successful auth (post-signup)
-      try {
-        const { data: { user: authedUser } } = await supabase.auth.getUser();
-        if (authedUser && walletAddress) {
-          await storeEvmAddress(authedUser.id, walletAddress);
-        }
-      } catch (e) {
-        console.warn('[EVM] Wallet store failed:', e);
-      }
-
-      toast({
-        title: "Account Created!",
-        description: "Your account has been successfully created",
-        className: "bg-success/10 border-success/50 text-success",
-      });
-
-      // Small delay for toast to show
-      setTimeout(() => {
-        onVerified();
-        navigate('/app/home');
-      }, 1000);
-
-    } catch (error) {
-      console.error('Verification error:', error);
+    } catch (error: any) {
+      console.error('OTP verification error:', error);
       toast({
         title: "Verification Failed",
-        description: "An error occurred while creating your account",
+        description: error.message || "Please try again or use the magic link",
         variant: "destructive"
       });
+      setShowMagicLink(true);
     } finally {
       setIsVerifying(false);
     }
   };
 
-  const handleResendCode = () => {
+  const handleResendCode = async () => {
     if (!canResend) return;
     
-    setResendCountdown(60);
+    setResendCountdown(600);
     setCanResend(false);
-    onResendCode();
     
-    toast({
-      title: "Code Resent",
-      description: "A new verification code has been sent to your email",
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+
+      if (error) throw error;
+
+      onResendCode();
+      
+      toast({
+        title: "Code Resent",
+        description: "A new 6-digit code has been sent to your email",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Resend",
+        description: error.message,
+        variant: "destructive"
+      });
+      setCanResend(true);
+    }
+  };
+
+  const handleMagicLink = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Magic Link Sent",
+        description: "Check your email for the sign-in link",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Send",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const handleCodeChange = (value: string) => {
@@ -203,6 +235,11 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 relative overflow-hidden">
+      {/* Dev ribbon */}
+      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-indigo-600/80 text-white">
+        OTP EMAIL v1
+      </div>
+      
       {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -312,10 +349,17 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                     </label>
                     <Input
                       ref={inputRef}
+                      data-testid="email-otp-input"
                       type="text"
+                      inputMode="numeric"
                       value={code}
                       onChange={(e) => handleCodeChange(e.target.value)}
                       onKeyPress={handleKeyPress}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                        handleCodeChange(paste);
+                      }}
                       placeholder="000000"
                       className="bg-black/30 border-white/30 text-white placeholder:text-white/50 focus:border-green-400 text-center text-2xl font-mono tracking-widest"
                       disabled={isVerifying}
@@ -338,6 +382,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                   </div>
 
                   <Button
+                    data-testid="email-otp-submit"
                     onClick={handleVerifyCode}
                     disabled={isVerifying || code.length !== 6}
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 font-semibold py-3 rounded-xl"
@@ -367,10 +412,11 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-center"
+              className="text-center space-y-3"
             >
               {canResend ? (
                 <Button
+                  data-testid="email-otp-resend"
                   variant="outline"
                   onClick={handleResendCode}
                   className="border-white/30 text-white hover:bg-white/20"
@@ -380,8 +426,20 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                 </Button>
               ) : (
                 <p className="text-white/60 text-sm">
-                  Resend code in {resendCountdown}s
+                  Resend code in {Math.floor(resendCountdown / 60)}:{String(resendCountdown % 60).padStart(2, '0')}
                 </p>
+              )}
+
+              {showMagicLink && (
+                <Button
+                  data-testid="email-otp-fallback-magic"
+                  variant="outline"
+                  onClick={handleMagicLink}
+                  className="border-amber-400/50 text-amber-300 hover:bg-amber-400/20"
+                >
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  Send Magic Link Instead
+                </Button>
               )}
             </motion.div>
 

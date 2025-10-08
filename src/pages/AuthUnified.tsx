@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,12 +93,23 @@ export default function AuthUnified() {
 
     setIsLoading(true);
     try {
-      const { error: signUpError } = await signUp(email, password);
-      if (signUpError) {
-        setError(signUpError.message || "Failed to create account");
+      // Use OTP-based signup instead of password
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+
+      if (otpError) {
+        setError(otpError.message || "Failed to send verification code");
       } else {
-        // Skip email verification, go straight to app
-        navigate("/app/home", { replace: true });
+        // Navigate to email verification with OTP
+        navigate("/auth/email-verification", { 
+          state: { email },
+          replace: true 
+        });
       }
     } catch (err) {
       setError("An unexpected error occurred");
