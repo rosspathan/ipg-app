@@ -60,7 +60,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       try {
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { shouldCreateUser: false } // OTP only, no magic link
+          options: { shouldCreateUser: true } // OTP only, no magic link
         });
         if (error) throw error;
       } catch (e) {
@@ -200,7 +200,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { shouldCreateUser: false } // OTP only
+        options: { shouldCreateUser: true } // OTP only
       });
 
       if (error) throw error;
