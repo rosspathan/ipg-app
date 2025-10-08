@@ -50,6 +50,7 @@ import WelcomeScreen2 from "./pages/WelcomeScreen2";
 import WelcomeScreen3 from "./pages/WelcomeScreen3";
 import AuthUnified from "./pages/AuthUnified";
 import AuthEmailVerification from "./pages/AuthEmailVerification";
+import AuthCallback from "./pages/AuthCallback";
 import AppLockScreen from "./pages/AppLockScreen";
 
 // Onboarding Pages
@@ -226,6 +227,7 @@ function App() {
                   <AuthEmailVerification />
                 </AuthProviderUser>
               } />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/lock" element={<AppLockScreen />} />
 
               {/* Legacy User App removed */}

@@ -54,20 +54,20 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     console.info('OTP_EMAIL_V1_ACTIVE');
   }, []);
 
-  // Send initial OTP
+  // Send initial OTP (no redirect needed for OTP verification)
   useEffect(() => {
     const send = async () => {
       try {
-        await supabase.auth.signInWithOtp({
+        const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { shouldCreateUser: true }
+          options: { shouldCreateUser: false } // OTP only, no magic link
         });
+        if (error) throw error;
       } catch (e) {
         console.warn('Initial OTP send failed', e);
       }
     };
     send();
-    // start/refresh resend cooldown
     setResendCountdown(60);
     setCanResend(false);
   }, [email]);
@@ -200,10 +200,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/auth/callback`
-        }
+        options: { shouldCreateUser: false } // OTP only
       });
 
       if (error) throw error;
