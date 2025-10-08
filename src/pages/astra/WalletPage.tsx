@@ -156,7 +156,7 @@ export function WalletPage() {
 
               <div className="bg-muted/40 backdrop-blur-sm rounded-xl p-3 border border-border/40">
                 <p className="font-mono text-xs break-all text-foreground/90 leading-relaxed" data-testid="wallet-evm-address">
-                  {showAddress ? (walletAddress || 'No wallet connected') : '••••••••••••••••••••••••••••••••••'}
+                  {showAddress ? (walletAddress || 'NO wallet connected') : '••••••••••••••••••••••••••••••••••'}
                 </p>
               </div>
 

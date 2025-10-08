@@ -7,6 +7,10 @@ import { useLocation } from "react-router-dom"
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
 import { useDisplayName } from "@/hooks/useDisplayName"
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
+import { useAuthUser } from "@/hooks/useAuthUser"
+import { Badge } from "@/components/ui/badge"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
 
 
 interface AppTopBarProps {
@@ -16,11 +20,27 @@ interface AppTopBarProps {
 export function AppTopBar({ className }: AppTopBarProps) {
   const { navigate } = useNavigation()
   const location = useLocation()
+  const { user } = useAuthUser()
 
   const notificationCount = 3 // Mock data
 
   const userName = useDisplayName();
   useUsernameBackfill(); // Backfill username if missing
+
+  // Fetch user badge
+  const { data: userBadge } = useQuery({
+    queryKey: ['user-badge', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('user_badge_status')
+        .select('current_badge')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return data?.current_badge || 'None';
+    },
+    enabled: !!user?.id
+  });
 
   return (
     <header 
@@ -70,6 +90,16 @@ export function AppTopBar({ className }: AppTopBarProps) {
           >
             {userName}
           </span>
+
+          {/* Badge Display */}
+          {userBadge && userBadge !== 'None' && (
+            <Badge 
+              variant="secondary" 
+              className="ml-2 text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20"
+            >
+              {userBadge}
+            </Badge>
+          )}
 
           {/* Subtle glow effect */}
           <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl bg-primary/20 pointer-events-none" />

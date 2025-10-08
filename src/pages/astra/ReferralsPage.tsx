@@ -73,7 +73,24 @@ export default function ReferralsPage() {
     enabled: !!user?.id,
   });
 
-  const referralLink = user?.id
+  // Fetch user's referral code from profile
+  const { data: profileData } = useQuery({
+    queryKey: ["profile-referral-code", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("referral_code")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const referralLink = profileData?.referral_code
+    ? `https://i-smartapp.com/auth?ref=${profileData.referral_code}`
+    : user?.id 
     ? `https://i-smartapp.com/auth?ref=${user.id}`
     : "";
 
