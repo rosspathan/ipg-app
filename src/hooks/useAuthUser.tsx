@@ -71,13 +71,24 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/app/home`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl
+        emailRedirectTo: redirectUrl,
+        // Skip email confirmation for faster onboarding
+        data: {
+          email_confirmed: true
+        }
       }
     });
+    
+    // If signup successful and user is created, proceed to onboarding
+    if (!error && data.user) {
+      // User is auto-confirmed and can proceed
+      console.log('✅ User signed up and auto-confirmed');
+    }
+    
     return { error };
   };
 

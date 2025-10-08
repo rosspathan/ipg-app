@@ -96,10 +96,8 @@ export default function AuthUnified() {
       if (signUpError) {
         setError(signUpError.message || "Failed to create account");
       } else {
-        navigate("/auth/email-verification", { 
-          state: { email },
-          replace: true 
-        });
+        // Skip email verification, go straight to app
+        navigate("/app/home", { replace: true });
       }
     } catch (err) {
       setError("An unexpected error occurred");
