@@ -144,15 +144,22 @@ export function HomePageRebuilt() {
         <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
 
         {/* KPI Card Unified */}
-        <KPICardUnified onCardPress={handleKPIPress} />
+        <KPICardUnified 
+          onCardPress={handleKPIPress}
+          data={[
+            { label: "Portfolio", value: "₹0", subValue: "+0%", trend: "up", type: "portfolio" },
+            { label: "24h Change", value: "+0%", subValue: "+₹0", trend: "up", type: "change" },
+            { label: "Status", value: "None", type: "status" }
+          ]}
+        />
 
         {/* BSK Balance Cards - Side by Side */}
         <BalanceDuoGrid>
           <BskCardCompact
             variant="withdrawable"
-            balance={125000}
-            fiatValue={12500}
-            bonusMetrics={{ today: 150, week: 1250, lifetime: 125000 }}
+            balance={0}
+            fiatValue={0}
+            bonusMetrics={{ today: 0, week: 0, lifetime: 0 }}
             onWithdraw={() => navigate("/app/programs/bsk-withdraw")}
             onTransfer={() => navigate("/app/programs/bsk-transfer")}
             onHistory={() => navigate("/app/wallet/history")}
@@ -161,8 +168,8 @@ export function HomePageRebuilt() {
           
           <BskCardCompact
             variant="holding"
-            balance={89500}
-            fiatValue={8950}
+            balance={0}
+            fiatValue={0}
             onViewSchedule={() => setShowRewardsBreakdown(true)}
           />
         </BalanceDuoGrid>
