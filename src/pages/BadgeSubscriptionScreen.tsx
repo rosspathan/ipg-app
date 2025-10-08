@@ -18,12 +18,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useDisplayName } from "@/hooks/useDisplayName"
 
 const BadgeSubscriptionScreen = () => {
   const { goBack } = useNavigation();
   const { toast } = useToast();
   const { user } = useAuthUser();
   const { badgeThresholds, loading } = useTeamReferrals();
+  const displayName = useDisplayName();
   
   const [currentBadge, setCurrentBadge] = useState<string>('NONE');
   const [bskBalance, setBskBalance] = useState<number>(0);
@@ -213,7 +215,7 @@ const BadgeSubscriptionScreen = () => {
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Badge Subscriptions</h1>
+            <h1 className="text-2xl font-bold">{displayName}'s Badges</h1>
             <p className="text-sm text-muted-foreground">Subscribe or upgrade to unlock more benefits</p>
           </div>
         </div>

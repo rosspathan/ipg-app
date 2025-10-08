@@ -70,6 +70,16 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
       }
     } catch {}
 
+    // Onboarding state fallback
+    try {
+      const onboard = localStorage.getItem('ipg_onboarding_state');
+      if (onboard) {
+        const parsed = JSON.parse(onboard);
+        const addr = parsed?.walletInfo?.address;
+        if (isAddress(addr)) return addr;
+      }
+    } catch {}
+
     console.warn('[EVM] No profile or local wallet address found for user');
     return null;
   } catch (err) {

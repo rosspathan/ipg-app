@@ -211,9 +211,10 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
+          const walletAddresses = { evm: { mainnet: ethersWallet.address, bsc: ethersWallet.address } };
           await supabase
             .from('profiles')
-            .update({ wallet_address: ethersWallet.address })
+            .update({ wallet_address: ethersWallet.address, wallet_addresses: walletAddresses })
             .eq('user_id', user.id);
         }
       } catch (profileError) {
@@ -257,9 +258,10 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
+          const walletAddresses = { evm: { mainnet: ethersWallet.address, bsc: ethersWallet.address } };
           await supabase
             .from('profiles')
-            .update({ wallet_address: ethersWallet.address })
+            .update({ wallet_address: ethersWallet.address, wallet_addresses: walletAddresses })
             .eq('user_id', user.id);
         }
       } catch (profileError) {
@@ -421,9 +423,10 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
+          const walletAddresses = { evm: { mainnet: walletInfo.address, bsc: walletInfo.address } };
           await supabase
             .from('profiles')
-            .update({ wallet_address: walletInfo.address })
+            .update({ wallet_address: walletInfo.address, wallet_addresses: walletAddresses })
             .eq('user_id', user.id);
         }
       } catch (profileError) {

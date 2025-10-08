@@ -16,6 +16,7 @@ import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
+import { useDisplayName } from "@/hooks/useDisplayName"
 /**
  * HomePageRebuilt - World-class mobile-first home screen
  * DO NOT MODIFY THE FOOTER - DockNav remains untouched
@@ -24,6 +25,7 @@ export function HomePageRebuilt() {
   const { navigate } = useNavigation()
   const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
+  const displayName = useDisplayName()
 
   const handleKPIPress = () => {
     console.log("KPI card pressed")
@@ -149,7 +151,7 @@ export function HomePageRebuilt() {
           data={[
             { label: "Portfolio", value: "₹0", subValue: "+0%", trend: "up", type: "portfolio" },
             { label: "24h Change", value: "+0%", subValue: "+₹0", trend: "up", type: "change" },
-            { label: "Status", value: "None", type: "status" }
+            { label: "User", value: displayName, type: "status" }
           ]}
         />
 

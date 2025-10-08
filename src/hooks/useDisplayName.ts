@@ -35,6 +35,18 @@ export function useDisplayName() {
     if (userApp?.email) {
       return extractUsernameFromEmail(userApp.email, user?.id);
     }
+
+    // Priority 5: Onboarding email stored locally (pre-auth)
+    try {
+      const raw = localStorage.getItem('ipg_onboarding_state');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const onboardingEmail = parsed?.email as string | undefined;
+        if (onboardingEmail) {
+          return extractUsernameFromEmail(onboardingEmail, user?.id);
+        }
+      }
+    } catch {}
     
     // Fallback with user ID if available
     if (user?.id) {

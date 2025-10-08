@@ -13,6 +13,7 @@ import { GroupHeader } from "@/components/astra/grid/GroupHeader"
 import { ActivityGrid } from "@/components/astra/grid/ActivityGrid"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
+import { useDisplayName } from "@/hooks/useDisplayName"
 
 // Enhanced KPI data with trends
 const kpiData = [
@@ -142,6 +143,7 @@ const recentActivities = [
 export function HomePage() {
   const { navigate } = useNavigation()
   const [showAllPrograms, setShowAllPrograms] = useState(false)
+  const displayName = useDisplayName()
 
   // Premium glass top bar
   const topBar = (
@@ -157,7 +159,7 @@ export function HomePage() {
       
       <div className="text-center">
         <h1 className="font-bold text-lg text-foreground font-heading">Dashboard</h1>
-        <p className="text-xs text-muted-foreground">Welcome back</p>
+        <p className="text-xs text-muted-foreground">Welcome back, {displayName}</p>
       </div>
       
       <div className="flex items-center gap-2">

@@ -32,15 +32,34 @@ export function WalletPage() {
   // Fetch wallet address from profiles table
   useEffect(() => {
     const fetchWalletAddress = async () => {
-      if (!user) return;
-
       try {
-        const addr = await getStoredEvmAddress(user.id);
-        if (addr) {
-          setWalletAddress(addr);
-        } else if (wallet?.address) {
-          setWalletAddress(wallet.address);
+        // If authenticated, prefer stored profile address
+        if (user?.id) {
+          const addr = await getStoredEvmAddress(user.id);
+          if (addr) {
+            setWalletAddress(addr);
+            return;
+          }
         }
+        // Fallbacks for pre-auth/onboarding
+        if (wallet?.address) {
+          setWalletAddress(wallet.address);
+          return;
+        }
+        try {
+          const local = localStorage.getItem('cryptoflow_wallet');
+          if (local) {
+            const parsed = JSON.parse(local);
+            if (parsed?.address) setWalletAddress(parsed.address);
+            return;
+          }
+          const onboard = localStorage.getItem('ipg_onboarding_state');
+          if (onboard) {
+            const parsed = JSON.parse(onboard);
+            const addr = parsed?.walletInfo?.address;
+            if (addr) setWalletAddress(addr);
+          }
+        } catch {}
       } catch (error) {
         console.error('Error fetching wallet address:', error);
         if (wallet?.address) setWalletAddress(wallet.address);
@@ -48,7 +67,7 @@ export function WalletPage() {
     };
 
     fetchWalletAddress();
-  }, [user, wallet?.address]);
+  }, [user?.id, wallet?.address]);
 
   const handleCopyAddress = async () => {
     if (!walletAddress) {
