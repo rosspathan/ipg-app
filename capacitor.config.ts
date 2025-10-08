@@ -4,10 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.lovable.ipgapp',
   appName: 'IPG App',
   webDir: 'dist',
-  server: {
-    url: 'https://3e2392ce-4919-4752-8d0d-0528c0668ead.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
