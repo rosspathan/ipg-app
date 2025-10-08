@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,6 +9,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { storeEvmAddress } from '@/lib/wallet/evmAddress';
 import { extractUsernameFromEmail } from '@/lib/user/username';
 import { useNavigate } from 'react-router-dom';
+
+// Mask email for display
+const maskEmail = (e: string) => {
+  try {
+    const [name, domain] = e.split('@');
+    if (!name || !domain) return e;
+    const maskedName = name.length <= 2 ? name[0] + '***' : name.slice(0, 2) + '***';
+    const domainParts = domain.split('.');
+    const domainMasked = domainParts[0].slice(0, 1) + '***' + (domainParts.length > 1 ? '.' + domainParts.slice(1).join('.') : '');
+    return `${maskedName}@${domainMasked}`;
+  } catch {
+    return e;
+  }
+};
 
 interface EmailVerificationScreenProps {
   email: string;
@@ -28,16 +42,35 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   const [code, setCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [canResend, setCanResend] = useState(false);
-  const [resendCountdown, setResendCountdown] = useState(600); // 10 minutes
+  const [resendCountdown, setResendCountdown] = useState(60); // Resend cooldown 60s
   const [showMagicLink, setShowMagicLink] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const maskedEmail = useMemo(() => maskEmail(email), [email]);
 
   // Log OTP mode
   useEffect(() => {
     console.info('OTP_EMAIL_V1_ACTIVE');
   }, []);
+
+  // Send initial OTP
+  useEffect(() => {
+    const send = async () => {
+      try {
+        await supabase.auth.signInWithOtp({
+          email,
+          options: { shouldCreateUser: true }
+        });
+      } catch (e) {
+        console.warn('Initial OTP send failed', e);
+      }
+    };
+    send();
+    // start/refresh resend cooldown
+    setResendCountdown(60);
+    setCanResend(false);
+  }, [email]);
 
   // Countdown timer for resend
   useEffect(() => {
@@ -81,7 +114,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
             title: "Code Expired",
             description: "We sent a new code to your email",
           });
-          await handleResendCode();
+          await handleResendCode(true);
           setIsVerifying(false);
           return;
         }
@@ -158,10 +191,10 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     }
   };
 
-  const handleResendCode = async () => {
-    if (!canResend) return;
+  const handleResendCode = async (force: boolean = false) => {
+    if (!canResend && !force) return;
     
-    setResendCountdown(600);
+    setResendCountdown(60);
     setCanResend(false);
     
     try {
@@ -331,7 +364,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                 transition={{ duration: 0.6, delay: 0.5 }}
                 className="text-green-400 font-semibold"
               >
-                {email}
+                {maskedEmail}
               </motion.p>
             </div>
 
@@ -418,7 +451,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                 <Button
                   data-testid="email-otp-resend"
                   variant="outline"
-                  onClick={handleResendCode}
+                  onClick={() => handleResendCode()}
                   className="border-white/30 text-white hover:bg-white/20"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
