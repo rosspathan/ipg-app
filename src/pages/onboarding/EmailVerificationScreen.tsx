@@ -54,25 +54,27 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     console.info('OTP_EMAIL_V1_ACTIVE');
   }, []);
 
-  // Send initial OTP (no redirect needed for OTP verification)
+  // Send initial verification email via custom edge function
   useEffect(() => {
     const send = async () => {
       try {
-        // Attempt OTP with account creation; if signups are disabled, retry without creating
-        let { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: { shouldCreateUser: true }
-        });
-        if (error && /signups not allowed/i.test(error.message || '')) {
-          const retry = await supabase.auth.signInWithOtp({
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        sessionStorage.setItem('verificationCode', code);
+        sessionStorage.setItem('verificationEmail', email);
+        
+        const { error } = await supabase.functions.invoke('send-verification-email', {
+          body: {
             email,
-            options: { shouldCreateUser: false }
-          });
-            error = retry.error;
-        }
+            verificationCode: code,
+            userName: email.split('@')[0],
+            isOnboarding: true
+          }
+        });
+        
         if (error) throw error;
+        console.info('Verification email sent successfully');
       } catch (e) {
-        console.warn('Initial OTP send failed', e);
+        console.warn('Initial email send failed', e);
       }
     };
     send();
@@ -93,107 +95,47 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   }, [resendCountdown]);
 
   const handleVerifyCode = async () => {
-    const raw = inputRef.current?.value ?? code;
-    const cleaned = (raw || '').replace(/\D/g, '').trim();
-    if (cleaned.length !== 6) {
+    if (code.length !== 6) {
       toast({
         title: "Invalid Code",
-        description: "Please enter the 6-digit verification code",
+        description: "Please enter a 6-digit verification code",
         variant: "destructive"
       });
       return;
     }
 
     setIsVerifying(true);
+    
     try {
-      // Verify OTP with Supabase
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: cleaned,
-        type: 'email'
+      const storedCode = sessionStorage.getItem('verificationCode');
+      const storedEmail = sessionStorage.getItem('verificationEmail');
+      
+      if (!storedCode || storedEmail !== email) {
+        throw new Error('Verification session expired');
+      }
+      
+      if (code !== storedCode) {
+        throw new Error('Invalid verification code');
+      }
+      
+      // Code is valid, proceed with onboarding
+      sessionStorage.removeItem('verificationCode');
+      sessionStorage.removeItem('verificationEmail');
+      
+      toast({
+        title: "Email Verified!",
+        description: "Your email has been verified successfully",
+        className: "bg-success/10 border-success/50 text-success",
       });
-
-      if (error) {
-        const errorMsg = error.message.toLowerCase();
-        
-        // Handle expired/invalid codes by auto-resending
-        if (errorMsg.includes('expired') || errorMsg.includes('invalid') || errorMsg.includes('token')) {
-          toast({
-            title: "Code Expired",
-            description: "We sent a new code to your email",
-          });
-          await handleResendCode(true);
-          setIsVerifying(false);
-          return;
-        }
-
-        // If it's a configuration issue, show magic link fallback
-        if (errorMsg.includes('email_provider') || errorMsg.includes('disabled')) {
-          setShowMagicLink(true);
-          toast({
-            title: "Configuration Issue",
-            description: "Please use the magic link option below",
-            variant: "destructive"
-          });
-          setIsVerifying(false);
-          return;
-        }
-
-        throw error;
-      }
-
-      // Success! We have a session
-      if (data.session) {
-        const user = data.session.user;
-        
-        // Backfill username from email if needed
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          if (!profile?.username) {
-            const username = extractUsernameFromEmail(user.email, user.id);
-            await supabase
-              .from('profiles')
-              .update({ username })
-              .eq('user_id', user.id);
-          }
-        } catch (e) {
-          console.warn('Username backfill failed:', e);
-        }
-
-        // Store wallet address if provided
-        if (walletAddress) {
-          try {
-            await storeEvmAddress(user.id, walletAddress);
-          } catch (e) {
-            console.warn('Wallet store failed:', e);
-          }
-        }
-
-        toast({
-          title: "Email Verified!",
-          description: "Your account is ready",
-          className: "bg-success/10 border-success/50 text-success",
-        });
-
-        setTimeout(() => {
-          onVerified();
-          navigate('/app/home');
-        }, 800);
-      }
-
+      
+      onVerified();
     } catch (error: any) {
-      console.error('OTP verification error:', error);
+      console.error('Verification error:', error);
       toast({
         title: "Verification Failed",
-        description: error.message || "Please try again or use the magic link",
+        description: error.message || "Invalid or expired code. Please try again.",
         variant: "destructive"
       });
-      setShowMagicLink(true);
     } finally {
       setIsVerifying(false);
     }
@@ -206,18 +148,18 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     setCanResend(false);
     
     try {
-      let { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: true }
-      });
-
-      if (error && /signups not allowed/i.test(error.message || '')) {
-        const retry = await supabase.auth.signInWithOtp({
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      sessionStorage.setItem('verificationCode', code);
+      sessionStorage.setItem('verificationEmail', email);
+      
+      const { error } = await supabase.functions.invoke('send-verification-email', {
+        body: {
           email,
-          options: { shouldCreateUser: false }
-        });
-        error = retry.error;
-      }
+          verificationCode: code,
+          userName: email.split('@')[0],
+          isOnboarding: true
+        }
+      });
 
       if (error) throw error;
 
@@ -238,28 +180,11 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   };
 
   const handleMagicLink = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/auth/callback`
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Magic Link Sent",
-        description: "Check your email for the sign-in link",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Failed to Send",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
+    toast({
+      title: "Magic Link Not Available",
+      description: "Please contact support if you need assistance with verification",
+      variant: "destructive"
+    });
   };
 
   const handleCodeChange = (value: string) => {
