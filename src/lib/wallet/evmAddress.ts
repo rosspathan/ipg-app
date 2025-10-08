@@ -21,28 +21,56 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (error || !data) {
-      console.warn('[EVM] No profile or wallet_addresses found for user');
-      return null;
+    // Helper: validate
+    const isAddress = (val: unknown) => typeof val === 'string' && val.startsWith('0x') && val.length >= 42;
+
+    // Try parsing from DB first (even if error, continue to local fallbacks)
+    if (data) {
+      const wa = (data as any).wallet_addresses;
+      const legacy = (data as any).wallet_address;
+
+      // Handle many possible shapes
+      const candidates: any[] = [
+        // Known structures
+        wa?.evm?.bsc,
+        wa?.evm?.mainnet,
+        wa?.evm,
+        wa?.bsc,
+        wa?.ethereum,
+        wa?.BEP20,
+        wa?.ERC20,
+        // If wallet_addresses itself is a string
+        wa,
+        // Legacy column
+        legacy,
+      ];
+
+      const found = candidates.find(isAddress);
+      if (found) return found as string;
     }
 
-    // wallet_addresses is JSONB: { evm: { mainnet: "0x...", bsc: "0x..." } }
-    const walletAddresses = data.wallet_addresses as any;
-    
-    // Try BSC first, then mainnet, then any EVM address
-    const evmAddress = walletAddresses?.evm?.bsc || 
-                       walletAddresses?.evm?.mainnet ||
-                       walletAddresses?.evm;
-
-    if (typeof evmAddress === 'string' && evmAddress.startsWith('0x')) {
-      return evmAddress;
+    if (error) {
+      console.warn('[EVM] profiles fetch error, will try local fallbacks:', error);
     }
 
-    // Backward-compat: legacy column wallet_address (text)
-    if (typeof (data as any).wallet_address === 'string' && (data as any).wallet_address.startsWith('0x')) {
-      return (data as any).wallet_address;
-    }
+    // Local fallbacks (created/imported wallet or cached MetaMask)
+    try {
+      const localWallet = localStorage.getItem('cryptoflow_wallet');
+      if (localWallet) {
+        const parsed = JSON.parse(localWallet);
+        if (isAddress(parsed?.address)) return parsed.address;
+      }
+    } catch {}
 
+    try {
+      const mm = localStorage.getItem('cryptoflow_metamask_wallet');
+      if (mm) {
+        const parsed = JSON.parse(mm);
+        if (isAddress(parsed?.address)) return parsed.address;
+      }
+    } catch {}
+
+    console.warn('[EVM] No profile or local wallet address found for user');
     return null;
   } catch (err) {
     console.error('[EVM] Error fetching wallet address:', err);
