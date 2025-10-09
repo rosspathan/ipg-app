@@ -52,6 +52,7 @@ export default function AuthEmailVerification() {
       const toCache = directEmail || fallbackEmail;
       if (toCache) {
         sessionStorage.setItem('verificationEmail', toCache);
+        window.dispatchEvent(new Event('verification:email-updated'));
       }
     } catch {}
   }, [email]);
@@ -110,6 +111,7 @@ export default function AuthEmailVerification() {
           } else if (email) {
             sessionStorage.setItem('verificationEmail', email);
           }
+          window.dispatchEvent(new Event('verification:email-updated'));
         } catch {}
         
         // Backfill username
