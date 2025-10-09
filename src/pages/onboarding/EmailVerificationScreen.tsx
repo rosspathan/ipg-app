@@ -47,6 +47,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasInitialSent = useRef(false);
   const maskedEmail = useMemo(() => maskEmail(email), [email]);
 
   // Log OTP mode
@@ -56,6 +57,9 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
   // Send initial verification email via custom edge function
   useEffect(() => {
+    if (hasInitialSent.current) return;
+    hasInitialSent.current = true;
+    
     const send = async () => {
       try {
         const code = Math.floor(100000 + Math.random() * 900000).toString();
