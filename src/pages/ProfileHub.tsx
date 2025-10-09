@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { DockNav } from "@/components/navigation/DockNav";
 import { QuickSwitch } from "@/components/astra/QuickSwitch";
 import { MiniIdCardPreview } from "@/components/profile/MiniIdCardPreview";
+import { useDisplayName } from "@/hooks/useDisplayName";
+import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
 
 const profileSections = [
   {
@@ -105,7 +107,8 @@ export function ProfileHub() {
   };
 
   const avatarUrl = getAvatarUrl('1x');
-  const displayName = user?.email?.split('@')[0] || userApp?.full_name || "User";
+  useUsernameBackfill();
+  const displayName = useDisplayName();
   const completionScore = completion?.completion_score || 0;
 
   return (

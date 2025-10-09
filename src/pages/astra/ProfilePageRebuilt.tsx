@@ -15,6 +15,8 @@ import SecurityTab from "@/components/profile/SecurityTab"
 import { NotificationsTab } from "@/components/profile/NotificationsTab"
 import { PreferencesTab } from "@/components/profile/PreferencesTab"
 import { BadgeCard } from "@/components/profile/BadgeCard"
+import { useDisplayName } from "@/hooks/useDisplayName"
+import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 
 const profileSections = [
   {
@@ -40,6 +42,10 @@ export function ProfilePageRebuilt() {
   const { badge } = useUserBadge()
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const [openSheet, setOpenSheet] = useState<string | null>(null)
+
+  // Resolve consistent user-facing name and ensure it's backfilled
+  const displayName = useDisplayName()
+  useUsernameBackfill()
 
   const handleQuickSwitchAction = (action: string) => {
     switch (action) {
@@ -72,7 +78,7 @@ export function ProfilePageRebuilt() {
               
               <div className="flex-1">
                 <h2 className="font-heading text-xl font-bold text-foreground mb-1">
-                  {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
+                  {displayName}
                 </h2>
                 <p className="text-sm text-muted-foreground font-mono">{user?.email}</p>
                 {badge && badge !== 'None' && (
