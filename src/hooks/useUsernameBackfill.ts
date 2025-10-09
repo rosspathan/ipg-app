@@ -17,36 +17,47 @@ export function useUsernameBackfill() {
       if (!user?.email) return;
 
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
-          .select('username, wallet_addresses, email')
+          .select('username, email')
           .eq('user_id', user.id)
           .maybeSingle();
 
+        if (error) {
+          console.warn('[USERNAME_BACKFILL] profile select error:', error.message);
+        }
+
         const currentUsername = (data as any)?.username;
-        const walletAddresses = (data as any)?.wallet_addresses;
 
-        // Pre-flight masked console snapshot
+        // Masked email log only
         const maskedEmail = user.email.slice(0, 2) + '***@' + user.email.split('@')[1];
-        const maskedAddr = walletAddresses?.evm
-          ? (walletAddresses.evm.bsc || walletAddresses.evm.mainnet || walletAddresses.evm)
-          : null;
-        const maskedEvm = typeof maskedAddr === 'string' && maskedAddr.startsWith('0x')
-          ? maskedAddr.slice(0, 6) + '...' + maskedAddr.slice(-4)
-          : 'none';
-        console.info('[USR_PREFLIGHT]', { email: maskedEmail, username: currentUsername || '—', evm: maskedEvm });
+        console.info('[USR_PREFLIGHT]', { email: maskedEmail, username: currentUsername || '—' });
 
+        const username = extractUsernameFromEmail(user.email, user.id);
         const needsBackfill = !data || !currentUsername || currentUsername === 'User';
         
-        if (needsBackfill) {
-          const username = extractUsernameFromEmail(user.email, user.id);
-          
-          await supabase
+        if (!data) {
+          // Ensure profile row exists, set username atomically
+          const { error: upsertErr } = await supabase
+            .from('profiles')
+            .upsert({ user_id: user.id, email: user.email, username, account_status: 'active' }, { onConflict: 'user_id' });
+          if (upsertErr) {
+            console.warn('[USERNAME_BACKFILL] upsert failed:', upsertErr.message);
+          } else {
+            console.info('[USERNAME_BACKFILL] Upserted profile with username:', username.slice(0, 4) + '***');
+            window.dispatchEvent(new Event('profile:updated'));
+          }
+        } else if (needsBackfill) {
+          const { error: updErr } = await supabase
             .from('profiles')
             .update({ username })
             .eq('user_id', user.id);
-
-          console.info('[USERNAME_BACKFILL] Set username:', username.slice(0, 4) + '***');
+          if (updErr) {
+            console.warn('[USERNAME_BACKFILL] update failed:', updErr.message);
+          } else {
+            console.info('[USERNAME_BACKFILL] Set username:', username.slice(0, 4) + '***');
+            window.dispatchEvent(new Event('profile:updated'));
+          }
         }
       } catch (err) {
         console.warn('[USERNAME_BACKFILL] Failed:', err);
