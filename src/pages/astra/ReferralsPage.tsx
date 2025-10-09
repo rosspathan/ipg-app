@@ -88,11 +88,9 @@ export default function ReferralsPage() {
     enabled: !!user?.id,
   });
 
-  const referralLink = profileData?.referral_code
-    ? `https://i-smartapp.com/auth?ref=${profileData.referral_code}`
-    : user?.id 
-    ? `https://i-smartapp.com/auth?ref=${user.id}`
-    : "";
+  const code = profileData?.referral_code || user?.id || "";
+  const baseHost = typeof window !== 'undefined' ? window.location.origin : 'https://i-smartapp.com';
+  const referralLink = code ? `${baseHost}/r/${code}` : "";
 
   const handleCopyLink = async () => {
     if (!referralLink) return;
@@ -232,8 +230,8 @@ export default function ReferralsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="p-3 bg-muted/50 rounded-lg border border-border">
-              <p className="text-sm text-foreground font-mono break-all">
-                {referralLink}
+              <p className="text-sm text-foreground font-mono break-all" data-testid="referral-link">
+                {referralLink || 'Sign in to generate your personal referral link'}
               </p>
             </div>
 
@@ -242,6 +240,7 @@ export default function ReferralsPage() {
                 onClick={handleCopyLink}
                 className="flex-1 gap-2"
                 variant={copied ? "default" : "outline"}
+                disabled={!referralLink}
               >
                 {copied ? (
                   <>
@@ -255,7 +254,7 @@ export default function ReferralsPage() {
                   </>
                 )}
               </Button>
-              <Button onClick={handleShare} className="flex-1 gap-2 bg-primary">
+              <Button onClick={handleShare} className="flex-1 gap-2 bg-primary" disabled={!referralLink}>
                 <Share2 className="w-4 h-4" />
                 Share
               </Button>
