@@ -38,6 +38,24 @@ export default function AuthEmailVerification() {
     }
   }, [countdown]);
 
+  // Cache verification email so the app can derive a username without an auth session
+  useEffect(() => {
+    try {
+      const directEmail = email;
+      let fallbackEmail = '';
+      if (!directEmail) {
+        const raw = localStorage.getItem('ipg_onboarding_state');
+        if (raw) {
+          try { fallbackEmail = JSON.parse(raw)?.email || ''; } catch {}
+        }
+      }
+      const toCache = directEmail || fallbackEmail;
+      if (toCache) {
+        sessionStorage.setItem('verificationEmail', toCache);
+      }
+    } catch {}
+  }, [email]);
+
   const handleVerifyCode = async () => {
     const cleaned = code.replace(/\D/g, '').trim();
     if (cleaned.length !== 6) {
@@ -84,6 +102,15 @@ export default function AuthEmailVerification() {
 
       if (data.session) {
         const user = data.session.user;
+
+        // Cache verified email for immediate display name derivation
+        try {
+          if (user?.email) {
+            sessionStorage.setItem('verificationEmail', user.email);
+          } else if (email) {
+            sessionStorage.setItem('verificationEmail', email);
+          }
+        } catch {}
         
         // Backfill username
         try {
