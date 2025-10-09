@@ -6,7 +6,6 @@ import WelcomeScreens from './onboarding/WelcomeScreens';
 import WalletChoiceScreen from './onboarding/WalletChoiceScreen';
 import CreateWalletScreen from './onboarding/CreateWalletScreen';
 import ImportWalletScreen from './onboarding/ImportWalletScreen';
-import WalletConnectScreen from './onboarding/WalletConnectScreen';
 import EmailInputScreen from './onboarding/EmailInputScreen';
 import EmailVerificationScreen from './onboarding/EmailVerificationScreen';
 import PinSetupScreen from './onboarding/PinSetupScreen';
@@ -90,7 +89,6 @@ const OnboardingFlow: React.FC = () => {
         <WalletChoiceScreen
           onCreateWallet={() => setStep('create-wallet')}
           onImportWallet={() => setStep('import-wallet')}
-          onWalletConnect={() => setStep('wallet-connect')}
           onBack={() => setStep('welcome')}
         />
       );
@@ -107,14 +105,6 @@ const OnboardingFlow: React.FC = () => {
       return (
         <ImportWalletScreen
           onWalletImported={handleWalletCreated}
-          onBack={() => setStep('wallet-choice')}
-        />
-      );
-    
-    case 'wallet-connect':
-      return (
-        <WalletConnectScreen
-          onWalletConnected={handleWalletCreated}
           onBack={() => setStep('wallet-choice')}
         />
       );

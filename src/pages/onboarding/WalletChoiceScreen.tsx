@@ -2,19 +2,17 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, Plus, Download, Link } from 'lucide-react';
+import { ChevronLeft, Plus, Download } from 'lucide-react';
 
 interface WalletChoiceScreenProps {
   onCreateWallet: () => void;
   onImportWallet: () => void;
-  onWalletConnect: () => void;
   onBack: () => void;
 }
 
 const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
   onCreateWallet,
   onImportWallet,
-  onWalletConnect,
   onBack
 }) => {
   const walletOptions = [
@@ -34,15 +32,6 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
       icon: Download,
       gradient: 'from-purple-500 to-pink-500',
       action: onImportWallet,
-      recommended: false
-    },
-    {
-      id: 'connect',
-      title: 'WalletConnect',
-      description: 'Connect your existing wallet via WalletConnect',
-      icon: Link,
-      gradient: 'from-orange-500 to-red-500',
-      action: onWalletConnect,
       recommended: false
     }
   ];
