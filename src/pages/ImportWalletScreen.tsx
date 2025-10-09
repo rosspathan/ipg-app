@@ -17,6 +17,7 @@ const ImportWalletScreen = () => {
   const { toast } = useToast();
   const { importWallet } = useWeb3();
   const [seedPhrase, setSeedPhrase] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [isValidating, setIsValidating] = useState(false);
 
@@ -25,6 +26,11 @@ const ImportWalletScreen = () => {
     setError("");
 
     try {
+      if (!email.trim()) {
+        setError("Please enter your email address");
+        return;
+      }
+
       const cleanPhrase = seedPhrase.trim().toLowerCase();
       const words = cleanPhrase.split(/\s+/);
 
@@ -91,16 +97,30 @@ const ImportWalletScreen = () => {
 
         <Card className="bg-gradient-card shadow-card border-0">
           <CardHeader>
-            <CardTitle className="text-base text-center">Recovery Phrase</CardTitle>
+            <CardTitle className="text-base text-center">Wallet Verification</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Textarea
-              value={seedPhrase}
-              onChange={(e) => handlePhraseChange(e.target.value)}
-              placeholder="Enter your recovery phrase (separate words with spaces)"
-              rows={6}
-              className="resize-none text-sm"
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Email Address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter the email used during wallet creation"
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Recovery Phrase</label>
+              <Textarea
+                value={seedPhrase}
+                onChange={(e) => handlePhraseChange(e.target.value)}
+                placeholder="Enter your recovery phrase (separate words with spaces)"
+                rows={6}
+                className="resize-none text-sm"
+              />
+            </div>
             
             {error && (
               <div className="flex items-center space-x-2 text-destructive text-sm">
@@ -110,6 +130,7 @@ const ImportWalletScreen = () => {
             )}
 
             <div className="text-xs text-muted-foreground">
+              <p>• Enter the email address you used when creating this wallet</p>
               <p>• Words should be separated by spaces</p>
               <p>• Only 12 or 24 word phrases are supported</p>
               <p>• Check spelling carefully</p>
@@ -122,7 +143,7 @@ const ImportWalletScreen = () => {
             variant="default" 
             size="lg" 
             onClick={handleValidate}
-            disabled={!seedPhrase.trim() || isValidating}
+            disabled={!seedPhrase.trim() || !email.trim() || isValidating}
             className="w-full"
           >
             {isValidating ? "Validating..." : "Validate & Import"}
