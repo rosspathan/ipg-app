@@ -65,6 +65,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         sessionStorage.setItem('verificationCode', code);
         sessionStorage.setItem('verificationEmail', email);
+        window.dispatchEvent(new Event('verification:email-updated'));
         
         const { error } = await supabase.functions.invoke('send-verification-email', {
           body: {
@@ -166,10 +167,13 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         description: "Your account is ready!",
       });
       
-      // Clean up temp storage
+      // Clean up temp storage (keep verificationEmail for display name derivation)
       sessionStorage.removeItem('ipg_temp_evm_address');
       sessionStorage.removeItem('verificationCode');
-      sessionStorage.removeItem('verificationEmail');
+      try {
+        sessionStorage.setItem('verificationEmail', email);
+        window.dispatchEvent(new Event('verification:email-updated'));
+      } catch {}
       
       onVerified();
     } catch (error: any) {
@@ -194,6 +198,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       sessionStorage.setItem('verificationCode', code);
       sessionStorage.setItem('verificationEmail', email);
+      window.dispatchEvent(new Event('verification:email-updated'));
       
       const { error } = await supabase.functions.invoke('send-verification-email', {
         body: {

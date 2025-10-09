@@ -3,7 +3,8 @@ import { useState, useEffect } from "react"
 import { Bell, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useNavigation } from "@/hooks/useNavigation"
-import { useProfile } from "@/hooks/useProfile"
+import { useDisplayName } from "@/hooks/useDisplayName"
+import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 import { cn } from "@/lib/utils"
 import ipgLogo from "@/assets/ipg-logo.jpg"
 import logoAlt from "@/assets/logo-alt.jpg"
@@ -21,7 +22,8 @@ interface HomeHeaderProProps {
  */
 export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderProProps) {
   const { navigate } = useNavigation()
-  const { userApp } = useProfile()
+  const displayName = useDisplayName()
+  useUsernameBackfill()
   const [isFlipped, setIsFlipped] = useState(false)
 
   // Logo flip animation every 5 seconds
@@ -99,7 +101,7 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
           {getGreeting()}
         </p>
         <h1 className="text-sm font-[Space_Grotesk] font-bold text-foreground truncate">
-          {userApp?.username || userApp?.email?.split('@')[0] || userApp?.full_name || 'User'}
+          {displayName}
         </h1>
       </div>
 
