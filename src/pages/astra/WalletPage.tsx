@@ -14,8 +14,11 @@ import { useWeb3 } from "@/contexts/Web3Context"
 import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress"
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 import { useDisplayName } from "@/hooks/useDisplayName"
+import { DockNav } from "@/components/navigation/DockNav"
+import { QuickSwitch } from "@/components/astra/QuickSwitch"
 
 export function WalletPage() {
+  const [showQuickSwitch, setShowQuickSwitch] = React.useState(false)
   const { navigate } = useNavigation()
   const { user } = useAuthUser()
   const { wallet } = useWeb3()
@@ -258,6 +261,31 @@ export function WalletPage() {
       <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-amber-600/80 text-white">
         USR-WALLET LINK v3
       </div>
+
+      {/* Quick Switch Radial Menu */}
+      <QuickSwitch
+        isOpen={showQuickSwitch}
+        onClose={() => setShowQuickSwitch(false)}
+        onAction={(action) => {
+          switch (action) {
+            case "deposit":
+              navigate("/app/wallet/deposit")
+              break
+            case "convert":
+              navigate("/app/swap")
+              break
+            case "trade":
+              navigate("/app/trade")
+              break
+            case "programs":
+              navigate("/app/programs")
+              break
+          }
+        }}
+      />
+
+      {/* Sticky Footer Navigation */}
+      <DockNav onNavigate={(path) => navigate(path)} onCenterPress={() => setShowQuickSwitch(true)} />
     </div>
   )
 }
