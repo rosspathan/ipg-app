@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { generateMnemonic, mnemonicToSeedSync } from "npm:bip39@3.1.0";
+import { HDKey } from "npm:@scure/bip32@1.3.3";
+import { keccak_256 } from "npm:@noble/hashes@1.3.3/sha3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,9 +11,91 @@ const corsHeaders = {
 
 interface OnboardingRequest {
   email: string;
-  walletAddress?: string;
   verificationCode: string;
   storedCode: string;
+}
+
+// Generate wallet from mnemonic
+function generateWalletFromMnemonic(mnemonic: string) {
+  const seed = mnemonicToSeedSync(mnemonic);
+  const hdkey = HDKey.fromMasterSeed(seed);
+  
+  // BIP44 path for Ethereum: m/44'/60'/0'/0/0
+  const path = "m/44'/60'/0'/0/0";
+  const childKey = hdkey.derive(path);
+  
+  if (!childKey.privateKey) {
+    throw new Error("Failed to derive private key");
+  }
+
+  const privateKey = childKey.privateKey;
+  const publicKey = childKey.publicKey;
+  
+  // Generate Ethereum address from public key
+  const addressBytes = keccak_256(publicKey.slice(1)).slice(-20);
+  const address = "0x" + Array.from(addressBytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  return {
+    address,
+    publicKey: "0x" + Array.from(publicKey)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join(''),
+    privateKey: "0x" + Array.from(privateKey)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join(''),
+  };
+}
+
+// Encrypt mnemonic using user's email as key (High Security - user-specific)
+async function encryptMnemonic(mnemonic: string, email: string): Promise<{ encrypted: string; salt: string }> {
+  const encoder = new TextEncoder();
+  
+  // Generate random salt
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  // Derive key from email + salt using PBKDF2
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(email),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+  
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"]
+  );
+  
+  // Encrypt mnemonic
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encryptedData = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: iv },
+    key,
+    encoder.encode(mnemonic)
+  );
+  
+  // Combine IV + encrypted data
+  const combined = new Uint8Array(iv.length + encryptedData.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(encryptedData), iv.length);
+  
+  const encryptedHex = Array.from(combined)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  
+  return { encrypted: encryptedHex, salt: saltHex };
 }
 
 serve(async (req) => {
@@ -19,7 +104,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, walletAddress, verificationCode, storedCode }: OnboardingRequest = await req.json();
+    const { email, verificationCode, storedCode }: OnboardingRequest = await req.json();
 
     // Verify the code matches
     if (verificationCode !== storedCode) {
@@ -46,19 +131,42 @@ serve(async (req) => {
     const existingUser = existingUsers?.users.find(u => u.email === email);
 
     let userId: string;
+    let mnemonic: string;
+    let walletData: any;
 
     if (existingUser) {
       userId = existingUser.id;
       console.log('User already exists:', userId);
+      
+      // Check if wallet already exists
+      const { data: existingWallet } = await supabaseAdmin
+        .from('user_wallets')
+        .select('wallet_address, encrypted_mnemonic')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (existingWallet) {
+        return new Response(
+          JSON.stringify({ 
+            error: "User already has a wallet. Please use wallet login.",
+            hasWallet: true
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     } else {
+      // Generate NEW wallet for new user
+      mnemonic = generateMnemonic(128); // 12 words
+      walletData = generateWalletFromMnemonic(mnemonic);
+      
       // Create user with admin privileges (auto-confirmed)
-      const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
+      const tempPassword = crypto.randomUUID() + 'Aa1!';
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email,
         password: tempPassword,
-        email_confirm: true, // Auto-confirm email
+        email_confirm: true,
         user_metadata: {
-          wallet_address: walletAddress,
+          wallet_address: walletData.address,
           email_verified: true,
         },
       });
@@ -70,20 +178,45 @@ serve(async (req) => {
       console.log('Created new user:', userId);
     }
 
+    // If no wallet yet, generate one
+    if (!mnemonic) {
+      mnemonic = generateMnemonic(128);
+      walletData = generateWalletFromMnemonic(mnemonic);
+    }
+
+    // Encrypt mnemonic with user's email
+    const { encrypted, salt } = await encryptMnemonic(mnemonic, email);
+
+    // Store encrypted wallet in database
+    const { error: walletError } = await supabaseAdmin
+      .from('user_wallets')
+      .insert({
+        user_id: userId,
+        wallet_address: walletData.address,
+        encrypted_mnemonic: encrypted,
+        encryption_salt: salt,
+        public_key: walletData.publicKey,
+      });
+
+    if (walletError) {
+      console.error('Wallet creation error:', walletError);
+      throw new Error(`Failed to store wallet: ${walletError.message}`);
+    }
+
     // Extract username from email
     const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '').substring(0, 20) || `user${userId.substring(0, 6)}`;
     
-    // Generate referral code (8 chars, uppercase)
+    // Generate referral code
     const referralCode = username.toUpperCase().substring(0, 8) || userId.substring(0, 8).toUpperCase();
 
-    // Upsert profile with username, wallet_address, and referral_code
+    // Upsert profile
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({ 
         user_id: userId,
         username,
         email,
-        wallet_address: walletAddress,
+        wallet_address: walletData.address,
         referral_code: referralCode,
         updated_at: new Date().toISOString(),
       }, {
@@ -126,14 +259,16 @@ serve(async (req) => {
       console.warn('Referral capture warning:', err);
     }
 
-    // Return success - client will verify OTP
+    // Return success with MNEMONIC (only shown once!)
     return new Response(
       JSON.stringify({ 
         success: true, 
         userId,
         username,
         referralCode,
-        walletAddress: walletAddress || null,
+        walletAddress: walletData.address,
+        mnemonic: mnemonic, // CRITICAL: User must save this!
+        warning: "Save your mnemonic phrase! This is the ONLY time it will be shown."
       }),
       { 
         status: 200, 

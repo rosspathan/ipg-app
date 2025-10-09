@@ -27,7 +27,7 @@ const maskEmail = (e: string) => {
 interface EmailVerificationScreenProps {
   email: string;
   walletAddress?: string; // EVM address from onboarding
-  onVerified: () => void;
+  onVerified: (mnemonic?: string, walletAddress?: string) => void;
   onResendCode: () => void;
   onBack: () => void;
 }
@@ -167,23 +167,45 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         }));
       }
 
-      toast({
-        title: "✓ Email Verified",
-        description: "Your account is ready!",
-      });
-      
-      // Clean up temp storage (keep verificationEmail for display name derivation)
-      sessionStorage.removeItem('ipg_temp_evm_address');
-      sessionStorage.removeItem('verificationCode');
-      try {
-        sessionStorage.setItem('verificationEmail', email);
-        const raw = localStorage.getItem('ipg_onboarding_state');
-        const parsed = raw ? JSON.parse(raw) : {};
-        localStorage.setItem('ipg_onboarding_state', JSON.stringify({ ...parsed, email }));
-        window.dispatchEvent(new Event('verification:email-updated'));
-      } catch {}
-      
-      onVerified();
+      // Check if mnemonic was returned (new wallet generation)
+      if (data.mnemonic) {
+        toast({
+          title: "✓ Email Verified",
+          description: "IMPORTANT: Save your recovery phrase!",
+        });
+        
+        // Clean up temp storage
+        sessionStorage.removeItem('ipg_temp_evm_address');
+        sessionStorage.removeItem('verificationCode');
+        try {
+          sessionStorage.setItem('verificationEmail', email);
+          const raw = localStorage.getItem('ipg_onboarding_state');
+          const parsed = raw ? JSON.parse(raw) : {};
+          localStorage.setItem('ipg_onboarding_state', JSON.stringify({ ...parsed, email }));
+          window.dispatchEvent(new Event('verification:email-updated'));
+        } catch {}
+        
+        // Pass mnemonic to show backup screen
+        onVerified(data.mnemonic, data.walletAddress);
+      } else {
+        toast({
+          title: "✓ Email Verified",
+          description: "Your account is ready!",
+        });
+        
+        // Clean up temp storage
+        sessionStorage.removeItem('ipg_temp_evm_address');
+        sessionStorage.removeItem('verificationCode');
+        try {
+          sessionStorage.setItem('verificationEmail', email);
+          const raw = localStorage.getItem('ipg_onboarding_state');
+          const parsed = raw ? JSON.parse(raw) : {};
+          localStorage.setItem('ipg_onboarding_state', JSON.stringify({ ...parsed, email }));
+          window.dispatchEvent(new Event('verification:email-updated'));
+        } catch {}
+        
+        onVerified();
+      }
     } catch (error: any) {
       console.error('[VERIFY] Error:', error);
       toast({

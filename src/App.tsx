@@ -52,6 +52,7 @@ import AuthUnified from "./pages/AuthUnified";
 import AuthEmailVerification from "./pages/AuthEmailVerification";
 import AuthCallback from "./pages/AuthCallback";
 import AppLockScreen from "./pages/AppLockScreen";
+import WalletLoginScreen from "./pages/WalletLoginScreen";
 
 // Onboarding Pages
 import OnboardingFlow from "./pages/OnboardingFlow";
@@ -216,6 +217,7 @@ function App() {
                   <AuthUnified />
                 </AuthProviderUser>
               } />
+              <Route path="/auth/wallet-login" element={<WalletLoginScreen />} />
               <Route path="/auth/register" element={
                 <AuthProviderUser>
                   <AuthUnified />

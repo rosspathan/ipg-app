@@ -7759,6 +7759,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_wallets: {
+        Row: {
+          created_at: string
+          encrypted_mnemonic: string
+          encryption_salt: string
+          id: string
+          last_used_at: string | null
+          public_key: string
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_mnemonic: string
+          encryption_salt: string
+          id?: string
+          last_used_at?: string | null
+          public_key: string
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_mnemonic?: string
+          encryption_salt?: string
+          id?: string
+          last_used_at?: string | null
+          public_key?: string
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       users_app: {
         Row: {
           account_frozen: boolean | null
