@@ -17,6 +17,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
   onBack
 }) => {
   const [mnemonic, setMnemonic] = useState('');
+  const [email, setEmail] = useState('');
   const [showMnemonic, setShowMnemonic] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [validationState, setValidationState] = useState<{
@@ -39,6 +40,15 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
   };
 
   const handleImport = async () => {
+    if (!email.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter your email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!mnemonic.trim()) {
       toast({
         title: "Error",
@@ -159,11 +169,34 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
             </p>
           </motion.div>
 
-          {/* Recovery Phrase Input */}
+          {/* Email Input */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <div className="p-6">
+                <h3 className="text-white font-semibold mb-4">Email Verification</h3>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter the email used during wallet creation"
+                  className="w-full px-4 py-3 bg-black/30 border border-white/30 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <p className="text-white/60 text-xs mt-2">
+                  Enter the email address you used when creating this wallet
+                </p>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Recovery Phrase Input */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
           >
             <Card className="bg-white/10 backdrop-blur-sm border-white/20">
               <div className="p-6">
@@ -218,7 +251,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
           >
             <Card className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm border-yellow-500/30">
               <div className="p-4">
@@ -240,7 +273,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
             className="space-y-2"
           >
             <p className="text-white/60 text-sm text-center">Quick test with sample phrases:</p>
@@ -263,11 +296,11 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
           >
             <Button
               onClick={handleImport}
-              disabled={!validationState?.isValid || isImporting}
+              disabled={!email.trim() || !validationState?.isValid || isImporting}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 font-semibold py-4 rounded-2xl"
               size="lg"
             >
@@ -290,7 +323,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
             className="text-center"
           >
             <p className="text-white/50 text-xs">
