@@ -65,11 +65,6 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         sessionStorage.setItem('verificationCode', code);
         sessionStorage.setItem('verificationEmail', email);
-        try {
-          const raw = localStorage.getItem('ipg_onboarding_state');
-          const parsed = raw ? JSON.parse(raw) : {};
-          localStorage.setItem('ipg_onboarding_state', JSON.stringify({ ...parsed, email }));
-        } catch {}
         window.dispatchEvent(new Event('verification:email-updated'));
         
         const { error } = await supabase.functions.invoke('send-verification-email', {
@@ -177,9 +172,6 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       sessionStorage.removeItem('verificationCode');
       try {
         sessionStorage.setItem('verificationEmail', email);
-        const raw = localStorage.getItem('ipg_onboarding_state');
-        const parsed = raw ? JSON.parse(raw) : {};
-        localStorage.setItem('ipg_onboarding_state', JSON.stringify({ ...parsed, email }));
         window.dispatchEvent(new Event('verification:email-updated'));
       } catch {}
       
@@ -206,11 +198,6 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       sessionStorage.setItem('verificationCode', code);
       sessionStorage.setItem('verificationEmail', email);
-      try {
-        const raw = localStorage.getItem('ipg_onboarding_state');
-        const parsed = raw ? JSON.parse(raw) : {};
-        localStorage.setItem('ipg_onboarding_state', JSON.stringify({ ...parsed, email }));
-      } catch {}
       window.dispatchEvent(new Event('verification:email-updated'));
       
       const { error } = await supabase.functions.invoke('send-verification-email', {
