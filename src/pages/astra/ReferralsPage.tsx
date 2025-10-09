@@ -117,7 +117,8 @@ export default function ReferralsPage() {
   }
 
   const code = profileData?.referral_code || user?.id || localFallbackCode;
-  const baseHost = typeof window !== 'undefined' ? window.location.origin : 'https://i-smartapp.com';
+  // Always use production domain for mobile apps
+  const baseHost = 'https://i-smartapp.com';
   const referralLink = code ? `${baseHost}/r/${code}` : "";
 
   const handleCopyLink = async () => {
