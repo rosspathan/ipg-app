@@ -62,20 +62,10 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
     try {
       const result = await importWallet(mnemonic.trim());
       if (result.success && result.wallet) {
-        // Persist EVM address to Supabase if user is authenticated
+        // Store EVM address to sessionStorage for later persistence
         if (result.wallet?.address) {
-          try {
-            const { persistEvmAddress } = await import('@/lib/wallet/evmAddress');
-            const { supabase } = await import('@/integrations/supabase/client');
-            const { data: { user } } = await supabase.auth.getUser();
-            
-            if (user?.id) {
-              await persistEvmAddress(user.id, result.wallet.address);
-              console.info('USR_WALLET_LINK_V3', { user: user.id, address: result.wallet.address.slice(0, 8) + '...' });
-            }
-          } catch (err) {
-            console.warn('[IMPORT] Failed to persist EVM address:', err);
-          }
+          const { storeEvmAddressTemp } = await import('@/lib/wallet/evmAddress');
+          storeEvmAddressTemp(result.wallet.address);
         }
         
         toast({

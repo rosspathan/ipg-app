@@ -109,6 +109,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     try {
       const storedCode = sessionStorage.getItem('verificationCode');
       const storedEmail = sessionStorage.getItem('verificationEmail');
+      const tempWalletAddress = sessionStorage.getItem('ipg_temp_evm_address');
       
       if (!storedCode || storedEmail !== email) {
         throw new Error('Verification session expired');
@@ -118,11 +119,11 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         throw new Error('Invalid verification code');
       }
       
-      // Complete onboarding via edge function (creates verified auth account)
+      // Complete onboarding via edge function (creates user + profile)
       const { data, error } = await supabase.functions.invoke('complete-onboarding', {
         body: {
           email,
-          walletAddress,
+          walletAddress: tempWalletAddress || walletAddress,
           verificationCode: code,
           storedCode
         }
@@ -133,41 +134,46 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       
       console.info('[VERIFY] User registered:', data.userId, data.username);
       
-      // Sign in the user with the access token
-      if (data.accessToken) {
-        // Extract token from magic link URL
-        const url = new URL(data.accessToken);
-        const token = url.searchParams.get('token');
-        
-        if (token) {
-          const { error: verifyError } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: 'magiclink'
-          });
-          
-          if (verifyError) {
-            console.warn('[VERIFY] Token verify failed:', verifyError);
-          }
-        }
+      // Now verify OTP to create session
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        email,
+        token: code,
+        type: 'email',
+      });
+
+      if (otpError) {
+        console.warn('[VERIFY] OTP verify failed, but user created:', otpError);
+        // User is created, continue anyway
       }
+
+      // Emit events for UI refresh
+      window.dispatchEvent(new CustomEvent('profile:updated', { 
+        detail: { username: data.username } 
+      }));
       
-      // Code is valid, proceed with onboarding
+      if (tempWalletAddress) {
+        window.dispatchEvent(new CustomEvent('evm:address:updated', { 
+          detail: { address: tempWalletAddress } 
+        }));
+      }
+
+      toast({
+        title: "✓ Email Verified",
+        description: "Your account is ready!",
+      });
+      
+      // Clean up temp storage
+      sessionStorage.removeItem('ipg_temp_evm_address');
       sessionStorage.removeItem('verificationCode');
       sessionStorage.removeItem('verificationEmail');
       
-      toast({
-        title: "Email Verified!",
-        description: "Your email has been verified successfully",
-        className: "bg-success/10 border-success/50 text-success",
-      });
-      
       onVerified();
     } catch (error: any) {
-      console.error('Verification error:', error);
+      console.error('[VERIFY] Error:', error);
       toast({
         title: "Verification Failed",
-        description: error.message || "Invalid or expired code. Please try again.",
-        variant: "destructive"
+        description: error.message || "Please try again",
+        variant: "destructive",
       });
     } finally {
       setIsVerifying(false);

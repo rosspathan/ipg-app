@@ -73,15 +73,18 @@ serve(async (req) => {
     // Extract username from email
     const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '').substring(0, 20) || `user${userId.substring(0, 6)}`;
 
-    // Update profile with username
+    // Upsert profile with username and wallet_address
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update({ 
+      .upsert({ 
+        user_id: userId,
         username,
         email,
         wallet_address: walletAddress,
-      })
-      .eq('user_id', userId);
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
+      });
 
     if (profileError) {
       console.warn('Profile update warning:', profileError);
@@ -119,20 +122,13 @@ serve(async (req) => {
       console.warn('Referral capture warning:', err);
     }
 
-    // Generate session token for the user
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-    });
-
-    if (sessionError) throw sessionError;
-
+    // Return success - client will verify OTP
     return new Response(
       JSON.stringify({ 
         success: true, 
         userId,
         username,
-        accessToken: sessionData.properties.action_link,
+        walletAddress: walletAddress || null,
       }),
       { 
         status: 200, 

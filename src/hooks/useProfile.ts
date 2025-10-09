@@ -98,6 +98,17 @@ export const useProfile = () => {
     fetchUserApp();
   }, [user]);
 
+  // Listen for profile update events
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      console.log('[useProfile] Profile update event received, refetching...');
+      fetchUserApp();
+    };
+
+    window.addEventListener('profile:updated', handleProfileUpdate);
+    return () => window.removeEventListener('profile:updated', handleProfileUpdate);
+  }, []);
+
   return {
     userApp,
     loading,

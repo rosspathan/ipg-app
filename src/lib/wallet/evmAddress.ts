@@ -9,6 +9,19 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
+ * Store EVM address to sessionStorage during onboarding
+ * @param address - EVM public address (0x...)
+ */
+export function storeEvmAddressTemp(address: string): void {
+  if (!address || !address.startsWith('0x')) {
+    console.warn('[EVM] Invalid address format:', address);
+    return;
+  }
+  sessionStorage.setItem('ipg_temp_evm_address', address);
+  console.info('[EVM] Stored temp address:', address.slice(0, 10) + '...');
+}
+
+/**
  * Get stored EVM address for a user from Supabase
  * @param userId - User's ID
  * @returns The EVM address (0x...) or null if not found
