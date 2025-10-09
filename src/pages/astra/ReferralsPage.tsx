@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useTeamReferrals } from "@/hooks/useTeamReferrals";
+import { extractUsernameFromEmail } from "@/lib/user/username";
 
 export default function ReferralsPage() {
   const { user } = useAuthUser();
@@ -88,7 +89,34 @@ export default function ReferralsPage() {
     enabled: !!user?.id,
   });
 
-  const code = profileData?.referral_code || user?.id || "";
+  // Derive a referral code even without Supabase auth
+  let localFallbackCode = '';
+  try {
+    const verifyEmail = typeof window !== 'undefined' ? sessionStorage.getItem('verificationEmail') : null;
+    let onboardingEmail: string | undefined;
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('ipg_onboarding_state');
+      if (raw) {
+        onboardingEmail = (JSON.parse(raw)?.email as string | undefined) || undefined;
+      }
+    }
+    const email = verifyEmail || onboardingEmail || null;
+    const username = extractUsernameFromEmail(email, undefined);
+    if (username && username.toLowerCase() !== 'user') {
+      localFallbackCode = username.toUpperCase();
+    }
+  } catch {}
+
+  if (!localFallbackCode && typeof window !== 'undefined') {
+    let deviceId = localStorage.getItem('ipg_device_id');
+    if (!deviceId) {
+      deviceId = `dev${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem('ipg_device_id', deviceId);
+    }
+    localFallbackCode = deviceId.slice(-8).toUpperCase();
+  }
+
+  const code = profileData?.referral_code || user?.id || localFallbackCode;
   const baseHost = typeof window !== 'undefined' ? window.location.origin : 'https://i-smartapp.com';
   const referralLink = code ? `${baseHost}/r/${code}` : "";
 
@@ -231,7 +259,7 @@ export default function ReferralsPage() {
           <CardContent className="space-y-3">
             <div className="p-3 bg-muted/50 rounded-lg border border-border">
               <p className="text-sm text-foreground font-mono break-all" data-testid="referral-link">
-                {referralLink || 'Sign in to generate your personal referral link'}
+                {referralLink || 'Complete onboarding to generate your personal referral link'}
               </p>
             </div>
 
