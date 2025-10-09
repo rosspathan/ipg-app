@@ -21,24 +21,32 @@ export function IDCardPage() {
 
   const handleBack = () => navigate("/app/profile");
 
-  if (!user) {
-    return null;
-  }
+  // Render even if user is not authenticated; build safe fallbacks
+  const isAuthed = !!user;
 
   const avatarUrl = getAvatarUrl('1x');
   const displayName = useDisplayName();
   
+  // Build safe fallbacks for unauthenticated preview
+  let email = '';
+  try {
+    email = user?.email || (userApp?.email as string | undefined) || sessionStorage.getItem('verificationEmail') || '';
+  } catch {}
+  
+  const userId = user?.id || (userApp as any)?.user_id || `guest-${Math.random().toString(36).slice(2, 8)}`;
+  
   // For now, default to Gold tier - this should come from user's actual tier
   const currentTier: BadgeTier = 'Gold';
-  const qrCode = referralCode?.code || user.id;
+  const qrCode = referralCode?.code || userId;
 
   const userData = {
-    id: user.id,
+    id: userId,
     displayName,
-    email: user.email || '',
+    email,
     avatarUrl: avatarUrl || undefined,
     joinDate: userApp?.created_at || new Date().toISOString(),
   };
+
 
   React.useEffect(() => {
     console.info('CLEAN_SLATE_APPLIED');
@@ -79,8 +87,8 @@ export function IDCardPage() {
             user={userData}
             currentTier={currentTier}
             qrCode={qrCode}
-            onAvatarUpload={uploadAvatar}
-            uploadingAvatar={uploading}
+            onAvatarUpload={isAuthed ? uploadAvatar : async () => {}}
+            uploadingAvatar={isAuthed ? uploading : false}
           />
         </div>
       </div>
