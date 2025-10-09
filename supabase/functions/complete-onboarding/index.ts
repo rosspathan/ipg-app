@@ -72,8 +72,11 @@ serve(async (req) => {
 
     // Extract username from email
     const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '').substring(0, 20) || `user${userId.substring(0, 6)}`;
+    
+    // Generate referral code (8 chars, uppercase)
+    const referralCode = username.toUpperCase().substring(0, 8) || userId.substring(0, 8).toUpperCase();
 
-    // Upsert profile with username and wallet_address
+    // Upsert profile with username, wallet_address, and referral_code
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({ 
@@ -81,6 +84,7 @@ serve(async (req) => {
         username,
         email,
         wallet_address: walletAddress,
+        referral_code: referralCode,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id'
@@ -128,6 +132,7 @@ serve(async (req) => {
         success: true, 
         userId,
         username,
+        referralCode,
         walletAddress: walletAddress || null,
       }),
       { 

@@ -8,7 +8,10 @@ export interface UserApp {
   user_id: string;
   email?: string;
   phone?: string;
+  username?: string;
   full_name?: string;
+  wallet_address?: string;
+  referral_code?: string;
   account_status: string;
   created_at: string;
 }

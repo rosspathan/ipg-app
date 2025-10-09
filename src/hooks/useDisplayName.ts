@@ -15,15 +15,14 @@ export function useDisplayName() {
   const { userApp } = useProfile();
 
   const displayName = useMemo(() => {
-    // Priority 1: Session email (most reliable)
-    if (user?.email) {
-      return extractUsernameFromEmail(user.email, user.id);
+    // Priority 1: Profile username (most reliable after onboarding)
+    if (userApp?.username) {
+      return userApp.username;
     }
 
-    // Priority 2: Profile username (persisted)
-    const profileUsername = (userApp as any)?.username as string | undefined;
-    if (profileUsername && profileUsername !== 'User') {
-      return profileUsername;
+    // Priority 2: Session email (authenticated users)
+    if (user?.email) {
+      return extractUsernameFromEmail(user.email, user.id);
     }
     
     // Priority 3: Profile full_name (if set)
@@ -62,7 +61,7 @@ export function useDisplayName() {
     }
     
     return "User";
-  }, [user?.email, user?.id, userApp?.email, userApp?.full_name, (userApp as any)?.username]);
+  }, [userApp?.username, userApp?.full_name, userApp?.email, user?.email, user?.id]);
 
   return displayName;
 }
