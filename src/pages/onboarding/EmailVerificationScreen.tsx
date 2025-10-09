@@ -118,65 +118,37 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         throw new Error('Invalid verification code');
       }
       
-      // Create/signin user account after email verification
-      try {
-        let userId: string | undefined;
+      // Complete onboarding via edge function (creates verified auth account)
+      const { data, error } = await supabase.functions.invoke('complete-onboarding', {
+        body: {
+          email,
+          walletAddress,
+          verificationCode: code,
+          storedCode
+        }
+      });
+      
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Registration failed');
+      
+      console.info('[VERIFY] User registered:', data.userId, data.username);
+      
+      // Sign in the user with the access token
+      if (data.accessToken) {
+        // Extract token from magic link URL
+        const url = new URL(data.accessToken);
+        const token = url.searchParams.get('token');
         
-        // Check if user already has auth account
-        const { data: { user: existingUser } } = await supabase.auth.getUser();
-        
-        if (!existingUser) {
-          // Create new auth account with email
-          const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password: tempPassword,
-            options: {
-              emailRedirectTo: `${window.location.origin}/app/home`,
-              data: {
-                wallet_address: walletAddress,
-                email_verified: true
-              }
-            }
+        if (token) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'magiclink'
           });
           
-          if (signUpError) throw signUpError;
-          userId = signUpData.user?.id;
-          console.info('[VERIFY] Created new auth account:', userId);
-        } else {
-          userId = existingUser.id;
-        }
-        
-        // Set username from email
-        if (userId) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('user_id', userId)
-            .maybeSingle();
-          
-          if (!profile?.username || profile.username === 'User') {
-            const username = extractUsernameFromEmail(email, userId);
-            await supabase
-              .from('profiles')
-              .update({ username })
-              .eq('user_id', userId);
-            console.info('USR_WALLET_LINK_V3', { user: userId, username });
+          if (verifyError) {
+            console.warn('[VERIFY] Token verify failed:', verifyError);
           }
         }
-      } catch (err) {
-        console.warn('[VERIFY] Failed to setup auth/username:', err);
-      }
-      
-      // Capture referral after successful verification
-      try {
-        const { captureReferralAfterEmailVerify } = await import('@/utils/referralCapture');
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id) {
-          await captureReferralAfterEmailVerify(user.id);
-        }
-      } catch (err) {
-        console.warn('[VERIFY] Failed to capture referral:', err);
       }
       
       // Code is valid, proceed with onboarding
