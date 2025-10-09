@@ -74,5 +74,18 @@ export function useDisplayName() {
     return "User";
   }, [userApp?.username, userApp?.full_name, userApp?.email, user?.email, user?.id, storageEmail]);
 
+  useEffect(() => {
+    try {
+      console.info('[DISPLAY_NAME_RESOLVE]', {
+        result: displayName,
+        userId: user?.id,
+        userEmail: user?.email,
+        profileUsername: userApp?.username,
+        profileEmail: userApp?.email,
+        storageEmail
+      });
+    } catch {}
+  }, [displayName, user?.id, user?.email, userApp?.username, userApp?.email, storageEmail]);
+
   return displayName;
 }
