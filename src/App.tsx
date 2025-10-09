@@ -261,7 +261,7 @@ function App() {
               <Route path="profile/security" element={<SecurityPage />} />
               <Route path="profile/notify" element={<NotificationsPage />} />
               <Route path="profile/settings" element={<SettingsPage />} />
-              <Route path="profile/referrals" element={<ReferralsPage />} />
+              <Route path="profile/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPageAstra /></React.Suspense>} />
               <Route path="support" element={<SupportPage />} />
                 
                 {/* Programs */}
