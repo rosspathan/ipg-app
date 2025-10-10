@@ -21,14 +21,22 @@ const AppLockScreen = () => {
   const [error, setError] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
 
-  // Check biometric availability
+  // Check biometric availability and auto-trigger if enabled
   useEffect(() => {
-    const checkBiometrics = async () => {
+    const checkAndTriggerBiometrics = async () => {
       const available = await checkBiometricAvailability();
       setBiometricAvailable(available);
+      
+      // Auto-trigger biometric authentication if enabled and available
+      if (available && lockState.biometricEnabled && !error) {
+        // Small delay to ensure UI is ready
+        setTimeout(() => {
+          handleBiometricUnlock();
+        }, 500);
+      }
     };
-    checkBiometrics();
-  }, [checkBiometricAvailability]);
+    checkAndTriggerBiometrics();
+  }, [checkBiometricAvailability, lockState.biometricEnabled]);
 
   // Redirect if already unlocked or no security set up
   useEffect(() => {
@@ -66,18 +74,21 @@ const AppLockScreen = () => {
   };
 
   const handleBiometricUnlock = async () => {
-    if (!lockState.biometricEnabled || biometricLoading) return;
+    if (!lockState.biometricEnabled || biometricLoading || isLocked) return;
 
     setBiometricLoading(true);
     setError("");
+    setPin(""); // Clear PIN when using biometrics
 
     try {
       const success = await unlockWithBiometrics();
       if (success) {
         navigate('/app/home', { replace: true });
+      } else {
+        setError("Biometric authentication failed. Please use PIN instead.");
       }
     } catch (error: any) {
-      setError(error.message || "Biometric authentication failed");
+      setError(error.message || "Biometric authentication failed. Please use PIN instead.");
     } finally {
       setBiometricLoading(false);
     }
@@ -140,50 +151,65 @@ const AppLockScreen = () => {
             </Alert>
           )}
 
-          <form onSubmit={handlePinSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <div className="relative">
-                <Input
-                  type={showPin ? "text" : "password"}
-                  inputMode="numeric"
-                  autoComplete="current-password"
-                  pattern="[0-9]*"
-                  value={pin}
-                  onChange={(e) => handlePinChange(e.target.value)}
-                  placeholder="••••••"
-                  className="pr-10 text-center text-2xl tracking-[0.5em] font-mono"
-                  disabled={isLocked || loading}
-                  autoFocus
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                  onClick={() => setShowPin(!showPin)}
-                  disabled={isLocked}
-                >
-                  {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </Button>
+          {!biometricLoading && (
+            <form onSubmit={handlePinSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <div className="relative">
+                  <Input
+                    type={showPin ? "text" : "password"}
+                    inputMode="numeric"
+                    autoComplete="current-password"
+                    pattern="[0-9]*"
+                    value={pin}
+                    onChange={(e) => handlePinChange(e.target.value)}
+                    placeholder="••••••"
+                    className="pr-10 text-center text-2xl tracking-[0.5em] font-mono"
+                    disabled={isLocked || loading}
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                    onClick={() => setShowPin(!showPin)}
+                    disabled={isLocked}
+                  >
+                    {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <Button 
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={pin.length !== 6 || isLocked || loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Unlocking...
+                  </>
+                ) : (
+                  "Unlock"
+                )}
+              </Button>
+            </form>
+          )}
+
+          {/* Show biometric loading state when authenticating */}
+          {biometricLoading && (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+              <Fingerprint className="h-16 w-16 text-primary animate-pulse" />
+              <div className="text-center space-y-2">
+                <p className="font-medium">Biometric Authentication</p>
+                <p className="text-sm text-muted-foreground">
+                  Please verify your identity
+                </p>
               </div>
             </div>
-
-            <Button 
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={pin.length !== 6 || isLocked || loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Unlocking...
-                </>
-              ) : (
-                "Unlock"
-              )}
-            </Button>
-          </form>
+          )}
 
           {/* Biometric Authentication */}
           {lockState.biometricEnabled && biometricAvailable && (
