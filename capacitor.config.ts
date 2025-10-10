@@ -1,9 +1,12 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.lovable.ipgapp',
-  appName: 'IPG App',
+  appId: 'com.ismart.exchange',
+  appName: 'I-SMART Exchange',
   webDir: 'dist',
+  server: {
+    androidScheme: 'https'
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
