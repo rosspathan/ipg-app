@@ -41,9 +41,10 @@ const OnboardingFlow: React.FC = () => {
     setStep('email-input');
   };
   
-  const handleWalletImported = (wallet: any) => {
+  const handleWalletImported = (wallet: any, email: string) => {
     setWalletInfo(wallet);
     setWalletFromOnboarding(wallet);
+    setEmail(email);
     setStep('pin-setup');
   };
   const handleEmailSubmitted = (email: string) => {
