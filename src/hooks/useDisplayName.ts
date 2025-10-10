@@ -56,17 +56,17 @@ export function useDisplayName() {
     // Priority 1: Profile username (most reliable after onboarding)
     if (userApp?.username) return userApp.username;
 
-    // Priority 2: Session email (authenticated users)
+    // Priority 2: Cached email during verification/onboarding (highest priority during onboarding)
+    if (storageEmail) return extractUsernameFromEmail(storageEmail, user?.id);
+
+    // Priority 3: Session email (authenticated users)
     if (user?.email) return extractUsernameFromEmail(user.email, user.id);
     
-    // Priority 3: Profile full_name (if set)
+    // Priority 4: Profile full_name (if set)
     if (userApp?.full_name && userApp.full_name !== 'User') return userApp.full_name;
     
-    // Priority 4: Profile email
+    // Priority 5: Profile email
     if (userApp?.email) return extractUsernameFromEmail(userApp.email, user?.id);
-
-    // Priority 5: Cached email during verification/onboarding
-    if (storageEmail) return extractUsernameFromEmail(storageEmail, user?.id);
     
     // Fallback with user ID if available
     if (user?.id) return `user${user.id.slice(0, 6)}`;
