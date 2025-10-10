@@ -3,6 +3,8 @@
  * Handles wa.me links, custom schemes, and Android Intents
  */
 
+import { openUrl, isNativeApp } from '@/utils/linkHandler';
+
 export interface WaSupportConfig {
   whatsapp_phone_e164: string;
   default_message: string;
@@ -111,6 +113,12 @@ export async function openWhatsAppLink(
   console.info('WA_LINK_PRIMARY', waMeUrl);
   console.info('WA_LINK_FALLBACK', finalConfig.web_fallback_url);
   
+  // If running as native app, use the in-app browser
+  if (isNativeApp()) {
+    await openUrl(waMeUrl);
+    return;
+  }
+  
   // Strategy 1: Try Custom Scheme first to bypass web blocks (opens app directly if installed)
   try {
     window.location.href = schemeUrl;
@@ -126,11 +134,7 @@ export async function openWhatsAppLink(
 
     // Strategy 3: If still visible, use wa.me universal link (opens Web/Desktop)
     if (!document.hidden) {
-      if (finalConfig.open_target === '_blank') {
-        window.open(waMeUrl, '_blank', 'noopener,noreferrer');
-      } else {
-        window.location.href = waMeUrl;
-      }
+      await openUrl(waMeUrl);
 
       // Wait again
       await new Promise(resolve => setTimeout(resolve, 900));
@@ -139,10 +143,10 @@ export async function openWhatsAppLink(
       if (!document.hidden) {
         console.info('WA_LINK_USING_FALLBACK');
         if (platform.isAndroid) {
-          window.open(finalConfig.play_fallback_url, '_blank', 'noopener,noreferrer');
+          await openUrl(finalConfig.play_fallback_url);
         } else {
           if (finalConfig.web_fallback_url.startsWith('http')) {
-            window.open(finalConfig.web_fallback_url, '_blank', 'noopener,noreferrer');
+            await openUrl(finalConfig.web_fallback_url);
           } else {
             window.location.href = finalConfig.web_fallback_url;
           }
@@ -153,7 +157,7 @@ export async function openWhatsAppLink(
     console.error('WhatsApp link error:', error);
     // Final fallback on error
     if (finalConfig.web_fallback_url.startsWith('http')) {
-      window.open(finalConfig.web_fallback_url, '_blank', 'noopener,noreferrer');
+      await openUrl(finalConfig.web_fallback_url);
     } else {
       window.location.href = finalConfig.web_fallback_url;
     }

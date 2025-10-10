@@ -5,7 +5,9 @@ const config: CapacitorConfig = {
   appName: 'I-SMART Exchange',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    hostname: 'i-smartapp.com',
+    cleartext: true
   },
   plugins: {
     SplashScreen: {

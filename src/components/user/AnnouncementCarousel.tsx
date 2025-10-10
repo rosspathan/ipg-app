@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { ExternalLink } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { openUrl } from "@/utils/linkHandler";
 
 interface Announcement {
   id: string;
@@ -38,7 +39,7 @@ export function AnnouncementCarousel() {
 
   const handleAnnouncementClick = (linkUrl: string | null) => {
     if (linkUrl) {
-      window.open(linkUrl, "_blank", "noopener,noreferrer");
+      openUrl(linkUrl);
     }
   };
 
