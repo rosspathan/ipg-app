@@ -149,11 +149,6 @@ export function HomePageRebuilt() {
 
   return (
     <div className="min-h-screen" data-testid="page-home" data-version="usr-wallet-link-v3">
-      {/* Dev ribbon */}
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-primary/80 text-primary-foreground">
-        USR-WALLET LINK v3
-      </div>
-      
       {/* Top Bar */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/40">
         <div className="flex items-center justify-between p-4">

@@ -258,9 +258,6 @@ export function WalletPage() {
         </div>
       </div>
       </AppShellGlass>
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-amber-600/80 text-white">
-        USR-WALLET LINK v3
-      </div>
 
       {/* Quick Switch Radial Menu */}
       <QuickSwitch
