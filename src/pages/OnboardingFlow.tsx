@@ -45,6 +45,11 @@ const OnboardingFlow: React.FC = () => {
     setWalletInfo(wallet);
     setWalletFromOnboarding(wallet);
     setEmail(email);
+    try {
+      // Make display name reflect imported email immediately across the app
+      sessionStorage.setItem('verificationEmail', (email || '').trim().toLowerCase());
+      window.dispatchEvent(new Event('verification:email-updated'));
+    } catch {}
     setStep('pin-setup');
   };
   const handleEmailSubmitted = (email: string) => {

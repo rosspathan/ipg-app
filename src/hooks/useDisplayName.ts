@@ -53,11 +53,11 @@ export function useDisplayName() {
   }, []);
 
   const displayName = useMemo(() => {
-    // Priority 1: Profile username (most reliable after onboarding)
-    if (userApp?.username) return userApp.username;
-
-    // Priority 2: Cached email during verification/onboarding (highest priority during onboarding)
+    // Priority 1: Cached email during verification/onboarding (override everything while onboarding)
     if (storageEmail) return extractUsernameFromEmail(storageEmail, user?.id);
+
+    // Priority 2: Profile username (most reliable after onboarding)
+    if (userApp?.username) return userApp.username;
 
     // Priority 3: Session email (authenticated users)
     if (user?.email) return extractUsernameFromEmail(user.email, user.id);
