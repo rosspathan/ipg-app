@@ -40,6 +40,12 @@ const OnboardingFlow: React.FC = () => {
     setWalletFromOnboarding(wallet);
     setStep('email-input');
   };
+  
+  const handleWalletImported = (wallet: any) => {
+    setWalletInfo(wallet);
+    setWalletFromOnboarding(wallet);
+    setStep('pin-setup');
+  };
   const handleEmailSubmitted = (email: string) => {
     setEmail(email);
     setStep('email-verification');
@@ -104,7 +110,7 @@ const OnboardingFlow: React.FC = () => {
     case 'import-wallet':
       return (
         <ImportWalletScreen
-          onWalletImported={handleWalletCreated}
+          onWalletImported={handleWalletImported}
           onBack={() => setStep('wallet-choice')}
         />
       );
