@@ -53,24 +53,54 @@ export function useDisplayName() {
   }, []);
 
   const displayName = useMemo(() => {
+    console.log('[DISPLAY_NAME] Computing display name:', {
+      storageEmail,
+      'userApp?.username': userApp?.username,
+      'user?.email': user?.email,
+      'userApp?.email': userApp?.email
+    });
+
     // Priority 1: Cached email during verification/onboarding (override everything while onboarding)
-    if (storageEmail) return extractUsernameFromEmail(storageEmail, user?.id);
+    if (storageEmail) {
+      const name = extractUsernameFromEmail(storageEmail, user?.id);
+      console.log('[DISPLAY_NAME] Using storageEmail:', name);
+      return name;
+    }
 
     // Priority 2: Profile username (most reliable after onboarding)
-    if (userApp?.username) return userApp.username;
+    if (userApp?.username) {
+      console.log('[DISPLAY_NAME] Using userApp.username:', userApp.username);
+      return userApp.username;
+    }
 
     // Priority 3: Session email (authenticated users)
-    if (user?.email) return extractUsernameFromEmail(user.email, user.id);
+    if (user?.email) {
+      const name = extractUsernameFromEmail(user.email, user.id);
+      console.log('[DISPLAY_NAME] Using user.email:', name);
+      return name;
+    }
     
     // Priority 4: Profile full_name (if set)
-    if (userApp?.full_name && userApp.full_name !== 'User') return userApp.full_name;
+    if (userApp?.full_name && userApp.full_name !== 'User') {
+      console.log('[DISPLAY_NAME] Using userApp.full_name:', userApp.full_name);
+      return userApp.full_name;
+    }
     
     // Priority 5: Profile email
-    if (userApp?.email) return extractUsernameFromEmail(userApp.email, user?.id);
+    if (userApp?.email) {
+      const name = extractUsernameFromEmail(userApp.email, user?.id);
+      console.log('[DISPLAY_NAME] Using userApp.email:', name);
+      return name;
+    }
     
     // Fallback with user ID if available
-    if (user?.id) return `user${user.id.slice(0, 6)}`;
+    if (user?.id) {
+      const fallback = `user${user.id.slice(0, 6)}`;
+      console.log('[DISPLAY_NAME] Using fallback:', fallback);
+      return fallback;
+    }
     
+    console.log('[DISPLAY_NAME] Using default: User');
     return "User";
   }, [userApp?.username, userApp?.full_name, userApp?.email, user?.email, user?.id, storageEmail]);
 

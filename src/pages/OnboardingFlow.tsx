@@ -47,9 +47,19 @@ const OnboardingFlow: React.FC = () => {
     setEmail(email);
     try {
       // Make display name reflect imported email immediately across the app
-      sessionStorage.setItem('verificationEmail', (email || '').trim().toLowerCase());
+      const normalizedEmail = (email || '').trim().toLowerCase();
+      console.log('[ONBOARDING] Setting verification email:', normalizedEmail);
+      sessionStorage.setItem('verificationEmail', normalizedEmail);
+      localStorage.setItem('ipg_onboarding_state', JSON.stringify({
+        ...state,
+        email: normalizedEmail,
+        walletInfo: wallet
+      }));
       window.dispatchEvent(new Event('verification:email-updated'));
-    } catch {}
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+      console.error('[ONBOARDING] Failed to set email:', e);
+    }
     setStep('pin-setup');
   };
   const handleEmailSubmitted = (email: string) => {
