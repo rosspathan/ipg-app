@@ -412,6 +412,30 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
               </motion.p>
             </div>
 
+            {/* Wallet Address Display (for imported wallets) */}
+            {walletAddress && (
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.55 }}
+              >
+                <Card className="bg-green-500/10 backdrop-blur-sm border-green-500/30">
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <LinkIcon className="w-4 h-4 text-green-400" />
+                      <span className="text-green-400 text-sm font-medium">Linking Wallet Address</span>
+                    </div>
+                    <div className="font-mono text-white text-xs break-all bg-black/30 p-3 rounded-lg">
+                      {walletAddress}
+                    </div>
+                    <p className="text-white/60 text-xs">
+                      This wallet will be linked to your email after verification
+                    </p>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
             {/* Code input card */}
             <motion.div
               initial={{ y: 30, opacity: 0 }}

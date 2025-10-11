@@ -11,11 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 interface EmailInputScreenProps {
   onEmailSubmitted: (email: string) => void;
   onBack: () => void;
+  walletAddress?: string; // Show imported wallet address
 }
 
 const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
   onEmailSubmitted,
-  onBack
+  onBack,
+  walletAddress
 }) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -175,7 +177,7 @@ const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
                 transition={{ duration: 0.6, delay: 0.3 }}
                 className="text-2xl font-bold text-white mb-3"
               >
-                Verify Your Email
+                {walletAddress ? 'Link Email to Wallet' : 'Verify Your Email'}
               </motion.h2>
               
               <motion.p
@@ -184,9 +186,32 @@ const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
                 transition={{ duration: 0.6, delay: 0.4 }}
                 className="text-white/80 text-base"
               >
-                We'll send you a verification code to secure your account
+                {walletAddress 
+                  ? 'Enter your email to link it with your imported wallet'
+                  : "We'll send you a verification code to secure your account"}
               </motion.p>
             </div>
+
+            {/* Wallet Address Display (for imported wallets) */}
+            {walletAddress && (
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+              >
+                <Card className="bg-green-500/10 backdrop-blur-sm border-green-500/30">
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <span className="text-green-400 text-sm font-medium">Imported Wallet</span>
+                    </div>
+                    <div className="font-mono text-white text-sm break-all bg-black/20 p-3 rounded-lg">
+                      {walletAddress}
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
 
             {/* Email input card */}
             <motion.div

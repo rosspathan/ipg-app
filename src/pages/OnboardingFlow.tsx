@@ -131,6 +131,7 @@ const OnboardingFlow: React.FC = () => {
     case 'email-input':
       return (
         <EmailInputScreen
+          walletAddress={state.walletInfo?.address}
           onEmailSubmitted={handleEmailSubmitted}
           onBack={() => setStep('create-wallet')}
         />
