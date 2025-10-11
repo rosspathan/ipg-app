@@ -55,42 +55,12 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     console.info('OTP_EMAIL_V1_ACTIVE');
   }, []);
 
-  // Send initial verification email via custom edge function
+  // Initialize countdown timer (email already sent by EmailInputScreen)
   useEffect(() => {
-    if (hasInitialSent.current) return;
-    hasInitialSent.current = true;
-    
-    const send = async () => {
-      try {
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        sessionStorage.setItem('verificationCode', code);
-        sessionStorage.setItem('verificationEmail', email);
-        try {
-          const raw = localStorage.getItem('ipg_onboarding_state');
-          const parsed = raw ? JSON.parse(raw) : {};
-          localStorage.setItem('ipg_onboarding_state', JSON.stringify({ ...parsed, email }));
-        } catch {}
-        window.dispatchEvent(new Event('verification:email-updated'));
-        
-        const { error } = await supabase.functions.invoke('send-verification-email', {
-          body: {
-            email,
-            verificationCode: code,
-            userName: email.split('@')[0],
-            isOnboarding: true
-          }
-        });
-        
-        if (error) throw error;
-        console.info('Verification email sent successfully');
-      } catch (e) {
-        console.warn('Initial email send failed', e);
-      }
-    };
-    send();
+    console.info('Email verification screen loaded - email already sent from input screen');
     setResendCountdown(60);
     setCanResend(false);
-  }, [email]);
+  }, []);
 
   // Countdown timer for resend
   useEffect(() => {

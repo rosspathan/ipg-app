@@ -48,16 +48,25 @@ const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
     setIsLoading(true);
     try {
       // Generate verification code
-      const verificationCode = generateVerificationCode();
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Store code locally for verification
-      storeVerificationCode(email.trim().toLowerCase(), verificationCode);
+      // Store code in sessionStorage for verification screen
+      sessionStorage.setItem('verificationCode', code);
+      sessionStorage.setItem('verificationEmail', email.trim().toLowerCase());
+      
+      try {
+        const raw = localStorage.getItem('ipg_onboarding_state');
+        const parsed = raw ? JSON.parse(raw) : {};
+        localStorage.setItem('ipg_onboarding_state', JSON.stringify({ ...parsed, email: email.trim() }));
+      } catch {}
+      
+      window.dispatchEvent(new Event('verification:email-updated'));
 
       // Send email via our edge function
       const { data, error } = await supabase.functions.invoke('send-verification-email', {
         body: {
           email: email.trim(),
-          verificationCode,
+          verificationCode: code,
           userName: email.split('@')[0],
           isOnboarding: true
         }
