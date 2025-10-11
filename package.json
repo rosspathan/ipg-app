@@ -66,6 +66,7 @@
     "ethers": "^6.15.0",
     "framer-motion": "^10.18.0",
     "html2canvas": "^1.4.1",
+    "html5-qrcode": "^2.3.8",
     "input-otp": "^1.4.2",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.462.0",

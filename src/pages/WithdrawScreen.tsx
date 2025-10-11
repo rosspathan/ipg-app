@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft, Shield, ScanLine } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import INRWithdrawScreen from "./INRWithdrawScreen";
+import { QRScanner } from "@/components/scanner/QRScanner";
 
 const WithdrawScreen = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const WithdrawScreen = () => {
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const assets = [
     { symbol: "BTC", name: "Bitcoin", balance: "0.00234567", networks: ["Bitcoin"] },
@@ -191,12 +193,24 @@ const WithdrawScreen = () => {
               <label className="text-sm font-medium text-muted-foreground mb-2 block">
                 Recipient Address
               </label>
-              <Input
-                placeholder="Enter recipient address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="font-mono"
-              />
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter recipient address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="font-mono flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowScanner(true)}
+                  className="shrink-0"
+                  aria-label="Scan QR Code"
+                >
+                  <ScanLine className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
             
             <div>
@@ -271,6 +285,19 @@ const WithdrawScreen = () => {
               </TabsContent>
         </Tabs>
       </div>
+
+      {/* QR Scanner Modal */}
+      <QRScanner
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onScan={(scannedAddress) => {
+          setAddress(scannedAddress);
+          toast({
+            title: "Address Scanned",
+            description: "Wallet address has been populated",
+          });
+        }}
+      />
     </div>
   );
 };
