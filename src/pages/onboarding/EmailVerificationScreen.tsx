@@ -146,7 +146,17 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
           return;
         }
         if (data?.reason === 'wallet_mismatch' || data?.reason === 'wallet_exists') {
-          toast({ title: 'Account Already Linked', description: data?.error || 'This email is already linked to a different wallet. Use wallet login or a different email.', variant: 'destructive' });
+          // Allow sign-in for existing accounts: send Supabase OTP/magic link and guide user
+          try {
+            await supabase.auth.signInWithOtp({
+              email,
+              options: { emailRedirectTo: `${window.location.origin}/` }
+            });
+            toast({ title: 'Account Already Linked', description: 'We sent you a secure sign-in link. Open it to access your existing account and balances.', variant: 'default' });
+          } catch (e: any) {
+            console.warn('[VERIFY] Fallback sign-in link error:', e);
+            toast({ title: 'Sign-in Link Failed', description: e.message || 'Please try again or use Wallet Login.', variant: 'destructive' });
+          }
           return;
         }
         throw new Error(data?.error || 'Registration failed');
