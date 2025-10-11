@@ -76,11 +76,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
   const handleVerifyCode = async () => {
     if (code.length !== 6) {
-      toast({
-        title: "Invalid Code",
-        description: "Please enter a 6-digit verification code",
-        variant: "destructive"
-      });
+      // Wait silently until 6 digits are entered
       return;
     }
 
@@ -251,8 +247,8 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && code.length === 6 && !isVerifying) {
       handleVerifyCode();
     }
   };
@@ -378,7 +374,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                       inputMode="numeric"
                       value={code}
                       onChange={(e) => handleCodeChange(e.target.value)}
-                      onKeyPress={handleKeyPress}
+                      onKeyDown={handleKeyDown}
                       onPaste={(e) => {
                         e.preventDefault();
                         const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
