@@ -43,111 +43,116 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
   }
 
   return (
-    <nav
-      className={cn(
-        "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50",
-        "pb-[env(safe-area-inset-bottom)]",
-        className
-      )}
-      data-testid="dock-nav"
-    >
-      {/* Background with curved cutout for center button */}
-      <div className="relative">
-        {/* Main nav bar with notch */}
-        <div 
-          className={cn(
-            "relative bg-card/95 backdrop-blur-2xl border-t border-border/40",
-            "transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-          )}
-          style={{
-            WebkitBackdropFilter: 'blur(32px)',
-            backdropFilter: 'blur(32px)',
-            boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.3)'
-          }}
-        >
-          {/* Curved notch cutout using SVG mask */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full w-24 h-12 overflow-visible">
-            <svg 
-              width="96" 
-              height="48" 
-              viewBox="0 0 96 48" 
-              className="w-full h-full"
-              style={{ filter: 'drop-shadow(0 -2px 8px rgba(124, 77, 255, 0.3))' }}
-            >
-              <path
-                d="M 0,48 Q 0,20 24,8 Q 48,0 48,0 Q 48,0 72,8 Q 96,20 96,48 Z"
-                fill="hsl(var(--card) / 0.95)"
-                stroke="hsl(var(--border) / 0.4)"
-                strokeWidth="1"
-              />
-            </svg>
-          </div>
+    <>
+      {/* Spacer to prevent content from being hidden behind the fixed dock */}
+      <div className="h-20 pb-safe" aria-hidden="true" />
 
-          <div className="flex items-center justify-around px-1 pt-2 pb-1.5 relative">
-            {navItems.map((item, index) => {
-              if (item.id === "center") {
+      <nav
+        className={cn(
+          "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50",
+          "pb-[env(safe-area-inset-bottom)]",
+          className
+        )}
+        data-testid="dock-nav"
+      >
+        {/* Background with curved cutout for center button */}
+        <div className="relative">
+          {/* Main nav bar with notch */}
+          <div 
+            className={cn(
+              "relative bg-card/95 backdrop-blur-2xl border-t border-border/40",
+              "transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+            )}
+            style={{
+              WebkitBackdropFilter: 'blur(32px)',
+              backdropFilter: 'blur(32px)',
+              boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.3)'
+            }}
+          >
+            {/* Curved notch cutout using SVG mask */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full w-24 h-12 overflow-visible">
+              <svg 
+                width="96" 
+                height="48" 
+                viewBox="0 0 96 48" 
+                className="w-full h-full"
+                style={{ filter: 'drop-shadow(0 -2px 8px rgba(124, 77, 255, 0.3))' }}
+              >
+                <path
+                  d="M 0,48 Q 0,20 24,8 Q 48,0 48,0 Q 48,0 72,8 Q 96,20 96,48 Z"
+                  fill="hsl(var(--card) / 0.95)"
+                  stroke="hsl(var(--border) / 0.4)"
+                  strokeWidth="1"
+                />
+              </svg>
+            </div>
+
+            <div className="flex items-center justify-around px-1 pt-2 pb-1.5 relative">
+              {navItems.map((item, index) => {
+                if (item.id === "center") {
+                  return (
+                    <div key={item.id} className="flex items-center justify-center relative" style={{ flex: '0 0 96px' }}>
+                      {/* Spacer for center button - it floats above */}
+                    </div>
+                  )
+                }
+
+                const Icon = item.icon!
+                const active = isActive(item.path)
+
                 return (
-                  <div key={item.id} className="flex items-center justify-center relative" style={{ flex: '0 0 96px' }}>
-                    {/* Spacer for center button - it floats above */}
-                  </div>
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick(item.path)}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-xl",
+                      "transition-all duration-[120ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                      "hover:bg-primary/10",
+                      "relative",
+                      active && "text-primary",
+                      !active && "text-muted-foreground hover:text-foreground",
+                      index < 2 ? "mr-auto" : "ml-auto" // Push items away from center
+                    )}
+                    style={{ minWidth: '64px' }}
+                    aria-label={item.label}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    <Icon className={cn(
+                      "h-5 w-5 transition-all duration-[120ms]",
+                      active && "scale-110"
+                    )} />
+                    
+                    <span className={cn(
+                      "text-[9px] font-medium transition-all duration-[120ms]",
+                      "font-[Inter,sans-serif]",
+                      active && "font-semibold"
+                    )}>
+                      {item.label}
+                    </span>
+
+                    {/* Active indicator */}
+                    {active && (
+                      <div 
+                        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-6 bg-gradient-to-r from-primary to-accent rounded-full"
+                        style={{
+                          boxShadow: '0 0 8px hsl(var(--primary))'
+                        }}
+                      />
+                    )}
+                  </button>
                 )
-              }
+              })}
+            </div>
+          </div>
 
-              const Icon = item.icon!
-              const active = isActive(item.path)
-
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.path)}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-xl",
-                    "transition-all duration-[120ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-                    "focus:outline-none focus:ring-2 focus:ring-primary/50",
-                    "hover:bg-primary/10",
-                    "relative",
-                    active && "text-primary",
-                    !active && "text-muted-foreground hover:text-foreground",
-                    index < 2 ? "mr-auto" : "ml-auto" // Push items away from center
-                  )}
-                  style={{ minWidth: '64px' }}
-                  aria-label={item.label}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <Icon className={cn(
-                    "h-5 w-5 transition-all duration-[120ms]",
-                    active && "scale-110"
-                  )} />
-                  
-                  <span className={cn(
-                    "text-[9px] font-medium transition-all duration-[120ms]",
-                    "font-[Inter,sans-serif]",
-                    active && "font-semibold"
-                  )}>
-                    {item.label}
-                  </span>
-
-                  {/* Active indicator */}
-                  {active && (
-                    <div 
-                      className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-6 bg-gradient-to-r from-primary to-accent rounded-full"
-                      style={{
-                        boxShadow: '0 0 8px hsl(var(--primary))'
-                      }}
-                    />
-                  )}
-                </button>
-              )
-            })}
+          {/* Floating center button - positioned absolutely above the nav */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+            <LogoDockButton onClick={handleCenterPress} />
           </div>
         </div>
 
-        {/* Floating center button - positioned absolutely above the nav */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-          <LogoDockButton onClick={handleCenterPress} />
-        </div>
-      </div>
-
-    </nav>
+      </nav>
+    </>
   )
 }
