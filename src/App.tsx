@@ -9,6 +9,7 @@ import { AuthProviderAdmin } from "@/hooks/useAuthAdmin";
 import { Web3Provider } from "@/contexts/Web3Context";
 import { UnlockGate } from "@/components/UnlockGate";
 import { useSecuritySync } from "@/hooks/useSecuritySync";
+import { useDeepLinking } from "@/hooks/useDeepLinking";
 
 // Layouts
 import UserLayout from "@/layouts/UserLayout";
@@ -103,7 +104,8 @@ import ProfileScreen from "./pages/ProfileScreen";
 
 // Admin Pages
 import AdminLoginScreen from "./pages/AdminLoginScreen";
-import AdminDashboard from "./pages/AdminDashboard";
+const AdminDashboard = React.lazy(() => import("./pages/AdminDashboard"));
+const AdminDatabaseReset = React.lazy(() => import("./pages/AdminDatabaseReset"));
 import AdminUsers from "./pages/AdminUsers";
 import AdminAssets from "./pages/AdminAssets";
 import AdminMarkets from "./pages/AdminMarkets";
@@ -175,6 +177,9 @@ const queryClient = new QueryClient();
 function App() {
   // Initialize security sync hook
   useSecuritySync();
+  
+  // Initialize deep linking for mobile app
+  useDeepLinking();
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -346,6 +351,7 @@ function App() {
                 <Route path="ads" element={<AdminAdsScreen />} />
                 <Route path="reports" element={<AdminReportsNova />} />
                 <Route path="settings" element={<AdminSettingsNova />} />
+                <Route path="database-reset" element={<React.Suspense fallback={<div>Loading...</div>}><AdminDatabaseReset /></React.Suspense>} />
                 <Route path="mobile-linking" element={<React.Suspense fallback={<div>Loading...</div>}><AdminMobileLinking /></React.Suspense>} />
               </Route>
 

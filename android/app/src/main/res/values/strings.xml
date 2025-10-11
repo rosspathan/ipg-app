@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">I-SMART</string>
+    <string name="title_activity_main">I-SMART Exchange</string>
+    <string name="package_name">com.ismart.exchange</string>
+    <string name="custom_url_scheme">ismart</string>
+</resources>
