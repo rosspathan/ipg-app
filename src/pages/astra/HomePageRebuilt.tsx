@@ -224,7 +224,7 @@ export function HomePageRebuilt() {
       {/* Floating WhatsApp Support Button - Fixed above footer */}
       <SupportLinkWhatsApp
         variant="fab"
-        className="fixed bottom-20 right-5 z-30"
+        className="fixed bottom-24 right-5 z-[60]"
       />
 
       {/* Quick Switch Radial Menu */}
