@@ -9,7 +9,7 @@ import { AuthProviderAdmin } from "@/hooks/useAuthAdmin";
 import { Web3Provider } from "@/contexts/Web3Context";
 import { UnlockGate } from "@/components/UnlockGate";
 import { useSecuritySync } from "@/hooks/useSecuritySync";
-import { useDeepLinking } from "@/hooks/useDeepLinking";
+import { RouterWrapper } from "@/components/RouterWrapper";
 
 // Layouts
 import UserLayout from "@/layouts/UserLayout";
@@ -178,9 +178,6 @@ function App() {
   // Initialize security sync hook
   useSecuritySync();
   
-  // Initialize deep linking for mobile app
-  useDeepLinking();
-  
   return (
     <QueryClientProvider client={queryClient}>
       <Web3Provider>
@@ -188,7 +185,8 @@ function App() {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
+            <RouterWrapper>
+              <Routes>
               {/* Landing & Splash */}
               <Route path="/" element={<Navigate to="/onboarding" replace />} />
               <Route path="/splash" element={<SplashScreen />} />
@@ -392,6 +390,7 @@ function App() {
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+          </RouterWrapper>
           </BrowserRouter>
         </TooltipProvider>
       </Web3Provider>
