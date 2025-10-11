@@ -146,18 +146,13 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
           return;
         }
         if (data?.reason === 'wallet_mismatch' || data?.reason === 'wallet_exists') {
-          // Email already linked to a different wallet - guide user to sign in with existing wallet
-          const existingAddress = data?.existingAddress || 'another wallet';
+          // This should no longer happen with multi-wallet support, but keep as fallback
+          console.warn('[VERIFY] Unexpected wallet mismatch:', data);
           toast({ 
-            title: 'Account Already Exists', 
-            description: `This email is linked to wallet ${existingAddress.slice(0, 6)}...${existingAddress.slice(-4)}. Please use Wallet Login with your existing wallet to access your account and balances.`,
-            variant: 'destructive',
-            duration: 8000
+            title: 'Verification Issue', 
+            description: 'There was an issue verifying your wallet. Please try again or contact support.',
+            variant: 'destructive'
           });
-          // Navigate back to wallet login after 2 seconds
-          setTimeout(() => {
-            window.location.href = '/auth/login';
-          }, 2000);
           return;
         }
         throw new Error(data?.error || 'Registration failed');

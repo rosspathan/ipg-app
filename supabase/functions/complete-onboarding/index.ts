@@ -142,50 +142,32 @@ serve(async (req) => {
 
     if (existingUser) {
       userId = existingUser.id;
-      console.log('User already exists:', userId);
+      console.log('[complete-onboarding] User exists:', userId);
       
-      // Check if wallet already exists
+      // Check if THIS specific wallet already exists for this user
       const { data: existingWallet } = await supabaseAdmin
         .from('user_wallets')
         .select('wallet_address, encrypted_mnemonic')
         .eq('user_id', userId)
+        .eq('wallet_address', (importedWallet?.address || '').toLowerCase())
         .maybeSingle();
       
       if (existingWallet) {
-        // If importing a wallet, check if it matches the existing one (normalize both sides)
-        if (importedWallet?.address) {
-          const existingAddr = (existingWallet.wallet_address || '').trim().toLowerCase();
-          const importedAddr = (importedWallet.address || '').trim().toLowerCase();
-          console.log('[complete-onboarding] Comparing addresses', { existingAddr, importedAddr });
-          if (existingAddr === importedAddr) {
-            console.log('[complete-onboarding] Imported wallet matches existing wallet - allowing re-verification');
-            // Allow re-verification with same wallet - skip wallet creation later
-            mnemonic = importedWallet.mnemonic?.trim();
-            walletData = generateWalletFromMnemonic(mnemonic);
-          } else {
-            return new Response(
-              JSON.stringify({ 
-                success: false,
-                reason: "wallet_mismatch",
-                error: "This email is already linked to a different wallet.",
-                hasWallet: true,
-                existingAddress: existingWallet.wallet_address,
-                providedAddress: importedWallet.address
-              }),
-              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-        } else {
-          return new Response(
-            JSON.stringify({ 
-              success: false,
-              reason: "wallet_exists",
-              error: "User already has a wallet. Please use wallet login.",
-              hasWallet: true
-            }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+        // This exact wallet is already linked - allow re-verification
+        console.log('[complete-onboarding] This wallet already linked, allowing re-verification');
+        if (importedWallet?.mnemonic) {
+          mnemonic = importedWallet.mnemonic.trim();
+          walletData = generateWalletFromMnemonic(mnemonic);
         }
+      } else {
+        // Check how many wallets user already has
+        const { count } = await supabaseAdmin
+          .from('user_wallets')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId);
+        
+        console.log(`[complete-onboarding] User has ${count || 0} existing wallet(s), adding new wallet`);
+        // Continue to add the new wallet - multi-wallet support enabled
       }
     } else {
       // Use IMPORTED wallet if provided, otherwise generate NEW wallet
@@ -251,31 +233,27 @@ serve(async (req) => {
     // Encrypt mnemonic with user's email
     const { encrypted, salt } = await encryptMnemonic(mnemonic, email);
 
-    // Store encrypted wallet in database (skip if wallet already exists for this user)
-    const { data: existingWalletCheck } = await supabaseAdmin
+    // Store encrypted wallet in database (upsert to support multiple wallets per user)
+    const { error: walletError } = await supabaseAdmin
       .from('user_wallets')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
+      .upsert({
+        user_id: userId,
+        wallet_address: walletData.address.toLowerCase(),
+        encrypted_mnemonic: encrypted,
+        encryption_salt: salt,
+        public_key: walletData.publicKey,
+        last_used_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,wallet_address', // Support multiple wallets per user
+        ignoreDuplicates: false
+      });
 
-    if (!existingWalletCheck) {
-      const { error: walletError } = await supabaseAdmin
-        .from('user_wallets')
-        .insert({
-          user_id: userId,
-          wallet_address: walletData.address,
-          encrypted_mnemonic: encrypted,
-          encryption_salt: salt,
-          public_key: walletData.publicKey,
-        });
-
-      if (walletError) {
-        console.error('Wallet creation error:', walletError);
-        throw new Error(`Failed to store wallet: ${walletError.message}`);
-      }
-    } else {
-      console.log('[complete-onboarding] Wallet already exists, skipping creation');
+    if (walletError) {
+      console.error('[complete-onboarding] Wallet upsert error:', walletError);
+      throw new Error(`Failed to store wallet: ${walletError.message}`);
     }
+
+    console.log('[complete-onboarding] Wallet stored/updated successfully');
 
     // Extract username from email
     const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '').substring(0, 20) || `user${userId.substring(0, 6)}`;
