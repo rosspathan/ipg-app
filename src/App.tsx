@@ -10,6 +10,7 @@ import { Web3Provider } from "@/contexts/Web3Context";
 import { UnlockGate } from "@/components/UnlockGate";
 import { useSecuritySync } from "@/hooks/useSecuritySync";
 import { RouterWrapper } from "@/components/RouterWrapper";
+import { AppInitializer } from "@/components/AppInitializer";
 
 // Layouts
 import UserLayout from "@/layouts/UserLayout";
@@ -188,7 +189,7 @@ function App() {
             <RouterWrapper>
               <Routes>
               {/* Landing & Splash */}
-              <Route path="/" element={<Navigate to="/onboarding" replace />} />
+              <Route path="/" element={<AppInitializer><Navigate to="/onboarding" replace /></AppInitializer>} />
               <Route path="/splash" element={<SplashScreen />} />
               <Route path="/r/:code" element={<ReferralResolver />} />
               <Route path="/deeplink/r/:code" element={<DeepLinkResolver />} />
