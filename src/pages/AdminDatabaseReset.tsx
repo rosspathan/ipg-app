@@ -21,7 +21,7 @@ export default function AdminDatabaseReset() {
   const [results, setResults] = useState<any>(null);
 
   const handleReset = async () => {
-    if (confirmText !== "RESET_DATABASE_CONFIRM") {
+    if (confirmText !== "RESET_ALL_BALANCES") {
       toast({
         title: "Invalid Confirmation",
         description: "Please type the confirmation text exactly as shown",
@@ -39,11 +39,8 @@ export default function AdminDatabaseReset() {
         throw new Error("Not authenticated");
       }
 
-      const response = await supabase.functions.invoke('admin-reset-database', {
-        body: {
-          confirmToken: "RESET_DATABASE_CONFIRM",
-          ...options,
-        },
+      const response = await supabase.functions.invoke('admin-reset-balances', {
+        body: {},
       });
 
       if (response.error) {
@@ -54,14 +51,14 @@ export default function AdminDatabaseReset() {
 
       if (response.data.success) {
         toast({
-          title: "Database Reset Complete",
-          description: "The database has been reset successfully",
+          title: "Balances Reset Complete",
+          description: "All user balances have been reset to zero",
         });
         setConfirmText("");
       } else {
         toast({
-          title: "Reset Completed with Errors",
-          description: "Some operations failed. Check the results below.",
+          title: "Reset Failed",
+          description: response.data.error || "Failed to reset balances",
           variant: "destructive",
         });
       }
@@ -69,7 +66,7 @@ export default function AdminDatabaseReset() {
       console.error("Reset error:", error);
       toast({
         title: "Reset Failed",
-        description: error.message || "Failed to reset database",
+        description: error.message || "Failed to reset balances",
         variant: "destructive",
       });
     } finally {
@@ -80,9 +77,9 @@ export default function AdminDatabaseReset() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-destructive">⚠️ Database Reset</h1>
+        <h1 className="text-3xl font-bold text-destructive">⚠️ Reset All User Balances</h1>
         <p className="text-muted-foreground mt-2">
-          Dangerous operation: This will delete data from the database. Use with extreme caution.
+          This will reset all BSK and crypto balances to zero for all users.
         </p>
       </div>
 
@@ -95,140 +92,94 @@ export default function AdminDatabaseReset() {
         </AlertDescription>
       </Alert>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Reset Options */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Reset Options</CardTitle>
-            <CardDescription>Select what to reset in the database</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="reset-users"
-                checked={options.resetUsers}
-                onCheckedChange={(checked) =>
-                  setOptions({ ...options, resetUsers: checked as boolean })
-                }
-              />
-              <div className="space-y-1">
-                <Label htmlFor="reset-users" className="flex items-center gap-2 cursor-pointer">
-                  <Users className="h-4 w-4" />
-                  Delete All Non-Admin Users
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Permanently removes all user accounts except admins
-                </p>
-              </div>
-            </div>
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle className="text-destructive">Confirmation Required</CardTitle>
+          <CardDescription>
+            Type the confirmation text below to reset all user balances
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-muted p-4 rounded-lg space-y-2">
+            <p className="text-sm font-medium">What will be reset:</p>
+            <ul className="text-sm space-y-1 list-disc list-inside">
+              <li>All BSK token balances (withdrawable and holding)</li>
+              <li>All crypto wallet balances</li>
+            </ul>
+          </div>
 
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="reset-balances"
-                checked={options.resetBalances}
-                onCheckedChange={(checked) =>
-                  setOptions({ ...options, resetBalances: checked as boolean })
-                }
-              />
-              <div className="space-y-1">
-                <Label htmlFor="reset-balances" className="flex items-center gap-2 cursor-pointer">
-                  <DollarSign className="h-4 w-4" />
-                  Reset All Balances to Zero
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Resets BSK and wallet balances for all users
-                </p>
-              </div>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-text">
+              Type: <code className="font-mono bg-muted px-2 py-1 rounded">RESET_ALL_BALANCES</code>
+            </Label>
+            <Input
+              id="confirm-text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="RESET_ALL_BALANCES"
+              className="font-mono"
+            />
+          </div>
 
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="reset-transactions"
-                checked={options.resetTransactions}
-                onCheckedChange={(checked) =>
-                  setOptions({ ...options, resetTransactions: checked as boolean })
-                }
-              />
-              <div className="space-y-1">
-                <Label htmlFor="reset-transactions" className="flex items-center gap-2 cursor-pointer">
-                  <FileText className="h-4 w-4" />
-                  Clear Transaction History
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Deletes trades, orders, spins, draws, and referral events
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <Button
+            variant="destructive"
+            size="lg"
+            className="w-full"
+            onClick={handleReset}
+            disabled={loading || confirmText !== "RESET_ALL_BALANCES"}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Resetting All Balances...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Reset All Balances to Zero
+              </>
+            )}
+          </Button>
 
-        {/* Confirmation */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-destructive">Confirmation Required</CardTitle>
-            <CardDescription>Type the confirmation text to proceed</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="confirm-text">
-                Type: <code className="font-mono">RESET_DATABASE_CONFIRM</code>
-              </Label>
-              <Input
-                id="confirm-text"
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="RESET_DATABASE_CONFIRM"
-                className="font-mono"
-              />
-            </div>
-
-            <Button
-              variant="destructive"
-              className="w-full"
-              onClick={handleReset}
-              disabled={loading || confirmText !== "RESET_DATABASE_CONFIRM"}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Resetting Database...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Reset Database
-                </>
-              )}
-            </Button>
-
-            <p className="text-xs text-muted-foreground text-center">
-              This action cannot be undone. All selected data will be permanently deleted.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          <p className="text-xs text-muted-foreground text-center">
+            This action cannot be undone. All user balances will be permanently set to zero.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Results */}
       {results && (
-        <Card>
+        <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Reset Results</CardTitle>
             <CardDescription>
-              {results.success ? "All operations completed successfully" : "Some operations failed"}
+              {results.success ? "Operation completed successfully" : "Operation failed"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {results.operations?.map((op: string, i: number) => (
-                <div key={i} className="text-sm text-green-600 dark:text-green-400">
-                  {op}
+            <div className="space-y-3">
+              {results.success && (
+                <>
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">BSK Records Reset</p>
+                      <p className="text-2xl font-bold">{results.bsk_balance_records_reset || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Crypto Records Reset</p>
+                      <p className="text-2xl font-bold">{results.crypto_balance_records_reset || 0}</p>
+                    </div>
+                  </div>
+                  <div className="text-sm text-green-600 dark:text-green-400">
+                    ✓ {results.message}
+                  </div>
+                </>
+              )}
+              {results.error && (
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  ✗ {results.error}
                 </div>
-              ))}
-              {results.errors?.map((error: string, i: number) => (
-                <div key={i} className="text-sm text-red-600 dark:text-red-400">
-                  {error}
-                </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
