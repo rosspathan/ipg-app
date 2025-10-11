@@ -9,6 +9,7 @@ import { BadgeIdCardSheet } from "@/components/badge-id/BadgeIdCardSheet";
 import { BadgeTier } from "@/components/badge-id/BadgeIdThemeRegistry";
 import { useDisplayName } from "@/hooks/useDisplayName";
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
+import { supabase } from "@/integrations/supabase/client";
 
 export function IDCardPage() {
   const navigate = useNavigate();
@@ -35,8 +36,35 @@ export function IDCardPage() {
   
   const userId = user?.id || (userApp as any)?.user_id || `guest-${Math.random().toString(36).slice(2, 8)}`;
   
-  // For now, default to Gold tier - this should come from user's actual tier
-  const currentTier: BadgeTier = 'Gold';
+  // Fetch user's purchased badge
+  const [currentTier, setCurrentTier] = React.useState<BadgeTier>('Silver');
+  const [purchasedBadges, setPurchasedBadges] = React.useState<BadgeTier[]>(['Silver']);
+  
+  React.useEffect(() => {
+    if (!user?.id) return;
+    
+    const loadUserBadge = async () => {
+      try {
+        const { data } = await supabase
+          .from('user_badge_holdings')
+          .select('current_badge')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (data?.current_badge) {
+          setCurrentTier(data.current_badge as BadgeTier);
+          // For now, only show the current badge
+          // In future, could track all purchased badges
+          setPurchasedBadges([data.current_badge as BadgeTier]);
+        }
+      } catch (error) {
+        console.error('Error loading badge:', error);
+      }
+    };
+    
+    loadUserBadge();
+  }, [user?.id]);
+  
   const qrCode = referralCode?.code || userId;
 
   const userData = {
@@ -86,6 +114,7 @@ export function IDCardPage() {
           <BadgeIdCardSheet
             user={userData}
             currentTier={currentTier}
+            purchasedBadges={purchasedBadges}
             qrCode={qrCode}
             onAvatarUpload={isAuthed ? uploadAvatar : async () => {}}
             uploadingAvatar={isAuthed ? uploading : false}

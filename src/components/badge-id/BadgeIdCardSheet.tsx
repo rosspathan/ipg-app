@@ -22,6 +22,7 @@ interface BadgeIdCardSheetProps {
     joinDate: string;
   };
   currentTier: BadgeTier;
+  purchasedBadges: BadgeTier[];
   qrCode: string;
   onAvatarUpload: (file: File) => Promise<void>;
   uploadingAvatar?: boolean;
@@ -30,6 +31,7 @@ interface BadgeIdCardSheetProps {
 export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
   user,
   currentTier,
+  purchasedBadges,
   qrCode,
   onAvatarUpload,
   uploadingAvatar = false
@@ -46,8 +48,7 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
 
   const theme = getThemeForTier(selectedTier);
   const allTiers = getAllTiers();
-  const currentTierIndex = allTiers.indexOf(currentTier);
-  const availableTiers = allTiers; // Show all tiers for preview
+  const availableTiers = purchasedBadges; // Only show purchased badges
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -185,131 +186,145 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
 
       {/* Tier Selector */}
       <div className="space-y-3">
-        <label className="text-sm font-medium">Select Tier to Preview</label>
-        <div className="flex flex-wrap gap-2">
-          {availableTiers.map((tier) => {
-            const tierTheme = getThemeForTier(tier);
-            return (
-              <button
-                key={tier}
-                onClick={() => setSelectedTier(tier)}
-                className={cn(
-                  "px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
-                  "hover:scale-105 hover:shadow-lg",
-                  selectedTier === tier
-                    ? "shadow-xl scale-105"
-                    : "hover:shadow-md"
-                )}
-                style={{
-                  background: selectedTier === tier 
-                    ? tierTheme.gradients.ribbon 
-                    : `${tierTheme.colors.primary}20`,
-                  color: selectedTier === tier ? tierTheme.colors.text : tierTheme.colors.primary,
-                  boxShadow: selectedTier === tier 
-                    ? `0 8px 24px ${tierTheme.colors.glow}40, 0 0 0 2px ${tierTheme.colors.primary}60`
-                    : undefined,
-                }}
-              >
-                {tier}
-              </button>
-            );
-          })}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Preview all membership tiers • Current tier: <span className="font-semibold">{currentTier}</span>
-        </p>
+        <label className="text-sm font-medium">Your Purchased Badge{purchasedBadges.length > 1 ? 's' : ''}</label>
+        {purchasedBadges.length > 0 ? (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {availableTiers.map((tier) => {
+                const tierTheme = getThemeForTier(tier);
+                return (
+                  <button
+                    key={tier}
+                    onClick={() => setSelectedTier(tier)}
+                    className={cn(
+                      "px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                      "hover:scale-105 hover:shadow-lg",
+                      selectedTier === tier
+                        ? "shadow-xl scale-105"
+                        : "hover:shadow-md"
+                    )}
+                    style={{
+                      background: selectedTier === tier 
+                        ? tierTheme.gradients.ribbon 
+                        : `${tierTheme.colors.primary}20`,
+                      color: selectedTier === tier ? tierTheme.colors.text : tierTheme.colors.primary,
+                      boxShadow: selectedTier === tier 
+                        ? `0 8px 24px ${tierTheme.colors.glow}40, 0 0 0 2px ${tierTheme.colors.primary}60`
+                        : undefined,
+                    }}
+                  >
+                    {tier}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Showing your purchased badge • Current: <span className="font-semibold">{currentTier}</span>
+            </p>
+          </>
+        ) : (
+          <div className="text-center py-8 px-4 bg-muted/50 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              You haven't purchased any badge yet. Visit the Badge Subscription page to get your membership badge!
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Card Preview */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">Preview</label>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowBack(!showBack)}
-          >
-            Show {showBack ? 'Front' : 'Back'}
-          </Button>
-        </div>
+      {purchasedBadges.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Preview</label>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowBack(!showBack)}
+            >
+              Show {showBack ? 'Front' : 'Back'}
+            </Button>
+          </div>
 
-        <div className="flex justify-center">
-          <div className="relative">
-            {!showBack ? (
-              <BadgeIdCard
-                ref={frontCardRef}
-                user={user}
-                tier={selectedTier}
-                qrCode={qrCode}
-                theme={theme}
-                reducedMotion={reducedMotion}
-                signatureUrl={signatureUrl}
-              />
-            ) : (
-              <BadgeIdCardBack
-                ref={backCardRef}
-                tier={selectedTier}
-                theme={theme}
-                reducedMotion={reducedMotion}
-              />
-            )}
+          <div className="flex justify-center">
+            <div className="relative">
+              {!showBack ? (
+                <BadgeIdCard
+                  ref={frontCardRef}
+                  user={user}
+                  tier={selectedTier}
+                  qrCode={qrCode}
+                  theme={theme}
+                  reducedMotion={reducedMotion}
+                  signatureUrl={signatureUrl}
+                />
+              ) : (
+                <BadgeIdCardBack
+                  ref={backCardRef}
+                  tier={selectedTier}
+                  theme={theme}
+                  reducedMotion={reducedMotion}
+                />
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Actions */}
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setShowSignaturePad(true)}
-          >
-            <Pen className="h-4 w-4 mr-2" />
-            {signatureUrl ? 'Edit' : 'Add'} Signature
-          </Button>
+      {purchasedBadges.length > 0 && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowSignaturePad(true)}
+            >
+              <Pen className="h-4 w-4 mr-2" />
+              {signatureUrl ? 'Edit' : 'Add'} Signature
+            </Button>
 
-          <Button
-            variant="outline"
-            onClick={handleCopyLink}
-          >
-            {copied ? (
-              <Check className="h-4 w-4 mr-2" />
-            ) : (
-              <Copy className="h-4 w-4 mr-2" />
-            )}
-            {copied ? 'Copied!' : 'Copy Link'}
-          </Button>
+            <Button
+              variant="outline"
+              onClick={handleCopyLink}
+            >
+              {copied ? (
+                <Check className="h-4 w-4 mr-2" />
+              ) : (
+                <Copy className="h-4 w-4 mr-2" />
+              )}
+              {copied ? 'Copied!' : 'Copy Link'}
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <Button
+              variant="outline"
+              onClick={handleSavePNG}
+              disabled={exporting}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              PNG
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleSavePDF}
+              disabled={exporting}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              PDF
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleShare}
+              disabled={exporting}
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+          </div>
         </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <Button
-            variant="outline"
-            onClick={handleSavePNG}
-            disabled={exporting}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            PNG
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={handleSavePDF}
-            disabled={exporting}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            PDF
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={handleShare}
-            disabled={exporting}
-          >
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </Button>
-        </div>
-      </div>
+      )}
 
       {exporting && (
         <div className="text-center text-sm text-muted-foreground">
