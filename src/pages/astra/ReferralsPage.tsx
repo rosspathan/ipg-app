@@ -97,11 +97,13 @@ export default function ReferralsPage() {
   });
 
   // Use the stored referral code or generate one based on username
-  const code = profileData?.referral_code || profileData?.username || user?.id;
+  const codeRaw = profileData?.referral_code ?? profileData?.username ?? '';
+  const fallbackCode = user?.id || '';
+  const code = (codeRaw && codeRaw.trim()) || fallbackCode;
   
   // Always use production domain for referral links
   const baseHost = 'https://i-smartapp.com';
-  const referralLink = code ? `${baseHost}/r/${code}` : "";
+  const referralLink = code ? `${baseHost}/r/${encodeURIComponent(code)}` : "";
 
   const handleCopyLink = async () => {
     if (!referralLink) return;
