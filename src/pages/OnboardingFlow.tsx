@@ -60,7 +60,13 @@ const OnboardingFlow: React.FC = () => {
     } catch (e) {
       console.error('[ONBOARDING] Failed to set email:', e);
     }
-    setStep('pin-setup');
+    
+    // For imported wallets, they've already verified ownership through email + recovery phrase
+    // So we can complete onboarding directly and navigate to dashboard
+    markEmailVerified();
+    setPinHash('imported'); // Mark as having security setup from original wallet
+    markBiometricSetup(false);
+    completeOnboarding();
   };
   const handleEmailSubmitted = (email: string) => {
     setEmail(email);
