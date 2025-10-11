@@ -181,7 +181,7 @@ export function HomePage() {
 
   return (
     <AppShellGlass topBar={topBar} data-testid="page-home">
-      <div className="space-y-6 pb-24">
+      <div className="space-y-6 pb-32">
         {/* KPI Row - New Component */}
         <div className="px-4 pt-4">
           <KPIChipRow data={kpiData} />

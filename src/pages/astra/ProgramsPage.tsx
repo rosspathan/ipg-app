@@ -256,7 +256,7 @@ export function ProgramsPage() {
 
   return (
     <AppShellGlass topBar={topBar} data-testid="page-programs">
-      <div className="space-y-6 pb-24">
+      <div className="space-y-6 pb-32">
         {selectedCategory === "all" ? (
           // Show grouped by category
           Object.entries(groupedPrograms).map(([category, programs]) => {
