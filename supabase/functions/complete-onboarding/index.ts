@@ -329,11 +329,17 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error("Onboarding completion error:", error);
+    console.error('[complete-onboarding] Error:', error);
+    
+    // Always return 200 with error details to avoid generic toast errors
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: error.message || 'Registration failed',
+        details: error.toString()
+      }),
       { 
-        status: 500, 
+        status: 200, // Always 200 to prevent generic error toasts in frontend
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     );

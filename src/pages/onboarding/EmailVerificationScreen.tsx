@@ -141,21 +141,34 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       
       if (error) throw error;
       if (!data?.success) {
+        // Handle specific error cases with user-friendly messages
         if (data?.reason === 'invalid_code') {
-          toast({ title: 'Invalid Code', description: 'Please check the 6-digit code and try again.', variant: 'destructive' });
-          return;
-        }
-        if (data?.reason === 'wallet_mismatch' || data?.reason === 'wallet_exists') {
-          // This should no longer happen with multi-wallet support, but keep as fallback
-          console.warn('[VERIFY] Unexpected wallet mismatch:', data);
           toast({ 
-            title: 'Verification Issue', 
-            description: 'There was an issue verifying your wallet. Please try again or contact support.',
-            variant: 'destructive'
+            title: 'Invalid Code', 
+            description: 'The verification code is incorrect. Please check and try again.',
+            variant: 'destructive' 
           });
           return;
         }
-        throw new Error(data?.error || 'Registration failed');
+        
+        if (data?.reason === 'wallet_mismatch') {
+          toast({ 
+            title: 'Wallet Already Linked', 
+            description: 'This email is already linked to a different wallet. Please use your original wallet to sign in.',
+            variant: 'destructive',
+            duration: 6000
+          });
+          return;
+        }
+        
+        // Generic error handling
+        const errorMessage = data?.error || 'Registration failed. Please try again.';
+        toast({ 
+          title: 'Verification Failed', 
+          description: errorMessage,
+          variant: 'destructive' 
+        });
+        return;
       }
       
       console.info('[VERIFY] User registered:', data.userId, data.username);
@@ -237,10 +250,16 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       }
     } catch (error: any) {
       console.error('[VERIFY] Error:', error);
+      // Don't show generic "Edge Function" errors - show user-friendly message
+      const errorMessage = error.message?.includes('Edge Function') 
+        ? 'Unable to complete verification. Please check your code and try again.'
+        : (error.message || 'Verification failed. Please try again.');
+      
       toast({
         title: "Verification Failed",
-        description: error.message || "Please try again",
+        description: errorMessage,
         variant: "destructive",
+        duration: 5000
       });
     } finally {
       setIsVerifying(false);
