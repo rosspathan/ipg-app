@@ -206,7 +206,7 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
         </div>
 
         {/* Content */}
-        <div className="flex-1 px-6 pb-8">
+        <div className="flex-1 px-6 pb-32" style={{ paddingBottom: 'max(8rem, env(safe-area-inset-bottom, 2rem))' }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={currentScreen}
