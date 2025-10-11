@@ -13,6 +13,7 @@ export type OnboardingStep =
   | 'wallet-choice'
   | 'create-wallet'
   | 'import-wallet'
+  | 'verify-wallet-email'
   | 'wallet-connect'
   | 'email-input'
   | 'email-verification'
