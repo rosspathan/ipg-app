@@ -80,6 +80,32 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
       });
 
       if (error || !data?.user) {
+        // Fallback: check locally stored onboarding data (same-device import)
+        try {
+          const saved = localStorage.getItem('ipg_onboarding_state');
+          if (saved) {
+            const savedState = JSON.parse(saved || '{}');
+            const savedEmail = (savedState.email || '').trim().toLowerCase();
+            const savedAddress = savedState.walletInfo?.address?.toLowerCase();
+            // Derive address locally from the provided mnemonic
+            const tmp = await importWallet(mnemonic.trim());
+            const importedAddr = tmp.wallet?.address?.toLowerCase();
+            const emailMatch = !!savedEmail && savedEmail === email.trim().toLowerCase();
+            const addrMatch = !!savedAddress && !!importedAddr && savedAddress === importedAddr;
+            if (emailMatch && addrMatch && tmp.success && tmp.wallet) {
+              if (tmp.wallet?.address) {
+                const { storeEvmAddressTemp } = await import('@/lib/wallet/evmAddress');
+                storeEvmAddressTemp(tmp.wallet.address);
+              }
+              toast({ title: 'Success!', description: 'Wallet imported successfully' });
+              onWalletImported(tmp.wallet, email.trim());
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('[ImportWallet] Local fallback check failed:', e);
+        }
+
         toast({
           title: "Import Failed",
           description: data?.error || "This wallet doesn't exist or the email doesn't match",
