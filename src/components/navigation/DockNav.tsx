@@ -49,7 +49,7 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
 
       <nav
         className={cn(
-          "fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50",
+          "fixed bottom-0 inset-x-0 w-full max-w-[430px] mx-auto z-50",
           "pb-[env(safe-area-inset-bottom)]",
           className
         )}
