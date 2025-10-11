@@ -174,21 +174,31 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
 
   return (
     <div className="space-y-6" data-testid="badge-id-card-sheet">
-      {/* Avatar Upload Section */}
-      <div className="flex justify-center">
-        <ProfileAvatarUploader
-          avatarUrl={user.avatarUrl}
-          displayName={user.displayName}
-          uploading={uploadingAvatar}
-          onUpload={onAvatarUpload}
-        />
-      </div>
+      {/* Avatar Upload Section - Only show if user has badges */}
+      {purchasedBadges.length > 0 && (
+        <div className="flex justify-center">
+          <ProfileAvatarUploader
+            avatarUrl={user.avatarUrl}
+            displayName={user.displayName}
+            uploading={uploadingAvatar}
+            onUpload={onAvatarUpload}
+          />
+        </div>
+      )}
 
-      {/* Tier Selector */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium">Your Purchased Badge{purchasedBadges.length > 1 ? 's' : ''}</label>
-        {purchasedBadges.length > 0 ? (
-          <>
+      {/* Show message if no badges purchased */}
+      {purchasedBadges.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">No badge purchased yet</p>
+        </div>
+      )}
+
+      {/* Only show tier selector and card if user has badges */}
+      {purchasedBadges.length > 0 && (
+        <>
+          {/* Tier Selector */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Your Purchased Badge{purchasedBadges.length > 1 ? 's' : ''}</label>
             <div className="flex flex-wrap gap-2">
               {availableTiers.map((tier) => {
                 const tierTheme = getThemeForTier(tier);
@@ -221,109 +231,99 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
             <p className="text-xs text-muted-foreground">
               Showing your purchased badge • Current: <span className="font-semibold">{currentTier}</span>
             </p>
-          </>
-        ) : (
-          <div className="text-center py-8 px-4 bg-muted/50 rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              You haven't purchased any badge yet. Visit the Badge Subscription page to get your membership badge!
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Card Preview */}
-      {purchasedBadges.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Preview</label>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowBack(!showBack)}
-            >
-              Show {showBack ? 'Front' : 'Back'}
-            </Button>
           </div>
 
-          <div className="flex justify-center">
-            <div className="relative">
-              {!showBack ? (
-                <BadgeIdCard
-                  ref={frontCardRef}
-                  user={user}
-                  tier={selectedTier}
-                  qrCode={qrCode}
-                  theme={theme}
-                  reducedMotion={reducedMotion}
-                  signatureUrl={signatureUrl}
-                />
-              ) : (
-                <BadgeIdCardBack
-                  ref={backCardRef}
-                  tier={selectedTier}
-                  theme={theme}
-                  reducedMotion={reducedMotion}
-                />
-              )}
+          {/* Card Preview */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Preview</label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowBack(!showBack)}
+              >
+                Show {showBack ? 'Front' : 'Back'}
+              </Button>
+            </div>
+
+            <div className="flex justify-center">
+              <div className="relative">
+                {!showBack ? (
+                  <BadgeIdCard
+                    ref={frontCardRef}
+                    user={user}
+                    tier={selectedTier}
+                    qrCode={qrCode}
+                    theme={theme}
+                    reducedMotion={reducedMotion}
+                    signatureUrl={signatureUrl}
+                  />
+                ) : (
+                  <BadgeIdCardBack
+                    ref={backCardRef}
+                    tier={selectedTier}
+                    theme={theme}
+                    reducedMotion={reducedMotion}
+                  />
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Actions */}
-      {purchasedBadges.length > 0 && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowSignaturePad(true)}
-            >
-              <Pen className="h-4 w-4 mr-2" />
-              {signatureUrl ? 'Edit' : 'Add'} Signature
-            </Button>
+          {/* Actions */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowSignaturePad(true)}
+              >
+                <Pen className="h-4 w-4 mr-2" />
+                {signatureUrl ? 'Edit' : 'Add'} Signature
+              </Button>
 
-            <Button
-              variant="outline"
-              onClick={handleCopyLink}
-            >
-              {copied ? (
-                <Check className="h-4 w-4 mr-2" />
-              ) : (
-                <Copy className="h-4 w-4 mr-2" />
-              )}
-              {copied ? 'Copied!' : 'Copy Link'}
-            </Button>
+              <Button
+                variant="outline"
+                onClick={handleCopyLink}
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 mr-2" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-2" />
+                )}
+                {copied ? 'Copied!' : 'Copy Link'}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                onClick={handleSavePNG}
+                disabled={exporting}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                PNG
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleSavePDF}
+                disabled={exporting}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                PDF
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleShare}
+                disabled={exporting}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
+            </div>
           </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <Button
-              variant="outline"
-              onClick={handleSavePNG}
-              disabled={exporting}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              PNG
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={handleSavePDF}
-              disabled={exporting}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              PDF
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={handleShare}
-              disabled={exporting}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
-            </Button>
-          </div>
-        </div>
+        </>
       )}
 
       {exporting && (
