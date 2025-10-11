@@ -41,32 +41,23 @@ const OnboardingFlow: React.FC = () => {
     setStep('email-input');
   };
   
-  const handleWalletImported = (wallet: any, email: string) => {
+  const handleWalletImported = (wallet: any) => {
+    // LOCAL-ONLY IMPORT: Store wallet and continue to email collection
     setWalletInfo(wallet);
     setWalletFromOnboarding(wallet);
-    setEmail(email);
+    
+    // Save wallet to onboarding state
     try {
-      // Make display name reflect imported email immediately across the app
-      const normalizedEmail = (email || '').trim().toLowerCase();
-      console.log('[ONBOARDING] Setting verification email:', normalizedEmail);
-      sessionStorage.setItem('verificationEmail', normalizedEmail);
       localStorage.setItem('ipg_onboarding_state', JSON.stringify({
         ...state,
-        email: normalizedEmail,
         walletInfo: wallet
       }));
-      window.dispatchEvent(new Event('verification:email-updated'));
-      window.dispatchEvent(new Event('storage'));
     } catch (e) {
-      console.error('[ONBOARDING] Failed to set email:', e);
+      console.error('[ONBOARDING] Failed to save wallet:', e);
     }
     
-    // For imported wallets, they've already verified ownership through email + recovery phrase
-    // So we can complete onboarding directly and navigate to dashboard
-    markEmailVerified();
-    setPinHash('imported'); // Mark as having security setup from original wallet
-    markBiometricSetup(false);
-    completeOnboarding();
+    // Navigate to email input (email will be collected next, then linked during account creation)
+    setStep('email-input');
   };
   const handleEmailSubmitted = (email: string) => {
     setEmail(email);

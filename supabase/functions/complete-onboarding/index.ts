@@ -13,6 +13,10 @@ interface OnboardingRequest {
   email: string;
   verificationCode: string;
   storedCode: string;
+  importedWallet?: {
+    address: string;
+    mnemonic: string;
+  };
 }
 
 // Generate wallet from mnemonic
@@ -104,7 +108,9 @@ serve(async (req) => {
   }
 
   try {
-    const { email, verificationCode, storedCode }: OnboardingRequest = await req.json();
+    const { email, verificationCode, storedCode, importedWallet }: OnboardingRequest = await req.json();
+
+    console.log('[complete-onboarding] Request:', { email, hasImportedWallet: !!importedWallet });
 
     // Verify the code matches
     if (verificationCode !== storedCode) {
@@ -155,9 +161,22 @@ serve(async (req) => {
         );
       }
     } else {
-      // Generate NEW wallet for new user
-      mnemonic = generateMnemonic(128); // 12 words
-      walletData = generateWalletFromMnemonic(mnemonic);
+      // Use IMPORTED wallet if provided, otherwise generate NEW wallet
+      if (importedWallet?.mnemonic && importedWallet?.address) {
+        console.log('[complete-onboarding] Using imported wallet:', importedWallet.address);
+        mnemonic = importedWallet.mnemonic;
+        walletData = generateWalletFromMnemonic(mnemonic);
+        
+        // Verify the derived address matches the imported address
+        if (walletData.address.toLowerCase() !== importedWallet.address.toLowerCase()) {
+          throw new Error('Imported wallet address mismatch');
+        }
+      } else {
+        // Generate NEW wallet for new user
+        console.log('[complete-onboarding] Generating new wallet');
+        mnemonic = generateMnemonic(128); // 12 words
+        walletData = generateWalletFromMnemonic(mnemonic);
+      }
       
       // Create user with admin privileges (auto-confirmed)
       const tempPassword = crypto.randomUUID() + 'Aa1!';
@@ -178,10 +197,22 @@ serve(async (req) => {
       console.log('Created new user:', userId);
     }
 
-    // If no wallet yet, generate one
+    // If no wallet yet, use imported or generate one
     if (!mnemonic) {
-      mnemonic = generateMnemonic(128);
-      walletData = generateWalletFromMnemonic(mnemonic);
+      if (importedWallet?.mnemonic && importedWallet?.address) {
+        console.log('[complete-onboarding] Using imported wallet for existing user:', importedWallet.address);
+        mnemonic = importedWallet.mnemonic;
+        walletData = generateWalletFromMnemonic(mnemonic);
+        
+        // Verify the derived address matches
+        if (walletData.address.toLowerCase() !== importedWallet.address.toLowerCase()) {
+          throw new Error('Imported wallet address mismatch for existing user');
+        }
+      } else {
+        console.log('[complete-onboarding] Generating new wallet for existing user');
+        mnemonic = generateMnemonic(128);
+        walletData = generateWalletFromMnemonic(mnemonic);
+      }
     }
 
     // Encrypt mnemonic with user's email

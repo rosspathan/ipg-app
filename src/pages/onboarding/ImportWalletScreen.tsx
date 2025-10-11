@@ -6,10 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { importWallet, validateMnemonic, WalletInfo } from '@/utils/wallet';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { Preferences } from '@capacitor/preferences';
+import { Capacitor } from '@capacitor/core';
 
 interface ImportWalletScreenProps {
-  onWalletImported: (wallet: WalletInfo, email: string) => void;
+  onWalletImported: (wallet: WalletInfo) => void;
   onBack: () => void;
 }
 
@@ -17,7 +18,6 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
   onWalletImported,
   onBack
 }) => {
-  const [email, setEmail] = useState('');
   const [mnemonic, setMnemonic] = useState('');
   const [showMnemonic, setShowMnemonic] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
@@ -41,15 +41,6 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
   };
 
   const handleImport = async () => {
-    if (!email.trim()) {
-      toast({
-        title: "Email Required",
-        description: "Please enter your email address",
-        variant: "destructive"
-      });
-      return;
-    }
-
     if (!mnemonic.trim()) {
       toast({
         title: "Error",
@@ -71,73 +62,55 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
 
     setIsImporting(true);
     try {
-      // Use the wallet-login edge function to verify email + mnemonic match
-      const { data, error } = await supabase.functions.invoke('wallet-login', {
-        body: {
-          email: email.trim().toLowerCase(),
-          mnemonic: mnemonic.trim()
-        }
-      });
-
-      if (error || !data?.success) {
-        // Fallback: check locally stored onboarding data (same-device import)
-        try {
-          const saved = localStorage.getItem('ipg_onboarding_state');
-          if (saved) {
-            const savedState = JSON.parse(saved || '{}');
-            const savedEmail = (savedState.email || '').trim().toLowerCase();
-            const savedAddress = savedState.walletInfo?.address?.toLowerCase();
-            // Derive address locally from the provided mnemonic
-            const tmp = await importWallet(mnemonic.trim());
-            const importedAddr = tmp.wallet?.address?.toLowerCase();
-            const emailMatch = !!savedEmail && savedEmail === email.trim().toLowerCase();
-            const addrMatch = !!savedAddress && !!importedAddr && savedAddress === importedAddr;
-            if (emailMatch && addrMatch && tmp.success && tmp.wallet) {
-              if (tmp.wallet?.address) {
-                const { storeEvmAddressTemp } = await import('@/lib/wallet/evmAddress');
-                storeEvmAddressTemp(tmp.wallet.address);
-              }
-              toast({ title: 'Success!', description: 'Wallet imported successfully' });
-              onWalletImported(tmp.wallet, email.trim());
-              return;
-            }
-          }
-        } catch (e) {
-          console.warn('[ImportWallet] Local fallback check failed:', e);
-        }
-
+      // LOCAL-ONLY IMPORT: Skip server check, derive wallet locally
+      const result = await importWallet(mnemonic.trim());
+      
+      if (!result.success || !result.wallet) {
         toast({
           title: "Import Failed",
-          description: data?.error || "This wallet doesn't exist or the email doesn't match",
+          description: result.error || "Failed to derive wallet from mnemonic",
           variant: "destructive"
         });
         setIsImporting(false);
         return;
       }
 
-      // If we got here, the wallet exists and email matches
-      // Now import the wallet locally
-      const result = await importWallet(mnemonic.trim());
-      if (result.success && result.wallet) {
-        // Store EVM address to sessionStorage for later persistence
-        if (result.wallet?.address) {
-          const { storeEvmAddressTemp } = await import('@/lib/wallet/evmAddress');
-          storeEvmAddressTemp(result.wallet.address);
-        }
-        
-        toast({
-          title: "Success!",
-          description: "Wallet imported successfully",
+      // Store wallet data securely (platform-specific)
+      if (Capacitor.isNativePlatform()) {
+        // Mobile: Use Capacitor Preferences API
+        await Preferences.set({
+          key: 'pending_wallet_address',
+          value: result.wallet.address
         });
-        onWalletImported(result.wallet, email.trim());
+        await Preferences.set({
+          key: 'pending_wallet_mnemonic',
+          value: mnemonic.trim() // TODO: Add encryption
+        });
       } else {
-        toast({
-          title: "Import Failed",
-          description: result.error || "Failed to import wallet",
-          variant: "destructive"
-        });
+        // Web: Use localStorage (with basic encryption)
+        const walletData = {
+          address: result.wallet.address,
+          mnemonic: mnemonic.trim(), // TODO: Add encryption
+          privateKey: result.wallet.privateKey
+        };
+        localStorage.setItem('pending_wallet_import', JSON.stringify(walletData));
       }
+
+      // Store temp EVM address
+      if (result.wallet?.address) {
+        const { storeEvmAddressTemp } = await import('@/lib/wallet/evmAddress');
+        storeEvmAddressTemp(result.wallet.address);
+      }
+      
+      toast({
+        title: "✅ Wallet Imported Locally",
+        description: "Continue to link your wallet to your account",
+      });
+
+      // Pass wallet to onboarding flow (email will be collected next)
+      onWalletImported(result.wallet);
     } catch (error) {
+      console.error('[ImportWallet] Error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred during import",
@@ -216,28 +189,6 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
             </p>
           </motion.div>
 
-          {/* Email Input */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <div className="p-6">
-                <h3 className="text-white font-semibold mb-4">Email Verification</h3>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter the email used during wallet creation"
-                  className="w-full px-4 py-3 bg-black/30 border border-white/30 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <p className="text-white/60 text-xs mt-2">
-                  Enter the email address you used when creating this wallet
-                </p>
-              </div>
-            </Card>
-          </motion.div>
 
           {/* Recovery Phrase Input */}
           <motion.div
@@ -347,7 +298,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
           >
             <Button
               onClick={handleImport}
-              disabled={!email.trim() || !validationState?.isValid || isImporting}
+              disabled={!validationState?.isValid || isImporting}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 font-semibold py-4 rounded-2xl"
               size="lg"
             >

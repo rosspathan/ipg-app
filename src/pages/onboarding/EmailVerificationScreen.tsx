@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { storeEvmAddress } from '@/lib/wallet/evmAddress';
 import { extractUsernameFromEmail } from '@/lib/user/username';
 import { useNavigate } from 'react-router-dom';
+import { Preferences } from '@capacitor/preferences';
+import { Capacitor } from '@capacitor/core';
 
 // Mask email for display
 const maskEmail = (e: string) => {
@@ -95,13 +97,45 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         throw new Error('Invalid verification code');
       }
       
-      // Complete onboarding via edge function (creates user + profile)
+      // Check for imported wallet data
+      let importedWallet: { address: string; mnemonic: string } | undefined;
+      
+      if (Capacitor.isNativePlatform()) {
+        // Mobile: Check Capacitor Preferences
+        const { value: address } = await Preferences.get({ key: 'pending_wallet_address' });
+        const { value: mnemonic } = await Preferences.get({ key: 'pending_wallet_mnemonic' });
+        
+        if (address && mnemonic) {
+          importedWallet = { address, mnemonic };
+          console.log('[VERIFY] Found imported wallet (mobile):', address);
+        }
+      } else {
+        // Web: Check localStorage
+        const pendingWallet = localStorage.getItem('pending_wallet_import');
+        if (pendingWallet) {
+          try {
+            const parsed = JSON.parse(pendingWallet);
+            if (parsed.address && parsed.mnemonic) {
+              importedWallet = { 
+                address: parsed.address, 
+                mnemonic: parsed.mnemonic 
+              };
+              console.log('[VERIFY] Found imported wallet (web):', parsed.address);
+            }
+          } catch (e) {
+            console.warn('[VERIFY] Failed to parse pending wallet:', e);
+          }
+        }
+      }
+      
+      // Complete onboarding via edge function (creates user + links wallet)
       const { data, error } = await supabase.functions.invoke('complete-onboarding', {
         body: {
           email,
           walletAddress: tempWalletAddress || walletAddress,
           verificationCode: code,
-          storedCode
+          storedCode,
+          importedWallet // Pass imported wallet to edge function
         }
       });
       
@@ -109,6 +143,17 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       if (!data?.success) throw new Error(data?.error || 'Registration failed');
       
       console.info('[VERIFY] User registered:', data.userId, data.username);
+      
+      // Clean up imported wallet data
+      if (importedWallet) {
+        if (Capacitor.isNativePlatform()) {
+          await Preferences.remove({ key: 'pending_wallet_address' });
+          await Preferences.remove({ key: 'pending_wallet_mnemonic' });
+        } else {
+          localStorage.removeItem('pending_wallet_import');
+        }
+        console.log('[VERIFY] Cleaned up imported wallet data');
+      }
       
       // Now verify OTP to create session
       const { error: otpError } = await supabase.auth.verifyOtp({
@@ -137,7 +182,9 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       if (data.mnemonic) {
         toast({
           title: "✓ Email Verified",
-          description: "IMPORTANT: Save your recovery phrase!",
+          description: importedWallet 
+            ? "Wallet linked successfully!" 
+            : "IMPORTANT: Save your recovery phrase!",
         });
         
         // Clean up temp storage
