@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { importWallet, validateMnemonic, WalletInfo } from '@/utils/wallet';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ImportWalletScreenProps {
   onWalletImported: (wallet: WalletInfo, email: string) => void;
@@ -70,6 +71,26 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
 
     setIsImporting(true);
     try {
+      // Use the wallet-login edge function to verify email + mnemonic match
+      const { data, error } = await supabase.functions.invoke('wallet-login', {
+        body: {
+          email: email.trim().toLowerCase(),
+          mnemonic: mnemonic.trim()
+        }
+      });
+
+      if (error || !data?.user) {
+        toast({
+          title: "Import Failed",
+          description: data?.error || "This wallet doesn't exist or the email doesn't match",
+          variant: "destructive"
+        });
+        setIsImporting(false);
+        return;
+      }
+
+      // If we got here, the wallet exists and email matches
+      // Now import the wallet locally
       const result = await importWallet(mnemonic.trim());
       if (result.success && result.wallet) {
         // Store EVM address to sessionStorage for later persistence
@@ -93,7 +114,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
     } catch (error) {
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred during import",
         variant: "destructive"
       });
     } finally {
