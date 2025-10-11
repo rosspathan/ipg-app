@@ -131,15 +131,15 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         ))}
       </div>
       
-      {/* Hidden input for mobile keyboards */}
+      {/* Hidden input - disabled to prevent native keyboard */}
       <input
-        type="number"
+        type="text"
+        inputMode="none"
+        readOnly
         value={value}
-        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full opacity-0 absolute -top-full"
+        className="w-full opacity-0 absolute -top-full pointer-events-none"
         maxLength={6}
-        autoFocus
       />
     </div>
   );
