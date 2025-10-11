@@ -16,6 +16,7 @@ import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 import { useDisplayName } from "@/hooks/useDisplayName"
 import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
+import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 
 export function WalletPage() {
   const [showQuickSwitch, setShowQuickSwitch] = React.useState(false)
@@ -280,6 +281,8 @@ export function WalletPage() {
           }
         }}
       />
+      {/* WhatsApp Support - Fixed above footer */}
+      <SupportLinkWhatsApp variant="fab" className="fixed bottom-24 right-5 z-[60]" />
 
       {/* Sticky Footer Navigation */}
       <DockNav onNavigate={(path) => navigate(path)} onCenterPress={() => setShowQuickSwitch(true)} />
