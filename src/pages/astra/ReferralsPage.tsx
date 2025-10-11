@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useTeamReferrals } from "@/hooks/useTeamReferrals";
 import { extractUsernameFromEmail } from "@/lib/user/username";
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 
 export default function ReferralsPage() {
   const { user } = useAuthUser();
@@ -138,17 +140,31 @@ export default function ReferralsPage() {
     if (!referralLink) return;
 
     try {
-      if (navigator.share) {
+      // Use Capacitor Share for native apps
+      if (Capacitor.isNativePlatform()) {
+        await Share.share({
+          title: 'Join me on I-SMART Exchange',
+          text: 'Start trading crypto and earning rewards with I-SMART Exchange! Use my referral link:',
+          url: referralLink,
+          dialogTitle: 'Share Referral Link'
+        });
+        toast.success("Shared successfully!");
+      } else if (navigator.share) {
+        // Fallback to Web Share API
         await navigator.share({
-          title: "Join me on IPG",
-          text: "Start trading crypto with IPG!",
+          title: "Join me on I-SMART Exchange",
+          text: "Start trading crypto with I-SMART Exchange!",
           url: referralLink,
         });
       } else {
+        // Final fallback: copy to clipboard
         handleCopyLink();
       }
-    } catch (error) {
-      console.error("Share failed:", error);
+    } catch (error: any) {
+      // User cancelled share - don't show error
+      if (error?.message !== 'Share canceled') {
+        console.error("Share failed:", error);
+      }
     }
   };
 

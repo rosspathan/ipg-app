@@ -10,6 +10,8 @@ import { BadgeIdExporter } from './BadgeIdExporter';
 import { getThemeForTier, getAllTiers, BadgeTier } from './BadgeIdThemeRegistry';
 import { buildReferralLink } from './QrLinkBuilder';
 import { cn } from '@/lib/utils';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 
 interface BadgeIdCardSheetProps {
   user: {
@@ -112,21 +114,32 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
     if (!frontCardRef.current) return;
 
     try {
-      if (navigator.share && navigator.canShare) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        // Simple share for mobile
+      const referralLink = buildReferralLink(qrCode);
+      
+      // Use Capacitor Share for native apps
+      if (Capacitor.isNativePlatform()) {
+        await Share.share({
+          title: 'My I-SMART Badge ID',
+          text: `Check out my ${selectedTier} member badge! Join me on I-SMART Exchange:`,
+          url: referralLink,
+          dialogTitle: 'Share Badge ID'
+        });
+      } else if (navigator.share && navigator.canShare) {
+        // Web Share API
         await navigator.share({
-          title: 'My i-SMART Badge ID',
+          title: 'My I-SMART Badge ID',
           text: `Check out my ${selectedTier} member badge!`,
-          url: buildReferralLink(qrCode),
+          url: referralLink,
         });
       } else {
         // Fallback: download PNG
         await handleSavePNG();
       }
-    } catch (error) {
-      console.error('Share error:', error);
+    } catch (error: any) {
+      // User cancelled share - don't show error
+      if (error?.message !== 'Share canceled') {
+        console.error('Share error:', error);
+      }
     }
   };
 
