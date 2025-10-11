@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { ChevronLeft, Copy, Download, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { createWallet, WalletInfo } from '@/utils/wallet';
 import { useToast } from '@/hooks/use-toast';
-
+import { copyToClipboard } from '@/utils/clipboard';
 interface CreateWalletScreenProps {
   onWalletCreated: (wallet: WalletInfo) => void;
   onBack: () => void;
@@ -51,20 +51,13 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
     }
   };
 
-  const copyToClipboard = async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied!",
-        description: `${label} copied to clipboard`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to copy to clipboard",
-        variant: "destructive"
-      });
-    }
+  const handleCopy = async (text: string, label: string) => {
+    const success = await copyToClipboard(text);
+    toast({
+      title: success ? "Copied!" : "Error",
+      description: success ? `${label} copied to clipboard` : "Failed to copy to clipboard",
+      variant: success ? "default" : "destructive",
+    });
   };
 
   const downloadBackup = () => {
@@ -244,8 +237,10 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyToClipboard(wallet.address, 'Address')}
+                  onClick={() => handleCopy(wallet.address, 'Address')}
                   className="border-white/30 text-white hover:bg-white/20"
+                  aria-label="Copy wallet address"
+                  data-testid="copy-wallet-address"
                 >
                   <Copy className="w-4 h-4 mr-2" />
                   Copy Address
@@ -268,8 +263,10 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => copyToClipboard(wallet.mnemonic, 'Recovery phrase')}
+                      onClick={() => handleCopy(wallet.mnemonic, 'Recovery phrase')}
                       className="border-orange-400/50 text-orange-300 hover:bg-orange-500/20"
+                      aria-label="Copy recovery phrase"
+                      data-testid="copy-recovery-phrase"
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
