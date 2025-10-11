@@ -8125,6 +8125,16 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
+      get_user_wallets: {
+        Args: { p_user_id: string }
+        Returns: {
+          created_at: string
+          is_primary: boolean
+          last_used_at: string
+          public_key: string
+          wallet_address: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
