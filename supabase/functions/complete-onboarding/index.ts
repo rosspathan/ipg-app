@@ -115,8 +115,8 @@ serve(async (req) => {
     // Verify the code matches
     if (verificationCode !== storedCode) {
       return new Response(
-        JSON.stringify({ error: "Invalid verification code" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, reason: "invalid_code", error: "Invalid verification code" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -162,20 +162,24 @@ serve(async (req) => {
           } else {
             return new Response(
               JSON.stringify({ 
-                error: "User already has a different wallet. Please use your existing wallet to log in.",
+                success: false,
+                reason: "wallet_mismatch",
+                error: "This email is already linked to a different wallet.",
                 hasWallet: true,
                 existingAddress: existingWallet.wallet_address
               }),
-              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           }
         } else {
           return new Response(
             JSON.stringify({ 
+              success: false,
+              reason: "wallet_exists",
               error: "User already has a wallet. Please use wallet login.",
               hasWallet: true
             }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       }

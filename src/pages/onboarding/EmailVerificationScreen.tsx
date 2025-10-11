@@ -140,7 +140,17 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       });
       
       if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Registration failed');
+      if (!data?.success) {
+        if (data?.reason === 'invalid_code') {
+          toast({ title: 'Invalid Code', description: 'Please check the 6-digit code and try again.', variant: 'destructive' });
+          return;
+        }
+        if (data?.reason === 'wallet_mismatch' || data?.reason === 'wallet_exists') {
+          toast({ title: 'Account Already Linked', description: data?.error || 'This email is already linked to a different wallet. Use wallet login or a different email.', variant: 'destructive' });
+          return;
+        }
+        throw new Error(data?.error || 'Registration failed');
+      }
       
       console.info('[VERIFY] User registered:', data.userId, data.username);
       
