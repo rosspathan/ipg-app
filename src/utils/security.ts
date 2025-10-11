@@ -1,4 +1,5 @@
-
+import { Capacitor } from '@capacitor/core';
+import { BiometricAuth, BiometryType } from '@aparajita/capacitor-biometric-auth';
 
 export interface SecuritySetup {
   hasPin: boolean;
@@ -70,12 +71,18 @@ export function getSecuritySetup(): SecuritySetup {
  * Check if biometric authentication is available
  */
 export async function isBiometricAvailable(): Promise<boolean> {
-  // Check if Web Authentication API is available
-  if (!window.PublicKeyCredential) {
-    return false;
-  }
-
   try {
+    // Native platform (iOS/Android)
+    if (Capacitor.isNativePlatform()) {
+      const result = await BiometricAuth.checkBiometry();
+      return result.isAvailable && result.biometryType !== BiometryType.none;
+    }
+
+    // Web: Check if Web Authentication API is available
+    if (!window.PublicKeyCredential) {
+      return false;
+    }
+
     // Check if biometric authenticators are available
     const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
     return available;
@@ -97,7 +104,32 @@ export async function setupBiometric(userId: string): Promise<{ success: boolean
       };
     }
 
-    // Create credential for biometric authentication
+    // Native platform (iOS/Android)
+    if (Capacitor.isNativePlatform()) {
+      // For native, we just verify the biometric is available and works
+      try {
+        await BiometricAuth.authenticate({
+          reason: 'Setup biometric authentication',
+          cancelTitle: 'Cancel',
+          allowDeviceCredential: false,
+          iosFallbackTitle: 'Use PIN',
+          androidTitle: 'Biometric Setup',
+          androidSubtitle: 'Verify your identity to enable biometrics',
+          androidConfirmationRequired: true
+        });
+
+        // If we reach here, authentication succeeded
+        localStorage.setItem('ipg_biometric_enabled', 'true');
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: 'Biometric verification failed.'
+        };
+      }
+    }
+
+    // Web: Create credential for biometric authentication using WebAuthn
     const credential = await navigator.credentials.create({
       publicKey: {
         challenge: new Uint8Array(32),
@@ -147,6 +179,35 @@ export async function setupBiometric(userId: string): Promise<{ success: boolean
  */
 export async function authenticateWithBiometric(): Promise<{ success: boolean; error?: string }> {
   try {
+    // Native platform (iOS/Android)
+    if (Capacitor.isNativePlatform()) {
+      const enabled = localStorage.getItem('ipg_biometric_enabled');
+      if (!enabled) {
+        return {
+          success: false,
+          error: 'Biometric authentication not set up.'
+        };
+      }
+
+      try {
+        await BiometricAuth.authenticate({
+          reason: 'Authenticate to access your wallet',
+          cancelTitle: 'Cancel',
+          allowDeviceCredential: true,
+          iosFallbackTitle: 'Use PIN',
+          androidTitle: 'Biometric Authentication',
+          androidSubtitle: 'Place your finger or look at the camera',
+          androidConfirmationRequired: false
+        });
+
+        // If we reach here, authentication succeeded
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: 'Biometric authentication failed.' };
+      }
+    }
+
+    // Web: Use WebAuthn
     const credentialId = localStorage.getItem('ipg_biometric_id');
     if (!credentialId) {
       return {

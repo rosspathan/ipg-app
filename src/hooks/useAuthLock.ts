@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
+import { Capacitor } from '@capacitor/core';
+import { BiometricAuth, BiometryType } from '@aparajita/capacitor-biometric-auth';
 
 
 interface LockState {
@@ -290,20 +292,24 @@ export const useAuthLock = () => {
 
   // Check if biometrics are available
   const checkBiometricAvailability = useCallback(async (): Promise<boolean> => {
-    // Web: Check for WebAuthn support
-    if (typeof window !== 'undefined' && window.PublicKeyCredential) {
-      try {
+    try {
+      // Native platform (iOS/Android)
+      if (Capacitor.isNativePlatform()) {
+        const result = await BiometricAuth.checkBiometry();
+        return result.isAvailable && result.biometryType !== BiometryType.none;
+      }
+      
+      // Web: Check for WebAuthn support
+      if (typeof window !== 'undefined' && window.PublicKeyCredential) {
         const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
         return available;
-      } catch (error) {
-        console.log('Biometrics not available:', error);
-        return false;
       }
+      
+      return false;
+    } catch (error) {
+      console.log('Biometrics not available:', error);
+      return false;
     }
-    
-    // Mobile: This would integrate with Expo LocalAuthentication
-    // For now, return false for web preview
-    return false;
   }, []);
 
   // Unlock with biometrics
@@ -328,7 +334,44 @@ export const useAuthLock = () => {
         return false;
       }
 
-      // For web preview, simulate biometric auth
+      // Native platform (iOS/Android)
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await BiometricAuth.authenticate({
+            reason: 'Unlock your wallet',
+            cancelTitle: 'Cancel',
+            allowDeviceCredential: true,
+            iosFallbackTitle: 'Use PIN',
+            androidTitle: 'Biometric Authentication',
+            androidSubtitle: 'Place your finger or look at the camera',
+            androidConfirmationRequired: false
+          });
+
+          // If we reach here, authentication succeeded
+          await saveLockState({
+            isUnlocked: true,
+            lastUnlockAt: Date.now(),
+            failedAttempts: 0,
+            lockedUntil: null
+          });
+
+          // Log successful biometric unlock
+          if (user) {
+            await supabase.from('login_audit').insert({
+              user_id: user.id,
+              event: 'bio_success',
+              device_info: { userAgent: navigator.userAgent, platform: 'native' }
+            });
+          }
+
+          return true;
+        } catch (biometricError) {
+          console.error('Native biometric failed:', biometricError);
+          return false;
+        }
+      }
+
+      // Web platform - simulate for preview
       toast({
         title: "Biometric Auth",
         description: "Simulated biometric authentication (web preview)",
@@ -342,22 +385,26 @@ export const useAuthLock = () => {
       });
 
       // Log successful biometric unlock
-      await supabase.from('login_audit').insert({
-        user_id: user.id,
-        event: 'bio_success',
-        device_info: { userAgent: navigator.userAgent }
-      });
+      if (user) {
+        await supabase.from('login_audit').insert({
+          user_id: user.id,
+          event: 'bio_success',
+          device_info: { userAgent: navigator.userAgent, platform: 'web' }
+        });
+      }
 
       return true;
     } catch (error) {
       console.error('Biometric authentication failed:', error);
       
       // Log failed biometric attempt
-      await supabase.from('login_audit').insert({
-        user_id: user.id,
-        event: 'bio_failed',
-        device_info: { userAgent: navigator.userAgent }
-      });
+      if (user) {
+        await supabase.from('login_audit').insert({
+          user_id: user.id,
+          event: 'bio_failed',
+          device_info: { userAgent: navigator.userAgent }
+        });
+      }
 
       toast({
         title: "Biometric Failed",
