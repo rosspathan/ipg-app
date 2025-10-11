@@ -57,7 +57,7 @@ export function AppShell() {
         <AppTopBar />
 
         {/* Main Content - Scrollable */}
-        <main className="flex-1 overflow-y-auto pb-24">
+        <main className="flex-1 overflow-y-auto pb-28">
           <Outlet />
         </main>
 
