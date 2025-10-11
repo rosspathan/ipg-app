@@ -65,4 +65,5 @@ export function AppShell() {
         <div id="dock-portal" />
       </div>
     </div>
+  )
 }
