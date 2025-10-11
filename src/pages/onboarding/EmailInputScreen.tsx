@@ -81,7 +81,7 @@ const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
         description: "Check your inbox for the verification code",
       });
 
-      onEmailSubmitted(email.trim());
+      onEmailSubmitted(email.trim().toLowerCase());
     } catch (error) {
       console.error('Error sending verification email:', error);
       toast({
