@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.ismart.exchange',
-  appName: 'I-SMART Exchange',
+  appName: 'I-SMART',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
