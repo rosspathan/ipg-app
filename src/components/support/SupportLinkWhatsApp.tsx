@@ -1,7 +1,9 @@
 import { FC, MouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { openWhatsAppLink, WaSupportConfig, DEFAULT_WA_CONFIG } from '@/lib/support/wa';
 import { IconButton } from '@/components/ui/icon-button';
 import IconWhatsApp from '@/components/icons/IconWhatsApp';
+import { cn } from '@/lib/utils';
 
 interface SupportLinkWhatsAppProps {
   /** Visual variant - inline (transparent) or fab (filled) */
@@ -64,7 +66,12 @@ export const SupportLinkWhatsApp: FC<SupportLinkWhatsAppProps> = ({
   const finalText = text || DEFAULT_WA_CONFIG.default_message;
   const waLink = `https://wa.me/${finalPhone.replace(/\D/g, '')}?text=${encodeURIComponent(finalText)}`;
 
-  return (
+  const computedClass = cn(
+    variant === 'fab' ? 'fixed bottom-24 right-5 z-[60]' : undefined,
+    className
+  );
+
+  const buttonEl = (
     <IconButton
       as="a"
       variant={variant}
@@ -72,10 +79,17 @@ export const SupportLinkWhatsApp: FC<SupportLinkWhatsAppProps> = ({
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Support on WhatsApp"
-      className={className}
+      className={computedClass}
       onClick={handleClick}
     >
       <IconWhatsApp className={variant === 'inline' ? 'w-6 h-6' : 'w-7 h-7'} />
     </IconButton>
   );
+
+  if (variant === 'fab') {
+    const portalRoot = typeof document !== 'undefined' ? document.getElementById('dock-portal') : null;
+    return portalRoot ? createPortal(buttonEl, portalRoot) : buttonEl;
+  }
+
+  return buttonEl;
 };
