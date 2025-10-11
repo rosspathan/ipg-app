@@ -9,6 +9,13 @@ const config: CapacitorConfig = {
     hostname: 'i-smartapp.com',
     cleartext: true
   },
+  ios: {
+    contentInset: 'automatic',
+    scrollEnabled: true,
+  },
+  android: {
+    allowMixedContent: true,
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
@@ -26,8 +33,14 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'dark',
-      backgroundColor: '#0f172a'
-    }
+      backgroundColor: '#0f172a',
+      overlaysWebView: false,
+    },
+    Keyboard: {
+      resize: 'body',
+      style: 'dark',
+      resizeOnFullScreen: true,
+    },
   },
 };
 

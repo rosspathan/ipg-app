@@ -49,9 +49,20 @@ export function BottomNavBar() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50">
-      <div className="bottom-bar-blur border-t border-border/30 bottom-safe">
-        <div className="flex items-center justify-around py-2 px-4">
+    <nav 
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50"
+      style={{
+        paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)',
+      }}
+    >
+      <div className="bottom-bar-blur border-t border-border/30">
+        <div 
+          className="flex items-center justify-around py-2 px-4"
+          style={{
+            paddingLeft: 'max(env(safe-area-inset-left), 1rem)',
+            paddingRight: 'max(env(safe-area-inset-right), 1rem)',
+          }}
+        >
           {navItems.map((item) => {
             const Icon = item.icon
             const active = isActive(item.route)
