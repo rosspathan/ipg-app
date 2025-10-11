@@ -7,6 +7,7 @@ import { ArrowLeft, Copy, Users, Trophy, TrendingUp, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useTeamReferrals } from '@/hooks/useTeamReferrals';
+import { useReferrals } from '@/hooks/useReferrals';
 import { useToast } from '@/hooks/use-toast';
 import { copyToClipboard } from "@/utils/clipboard";
 
@@ -22,7 +23,8 @@ const TeamReferralsUserScreen = () => {
     loading 
   } = useTeamReferrals();
 
-  const referralLink = user ? `https://i-smartapp.com/auth/register?ref=${user.id}` : '';
+  const { getReferralUrl } = useReferrals();
+  const referralLink = getReferralUrl();
 
   const handleCopyLink = async () => {
     const success = await copyToClipboard(referralLink);

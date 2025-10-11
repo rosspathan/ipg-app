@@ -13,6 +13,7 @@ import { copyToClipboard } from "@/utils/clipboard";
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useReferralProgram } from '@/hooks/useReferralProgram';
 import { useTeamReferrals } from '@/hooks/useTeamReferrals';
+import { useReferrals } from '@/hooks/useReferrals';
 import { supabase } from '@/integrations/supabase/client';
 
 const ReferralsScreen = () => {
@@ -40,7 +41,8 @@ const ReferralsScreen = () => {
     loading: teamLoading
   } = useTeamReferrals();
 
-  const referralLink = user ? `https://i-smartapp.com/auth/register?ref=${user.id}` : "";
+  const { getReferralUrl, loading: referralLinkLoading } = useReferrals();
+  const referralLink = getReferralUrl();
   
   const [currentBadge, setCurrentBadge] = useState<string>('None');
   
@@ -81,7 +83,7 @@ const ReferralsScreen = () => {
     }
   };
 
-  const loading = referralLoading || teamLoading;
+  const loading = referralLoading || teamLoading || referralLinkLoading;
   
   if (loading) {
     console.log('ReferralsScreen loading state:', { loading, userPresent: !!user });
