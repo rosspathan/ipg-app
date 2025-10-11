@@ -22,7 +22,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useTeamReferrals } from "@/hooks/useTeamReferrals";
-import { extractUsernameFromEmail } from "@/lib/user/username";
+import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
+import { useDisplayName } from "@/hooks/useDisplayName";
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 
@@ -31,6 +32,10 @@ export default function ReferralsPage() {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const { badgeThresholds } = useTeamReferrals();
+  
+  // Ensure username is saved to profiles table
+  useUsernameBackfill();
+  const displayName = useDisplayName();
 
   // Fetch referral data
   const { data: referralData } = useQuery({
@@ -83,7 +88,7 @@ export default function ReferralsPage() {
       if (!user?.id) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("referral_code")
+        .select("referral_code, username")
         .eq("user_id", user.id)
         .maybeSingle();
       return data;
@@ -91,35 +96,10 @@ export default function ReferralsPage() {
     enabled: !!user?.id,
   });
 
-  // Derive a referral code even without Supabase auth
-  let localFallbackCode = '';
-  try {
-    const verifyEmail = typeof window !== 'undefined' ? sessionStorage.getItem('verificationEmail') : null;
-    let onboardingEmail: string | undefined;
-    if (typeof window !== 'undefined') {
-      const raw = localStorage.getItem('ipg_onboarding_state');
-      if (raw) {
-        onboardingEmail = (JSON.parse(raw)?.email as string | undefined) || undefined;
-      }
-    }
-    const email = verifyEmail || onboardingEmail || null;
-    const username = extractUsernameFromEmail(email, undefined);
-    if (username && username.toLowerCase() !== 'user') {
-      localFallbackCode = username.toUpperCase();
-    }
-  } catch {}
-
-  if (!localFallbackCode && typeof window !== 'undefined') {
-    let deviceId = localStorage.getItem('ipg_device_id');
-    if (!deviceId) {
-      deviceId = `dev${Math.random().toString(36).slice(2, 10)}`;
-      localStorage.setItem('ipg_device_id', deviceId);
-    }
-    localFallbackCode = deviceId.slice(-8).toUpperCase();
-  }
-
-  const code = profileData?.referral_code || user?.id || localFallbackCode;
-  // Always use production domain for mobile apps
+  // Use the stored referral code or generate one based on username
+  const code = profileData?.referral_code || profileData?.username || user?.id;
+  
+  // Always use production domain for referral links
   const baseHost = 'https://i-smartapp.com';
   const referralLink = code ? `${baseHost}/r/${code}` : "";
 
