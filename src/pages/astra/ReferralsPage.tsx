@@ -26,6 +26,7 @@ import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
 import { useDisplayName } from "@/hooks/useDisplayName";
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
+import { useReferrals } from "@/hooks/useReferrals";
 
 export default function ReferralsPage() {
   const { user } = useAuthUser();
@@ -81,7 +82,7 @@ export default function ReferralsPage() {
     enabled: !!user?.id,
   });
 
-  // Fetch user's referral code from profile
+  // Fetch user's referral code from profile (optional for stats)
   const { data: profileData } = useQuery({
     queryKey: ["profile-referral-code", user?.id],
     queryFn: async () => {
@@ -96,20 +97,15 @@ export default function ReferralsPage() {
     enabled: !!user?.id,
   });
 
-  // Use the stored referral code or generate one based on username
-  const codeRaw = profileData?.referral_code ?? profileData?.username ?? '';
-  const fallbackCode = user?.id || '';
-  const code = (codeRaw && codeRaw.trim()) || fallbackCode;
-  
-  // Always use production domain for referral links
-  const baseHost = 'https://i-smartapp.com';
-  const referralLink = code ? `${baseHost}/r/${encodeURIComponent(code)}` : "";
+  // Unified referral link (works even when logged out)
+  const { referralCode, getReferralUrl, loading: refLoading, shareReferral } = useReferrals();
+  const url = getReferralUrl() || (referralCode ? `https://i-smartapp.com/r/${encodeURIComponent(referralCode.code)}` : "");
 
   const handleCopyLink = async () => {
-    if (!referralLink) return;
+    if (!url) return;
 
     try {
-      await navigator.clipboard.writeText(referralLink);
+      await navigator.clipboard.writeText(url);
       setCopied(true);
       toast.success("Referral link copied!");
       setTimeout(() => setCopied(false), 2000);
@@ -119,7 +115,7 @@ export default function ReferralsPage() {
   };
 
   const handleShare = async () => {
-    if (!referralLink) return;
+    if (!url) return;
 
     try {
       // Use Capacitor Share for native apps
@@ -127,7 +123,7 @@ export default function ReferralsPage() {
         await Share.share({
           title: 'Join me on I-SMART Exchange',
           text: 'Start trading crypto and earning rewards with I-SMART Exchange! Use my referral link:',
-          url: referralLink,
+          url,
           dialogTitle: 'Share Referral Link'
         });
         toast.success("Shared successfully!");
@@ -136,7 +132,7 @@ export default function ReferralsPage() {
         await navigator.share({
           title: "Join me on I-SMART Exchange",
           text: "Start trading crypto with I-SMART Exchange!",
-          url: referralLink,
+          url,
         });
       } else {
         // Final fallback: copy to clipboard
@@ -258,7 +254,7 @@ export default function ReferralsPage() {
           <CardContent className="space-y-3">
             <div className="p-3 bg-muted/50 rounded-lg border border-border">
               <p className="text-sm text-foreground font-mono break-all" data-testid="referral-link">
-                {referralLink || 'Complete onboarding to generate your personal referral link'}
+                {url || 'Complete onboarding to generate your personal referral link'}
               </p>
             </div>
 
@@ -267,7 +263,7 @@ export default function ReferralsPage() {
                 onClick={handleCopyLink}
                 className="flex-1 gap-2"
                 variant={copied ? "default" : "outline"}
-                disabled={!referralLink}
+                disabled={!url}
               >
                 {copied ? (
                   <>
@@ -281,7 +277,7 @@ export default function ReferralsPage() {
                   </>
                 )}
               </Button>
-              <Button onClick={handleShare} className="flex-1 gap-2 bg-primary" disabled={!referralLink}>
+              <Button onClick={handleShare} className="flex-1 gap-2 bg-primary" disabled={!url}>
                 <Share2 className="w-4 h-4" />
                 Share
               </Button>
