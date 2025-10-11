@@ -61,8 +61,8 @@ export function AppShell() {
           <Outlet />
         </main>
 
-        {/* Bottom Navigation handled by each page via DockNav */}
+        {/* Portal target for DockNav to ensure true fixed positioning */}
+        <div id="dock-portal" />
       </div>
     </div>
-  )
 }
