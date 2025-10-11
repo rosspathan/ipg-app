@@ -79,7 +79,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
         }
       });
 
-      if (error || !data?.user) {
+      if (error || !data?.success) {
         // Fallback: check locally stored onboarding data (same-device import)
         try {
           const saved = localStorage.getItem('ipg_onboarding_state');
