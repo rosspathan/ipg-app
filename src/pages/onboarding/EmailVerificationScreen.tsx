@@ -106,8 +106,8 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         const { value: mnemonic } = await Preferences.get({ key: 'pending_wallet_mnemonic' });
         
         if (address && mnemonic) {
-          importedWallet = { address, mnemonic };
-          console.log('[VERIFY] Found imported wallet (mobile):', address);
+          importedWallet = { address: address.trim().toLowerCase(), mnemonic: mnemonic.trim() };
+          console.log('[VERIFY] Found imported wallet (mobile):', address.trim().toLowerCase());
         }
       } else {
         // Web: Check localStorage
@@ -117,10 +117,10 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
             const parsed = JSON.parse(pendingWallet);
             if (parsed.address && parsed.mnemonic) {
               importedWallet = { 
-                address: parsed.address, 
-                mnemonic: parsed.mnemonic 
+                address: String(parsed.address).trim().toLowerCase(), 
+                mnemonic: String(parsed.mnemonic).trim() 
               };
-              console.log('[VERIFY] Found imported wallet (web):', parsed.address);
+              console.log('[VERIFY] Found imported wallet (web):', String(parsed.address).trim().toLowerCase());
             }
           } catch (e) {
             console.warn('[VERIFY] Failed to parse pending wallet:', e);

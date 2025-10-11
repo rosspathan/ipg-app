@@ -152,12 +152,15 @@ serve(async (req) => {
         .maybeSingle();
       
       if (existingWallet) {
-        // If importing a wallet, check if it matches the existing one
+        // If importing a wallet, check if it matches the existing one (normalize both sides)
         if (importedWallet?.address) {
-          if (existingWallet.wallet_address.toLowerCase() === importedWallet.address.toLowerCase()) {
+          const existingAddr = (existingWallet.wallet_address || '').trim().toLowerCase();
+          const importedAddr = (importedWallet.address || '').trim().toLowerCase();
+          console.log('[complete-onboarding] Comparing addresses', { existingAddr, importedAddr });
+          if (existingAddr === importedAddr) {
             console.log('[complete-onboarding] Imported wallet matches existing wallet - allowing re-verification');
             // Allow re-verification with same wallet - skip wallet creation later
-            mnemonic = importedWallet.mnemonic;
+            mnemonic = importedWallet.mnemonic?.trim();
             walletData = generateWalletFromMnemonic(mnemonic);
           } else {
             return new Response(
@@ -166,7 +169,8 @@ serve(async (req) => {
                 reason: "wallet_mismatch",
                 error: "This email is already linked to a different wallet.",
                 hasWallet: true,
-                existingAddress: existingWallet.wallet_address
+                existingAddress: existingWallet.wallet_address,
+                providedAddress: importedWallet.address
               }),
               { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
@@ -187,11 +191,14 @@ serve(async (req) => {
       // Use IMPORTED wallet if provided, otherwise generate NEW wallet
       if (importedWallet?.mnemonic && importedWallet?.address) {
         console.log('[complete-onboarding] Using imported wallet:', importedWallet.address);
-        mnemonic = importedWallet.mnemonic;
+        mnemonic = importedWallet.mnemonic?.trim();
         walletData = generateWalletFromMnemonic(mnemonic);
         
-        // Verify the derived address matches the imported address
-        if (walletData.address.toLowerCase() !== importedWallet.address.toLowerCase()) {
+        // Verify the derived address matches the imported address (normalized)
+        const derived = (walletData.address || '').trim().toLowerCase();
+        const provided = (importedWallet.address || '').trim().toLowerCase();
+        console.log('[complete-onboarding] Derived vs provided', { derived, provided });
+        if (derived !== provided) {
           throw new Error('Imported wallet address mismatch');
         }
       } else {
@@ -224,11 +231,14 @@ serve(async (req) => {
     if (!mnemonic) {
       if (importedWallet?.mnemonic && importedWallet?.address) {
         console.log('[complete-onboarding] Using imported wallet for existing user:', importedWallet.address);
-        mnemonic = importedWallet.mnemonic;
+        mnemonic = importedWallet.mnemonic?.trim();
         walletData = generateWalletFromMnemonic(mnemonic);
         
-        // Verify the derived address matches
-        if (walletData.address.toLowerCase() !== importedWallet.address.toLowerCase()) {
+        // Verify the derived address matches (normalized)
+        const derived = (walletData.address || '').trim().toLowerCase();
+        const provided = (importedWallet.address || '').trim().toLowerCase();
+        console.log('[complete-onboarding] Derived vs provided (existing user)', { derived, provided });
+        if (derived !== provided) {
           throw new Error('Imported wallet address mismatch for existing user');
         }
       } else {
