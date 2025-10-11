@@ -152,13 +152,32 @@ serve(async (req) => {
         .maybeSingle();
       
       if (existingWallet) {
-        return new Response(
-          JSON.stringify({ 
-            error: "User already has a wallet. Please use wallet login.",
-            hasWallet: true
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // If importing a wallet, check if it matches the existing one
+        if (importedWallet?.address) {
+          if (existingWallet.wallet_address.toLowerCase() === importedWallet.address.toLowerCase()) {
+            console.log('[complete-onboarding] Imported wallet matches existing wallet - allowing re-verification');
+            // Allow re-verification with same wallet - skip wallet creation later
+            mnemonic = importedWallet.mnemonic;
+            walletData = generateWalletFromMnemonic(mnemonic);
+          } else {
+            return new Response(
+              JSON.stringify({ 
+                error: "User already has a different wallet. Please use your existing wallet to log in.",
+                hasWallet: true,
+                existingAddress: existingWallet.wallet_address
+              }),
+              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        } else {
+          return new Response(
+            JSON.stringify({ 
+              error: "User already has a wallet. Please use wallet login.",
+              hasWallet: true
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
     } else {
       // Use IMPORTED wallet if provided, otherwise generate NEW wallet
@@ -218,20 +237,30 @@ serve(async (req) => {
     // Encrypt mnemonic with user's email
     const { encrypted, salt } = await encryptMnemonic(mnemonic, email);
 
-    // Store encrypted wallet in database
-    const { error: walletError } = await supabaseAdmin
+    // Store encrypted wallet in database (skip if wallet already exists for this user)
+    const { data: existingWalletCheck } = await supabaseAdmin
       .from('user_wallets')
-      .insert({
-        user_id: userId,
-        wallet_address: walletData.address,
-        encrypted_mnemonic: encrypted,
-        encryption_salt: salt,
-        public_key: walletData.publicKey,
-      });
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (walletError) {
-      console.error('Wallet creation error:', walletError);
-      throw new Error(`Failed to store wallet: ${walletError.message}`);
+    if (!existingWalletCheck) {
+      const { error: walletError } = await supabaseAdmin
+        .from('user_wallets')
+        .insert({
+          user_id: userId,
+          wallet_address: walletData.address,
+          encrypted_mnemonic: encrypted,
+          encryption_salt: salt,
+          public_key: walletData.publicKey,
+        });
+
+      if (walletError) {
+        console.error('Wallet creation error:', walletError);
+        throw new Error(`Failed to store wallet: ${walletError.message}`);
+      }
+    } else {
+      console.log('[complete-onboarding] Wallet already exists, skipping creation');
     }
 
     // Extract username from email
