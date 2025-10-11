@@ -190,7 +190,6 @@ function getOnboardingEmailTemplate(userName: string, verificationCode: string):
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://ocblgldglqhlrmtnynmu.supabase.co/storage/v1/object/public/storage-assets/ipg-logo-email.png" alt="IPG I-SMART EXCHANGE" class="logo" onerror="this.style.display='none'" />
             <h1>IPG I-SMART EXCHANGE</h1>
             <p>Welcome to the Future of Trading</p>
           </div>
@@ -245,7 +244,6 @@ function getRegularEmailTemplate(confirmationUrl: string): string {
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <img src="https://ocblgldglqhlrmtnynmu.supabase.co/storage/v1/object/public/storage-assets/ipg-logo-email.png" alt="IPG I-SMART EXCHANGE" style="width: 120px; height: 120px; object-fit: contain; margin-bottom: 16px;" onerror="this.style.display='none'" />
         <h1 style="margin: 0; font-size: 28px;">Welcome to IPG I-SMART EXCHANGE</h1>
         <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Your Digital Wallet & Trading Platform</p>
       </div>
