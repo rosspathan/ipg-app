@@ -141,7 +141,7 @@ export function ReferralsPage() {
           <div className="space-y-3">
             <div className="flex gap-2">
               <Input
-                data-testid="ref-link"
+                data-testid="ref-share-link"
                 value={url}
                 readOnly
                 className="font-mono text-sm bg-muted"
@@ -173,6 +173,45 @@ export function ReferralsPage() {
                 WhatsApp
               </Button>
             </div>
+          </div>
+        </Card>
+
+        {/* Android Intent Link */}
+        <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
+          <h3 className="font-heading text-base font-bold text-foreground mb-4">
+            Android APK Deep Link
+          </h3>
+
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Share this link to open the app directly on Android devices
+            </p>
+            
+            <div className="flex gap-2">
+              <Input
+                data-testid="ref-share-intent"
+                value={`intent://r/${referralCode?.code || ''}#Intent;scheme=https;package=com.ismart.exchange;S.browser_fallback_url=https%3A%2F%2Fi-smartapp.com%2Fdownload%3Fref%3D${referralCode?.code || ''};end`}
+                readOnly
+                className="font-mono text-xs bg-muted"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={async () => {
+                  const intentUrl = `intent://r/${referralCode?.code || ''}#Intent;scheme=https;package=com.ismart.exchange;S.browser_fallback_url=https%3A%2F%2Fi-smartapp.com%2Fdownload%3Fref%3D${referralCode?.code || ''};end`;
+                  const success = await copyToClipboard(intentUrl);
+                  if (success) {
+                    toast({ title: "Copied", description: "Android intent link copied" });
+                  }
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              This link will open the app if installed, or redirect to download page
+            </p>
           </div>
         </Card>
 

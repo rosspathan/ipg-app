@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Public referral link resolver
@@ -8,16 +9,20 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export function ReferralResolver() {
   const { code } = useParams<{ code: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [resolving, setResolving] = useState(true);
 
   useEffect(() => {
     let mounted = true;
 
     const resolveReferral = async () => {
-      console.log('🔗 Resolving referral sponsorID:', code);
+      // Check for ref code in URL params or path params
+      const refCode = code || searchParams.get('ref');
+      console.log('🔗 Resolving referral sponsorID:', refCode);
       
-      if (!code) {
+      if (!refCode) {
         console.warn('No sponsorID provided, redirecting to onboarding');
         if (mounted) navigate('/onboarding', { replace: true });
         return;
@@ -25,7 +30,7 @@ export function ReferralResolver() {
 
       try {
         // Code is now the sponsor's user_id directly
-        const sponsorId = code;
+        const sponsorId = refCode;
         
         console.log('Using sponsorID directly:', sponsorId);
         
@@ -40,29 +45,38 @@ export function ReferralResolver() {
           console.error('Database error validating sponsor:', error);
         }
 
-        // Store pending referral with sponsor ID
+        // Store in sessionStorage for Module C requirement
+        sessionStorage.setItem('ipg_ref_code', sponsorId);
+        
+        // Also store in localStorage for backward compatibility
         const pendingRef = {
           code: sponsorId,
           sponsorId: sponsorId,
           timestamp: Date.now()
         };
-        
         localStorage.setItem('ismart_pending_ref', JSON.stringify(pendingRef));
         
         if (profileData) {
           console.log('✅ Valid sponsor found:', sponsorId);
+          console.log('REF_CAPTURE_OK'); // Module C console marker
         } else {
           console.warn('⚠️ Sponsor not found, but storing referral anyway');
         }
 
+        // Show toast notification
+        toast({
+          title: "Referral applied",
+          description: "You'll earn rewards when you complete registration",
+        });
+
         // Always redirect to onboarding with sponsor ID
         if (mounted) {
           console.log('Redirecting to onboarding with sponsorID');
-          navigate(`/onboarding?ref=${sponsorId}`, { replace: true });
+          navigate('/onboarding', { replace: true });
         }
       } catch (error) {
         console.error('Error resolving referral:', error);
-        if (mounted) navigate(`/onboarding?ref=${code}`, { replace: true });
+        if (mounted) navigate('/onboarding', { replace: true });
       }
     };
 
@@ -71,7 +85,7 @@ export function ReferralResolver() {
     return () => {
       mounted = false;
     };
-  }, [code, navigate]);
+  }, [code, searchParams, navigate, toast]);
 
   if (!resolving) {
     return null;

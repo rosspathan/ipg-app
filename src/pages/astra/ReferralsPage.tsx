@@ -259,7 +259,7 @@ export default function ReferralsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="p-3 bg-muted/50 rounded-lg border border-border">
-              <p className="text-sm text-foreground font-mono break-all" data-testid="referral-link">
+              <p className="text-sm text-foreground font-mono break-all" data-testid="ref-share-link">
                 {url || 'Complete onboarding to generate your personal referral link'}
               </p>
             </div>
@@ -288,6 +288,36 @@ export default function ReferralsPage() {
                 Share
               </Button>
             </div>
+
+            {/* Android Intent Link */}
+            {referralCode && (
+              <div className="pt-3 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-2">Android APK Deep Link</p>
+                <div className="p-2 bg-muted/30 rounded-lg">
+                  <p className="text-xs font-mono text-foreground break-all line-clamp-2" data-testid="ref-share-intent">
+                    intent://r/{referralCode.code}#Intent;scheme=https;package=com.ismart.exchange;S.browser_fallback_url=https%3A%2F%2Fi-smartapp.com%2Fdownload%3Fref%3D{referralCode.code};end
+                  </p>
+                </div>
+                <Button
+                  onClick={async () => {
+                    const intentUrl = `intent://r/${referralCode.code}#Intent;scheme=https;package=com.ismart.exchange;S.browser_fallback_url=https%3A%2F%2Fi-smartapp.com%2Fdownload%3Fref%3D${referralCode.code};end`;
+                    try {
+                      await navigator.clipboard.writeText(intentUrl);
+                      toast.success("Android intent link copied!");
+                    } catch (error) {
+                      toast.error("Failed to copy link");
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2"
+                  disabled={!referralCode}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Intent Link
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
