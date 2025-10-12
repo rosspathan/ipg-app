@@ -56,6 +56,10 @@ import AuthUnified from "./pages/AuthUnified";
 import AuthEmailVerification from "./pages/AuthEmailVerification";
 import AuthCallback from "./pages/AuthCallback";
 import AppLockScreen from "./pages/AppLockScreen";
+import SetupPinScreen from "./pages/lock/SetupPinScreen";
+import BiometricEnrollScreen from "./pages/lock/BiometricEnrollScreen";
+import LockScreen from "./pages/lock/LockScreen";
+import { AppLockGuard } from "@/components/AppLockGuard";
 import WalletLoginScreen from "./pages/WalletLoginScreen";
 
 // Onboarding Pages
@@ -237,6 +241,11 @@ function App() {
               } />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/lock" element={<AppLockScreen />} />
+              
+              {/* Lock Flow - Module B */}
+              <Route path="/lock/setup-pin" element={<SetupPinScreen />} />
+              <Route path="/lock/biometric-enroll" element={<BiometricEnrollScreen />} />
+              <Route path="/lock" element={<LockScreen />} />
 
               {/* Legacy User App removed */}
               <Route path="/app-legacy/*" element={<RemovedPage home="/app/home" removed="Legacy user routes have been removed." />} />
@@ -245,9 +254,11 @@ function App() {
               <Route path="/app/*" element={
                 <AuthProviderUser>
                   <UserRoute>
-                    <UnlockGate>
-                      <AstraLayout />
-                    </UnlockGate>
+                    <AppLockGuard>
+                      <UnlockGate>
+                        <AstraLayout />
+                      </UnlockGate>
+                    </AppLockGuard>
                   </UserRoute>
                 </AuthProviderUser>
               }>
