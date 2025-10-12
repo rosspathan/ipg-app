@@ -41,6 +41,7 @@ import AdminCryptoConversionsScreen from "./pages/AdminCryptoConversionsScreen";
 import AdminAnnouncementsScreen from "./pages/AdminAnnouncementsScreen";
 import BSKTransferScreen from "./pages/BSKTransferScreen";
 import AdminKYCReview from "./pages/AdminKYCReview";
+const AdminKYCSettings = React.lazy(() => import("./pages/AdminKYCSettings"));
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -367,6 +368,7 @@ function App() {
                 <Route path="reports" element={<AdminReportsNova />} />
                 <Route path="settings" element={<AdminSettingsNova />} />
                 <Route path="kyc-review" element={<AdminKYCReview />} />
+                <Route path="kyc/settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminKYCSettings /></React.Suspense>} />
                 <Route path="database-reset" element={<React.Suspense fallback={<div>Loading...</div>}><AdminDatabaseReset /></React.Suspense>} />
                 <Route path="mobile-linking" element={<React.Suspense fallback={<div>Loading...</div>}><AdminMobileLinking /></React.Suspense>} />
               </Route>
