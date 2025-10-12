@@ -346,6 +346,33 @@ export function KYCPage() {
                   )}
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="country" className="flex items-center gap-1">
+                    Country of Residence
+                    <span className="text-danger">*</span>
+                  </Label>
+                  <Select
+                    value={formData.country || ''}
+                    onValueChange={(val) => handleFormChange('country', val)}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select country of residence" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IN">India</SelectItem>
+                      <SelectItem value="US">United States</SelectItem>
+                      <SelectItem value="GB">United Kingdom</SelectItem>
+                      <SelectItem value="CA">Canada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {validationErrors.country && (
+                    <p className="text-xs text-danger animate-in slide-in-from-top-1">
+                      {validationErrors.country}
+                    </p>
+                  )}
+                </div>
+
                 <ValidatedInput
                   id="phone"
                   label="Phone Number"

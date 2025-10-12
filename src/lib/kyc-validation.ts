@@ -116,6 +116,7 @@ export function validateKYCLevel(
       { key: 'legal_name', label: 'Legal Name' },
       { key: 'dob', label: 'Date of Birth' },
       { key: 'nationality', label: 'Nationality' },
+      { key: 'country', label: 'Country' },
       { key: 'phone', label: 'Phone Number' },
       { key: 'city', label: 'City' },
       { key: 'postal_code', label: 'Postal Code' },
@@ -138,9 +139,10 @@ export function validateKYCLevel(
       if (phoneError) errors.push({ field: 'phone', message: phoneError });
     }
     
-    // Postal code validation
-    if (formData.postal_code && formData.nationality) {
-      const postalError = validatePostalCode(formData.postal_code, formData.nationality, rules);
+    // Postal code validation - use country of residence when available, fallback to nationality
+    const countryForPostal = formData.country || formData.nationality;
+    if (formData.postal_code && countryForPostal) {
+      const postalError = validatePostalCode(formData.postal_code, countryForPostal, rules);
       if (postalError) errors.push({ field: 'postal_code', message: postalError });
     }
   } else if (level === 'L1') {
