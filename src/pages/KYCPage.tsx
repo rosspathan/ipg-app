@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Upload, CheckCircle, XCircle, Clock, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useKYCNew } from "@/hooks/useKYCNew";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ const KYC_LEVELS = [
 export function KYCPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const { profiles, config, uploadDocument, updateKYCLevel, submitKYCLevel, loading, uploading } = useKYCNew();
   const [activeLevel, setActiveLevel] = useState<'L0' | 'L1' | 'L2'>('L0');
   const [formData, setFormData] = useState<Record<string, any>>({});
@@ -234,31 +236,44 @@ export function KYCPage() {
                 
                 <div>
                   <Label htmlFor="dob">Date of Birth *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        disabled={isReadOnly}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.dob && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.dob ? format(new Date(formData.dob), "PPP") : <span>mm/dd/yyyy</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.dob ? new Date(formData.dob) : undefined}
-                        onSelect={(date) => setFormData(prev => ({ ...prev, dob: date ? format(date, "yyyy-MM-dd") : '' }))}
-                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  {isMobile ? (
+                    <Input
+                      id="dob"
+                      type="date"
+                      value={formData.dob || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
+                      disabled={isReadOnly}
+                      max={format(new Date(), "yyyy-MM-dd")}
+                      min="1900-01-01"
+                      className="w-full"
+                    />
+                  ) : (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          disabled={isReadOnly}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !formData.dob && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.dob ? format(new Date(formData.dob), "PPP") : <span>mm/dd/yyyy</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formData.dob ? new Date(formData.dob) : undefined}
+                          onSelect={(date) => setFormData(prev => ({ ...prev, dob: date ? format(date, "yyyy-MM-dd") : '' }))}
+                          disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
                 </div>
 
                 <div>
