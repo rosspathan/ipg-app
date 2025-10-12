@@ -25,6 +25,9 @@ export default function LockScreen() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [biometricAvailable] = useState(hasBiometricEnrolled());
 
+  // Dev ribbon flag
+  const showDevRibbon = true;
+
   // Auto-try biometrics on mount
   useEffect(() => {
     if (biometricAvailable) {

@@ -20,6 +20,7 @@ export default function BiometricEnrollScreen() {
   const [checking, setChecking] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [error, setError] = useState('');
+  const showDevRibbon = true;
 
   useEffect(() => {
     checkBiometricSupport();
@@ -120,9 +121,12 @@ export default function BiometricEnrollScreen() {
 
   return (
     <div className="screen min-h-screen flex items-center justify-center bg-background px-6">
-      <div className="fixed top-4 left-4 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-mono">
-        APP-LOCK v1
-      </div>
+      {/* Dev Ribbon */}
+      {showDevRibbon && (
+        <div className="fixed top-4 left-4 px-3 py-1 bg-warning/20 border border-warning/40 rounded-lg text-xs font-mono text-warning-foreground">
+          APP-LOCK v1
+        </div>
+      )}
 
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">

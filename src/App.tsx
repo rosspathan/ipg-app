@@ -31,6 +31,8 @@ import AdminSettingsNova from "./pages/admin/AdminSettingsNova";
 // CMS Program Registry
 const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNova"));
 const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
+const AdminProgramsControl = React.lazy(() => import("./pages/admin/AdminProgramsControl"));
+const AdminSystemHealth = React.lazy(() => import("./pages/admin/AdminSystemHealth"));
 const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
 const AdminMobileLinking = React.lazy(() => import("./pages/admin/AdminMobileLinking"));
 import AdminBSKManagementNova from "./pages/admin/AdminBSKManagementNova";
@@ -350,6 +352,7 @@ function App() {
                 {/* Programs */}
                 <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />
                 <Route path="programs/editor" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
+                <Route path="programs/control" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsControl /></React.Suspense>} />
                 
                 {/* Gamification & Programs */}
                 <Route path="spin" element={<AdminSpinNova />} />
@@ -367,6 +370,7 @@ function App() {
                 <Route path="ads" element={<AdminAdsScreen />} />
                 <Route path="reports" element={<AdminReportsNova />} />
                 <Route path="settings" element={<AdminSettingsNova />} />
+                <Route path="system/health" element={<React.Suspense fallback={<div>Loading...</div>}><AdminSystemHealth /></React.Suspense>} />
                 <Route path="kyc-review" element={<AdminKYCReview />} />
                 <Route path="kyc/settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminKYCSettings /></React.Suspense>} />
                 <Route path="database-reset" element={<React.Suspense fallback={<div>Loading...</div>}><AdminDatabaseReset /></React.Suspense>} />
