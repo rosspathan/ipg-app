@@ -33,6 +33,7 @@ export default function AdminKYCReview() {
   const [loading, setLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState<KYCNotification | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
+  const [requestedItems, setRequestedItems] = useState<string>("");
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
@@ -89,19 +90,31 @@ export default function AdminKYCReview() {
     }
   };
 
-  const handleReview = async (action: 'approve' | 'reject') => {
+  const handleReview = async (action: 'approve' | 'reject' | 'needs_info') => {
     if (!selectedNotification) return;
 
     try {
       setProcessing(true);
       
+      // Prepare rejection reason with requested items
+      let rejectionData = null;
+      if (action === 'needs_info') {
+        const items = requestedItems.split('\n').filter(item => item.trim());
+        rejectionData = JSON.stringify({
+          message: reviewNotes,
+          requested_items: items
+        });
+      } else if (action === 'reject') {
+        rejectionData = reviewNotes;
+      }
+
       // Update KYC profile status
       const { error: profileError } = await supabase
         .from('kyc_profiles_new')
         .update({
           status: action === 'approve' ? 'approved' : 'rejected',
-          rejection_reason: action === 'reject' ? reviewNotes : null,
-          reviewed_at: new Date().toISOString()
+          rejection_reason: rejectionData,
+          reviewed_at: action === 'approve' ? new Date().toISOString() : null
         })
         .eq('id', selectedNotification.kyc_profile_id);
 
@@ -119,13 +132,15 @@ export default function AdminKYCReview() {
 
       if (notifError) throw notifError;
 
+      const actionText = action === 'approve' ? 'approved' : action === 'needs_info' ? 'marked as needs info' : 'rejected';
       toast({
         title: "Success",
-        description: `KYC ${action === 'approve' ? 'approved' : 'rejected'} successfully`
+        description: `KYC ${actionText} successfully`
       });
 
       setSelectedNotification(null);
       setReviewNotes("");
+      setRequestedItems("");
       fetchNotifications();
     } catch (error) {
       console.error('Error reviewing KYC:', error);
@@ -248,30 +263,52 @@ export default function AdminKYCReview() {
 
               {/* Review Notes */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Review Notes</label>
+                <label className="text-sm font-medium">Message to User</label>
                 <Textarea
                   value={reviewNotes}
                   onChange={(e) => setReviewNotes(e.target.value)}
-                  placeholder="Add notes about your decision..."
+                  placeholder="Add a message explaining your decision..."
                   rows={3}
                 />
               </div>
 
+              {/* Requested Items (for Needs Info) */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Requested Items (one per line)</label>
+                <Textarea
+                  value={requestedItems}
+                  onChange={(e) => setRequestedItems(e.target.value)}
+                  placeholder="e.g.\nClear selfie photo\nID back side\nProof of address"
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  These items will be shown to the user as a checklist
+                </p>
+              </div>
+
               {/* Actions */}
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 <Button
                   onClick={() => handleReview('approve')}
                   disabled={processing}
-                  className="flex-1 bg-success hover:bg-success/90"
+                  className="w-full bg-success hover:bg-success/90"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Approve
                 </Button>
                 <Button
+                  onClick={() => handleReview('needs_info')}
+                  disabled={processing || !reviewNotes.trim()}
+                  variant="outline"
+                  className="w-full border-warning text-warning hover:bg-warning/10"
+                >
+                  Mark as Needs Info
+                </Button>
+                <Button
                   onClick={() => handleReview('reject')}
                   disabled={processing}
                   variant="destructive"
-                  className="flex-1"
+                  className="w-full"
                 >
                   <XCircle className="h-4 w-4 mr-2" />
                   Reject

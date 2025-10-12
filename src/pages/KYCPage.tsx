@@ -24,6 +24,9 @@ export function KYCPage() {
   const { profiles, config, uploadDocument, updateKYCLevel, submitKYCLevel, loading, uploading } = useKYCNew();
   const [activeLevel, setActiveLevel] = useState<'L0' | 'L1' | 'L2'>('L0');
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [adminMessage, setAdminMessage] = useState<string | null>(null);
+  const [requestedItems, setRequestedItems] = useState<string[]>([]);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
   // Load form data when profile or level changes
   useEffect(() => {
@@ -33,7 +36,36 @@ export function KYCPage() {
     } else {
       setFormData({});
     }
+    
+    // Load admin message and requested items if status is rejected (needs info)
+    if (currentProfile?.status === 'rejected' && currentProfile?.rejection_reason) {
+      try {
+        const parsed = JSON.parse(currentProfile.rejection_reason);
+        setAdminMessage(parsed.message || currentProfile.rejection_reason);
+        setRequestedItems(parsed.requested_items || []);
+      } catch {
+        setAdminMessage(currentProfile.rejection_reason);
+        setRequestedItems([]);
+      }
+    } else {
+      setAdminMessage(null);
+      setRequestedItems([]);
+    }
   }, [activeLevel, profiles]);
+
+  // Auto-save form data with debounce
+  useEffect(() => {
+    if (Object.keys(formData).length === 0) return;
+    if (['submitted', 'in_review', 'approved'].includes(profiles[activeLevel]?.status || '')) return;
+
+    const timer = setTimeout(() => {
+      updateKYCLevel(activeLevel, formData, 'draft').catch(() => {
+        // Silent fail for autosave
+      });
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [formData, activeLevel, profiles, updateKYCLevel]);
 
   const handleBack = () => navigate("/app/profile");
 
@@ -121,6 +153,9 @@ export function KYCPage() {
       // Then submit it
       await submitKYCLevel(activeLevel, profile.id);
       
+      setShowSuccessBanner(true);
+      setTimeout(() => setShowSuccessBanner(false), 5000);
+      
       toast({ 
         title: "Success", 
         description: `KYC Level ${activeLevel} submitted for review` 
@@ -154,6 +189,19 @@ export function KYCPage() {
 
       {/* Content */}
       <div className="space-y-6 pt-6 px-4">
+        {/* Success Banner */}
+        {showSuccessBanner && (
+          <div className="bg-success/10 border border-success/20 rounded-xl p-4 flex items-center gap-3 animate-in slide-in-from-top">
+            <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-success">Submitted Successfully!</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Your KYC {activeLevel} has been submitted for admin review.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Level Selector */}
         <div className="grid grid-cols-3 gap-2">
           {KYC_LEVELS.map(level => {
@@ -204,10 +252,20 @@ export function KYCPage() {
               )}
             </div>
             
-            {currentProfile.rejection_reason && (
-              <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg">
-                <p className="text-sm font-medium text-danger mb-1">Rejection Reason</p>
-                <p className="text-xs text-foreground">{currentProfile.rejection_reason}</p>
+            {adminMessage && (
+              <div className="mt-4 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                <p className="text-sm font-medium text-warning mb-1">Admin Message</p>
+                <p className="text-xs text-foreground">{adminMessage}</p>
+                {requestedItems.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-foreground mb-1">Requested Items:</p>
+                    <ul className="text-xs text-foreground list-disc list-inside space-y-1">
+                      {requestedItems.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </Card>
