@@ -21,17 +21,6 @@ export function SettingsPage() {
     timezone: 'UTC'
   });
 
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to access settings",
-        variant: "destructive"
-      });
-      navigate("/auth");
-    }
-  }, [user, navigate, toast]);
 
   const handleBack = () => navigate("/app/profile");
 

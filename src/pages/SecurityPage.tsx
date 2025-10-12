@@ -38,23 +38,10 @@ export function SecurityPage() {
     "absorb", "abstract", "absurd", "abuse", "access", "accident"
   ];
 
-  // Redirect to auth if not logged in
   useEffect(() => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to access security settings",
-        variant: "destructive"
-      });
-      navigate("/auth");
-    }
-  }, [user, navigate, toast]);
-
-  useEffect(() => {
-    if (!user) return;
     checkBiometricAvailability().then(setBiometricAvailable);
     fetchDevices();
-  }, [user]);
+  }, []);
 
   const fetchDevices = async () => {
     if (!user) return;
