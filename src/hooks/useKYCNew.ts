@@ -43,7 +43,7 @@ export interface KYCConfig {
 }
 
 export const useKYCNew = () => {
-  const { user } = useAuthUser();
+  const { user, loading: authLoading } = useAuthUser();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<Record<KYCLevel, KYCProfile | null>>({
     L0: null,
@@ -56,7 +56,7 @@ export const useKYCNew = () => {
   const [uploading, setUploading] = useState(false);
 
   const fetchKYC = async () => {
-    if (!user) {
+    if (!user || authLoading) {
       setLoading(false);
       return;
     }
@@ -119,7 +119,14 @@ export const useKYCNew = () => {
     level: KYCLevel,
     docType: string
   ): Promise<string> => {
-    if (!user) throw new Error('User not authenticated');
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to upload documents",
+        variant: "destructive",
+      });
+      throw new Error('User not authenticated');
+    }
 
     try {
       setUploading(true);
@@ -169,7 +176,14 @@ export const useKYCNew = () => {
     data: Record<string, any>,
     status?: KYCStatus
   ): Promise<KYCProfile> => {
-    if (!user) throw new Error('User not authenticated');
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save your KYC information",
+        variant: "destructive",
+      });
+      throw new Error('User not authenticated');
+    }
 
     try {
       const existing = profiles[level];
@@ -227,7 +241,14 @@ export const useKYCNew = () => {
   };
 
   const submitKYCLevel = async (level: KYCLevel, profileId: string) => {
-    if (!user) throw new Error('User not authenticated');
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit your KYC",
+        variant: "destructive",
+      });
+      throw new Error('User not authenticated');
+    }
 
     try {
       const { data, error } = await supabase
@@ -260,8 +281,10 @@ export const useKYCNew = () => {
   };
 
   useEffect(() => {
-    fetchKYC();
-  }, [user]);
+    if (!authLoading) {
+      fetchKYC();
+    }
+  }, [user, authLoading]);
 
   return {
     profiles,
