@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'I-SMART',
   webDir: 'dist',
   server: {
-    url: 'https://i-smartapp.com',
+    url: 'https://i-smartapp.com/?app=android&v=20251012',
     cleartext: true
   },
   appUrlScheme: 'ismart',
