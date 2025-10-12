@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Upload, CheckCircle, XCircle, Clock, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { ChevronLeft, Upload, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useKYCNew } from "@/hooks/useKYCNew";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,10 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { DOBPicker } from "@/components/kyc/DOBPicker";
+import { ValidatedInput } from "@/components/kyc/ValidatedInput";
+import { validateKYCLevel, DEFAULT_VALIDATION_RULES, ValidationError } from "@/lib/kyc-validation";
 
 const KYC_LEVELS = [
   { id: 'L0', name: 'Basic', description: 'Personal info & address' },
@@ -30,6 +29,8 @@ export function KYCPage() {
   const [adminMessage, setAdminMessage] = useState<string | null>(null);
   const [requestedItems, setRequestedItems] = useState<string[]>([]);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Load form data when profile or level changes
   useEffect(() => {
@@ -60,15 +61,37 @@ export function KYCPage() {
   useEffect(() => {
     if (Object.keys(formData).length === 0) return;
     if (['submitted', 'in_review', 'approved'].includes(profiles[activeLevel]?.status || '')) return;
+    if (!hasUnsavedChanges) return;
 
-    const timer = setTimeout(() => {
-      updateKYCLevel(activeLevel, formData, 'draft').catch(() => {
+    const timer = setTimeout(async () => {
+      try {
+        await updateKYCLevel(activeLevel, formData, 'draft');
+        setHasUnsavedChanges(false);
+        toast({ 
+          title: "Saved", 
+          description: "Your changes have been auto-saved as draft",
+          duration: 2000
+        });
+      } catch {
         // Silent fail for autosave
-      });
+      }
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [formData, activeLevel, profiles, updateKYCLevel]);
+  }, [formData, activeLevel, profiles, updateKYCLevel, hasUnsavedChanges]);
+
+  // Track form changes
+  const handleFormChange = (key: string, value: any) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
+    setHasUnsavedChanges(true);
+    
+    // Clear error for this field
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[key];
+      return newErrors;
+    });
+  };
 
   const handleBack = () => navigate("/app/profile");
 
@@ -108,41 +131,30 @@ export function KYCPage() {
     }
   };
 
-  const validateForm = () => {
-    if (activeLevel === 'L0') {
-      const required = ['legal_name', 'dob', 'nationality', 'phone', 'city', 'postal_code'];
-      const missing = required.filter(field => !formData[field]);
-      if (missing.length > 0) {
-        toast({ 
-          title: "Validation Error", 
-          description: "Please fill in all required fields",
-          variant: "destructive"
-        });
-        return false;
-      }
-    } else if (activeLevel === 'L1') {
-      const required = ['id_type', 'id_number', 'id_front', 'id_back', 'selfie'];
-      const missing = required.filter(field => !formData[field]);
-      if (missing.length > 0) {
-        toast({ 
-          title: "Validation Error", 
-          description: "Please fill in all required fields and upload all documents",
-          variant: "destructive"
-        });
-        return false;
-      }
-    } else if (activeLevel === 'L2') {
-      const required = ['source_of_funds', 'occupation'];
-      const missing = required.filter(field => !formData[field]);
-      if (missing.length > 0) {
-        toast({ 
-          title: "Validation Error", 
-          description: "Please fill in all required fields",
-          variant: "destructive"
-        });
-        return false;
-      }
+  const validateForm = (): boolean => {
+    const rules = config ? {
+      ...DEFAULT_VALIDATION_RULES,
+      minAgeYears: (config.level_schemas.L0?.minAgeYears || 18) as number,
+    } : DEFAULT_VALIDATION_RULES;
+
+    const errors = validateKYCLevel(activeLevel, formData, rules);
+    
+    if (errors.length > 0) {
+      const errorMap: Record<string, string> = {};
+      errors.forEach(err => {
+        errorMap[err.field] = err.message;
+      });
+      setValidationErrors(errorMap);
+      
+      toast({ 
+        title: "Validation Error", 
+        description: `Please fix ${errors.length} error(s) before submitting`,
+        variant: "destructive"
+      });
+      return false;
     }
+    
+    setValidationErrors({});
     return true;
   };
 
@@ -174,6 +186,8 @@ export function KYCPage() {
 
   const currentProfile = profiles[activeLevel];
   const isReadOnly = ['submitted', 'in_review', 'approved'].includes(currentProfile?.status || '');
+  const minAgeYears = config?.level_schemas?.L0?.minAgeYears || 18;
+  const canSubmit = Object.keys(formData).length > 0 && Object.keys(validationErrors).length === 0;
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-kyc">
@@ -279,57 +293,40 @@ export function KYCPage() {
           <div className="space-y-4">
             {activeLevel === 'L0' && (
               <>
-                <div>
-                  <Label htmlFor="legal_name">Legal Name *</Label>
-                  <Input
-                    id="legal_name"
-                    value={formData.legal_name || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, legal_name: e.target.value }))}
-                    disabled={isReadOnly}
-                    placeholder="Full legal name"
-                  />
-                </div>
+                <ValidatedInput
+                  id="legal_name"
+                  label="Legal Name"
+                  required
+                  value={formData.legal_name || ''}
+                  onChange={(e) => handleFormChange('legal_name', e.target.value)}
+                  disabled={isReadOnly}
+                  placeholder="Full legal name"
+                  error={validationErrors.legal_name}
+                />
                 
                 <div>
-                  <Label htmlFor="dob">Date of Birth *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        disabled={isReadOnly}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.dob && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.dob ? format(new Date(formData.dob), "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.dob ? new Date(formData.dob) : undefined}
-                        onSelect={(date) => {
-                          if (date) {
-                            setFormData(prev => ({ ...prev, dob: format(date, "yyyy-MM-dd") }));
-                          }
-                        }}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DOBPicker
+                    value={formData.dob}
+                    onChange={(date) => handleFormChange('dob', date)}
+                    disabled={isReadOnly}
+                    minAgeYears={minAgeYears}
+                    error={validationErrors.dob}
+                  />
+                  {validationErrors.dob && (
+                    <p className="text-xs text-danger mt-1 animate-in slide-in-from-top-1">
+                      {validationErrors.dob}
+                    </p>
+                  )}
                 </div>
 
-                <div>
-                  <Label htmlFor="nationality">Nationality *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="nationality" className="flex items-center gap-1">
+                    Nationality
+                    <span className="text-danger">*</span>
+                  </Label>
                   <Select
                     value={formData.nationality || ''}
-                    onValueChange={(val) => setFormData(prev => ({ ...prev, nationality: val }))}
+                    onValueChange={(val) => handleFormChange('nationality', val)}
                     disabled={isReadOnly}
                   >
                     <SelectTrigger>
@@ -342,49 +339,57 @@ export function KYCPage() {
                       <SelectItem value="CA">Canada</SelectItem>
                     </SelectContent>
                   </Select>
+                  {validationErrors.nationality && (
+                    <p className="text-xs text-danger animate-in slide-in-from-top-1">
+                      {validationErrors.nationality}
+                    </p>
+                  )}
                 </div>
 
-                <div>
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    disabled={isReadOnly}
-                    placeholder="+1234567890"
-                  />
-                </div>
+                <ValidatedInput
+                  id="phone"
+                  label="Phone Number"
+                  required
+                  type="tel"
+                  value={formData.phone || ''}
+                  onChange={(e) => handleFormChange('phone', e.target.value)}
+                  disabled={isReadOnly}
+                  placeholder="+1234567890"
+                  error={validationErrors.phone}
+                />
 
-                <div>
-                  <Label htmlFor="city">City *</Label>
-                  <Input
-                    id="city"
-                    value={formData.city || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                    disabled={isReadOnly}
-                  />
-                </div>
+                <ValidatedInput
+                  id="city"
+                  label="City"
+                  required
+                  value={formData.city || ''}
+                  onChange={(e) => handleFormChange('city', e.target.value)}
+                  disabled={isReadOnly}
+                  error={validationErrors.city}
+                />
 
-                <div>
-                  <Label htmlFor="postal_code">Postal Code *</Label>
-                  <Input
-                    id="postal_code"
-                    value={formData.postal_code || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, postal_code: e.target.value }))}
-                    disabled={isReadOnly}
-                  />
-                </div>
+                <ValidatedInput
+                  id="postal_code"
+                  label="Postal Code"
+                  required
+                  value={formData.postal_code || ''}
+                  onChange={(e) => handleFormChange('postal_code', e.target.value)}
+                  disabled={isReadOnly}
+                  error={validationErrors.postal_code}
+                />
               </>
             )}
 
             {activeLevel === 'L1' && (
               <>
-                <div>
-                  <Label htmlFor="id_type">ID Type *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="id_type" className="flex items-center gap-1">
+                    ID Type
+                    <span className="text-danger">*</span>
+                  </Label>
                   <Select
                     value={formData.id_type || ''}
-                    onValueChange={(val) => setFormData(prev => ({ ...prev, id_type: val }))}
+                    onValueChange={(val) => handleFormChange('id_type', val)}
                     disabled={isReadOnly}
                   >
                     <SelectTrigger>
@@ -397,17 +402,22 @@ export function KYCPage() {
                       <SelectItem value="aadhaar">Aadhaar Card</SelectItem>
                     </SelectContent>
                   </Select>
+                  {validationErrors.id_type && (
+                    <p className="text-xs text-danger animate-in slide-in-from-top-1">
+                      {validationErrors.id_type}
+                    </p>
+                  )}
                 </div>
 
-                <div>
-                  <Label htmlFor="id_number">ID Number *</Label>
-                  <Input
-                    id="id_number"
-                    value={formData.id_number || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, id_number: e.target.value }))}
-                    disabled={isReadOnly}
-                  />
-                </div>
+                <ValidatedInput
+                  id="id_number"
+                  label="ID Number"
+                  required
+                  value={formData.id_number || ''}
+                  onChange={(e) => handleFormChange('id_number', e.target.value)}
+                  disabled={isReadOnly}
+                  error={validationErrors.id_number}
+                />
 
                 <div>
                   <Label>ID Front *</Label>
@@ -458,11 +468,24 @@ export function KYCPage() {
 
             {activeLevel === 'L2' && (
               <>
-                <div>
-                  <Label htmlFor="source_of_funds">Source of Funds *</Label>
+                <ValidatedInput
+                  id="occupation"
+                  label="Occupation"
+                  required
+                  value={formData.occupation || ''}
+                  onChange={(e) => handleFormChange('occupation', e.target.value)}
+                  disabled={isReadOnly}
+                  error={validationErrors.occupation}
+                />
+
+                <div className="space-y-2">
+                  <Label htmlFor="source_of_funds" className="flex items-center gap-1">
+                    Source of Funds
+                    <span className="text-danger">*</span>
+                  </Label>
                   <Select
                     value={formData.source_of_funds || ''}
-                    onValueChange={(val) => setFormData(prev => ({ ...prev, source_of_funds: val }))}
+                    onValueChange={(val) => handleFormChange('source_of_funds', val)}
                     disabled={isReadOnly}
                   >
                     <SelectTrigger>
@@ -472,19 +495,15 @@ export function KYCPage() {
                       <SelectItem value="employment">Employment</SelectItem>
                       <SelectItem value="business">Business</SelectItem>
                       <SelectItem value="investment">Investment</SelectItem>
-                      <SelectItem value="savings">Savings</SelectItem>
+                      <SelectItem value="inheritance">Inheritance</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="occupation">Occupation *</Label>
-                  <Input
-                    id="occupation"
-                    value={formData.occupation || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, occupation: e.target.value }))}
-                    disabled={isReadOnly}
-                  />
+                  {validationErrors.source_of_funds && (
+                    <p className="text-xs text-danger animate-in slide-in-from-top-1">
+                      {validationErrors.source_of_funds}
+                    </p>
+                  )}
                 </div>
               </>
             )}
@@ -497,9 +516,9 @@ export function KYCPage() {
             <Button
               onClick={handleSubmit}
               className="w-full h-12"
-              disabled={uploading}
+              disabled={uploading || !canSubmit}
             >
-              {uploading ? 'Uploading...' : `Submit ${activeLevel} for Review`}
+              {uploading ? 'Uploading...' : !canSubmit ? 'Complete all required fields' : `Submit ${activeLevel} for Review`}
             </Button>
           </div>
         )}

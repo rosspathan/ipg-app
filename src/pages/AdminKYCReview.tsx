@@ -35,6 +35,7 @@ export default function AdminKYCReview() {
   const [reviewNotes, setReviewNotes] = useState("");
   const [requestedItems, setRequestedItems] = useState<string>("");
   const [processing, setProcessing] = useState(false);
+  const [filterLevel, setFilterLevel] = useState<'all' | 'L0' | 'L1' | 'L2'>('all');
 
   useEffect(() => {
     fetchNotifications();
@@ -163,6 +164,10 @@ export default function AdminKYCReview() {
     return colors[level as keyof typeof colors] || "";
   };
 
+  const filteredNotifications = filterLevel === 'all' 
+    ? notifications 
+    : notifications.filter(n => n.level === filterLevel);
+
   return (
     <div className="min-h-screen bg-background pb-32">
       {/* Header */}
@@ -175,7 +180,23 @@ export default function AdminKYCReview() {
             <ChevronLeft className="h-5 w-5" />
             <span className="font-medium">KYC Review</span>
           </button>
-          <Badge variant="outline">{notifications.length} Pending</Badge>
+          <Badge variant="outline">{filteredNotifications.length} Showing</Badge>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="sticky top-14 z-30 bg-background/80 backdrop-blur-xl border-b border-border/40 px-4 py-3">
+        <div className="flex gap-2 overflow-x-auto">
+          {['all', 'L0', 'L1', 'L2'].map((level) => (
+            <Button
+              key={level}
+              variant={filterLevel === level ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilterLevel(level as any)}
+            >
+              {level === 'all' ? 'All' : level}
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -185,12 +206,12 @@ export default function AdminKYCReview() {
           <div className="text-center py-12 text-muted-foreground">
             Loading submissions...
           </div>
-        ) : notifications.length === 0 ? (
+        ) : filteredNotifications.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            No pending KYC submissions
+            No {filterLevel !== 'all' ? `${filterLevel} ` : ''}pending KYC submissions
           </div>
         ) : (
-          notifications.map((notification) => (
+          filteredNotifications.map((notification) => (
             <Card key={notification.id} className="p-4 bg-card/60 backdrop-blur-xl border-border/40">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
