@@ -134,14 +134,20 @@ export default function ReferralsPage() {
           text: "Start trading crypto with I-SMART Exchange!",
           url,
         });
+        toast.success("Shared successfully!");
       } else {
         // Final fallback: copy to clipboard
         handleCopyLink();
       }
     } catch (error: any) {
-      // User cancelled share - don't show error
-      if (error?.message !== 'Share canceled') {
+      // Check if it's a permission error or cancellation
+      if (error?.name === 'NotAllowedError' || error?.message?.includes('Permission denied')) {
+        // Share not available, fall back to copy
+        handleCopyLink();
+      } else if (error?.name !== 'AbortError' && error?.message !== 'Share canceled') {
+        // Only log unexpected errors
         console.error("Share failed:", error);
+        handleCopyLink();
       }
     }
   };
