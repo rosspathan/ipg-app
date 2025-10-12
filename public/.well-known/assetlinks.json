@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ismart.exchange",
+      "sha256_cert_fingerprints": [
+        "46:5D:F9:50:6A:8D:C2:6F:42:B2:A1:A1:3B:DF:7C:B2:49:BA:F3:FD:43:16:4B:96:5B:CA:34:20:ED:80:5A:4A"
+      ]
+    }
+  }
+]
