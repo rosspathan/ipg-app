@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { useWeb3 } from '@/contexts/Web3Context';
 import { useToast } from '@/hooks/use-toast';
 
 export type KYCLevel = 'L0' | 'L1' | 'L2';
@@ -44,6 +45,7 @@ export interface KYCConfig {
 
 export const useKYCNew = () => {
   const { user, loading: authLoading } = useAuthUser();
+  const { wallet, isConnected } = useWeb3();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<Record<KYCLevel, KYCProfile | null>>({
     L0: null,
@@ -55,11 +57,20 @@ export const useKYCNew = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
+  // Use Supabase user ID if available, otherwise use wallet address
+  const getUserId = (): string | null => {
+    if (user?.id) return user.id;
+    if (wallet?.address) return wallet.address;
+    return null;
+  };
+
   const fetchKYC = async () => {
     if (authLoading) {
       return;
     }
-    if (!user) {
+    
+    const userId = getUserId();
+    if (!userId) {
       setLoading(false);
       return;
     }
@@ -82,7 +93,7 @@ export const useKYCNew = () => {
       const { data: profilesData } = await supabase
         .from('kyc_profiles_new')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
 
       if (profilesData) {
         const profilesMap: Record<KYCLevel, KYCProfile | null> = {
@@ -100,7 +111,7 @@ export const useKYCNew = () => {
       const { data: docsData } = await supabase
         .from('kyc_documents_new')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
 
       if (docsData) {
         setDocuments(docsData as KYCDocument[]);
@@ -122,7 +133,8 @@ export const useKYCNew = () => {
     level: KYCLevel,
     docType: string
   ): Promise<string> => {
-    if (!user) {
+    const userId = getUserId();
+    if (!userId) {
       console.warn('Upload attempted without authentication');
       throw new Error('User not authenticated');
     }
@@ -130,7 +142,7 @@ export const useKYCNew = () => {
     try {
       setUploading(true);
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${level}/${docType}_${Date.now()}.${fileExt}`;
+      const fileName = `${userId}/${level}/${docType}_${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('kyc')
@@ -146,7 +158,7 @@ export const useKYCNew = () => {
       const { error: docError } = await supabase
         .from('kyc_documents_new')
         .insert({
-          user_id: user.id,
+          user_id: userId,
           level,
           doc_type: docType,
           storage_path: fileName,
@@ -175,7 +187,8 @@ export const useKYCNew = () => {
     data: Record<string, any>,
     status?: KYCStatus
   ): Promise<KYCProfile> => {
-    if (!user) {
+    const userId = getUserId();
+    if (!userId) {
       console.warn('Update attempted without authentication');
       throw new Error('User not authenticated');
     }
@@ -207,7 +220,7 @@ export const useKYCNew = () => {
         const { data: created, error } = await supabase
           .from('kyc_profiles_new')
           .insert({
-            user_id: user.id,
+            user_id: userId,
             level,
             data_json: data,
             status: status || 'draft'
@@ -236,7 +249,8 @@ export const useKYCNew = () => {
   };
 
   const submitKYCLevel = async (level: KYCLevel, profileId: string) => {
-    if (!user) {
+    const userId = getUserId();
+    if (!userId) {
       console.warn('Submit attempted without authentication');
       throw new Error('User not authenticated');
     }
@@ -275,7 +289,7 @@ export const useKYCNew = () => {
     if (!authLoading) {
       fetchKYC();
     }
-  }, [user, authLoading]);
+  }, [user, wallet, authLoading]);
 
   return {
     profiles,
