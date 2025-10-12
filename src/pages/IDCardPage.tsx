@@ -38,7 +38,7 @@ export function IDCardPage() {
   
   // Fetch user's purchased badge
   const [currentTier, setCurrentTier] = React.useState<BadgeTier>('Silver');
-  const [purchasedBadges, setPurchasedBadges] = React.useState<BadgeTier[]>(['Silver']);
+  const [purchasedBadges, setPurchasedBadges] = React.useState<BadgeTier[]>([]);
   
   React.useEffect(() => {
     if (!user?.id) return;
