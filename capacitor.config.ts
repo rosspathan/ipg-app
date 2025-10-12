@@ -5,8 +5,7 @@ const config: CapacitorConfig = {
   appName: 'I-SMART',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
-    hostname: 'i-smartapp.com',
+    url: 'https://i-smartapp.com',
     cleartext: true
   },
   appUrlScheme: 'ismart',
