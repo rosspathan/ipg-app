@@ -56,7 +56,10 @@ export const useKYCNew = () => {
   const [uploading, setUploading] = useState(false);
 
   const fetchKYC = async () => {
-    if (!user || authLoading) {
+    if (authLoading) {
+      return;
+    }
+    if (!user) {
       setLoading(false);
       return;
     }
@@ -120,11 +123,7 @@ export const useKYCNew = () => {
     docType: string
   ): Promise<string> => {
     if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to upload documents",
-        variant: "destructive",
-      });
+      console.warn('Upload attempted without authentication');
       throw new Error('User not authenticated');
     }
 
@@ -177,11 +176,7 @@ export const useKYCNew = () => {
     status?: KYCStatus
   ): Promise<KYCProfile> => {
     if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to save your KYC information",
-        variant: "destructive",
-      });
+      console.warn('Update attempted without authentication');
       throw new Error('User not authenticated');
     }
 
@@ -242,11 +237,7 @@ export const useKYCNew = () => {
 
   const submitKYCLevel = async (level: KYCLevel, profileId: string) => {
     if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to submit your KYC",
-        variant: "destructive",
-      });
+      console.warn('Submit attempted without authentication');
       throw new Error('User not authenticated');
     }
 
