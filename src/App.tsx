@@ -11,6 +11,7 @@ import { UnlockGate } from "@/components/UnlockGate";
 import { useSecuritySync } from "@/hooks/useSecuritySync";
 import { RouterWrapper } from "@/components/RouterWrapper";
 import { AppInitializer } from "@/components/AppInitializer";
+import { AppStateManager } from "@/components/AppStateManager";
 
 // Layouts
 import UserLayout from "@/layouts/UserLayout";
@@ -187,6 +188,7 @@ function App() {
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <AppStateManager />
             <RouterWrapper>
               <Routes>
               {/* Landing & Splash */}

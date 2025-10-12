@@ -9,6 +9,7 @@ const config: CapacitorConfig = {
     hostname: 'i-smartapp.com',
     cleartext: true
   },
+  appUrlScheme: 'ismart',
   ios: {
     contentInset: 'automatic',
     scrollEnabled: true,
