@@ -25,22 +25,6 @@ export function KYCPage() {
   const [activeLevel, setActiveLevel] = useState<'L0' | 'L1' | 'L2'>('L0');
   const [formData, setFormData] = useState<Record<string, any>>({});
 
-  // Check authentication
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to access KYC verification",
-          variant: "destructive"
-        });
-        navigate("/auth");
-      }
-    };
-    checkAuth();
-  }, [navigate, toast]);
-
   // Load form data when profile or level changes
   useEffect(() => {
     const currentProfile = profiles[activeLevel];
