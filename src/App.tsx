@@ -39,6 +39,7 @@ import ManualBSKPurchaseScreen from "./pages/ManualBSKPurchaseScreen";
 import AdminCryptoConversionsScreen from "./pages/AdminCryptoConversionsScreen";
 import AdminAnnouncementsScreen from "./pages/AdminAnnouncementsScreen";
 import BSKTransferScreen from "./pages/BSKTransferScreen";
+import AdminKYCReview from "./pages/AdminKYCReview";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -350,6 +351,7 @@ function App() {
                 <Route path="ads" element={<AdminAdsScreen />} />
                 <Route path="reports" element={<AdminReportsNova />} />
                 <Route path="settings" element={<AdminSettingsNova />} />
+                <Route path="kyc-review" element={<AdminKYCReview />} />
                 <Route path="database-reset" element={<React.Suspense fallback={<div>Loading...</div>}><AdminDatabaseReset /></React.Suspense>} />
                 <Route path="mobile-linking" element={<React.Suspense fallback={<div>Loading...</div>}><AdminMobileLinking /></React.Suspense>} />
               </Route>

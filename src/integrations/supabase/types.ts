@@ -4407,6 +4407,56 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_admin_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          kyc_profile_id: string
+          level: string
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kyc_profile_id: string
+          level: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kyc_profile_id?: string
+          level?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_admin_notifications_kyc_profile_id_fkey"
+            columns: ["kyc_profile_id"]
+            isOneToOne: false
+            referencedRelation: "kyc_profiles_new"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kyc_documents_new: {
         Row: {
           created_at: string
