@@ -4,10 +4,12 @@ const config: CapacitorConfig = {
   appId: 'com.ismart.exchange',
   appName: 'I-SMART',
   webDir: 'dist',
-  server: {
-    url: 'https://i-smartapp.com/?app=android&v=20251012',
-    cleartext: true
-  },
+  // For DEVELOPMENT: Uncomment to use live server
+  // server: {
+  //   url: 'https://i-smartapp.com/?app=android&v=20251012',
+  //   cleartext: true
+  // },
+  // For PRODUCTION: Server section should be commented out to use local build
   appUrlScheme: 'ismart',
   ios: {
     contentInset: 'automatic',
