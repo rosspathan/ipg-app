@@ -1,25 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Globe, Moon, Sun, Smartphone } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthUser } from "@/hooks/useAuthUser";
+import { useTheme } from "next-themes";
 
 export function SettingsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuthUser();
+  const { theme, setTheme } = useTheme();
+  
   const [settings, setSettings] = useState({
-    darkMode: true,
+    darkMode: theme === 'dark',
     language: 'en',
     currency: 'USD',
     timezone: 'UTC'
   });
 
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to access settings",
+        variant: "destructive"
+      });
+      navigate("/auth");
+    }
+  }, [user, navigate, toast]);
+
   const handleBack = () => navigate("/app/profile");
 
   const handleUpdate = (key: string, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+    
+    // Apply theme change
+    if (key === 'darkMode') {
+      setTheme(value ? 'dark' : 'light');
+    }
+    
     toast({ title: "Updated", description: "Settings saved" });
   };
 
