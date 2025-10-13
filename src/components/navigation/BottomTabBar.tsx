@@ -39,7 +39,10 @@ export const BottomTabBar: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 bg-background/95 backdrop-blur-md border-t border-border">
+    <div 
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 bg-background/95 backdrop-blur-md border-t border-border"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       <div className="flex items-center justify-between px-4 py-2 relative">
         {/* Left side tabs */}
         <div className="flex gap-8">
@@ -130,9 +133,6 @@ export const BottomTabBar: React.FC = () => {
           })}
         </div>
       </div>
-      
-      {/* Safe area padding for devices with home indicator */}
-      <div className="h-safe-area-inset-bottom bg-background/95" />
     </div>
   );
 };

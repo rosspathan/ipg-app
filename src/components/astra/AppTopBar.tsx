@@ -54,6 +54,7 @@ export function AppTopBar({ className }: AppTopBarProps) {
         "transition-all duration-300 ease-in-out",
         className
       )}
+      style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
       data-testid="app-top-bar"
     >
       {/* Left: Logo */}

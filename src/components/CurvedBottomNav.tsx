@@ -42,7 +42,10 @@ const CurvedBottomNav: React.FC = () => {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4">
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-50 px-4"
+        style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+      >
         {/* Glass background with curve */}
         <div className="relative">
           {/* Curved background */}
