@@ -57,11 +57,20 @@ export const useReferrals = () => {
 
       // Determine referral code
       if (user) {
-        // Use sponsor's user_id directly as referral code
+        // Fetch or generate actual referral code from database
+        const { data: codeData, error: codeError } = await supabase
+          .rpc('get_or_create_referral_code', { p_user_id: user.id });
+
+        if (codeError) {
+          console.error('Error getting referral code:', codeError);
+        }
+
+        const actualCode = codeData || user.id.substring(0, 8).toUpperCase();
+
         setReferralCode({
           id: user.id,
           user_id: user.id,
-          code: user.id,
+          code: actualCode,
           created_at: new Date().toISOString()
         });
 

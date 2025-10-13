@@ -29,10 +29,22 @@ export function ReferralResolver() {
       }
 
       try {
-        // Code is now the sponsor's user_id directly
-        const sponsorId = refCode;
+        console.log('Resolving referral code:', refCode);
         
-        console.log('Using sponsorID directly:', sponsorId);
+        // Look up sponsor by referral code
+        const { data: referralData, error: refError } = await supabase
+          .from('referral_codes')
+          .select('user_id')
+          .eq('code', refCode)
+          .maybeSingle();
+
+        if (refError) {
+          console.error('Error looking up referral code:', refError);
+        }
+
+        const sponsorId = referralData?.user_id || refCode;
+        
+        console.log('Resolved sponsorID:', sponsorId);
         
         // Validate that sponsor exists in the database
         const { data: profileData, error } = await supabase
