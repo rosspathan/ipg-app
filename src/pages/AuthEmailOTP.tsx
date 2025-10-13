@@ -88,7 +88,7 @@ const AuthEmailOTP = () => {
       const userId = data.user?.id;
       if (!userId) throw new Error('No user ID');
 
-      // Create/upsert profile with username
+      // Create/upsert profile with username (email local-part)
       const username = extractUsernameFromEmail(email, userId);
       
       const { error: profileError } = await supabase
@@ -98,6 +98,7 @@ const AuthEmailOTP = () => {
           email: email.trim().toLowerCase(),
           username,
           wallet_address: wallet?.address || null,
+          ipg_onboarded: true, // Mark user as onboarded
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id',
@@ -118,6 +119,7 @@ const AuthEmailOTP = () => {
         description: "You're logged in",
       });
 
+      // Navigate to home after successful login
       setTimeout(() => {
         navigate("/app/home");
       }, 500);
