@@ -26,6 +26,20 @@ const navItems = [
 export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) {
   const location = useLocation()
   
+  // Measure nav height to create an accurate spacer and avoid overlap on APK/WebView
+  const navRef = React.useRef<HTMLDivElement | null>(null)
+  const [spacerHeight, setSpacerHeight] = React.useState<number>(96)
+
+  React.useLayoutEffect(() => {
+    const update = () => {
+      const h = navRef.current?.offsetHeight ?? 96
+      setSpacerHeight(h)
+    }
+    // initial + on resize
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
 
   const isActive = (path: string | null) => {
     if (!path) return false
@@ -44,8 +58,14 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
 
   const portalRoot = typeof document !== "undefined" ? document.getElementById("dock-portal") : null
 
+  // Console marker to help debug safe area on device builds
+  React.useEffect(() => {
+    console.debug("SAFE_AREA_APPLIED")
+  }, [])
+
   const navEl = (
     <nav
+      ref={navRef}
       className={cn(
         "fixed bottom-0 inset-x-0 w-full max-w-[430px] mx-auto z-50",
         className
@@ -159,11 +179,11 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
     <>
       {/* Spacer to prevent content from being hidden behind the fixed dock */}
       <div 
-        className="h-20" 
+        aria-hidden="true"
         style={{
+          height: spacerHeight,
           paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
         }}
-        aria-hidden="true" 
       />
       {portalRoot ? createPortal(navEl, portalRoot) : navEl}
     </>

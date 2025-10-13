@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FloatingActionButton } from "@/components/ui/floating-action-button";
@@ -17,6 +17,19 @@ const CurvedBottomNav: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSpeedDialOpen, setIsSpeedDialOpen] = useState(false);
+
+  // Measure nav height to insert a spacer and avoid overlap on APK/WebView
+  const navRef = useRef<HTMLDivElement | null>(null);
+  const [spacerHeight, setSpacerHeight] = useState<number>(96);
+  useLayoutEffect(() => {
+    const update = () => {
+      const h = navRef.current?.offsetHeight ?? 96;
+      setSpacerHeight(h);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   const navItems: NavItem[] = [
     { path: "/app/home", icon: Home, label: "Home" },
@@ -40,14 +53,23 @@ const CurvedBottomNav: React.FC = () => {
     navigate(path);
   };
 
-  return (
-    <>
-      <div 
-        className="fixed bottom-0 left-0 right-0 z-50 px-4"
-        style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
-      >
-        {/* Glass background with curve */}
-        <div className="relative">
+return (
+  <>
+    {/* Spacer to prevent content from being hidden behind the fixed nav */}
+    <div
+      aria-hidden
+      style={{
+        height: spacerHeight,
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
+      }}
+    />
+    <div 
+      ref={navRef}
+      className="fixed bottom-0 left-0 right-0 z-50 px-4"
+      style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+    >
+      {/* Glass background with curve */}
+      <div className="relative">
           {/* Curved background */}
           <div className={cn(
             "glass-card bg-card-glass border border-border/30",
