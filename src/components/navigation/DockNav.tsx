@@ -41,16 +41,26 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
     setPortalRootEl(root)
   }, [])
 
-  // Measure nav height and expose it as a CSS variable to AppShell
+  // Measure dock height including floating center button overlap
   React.useLayoutEffect(() => {
     const update = () => {
-      const h = navRef.current?.offsetHeight ?? 88
-      document.documentElement.style.setProperty('--dock-height', `${h}px`)
+      const nav = navRef.current
+      if (!nav) return
+      const navRect = nav.getBoundingClientRect()
+      const fabEl = nav.querySelector('[data-dock-fab]') as HTMLElement | null
+      let extra = 0
+      if (fabEl) {
+        const fabRect = fabEl.getBoundingClientRect()
+        extra = Math.max(0, navRect.top - fabRect.top)
+      }
+      const total = Math.round(navRect.height + extra)
+      document.documentElement.style.setProperty('--dock-height', `${total}px`)
     }
     update()
     window.addEventListener('resize', update)
     return () => window.removeEventListener('resize', update)
   }, [])
+
 
 
   const isActive = (path: string | null) => {
@@ -179,7 +189,7 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
         </div>
 
         {/* Floating center button - positioned absolutely above the nav */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2" data-dock-fab>
           <LogoDockButton onClick={handleCenterPress} />
         </div>
       </div>
