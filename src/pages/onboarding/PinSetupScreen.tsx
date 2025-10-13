@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronLeft, Shield, Eye, EyeOff } from 'lucide-react';
-import { hashPin, isValidPin } from '@/utils/security';
+import { hashPin, generateSalt, isValidPin, isWeakPin } from '@/utils/pinCrypto';
+import { storePinCredentials, setLockState } from '@/utils/lockState';
 import { useToast } from '@/hooks/use-toast';
 
 interface PinSetupScreenProps {
@@ -45,14 +46,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
       return;
     }
 
-    // Check for weak pins
-    const weakPatterns = [
-      '000000', '111111', '222222', '333333', '444444', '555555',
-      '666666', '777777', '888888', '999999', '123456', '654321',
-      '123123', '456456', '789789'
-    ];
-
-    if (weakPatterns.includes(pin)) {
+    if (isWeakPin(pin)) {
       toast({
         title: "Weak PIN",
         description: "Please choose a more secure PIN without repeating digits or sequences",
@@ -77,12 +71,23 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
 
     setIsHashing(true);
     try {
-      const pinHash = await hashPin(pin);
+      // Generate salt and hash PIN using PBKDF2
+      const salt = generateSalt();
+      const hash = await hashPin(pin, salt);
+      
+      // Store PIN credentials in lockState system
+      storePinCredentials(hash, salt);
+      
+      // Set app as unlocked initially
+      setLockState('unlocked');
+      
       toast({
         title: "PIN Created Successfully!",
         description: "Your secure PIN has been set up",
       });
-      onPinSetup(pinHash);
+      
+      // Pass hash to parent for onboarding completion
+      onPinSetup(hash);
     } catch (error) {
       toast({
         title: "Error",

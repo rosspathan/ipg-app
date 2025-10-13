@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronLeft, Fingerprint, CheckCircle, AlertCircle } from 'lucide-react';
 import { isBiometricAvailable, setupBiometric, authenticateWithBiometric } from '@/utils/security';
+import { storeBiometricCredId, setOnboarded } from '@/utils/lockState';
 import { useToast } from '@/hooks/use-toast';
 
 interface BiometricSetupScreenProps {
@@ -44,6 +45,8 @@ const BiometricSetupScreen: React.FC<BiometricSetupScreenProps> = ({
       
       if (result.success) {
         setIsSetupComplete(true);
+        // Store biometric credential in lockState
+        storeBiometricCredId('biometric_enabled');
         toast({
           title: "Biometric Setup Complete!",
           description: "Your biometric authentication is now active",
@@ -96,11 +99,13 @@ const BiometricSetupScreen: React.FC<BiometricSetupScreenProps> = ({
   };
 
   const handleSkip = () => {
+    setOnboarded();
     onBiometricSetup(false);
     onSkip();
   };
 
   const handleContinue = () => {
+    setOnboarded();
     onBiometricSetup(isSetupComplete);
   };
 
@@ -361,7 +366,10 @@ const BiometricSetupScreen: React.FC<BiometricSetupScreenProps> = ({
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
                 <Button
-                  onClick={() => onBiometricSetup(false)}
+                  onClick={() => {
+                    setOnboarded();
+                    onBiometricSetup(false);
+                  }}
                   className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 font-semibold py-4 rounded-2xl"
                   size="lg"
                 >
