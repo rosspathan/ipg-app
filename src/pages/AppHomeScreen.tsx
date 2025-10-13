@@ -132,7 +132,7 @@ const AppHomeScreen = () => {
   };
 
   return (
-    <div className="min-h-screen w-full animate-slide-in-right">
+    <div className="h-full w-full overflow-x-hidden">
       {/* Content */}
       <div>
         {/* Cyber Header with KPIs */}
