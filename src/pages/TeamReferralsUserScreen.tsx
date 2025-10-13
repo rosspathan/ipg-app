@@ -123,22 +123,28 @@ const TeamReferralsUserScreen = () => {
         </Card>
       </div>
 
-      {/* Referral Link */}
+      {/* Referral Code */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Referral Link</CardTitle>
+          <CardTitle>Your Referral Code</CardTitle>
           <CardDescription>
-            Share this link to build your team and earn BSK rewards
+            Share this code to build your team and earn BSK rewards
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex space-x-2">
             <Input
-              value={referralLink}
+              value={user?.id.substring(0, 8).toUpperCase() || ''}
               readOnly
-              className="flex-1"
+              className="flex-1 text-center font-mono text-xl font-bold"
             />
-            <Button onClick={handleCopyLink}>
+            <Button onClick={async () => {
+              const code = user?.id.substring(0, 8).toUpperCase() || '';
+              const success = await copyToClipboard(code);
+              if (success) {
+                toast({ title: "Copied!", description: "Referral code copied to clipboard" });
+              }
+            }}>
               <Copy className="w-4 h-4 mr-2" />
               Copy
             </Button>

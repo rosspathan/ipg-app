@@ -292,24 +292,34 @@ const ReferralsScreen = () => {
         </Card>
       </div>
 
-      {/* Referral Link */}
+      {/* Referral Code */}
       <Card className="bg-gradient-card shadow-card border-0 mb-6">
         <CardHeader>
-          <CardTitle className="text-base">Your Referral Link</CardTitle>
+          <CardTitle className="text-base">Your Referral Code</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex space-x-2">
             <Input
-              value={referralLink}
+              value={user?.id.substring(0, 8).toUpperCase() || ''}
               readOnly
-              className="flex-1"
+              className="flex-1 text-center font-mono text-xl font-bold"
             />
-            <Button onClick={handleCopyLink} size="icon" disabled={!referralLink}>
+            <Button 
+              onClick={async () => {
+                const code = user?.id.substring(0, 8).toUpperCase() || '';
+                const success = await copyToClipboard(code);
+                if (success) {
+                  toast({ title: "Copied!", description: "Referral code copied to clipboard" });
+                }
+              }}
+              size="icon"
+              disabled={!user}
+            >
               <Copy className="w-4 h-4" />
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Share this link to earn BSK rewards from your referrals' activities
+            Share this code to earn BSK rewards from your referrals' activities
           </p>
         </CardContent>
       </Card>

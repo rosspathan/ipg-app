@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Copy, Share2, QrCode, Users, TrendingUp } from "lucide-react";
+import { ChevronLeft, Copy, Share2, QrCode, Users, TrendingUp, Gift } from "lucide-react";
 import { useReferrals } from "@/hooks/useReferrals";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -102,56 +102,29 @@ export function ReferralsPage() {
           </div>
         </Card>
 
-        {/* Referral Code */}
-        <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
-          <h3 className="font-heading text-base font-bold text-foreground mb-4">
+        {/* Referral Code - Main Card */}
+        <Card className="p-6 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/20 backdrop-blur-xl border border-primary/30">
+          <h3 className="font-heading text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <Gift className="h-5 w-5 text-primary" />
             Your Referral Code
           </h3>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex gap-2">
               <Input
                 data-testid="ref-code"
                 value={referralCode.code}
                 readOnly
-                className="font-mono text-lg font-bold bg-muted text-center"
+                className="font-mono text-2xl font-bold bg-card/80 text-center tracking-wider"
               />
               <Button
                 data-testid="ref-copy"
-                variant="outline"
+                variant="default"
                 size="icon"
                 onClick={handleCopyCode}
+                className="h-auto"
               >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <p className="text-xs text-muted-foreground text-center">
-              Share this code with friends to earn rewards
-            </p>
-          </div>
-        </Card>
-
-        {/* Referral Link */}
-        <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
-          <h3 className="font-heading text-base font-bold text-foreground mb-4">
-            Referral Link
-          </h3>
-
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <Input
-                data-testid="ref-share-link"
-                value={url}
-                readOnly
-                className="font-mono text-sm bg-muted"
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleCopyLink}
-              >
-                <Copy className="h-4 w-4" />
+                <Copy className="h-5 w-5" />
               </Button>
             </div>
 
@@ -159,105 +132,62 @@ export function ReferralsPage() {
               <Button
                 variant="outline"
                 onClick={() => handleShare('native')}
-                className="h-12"
+                className="h-12 font-medium"
               >
                 <Share2 className="h-4 w-4 mr-2" />
-                Share
+                Share Code
               </Button>
               
               <Button
                 data-testid="ref-whatsapp"
                 onClick={() => handleShare('whatsapp')}
-                className="h-12 bg-[#25D366] hover:bg-[#128C7E] text-white"
+                className="h-12 bg-[#25D366] hover:bg-[#128C7E] text-white font-medium"
               >
                 WhatsApp
               </Button>
             </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Share this code with friends to earn rewards when they sign up
+            </p>
           </div>
         </Card>
 
-        {/* Android Intent Link */}
+        {/* How It Works */}
         <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
           <h3 className="font-heading text-base font-bold text-foreground mb-4">
-            Android APK Deep Link
+            How It Works
           </h3>
 
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Share this link to open the app directly on Android devices
-            </p>
-            
-            <div className="flex gap-2">
-              <Input
-                data-testid="ref-share-intent"
-                value={`intent://r/${referralCode?.code || ''}#Intent;scheme=https;package=com.ismart.exchange;S.browser_fallback_url=https%3A%2F%2Fi-smartapp.com%2Fdownload%3Fref%3D${referralCode?.code || ''};end`}
-                readOnly
-                className="font-mono text-xs bg-muted"
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={async () => {
-                  const intentUrl = `intent://r/${referralCode?.code || ''}#Intent;scheme=https;package=com.ismart.exchange;S.browser_fallback_url=https%3A%2F%2Fi-smartapp.com%2Fdownload%3Fref%3D${referralCode?.code || ''};end`;
-                  const success = await copyToClipboard(intentUrl);
-                  if (success) {
-                    toast({ title: "Copied", description: "Android intent link copied" });
-                  }
-                }}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                1
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Share Your Code</p>
+                <p className="text-sm text-muted-foreground">Send your referral code to friends via WhatsApp or any app</p>
+              </div>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              This link will open the app if installed, or redirect to download page
-            </p>
-          </div>
-        </Card>
-
-        {/* QR Code */}
-        <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-heading text-base font-bold text-foreground">
-              QR Code
-            </h3>
-            <QrCode className="h-5 w-5 text-primary" />
-          </div>
-
-          <div className="flex items-center justify-center p-8 bg-white rounded-xl" data-testid="ref-qr">
-            {url ? (
-              <QRCodeCanvas
-                value={url}
-                size={256}
-                bgColor="#ffffff"
-                fgColor="#1a1a1a"
-                includeMargin
-              />
-            ) : (
-              <div className="text-muted-foreground text-xs">No referral link</div>
-            )}
-          </div>
-
-          <p className="text-xs text-muted-foreground text-center mt-4">
-            Scan this QR code to open the referral link
-          </p>
-        </Card>
-
-        {/* Deep Link Info */}
-        <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
-          <h3 className="font-heading text-base font-bold text-foreground mb-4">
-            Android Deep Link
-          </h3>
-
-          <div className="space-y-2">
-            <div className="p-3 bg-background rounded-lg">
-              <p className="text-xs text-muted-foreground mb-1">Universal Link</p>
-              <p className="text-xs font-mono text-foreground break-all">{url}</p>
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                2
+              </div>
+              <div>
+                <p className="font-medium text-foreground">They Sign Up</p>
+                <p className="text-sm text-muted-foreground">Friends enter your code during email verification</p>
+              </div>
             </div>
 
-            <div className="p-3 bg-background rounded-lg">
-              <p className="text-xs text-muted-foreground mb-1">Deep Link Scheme</p>
-              <p className="text-xs font-mono text-foreground break-all">{deepLink}</p>
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                3
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Earn Rewards</p>
+                <p className="text-sm text-muted-foreground">Get commissions when they trade and participate</p>
+              </div>
             </div>
           </div>
         </Card>

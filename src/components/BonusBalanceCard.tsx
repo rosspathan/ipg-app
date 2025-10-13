@@ -116,7 +116,7 @@ const BonusBalanceCard: React.FC<BonusBalanceCardProps> = ({ className, style })
                   <div className="absolute inset-0 bg-gradient-ring blur-xl opacity-20" />
                 </div>
                 <p className="text-sm font-medium mb-2">No bonus rewards yet</p>
-                <p className="text-xs mb-4">Share your referral link to earn BSK!</p>
+                <p className="text-xs mb-4">Share your referral code to earn BSK!</p>
                 <Button 
                   variant="outline" 
                   size="sm"

@@ -199,13 +199,13 @@ const ReferralProgramScreen = () => {
         </Card>
       </div>
 
-      {/* Referral Link Card */}
+      {/* Referral Code Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Share2 className="w-5 h-5" />
-              <span>Your Referral Link</span>
+              <span>Your Referral Code</span>
             </div>
             {!canMakeReferral() && (
               <Badge variant="secondary" className="text-xs">
@@ -214,18 +214,24 @@ const ReferralProgramScreen = () => {
             )}
           </CardTitle>
           <CardDescription>
-            Share this link to earn BSK rewards when friends sign up and complete qualifying actions
+            Share your code to earn BSK rewards when friends sign up and complete qualifying actions
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex space-x-2">
             <Input
-              value={referralLink}
+              value={user?.id.substring(0, 8).toUpperCase() || ''}
               readOnly
-              className="flex-1"
+              className="flex-1 text-center font-mono text-xl font-bold"
             />
             <Button 
-              onClick={handleCopyLink} 
+              onClick={async () => {
+                const code = user?.id.substring(0, 8).toUpperCase() || '';
+                const success = await copyToClipboard(code);
+                if (success) {
+                  toast({ title: "Copied!", description: "Referral code copied to clipboard" });
+                }
+              }}
               disabled={!canMakeReferral()}
               variant={canMakeReferral() ? "default" : "secondary"}
             >

@@ -255,8 +255,22 @@ serve(async (req) => {
     // Extract username from email
     const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9._]/g, '').substring(0, 20) || `user${userId.substring(0, 6)}`;
     
-    // Generate referral code
+    // Generate referral code - Always create a code for every user
     const referralCode = username.toUpperCase().substring(0, 8) || userId.substring(0, 8).toUpperCase();
+
+    // Create referral code entry (if not exists)
+    const { error: refCodeError } = await supabaseAdmin
+      .from('referral_codes')
+      .insert({
+        user_id: userId,
+        code: referralCode
+      })
+      .onConflict('user_id')
+      .ignoreDuplicates();
+    
+    if (refCodeError) {
+      console.warn('Referral code creation warning:', refCodeError);
+    }
 
     // Upsert profile
     const { error: profileError } = await supabaseAdmin
@@ -274,6 +288,22 @@ serve(async (req) => {
 
     if (profileError) {
       console.warn('Profile update warning:', profileError);
+    }
+
+    // Initialize referral_links_new entry for this user
+    const { error: refLinkError } = await supabaseAdmin
+      .from('referral_links_new')
+      .insert({
+        user_id: userId,
+        referral_code: referralCode,
+        total_referrals: 0,
+        total_commissions: 0
+      })
+      .onConflict('user_id')
+      .ignoreDuplicates();
+    
+    if (refLinkError) {
+      console.warn('Referral link initialization warning:', refLinkError);
     }
 
     // Capture referral if pending
