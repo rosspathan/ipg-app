@@ -41,10 +41,26 @@ export const useBSKLedgers = () => {
   const [holdingHistory, setHoldingHistory] = useState<BSKLedgerEntry[]>([]);
 
   useEffect(() => {
-    if (user) {
-      loadData();
+    // If no authenticated user, provide safe defaults and stop loading so UI can render
+    if (!user?.id) {
+      setBalances({
+        user_id: 'anonymous',
+        withdrawable_balance: 0,
+        holding_balance: 0,
+        lifetime_withdrawable_earned: 0,
+        lifetime_holding_earned: 0,
+        lifetime_withdrawn: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as any);
+      setWithdrawableHistory([]);
+      setHoldingHistory([]);
+      setLoading(false);
+      return;
     }
-  }, [user]);
+
+    loadData();
+  }, [user?.id]);
 
   const loadData = async () => {
     if (!user?.id) return;
@@ -112,9 +128,27 @@ export const useBSKLedgers = () => {
         return;
       }
       
-      setBalances(newBalance as any);
+      setBalances({
+        user_id: (newBalance as any)?.user_id || user.id,
+        withdrawable_balance: Number((newBalance as any)?.withdrawable_balance || 0),
+        holding_balance: Number((newBalance as any)?.holding_balance || 0),
+        lifetime_withdrawable_earned: Number((newBalance as any)?.total_earned_withdrawable ?? (newBalance as any)?.lifetime_withdrawable_earned ?? 0),
+        lifetime_holding_earned: Number((newBalance as any)?.total_earned_holding ?? (newBalance as any)?.lifetime_holding_earned ?? 0),
+        lifetime_withdrawn: Number((newBalance as any)?.lifetime_withdrawn ?? 0),
+        created_at: (newBalance as any)?.created_at || new Date().toISOString(),
+        updated_at: (newBalance as any)?.updated_at || new Date().toISOString()
+      } as any);
     } else {
-      setBalances(data as any);
+      setBalances({
+        user_id: (data as any)?.user_id || user.id,
+        withdrawable_balance: Number((data as any)?.withdrawable_balance || 0),
+        holding_balance: Number((data as any)?.holding_balance || 0),
+        lifetime_withdrawable_earned: Number((data as any)?.total_earned_withdrawable ?? (data as any)?.lifetime_withdrawable_earned ?? 0),
+        lifetime_holding_earned: Number((data as any)?.total_earned_holding ?? (data as any)?.lifetime_holding_earned ?? 0),
+        lifetime_withdrawn: Number((data as any)?.lifetime_withdrawn ?? 0),
+        created_at: (data as any)?.created_at || new Date().toISOString(),
+        updated_at: (data as any)?.updated_at || new Date().toISOString()
+      } as any);
     }
   };
 
