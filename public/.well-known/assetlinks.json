@@ -5,8 +5,10 @@
       "namespace": "android_app",
       "package_name": "com.ismart.exchange",
       "sha256_cert_fingerprints": [
+        "8A:E8:4F:D8:D9:86:9B:BC:29:F8:D1:51:D1:8C:0B:86:51:A9:20:6F:1E:BB:EC:8D:B1:B2:AE:DF:B5:59:FA:2D",
         "46:5D:F9:50:6A:8D:C2:6F:42:B2:A1:A1:3B:DF:7C:B2:49:BA:F3:FD:43:16:4B:96:5B:CA:34:20:ED:80:5A:4A"
       ]
     }
   }
 ]
+

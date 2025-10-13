@@ -49,8 +49,8 @@ export function useDeepLinking() {
     try {
       const urlObj = new URL(url);
 
-      // Handle referral links: https://i-smartapp.com/r/:code
-      if (urlObj.host === 'i-smartapp.com' && urlObj.pathname.startsWith('/r/')) {
+      // Handle referral links: https://i-smartapp.com/r/:code (including www)
+      if ((urlObj.host === 'i-smartapp.com' || urlObj.host === 'www.i-smartapp.com') && urlObj.pathname.startsWith('/r/')) {
         const code = urlObj.pathname.split('/r/')[1];
         if (code) {
           console.log('📨 Referral code from deep link:', code);
