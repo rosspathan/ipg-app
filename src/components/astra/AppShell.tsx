@@ -70,12 +70,13 @@ export function AppShell() {
         {/* Top Bar - Sticky */}
         <AppTopBar />
 
-        {/* Main Content - Scrollable with safe-area padding */}
+        {/* Main Content - ONLY scroll container in the app */}
         <main 
           className="flex-1 overflow-y-auto overflow-x-hidden"
           style={{ 
-            paddingBottom: 'calc(56px + env(safe-area-inset-bottom))',
-            overscrollBehavior: 'contain'
+            paddingBottom: 'calc(88px + env(safe-area-inset-bottom))',
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch'
           }}
         >
           <Outlet />

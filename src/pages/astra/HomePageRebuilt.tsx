@@ -148,7 +148,7 @@ export function HomePageRebuilt() {
   ]
 
   return (
-    <div className="min-h-0" data-testid="page-home" data-version="usr-wallet-link-v3">
+    <div data-testid="page-home" data-version="usr-wallet-link-v3">
       {/* Top Bar */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/40">
         <div className="flex items-center justify-between p-4">

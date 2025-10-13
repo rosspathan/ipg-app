@@ -22,15 +22,17 @@ export function AppShellGlass({
   topBar, 
   bottomBar,
   showTopBar = true,
-  showBottomBar = true
+  showBottomBar = true,
+  ...props
 }: AppShellGlassProps) {
   return (
     <div 
       className={cn(
-        "bg-background flex flex-col relative",
+        "flex flex-col relative",
         className
       )}
       data-testid="shell-glass"
+      {...props}
     >
       {/* Glass Top Bar - Safe Area Aware */}
       {showTopBar && topBar && (
@@ -50,10 +52,10 @@ export function AppShellGlass({
         </div>
       )}
       
-      {/* Main Content - No scroll, parent handles it */}
-      <main className="flex-1 relative">
+      {/* Main Content - No scroll, no min-height, parent handles everything */}
+      <div className="relative">
         {children}
-      </main>
+      </div>
       
       {/* Glass Bottom Bar - Safe Area Aware */}
       {showBottomBar && bottomBar && (
