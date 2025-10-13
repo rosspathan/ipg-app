@@ -25,14 +25,37 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep link for referral links - i-smartapp.com scheme -->
+            <!-- Deep link for referral links - i-smartapp.com -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" />
-                <data android:host="i-smartapp.com" />
-                <data android:pathPrefix="/r" />
+                <data 
+                    android:scheme="https" 
+                    android:host="i-smartapp.com" 
+                    android:pathPrefix="/r" />
+            </intent-filter>
+
+            <!-- Deep link with www subdomain -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data 
+                    android:scheme="https" 
+                    android:host="www.i-smartapp.com" 
+                    android:pathPrefix="/r" />
+            </intent-filter>
+
+            <!-- Deep link for /download page -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data 
+                    android:scheme="https" 
+                    android:host="i-smartapp.com" 
+                    android:pathPrefix="/download" />
             </intent-filter>
 
             <!-- Deep link for custom app scheme -->
