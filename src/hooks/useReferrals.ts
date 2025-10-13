@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
+import { openUrl } from '@/utils/linkHandler';
 
 export interface ReferralCode {
   id: string;
@@ -142,7 +143,8 @@ export const useReferrals = () => {
 
     if (method === 'whatsapp') {
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-      window.open(whatsappUrl, '_blank');
+      // Use openUrl to keep it in-app for APK builds
+      await openUrl(whatsappUrl);
     } else if (method === 'native' && navigator.share) {
       try {
         await navigator.share({
