@@ -20,18 +20,18 @@ const OnboardingIndexScreen = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-primary px-6">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 pb-safe">
       <div className="flex flex-col items-center space-y-8 max-w-md w-full">
         <div className="flex flex-col items-center space-y-4">
           <img 
             src="/lovable-uploads/a9cfc5de-7126-4662-923b-cc0348077e3d.png" 
             alt="I-SMART Logo" 
-            className="w-24 h-24 rounded-2xl shadow-card object-contain"
+            className="w-24 h-24 rounded-2xl object-contain"
           />
-          <h1 className="text-3xl font-bold text-primary-foreground text-center">
+          <h1 className="text-2xl font-bold text-foreground text-center">
             Wallet Setup
           </h1>
-          <p className="text-primary-foreground/80 text-center">
+          <p className="text-muted-foreground text-center">
             Choose how you'd like to set up your wallet
           </p>
         </div>
@@ -40,21 +40,18 @@ const OnboardingIndexScreen = () => {
           {options.map((option) => (
             <Card 
               key={option.title}
-              className="bg-card/90 backdrop-blur cursor-pointer hover:bg-card/95 transition-colors"
-              onClick={option.action}
+              className="bg-card border border-border"
             >
               <CardHeader>
-                <CardTitle className="text-lg">{option.title}</CardTitle>
-                <CardDescription>{option.description}</CardDescription>
+                <CardTitle className="text-base">{option.title}</CardTitle>
+                <CardDescription className="text-sm">{option.description}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button 
+                  data-testid={option.primary ? "onb-create" : "onb-import"}
                   variant={option.primary ? "default" : "outline"}
                   className="w-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    option.action();
-                  }}
+                  onClick={option.action}
                 >
                   {option.title}
                 </Button>
@@ -65,8 +62,8 @@ const OnboardingIndexScreen = () => {
 
         <Button 
           variant="ghost" 
-          onClick={() => navigate("/auth/login")}
-          className="text-primary-foreground/80 hover:text-primary-foreground"
+          onClick={() => navigate("/auth")}
+          className="text-muted-foreground"
         >
           Already have an account? Sign In
         </Button>
