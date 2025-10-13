@@ -74,9 +74,8 @@ export function AppShell() {
         <main 
           className="flex-1 overflow-y-auto overflow-x-hidden"
           style={{ 
-            paddingBottom: 'calc(88px + max(8px, env(safe-area-inset-bottom)))',
-            overscrollBehavior: 'contain',
-            scrollbarGutter: 'stable both-edges'
+            paddingBottom: 'calc(56px + env(safe-area-inset-bottom))',
+            overscrollBehavior: 'contain'
           }}
         >
           <Outlet />
