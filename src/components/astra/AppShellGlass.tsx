@@ -27,7 +27,7 @@ export function AppShellGlass({
   return (
     <div 
       className={cn(
-        "h-screen bg-background flex flex-col relative overflow-hidden",
+        "fixed inset-0 bg-background flex flex-col relative overflow-hidden",
         className
       )}
       data-testid="shell-glass"
@@ -51,7 +51,7 @@ export function AppShellGlass({
       )}
       
       {/* Main Scrollable Content */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
+      <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative">
         {children}
       </main>
       
