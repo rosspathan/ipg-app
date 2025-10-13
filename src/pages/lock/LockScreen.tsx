@@ -66,7 +66,10 @@ export default function LockScreen() {
 
       if (assertion) {
         unlockApp();
-        navigate('/app/home', { replace: true });
+        // Return to the page user was on before lock
+        const returnPath = localStorage.getItem('ipg_return_path') || '/app/home';
+        localStorage.removeItem('ipg_return_path');
+        navigate(returnPath, { replace: true });
       }
     } catch (err: any) {
       console.error('Biometric auth failed:', err);
@@ -103,7 +106,10 @@ export default function LockScreen() {
       if (isValid) {
         setFailedAttempts(0);
         unlockApp();
-        navigate('/app/home', { replace: true });
+        // Return to the page user was on before lock
+        const returnPath = localStorage.getItem('ipg_return_path') || '/app/home';
+        localStorage.removeItem('ipg_return_path');
+        navigate(returnPath, { replace: true });
       } else {
         const newAttempts = failedAttempts + 1;
         setFailedAttempts(newAttempts);

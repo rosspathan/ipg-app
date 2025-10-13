@@ -23,6 +23,8 @@ export const AppStateManager = () => {
         const needsUnlock = isUnlockRequired(false);
         if (needsUnlock) {
           console.log('App opened - lock required, redirecting to lock screen');
+          // Store the intended destination before locking
+          localStorage.setItem('ipg_return_path', location.pathname);
           navigate('/auth/lock', { replace: true });
         }
       }
@@ -56,6 +58,8 @@ export const AppStateManager = () => {
           const needsUnlock = isUnlockRequired(false);
           if (needsUnlock) {
             console.log('Redirecting to lock screen');
+            // Store the intended destination before locking
+            localStorage.setItem('ipg_return_path', location.pathname);
             navigate('/auth/lock', { replace: true });
           }
         }
