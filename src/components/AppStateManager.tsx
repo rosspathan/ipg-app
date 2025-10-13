@@ -14,6 +14,23 @@ export const AppStateManager = () => {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
+    // Check if unlock is needed on initial app load (when app is reopened from task switcher)
+    const checkInitialLockState = () => {
+      const isAuthRoute = location.pathname.startsWith('/auth') || 
+                         location.pathname.startsWith('/onboarding');
+      
+      if (user && !isAuthRoute) {
+        const needsUnlock = isUnlockRequired(false);
+        if (needsUnlock) {
+          console.log('App opened - lock required, redirecting to lock screen');
+          navigate('/auth/lock', { replace: true });
+        }
+      }
+    };
+
+    // Check lock state immediately on mount
+    checkInitialLockState();
+
     let pauseListener: any;
     let resumeListener: any;
     let urlListener: any;
