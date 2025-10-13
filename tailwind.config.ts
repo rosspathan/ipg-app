@@ -196,9 +196,9 @@ export default {
 				'fade-in': 'fade-in 0.4s ease-out',
 				'fade-in-scale': 'fade-in-scale var(--duration-normal) ease-out',
 				'count-up': 'count-up var(--duration-normal) ease-out',
-				'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
-				'cyber-glow': 'cyber-glow 3s ease-in-out infinite',
-				'neon-pulse': 'neon-pulse 2s ease-in-out infinite',
+				'glow-pulse': 'glow-pulse 1s ease-out',
+				'cyber-glow': 'cyber-glow 1s ease-out',
+				'neon-pulse': 'neon-pulse 1s ease-out',
 				'slide-up-stagger': 'slide-up-stagger var(--duration-normal) ease-out',
 				'shimmer': 'shimmer 2s ease-in-out infinite',
 				'slide-in-up': 'slide-in-up 0.3s ease-out'
