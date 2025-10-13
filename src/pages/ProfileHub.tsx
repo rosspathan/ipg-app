@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   User, Shield, CreditCard, Bell, Settings, 
@@ -75,12 +75,20 @@ const profileSections = [
 
 export function ProfileHub() {
   const navigate = useNavigate();
-  const { user } = useAuthUser();
+  const { user, loading: authLoading } = useAuthUser();
   const { userApp } = useProfile();
   const { completion } = useProfileCompletion();
   const { getAvatarUrl } = useAvatar();
   const { badge } = useUserBadge();
   const [showQuickSwitch, setShowQuickSwitch] = useState(false);
+  
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      console.log('[ProfileHub] No user found, redirecting to onboarding');
+      navigate('/onboarding', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   const handleBack = () => {
     navigate("/app/home");
@@ -110,6 +118,23 @@ export function ProfileHub() {
   useUsernameBackfill();
   const displayName = useDisplayName();
   const completionScore = completion?.completion_score || 0;
+  
+  // Show loading state while auth is initializing
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render if no user (will redirect via useEffect)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-profile">

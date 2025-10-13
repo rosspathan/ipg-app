@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Upload, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useKYCNew } from "@/hooks/useKYCNew";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,6 +24,7 @@ const KYC_LEVELS = [
 export function KYCPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuthUser();
   const { profiles, config, uploadDocument, updateKYCLevel, submitKYCLevel, loading, uploading } = useKYCNew();
   const [activeLevel, setActiveLevel] = useState<'L0' | 'L1' | 'L2'>('L0');
   const [formData, setFormData] = useState<Record<string, any>>({});
@@ -31,6 +33,19 @@ export function KYCPage() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      console.log('[KYCPage] No user found, redirecting to onboarding');
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to access KYC verification",
+        variant: "destructive",
+      });
+      navigate('/onboarding', { replace: true });
+    }
+  }, [user, authLoading, navigate, toast]);
 
   // Load form data when profile or level changes
   useEffect(() => {
@@ -188,6 +203,25 @@ export function KYCPage() {
   const isReadOnly = ['submitted', 'in_review', 'approved'].includes(currentProfile?.status || '');
   const minAgeYears = config?.level_schemas?.L0?.minAgeYears || 18;
   const canSubmit = Object.keys(formData).length > 0 && Object.keys(validationErrors).length === 0;
+  
+  // Show loading state while auth or KYC data is loading
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">
+            {authLoading ? 'Authenticating...' : 'Loading KYC data...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render if no user (will redirect via useEffect)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-kyc">
