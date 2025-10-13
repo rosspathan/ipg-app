@@ -49,8 +49,8 @@ export const useBSKLedgers = () => {
   const loadData = async () => {
     if (!user?.id) return;
     
+    setLoading(true);
     try {
-      setLoading(true);
       await Promise.all([
         loadBalances(),
         loadWithdrawableHistory(),
@@ -58,11 +58,7 @@ export const useBSKLedgers = () => {
       ]);
     } catch (error) {
       console.error('Error loading BSK data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load BSK balance data',
-        variant: 'destructive'
-      });
+      // Don't show toast, just log error and continue with default values
     } finally {
       setLoading(false);
     }
@@ -72,27 +68,53 @@ export const useBSKLedgers = () => {
     if (!user?.id) return;
 
     const { data, error } = await supabase
-      .from('user_bsk_balance_summary')
+      .from('user_bsk_balances')
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
-      throw error;
+      console.error('Error loading BSK balances:', error);
+      // Set default balance instead of throwing
+      setBalances({
+        user_id: user.id,
+        withdrawable_balance: 0,
+        holding_balance: 0,
+        lifetime_withdrawable_earned: 0,
+        lifetime_holding_earned: 0,
+        lifetime_withdrawn: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as any);
+      return;
     }
 
     if (!data) {
       // Initialize balance record
       const { data: newBalance, error: insertError } = await supabase
-        .from('user_bsk_balance_summary')
+        .from('user_bsk_balances')
         .insert({ user_id: user.id })
         .select()
-        .single();
+        .maybeSingle();
 
-      if (insertError) throw insertError;
-      setBalances(newBalance);
+      if (insertError) {
+        console.error('Error creating BSK balance:', insertError);
+        // Set default balance instead of throwing
+        setBalances({
+          user_id: user.id,
+          withdrawable_balance: 0,
+          holding_balance: 0,
+          total_earned_withdrawable: 0,
+          total_earned_holding: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as any);
+        return;
+      }
+      
+      setBalances(newBalance as any);
     } else {
-      setBalances(data);
+      setBalances(data as any);
     }
   };
 
@@ -106,7 +128,11 @@ export const useBSKLedgers = () => {
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error loading withdrawable history:', error);
+      setWithdrawableHistory([]);
+      return;
+    }
     setWithdrawableHistory(data || []);
   };
 
@@ -120,7 +146,11 @@ export const useBSKLedgers = () => {
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error loading holding history:', error);
+      setHoldingHistory([]);
+      return;
+    }
     setHoldingHistory(data || []);
   };
 
