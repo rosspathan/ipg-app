@@ -6,13 +6,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'react-router-dom';
 import { ROUTES } from '@/config/routes';
 import React, { useEffect } from 'react';
-import { cn } from "@/lib/utils";
 
 const UserLayout = () => {
   const location = useLocation();
   const { navigate, getCurrentStack } = useNavigation();
   const { toast } = useToast();
-  const hideLegacyTabBar = location.pathname.startsWith('/app/home') || location.pathname.startsWith('/app/wallet');
 
   // Handle Android hardware back button
   const [backPressCount, setBackPressCount] = React.useState(0);
@@ -73,12 +71,12 @@ const UserLayout = () => {
     <NavigationStateManager>
       <div className="h-screen bg-background w-full max-w-full overflow-hidden animate-fade-in-scale flex flex-col">
         {/* Main Content */}
-        <div className={cn("flex-1 overflow-y-auto overflow-x-hidden", hideLegacyTabBar ? "pb-0" : "pb-24") }>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-24">
           <Outlet />
         </div>
 
         {/* Enhanced bottom navigation */}
-        {!hideLegacyTabBar && <BottomTabBar />}
+        <BottomTabBar />
       </div>
     </NavigationStateManager>
   );
