@@ -50,14 +50,14 @@ export function BreadcrumbNav() {
   }
 
   return (
-    <div className="flex items-center gap-2 px-6 py-3 bg-card/30 backdrop-blur-sm border-b border-border/50">
+    <div className="flex items-center gap-2 px-3 sm:px-4 py-3 bg-[hsl(230_28%_13%/0.5)] backdrop-blur-sm border-b border-[hsl(225_24%_22%/0.16)]">
       <Breadcrumb>
-        <BreadcrumbList>
+        <BreadcrumbList className="flex-wrap">
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
               <Link to="/admin" className="flex items-center gap-1.5 hover:text-primary transition-colors">
-                <Home className="h-3.5 w-3.5" />
-                <span className="text-sm">Dashboard</span>
+                <Home className="h-4 w-4" />
+                <span className="text-xs sm:text-sm">Dashboard</span>
               </Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
@@ -65,16 +65,16 @@ export function BreadcrumbNav() {
           {breadcrumbs.slice(1).map((crumb, index) => (
             <BreadcrumbItem key={index}>
               <BreadcrumbSeparator>
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </BreadcrumbSeparator>
               {crumb.path ? (
                 <BreadcrumbLink asChild>
-                  <Link to={crumb.path} className="text-sm hover:text-primary transition-colors">
+                  <Link to={crumb.path} className="text-xs sm:text-sm hover:text-primary transition-colors">
                     {crumb.label}
                   </Link>
                 </BreadcrumbLink>
               ) : (
-                <BreadcrumbPage className="text-sm font-medium">
+                <BreadcrumbPage className="text-xs sm:text-sm font-medium text-primary">
                   {crumb.label}
                 </BreadcrumbPage>
               )}

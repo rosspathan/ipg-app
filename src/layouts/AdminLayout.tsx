@@ -1,6 +1,5 @@
 import { Outlet } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AdminSidebar } from "@/components/admin/nova/AdminSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { NavigationStateManager } from "@/components/navigation/NavigationGuards";
 import { BrandLogoBlink } from "@/components/admin/nova/BrandLogoBlink";
 import { Bell, Search } from "lucide-react";
@@ -13,79 +12,65 @@ const AdminLayout = () => {
     <NavigationStateManager>
       <SidebarProvider defaultOpen={false}>
         <div className="flex min-h-screen w-full bg-gradient-to-b from-[hsl(245_35%_7%)] to-[hsl(234_38%_13%)]">
-          {/* Desktop Sidebar - Only visible on desktop (lg+) */}
-          {/* Sidebar disabled to enforce mobile-only layout across devices */}
-          {false && (
-            <div className="hidden lg:block lg:fixed lg:inset-y-0 lg:left-0 lg:z-50">
-              <AdminSidebar />
-            </div>
-          )}
-
-          {/* Main Content Wrapper - Full width on mobile, offset on desktop */}
-          <div className="flex flex-col min-h-screen w-full items-stretch">....
+          {/* Main Content Wrapper - Full width, mobile-first */}
+          <div className="flex flex-col min-h-screen w-full">
             {/* Top Header - Mobile Optimized with Safe Areas */}
             <header 
               className="sticky top-0 z-40 bg-[hsl(230_28%_13%/0.95)] backdrop-blur-xl border-b border-[hsl(225_24%_22%/0.16)] shadow-[0_4px_24px_-8px_hsl(245_35%_7%/0.5)]"
               style={{
-                paddingTop: 'max(env(safe-area-inset-top), 0.5rem)'
+                paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)'
               }}
             >
-              <div className="flex items-center justify-between h-12 sm:h-14 md:h-16 px-2 sm:px-3 md:px-4 gap-2 w-full max-w-[480px] mx-auto">
-                {/* Left: Trigger (only on desktop) + Logo */}
-                <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 min-w-0">
-                  <SidebarTrigger className="hidden text-muted-foreground hover:text-foreground touch-manipulation min-w-[44px] min-h-[44px] items-center justify-center shrink-0" />
+              <div className="flex items-center justify-between h-14 px-3 sm:px-4 gap-2 w-full">
+                {/* Left: Logo */}
+                <div className="flex items-center gap-2 min-w-0">
                   <div className="shrink-0">
                     <BrandLogoBlink />
                   </div>
                 </div>
 
-                {/* Center: Title (mobile) */}
-                <h1 className="flex-1 text-sm sm:text-base md:text-lg font-heading font-bold text-foreground truncate px-2">
-                  Admin
+                {/* Center: Title */}
+                <h1 className="flex-1 text-base sm:text-lg font-heading font-bold text-foreground truncate text-center">
+                  Admin Console
                 </h1>
 
                 {/* Right: Actions */}
-                <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="min-w-[44px] min-h-[44px] text-muted-foreground hover:text-foreground touch-manipulation"
+                    className="h-10 w-10 text-muted-foreground hover:text-foreground"
                   >
-                    <Search className="w-5 h-5" />
+                    <Search className="h-5 w-5" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="min-w-[44px] min-h-[44px] text-muted-foreground hover:text-foreground relative touch-manipulation"
+                    className="h-10 w-10 text-muted-foreground hover:text-foreground relative"
                   >
-                    <Bell className="w-5 h-5" />
+                    <Bell className="h-5 w-5" />
                     <span className="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full ring-2 ring-[hsl(230_28%_13%)]" />
                   </Button>
                 </div>
               </div>
             </header>
 
-            {/* Breadcrumb - Hidden on small mobile */}
-            <div className="hidden sm:block lg:block">
-              <BreadcrumbNav />
-            </div>
+            {/* Breadcrumb Navigation */}
+            <BreadcrumbNav />
 
-            {/* Page Content - Mobile Optimized with Safe Areas */}
+            {/* Page Content - Mobile Optimized with proper spacing for fixed dock */}
             <main 
-              className="flex-1 overflow-x-hidden overflow-y-auto w-full max-w-[480px] mx-auto px-2 sm:px-3"
+              className="flex-1 w-full px-3 sm:px-4 py-4"
               style={{
-                paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))',
-                paddingLeft: 'max(env(safe-area-inset-left), 0px)',
-                paddingRight: 'max(env(safe-area-inset-right), 0px)',
+                paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))',
+                minHeight: 'calc(100vh - 14rem)'
               }}
             >
               <Outlet />
             </main>
 
-            {/* Mobile Dock - Always visible (mobile-first across devices) */}
-            <div className="w-full max-w-[480px] mx-auto">
-              <DockAdmin />
-            </div>
+            {/* Mobile Dock - Fixed at bottom */}
+            <DockAdmin />
           </div>
         </div>
       </SidebarProvider>

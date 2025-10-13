@@ -168,16 +168,15 @@ export function DockAdmin({ className }: DockAdminProps) {
         data-testid="admin-dock"
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50",
-          "lg:hidden", // Hide on desktop
           "bg-[hsl(230_28%_13%/0.98)] backdrop-blur-xl",
           "border-t border-[hsl(225_24%_22%/0.16)]",
           "shadow-[0_-4px_24px_-8px_hsl(245_35%_7%/0.6)]",
           className
         )}
         style={{
-          paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)',
-          paddingLeft: 'max(env(safe-area-inset-left), 0.25rem)',
-          paddingRight: 'max(env(safe-area-inset-right), 0.25rem)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)',
+          paddingLeft: 'calc(env(safe-area-inset-left) + 0.25rem)',
+          paddingRight: 'calc(env(safe-area-inset-right) + 0.25rem)',
         }}
       >
         <div className="flex items-center justify-around h-16 sm:h-20 px-1 sm:px-2 md:px-3 relative max-w-screen-xl mx-auto">
