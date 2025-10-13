@@ -19,6 +19,13 @@ const config: CapacitorConfig = {
     allowMixedContent: true,
   },
   plugins: {
+    BiometricAuth: {
+      androidTitle: 'Biometric Authentication',
+      androidSubtitle: 'Verify your identity',
+      androidConfirmationRequired: false,
+      androidBiometryStrength: 2, // BIOMETRIC_STRONG
+      androidMaxAttempts: -1, // Unlimited attempts
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       backgroundColor: '#0f172a',
