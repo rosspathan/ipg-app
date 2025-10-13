@@ -130,7 +130,7 @@ export default function LockScreen() {
               </div>
             </div>
           </div>
-          <CardTitle className="text-2xl">App Locked</CardTitle>
+          <CardTitle className="text-2xl">App Lock</CardTitle>
           <CardDescription>
             Enter your PIN to unlock the app
           </CardDescription>
