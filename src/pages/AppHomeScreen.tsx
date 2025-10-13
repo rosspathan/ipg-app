@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,12 +18,14 @@ import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
 import ipgLogo from "@/assets/ipg-logo.jpg";
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp";
-import CurvedBottomNav from "@/components/CurvedBottomNav";
+import { AppShellGlass } from "@/components/astra/AppShellGlass";
+import { DockNav } from "@/components/navigation/DockNav";
+import { useNavigation } from "@/hooks/useNavigation";
 
 const AppHomeScreen = () => {
   console.log('AppHomeScreen: Component rendering...');
   
-  const navigate = useNavigate();
+  const { navigate } = useNavigation();
   const { user } = useAuthUser();
 
   console.log('AppHomeScreen: User authenticated:', !!user);
@@ -132,8 +133,8 @@ const AppHomeScreen = () => {
   };
 
   return (
-    <div className="h-full w-full overflow-x-hidden">
-      {/* Content */}
+    <>
+      <AppShellGlass showTopBar={false} showBottomBar={false}>
       <div>
         {/* Cyber Header with KPIs */}
         <CyberHeader
@@ -160,7 +161,7 @@ const AppHomeScreen = () => {
           }
         />
 
-      <div className="p-3 space-y-4 md:p-4 md:space-y-6 pb-28">
+      <div className="p-3 space-y-4 md:p-4 md:space-y-6 pb-2">
         {/* Premium Add Funds Button - World Class Design */}
         <div className="relative group animate-fade-in-scale" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
           <Button
@@ -384,11 +385,12 @@ const AppHomeScreen = () => {
         </CyberCard>
       </div>
       </div>
+    </AppShellGlass>
 
-      {/* Bottom Navigation with Radial Speed Dial */}
-      <CurvedBottomNav />
-    </div>
-  );
+    {/* Bottom Navigation Dock */}
+    <DockNav onNavigate={(path) => navigate(path)} />
+  </>
+);
 };
 
 export default AppHomeScreen;
