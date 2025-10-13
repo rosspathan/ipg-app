@@ -55,14 +55,6 @@ const CurvedBottomNav: React.FC = () => {
 
 return (
   <>
-    {/* Spacer to prevent content from being hidden behind the fixed nav */}
-    <div
-      aria-hidden
-      style={{
-        height: spacerHeight,
-        paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
-      }}
-    />
     <div 
       ref={navRef}
       className="fixed bottom-0 left-0 right-0 z-50 px-4"

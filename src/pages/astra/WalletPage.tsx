@@ -154,9 +154,9 @@ export function WalletPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20" data-version="usr-wallet-link-v3">
+    <div className="h-full bg-gradient-to-b from-background via-background to-muted/20" data-version="usr-wallet-link-v3">
       <AppShellGlass topBar={topBar} data-testid="page-wallet">
-      <div className="space-y-6 pb-28">
+      <div className="space-y-6 pb-32">
         {/* Address Panel with Network Badge */}
         <div 
           className="mx-4 mt-4 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 transition-all duration-220"
