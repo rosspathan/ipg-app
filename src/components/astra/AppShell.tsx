@@ -57,7 +57,12 @@ export function AppShell() {
         <AppTopBar />
 
         {/* Main Content - Scrollable with safe-area padding */}
-        <main className="flex-1 overflow-y-auto pb-safe" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+        <main 
+          className="flex-1 overflow-y-auto" 
+          style={{ 
+            paddingBottom: 'calc(88px + max(8px, env(safe-area-inset-bottom)))' 
+          }}
+        >
           <Outlet />
         </main>
 

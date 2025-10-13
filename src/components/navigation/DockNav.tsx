@@ -48,9 +48,11 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
     <nav
       className={cn(
         "fixed bottom-0 inset-x-0 w-full max-w-[430px] mx-auto z-50",
-        "pb-[env(safe-area-inset-bottom)]",
         className
       )}
+      style={{
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
+      }}
       data-testid="dock-nav"
     >
       {/* Background with curved cutout for center button */}
@@ -156,7 +158,13 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
   return (
     <>
       {/* Spacer to prevent content from being hidden behind the fixed dock */}
-      <div className="h-20 pb-safe" aria-hidden="true" />
+      <div 
+        className="h-20" 
+        style={{
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
+        }}
+        aria-hidden="true" 
+      />
       {portalRoot ? createPortal(navEl, portalRoot) : navEl}
     </>
   )
