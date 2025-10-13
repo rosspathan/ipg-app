@@ -26,42 +26,20 @@ const navItems = [
 export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) {
   const location = useLocation()
   
-  // Setup portal root for fixed dock; create if missing
+  // Measure nav height to create an accurate spacer and avoid overlap on APK/WebView
   const navRef = React.useRef<HTMLDivElement | null>(null)
-  const [portalRootEl, setPortalRootEl] = React.useState<HTMLElement | null>(null)
+  const [spacerHeight, setSpacerHeight] = React.useState<number>(96)
 
-  React.useEffect(() => {
-    if (typeof document === 'undefined') return
-    let root = document.getElementById('dock-portal') as HTMLElement | null
-    if (!root) {
-      root = document.createElement('div')
-      root.id = 'dock-portal'
-      document.body.appendChild(root)
-    }
-    setPortalRootEl(root)
-  }, [])
-
-  // Measure dock height including floating center button overlap
   React.useLayoutEffect(() => {
     const update = () => {
-      const nav = navRef.current
-      if (!nav) return
-      const navRect = nav.getBoundingClientRect()
-      const fabEl = nav.querySelector('[data-dock-fab]') as HTMLElement | null
-      let extra = 0
-      if (fabEl) {
-        const fabRect = fabEl.getBoundingClientRect()
-        extra = Math.max(0, navRect.top - fabRect.top)
-      }
-      const total = Math.round(navRect.height + extra)
-      document.documentElement.style.setProperty('--dock-height', `${total}px`)
+      const h = navRef.current?.offsetHeight ?? 96
+      setSpacerHeight(h)
     }
+    // initial + on resize
     update()
     window.addEventListener('resize', update)
     return () => window.removeEventListener('resize', update)
   }, [])
-
-
 
   const isActive = (path: string | null) => {
     if (!path) return false
@@ -78,7 +56,7 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
     onCenterPress?.()
   }
 
-  const portalRoot = portalRootEl
+  const portalRoot = typeof document !== "undefined" ? document.getElementById("dock-portal") : null
 
   // Console marker to help debug safe area on device builds
   React.useEffect(() => {
@@ -189,7 +167,7 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
         </div>
 
         {/* Floating center button - positioned absolutely above the nav */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2" data-dock-fab>
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
           <LogoDockButton onClick={handleCenterPress} />
         </div>
       </div>
@@ -199,6 +177,14 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
 
   return (
     <>
+      {/* Spacer to prevent content from being hidden behind the fixed dock */}
+      <div 
+        aria-hidden="true"
+        style={{
+          height: spacerHeight,
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
+        }}
+      />
       {portalRoot ? createPortal(navEl, portalRoot) : navEl}
     </>
   )

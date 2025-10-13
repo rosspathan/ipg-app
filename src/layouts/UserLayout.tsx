@@ -6,7 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'react-router-dom';
 import { ROUTES } from '@/config/routes';
 import React, { useEffect } from 'react';
-import { cn } from '@/lib/utils';
 
 const UserLayout = () => {
   const location = useLocation();
@@ -68,23 +67,16 @@ const UserLayout = () => {
     }
   }, [location.pathname]);
 
-  // Routes that use DockNav instead of BottomTabBar
-  const dockNavRoutes = ['/app/home', '/app/wallet', '/app/profile', '/app/trade', '/app/programs'];
-  const useDockNav = dockNavRoutes.some(route => location.pathname.startsWith(route));
-
   return (
     <NavigationStateManager>
       <div className="h-screen bg-background w-full max-w-full overflow-hidden animate-fade-in-scale flex flex-col">
         {/* Main Content */}
-        <div className={cn(
-          "flex-1 overflow-y-auto overflow-x-hidden",
-          useDockNav ? "pb-0" : "pb-24"
-        )}>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-24">
           <Outlet />
         </div>
 
-        {/* Bottom navigation - only show legacy BottomTabBar on non-DockNav routes */}
-        {!useDockNav && <BottomTabBar />}
+        {/* Enhanced bottom navigation */}
+        <BottomTabBar />
       </div>
     </NavigationStateManager>
   );

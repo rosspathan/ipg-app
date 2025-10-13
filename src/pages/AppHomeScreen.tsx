@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,14 +19,12 @@ import { copyToClipboard } from "@/utils/clipboard";
 import { cn } from "@/lib/utils";
 import ipgLogo from "@/assets/ipg-logo.jpg";
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp";
-import { AppShellGlass } from "@/components/astra/AppShellGlass";
-import { DockNav } from "@/components/navigation/DockNav";
-import { useNavigation } from "@/hooks/useNavigation";
+import CurvedBottomNav from "@/components/CurvedBottomNav";
 
 const AppHomeScreen = () => {
   console.log('AppHomeScreen: Component rendering...');
   
-  const { navigate } = useNavigation();
+  const navigate = useNavigate();
   const { user } = useAuthUser();
 
   console.log('AppHomeScreen: User authenticated:', !!user);
@@ -133,8 +132,8 @@ const AppHomeScreen = () => {
   };
 
   return (
-    <>
-      <AppShellGlass showTopBar={false} showBottomBar={false}>
+    <div className="min-h-screen w-full animate-slide-in-right">
+      {/* Content */}
       <div>
         {/* Cyber Header with KPIs */}
         <CyberHeader
@@ -161,7 +160,7 @@ const AppHomeScreen = () => {
           }
         />
 
-      <div className="p-3 space-y-4 md:p-4 md:space-y-6 pb-2">
+      <div className="p-3 space-y-4 md:p-4 md:space-y-6 pb-28">
         {/* Premium Add Funds Button - World Class Design */}
         <div className="relative group animate-fade-in-scale" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
           <Button
@@ -385,12 +384,11 @@ const AppHomeScreen = () => {
         </CyberCard>
       </div>
       </div>
-    </AppShellGlass>
 
-    {/* Bottom Navigation Dock */}
-    <DockNav onNavigate={(path) => navigate(path)} />
-  </>
-);
+      {/* Bottom Navigation with Radial Speed Dial */}
+      <CurvedBottomNav />
+    </div>
+  );
 };
 
 export default AppHomeScreen;

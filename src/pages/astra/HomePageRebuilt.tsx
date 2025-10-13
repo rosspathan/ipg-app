@@ -148,7 +148,7 @@ export function HomePageRebuilt() {
   ]
 
   return (
-    <div data-testid="page-home" data-version="usr-wallet-link-v3">
+    <div className="min-h-screen" data-testid="page-home" data-version="usr-wallet-link-v3">
       {/* Top Bar */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/40">
         <div className="flex items-center justify-between p-4">
@@ -167,7 +167,7 @@ export function HomePageRebuilt() {
       </div>
 
       {/* Main Content */}
-      <main className="px-4 space-y-6 pt-4 pb-4">
+      <main className="px-4 space-y-6 pt-4 pb-28">
         {/* Add Funds CTA */}
         <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
 
