@@ -82,13 +82,7 @@ export function ProfileHub() {
   const { badge } = useUserBadge();
   const [showQuickSwitch, setShowQuickSwitch] = useState(false);
   
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      console.log('[ProfileHub] No user found, redirecting to onboarding');
-      navigate('/onboarding', { replace: true });
-    }
-  }, [user, authLoading, navigate]);
+  // Note: Profile is protected by UserRoute, no need for additional redirect check
 
   const handleBack = () => {
     navigate("/app/home");
@@ -131,9 +125,21 @@ export function ProfileHub() {
     );
   }
   
-  // Don't render if no user (will redirect via useEffect)
-  if (!user) {
-    return null;
+  // If no user after loading, show message (shouldn't happen due to UserRoute)
+  if (!user && !authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">Please sign in to view your profile</p>
+          <button 
+            onClick={() => navigate('/auth/login')}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

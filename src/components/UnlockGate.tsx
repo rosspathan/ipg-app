@@ -17,9 +17,10 @@ export const UnlockGate = ({ children }: UnlockGateProps) => {
     const checkSecurity = async () => {
       if (!user) return;
 
-      // Skip for auth and onboarding routes
+      // Skip for auth, onboarding, and profile routes
       if (location.pathname.startsWith('/auth') || 
           location.pathname.startsWith('/onboarding') ||
+          location.pathname.startsWith('/app/profile') ||
           location.pathname === '/recovery/verify') {
         return;
       }
