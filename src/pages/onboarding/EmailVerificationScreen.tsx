@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, Mail, RefreshCw, CheckCircle, Link as LinkIcon } from 'lucide-react';
+import { ChevronLeft, Mail, RefreshCw, CheckCircle, Link as LinkIcon, Gift } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { storeEvmAddress } from '@/lib/wallet/evmAddress';
@@ -11,6 +11,7 @@ import { extractUsernameFromEmail } from '@/lib/user/username';
 import { useNavigate } from 'react-router-dom';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
+import { storePendingReferral } from '@/utils/referralCapture';
 
 // Mask email for display
 const maskEmail = (e: string) => {
@@ -46,6 +47,9 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   const [canResend, setCanResend] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(60); // Resend cooldown 60s
   const [showMagicLink, setShowMagicLink] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
+  const [isValidatingReferral, setIsValidatingReferral] = useState(false);
+  const [referralValidated, setReferralValidated] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -335,6 +339,79 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     }
   };
 
+  const handleValidateReferral = async () => {
+    if (!referralCode.trim()) {
+      setReferralValidated(false);
+      return;
+    }
+
+    setIsValidatingReferral(true);
+    try {
+      const { data, error } = await supabase
+        .from('referral_codes')
+        .select('user_id')
+        .eq('code', referralCode.trim().toUpperCase())
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error validating referral:', error);
+        toast({
+          title: "Invalid Code",
+          description: "This referral code doesn't exist",
+          variant: "destructive"
+        });
+        setReferralValidated(false);
+        return;
+      }
+
+      if (!data) {
+        toast({
+          title: "Invalid Code",
+          description: "This referral code doesn't exist",
+          variant: "destructive"
+        });
+        setReferralValidated(false);
+        return;
+      }
+
+      // Validate sponsor exists
+      const { data: sponsorProfile } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('user_id', data.user_id)
+        .maybeSingle();
+
+      if (!sponsorProfile) {
+        toast({
+          title: "Invalid Code",
+          description: "Sponsor not found",
+          variant: "destructive"
+        });
+        setReferralValidated(false);
+        return;
+      }
+
+      // Store pending referral
+      storePendingReferral(referralCode.trim().toUpperCase(), data.user_id);
+      setReferralValidated(true);
+      
+      toast({
+        title: "✓ Referral Code Applied",
+        description: "You'll be linked to your sponsor after verification"
+      });
+    } catch (error: any) {
+      console.error('Error validating referral:', error);
+      toast({
+        title: "Validation Failed",
+        description: error.message || "Please try again",
+        variant: "destructive"
+      });
+      setReferralValidated(false);
+    } finally {
+      setIsValidatingReferral(false);
+    }
+  };
+
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 relative overflow-hidden" style={{ height: '100dvh' }}>
       {/* Dev ribbon */}
@@ -455,6 +532,58 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                     </div>
                     <p className="text-white/60 text-xs">
                       This wallet will be linked to your email after verification
+                    </p>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Referral Code Input (APK Only) */}
+            {Capacitor.isNativePlatform() && (
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.57 }}
+              >
+                <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 backdrop-blur-sm border-amber-500/30">
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Gift className="w-4 h-4 text-amber-400" />
+                      <span className="text-amber-400 text-sm font-medium">Have a Referral Code?</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        value={referralCode}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                          setReferralCode(val);
+                          if (referralValidated) setReferralValidated(false);
+                        }}
+                        placeholder="Enter code (optional)"
+                        className="bg-black/30 border-amber-500/30 text-white placeholder:text-white/40 font-mono"
+                        maxLength={12}
+                        disabled={referralValidated}
+                      />
+                      <Button
+                        onClick={handleValidateReferral}
+                        disabled={!referralCode.trim() || isValidatingReferral || referralValidated}
+                        size="sm"
+                        className={referralValidated ? "bg-green-500 hover:bg-green-600" : "bg-amber-500 hover:bg-amber-600"}
+                      >
+                        {isValidatingReferral ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : referralValidated ? (
+                          <CheckCircle className="w-4 h-4" />
+                        ) : (
+                          "Apply"
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-white/60 text-xs">
+                      {referralValidated 
+                        ? "✓ Code applied! You'll be linked after verification" 
+                        : "Optional: Enter your referrer's code to get linked"}
                     </p>
                   </div>
                 </Card>

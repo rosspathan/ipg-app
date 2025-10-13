@@ -136,30 +136,29 @@ export const useReferrals = () => {
   };
 
   const getReferralUrl = () => {
-    if (!referralCode || !settings) return '';
-    return `${settings.host}${settings.ref_base_path}/${referralCode.code}`;
+    // APK-only: No URL needed, users share codes directly
+    return '';
   };
 
   const getDeepLink = () => {
-    if (!referralCode || !settings) return '';
-    return `${settings.custom_scheme}://r/${referralCode.code}`;
+    // APK-only: No deep link needed
+    return '';
   };
 
   const shareReferral = async (method: 'whatsapp' | 'native') => {
-    const url = getReferralUrl();
-    const template = settings?.whatsapp_template || 'Join me on IPG I-SMART! Use my link: {{link}} 🚀';
-    const text = template.replace('{{link}}', url);
+    if (!referralCode) return;
+    
+    // Share just the code for APK-only system
+    const text = `Join me on IPG I-SMART! Use my referral code: ${referralCode.code} 🚀`;
 
     if (method === 'whatsapp') {
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-      // Use openUrl to keep it in-app for APK builds
       await openUrl(whatsappUrl);
     } else if (method === 'native' && navigator.share) {
       try {
         await navigator.share({
           title: 'Join IPG I-SMART',
-          text,
-          url
+          text
         });
       } catch (error) {
         console.error('Error sharing:', error);

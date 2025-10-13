@@ -166,7 +166,7 @@ import { SecurityPage } from "@/pages/SecurityPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { ReferralsPage } from "@/pages/ReferralsPage";
-import { ReferralResolver } from "@/pages/ReferralResolver";
+
 import { DownloadPage } from "@/pages/DownloadPage";
 import { DeepLinkResolver } from "@/pages/DeepLinkResolver";
 import { InsurancePage } from "@/pages/astra/InsurancePage";
@@ -202,7 +202,6 @@ function App() {
               {/* Landing & Splash */}
               <Route path="/" element={<AppInitializer><Navigate to="/onboarding" replace /></AppInitializer>} />
               <Route path="/splash" element={<SplashScreen />} />
-              <Route path="/r/:code" element={<ReferralResolver />} />
               <Route path="/download" element={<DownloadPage />} />
               <Route path="/deeplink/r/:code" element={<DeepLinkResolver />} />
               <Route path="/welcome" element={<WelcomeScreen />} />
