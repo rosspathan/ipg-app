@@ -61,12 +61,7 @@ const CreateWalletScreen = () => {
   const handleConfirmPhrase = async () => {
     try {
       await createWallet(seedPhrase.join(" "));
-      console.log('WALLET_OK - Created');
-      toast({
-        title: "Wallet Created!",
-        description: "Your wallet has been created successfully",
-      });
-      navigate("/auth");
+      navigate("/onboarding/security");
     } catch (error) {
       toast({
         title: "Error",
@@ -77,7 +72,7 @@ const CreateWalletScreen = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background px-6 py-8 pb-safe">
+    <div className="min-h-screen flex flex-col bg-background px-6 py-8">
       <div className="flex items-center mb-6">
         <Button 
           variant="ghost" 
@@ -100,7 +95,7 @@ const CreateWalletScreen = () => {
           </p>
         </div>
 
-        <Card className="bg-card border border-border">
+        <Card className="bg-gradient-card shadow-card border-0">
           <CardHeader>
             <CardTitle className="text-base text-center">Recovery Phrase</CardTitle>
           </CardHeader>
@@ -140,13 +135,12 @@ const CreateWalletScreen = () => {
           </Button>
           
           <Button 
-            data-testid="wallet-confirm"
             variant="default" 
             size="lg" 
             onClick={handleConfirmPhrase}
             className="w-full"
           >
-            Continue to Login
+            I've Saved My Phrase
           </Button>
         </div>
 

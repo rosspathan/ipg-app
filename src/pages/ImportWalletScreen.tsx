@@ -49,16 +49,14 @@ const ImportWalletScreen = () => {
       // Import the wallet using Web3 context
       await importWallet(cleanPhrase);
       
-      console.log('WALLET_OK - Imported');
-      
       toast({
         title: "Success!",
         description: "Wallet imported successfully",
       });
 
-      // Navigate to login
+      // Navigate to security setup
       setTimeout(() => {
-        navigate("/auth");
+        navigate("/onboarding/security");
       }, 1000);
 
     } catch (err) {
@@ -74,7 +72,7 @@ const ImportWalletScreen = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background px-6 py-8 pb-safe">
+    <div className="min-h-screen flex flex-col bg-background px-6 py-8">
       <div className="flex items-center mb-6">
         <Button 
           variant="ghost" 
@@ -97,7 +95,7 @@ const ImportWalletScreen = () => {
           </p>
         </div>
 
-        <Card className="bg-card border border-border">
+        <Card className="bg-gradient-card shadow-card border-0">
           <CardHeader>
             <CardTitle className="text-base text-center">Wallet Verification</CardTitle>
           </CardHeader>

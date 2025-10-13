@@ -189,20 +189,19 @@ export default {
 				}
 			},
 			animation: {
-				// Safe Mode: All animations disabled for MVP
-				'accordion-down': 'none',
-				'accordion-up': 'none',
-				'slide-in-right': 'none',
-				'slide-in-left': 'none',
-				'fade-in': 'none',
-				'fade-in-scale': 'none',
-				'count-up': 'none',
-				'glow-pulse': 'none',
-				'cyber-glow': 'none',
-				'neon-pulse': 'none',
-				'slide-up-stagger': 'none',
-				'shimmer': 'none',
-				'slide-in-up': 'none'
+				'accordion-down': 'accordion-down 0.2s ease-out',
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'slide-in-right': 'slide-in-right var(--duration-normal) ease-out',
+				'slide-in-left': 'slide-in-left var(--duration-normal) ease-out',
+				'fade-in': 'fade-in 0.4s ease-out',
+				'fade-in-scale': 'fade-in-scale var(--duration-normal) ease-out',
+				'count-up': 'count-up var(--duration-normal) ease-out',
+				'glow-pulse': 'glow-pulse 1s ease-out',
+				'cyber-glow': 'cyber-glow 1s ease-out',
+				'neon-pulse': 'neon-pulse 1s ease-out',
+				'slide-up-stagger': 'slide-up-stagger var(--duration-normal) ease-out',
+				'shimmer': 'shimmer 2s ease-in-out infinite',
+				'slide-in-up': 'slide-in-up 0.3s ease-out'
 			}
 		}
 	},

@@ -49,9 +49,13 @@ const AdminKYCSettings = React.lazy(() => import("./pages/AdminKYCSettings"));
 import UserRoute from "@/components/UserRoute";
 import AdminRouteNew from "@/components/AdminRouteNew";
 
-// Landing & Auth Pages - MVP
-import SplashScreenMVP from "./pages/SplashScreenMVP";
-import AuthEmailOTP from "./pages/AuthEmailOTP";
+// Landing & Auth Pages
+import SplashScreen from "./pages/SplashScreen";
+import WelcomeScreen from "./pages/WelcomeScreen";
+import WelcomeScreen1 from "./pages/WelcomeScreen1";
+import WelcomeScreen2 from "./pages/WelcomeScreen2";
+import WelcomeScreen3 from "./pages/WelcomeScreen3";
+import AuthUnified from "./pages/AuthUnified";
 import AuthEmailVerification from "./pages/AuthEmailVerification";
 import AuthCallback from "./pages/AuthCallback";
 import AppLockScreen from "./pages/AppLockScreen";
@@ -61,10 +65,14 @@ import LockScreen from "./pages/lock/LockScreen";
 import { AppLockGuard } from "@/components/AppLockGuard";
 import WalletLoginScreen from "./pages/WalletLoginScreen";
 
-// Onboarding Pages - MVP
+// Onboarding Pages
+import OnboardingFlow from "./pages/OnboardingFlow";
 import OnboardingIndexScreen from "./pages/OnboardingIndexScreen";
+import WalletSelectionScreen from "./pages/WalletSelectionScreen";
 import CreateWalletScreen from "./pages/CreateWalletScreen";
 import ImportWalletScreen from "./pages/ImportWalletScreen";
+import SecuritySetupScreen from "./pages/SecuritySetupScreen";
+import RecoveryVerifyScreen from "./pages/RecoveryVerifyScreen";
 
 // User App Pages
 import AppHomeScreen from "./pages/AppHomeScreen";
@@ -191,42 +199,46 @@ function App() {
             <AppStateManager />
             <RouterWrapper>
               <Routes>
-              {/* Landing & Splash - MVP */}
-              <Route path="/" element={<AppInitializer><Navigate to="/splash" replace /></AppInitializer>} />
-              <Route path="/splash" element={<SplashScreenMVP />} />
+              {/* Landing & Splash */}
+              <Route path="/" element={<AppInitializer><Navigate to="/onboarding" replace /></AppInitializer>} />
+              <Route path="/splash" element={<SplashScreen />} />
               <Route path="/r/:code" element={<ReferralResolver />} />
               <Route path="/download" element={<DownloadPage />} />
               <Route path="/deeplink/r/:code" element={<DeepLinkResolver />} />
+              <Route path="/welcome" element={<WelcomeScreen />} />
+              <Route path="/welcome-1" element={<WelcomeScreen1 />} />
+              <Route path="/welcome-2" element={<WelcomeScreen2 />} />
+              <Route path="/welcome-3" element={<WelcomeScreen3 />} />
 
-              {/* Onboarding Flow - MVP */}
-              <Route path="/onboarding" element={<OnboardingIndexScreen />} />
+              {/* Onboarding Flow */}
+              <Route path="/onboarding" element={<OnboardingFlow />} />
               <Route path="/onboarding/create-wallet" element={<CreateWalletScreen />} />
               <Route path="/onboarding/import-wallet" element={<ImportWalletScreen />} />
-              
+              <Route path="/onboarding/security" element={<SecuritySetupScreen />} />
+              <Route path="/recovery/verify" element={<RecoveryVerifyScreen />} />
+              <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
+
               {/* Legacy Onboarding Redirects */}
               <Route path="/create-wallet" element={<Navigate to="/onboarding/create-wallet" replace />} />
               <Route path="/import-wallet" element={<Navigate to="/onboarding/import-wallet" replace />} />
-              <Route path="/onboarding/security" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/recovery/verify" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/wallet-selection" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/welcome" element={<Navigate to="/splash" replace />} />
-              <Route path="/welcome-1" element={<Navigate to="/splash" replace />} />
-              <Route path="/welcome-2" element={<Navigate to="/splash" replace />} />
-              <Route path="/welcome-3" element={<Navigate to="/splash" replace />} />
 
-              {/* User Authentication - MVP (Email OTP Only) */}
+              {/* User Authentication */}
               <Route path="/auth" element={
                 <AuthProviderUser>
-                  <AuthEmailOTP />
+                  <AuthUnified />
                 </AuthProviderUser>
               } />
               <Route path="/auth/login" element={
                 <AuthProviderUser>
-                  <AuthEmailOTP />
+                  <AuthUnified />
                 </AuthProviderUser>
               } />
-              <Route path="/auth/register" element={<Navigate to="/auth" replace />} />
-              <Route path="/auth/wallet-login" element={<Navigate to="/auth" replace />} />
+              <Route path="/auth/wallet-login" element={<WalletLoginScreen />} />
+              <Route path="/auth/register" element={
+                <AuthProviderUser>
+                  <AuthUnified />
+                </AuthProviderUser>
+              } />
               <Route path="/auth/email-verification" element={
                 <AuthProviderUser>
                   <AuthEmailVerification />

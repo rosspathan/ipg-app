@@ -21,7 +21,6 @@ export function ReferralResolver() {
       // Check for ref code in URL params or path params
       const refCode = code || searchParams.get('ref');
       console.log('🔗 Resolving referral sponsorID:', refCode);
-      console.log('REF_CAPTURE_OK');
       
       if (!refCode) {
         console.warn('No sponsorID provided, redirecting to onboarding');
@@ -59,6 +58,7 @@ export function ReferralResolver() {
         
         if (profileData) {
           console.log('✅ Valid sponsor found:', sponsorId);
+          console.log('REF_CAPTURE_OK'); // Module C console marker
         } else {
           console.warn('⚠️ Sponsor not found, but storing referral anyway');
         }
@@ -66,7 +66,7 @@ export function ReferralResolver() {
         // Show toast notification
         toast({
           title: "Referral applied",
-          description: "Complete registration to earn rewards",
+          description: "You'll earn rewards when you complete registration",
         });
 
         // Always redirect to onboarding with sponsor ID
@@ -94,8 +94,8 @@ export function ReferralResolver() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
-        <p className="text-muted-foreground">Processing referral...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="text-muted-foreground">Processing referral link...</p>
       </div>
     </div>
   );
