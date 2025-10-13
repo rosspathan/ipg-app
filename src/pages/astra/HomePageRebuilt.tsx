@@ -167,7 +167,7 @@ export function HomePageRebuilt() {
       </div>
 
       {/* Main Content */}
-      <main className="px-4 space-y-6 pt-4 pb-4">
+      <main className="px-4 space-y-6 pt-4 pb-28">
         {/* Add Funds CTA */}
         <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
 

@@ -160,7 +160,7 @@ const AppHomeScreen = () => {
           }
         />
 
-      <div className="p-3 space-y-4 md:p-4 md:space-y-6">
+      <div className="p-3 space-y-4 md:p-4 md:space-y-6 pb-28">
         {/* Premium Add Funds Button - World Class Design */}
         <div className="relative group animate-fade-in-scale" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
           <Button
