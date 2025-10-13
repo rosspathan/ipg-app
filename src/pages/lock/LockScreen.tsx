@@ -120,10 +120,6 @@ export default function LockScreen() {
 
   return (
     <div className="screen min-h-screen flex items-center justify-center bg-background px-6">
-      <div className="fixed top-4 left-4 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-mono">
-        APP-LOCK v1
-      </div>
-
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
