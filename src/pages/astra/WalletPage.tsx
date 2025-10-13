@@ -2,7 +2,9 @@ import * as React from "react"
 import { useState, useEffect } from "react"
 import { Copy, ExternalLink, QrCode, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
+import { QRCodeSVG } from "qrcode.react"
 import { copyToClipboard } from "@/utils/clipboard"
 import { AppShellGlass } from "@/components/astra/AppShellGlass"
 import { BalanceCluster } from "@/components/astra/BalanceCluster"
@@ -26,6 +28,7 @@ export function WalletPage() {
   const displayName = useDisplayName()
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [showAddress, setShowAddress] = useState(true)
+  const [showQrDialog, setShowQrDialog] = useState(false)
 
   useUsernameBackfill(); // Backfill username if missing
 
@@ -209,8 +212,9 @@ export function WalletPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {/* QR modal logic */}}
+                  onClick={() => setShowQrDialog(true)}
                   className="flex flex-col items-center gap-1 h-auto py-2 bg-background/60 hover:bg-primary/10 hover:border-primary/40 transition-colors"
+                  disabled={!walletAddress}
                   data-testid="wallet-qr"
                 >
                   <QrCode className="h-3.5 w-3.5" />
@@ -286,6 +290,30 @@ export function WalletPage() {
 
       {/* Sticky Footer Navigation */}
       <DockNav onNavigate={(path) => navigate(path)} onCenterPress={() => setShowQuickSwitch(true)} />
+
+      {/* QR Code Dialog */}
+      <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Wallet QR Code</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {walletAddress && (
+              <div className="bg-white p-4 rounded-lg">
+                <QRCodeSVG
+                  value={walletAddress}
+                  size={256}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground text-center font-mono break-all px-4">
+              {walletAddress}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
