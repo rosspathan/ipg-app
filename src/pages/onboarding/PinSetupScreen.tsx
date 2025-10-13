@@ -267,12 +267,12 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
             </div>
             
             <h2 className="text-2xl font-bold text-white mb-3">
-              {step === 'create' ? 'Create Your PIN' : 'Confirm Your PIN'}
+              {step === 'create' ? 'App Lock' : 'Confirm Your PIN'}
             </h2>
             
             <p className="text-white/80 text-base max-w-sm mx-auto">
               {step === 'create' 
-                ? 'Choose a secure 6-digit PIN to protect your wallet'
+                ? 'Choose a secure 6-digit PIN to lock and unlock your app'
                 : 'Please enter your PIN again to confirm'
               }
             </p>
