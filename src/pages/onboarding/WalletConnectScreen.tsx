@@ -63,9 +63,9 @@ const WalletConnectScreen: React.FC<WalletConnectScreenProps> = ({ onWalletConne
   };
 
   return (
-    <div className="min-h-screen bg-gradient-primary flex flex-col">
+    <div className="h-screen bg-gradient-primary flex flex-col" style={{ height: '100dvh', paddingTop: 'max(env(safe-area-inset-top), 8px)', paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between p-6">
+      <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
         <Button
           variant="ghost"
           size="sm"
@@ -80,7 +80,7 @@ const WalletConnectScreen: React.FC<WalletConnectScreenProps> = ({ onWalletConne
       </div>
 
       {/* Content */}
-      <div className="flex-1 px-6 pb-6">
+      <div className="flex-1 px-6 pb-4 overflow-y-auto">
         <div className="max-w-md mx-auto space-y-6">
           {/* Info Card */}
           <Card className="bg-card/90 backdrop-blur">

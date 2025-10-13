@@ -147,9 +147,9 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
   const current = screens[currentScreen];
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${current.gradient} relative overflow-hidden`}>
+    <div className={`h-screen bg-gradient-to-br ${current.gradient} relative overflow-hidden`} style={{ height: '100dvh' }}>
       {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"
           animate={{
@@ -176,9 +176,9 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
         />
       </div>
 
-      <div className="relative z-10 min-h-screen flex flex-col">
+      <div className="relative z-10 h-full flex flex-col" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)', paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6">
+        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -206,7 +206,7 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
         </div>
 
         {/* Content */}
-        <div className="flex-1 px-6 pb-32" style={{ paddingBottom: 'max(8rem, env(safe-area-inset-bottom, 2rem))' }}>
+        <div className="flex-1 px-6 pb-4 overflow-y-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentScreen}

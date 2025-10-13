@@ -37,9 +37,9 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden" style={{ height: '100dvh' }}>
       {/* Background elements */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute top-20 right-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"
           animate={{
@@ -67,9 +67,9 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
         />
       </div>
 
-      <div className="relative z-10 min-h-screen flex flex-col">
+      <div className="relative z-10 h-full flex flex-col" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)', paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6">
+        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -87,7 +87,7 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 px-6 pb-8">
+        <div className="flex-1 px-6 pb-4 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
