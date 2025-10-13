@@ -41,6 +41,17 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
     setPortalRootEl(root)
   }, [])
 
+  // Measure nav height and expose it as a CSS variable to AppShell
+  React.useLayoutEffect(() => {
+    const update = () => {
+      const h = navRef.current?.offsetHeight ?? 88
+      document.documentElement.style.setProperty('--dock-height', `${h}px`)
+    }
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
 
   const isActive = (path: string | null) => {
     if (!path) return false
