@@ -1,7 +1,9 @@
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProgramModules } from "@/hooks/useProgramRegistry";
+import { useAuthAdmin } from "@/hooks/useAuthAdmin";
+import { Loader2 } from "lucide-react";
 import { CardLane } from "@/components/admin/nova/CardLane";
 import { KPIStat } from "@/components/admin/nova/KPIStat";
 import { Button } from "@/components/ui/button";
@@ -13,8 +15,32 @@ import * as Icons from "lucide-react";
 
 export default function AdminProgramsNova() {
   const navigate = useNavigate();
+  const { user, isAdmin, loading: authLoading } = useAuthAdmin();
   const { modules, isLoading } = useProgramModules();
   const [showNewModule, setShowNewModule] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/onboarding", { replace: true });
+    } else if (!authLoading && user && !isAdmin) {
+      navigate("/app", { replace: true });
+    }
+  }, [authLoading, user, isAdmin, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
+    return null;
+  }
 
   const liveModules = modules?.filter(m => m.status === 'live') || [];
   const draftModules = modules?.filter(m => m.status === 'draft') || [];

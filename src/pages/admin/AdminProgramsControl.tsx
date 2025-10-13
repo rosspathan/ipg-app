@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Save, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuthAdmin } from '@/hooks/useAuthAdmin';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -70,17 +71,42 @@ const PROGRAMS = [
 export default function AdminProgramsControl() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isAdmin, loading: authLoading } = useAuthAdmin();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [programs, setPrograms] = useState<ProgramConfig[]>([]);
 
   useEffect(() => {
-    fetchPrograms();
-  }, []);
+    if (!authLoading && !user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to access admin controls",
+        variant: "destructive"
+      });
+      navigate("/onboarding", { replace: true });
+    } else if (!authLoading && user && !isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Admin privileges required",
+        variant: "destructive"
+      });
+      navigate("/app", { replace: true });
+    }
+  }, [authLoading, user, isAdmin, navigate, toast]);
+
+  useEffect(() => {
+    if (user && isAdmin) {
+      fetchPrograms();
+    }
+  }, [user, isAdmin]);
 
   const fetchPrograms = async () => {
     try {
       setLoading(true);
+      
+      if (!user) {
+        throw new Error("Not authenticated");
+      }
       
       // Load from system_settings table
       const { data, error } = await supabase
@@ -88,7 +114,18 @@ export default function AdminProgramsControl() {
         .select('*')
         .in('key', PROGRAMS.map(p => `program_${p.id}_enabled`));
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116' || error.message.includes('JWT')) {
+          toast({
+            title: "Session Expired",
+            description: "Please log in again",
+            variant: "destructive"
+          });
+          navigate("/onboarding", { replace: true });
+          return;
+        }
+        throw error;
+      }
 
       // Initialize with defaults
       const configs = PROGRAMS.map(prog => {
@@ -135,6 +172,10 @@ export default function AdminProgramsControl() {
     try {
       setSaving(true);
 
+      if (!user) {
+        throw new Error("Not authenticated");
+      }
+
       // Save each program's enabled state
       for (const prog of programs) {
         const { error } = await supabase
@@ -147,7 +188,18 @@ export default function AdminProgramsControl() {
             onConflict: 'key'
           });
 
-        if (error) throw error;
+        if (error) {
+          if (error.code === 'PGRST116' || error.message.includes('JWT')) {
+            toast({
+              title: "Session Expired",
+              description: "Please log in again",
+              variant: "destructive"
+            });
+            navigate("/onboarding", { replace: true });
+            return;
+          }
+          throw error;
+        }
       }
 
       console.log('PROGRAMS_READY');
@@ -168,6 +220,23 @@ export default function AdminProgramsControl() {
     }
   };
 
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">
+            {authLoading ? "Authenticating..." : "Loading program settings..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background pb-32">
       {/* Header */}
@@ -180,7 +249,7 @@ export default function AdminProgramsControl() {
             <ChevronLeft className="h-5 w-5" />
             <span className="font-medium">Programs Control</span>
           </button>
-          <Button onClick={handleSave} disabled={saving || loading} size="sm">
+          <Button onClick={handleSave} disabled={saving} size="sm">
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Save
           </Button>
@@ -193,11 +262,7 @@ export default function AdminProgramsControl() {
           Enable or disable programs and configure their parameters
         </p>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
+        {(
           programs.map(prog => (
             <Card key={prog.id} className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
               <div className="flex items-start justify-between mb-4">
