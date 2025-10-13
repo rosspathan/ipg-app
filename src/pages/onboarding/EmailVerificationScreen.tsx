@@ -538,57 +538,55 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
               </motion.div>
             )}
 
-            {/* Referral Code Input (APK Only) */}
-            {Capacitor.isNativePlatform() && (
-              <motion.div
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.57 }}
-              >
-                <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 backdrop-blur-sm border-amber-500/30">
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Gift className="w-4 h-4 text-amber-400" />
-                      <span className="text-amber-400 text-sm font-medium">Have a Referral Code?</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        type="text"
-                        value={referralCode}
-                        onChange={(e) => {
-                          const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                          setReferralCode(val);
-                          if (referralValidated) setReferralValidated(false);
-                        }}
-                        placeholder="Enter code (optional)"
-                        className="bg-black/30 border-amber-500/30 text-white placeholder:text-white/40 font-mono"
-                        maxLength={12}
-                        disabled={referralValidated}
-                      />
-                      <Button
-                        onClick={handleValidateReferral}
-                        disabled={!referralCode.trim() || isValidatingReferral || referralValidated}
-                        size="sm"
-                        className={referralValidated ? "bg-green-500 hover:bg-green-600" : "bg-amber-500 hover:bg-amber-600"}
-                      >
-                        {isValidatingReferral ? (
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                        ) : referralValidated ? (
-                          <CheckCircle className="w-4 h-4" />
-                        ) : (
-                          "Apply"
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-white/60 text-xs">
-                      {referralValidated 
-                        ? "✓ Code applied! You'll be linked after verification" 
-                        : "Optional: Enter your referrer's code to get linked"}
-                    </p>
+            {/* Referral Code Input (Web & Mobile) */}
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.57 }}
+            >
+              <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 backdrop-blur-sm border-amber-500/30">
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-amber-400" />
+                    <span className="text-amber-400 text-sm font-medium">Have a Referral Code?</span>
                   </div>
-                </Card>
-              </motion.div>
-            )}
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={referralCode}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        setReferralCode(val);
+                        if (referralValidated) setReferralValidated(false);
+                      }}
+                      placeholder="Enter code (optional)"
+                      className="bg-black/30 border-amber-500/30 text-white placeholder:text-white/40 font-mono"
+                      maxLength={12}
+                      disabled={referralValidated}
+                    />
+                    <Button
+                      onClick={handleValidateReferral}
+                      disabled={!referralCode.trim() || isValidatingReferral || referralValidated}
+                      size="sm"
+                      className={referralValidated ? "bg-green-500 hover:bg-green-600" : "bg-amber-500 hover:bg-amber-600"}
+                    >
+                      {isValidatingReferral ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : referralValidated ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        "Apply"
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-white/60 text-xs">
+                    {referralValidated 
+                      ? "✓ Code applied! You'll be linked after verification" 
+                      : "Optional: Enter your referrer's code to get linked"}
+                  </p>
+                </div>
+              </Card>
+            </motion.div>
 
             {/* Code input card */}
             <motion.div
