@@ -23,8 +23,17 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
       try {
         console.log('[AppInitializer] Checking app state...');
         
+        // Add small delay to ensure storage is ready in native apps
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Check for active session
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('[AppInitializer] Session error:', sessionError);
+        }
+        
+        console.log('[AppInitializer] Session check result:', session ? 'Session found' : 'No session');
         
         if (session?.user) {
           console.log('[AppInitializer] User session found:', session.user.id);
