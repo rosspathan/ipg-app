@@ -2,7 +2,7 @@ import * as React from "react"
 import { useState } from "react"
 import { Gift, Star, Zap, Users, TrendingUp, Shield, Coins, Target, Sparkles } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
-import { AppShellGlass } from "@/components/astra/AppShellGlass"
+
 import { GridToolbar, type CategoryFilter, type SortOption } from "@/components/astra/grid/GridToolbar"
 import { GridViewport } from "@/components/astra/grid/GridViewport"
 import { ProgramGrid } from "@/components/astra/grid/ProgramGrid"
@@ -255,7 +255,11 @@ export function ProgramsPage() {
   )
 
   return (
-    <AppShellGlass topBar={topBar} data-testid="page-programs">
+    <>
+      <div className="sticky top-0 z-30 bg-card/95 backdrop-blur-xl border-b border-border/40">
+        {topBar}
+      </div>
+
       <div className="space-y-6 pb-32">
         {selectedCategory === "all" ? (
           // Show grouped by category
@@ -309,6 +313,6 @@ export function ProgramsPage() {
         onFiltersChange={setFilters}
         onReset={() => setFilters(defaultFilters)}
       />
-    </AppShellGlass>
+    </>
   )
 }

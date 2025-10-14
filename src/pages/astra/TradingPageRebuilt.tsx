@@ -92,7 +92,11 @@ export function TradingPageRebuilt() {
   )
 
   return (
-    <AppShellGlass topBar={topBar} data-testid="page-trading">
+    <>
+      <div className="sticky top-0 z-30 bg-card/95 backdrop-blur-xl border-b border-border/40">
+        {topBar}
+      </div>
+
       <div className="space-y-6 pb-32">
         {/* KPI Row */}
         <div className="px-4 pt-4">
@@ -246,19 +250,6 @@ export function TradingPageRebuilt() {
           </Button>
         </div>
       </div>
-
-      {/* Bottom Navigation */}
-      <DockNav
-        onNavigate={navigate}
-        onCenterPress={() => setShowQuickSwitch(true)}
-      />
-
-      {/* Quick Switch */}
-      <QuickSwitch
-        isOpen={showQuickSwitch}
-        onClose={() => setShowQuickSwitch(false)}
-        onAction={handleQuickSwitchAction}
-      />
-    </AppShellGlass>
+    </>
   )
 }
