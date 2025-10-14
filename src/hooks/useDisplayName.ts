@@ -52,6 +52,20 @@ export function useDisplayName() {
     };
   }, []);
 
+  // Clear stale storageEmail if user is authenticated
+  useEffect(() => {
+    if (user?.id && storageEmail && storageEmail !== user.email) {
+      try {
+        sessionStorage.removeItem('verificationEmail');
+        localStorage.removeItem('ipg_onboarding_state');
+        setStorageEmail(null);
+        console.log('[DISPLAY_NAME] Cleared stale storageEmail for authenticated user');
+      } catch (e) {
+        console.error('[DISPLAY_NAME] Failed to clear storage:', e);
+      }
+    }
+  }, [user?.id, user?.email, storageEmail]);
+
   const displayName = useMemo(() => {
     console.log('[DISPLAY_NAME] Computing display name:', {
       storageEmail,

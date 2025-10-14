@@ -72,7 +72,7 @@ export function ProfilePageRebuilt() {
               <Avatar className="h-20 w-20 border-4 border-primary/20">
                 <AvatarImage src={user?.user_metadata?.avatar_url} />
                 <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
-                  {user?.email?.charAt(0).toUpperCase() || "U"}
+                  {displayName?.charAt(0).toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
               

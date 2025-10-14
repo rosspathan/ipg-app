@@ -102,7 +102,7 @@ export function AppHeader({
           <Avatar className="h-8 w-8 border border-accent/20">
             <AvatarImage src={user?.user_metadata?.avatar_url} />
             <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
-              {userApp?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
+              {displayName?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
         </Button>
