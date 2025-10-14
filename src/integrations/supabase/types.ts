@@ -2848,6 +2848,63 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_platform_metrics: {
+        Row: {
+          active_users_24h: number | null
+          bsk_holding_total: number | null
+          bsk_total_supply: number | null
+          bsk_withdrawable_total: number | null
+          calculated_at: string | null
+          deposits_amount: number | null
+          deposits_count: number | null
+          id: string
+          inr_total_balance: number | null
+          metric_date: string
+          new_users: number | null
+          total_fees_collected: number | null
+          total_users: number | null
+          tvl: number | null
+          withdrawals_amount: number | null
+          withdrawals_count: number | null
+        }
+        Insert: {
+          active_users_24h?: number | null
+          bsk_holding_total?: number | null
+          bsk_total_supply?: number | null
+          bsk_withdrawable_total?: number | null
+          calculated_at?: string | null
+          deposits_amount?: number | null
+          deposits_count?: number | null
+          id?: string
+          inr_total_balance?: number | null
+          metric_date: string
+          new_users?: number | null
+          total_fees_collected?: number | null
+          total_users?: number | null
+          tvl?: number | null
+          withdrawals_amount?: number | null
+          withdrawals_count?: number | null
+        }
+        Update: {
+          active_users_24h?: number | null
+          bsk_holding_total?: number | null
+          bsk_total_supply?: number | null
+          bsk_withdrawable_total?: number | null
+          calculated_at?: string | null
+          deposits_amount?: number | null
+          deposits_count?: number | null
+          id?: string
+          inr_total_balance?: number | null
+          metric_date?: string
+          new_users?: number | null
+          total_fees_collected?: number | null
+          total_users?: number | null
+          tvl?: number | null
+          withdrawals_amount?: number | null
+          withdrawals_count?: number | null
+        }
+        Relationships: []
+      }
       daily_rewards: {
         Row: {
           claimed_at: string
@@ -6179,6 +6236,47 @@ export type Database = {
         }
         Relationships: []
       }
+      report_snapshots: {
+        Row: {
+          date_range_end: string
+          date_range_start: string
+          file_path: string | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          report_id: string | null
+          snapshot_data: Json
+        }
+        Insert: {
+          date_range_end: string
+          date_range_start: string
+          file_path?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          report_id?: string | null
+          snapshot_data: Json
+        }
+        Update: {
+          date_range_end?: string
+          date_range_start?: string
+          file_path?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          report_id?: string | null
+          snapshot_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_snapshots_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "saved_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rng_seeds: {
         Row: {
           created_at: string
@@ -6206,6 +6304,45 @@ export type Database = {
           server_seed_hash?: string
           valid_from?: string
           valid_to?: string | null
+        }
+        Relationships: []
+      }
+      saved_reports: {
+        Row: {
+          config: Json
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_scheduled: boolean | null
+          last_generated_at: string | null
+          report_name: string
+          report_type: string
+          schedule_cron: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          config: Json
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_scheduled?: boolean | null
+          last_generated_at?: string | null
+          report_name: string
+          report_type: string
+          schedule_cron?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_scheduled?: boolean | null
+          last_generated_at?: string | null
+          report_name?: string
+          report_type?: string
+          schedule_cron?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -8345,6 +8482,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      calculate_daily_metrics: {
+        Args: { p_date: string }
+        Returns: Json
+      }
       calculate_provable_spin_result: {
         Args: {
           p_client_seed: string
@@ -8409,6 +8550,15 @@ export type Database = {
       generate_referral_code: {
         Args: { code_length?: number }
         Returns: string
+      }
+      generate_report_data: {
+        Args: {
+          p_date_end: string
+          p_date_start: string
+          p_filters?: Json
+          p_report_type: string
+        }
+        Returns: Json
       }
       get_asset_logo_url: {
         Args: { asset_row: Database["public"]["Tables"]["assets"]["Row"] }

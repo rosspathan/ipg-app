@@ -80,7 +80,6 @@ export const ROUTES = {
   // Nova DS Admin Routes (Phase 1)
   ADMIN_CATALOG: '/admin/catalog',
   ADMIN_PROGRAMS_NOVA: '/admin/programs',
-  ADMIN_REPORTS: '/admin/reports',
   ADMIN_SETTINGS: '/admin/settings',
   
   // Legacy Admin Routes
@@ -117,6 +116,8 @@ export const ROUTES = {
   ADMIN_CURRENCY_CONTROL: '/admin/currency',
   ADMIN_TRANSACTIONS: '/admin/transactions',
   ADMIN_USER_FINANCIAL: '/admin/users/financial',
+  ADMIN_REPORTS: '/admin/reports',
+  ADMIN_ANALYTICS: '/admin/analytics',
   
   // Special routes
   APP_LOCK: '/app/lock',

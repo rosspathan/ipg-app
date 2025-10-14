@@ -150,6 +150,8 @@ import AdminSystemScreen from "./pages/AdminSystemScreen";
 import CurrencyControlCenter from "./pages/admin/CurrencyControlCenter";
 import TransactionControlCenter from "./pages/admin/TransactionControlCenter";
 import UserFinancialManagement from "./pages/admin/UserFinancialManagement";
+import FinancialReports from "./pages/admin/FinancialReports";
+import FinancialAnalytics from "./pages/admin/FinancialAnalytics";
 
 // Utility Pages
 import EmailVerificationScreen from "./pages/EmailVerificationScreen";
@@ -391,12 +393,18 @@ function App() {
                 
                 {/* Reports & Settings */}
                 <Route path="ads" element={<AdminAdsScreen />} />
-                <Route path="reports" element={<AdminReportsNova />} />
                 <Route path="settings" element={<AdminSettingsNova />} />
                 <Route path="system/health" element={<React.Suspense fallback={<div>Loading...</div>}><AdminSystemHealth /></React.Suspense>} />
                 <Route path="kyc" element={<React.Suspense fallback={<div>Loading...</div>}><KYCReviewNew /></React.Suspense>} />
                 <Route path="kyc-review" element={<AdminKYCReview />} />
                 <Route path="kyc/settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminKYCSettings /></React.Suspense>} />
+                
+                {/* Financial Management Routes - Phase 2-4 */}
+                <Route path="transactions" element={<TransactionControlCenter />} />
+                <Route path="users/financial" element={<UserFinancialManagement />} />
+                <Route path="reports" element={<FinancialReports />} />
+                <Route path="analytics" element={<FinancialAnalytics />} />
+                
                 <Route path="database-reset" element={<React.Suspense fallback={<div>Loading...</div>}><AdminDatabaseReset /></React.Suspense>} />
                 <Route path="mobile-linking" element={<React.Suspense fallback={<div>Loading...</div>}><AdminMobileLinking /></React.Suspense>} />
               </Route>

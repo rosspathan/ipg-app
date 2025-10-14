@@ -86,6 +86,11 @@ const navItems: NavItem[] = [
     icon: FileText,
   },
   {
+    title: "Analytics",
+    url: "/admin/analytics",
+    icon: TrendingUp,
+  },
+  {
     title: "Settings",
     url: "/admin/settings",
     icon: Settings,
