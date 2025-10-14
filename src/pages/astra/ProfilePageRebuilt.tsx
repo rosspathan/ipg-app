@@ -98,8 +98,11 @@ export function ProfilePageRebuilt() {
       {/* Main Content */}
       <div className="space-y-6 pt-4 px-4">
       
-      {/* Badge Card */}
-      <BadgeCard />
+          {/* Profile Completion Card */}
+          <ProfileCompletionCard />
+          
+          {/* Badge Card */}
+          <BadgeCard />
 
       {/* Profile Header Card with Interactive Avatar */}
       <Card className={cn(

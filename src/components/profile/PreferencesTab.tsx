@@ -8,6 +8,7 @@ import { usePreferences } from "@/hooks/usePreferences";
 
 export const PreferencesTab = () => {
   const { settings, loading, updateSettings } = usePreferences();
+  const { theme, setTheme } = useTheme();
   const [saving, setSaving] = useState(false);
 
   const handleCurrencyChange = async (currency: string) => {
