@@ -153,14 +153,7 @@ export function WalletPage() {
   )
 
   return (
-    <>
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 bg-card/95 backdrop-blur-xl border-b border-border/40 -mx-4 -mt-4 mb-6">
-        {topBar}
-      </div>
-
-      {/* Main Content */}
-      <div className="space-y-6" data-testid="page-wallet" data-version="usr-wallet-link-v3">
+    <div className="space-y-6" data-testid="page-wallet" data-version="usr-wallet-link-v3">
         {/* Address Panel with Network Badge */}
         <div 
           className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 transition-all duration-220"
@@ -256,9 +249,8 @@ export function WalletPage() {
         {/* Quick Actions Ribbon */}
         <QuickActionsRibbon actions={quickActions} />
 
-        {/* Balance Cluster with Crypto Assets Grid */}
-        <BalanceCluster />
-      </div>
+      {/* Balance Cluster with Crypto Assets Grid */}
+      <BalanceCluster />
 
       {/* QR Code Dialog */}
       <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
@@ -283,6 +275,6 @@ export function WalletPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }

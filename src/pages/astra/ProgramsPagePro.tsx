@@ -92,26 +92,7 @@ export function ProgramsPagePro() {
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
 
   return (
-    <>
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-xl border-b border-border/40 px-4 py-3 -mx-4 -mt-4 mb-6">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/app/home")}
-            className="h-9 w-9 p-0"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="font-[Space_Grotesk] font-bold text-xl text-foreground">
-            My Programs
-          </h1>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="space-y-4" data-testid="page-programs">
+    <div className="space-y-4" data-testid="page-programs">
         {/* Grid */}
         <div className="grid grid-cols-2 gap-4">
           {allPrograms.map((program) => (
@@ -167,7 +148,6 @@ export function ProgramsPagePro() {
             </button>
           ))}
         </div>
-      </div>
 
       {/* Quick Switch Radial Menu */}
       <QuickSwitch
@@ -190,12 +170,6 @@ export function ProgramsPagePro() {
           }
         }}
       />
-
-      {/* Bottom Navigation */}
-      <DockNav 
-        onNavigate={(path) => navigate(path)} 
-        onCenterPress={() => setShowQuickSwitch(true)} 
-      />
-    </>
+    </div>
   )
 }

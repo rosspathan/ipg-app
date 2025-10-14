@@ -148,26 +148,7 @@ export function HomePageRebuilt() {
   ]
 
   return (
-    <>
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/40 -mx-4 -mt-4 mb-4">
-        <div className="flex items-center justify-between p-4">
-          {/* Left: Avatar + Name */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-              {displayName?.charAt(0).toUpperCase() || 'U'}
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Welcome back</p>
-              <p className="text-sm font-semibold" data-testid="header-username">{displayName}</p>
-            </div>
-          </div>
-          <div className="w-8" />
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="space-y-6" data-testid="page-home" data-version="usr-wallet-link-v3">
+    <div className="space-y-6" data-testid="page-home" data-version="usr-wallet-link-v3">
         {/* Add Funds CTA */}
         <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
 
@@ -213,18 +194,11 @@ export function HomePageRebuilt() {
           programs={programs}
           onViewAll={() => navigate("/app/programs")}
         />
-      </div>
 
       {/* Rewards Breakdown Bottom Sheet */}
       <RewardsBreakdown
         isOpen={showRewardsBreakdown}
         onClose={() => setShowRewardsBreakdown(false)}
-      />
-
-      {/* Floating WhatsApp Support Button - Fixed above footer */}
-      <SupportLinkWhatsApp
-        variant="fab"
-        className="fixed bottom-24 right-5 z-[60]"
       />
 
       {/* Quick Switch Radial Menu */}
@@ -248,9 +222,6 @@ export function HomePageRebuilt() {
           }
         }}
       />
-
-      {/* Footer - DO NOT MODIFY THIS SECTION */}
-      <DockNav onNavigate={(path) => navigate(path)} onCenterPress={() => setShowQuickSwitch(true)} />
-    </>
+    </div>
   )
 }

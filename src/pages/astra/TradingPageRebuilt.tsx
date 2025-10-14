@@ -92,12 +92,7 @@ export function TradingPageRebuilt() {
   )
 
   return (
-    <>
-      <div className="sticky top-0 z-30 bg-card/95 backdrop-blur-xl border-b border-border/40">
-        {topBar}
-      </div>
-
-      <div className="space-y-6 pb-32">
+    <div className="space-y-6">
         {/* KPI Row */}
         <div className="px-4 pt-4">
           <KPIChipRow data={kpiData} />
@@ -249,7 +244,6 @@ export function TradingPageRebuilt() {
             Sell {selectedPair.base_symbol}
           </Button>
         </div>
-      </div>
-    </>
+    </div>
   )
 }

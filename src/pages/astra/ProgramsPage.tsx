@@ -255,12 +255,7 @@ export function ProgramsPage() {
   )
 
   return (
-    <>
-      <div className="sticky top-0 z-30 bg-card/95 backdrop-blur-xl border-b border-border/40">
-        {topBar}
-      </div>
-
-      <div className="space-y-6 pb-32">
+    <div className="space-y-6">
         {selectedCategory === "all" ? (
           // Show grouped by category
           Object.entries(groupedPrograms).map(([category, programs]) => {
@@ -303,16 +298,15 @@ export function ProgramsPage() {
             </p>
           </div>
         )}
-      </div>
 
-      {/* Filters Bottom Sheet */}
-      <BottomSheetFilters
-        isOpen={showFilters}
-        onClose={() => setShowFilters(false)}
-        filters={filters}
-        onFiltersChange={setFilters}
-        onReset={() => setFilters(defaultFilters)}
-      />
-    </>
-  )
-}
+        {/* Filters Bottom Sheet */}
+        <BottomSheetFilters
+          isOpen={showFilters}
+          onClose={() => setShowFilters(false)}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onReset={() => setFilters(defaultFilters)}
+        />
+      </div>
+    )
+  }
