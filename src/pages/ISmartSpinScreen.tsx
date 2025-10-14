@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useISmartSpin } from '@/hooks/useISmartSpin'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { SpinHeaderPro } from '@/components/spin/SpinHeaderPro'
-import { SpinWheel3D } from '@/components/spin/SpinWheel3D'
-import { WheelStatsRow } from '@/components/spin/WheelStatsRow'
-import { FreeSpinsCard } from '@/components/spin/FreeSpinsCard'
+import { SpinWheelBasic } from '@/components/spin/SpinWheelBasic'
 import { BetCardPro } from '@/components/spin/BetCardPro'
 import { ProvablyFairPanel } from '@/components/spin/ProvablyFairPanel'
 import { HistorySheet } from '@/components/spin/HistorySheet'
@@ -97,23 +94,20 @@ export default function ISmartSpinScreen() {
 
   if (!config) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-        <SpinHeaderPro />
-        <div className="max-w-md mx-auto pt-12 px-4">
-          <Card>
-            <CardContent className="pt-6 text-center space-y-4">
-              <p className="text-muted-foreground">
-                i-SMART Spin Wheel is currently unavailable
-              </p>
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/app/programs')}
-              >
-                Back to Programs
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <Card>
+          <CardContent className="pt-6 text-center space-y-4">
+            <p className="text-muted-foreground">
+              i-SMART Spin Wheel is currently unavailable
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/app/programs')}
+            >
+              Back to Programs
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -123,20 +117,56 @@ export default function ISmartSpinScreen() {
   return (
     <div 
       data-testid="page-spin-v3"
-      className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-48"
+      className="min-h-screen pb-48"
     >
-      <SpinHeaderPro />
+      <div className="max-w-md mx-auto px-4 space-y-6 pt-4">
+        {/* Free Spins Banner */}
+        {userLimits && userLimits.free_spins_remaining > 0 && (
+          <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl p-4 text-center">
+            <p className="text-sm font-medium text-green-600 dark:text-green-400">
+              🎉 {userLimits.free_spins_remaining} Free Spins Remaining!
+            </p>
+          </div>
+        )}
 
-      <div className="max-w-md mx-auto">
-        {/* Subtext */}
-        <div className="px-4 pt-4 pb-2">
-          <p className="text-sm text-muted-foreground text-center">
-            Test your luck with provably fair spins
-          </p>
+        {/* Spin Wheel */}
+        <div className="flex flex-col items-center justify-center py-6">
+          <SpinWheelBasic
+            segments={segments}
+            isSpinning={spinMachine.isSpinning}
+            winningSegmentIndex={winningSegmentIndex}
+            onSpinComplete={handleSpinComplete}
+          />
+        </div>
+
+        {/* Balance & Last Result */}
+        <div className="space-y-3">
+          {/* Balance */}
+          <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-card/50 border border-border/40">
+            <p className="text-sm text-muted-foreground">Your Balance</p>
+            <p className="text-lg font-bold text-foreground">
+              {Number(bskBalance).toFixed(2)} BSK
+            </p>
+          </div>
+
+          {/* Last Result */}
+          {lastResult && (
+            <div className="px-4 py-3 rounded-xl bg-card/50 border border-border/40 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Last Result</p>
+              <p className={`text-2xl font-bold ${
+                lastResult.multiplier > 0 ? 'text-green-500' : 'text-red-500'
+              }`}>
+                {lastResult.multiplier > 0 
+                  ? `🎉 WIN +${Number(lastResult.net_payout_bsk ?? 0).toFixed(2)} BSK`
+                  : '💔 LOSE'
+                }
+              </p>
+            </div>
+          )}
         </div>
 
         {/* History Button */}
-        <div className="px-4 pb-3 flex justify-center">
+        <div className="flex justify-center">
           <Button
             variant="ghost"
             size="sm"
@@ -144,85 +174,12 @@ export default function ISmartSpinScreen() {
             className="text-xs"
           >
             <History className="w-3 h-3 mr-1" />
-            View History
+            View Spin History
           </Button>
         </div>
 
-        {/* Free Spins Card */}
-        {userLimits && (
-          <FreeSpinsCard
-            freeSpinsRemaining={userLimits.free_spins_remaining}
-            totalFreeSpins={5}
-            postFreeSpinFee={config.post_free_spin_fee_bsk}
-            onTap={() => setShowHistory(true)}
-          />
-        )}
-
-        {/* Spin Wheel - Force refresh */}
-        {segments.length > 0 && (
-          <SpinWheel3D
-            key={`premium-wheel-${segments.length}-${JSON.stringify(segments.map(s => s.label))}`}
-            segments={segments}
-            isSpinning={spinMachine.isSpinning}
-            winningSegmentIndex={winningSegmentIndex}
-            spinId={spinMachine.spinId}
-            onSpinComplete={handleSpinComplete}
-          />
-        )}
-
-        {/* Wheel Stats Row */}
-        <WheelStatsRow
-          segments={segments}
-          winningSegmentIndex={winningSegmentIndex}
-        />
-
         {/* Provably Fair Panel */}
-        <div className="mt-4">
-          <ProvablyFairPanel />
-        </div>
-
-        {/* Last Result Display */}
-        {lastResult && (
-          <div className="mx-4 mb-4">
-            <Card className="border-primary/20">
-              <CardContent className="py-3">
-                <div className="text-center space-y-1">
-                  {lastResult.multiplier > 0 ? (
-                    <>
-                      <p className="text-lg font-bold text-green-600">
-                        🎉 Won {(lastResult.payout_bsk ?? 0).toFixed(2)} BSK!
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {lastResult.segment.label} • {lastResult.multiplier}× multiplier
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-base font-medium text-muted-foreground">
-                        Better luck next time!
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {lastResult.segment.label}
-                      </p>
-                    </>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Net: {(lastResult.net_change_bsk ?? 0) > 0 ? '+' : ''}
-                    {(lastResult.net_change_bsk ?? 0).toFixed(2)} BSK
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Balance Info */}
-        <div className="mx-4 mb-4 p-3 bg-muted/50 rounded-lg">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">Available Balance</span>
-            <span className="font-bold">{(bskBalance ?? 0).toFixed(2)} BSK</span>
-          </div>
-        </div>
+        <ProvablyFairPanel />
       </div>
 
       {/* Floating Bet Card */}
