@@ -261,12 +261,13 @@ serve(async (req) => {
     // Create referral code entry (if not exists)
     const { error: refCodeError } = await supabaseAdmin
       .from('referral_codes')
-      .insert({
+      .upsert({
         user_id: userId,
         code: referralCode
-      })
-      .onConflict('user_id')
-      .ignoreDuplicates();
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: true
+      });
     
     if (refCodeError) {
       console.warn('Referral code creation warning:', refCodeError);
@@ -293,14 +294,15 @@ serve(async (req) => {
     // Initialize referral_links_new entry for this user
     const { error: refLinkError } = await supabaseAdmin
       .from('referral_links_new')
-      .insert({
+      .upsert({
         user_id: userId,
         referral_code: referralCode,
         total_referrals: 0,
         total_commissions: 0
-      })
-      .onConflict('user_id')
-      .ignoreDuplicates();
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: true
+      });
     
     if (refLinkError) {
       console.warn('Referral link initialization warning:', refLinkError);
