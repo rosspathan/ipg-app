@@ -7224,6 +7224,42 @@ export type Database = {
           },
         ]
       }
+      trading_engine_settings: {
+        Row: {
+          auto_matching_enabled: boolean
+          circuit_breaker_active: boolean
+          created_at: string
+          id: string
+          maker_fee_percent: number
+          matching_interval_seconds: number
+          max_orders_per_user_per_minute: number
+          taker_fee_percent: number
+          updated_at: string
+        }
+        Insert: {
+          auto_matching_enabled?: boolean
+          circuit_breaker_active?: boolean
+          created_at?: string
+          id?: string
+          maker_fee_percent?: number
+          matching_interval_seconds?: number
+          max_orders_per_user_per_minute?: number
+          taker_fee_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_matching_enabled?: boolean
+          circuit_breaker_active?: boolean
+          created_at?: string
+          id?: string
+          maker_fee_percent?: number
+          matching_interval_seconds?: number
+          max_orders_per_user_per_minute?: number
+          taker_fee_percent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       trading_pairs: {
         Row: {
           active: boolean | null
@@ -8089,6 +8125,47 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_balances: {
+        Row: {
+          asset_id: string
+          available: number
+          created_at: string
+          id: string
+          locked: number
+          total: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          available?: number
+          created_at?: string
+          id?: string
+          locked?: number
+          total?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          available?: number
+          created_at?: string
+          id?: string
+          locked?: number
+          total?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_balances_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wallet_bonus_balances: {
         Row: {
           asset_id: string
@@ -8317,6 +8394,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      lock_balance_for_order: {
+        Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
+        Returns: boolean
+      }
       log_admin_action: {
         Args: {
           p_action: string
@@ -8371,6 +8452,23 @@ export type Database = {
       settle_pending_referrer_rewards: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      settle_trade: {
+        Args: {
+          p_base_symbol: string
+          p_buyer_fee: number
+          p_buyer_id: string
+          p_price: number
+          p_quantity: number
+          p_quote_symbol: string
+          p_seller_fee: number
+          p_seller_id: string
+        }
+        Returns: boolean
+      }
+      unlock_balance_for_order: {
+        Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
+        Returns: boolean
       }
       update_user_referral_state: {
         Args: { p_user_id: string }

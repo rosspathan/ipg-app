@@ -8,13 +8,40 @@ export const useUserBalance = (assetSymbol?: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // TODO: Implement real balance fetching once wallet_balances table is set up
-      // For now, return mock data
-      return [
-        { symbol: 'USDT', balance: 1000, available: 1000 },
-        { symbol: 'BTC', balance: 0.5, available: 0.5 },
-        { symbol: 'BNB', balance: 10, available: 10 },
-      ].filter(b => !assetSymbol || b.symbol === assetSymbol);
+      // Fetch real balances from wallet_balances table
+      let query = supabase
+        .from('wallet_balances')
+        .select(`
+          *,
+          assets:asset_id (symbol, name, logo_url)
+        `)
+        .eq('user_id', user.id);
+
+      // Filter by specific asset if provided
+      if (assetSymbol) {
+        const { data: asset } = await supabase
+          .from('assets')
+          .select('id')
+          .eq('symbol', assetSymbol)
+          .single();
+        
+        if (asset) {
+          query = query.eq('asset_id', asset.id);
+        }
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      // Transform data to match expected format
+      return (data || []).map((balance: any) => ({
+        symbol: balance.assets.symbol,
+        name: balance.assets.name,
+        balance: parseFloat(balance.total),
+        available: parseFloat(balance.available),
+        locked: parseFloat(balance.locked),
+        logo_url: balance.assets.logo_url,
+      }));
     },
   });
 };

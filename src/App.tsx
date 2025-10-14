@@ -24,6 +24,7 @@ import AdminDashboardNova from "./pages/admin/AdminDashboardNova";
 import AdminUsersNova from "./pages/admin/AdminUsersNova";
 import AdminMarketsNova from "./pages/admin/AdminMarketsNova";
 import AdminTradingOrders from "./pages/admin/AdminTradingOrders";
+import AdminTradingEngine from "./pages/admin/AdminTradingEngine";
 import AdminSubscriptionsNova from "./pages/admin/AdminSubscriptionsNova";
 import AdminStakingNova from "./pages/admin/AdminStakingNova";
 import AdminSpinNova from "./pages/admin/AdminSpinNova";
@@ -345,6 +346,7 @@ function App() {
                 {/* Markets Management */}
                 <Route path="markets" element={<AdminMarketsNova />} />
                 <Route path="trading-orders" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTradingOrders /></React.Suspense>} />
+                <Route path="trading-engine" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTradingEngine /></React.Suspense>} />
                 
                 {/* BSK Management */}
                 <Route path="bsk" element={<AdminBSKManagementNova />} />

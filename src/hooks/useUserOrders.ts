@@ -44,6 +44,26 @@ export const useUserOrders = (symbol?: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Parse symbol to get quote asset for balance locking
+      const [baseSymbol, quoteSymbol] = params.symbol.split('/');
+      const assetToLock = params.side === 'buy' ? quoteSymbol : baseSymbol;
+      const amountToLock = params.side === 'buy' 
+        ? params.quantity * (params.price || 0) 
+        : params.quantity;
+
+      // Lock balance before placing order (only for limit orders)
+      if (params.type === 'limit') {
+        const { data: locked, error: lockError } = await supabase.rpc('lock_balance_for_order', {
+          p_user_id: user.id,
+          p_asset_symbol: assetToLock,
+          p_amount: amountToLock
+        });
+
+        if (lockError || !locked) {
+          throw new Error('Insufficient balance');
+        }
+      }
+
       // Insert order into database using correct column names
       const { data: order, error } = await supabase
         .from('orders')
@@ -56,13 +76,23 @@ export const useUserOrders = (symbol?: string) => {
           price: params.price,
           filled_amount: 0,
           remaining_amount: params.quantity,
-          status: params.type === 'market' ? 'filled' : 'pending',
+          status: 'pending',
           trading_type: params.trading_type || 'spot',
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Unlock balance if order creation failed
+        if (params.type === 'limit') {
+          await supabase.rpc('unlock_balance_for_order', {
+            p_user_id: user.id,
+            p_asset_symbol: assetToLock,
+            p_amount: amountToLock
+          });
+        }
+        throw error;
+      }
 
       return order;
     },
@@ -85,6 +115,34 @@ export const useUserOrders = (symbol?: string) => {
 
   const cancelOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Get order details first
+      const { data: order, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Unlock balance if it's a pending limit order
+      if (order.status === 'pending' && order.order_type === 'limit') {
+        const [baseSymbol, quoteSymbol] = order.symbol.split('/');
+        const assetToUnlock = order.side === 'buy' ? quoteSymbol : baseSymbol;
+        const amountToUnlock = order.side === 'buy' 
+          ? order.remaining_amount * order.price 
+          : order.remaining_amount;
+
+        await supabase.rpc('unlock_balance_for_order', {
+          p_user_id: user.id,
+          p_asset_symbol: assetToUnlock,
+          p_amount: amountToUnlock
+        });
+      }
+
+      // Update order status
       const { error } = await supabase
         .from('orders')
         .update({ 
