@@ -283,8 +283,7 @@ function App() {
               
               {/* Profile Hub */}
               <Route path="profile" element={<ProfileHub />} />
-                    <Route path="profile/kyc" element={<KYCPage />} />
-                    <Route path="profile/kyc-submission" element={<KYCSubmission />} />
+              <Route path="profile/kyc" element={<KYCSubmission />} />
               <Route path="profile/id-card" element={<IDCardPage />} />
               <Route path="profile/security" element={<SecurityPage />} />
               <Route path="profile/notify" element={<NotificationsPage />} />
