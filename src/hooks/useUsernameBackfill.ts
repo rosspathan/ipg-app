@@ -28,14 +28,14 @@ export function useUsernameBackfill() {
           .from('profiles')
           .upsert(
             { 
-              user_id: user.id, 
+              id: user.id, 
               email: user.email, 
               username,
               account_status: 'active',
-              referral_code: user.id.substring(0, 8).toUpperCase() // Temporary code
+              referral_code: user.id.substring(0, 8).toUpperCase()
             },
             { 
-              onConflict: 'user_id',
+              onConflict: 'id',
               ignoreDuplicates: false 
             }
           )

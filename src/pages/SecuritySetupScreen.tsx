@@ -89,10 +89,10 @@ const SecuritySetupScreen = () => {
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
-            user_id: session.user.id,
+            id: session.user.id,
             email: session.user.email,
-            referral_code: session.user.id.substring(0, 8).toUpperCase() // Temporary code
-          }, { onConflict: 'user_id' });
+            referral_code: session.user.id.substring(0, 8).toUpperCase()
+          }, { onConflict: 'id' });
 
         if (profileError) console.warn('Profile upsert failed:', profileError);
       } else {

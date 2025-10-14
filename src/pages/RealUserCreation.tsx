@@ -74,7 +74,7 @@ const RealUserCreation = () => {
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          user_id: authData.user.id,
+          id: authData.user.id,
           email: formData.email,
           full_name: formData.full_name,
           phone: formData.phone || null,
@@ -82,7 +82,7 @@ const RealUserCreation = () => {
           account_status: formData.account_status,
           two_fa_enabled: formData.two_fa_enabled,
           withdrawal_locked: formData.withdrawal_locked,
-          referral_code: authData.user.id.substring(0, 8).toUpperCase() // Temporary code
+          referral_code: authData.user.id.substring(0, 8).toUpperCase()
         });
 
       if (profileError) {

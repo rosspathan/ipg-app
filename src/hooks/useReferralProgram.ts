@@ -62,13 +62,13 @@ export interface ReferralRelationship {
   referee_id: string;
   referee_username: string;
   referee_code: string;
-  sponsor_id: string | null;
-  sponsor_username: string | null;
-  sponsor_code: string | null;
+  sponsor_id: string;
+  sponsor_username: string;
+  sponsor_code: string;
   sponsor_code_used: string;
-  locked_at: string | null;
-  first_touch_at: string | null;
-  source: string | null;
+  locked_at: string;
+  first_touch_at: string;
+  source: string;
 }
 
 export const useReferralProgram = () => {
