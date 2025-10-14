@@ -60,7 +60,7 @@ export function AppShell() {
         <main 
           className="flex-1 overflow-y-auto" 
           style={{ 
-            paddingBottom: 'calc(88px + max(8px, env(safe-area-inset-bottom)))' 
+            paddingBottom: 'max(8px, env(safe-area-inset-bottom))' 
           }}
         >
           <Outlet />
