@@ -181,8 +181,7 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
       <div 
         aria-hidden="true"
         style={{
-          height: spacerHeight,
-          paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
+          height: spacerHeight
         }}
       />
       {portalRoot ? createPortal(navEl, portalRoot) : navEl}

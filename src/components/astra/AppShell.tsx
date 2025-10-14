@@ -58,7 +58,7 @@ export function AppShell() {
 
         {/* Main Content - Scrollable with safe-area padding */}
         <main 
-          className="flex-1 overflow-y-auto" 
+          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain" 
           style={{ 
             paddingBottom: 'max(8px, env(safe-area-inset-bottom))' 
           }}
