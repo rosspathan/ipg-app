@@ -118,8 +118,8 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
       // Validate that the referrer exists and is not the same as the new user
       const { data: referrerProfile } = await supabase
         .from('profiles')
-        .select('id, referral_code')
-        .eq('id', pendingReferral)
+        .select('user_id, referral_code')
+        .eq('user_id', pendingReferral)
         .maybeSingle();
 
       if (!referrerProfile) {
@@ -128,7 +128,7 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (referrerProfile.id === userId) {
+      if (referrerProfile.user_id === userId) {
         console.log('❌ Cannot refer yourself');
         localStorage.removeItem('pending_referral');
         return;

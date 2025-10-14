@@ -55,7 +55,7 @@ const TestUsers = () => {
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          id: authData.user.id,
+          user_id: authData.user.id,
           email: testUser.email,
           full_name: testUser.full_name,
           phone: testUser.phone,

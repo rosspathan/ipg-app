@@ -33,7 +33,7 @@ export const useProfile = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -43,7 +43,7 @@ export const useProfile = () => {
         const { data: newUserApp, error: createError } = await supabase
           .from('profiles')
           .insert([{
-            id: user.id,
+            user_id: user.id,
             email: user.email,
             account_status: 'active',
             referral_code: user.id.substring(0, 8).toUpperCase()
@@ -75,7 +75,7 @@ export const useProfile = () => {
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
