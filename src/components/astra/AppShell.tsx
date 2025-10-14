@@ -73,7 +73,7 @@ export function AppShell() {
         </main>
 
         {/* WhatsApp Support - Fixed above dock */}
-        <SupportLinkWhatsApp variant="fab" className="fixed bottom-24 right-5 z-[60]" />
+        <SupportLinkWhatsApp variant="fab" />
 
         {/* Sticky Footer Navigation */}
         <DockNav onNavigate={(path) => navigate(path)} onCenterPress={() => setShowQuickSwitch(true)} />

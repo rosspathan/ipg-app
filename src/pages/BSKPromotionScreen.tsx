@@ -9,7 +9,7 @@ export default function BSKPromotionScreen() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <BacklinkBar programName="BSK Purchase Bonus" />
       
       <div className="container mx-auto p-4 space-y-6">

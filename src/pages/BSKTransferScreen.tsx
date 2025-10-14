@@ -7,7 +7,7 @@ export default function BSKTransferScreen() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b">
         <div className="flex items-center gap-4 p-4">
           <Button
