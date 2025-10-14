@@ -133,8 +133,8 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
         </div>
       </AstraCard>
 
-      {/* BSK Withdrawable Card */}
-      {withdrawableBalance && (
+      {/* BSK Withdrawable Card - Only show if balance > 0 */}
+      {withdrawableBalance && withdrawableBalance.balance > 0 && (
         <AstraCard variant="elevated" data-testid="bsk-withdrawable-card">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -165,8 +165,8 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
         </AstraCard>
       )}
 
-      {/* BSK Holding Card */}
-      {holdingBalance && (
+      {/* BSK Holding Card - Only show if balance > 0 */}
+      {holdingBalance && holdingBalance.balance > 0 && (
         <AstraCard variant="elevated" data-testid="bsk-holding-card">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
