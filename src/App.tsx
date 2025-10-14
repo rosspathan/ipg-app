@@ -173,7 +173,8 @@ import { AstraLayout } from "@/layouts/AstraLayout";
 import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
 import { ProgramsPageRebuilt } from "@/pages/astra/ProgramsPageRebuilt";
 import { ProgramsPagePro } from "@/pages/astra/ProgramsPagePro";
-import { TradingPageRebuilt } from "@/pages/astra/TradingPageRebuilt";
+import { TradingOverview } from "@/pages/astra/TradingOverview";
+import { TradingPairPage } from "@/pages/astra/TradingPairPage";
 import { ProfileHub } from "@/pages/ProfileHub";
 import { KYCPage } from "@/pages/KYCPage";
 import KYCSubmission from "@/pages/KYCSubmission";
@@ -291,7 +292,8 @@ function App() {
               <Route path="wallet/transfer" element={<TransferScreen />} />
               <Route path="wallet/history" element={<HistoryScreen />} />
               <Route path="programs" element={<ProgramsScreen />} />
-              <Route path="trade" element={<TradingScreenRebuilt />} />
+              <Route path="trade" element={<TradingOverview />} />
+              <Route path="trade/:symbol" element={<TradingPairPage />} />
               <Route path="trading" element={<Navigate to="/app/trade" replace />} />
               <Route path="swap" element={<SwapScreen />} />
               

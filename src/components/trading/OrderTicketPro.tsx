@@ -27,6 +27,7 @@ interface OrderTicketProProps {
   bestAsk?: number;
   loading?: boolean;
   onSubmit: (order: OrderTicketData) => void;
+  defaultSide?: "buy" | "sell";
 }
 
 export function OrderTicketPro({
@@ -38,9 +39,10 @@ export function OrderTicketPro({
   bestBid,
   bestAsk,
   loading = false,
-  onSubmit
+  onSubmit,
+  defaultSide = "buy"
 }: OrderTicketProProps) {
-  const [side, setSide] = useState<OrderSide>("buy");
+  const [side, setSide] = useState<OrderSide>(defaultSide);
   const [type, setType] = useState<OrderType>("market");
   const [amount, setAmount] = useState<string>("");
   const [price, setPrice] = useState<string>(currentPrice.toFixed(2));
