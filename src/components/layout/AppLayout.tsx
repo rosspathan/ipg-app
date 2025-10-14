@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Outlet, useLocation } from "react-router-dom"
 import { Plus } from "lucide-react"
-import { AppHeaderSticky } from "@/components/navigation/AppHeaderSticky"
+import { AppHeader } from "@/components/navigation/AppHeader"
 import { BottomNavBar } from "@/components/navigation/BottomNavBar"
 import { FloatingActionButton } from "@/components/ui/floating-action-button"
 import { Toaster } from "@/components/ui/toaster"
@@ -66,9 +66,11 @@ export function AppLayout() {
   return (
     <div className="app-shell bg-background relative">
       {/* App Header */}
-      <AppHeaderSticky 
-        onProfileClick={() => navigate('/app/profile')}
-        onNotificationsClick={() => navigate('/app/notifications')}
+      <AppHeader 
+        title={getPageTitle()}
+        showPortfolio={location.pathname === "/app" || location.pathname === "/app/"}
+        totalPortfolio={portfolioData.total}
+        portfolioChange={portfolioData.change}
         notificationCount={3}
       />
 
