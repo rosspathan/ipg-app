@@ -4457,6 +4457,47 @@ export type Database = {
           },
         ]
       }
+      kyc_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_status: string | null
+          notes: string | null
+          old_status: string | null
+          performed_by: string
+          submission_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          old_status?: string | null
+          performed_by: string
+          submission_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          old_status?: string | null
+          performed_by?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_audit_log_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "kyc_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kyc_documents_new: {
         Row: {
           created_at: string
@@ -4576,6 +4617,90 @@ export type Database = {
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      kyc_submissions: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          admin_notes: string | null
+          city: string
+          country: string
+          created_at: string
+          date_of_birth: string
+          full_name: string
+          id: string
+          id_back_url: string | null
+          id_front_url: string | null
+          id_number: string
+          id_type: string
+          nationality: string
+          phone: string
+          postal_code: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          selfie_url: string | null
+          state: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          admin_notes?: string | null
+          city: string
+          country: string
+          created_at?: string
+          date_of_birth: string
+          full_name: string
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          id_number: string
+          id_type: string
+          nationality: string
+          phone: string
+          postal_code: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          selfie_url?: string | null
+          state?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          admin_notes?: string | null
+          city?: string
+          country?: string
+          created_at?: string
+          date_of_birth?: string
+          full_name?: string
+          id?: string
+          id_back_url?: string | null
+          id_front_url?: string | null
+          id_number?: string
+          id_type?: string
+          nationality?: string
+          phone?: string
+          postal_code?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          selfie_url?: string | null
+          state?: string | null
           status?: string
           submitted_at?: string | null
           updated_at?: string
