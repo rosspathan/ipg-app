@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { Copy, Download, ChevronLeft } from "lucide-react";
+import { Copy, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
 import { useWeb3 } from "@/contexts/Web3Context";
 import { Buffer } from 'buffer';
 import * as bip39 from "bip39";
+import { motion } from 'framer-motion';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
+import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
+import { OnboardingCard } from '@/components/onboarding/OnboardingCard';
 
 // Make Buffer available globally for bip39
 (window as any).Buffer = Buffer;
@@ -72,96 +76,114 @@ const CreateWalletScreen = () => {
   };
 
   return (
-    <div 
-      className="h-screen overflow-hidden flex flex-col bg-background" 
-      style={{ 
-        height: '100dvh',
-        paddingTop: 'max(env(safe-area-inset-top), 8px)',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
-        paddingLeft: '24px',
-        paddingRight: '24px'
-      }}
-    >
-      <div className="flex items-center py-4 mb-4 flex-shrink-0">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate("/onboarding")}
-          className="mr-2 min-w-[44px] min-h-[44px]"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </Button>
-        <h1 className="text-xl font-semibold">Create Wallet</h1>
-      </div>
+    <OnboardingLayout gradientVariant="primary" className="px-0">
+      <div className="flex flex-col h-full px-6">
+        <OnboardingHeader 
+          title="Create Wallet"
+          showBack
+          onBack={() => navigate(-1)}
+        />
+        
+        <ProgressIndicator 
+          currentStep={3}
+          totalSteps={8}
+          stepName="Backup Phrase"
+          className="mt-4"
+        />
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-sm mx-auto w-full space-y-6 pb-4">
-          <div className="text-center space-y-2">
-          <h2 className="text-lg font-semibold text-foreground">
-            Save Your Recovery Phrase
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Write down or save these 12 words in order. You'll need them to recover your wallet.
-          </p>
-        </div>
-
-        <Card className="bg-gradient-card shadow-card border-0">
-          <CardHeader>
-            <CardTitle className="text-base text-center">Recovery Phrase</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-              {seedPhrase.map((word, index) => (
-                <div key={index} className="flex items-center space-x-2 p-2 sm:p-3 bg-muted rounded-lg">
-                  <span className="text-xs text-muted-foreground font-medium w-5 sm:w-6 flex-shrink-0">
-                    {index + 1}.
-                  </span>
-                  <span className="font-medium text-xs sm:text-sm truncate">{word}</span>
-                </div>
-              ))}
+        <div className="flex-1 pb-4 overflow-y-auto space-y-6 mt-6">
+          {/* Title */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
+          >
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+              <FileText className="w-10 h-10 text-white" />
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-3">
-          <Button 
-            variant="outline" 
-            size="lg" 
-            onClick={handleCopy}
-            className="w-full"
-          >
-            <Copy className="w-4 h-4 mr-2" />
-            Copy Phrase
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="lg" 
-            onClick={handleDownload}
-            className="w-full"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Download
-          </Button>
-          
-          <Button 
-            variant="default" 
-            size="lg" 
-            onClick={handleConfirmPhrase}
-            className="w-full"
-          >
-            I've Saved My Phrase
-          </Button>
-          </div>
-
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-            <p className="text-xs text-destructive-foreground/80 text-center">
-              ⚠️ Never share your recovery phrase. Anyone with this phrase can access your wallet.
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Backup Your Recovery Phrase
+            </h2>
+            <p className="text-white/80 text-base max-w-md mx-auto">
+              Write down these 12 words in order and store them safely
             </p>
-          </div>
+          </motion.div>
+
+          {/* Seed Phrase Display */}
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <OnboardingCard variant="glass">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                  {seedPhrase.map((word, index) => (
+                    <div key={index} className="flex items-center space-x-2 p-2 sm:p-3 bg-white/10 rounded-lg border border-white/20">
+                      <span className="text-xs text-white/60 font-medium w-5 sm:w-6 flex-shrink-0">
+                        {index + 1}.
+                      </span>
+                      <span className="font-medium text-white text-xs sm:text-sm truncate">{word}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </OnboardingCard>
+          </motion.div>
+
+          {/* Warning Message */}
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <OnboardingCard variant="gradient" className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30">
+              <p className="text-red-200 text-sm leading-relaxed">
+                ⚠️ Never share this phrase with anyone. Anyone with your recovery phrase can access your funds.
+              </p>
+            </OnboardingCard>
+          </motion.div>
+
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="space-y-3"
+          >
+            <Button 
+              variant="outline" 
+              size="lg" 
+              onClick={handleCopy}
+              className="w-full border-white/30 text-white hover:bg-white/10 rounded-xl"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy Phrase
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="lg" 
+              onClick={handleDownload}
+              className="w-full border-white/30 text-white hover:bg-white/10 rounded-xl"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
+            
+            <Button 
+              variant="default" 
+              size="lg" 
+              onClick={handleConfirmPhrase}
+              className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-xl"
+            >
+              I've Saved My Phrase
+            </Button>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 };
 

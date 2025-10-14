@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, AlertCircle } from "lucide-react";
+import { Download, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWeb3 } from "@/contexts/Web3Context";
 import { Buffer } from 'buffer';
 import * as bip39 from "bip39";
+import { motion } from 'framer-motion';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
+import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
+import { OnboardingCard } from '@/components/onboarding/OnboardingCard';
 
 // Make Buffer available globally for bip39
 (window as any).Buffer = Buffer;
@@ -72,100 +77,120 @@ const ImportWalletScreen = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background px-6 py-8">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="mr-2"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <h1 className="text-xl font-semibold">Import Wallet</h1>
-      </div>
+    <OnboardingLayout gradientVariant="primary" className="px-0">
+      <div className="flex flex-col h-full px-6">
+        <OnboardingHeader 
+          title="Import Wallet"
+          showBack
+          onBack={() => navigate(-1)}
+        />
+        
+        <ProgressIndicator 
+          currentStep={3}
+          totalSteps={8}
+          stepName="Import Wallet"
+          className="mt-4"
+        />
 
-      <div className="flex-1 flex flex-col max-w-sm mx-auto w-full space-y-6">
-        <div className="text-center space-y-2">
-          <h2 className="text-lg font-semibold text-foreground">
-            Enter Recovery Phrase
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Enter your 12 or 24-word recovery phrase to restore your wallet.
-          </p>
-        </div>
-
-        <Card className="bg-gradient-card shadow-card border-0">
-          <CardHeader>
-            <CardTitle className="text-base text-center">Wallet Verification</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Email Address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter the email used during wallet creation"
-                className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              />
+        <div className="flex-1 pb-4 overflow-y-auto space-y-6 mt-6">
+          {/* Title */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
+          >
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
+              <Download className="w-10 h-10 text-white" />
             </div>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Enter Recovery Phrase
+            </h2>
+            <p className="text-white/80 text-base max-w-md mx-auto">
+              Enter your 12 or 24-word recovery phrase to restore your wallet
+            </p>
+          </motion.div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Recovery Phrase</label>
-              <Textarea
-                value={seedPhrase}
-                onChange={(e) => handlePhraseChange(e.target.value)}
-                placeholder="Enter your recovery phrase (separate words with spaces)"
-                rows={6}
-                className="resize-none text-sm"
-              />
-            </div>
-            
-            {error && (
-              <div className="flex items-center space-x-2 text-destructive text-sm">
-                <AlertCircle className="w-4 h-4" />
-                <span>{error}</span>
+          {/* Form Card */}
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <OnboardingCard variant="glass">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-white/90 text-sm font-medium">Email Address</label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter the email used during wallet creation"
+                    className="bg-black/30 border-white/30 text-white placeholder:text-white/50 focus:border-blue-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-white/90 text-sm font-medium">Recovery Phrase</label>
+                  <Textarea
+                    value={seedPhrase}
+                    onChange={(e) => handlePhraseChange(e.target.value)}
+                    placeholder="Enter your recovery phrase (separate words with spaces)"
+                    rows={6}
+                    className="resize-none bg-black/30 border-white/30 text-white placeholder:text-white/50 focus:border-blue-400"
+                  />
+                </div>
+                
+                {error && (
+                  <div className="flex items-center space-x-2 text-red-400 text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/30">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <Button 
+                  variant="default" 
+                  size="lg" 
+                  onClick={handleValidate}
+                  disabled={!seedPhrase.trim() || !email.trim() || isValidating}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl"
+                >
+                  {isValidating ? "Validating..." : "Validate & Import"}
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="lg" 
+                  onClick={() => navigate("/create-wallet")}
+                  className="w-full text-white hover:bg-white/10 rounded-xl"
+                >
+                  Create New Wallet Instead
+                </Button>
               </div>
-            )}
+            </OnboardingCard>
+          </motion.div>
 
-            <div className="text-xs text-muted-foreground">
-              <p>• Enter the email address you used when creating this wallet</p>
-              <p>• Words should be separated by spaces</p>
-              <p>• Only 12 or 24 word phrases are supported</p>
-              <p>• Check spelling carefully</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-3">
-          <Button 
-            variant="default" 
-            size="lg" 
-            onClick={handleValidate}
-            disabled={!seedPhrase.trim() || !email.trim() || isValidating}
-            className="w-full"
+          {/* Security Tips */}
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
           >
-            {isValidating ? "Validating..." : "Validate & Import"}
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="lg" 
-            onClick={() => navigate("/create-wallet")}
-            className="w-full"
-          >
-            Create New Wallet Instead
-          </Button>
-        </div>
-
-        <div className="bg-muted/50 border border-border rounded-lg p-4">
-          <p className="text-xs text-muted-foreground text-center">
-            💡 Make sure you're in a secure environment when entering your recovery phrase.
-          </p>
+            <OnboardingCard variant="gradient" className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-500/30">
+              <h4 className="text-yellow-200 font-semibold text-sm mb-2 flex items-center">
+                <span className="mr-2">💡</span>
+                Security Tips
+              </h4>
+              <ul className="text-yellow-200/80 text-xs space-y-1">
+                <li>• Make sure you're in a secure location</li>
+                <li>• Never share your recovery phrase with anyone</li>
+                <li>• Your phrase is encrypted and stored only on this device</li>
+              </ul>
+            </OnboardingCard>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 };
 

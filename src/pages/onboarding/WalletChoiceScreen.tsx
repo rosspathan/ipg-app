@@ -1,8 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, Plus, Download } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
+import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
+import { OnboardingCard } from '@/components/onboarding/OnboardingCard';
 
 interface WalletChoiceScreenProps {
   onCreateWallet: () => void;
@@ -37,57 +40,22 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
   ];
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden" style={{ height: '100dvh' }}>
-      {/* Background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-20 right-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+    <OnboardingLayout gradientVariant="primary" className="px-0">
+      <div className="flex flex-col h-full px-6">
+        <OnboardingHeader 
+          title="Setup Wallet"
+          showBack
+          onBack={onBack}
         />
-        <motion.div
-          className="absolute bottom-20 left-10 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
+        
+        <ProgressIndicator 
+          currentStep={2}
+          totalSteps={8}
+          stepName="Choose Wallet"
+          className="mt-4"
         />
-      </div>
 
-      <div className="relative z-10 h-full flex flex-col" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)', paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="text-white hover:bg-white/20 min-w-[44px] min-h-[44px]"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </Button>
-          
-          <div className="text-center">
-            <h1 className="text-white font-semibold">Setup Wallet</h1>
-          </div>
-
-          <div className="w-10" />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 px-6 pb-4 overflow-y-auto">
+        <div className="flex-1 pb-4 overflow-y-auto mt-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -119,17 +87,18 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
                     delay: 0.2 + (index * 0.1) 
                   }}
                 >
-                  <Card 
-                    className="relative bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/15 transition-all duration-300 cursor-pointer transform hover:scale-[1.02] hover:shadow-xl"
-                    onClick={option.action}
+                  <OnboardingCard 
+                    variant="glass" 
+                    hover
+                    className="relative cursor-pointer"
                   >
-                    {option.recommended && (
-                      <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-3 py-1 rounded-full">
-                        Recommended
-                      </div>
-                    )}
-                    
-                    <div className="p-6">
+                    <div onClick={option.action}>
+                      {option.recommended && (
+                        <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-3 py-1 rounded-full">
+                          Recommended
+                        </div>
+                      )}
+                      
                       <div className="flex items-center space-x-4">
                         <div className={`w-12 h-12 bg-gradient-to-r ${option.gradient} rounded-xl flex items-center justify-center flex-shrink-0`}>
                           <IconComponent className="w-6 h-6 text-white" />
@@ -151,7 +120,7 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
                         </motion.div>
                       </div>
                     </div>
-                  </Card>
+                  </OnboardingCard>
                 </motion.div>
               );
             })}
@@ -164,7 +133,7 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
             transition={{ duration: 0.6, delay: 0.8 }}
             className="mt-8 max-w-md mx-auto"
           >
-            <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm rounded-2xl p-4 border border-yellow-500/30">
+            <OnboardingCard variant="gradient" className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-500/30">
               <div className="flex items-start space-x-3">
                 <span className="text-2xl flex-shrink-0">🛡️</span>
                 <div>
@@ -176,7 +145,7 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
                   </p>
                 </div>
               </div>
-            </div>
+            </OnboardingCard>
           </motion.div>
 
           {/* Network Info */}
@@ -192,7 +161,7 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
           </motion.div>
         </div>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 };
 

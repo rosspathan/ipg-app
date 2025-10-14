@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ChevronLeft, Shield, Eye, EyeOff } from 'lucide-react';
+import { Shield, Eye, EyeOff } from 'lucide-react';
 import { hashPin, generateSalt, isValidPin, isWeakPin } from '@/utils/pinCrypto';
 import { storePinCredentials, setLockState } from '@/utils/lockState';
 import { useToast } from '@/hooks/use-toast';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
+import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
+import { OnboardingCard } from '@/components/onboarding/OnboardingCard';
 
 interface PinSetupScreenProps {
   onPinSetup: (pinHash: string) => void;
@@ -26,7 +29,6 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
   const { toast } = useToast();
 
   const handlePinChange = (value: string, isConfirm: boolean = false) => {
-    // Only allow digits and limit to 6 characters
     const cleanValue = value.replace(/\D/g, '').slice(0, 6);
     
     if (isConfirm) {
@@ -71,14 +73,10 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
 
     setIsHashing(true);
     try {
-      // Generate salt and hash PIN using PBKDF2
       const salt = generateSalt();
       const hash = await hashPin(pin, salt);
       
-      // Store PIN credentials in lockState system
       storePinCredentials(hash, salt);
-      
-      // Set app as unlocked initially
       setLockState('unlocked');
       
       toast({
@@ -86,7 +84,6 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         description: "Your secure PIN has been set up",
       });
       
-      // Pass hash to parent for onboarding completion
       onPinSetup(hash);
     } catch (error) {
       toast({
@@ -108,7 +105,6 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
     }
   };
 
-  // PIN input component
   const PinInput = ({ 
     value, 
     onChange, 
@@ -136,7 +132,6 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         ))}
       </div>
       
-      {/* Hidden input - disabled to prevent native keyboard */}
       <input
         type="text"
         inputMode="none"
@@ -149,7 +144,6 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
     </div>
   );
 
-  // Number pad component
   const NumberPad = ({ onNumber, onDelete }: { onNumber: (num: string) => void; onDelete: () => void }) => (
     <div className="grid grid-cols-3 gap-4 max-w-xs mx-auto">
       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
@@ -158,7 +152,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
           variant="outline"
           size="lg"
           onClick={() => onNumber(num.toString())}
-          className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 text-xl font-semibold touch-manipulation"
+          className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 text-xl font-semibold touch-manipulation rounded-xl"
         >
           {num}
         </Button>
@@ -168,7 +162,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         variant="outline"
         size="lg"
         onClick={() => setShowPin(!showPin)}
-        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 touch-manipulation"
+        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 touch-manipulation rounded-xl"
       >
         {showPin ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
       </Button>
@@ -177,7 +171,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         variant="outline"
         size="lg"
         onClick={() => onNumber('0')}
-        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 text-xl font-semibold touch-manipulation"
+        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 text-xl font-semibold touch-manipulation rounded-xl"
       >
         0
       </Button>
@@ -186,7 +180,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         variant="outline"
         size="lg"
         onClick={onDelete}
-        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 touch-manipulation"
+        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 touch-manipulation rounded-xl"
       >
         ⌫
       </Button>
@@ -214,53 +208,22 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 relative overflow-hidden" style={{ height: '100dvh' }}>
-      {/* Background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-20 right-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+    <OnboardingLayout gradientVariant="secondary" className="px-0">
+      <div className="flex flex-col h-full px-6">
+        <OnboardingHeader 
+          title="Setup PIN"
+          showBack
+          onBack={handleBackStep}
         />
-      </div>
+        
+        <ProgressIndicator 
+          currentStep={6}
+          totalSteps={8}
+          stepName="Set PIN"
+          className="mt-4"
+        />
 
-      <div className="relative z-10 h-full flex flex-col" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)', paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBackStep}
-            className="text-white hover:bg-white/20 min-w-[44px] min-h-[44px]"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </Button>
-          
-          <div className="text-center">
-            <h1 className="text-white font-semibold">Setup PIN</h1>
-            <div className="flex space-x-2 mt-1">
-              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                step === 'create' ? 'bg-white' : 'bg-white/40'
-              }`} />
-              <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                step === 'confirm' ? 'bg-white' : 'bg-white/40'
-              }`} />
-            </div>
-          </div>
-
-          <div className="w-10" />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 px-6 pb-4 space-y-6 overflow-y-auto">
-          {/* Icon and title */}
+        <div className="flex-1 pb-4 space-y-6 overflow-y-auto mt-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -283,24 +246,20 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
             </p>
           </motion.div>
 
-          {/* PIN input */}
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <div className="p-6">
-                <PinInput
-                  value={step === 'create' ? pin : confirmPin}
-                  onChange={(value) => handlePinChange(value, step === 'confirm')}
-                  placeholder="Enter 6-digit PIN"
-                />
-              </div>
-            </Card>
+            <OnboardingCard variant="glass">
+              <PinInput
+                value={step === 'create' ? pin : confirmPin}
+                onChange={(value) => handlePinChange(value, step === 'confirm')}
+                placeholder="Enter 6-digit PIN"
+              />
+            </OnboardingCard>
           </motion.div>
 
-          {/* Number pad */}
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -309,7 +268,6 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
             <NumberPad onNumber={handleNumberPress} onDelete={handleDelete} />
           </motion.div>
 
-          {/* Action button */}
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -319,7 +277,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
               <Button
                 onClick={handleCreatePin}
                 disabled={pin.length !== 6}
-                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 font-semibold py-4 rounded-2xl"
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 font-semibold py-4 rounded-2xl text-white"
                 size="lg"
               >
                 Continue
@@ -328,7 +286,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
               <Button
                 onClick={handleConfirmPin}
                 disabled={confirmPin.length !== 6 || isHashing}
-                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 font-semibold py-4 rounded-2xl"
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 font-semibold py-4 rounded-2xl text-white"
                 size="lg"
               >
                 {isHashing ? (
@@ -347,32 +305,29 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
             )}
           </motion.div>
 
-          {/* Security tips */}
           {step === 'create' && (
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.5 }}
             >
-              <Card className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm border-yellow-500/30">
-                <div className="p-4">
-                  <h4 className="text-yellow-200 font-semibold text-sm mb-2 flex items-center">
-                    <span className="mr-2">💡</span>
-                    Security Tips
-                  </h4>
-                  <ul className="text-yellow-200/80 text-xs space-y-1">
-                    <li>• Avoid simple patterns like 123456 or 111111</li>
-                    <li>• Don't use your birthday or other personal dates</li>
-                    <li>• Choose a PIN you can remember but others can't guess</li>
-                    <li>• Your PIN is encrypted and stored securely on device</li>
-                  </ul>
-                </div>
-              </Card>
+              <OnboardingCard variant="gradient" className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-500/30">
+                <h4 className="text-yellow-200 font-semibold text-sm mb-2 flex items-center">
+                  <span className="mr-2">💡</span>
+                  Security Tips
+                </h4>
+                <ul className="text-yellow-200/80 text-xs space-y-1">
+                  <li>• Avoid simple patterns like 123456 or 111111</li>
+                  <li>• Don't use your birthday or other personal dates</li>
+                  <li>• Choose a PIN you can remember but others can't guess</li>
+                  <li>• Your PIN is encrypted and stored securely on device</li>
+                </ul>
+              </OnboardingCard>
             </motion.div>
           )}
         </div>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 };
 

@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
+import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
+import { OnboardingCard } from '@/components/onboarding/OnboardingCard';
 
 interface WelcomeScreensProps {
   onComplete: () => void;
@@ -147,73 +151,22 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
   const current = screens[currentScreen];
 
   return (
-    <div 
-      className={`h-screen bg-gradient-to-br ${current.gradient} relative overflow-hidden`} 
-      style={{ 
-        height: '100dvh',
-        paddingTop: 'max(env(safe-area-inset-top), 8px)',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' 
-      }}
-    >
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.1, 1],
-            rotate: [0, 90, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "linear"
-          }}
+    <OnboardingLayout gradientVariant="primary" className="px-0">
+      <div className="flex flex-col h-full px-6">
+        <OnboardingHeader 
+          showBack
+          onBack={previousScreen}
+          rightAction={<div className="w-10" />}
         />
-        <motion.div
-          className="absolute -bottom-32 -left-32 w-80 h-80 bg-white/5 rounded-full blur-2xl"
-          animate={{
-            scale: [1.1, 1, 1.1],
-            rotate: [0, -90, 0],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "linear"
-          }}
+        
+        <ProgressIndicator 
+          currentStep={currentScreen + 1}
+          totalSteps={screens.length}
+          stepName={current.title}
+          className="mt-4"
         />
-      </div>
 
-      <div className="relative z-10 h-full flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={previousScreen}
-            className="text-white hover:bg-white/20 min-w-[44px] min-h-[44px]"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </Button>
-          
-          <div className="flex space-x-2">
-            {screens.map((_, index) => (
-              <motion.div
-                key={index}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  index === currentScreen 
-                    ? 'w-8 bg-white' 
-                    : 'w-2 bg-white/40'
-                }`}
-                layoutId={`indicator-${index}`}
-              />
-            ))}
-          </div>
-
-          <div className="w-10" /> {/* Spacer */}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 px-6 pb-4 overflow-y-auto">
+        <div className="flex-1 pb-4 overflow-y-auto mt-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentScreen}
@@ -269,21 +222,22 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
                       duration: 0.5, 
                       delay: 0.5 + (index * 0.1) 
                     }}
-                    className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20"
                   >
-                    <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <span className="text-xl">{feature.icon}</span>
+                    <OnboardingCard variant="glass">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <span className="text-xl">{feature.icon}</span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-white font-semibold text-lg mb-1">
+                            {feature.title}
+                          </h3>
+                          <p className="text-white/80 text-sm">
+                            {feature.description}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-semibold text-lg mb-1">
-                          {feature.title}
-                        </h3>
-                        <p className="text-white/80 text-sm">
-                          {feature.description}
-                        </p>
-                      </div>
-                    </div>
+                    </OnboardingCard>
                   </motion.div>
                 ))}
               </motion.div>
@@ -297,7 +251,7 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
               >
                 <Button
                   onClick={nextScreen}
-                  className="w-full bg-white text-gray-900 hover:bg-gray-100 font-semibold py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                  className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold py-4 rounded-2xl transition-all duration-300"
                   size="lg"
                 >
                   {currentScreen === screens.length - 1 ? (
@@ -323,7 +277,7 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
           </AnimatePresence>
         </div>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 };
 

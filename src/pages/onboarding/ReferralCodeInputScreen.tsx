@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, Users, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Users, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useReferralCodeValidation } from '@/hooks/useReferralCodeValidation';
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
+import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
+import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
+import { OnboardingCard } from '@/components/onboarding/OnboardingCard';
 
 interface ReferralCodeInputScreenProps {
   onCodeSubmitted: (code: string, sponsorId: string) => void;
@@ -33,71 +36,38 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden" style={{ height: '100dvh' }}>
-      {/* Background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+    <OnboardingLayout gradientVariant="secondary" className="px-0">
+      <div className="flex flex-col h-full px-6">
+        <OnboardingHeader 
+          title="Referral Code"
+          showBack
+          onBack={onBack}
+          rightAction={
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onSkip}
+              className="text-white/70 hover:bg-white/20 hover:text-white"
+            >
+              Skip
+            </Button>
+          }
         />
-        <motion.div
-          className="absolute bottom-20 right-10 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1.1, 1, 1.1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
+        
+        <ProgressIndicator 
+          currentStep={7}
+          totalSteps={8}
+          stepName="Referral Code"
+          className="mt-4"
         />
-      </div>
 
-      <div className="relative z-10 h-full flex flex-col" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)', paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="text-white hover:bg-white/20 min-w-[44px] min-h-[44px]"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </Button>
-          
-          <div className="text-center">
-            <h1 className="text-white font-semibold">Referral Code</h1>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onSkip}
-            className="text-white/70 hover:bg-white/20 hover:text-white"
-          >
-            Skip
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 px-6 pb-4 overflow-y-auto flex flex-col justify-center">
+        <div className="flex-1 pb-4 overflow-y-auto flex flex-col justify-center mt-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             className="max-w-md mx-auto w-full space-y-6"
           >
-            {/* Icon and title */}
             <div className="text-center">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
@@ -127,14 +97,13 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
               </motion.p>
             </div>
 
-            {/* Code input card */}
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.5 }}
             >
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                <div className="p-6 space-y-4">
+              <OnboardingCard variant="glass">
+                <div className="space-y-4">
                   <div>
                     <label className="text-white/90 text-sm font-medium block mb-2">
                       Referral Code (Optional)
@@ -162,7 +131,6 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
                       )}
                     </div>
                     
-                    {/* Validation feedback */}
                     {code.trim() && !validation.loading && (
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
@@ -187,45 +155,41 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
                   <Button
                     onClick={handleContinue}
                     disabled={!validation.isValid || validation.loading}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 font-semibold py-3 rounded-xl"
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 font-semibold py-3 rounded-xl text-white"
                   >
                     Continue with Referral
                   </Button>
                 </div>
-              </Card>
+              </OnboardingCard>
             </motion.div>
 
-            {/* Benefits */}
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.6 }}
             >
-              <Card className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 backdrop-blur-sm border-blue-500/30">
-                <div className="p-4">
-                  <h4 className="text-blue-200 font-semibold text-sm mb-3 flex items-center">
-                    <span className="mr-2">🎁</span>
-                    Referral Benefits
-                  </h4>
-                  <ul className="text-blue-200/80 text-xs space-y-2">
-                    <li className="flex items-center">
-                      <span className="w-4 h-4 bg-blue-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
-                      Join your friend's trading network
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-4 h-4 bg-blue-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
-                      Unlock exclusive rewards together
-                    </li>
-                    <li className="flex items-center">
-                      <span className="w-4 h-4 bg-blue-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
-                      Build your own referral team
-                    </li>
-                  </ul>
-                </div>
-              </Card>
+              <OnboardingCard variant="gradient" className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/30">
+                <h4 className="text-blue-200 font-semibold text-sm mb-3 flex items-center">
+                  <span className="mr-2">🎁</span>
+                  Referral Benefits
+                </h4>
+                <ul className="text-blue-200/80 text-xs space-y-2">
+                  <li className="flex items-center">
+                    <span className="w-4 h-4 bg-blue-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
+                    Join your friend's trading network
+                  </li>
+                  <li className="flex items-center">
+                    <span className="w-4 h-4 bg-blue-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
+                    Unlock exclusive rewards together
+                  </li>
+                  <li className="flex items-center">
+                    <span className="w-4 h-4 bg-blue-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
+                    Build your own referral team
+                  </li>
+                </ul>
+              </OnboardingCard>
             </motion.div>
 
-            {/* Skip note */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -239,7 +203,7 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
           </motion.div>
         </div>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 };
 
