@@ -141,17 +141,65 @@ export const useReferrals = () => {
   const shareReferral = async (method: 'whatsapp' | 'native') => {
     if (!referralCode) return;
     
-    // Share just the code
-    const text = `Join me on IPG I-SMART! Use my referral code: ${referralCode.code} 🚀`;
+    // Fetch user profile for display name
+    let referrerName = 'A friend';
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name, username, email')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (profile) {
+        referrerName = profile.display_name || profile.username || extractUsernameFromEmail(profile.email) || 'A friend';
+      }
+    }
+    
+    // Get template from settings or use default
+    const template = settings?.whatsapp_template || `🌟 *Join I-SMART Exchange!* 🌟
+
+Hey! I'm earning crypto rewards with I-SMART Exchange. Join me! 💎
+
+💰 *Why You'll Love It:*
+✅ Trade IPG, BTC, ETH, USDT & more
+✅ Earn BSK tokens on every trade
+✅ Multi-level referral rewards
+✅ Secure wallet with biometric protection
+✅ Daily reward programs & lucky draws
+
+🎁 *YOUR REFERRAL CODE:*
+{CODE}
+
+📱 *How to Join (3 Easy Steps):*
+1️⃣ Download I-SMART Exchange app:
+   [APK DOWNLOAD LINK - Coming Soon]
+
+2️⃣ Sign up with your email
+
+3️⃣ Enter referral code: {CODE}
+   (Enter it during verification to get bonuses!)
+
+💪 I've helped {TOTAL_REFERRALS} friends join!
+
+Referred by: {REFERRER_NAME}
+
+Start earning together! 🚀
+#CryptoTrading #ISMART #ReferralRewards`;
+    
+    // Parse template with variables
+    const message = template
+      .replace(/{CODE}/g, referralCode.code)
+      .replace(/{REFERRER_NAME}/g, referrerName)
+      .replace(/{TOTAL_REFERRALS}/g, stats.total_referrals.toString());
 
     if (method === 'whatsapp') {
-      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
       await openUrl(whatsappUrl);
     } else if (method === 'native' && navigator.share) {
       try {
         await navigator.share({
-          title: 'Join IPG I-SMART',
-          text
+          title: 'Join I-SMART Exchange',
+          text: message
         });
       } catch (error) {
         console.error('Error sharing:', error);
