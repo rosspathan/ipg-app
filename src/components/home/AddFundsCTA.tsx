@@ -16,24 +16,25 @@ export function AddFundsCTA({ onPress, className }: AddFundsCTAProps) {
     <Button
       onClick={onPress}
       className={cn(
-        "w-full h-14 rounded-2xl relative overflow-hidden",
+        "w-full h-16 rounded-2xl relative overflow-hidden",
         "bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%]",
-        "text-white font-[Space_Grotesk] font-bold text-base",
+        "text-white font-heading font-bold text-lg",
         "transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-        "hover:bg-[position:100%_0] hover:opacity-90",
+        "hover:bg-[position:100%_0] active:scale-[0.98]",
         "focus:outline-none focus:ring-2 focus:ring-primary/50",
+        "shadow-glow-primary",
         "group",
         className
       )}
-      style={{
-        boxShadow: '0 8px 24px rgba(124, 77, 255, 0.4)'
-      }}
       data-testid="add-funds-cta"
     >
       {/* Animated background glow */}
       <div 
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[600ms]"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[600ms] animate-shimmer"
       />
+      
+      {/* Bottom glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
       {/* Content */}
       <div className="relative flex items-center justify-center gap-2">

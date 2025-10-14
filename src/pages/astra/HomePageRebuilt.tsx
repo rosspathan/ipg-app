@@ -2,6 +2,7 @@ import * as React from "react"
 import { useState } from "react"
 import { Gift, Zap, Star, MessageCircle } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
+import { AppTopBar } from "@/components/astra/AppTopBar"
 import { KPICardUnified } from "@/components/home/KPICardUnified"
 import { AddFundsCTA } from "@/components/home/AddFundsCTA"
 import { BalanceDuoGrid } from "@/components/home/BalanceDuoGrid"
@@ -110,7 +111,12 @@ export function HomePageRebuilt() {
   ]
 
   return (
-    <div className="space-y-6" data-testid="page-home" data-version="usr-wallet-link-v3">
+    <div className="min-h-screen" data-testid="page-home" data-version="usr-wallet-link-v3">
+      {/* Header with Logo */}
+      <AppTopBar />
+      
+      {/* Main Content with Padding */}
+      <div className="space-y-6 p-4 pb-24">
         {/* Add Funds CTA */}
         <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
 
@@ -184,6 +190,7 @@ export function HomePageRebuilt() {
           }
         }}
       />
+      </div>
     </div>
   )
 }

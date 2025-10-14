@@ -72,20 +72,22 @@ export function BskCardCompact({
   return (
     <div
       className={cn(
-        "p-3 rounded-2xl border border-border/30 space-y-3",
+        "p-4 rounded-2xl border-2 space-y-3",
+        "glass-card",
         "transition-all duration-[220ms]",
         "flex flex-col h-full",
+        "hover:shadow-elevated active:scale-[0.99]",
         isWithdrawable 
-          ? "bg-success/5 backdrop-blur-xl" 
-          : "bg-primary/5 backdrop-blur-xl",
+          ? "bg-gradient-to-br from-success/10 via-success/5 to-transparent border-success/30 hover:border-success/50" 
+          : "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30 hover:border-primary/50",
         className
       )}
       style={{
         WebkitBackdropFilter: 'blur(16px)',
         backdropFilter: 'blur(16px)',
         boxShadow: isWithdrawable 
-          ? '0 4px 20px rgba(34, 197, 94, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
-          : '0 4px 20px rgba(124, 77, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+          ? '0 8px 32px rgba(34, 197, 94, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+          : '0 8px 32px rgba(124, 77, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
       }}
       data-testid="bsk-card"
     >
@@ -118,20 +120,25 @@ export function BskCardCompact({
       </div>
 
       {/* Amount Row */}
-      <div>
+      <div className="relative">
         <div className={cn(
-          "font-[Space_Grotesk] font-bold text-xl tabular-nums",
+          "font-heading font-bold text-2xl tabular-nums animate-fade-in",
           isWithdrawable ? "text-success" : "text-primary"
         )}>
           {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`}{" "}
           <span className={cn(
-            "text-sm",
+            "text-base font-semibold",
             isWithdrawable ? "text-success/70" : "text-primary/70"
           )}>BSK</span>
         </div>
-        <div className="font-[Inter] text-[10px] text-muted-foreground tabular-nums mt-0.5">
+        <div className="font-body text-xs text-muted-foreground tabular-nums mt-1">
           {isPrivate ? "••••••" : `≈ ₹${fiatValue.toLocaleString()}`}
         </div>
+        {/* Subtle glow behind amount */}
+        <div className={cn(
+          "absolute -inset-4 blur-2xl opacity-20 pointer-events-none",
+          isWithdrawable ? "bg-success" : "bg-primary"
+        )} />
       </div>
 
       {/* Actions Row */}
@@ -142,13 +149,14 @@ export function BskCardCompact({
             variant="outline"
             size="sm"
             className={cn(
-              "flex-1 h-7 px-1.5 min-w-0",
-              "border-success/30 hover:border-success/50 hover:bg-success/10",
-              "text-success font-[Inter] font-medium text-[8px]",
-              "focus:ring-2 focus:ring-success/30"
+              "flex-1 h-9 px-2 min-w-0",
+              "border-success/40 hover:border-success/60 hover:bg-success/15",
+              "text-success font-body font-semibold text-xs",
+              "focus:ring-2 focus:ring-success/30",
+              "transition-all duration-200 active:scale-95"
             )}
           >
-            <ArrowDownToLine className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
+            <ArrowDownToLine className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
             <span className="truncate">Withdraw</span>
           </Button>
           <Button
@@ -156,13 +164,14 @@ export function BskCardCompact({
             variant="outline"
             size="sm"
             className={cn(
-              "flex-1 h-7 px-1.5 min-w-0",
-              "border-primary/30 hover:border-primary/50 hover:bg-primary/10",
-              "text-primary font-[Inter] font-medium text-[8px]",
-              "focus:ring-2 focus:ring-primary/30"
+              "flex-1 h-9 px-2 min-w-0",
+              "border-primary/40 hover:border-primary/60 hover:bg-primary/15",
+              "text-primary font-body font-semibold text-xs",
+              "focus:ring-2 focus:ring-primary/30",
+              "transition-all duration-200 active:scale-95"
             )}
           >
-            <ArrowRightLeft className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
+            <ArrowRightLeft className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
             <span className="truncate">Transfer</span>
           </Button>
         </div>
@@ -172,13 +181,14 @@ export function BskCardCompact({
           variant="outline"
           size="sm"
           className={cn(
-            "w-full h-7",
-            "border-primary/30 hover:border-primary/50 hover:bg-primary/10",
-            "text-primary font-[Inter] font-medium text-[8px]",
-            "focus:ring-2 focus:ring-primary/30"
+            "w-full h-9",
+            "border-primary/40 hover:border-primary/60 hover:bg-primary/15",
+            "text-primary font-body font-semibold text-xs",
+            "focus:ring-2 focus:ring-primary/30",
+            "transition-all duration-200 active:scale-95"
           )}
         >
-          <Calendar className="h-2.5 w-2.5 mr-1" />
+          <Calendar className="h-3.5 w-3.5 mr-1.5" />
           View Schedule
         </Button>
       )}
