@@ -38,6 +38,8 @@ const AdminProgramsControl = React.lazy(() => import("./pages/admin/AdminProgram
 const AdminProgramAnalytics = React.lazy(() => import("./pages/admin/AdminProgramAnalytics"));
 const ProgramControlCenter = React.lazy(() => import("./pages/admin/ProgramControlCenter"));
 const ProgramTemplates = React.lazy(() => import("./pages/admin/ProgramTemplates"));
+const ProgramsHub = React.lazy(() => import("./pages/ProgramsHub"));
+const ProgramDetail = React.lazy(() => import("./pages/ProgramDetail"));
 const AdminSystemHealth = React.lazy(() => import("./pages/admin/AdminSystemHealth"));
 const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
 const AdminMobileLinking = React.lazy(() => import("./pages/admin/AdminMobileLinking"));
@@ -447,6 +449,10 @@ function App() {
               <Route path="/subscriptions" element={<Navigate to="/app/programs/subscriptions" replace />} />
               <Route path="/insurance" element={<Navigate to="/app/programs/insurance" replace />} />
               <Route path="/lucky-draw" element={<Navigate to="/app/programs/lucky" replace />} />
+              
+              {/* Public Program Hub Routes */}
+              <Route path="/programs-hub" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramsHub /></React.Suspense>} />
+              <Route path="/programs-hub/:key" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramDetail /></React.Suspense>} />
 
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
