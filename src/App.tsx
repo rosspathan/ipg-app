@@ -23,6 +23,7 @@ import { AdminShellAdaptive } from "@/components/admin/nova/AdminShellAdaptive";
 import AdminDashboardNova from "./pages/admin/AdminDashboardNova";
 import AdminUsersNova from "./pages/admin/AdminUsersNova";
 import AdminMarketsNova from "./pages/admin/AdminMarketsNova";
+import AdminTradingOrders from "./pages/admin/AdminTradingOrders";
 import AdminSubscriptionsNova from "./pages/admin/AdminSubscriptionsNova";
 import AdminStakingNova from "./pages/admin/AdminStakingNova";
 import AdminSpinNova from "./pages/admin/AdminSpinNova";
@@ -279,6 +280,7 @@ function App() {
               <Route path="wallet/history" element={<HistoryScreen />} />
               <Route path="programs" element={<ProgramsPagePro />} />
               <Route path="trade" element={<TradingScreenRebuilt />} />
+              <Route path="trading" element={<Navigate to="/app/trade" replace />} />
               <Route path="swap" element={<SwapScreen />} />
               
               {/* Profile Hub */}
@@ -342,6 +344,7 @@ function App() {
                 
                 {/* Markets Management */}
                 <Route path="markets" element={<AdminMarketsNova />} />
+                <Route path="trading-orders" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTradingOrders /></React.Suspense>} />
                 
                 {/* BSK Management */}
                 <Route path="bsk" element={<AdminBSKManagementNova />} />

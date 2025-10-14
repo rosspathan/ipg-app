@@ -8,6 +8,9 @@ import { AmountInputPro } from "@/components/trading/AmountInputPro";
 import { AllocationDonut } from "@/components/trading/AllocationDonut";
 import { ErrorHintBar, type ErrorHint } from "@/components/trading/ErrorHintBar";
 import { useTradingPairs } from "@/hooks/useTradingPairs";
+import { useUserBalance } from "@/hooks/useUserBalance";
+import { useUserOrders } from "@/hooks/useUserOrders";
+import { OrdersList } from "@/components/trading/OrdersList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +45,10 @@ export default function TradingScreenRebuilt() {
   const { data: allPairs = [], isLoading } = useTradingPairs();
   
   const [selectedPairSymbol, setSelectedPairSymbol] = useState("BNB ORIGINAL/USDT");
+  
+  // Fetch real balances and orders
+  const { data: balances } = useUserBalance();
+  const { orders, placeOrder, cancelOrder, isPlacingOrder } = useUserOrders(selectedPairSymbol);
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState("limit");
   const [price, setPrice] = useState("1147.3");
@@ -58,9 +65,13 @@ export default function TradingScreenRebuilt() {
   // Get current pair data
   const currentPair = allPairs.find(p => p.symbol === selectedPairSymbol) || allPairs[0];
   
-  const availableBalance = 329.19972973;
   const baseSymbol = currentPair?.baseAsset || "BNB";
   const quoteSymbol = currentPair?.quoteAsset || "USDT";
+  
+  // Get real balance for the relevant asset
+  const relevantAsset = side === "buy" ? quoteSymbol : baseSymbol;
+  const userBalanceData = balances?.find((b: any) => b.symbol === relevantAsset);
+  const availableBalance = userBalanceData?.balance || 0;
   const priceChange = currentPair ? `${currentPair.change24h > 0 ? '+' : ''}${currentPair.change24h.toFixed(2)}%` : "+0.00%";
   
   // Trading limits from current pair
@@ -143,7 +154,7 @@ export default function TradingScreenRebuilt() {
     setErrors(newErrors);
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     // Validation
     const qty = parseFloat(quantity);
     const orderPrice = orderType === "market" ? mockOrderBook.bids[0].price : parseFloat(price);
@@ -164,45 +175,26 @@ export default function TradingScreenRebuilt() {
       return;
     }
 
-    // Create order object
-    const order = {
-      id: `order-${Date.now()}`,
-      pair: selectedPairSymbol,
-      side,
-      type: orderType,
-      price: orderPrice,
-      quantity: qty,
-      total: totalValue,
-      status: orderType === "market" ? "filled" : "pending",
-      timestamp: new Date().toISOString()
-    };
+    try {
+      // Place order in database
+      await placeOrder({
+        symbol: selectedPairSymbol,
+        side,
+        type: orderType as 'market' | 'limit',
+        quantity: qty,
+        price: orderType === 'limit' ? orderPrice : undefined,
+        trading_type: 'spot',
+      });
 
-    // For market orders, execute immediately
-    if (orderType === "market") {
-      toast.success(
-        `Market ${side} order filled: ${qty.toFixed(4)} BNB @ $${orderPrice.toFixed(2)}`,
-        {
-          description: `Total: $${totalValue.toFixed(2)}`
-        }
-      );
-    } else {
-      // For limit orders, show pending
-      toast.success(
-        `Limit ${side} order placed: ${qty.toFixed(4)} BNB @ $${orderPrice.toFixed(2)}`,
-        {
-          description: "Order is pending execution"
-        }
-      );
+      // Reset form
+      setQuantity("");
+      setPercentage(0);
+      if (orderType === "limit") {
+        setPrice("");
+      }
+    } catch (error) {
+      console.error("Order placement error:", error);
     }
-
-    // Reset form
-    setQuantity("");
-    setPercentage(0);
-    if (orderType === "limit") {
-      setPrice("");
-    }
-
-    console.log("Order placed:", order);
   };
 
   return (
@@ -456,6 +448,7 @@ export default function TradingScreenRebuilt() {
             {/* Submit Button */}
             <Button
               onClick={handlePlaceOrder}
+              disabled={isPlacingOrder || errors.some(e => e.severity === 'error')}
               className={cn(
                 "w-full h-11 text-sm font-bold shadow-lg transition-all duration-200 rounded-xl",
                 side === "buy"
@@ -524,14 +517,14 @@ export default function TradingScreenRebuilt() {
           <div className="flex items-center gap-4 px-4 py-2 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setSelectedTab("orders")}
-              className={cn(
+             className={cn(
                 "flex items-center gap-1.5 pb-2 border-b-2 transition-colors whitespace-nowrap text-xs",
                 selectedTab === "orders"
                   ? "border-primary text-primary font-semibold"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
-              Orders(0)
+              Orders({orders.length})
               <ChevronDown className="h-3 w-3" />
             </button>
             <button
@@ -570,19 +563,30 @@ export default function TradingScreenRebuilt() {
           </div>
 
           {/* Tab Content */}
-          <div className="px-4 py-4 pb-2 text-center">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Checkbox id="show-current" className="h-3.5 w-3.5" />
-                <label htmlFor="show-current" className="text-xs text-muted-foreground">
-                  Show current
-                </label>
+          <div className="px-4 py-4 pb-2">
+            {selectedTab === 'orders' && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="show-current" className="h-3.5 w-3.5" />
+                    <label htmlFor="show-current" className="text-xs text-muted-foreground">
+                      Show current
+                    </label>
+                  </div>
+                  <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    Cancel all
+                  </button>
+                </div>
+                <OrdersList 
+                  orders={orders as any} 
+                  onCancel={cancelOrder}
+                  showCancelButton={true}
+                />
               </div>
-              <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                Cancel all
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground">No {selectedTab} yet</p>
+            )}
+            {selectedTab !== 'orders' && (
+              <p className="text-xs text-muted-foreground text-center">No {selectedTab} yet</p>
+            )}
           </div>
         </div>
       </div>
