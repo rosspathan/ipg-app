@@ -158,7 +158,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
           variant="outline"
           size="lg"
           onClick={() => onNumber(num.toString())}
-          className="h-16 border-white/30 text-white hover:bg-white/20 text-xl font-semibold"
+          className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 text-xl font-semibold touch-manipulation"
         >
           {num}
         </Button>
@@ -168,7 +168,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         variant="outline"
         size="lg"
         onClick={() => setShowPin(!showPin)}
-        className="h-16 border-white/30 text-white hover:bg-white/20"
+        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 touch-manipulation"
       >
         {showPin ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
       </Button>
@@ -177,7 +177,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         variant="outline"
         size="lg"
         onClick={() => onNumber('0')}
-        className="h-16 border-white/30 text-white hover:bg-white/20 text-xl font-semibold"
+        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 text-xl font-semibold touch-manipulation"
       >
         0
       </Button>
@@ -186,7 +186,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         variant="outline"
         size="lg"
         onClick={onDelete}
-        className="h-16 border-white/30 text-white hover:bg-white/20"
+        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 touch-manipulation"
       >
         ⌫
       </Button>
@@ -238,9 +238,9 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleBackStep}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20 min-w-[44px] min-h-[44px]"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-6 h-6" />
           </Button>
           
           <div className="text-center">

@@ -70,9 +70,9 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20 min-w-[44px] min-h-[44px]"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-6 h-6" />
           </Button>
           
           <div className="text-center">

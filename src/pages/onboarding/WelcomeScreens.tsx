@@ -147,7 +147,14 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
   const current = screens[currentScreen];
 
   return (
-    <div className={`h-screen bg-gradient-to-br ${current.gradient} relative overflow-hidden`} style={{ height: '100dvh' }}>
+    <div 
+      className={`h-screen bg-gradient-to-br ${current.gradient} relative overflow-hidden`} 
+      style={{ 
+        height: '100dvh',
+        paddingTop: 'max(env(safe-area-inset-top), 8px)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' 
+      }}
+    >
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -176,16 +183,16 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
         />
       </div>
 
-      <div className="relative z-10 h-full flex flex-col" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)', paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
+      <div className="relative z-10 h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={previousScreen}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-white/20 min-w-[44px] min-h-[44px]"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-6 h-6" />
           </Button>
           
           <div className="flex space-x-2">

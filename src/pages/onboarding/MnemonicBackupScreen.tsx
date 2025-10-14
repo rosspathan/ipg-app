@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Shield, Copy, Eye, EyeOff, AlertTriangle, Check } from "lucide-react";
+import { Shield, Copy, Eye, EyeOff, AlertTriangle, Check, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MnemonicBackupScreenProps {
@@ -51,10 +51,33 @@ const MnemonicBackupScreen = ({
   const allConfirmed = Object.values(confirmations).every((v) => v);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl p-8 space-y-6 backdrop-blur-sm bg-card/95 border-primary/20">
-        {/* Header */}
-        <div className="text-center space-y-2">
+    <div 
+      className="h-screen overflow-hidden flex flex-col bg-gradient-to-b from-background via-background to-primary/5" 
+      style={{ 
+        height: '100dvh',
+        paddingTop: 'max(env(safe-area-inset-top), 8px)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
+        paddingLeft: '16px',
+        paddingRight: '16px'
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center py-4 mb-2 flex-shrink-0">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={onBack}
+          className="mr-2 min-w-[44px] min-h-[44px]"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </Button>
+        <h1 className="text-lg font-semibold">Backup Recovery Phrase</h1>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <Card className="w-full max-w-2xl mx-auto p-6 sm:p-8 space-y-6 backdrop-blur-sm bg-card/95 border-primary/20 mb-4">
+          {/* Title */}
+          <div className="text-center space-y-2">
           <div className="flex justify-center mb-4">
             <Shield className="h-16 w-16 text-primary animate-pulse" />
           </div>
@@ -128,7 +151,7 @@ const MnemonicBackupScreen = ({
           </div>
 
           <div
-            className={`grid grid-cols-3 gap-3 p-6 rounded-lg border-2 ${
+            className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 p-4 sm:p-6 rounded-lg border-2 ${
               showMnemonic
                 ? "bg-background border-primary"
                 : "bg-muted/30 border-muted blur-sm"
@@ -137,12 +160,12 @@ const MnemonicBackupScreen = ({
             {mnemonicWords.map((word, index) => (
               <div
                 key={index}
-                className="flex items-center gap-2 p-3 bg-card rounded border"
+                className="flex items-center gap-2 p-2 sm:p-3 bg-card rounded border"
               >
-                <span className="text-xs text-muted-foreground font-mono">
+                <span className="text-xs text-muted-foreground font-mono flex-shrink-0">
                   {index + 1}.
                 </span>
-                <span className="font-mono font-semibold text-foreground">
+                <span className="font-mono font-semibold text-sm sm:text-base text-foreground truncate">
                   {showMnemonic ? word : "••••"}
                 </span>
               </div>
@@ -237,7 +260,8 @@ const MnemonicBackupScreen = ({
             <li>Our support team will NEVER ask for your phrase</li>
           </ul>
         </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };
