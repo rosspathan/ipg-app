@@ -23,11 +23,9 @@ export const ProfileCompletionCard = () => {
     { label: 'Profile Picture', completed: completion?.has_avatar || false },
     { label: 'Display Name', completed: completion?.has_display_name || false },
     { label: 'Phone Number', completed: completion?.has_phone || false },
-    { label: 'Wallet Address', completed: completion?.has_wallet || false },
-    { label: 'Two-Factor Auth', completed: completion?.has_2fa || false }
   ];
 
-  const percentage = completion?.completion_percentage || 0;
+  const percentage = completion?.completion_score || 0;
 
   return (
     <Card className="bg-gradient-to-br from-primary/5 via-transparent to-primary/5 backdrop-blur-xl border-2 border-primary/20">

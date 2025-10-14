@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Globe, Palette, Clock, DollarSign } from "lucide-react";
 import { usePreferences } from "@/hooks/usePreferences";
+import { useTheme } from "next-themes";
 
 export const PreferencesTab = () => {
   const { settings, loading, updateSettings } = usePreferences();

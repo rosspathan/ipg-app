@@ -24,6 +24,7 @@ import { NotificationsTab } from "@/components/profile/NotificationsTab"
 import { PreferencesTab } from "@/components/profile/PreferencesTab"
 import { BadgeCard } from "@/components/profile/BadgeCard"
 import { AvatarEditSheet } from "@/components/profile/AvatarEditSheet"
+import { ProfileCompletionCard } from "@/components/profile/ProfileCompletionCard"
 
 const profileSections = [
   {

@@ -95,7 +95,7 @@ export const NotificationCenter = ({ open, onOpenChange }: NotificationCenterPro
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-2">
-                        {notification.message}
+                        {notification.body}
                       </p>
                       <p className="text-xs text-muted-foreground/60">
                         {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}

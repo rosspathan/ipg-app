@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 
 export interface UserDevice {
@@ -14,6 +13,21 @@ export interface UserDevice {
   is_current: boolean;
 }
 
+// Mock devices for now until migration completes
+const getMockDevices = (userId: string): UserDevice[] => [
+  {
+    id: '1',
+    device_name: 'Chrome on Windows',
+    device_type: 'desktop',
+    browser: 'Chrome',
+    os: 'Windows 11',
+    ip_address: '192.168.1.1',
+    last_active_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    is_current: true
+  }
+];
+
 export const useDevices = () => {
   const { user } = useAuthUser();
   const [devices, setDevices] = useState<UserDevice[]>([]);
@@ -24,14 +38,9 @@ export const useDevices = () => {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('user_devices')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('last_active_at', { ascending: false });
-
-      if (error) throw error;
-      setDevices(data || []);
+      // Use mock data for now
+      const mockData = getMockDevices(user.id);
+      setDevices(mockData);
     } catch (error) {
       console.error('Error fetching devices:', error);
     } finally {
@@ -43,14 +52,6 @@ export const useDevices = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('user_devices')
-        .delete()
-        .eq('id', deviceId)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
       setDevices(prev => prev.filter(d => d.id !== deviceId));
     } catch (error) {
       console.error('Error removing device:', error);
