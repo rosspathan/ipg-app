@@ -116,6 +116,7 @@ export const ROUTES = {
   // Currency Management
   ADMIN_CURRENCY_CONTROL: '/admin/currency',
   ADMIN_TRANSACTIONS: '/admin/transactions',
+  ADMIN_USER_FINANCIAL: '/admin/users/financial',
   
   // Special routes
   APP_LOCK: '/app/lock',
@@ -214,7 +215,8 @@ export const ADMIN_STACK_ROUTES = [
   ROUTES.ADMIN_MARKET_FEED,
   ROUTES.ADMIN_CREDENTIALS_TEST,
   ROUTES.ADMIN_CURRENCY_CONTROL,
-  ROUTES.ADMIN_TRANSACTIONS
+  ROUTES.ADMIN_TRANSACTIONS,
+  ROUTES.ADMIN_USER_FINANCIAL
 ] as const;
 
 export const AUTH_STACK_ROUTES = [

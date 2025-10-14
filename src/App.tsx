@@ -149,6 +149,7 @@ import AdminCredentialsTest from "./pages/AdminCredentialsTest";
 import AdminSystemScreen from "./pages/AdminSystemScreen";
 import CurrencyControlCenter from "./pages/admin/CurrencyControlCenter";
 import TransactionControlCenter from "./pages/admin/TransactionControlCenter";
+import UserFinancialManagement from "./pages/admin/UserFinancialManagement";
 
 // Utility Pages
 import EmailVerificationScreen from "./pages/EmailVerificationScreen";
@@ -386,6 +387,7 @@ function App() {
                 <Route path="funding/inr" element={<AdminINRFundingScreen />} />
                 <Route path="currency" element={<CurrencyControlCenter />} />
                 <Route path="transactions" element={<TransactionControlCenter />} />
+                <Route path="users/financial" element={<UserFinancialManagement />} />
                 
                 {/* Reports & Settings */}
                 <Route path="ads" element={<AdminAdsScreen />} />
