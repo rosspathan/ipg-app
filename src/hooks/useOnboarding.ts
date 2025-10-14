@@ -16,7 +16,6 @@ export type OnboardingStep =
   | 'verify-wallet-email'
   | 'wallet-connect'
   | 'email-input'
-  | 'referral-code'
   | 'email-verification'
   | 'pin-setup'
   | 'biometric-setup'

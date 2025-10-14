@@ -65,15 +65,6 @@ const OnboardingFlow: React.FC = () => {
   };
   const handleEmailSubmitted = (email: string) => {
     setEmail(email);
-    setStep('referral-code');
-  };
-  
-  const handleReferralCodeSubmitted = (code: string, sponsorId: string) => {
-    setReferralCode(code, sponsorId);
-    setStep('email-verification');
-  };
-  
-  const handleReferralSkipped = () => {
     setStep('email-verification');
   };
   
@@ -167,15 +158,6 @@ const OnboardingFlow: React.FC = () => {
           walletAddress={state.walletInfo?.address}
           onEmailSubmitted={handleEmailSubmitted}
           onBack={() => setStep('create-wallet')}
-        />
-      );
-    
-    case 'referral-code':
-      return (
-        <ReferralCodeInputScreen
-          onCodeSubmitted={handleReferralCodeSubmitted}
-          onSkip={handleReferralSkipped}
-          onBack={() => setStep('email-input')}
         />
       );
     
