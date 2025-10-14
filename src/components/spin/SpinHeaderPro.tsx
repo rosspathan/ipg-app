@@ -2,6 +2,7 @@ import React from 'react'
 import { ArrowLeft, Bell, MessageCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { HeaderLogoFlipper } from '@/components/brand/HeaderLogoFlipper'
 
 export function SpinHeaderPro() {
   const navigate = useNavigate()
@@ -13,15 +14,19 @@ export function SpinHeaderPro() {
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="max-w-md mx-auto h-full px-4 flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/app/programs')}
-          className="h-9 w-9 p-0"
-          aria-label="Back to Programs"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/app/programs')}
+            className="h-9 w-9 p-0"
+            aria-label="Back to Programs"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+
+          <HeaderLogoFlipper size="sm" className="shrink-0" />
+        </div>
 
         <div className="flex-1 text-center px-2">
           <h1 className="text-sm font-semibold leading-tight">i-SMART Spin</h1>

@@ -1,6 +1,7 @@
 import * as React from "react"
 import { ChevronLeft, Bell, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
 import { useNavigation } from "@/hooks/useNavigation"
 
 export function ProgramsHeaderPro() {
@@ -12,7 +13,7 @@ export function ProgramsHeaderPro() {
       className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/30"
     >
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
@@ -23,11 +24,13 @@ export function ProgramsHeaderPro() {
             <ChevronLeft className="h-5 w-5" />
           </Button>
           
+          <HeaderLogoFlipper size="sm" className="shrink-0" />
+          
           <div>
-            <h1 className="font-heading text-xl font-bold text-foreground">
+            <h1 className="font-heading text-lg font-bold text-foreground leading-tight">
               Programs
             </h1>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] text-muted-foreground leading-tight">
               Explore all programs
             </p>
           </div>
