@@ -40,6 +40,7 @@ import AdminSettingsNova from "./pages/admin/AdminSettingsNova";
 // CMS Program Registry
 const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNova"));
 const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
+const AdminProgramEditorClean = React.lazy(() => import("./pages/admin/AdminProgramEditorClean"));
 const AdminProgramsControl = React.lazy(() => import("./pages/admin/AdminProgramsControl"));
 const AdminProgramAnalytics = React.lazy(() => import("./pages/admin/AdminProgramAnalytics"));
 const ProgramControlCenter = React.lazy(() => import("./pages/admin/ProgramControlCenter"));
@@ -386,8 +387,9 @@ function App() {
                 <Route path="programs/control-center" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramControlCenter /></React.Suspense>} />
                 <Route path="programs/templates" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramTemplates /></React.Suspense>} />
                 <Route path="programs/analytics" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramAnalytics /></React.Suspense>} />
-                <Route path="programs/editor" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
-                <Route path="programs/editor/:moduleId" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
+                <Route path="programs/editor" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
+                <Route path="programs/editor/:moduleId" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
+                <Route path="programs/editor/:id" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
                 <Route path="programs/control" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsControl /></React.Suspense>} />
                 
                 {/* Gamification & Programs */}
