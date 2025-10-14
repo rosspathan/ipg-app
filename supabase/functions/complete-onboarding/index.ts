@@ -9,6 +9,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Bump function version to force fresh deploy and aid debugging
+const FUNCTION_VERSION = 'v2025-10-14-2';
+
 interface OnboardingRequest {
   email: string;
   verificationCode: string;
@@ -110,7 +113,7 @@ serve(async (req) => {
   try {
     const { email, verificationCode, storedCode, importedWallet }: OnboardingRequest = await req.json();
 
-    console.log('[complete-onboarding] Request:', { email, hasImportedWallet: !!importedWallet });
+    console.log('[complete-onboarding] Request:', { email, hasImportedWallet: !!importedWallet, version: FUNCTION_VERSION });
 
     // Verify the code matches
     if (verificationCode !== storedCode) {
