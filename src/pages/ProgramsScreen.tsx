@@ -1,73 +1,39 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ChevronLeft, Star, Users, Shield, Trophy, Target, TrendingUp, Monitor, Coins, Gift } from "lucide-react";
+import { ChevronLeft, Gift } from "lucide-react";
 import { ProgramGridCompact } from "@/components/programs-pro/ProgramGridCompact";
 import { ProgramTileUltra, type TileBadgeType } from "@/components/programs-pro/ProgramTileUltra";
+import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms";
+import { Loader2 } from "lucide-react";
 
 const ProgramsScreen = () => {
+  const { programs, isLoading, isUsingDefaults } = useActivePrograms();
 
-  const programs = [
-    {
-      id: "advertising",
-      title: "Ad Mining",
-      subtitle: "Watch ads & earn",
-      icon: <Monitor className="w-5 h-5" />,
-      badge: "DAILY" as TileBadgeType,
-      route: "/app/programs/advertising"
-    },
-    {
-      id: "lucky-draw",
-      title: "Lucky Draw",
-      subtitle: "Win big prizes",
-      icon: <Target className="w-5 h-5" />,
-      badge: "HOT" as TileBadgeType,
-      route: "/app/programs/lucky-draw"
-    },
-    {
-      id: "spin-wheel",
-      title: "Spin Wheel",
-      subtitle: "Daily spins",
-      icon: <Trophy className="w-5 h-5" />,
-      badge: "LIVE" as TileBadgeType,
-      route: "/app/programs/spin"
-    },
-    {
-      id: "purchase",
-      title: "Purchase",
-      subtitle: "Get 50% extra!",
-      icon: <Coins className="w-5 h-5" />,
-      badge: "NEW" as TileBadgeType,
-      route: "/app/programs/bsk-bonus"
-    },
-    {
-      id: "referrals",
-      title: "Referrals",
-      subtitle: "Earn commissions",
-      icon: <Users className="w-5 h-5" />,
-      route: "/app/programs/referrals"
-    },
-    {
-      id: "staking",
-      title: "Staking",
-      subtitle: "Earn passive rewards",
-      icon: <Star className="w-5 h-5" />,
-      route: "/app/programs/staking"
-    },
-    {
-      id: "loans",
-      title: "Loans",
-      subtitle: "0% interest",
-      icon: <TrendingUp className="w-5 h-5" />,
-      route: "/app/programs/loans"
-    },
-    {
-      id: "insurance",
-      title: "Insurance",
-      subtitle: "Protect assets",
-      icon: <Shield className="w-5 h-5" />,
-      route: "/app/programs/insurance"
-    }
-  ];
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/30">
+          <div className="flex items-center px-4 py-3">
+            <Button variant="ghost" size="icon" asChild className="mr-2">
+              <Link to="/app/home">
+                <ChevronLeft className="w-5 h-5" />
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-xl font-[var(--font-heading)] font-bold text-foreground">Programs</h1>
+              <p className="text-xs text-muted-foreground">Explore all programs</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading programs...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -103,17 +69,28 @@ const ProgramsScreen = () => {
 
       {/* Programs Grid */}
       <div className="px-4 py-6 flex-1">
+        {isUsingDefaults && (
+          <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/50">
+            <p className="text-xs text-muted-foreground text-center">
+              Using default programs. Configure in admin panel for custom programs.
+            </p>
+          </div>
+        )}
+        
         <ProgramGridCompact>
-          {programs.map((program) => (
-            <Link key={program.id} to={program.route}>
-              <ProgramTileUltra
-                icon={program.icon}
-                title={program.title}
-                subtitle={program.subtitle}
-                badge={program.badge}
-              />
-            </Link>
-          ))}
+          {programs.map((program) => {
+            const IconComponent = getLucideIcon(program.icon);
+            return (
+              <Link key={program.id} to={program.route}>
+                <ProgramTileUltra
+                  icon={<IconComponent className="w-5 h-5" />}
+                  title={program.name}
+                  subtitle={program.description}
+                  badge={program.badge as TileBadgeType}
+                />
+              </Link>
+            );
+          })}
         </ProgramGridCompact>
       </div>
     </div>

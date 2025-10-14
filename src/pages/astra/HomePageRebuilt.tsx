@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState } from "react"
-import { Gift, Target, Zap, Star, Users, TrendingUp, Shield, Coins, MessageCircle } from "lucide-react"
+import { Gift, Zap, Star, MessageCircle } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
 import { KPICardUnified } from "@/components/home/KPICardUnified"
 import { AddFundsCTA } from "@/components/home/AddFundsCTA"
@@ -18,6 +18,7 @@ import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
 import { useDisplayName } from "@/hooks/useDisplayName"
 import { supabase } from "@/integrations/supabase/client"
+import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms"
 /**
  * HomePageRebuilt - World-class mobile-first home screen
  * DO NOT MODIFY THE FOOTER - DockNav remains untouched
@@ -27,6 +28,7 @@ export function HomePageRebuilt() {
   const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const displayName = useDisplayName()
+  const { programs: allPrograms } = useActivePrograms()
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -41,56 +43,16 @@ export function HomePageRebuilt() {
     navigate("/app/wallet")
   }
 
-  const programs = [
-    {
-      id: "1",
-      title: "Ad Mining",
-      icon: <Gift className="h-5 w-5" />,
-      onPress: () => navigate("/app/programs/advertising")
-    },
-    {
-      id: "2",
-      title: "Lucky Draw",
-      icon: <Target className="h-5 w-5" />,
-      onPress: () => navigate("/app/programs/lucky-draw")
-    },
-    {
-      id: "3",
-      title: "Spin Wheel",
-      icon: <Zap className="h-5 w-5" />,
-      onPress: () => navigate("/app/programs/spin")
-    },
-    {
-      id: "4",
-      title: "Purchase",
-      icon: <Coins className="h-5 w-5" />,
-      onPress: () => navigate("/app/programs/bsk-purchase-manual")
-    },
-    {
-      id: "5",
-      title: "Referrals",
-      icon: <Users className="h-5 w-5" />,
-      onPress: () => navigate("/app/programs/referrals")
-    },
-    {
-      id: "6",
-      title: "Staking",
-      icon: <Star className="h-5 w-5" />,
-      onPress: () => navigate("/app/programs/staking")
-    },
-    {
-      id: "7",
-      title: "Loans",
-      icon: <TrendingUp className="h-5 w-5" />,
-      onPress: () => navigate("/app/programs/loans")
-    },
-    {
-      id: "8",
-      title: "Insurance",
-      icon: <Shield className="h-5 w-5" />,
-      onPress: () => navigate("/app/programs/insurance")
-    }
-  ]
+  // Transform programs for ProgramsGrid component (show first 8)
+  const programs = allPrograms.slice(0, 8).map(program => {
+    const IconComponent = getLucideIcon(program.icon);
+    return {
+      id: program.id,
+      title: program.name,
+      icon: <IconComponent className="h-5 w-5" />,
+      onPress: () => navigate(program.route)
+    };
+  });
 
   const activities = [
     {
