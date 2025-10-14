@@ -4,20 +4,26 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useProgramModules, useProgramConfigs, useProgramAudit } from "@/hooks/useProgramRegistry";
 import { SchemaForm } from "@/components/admin/nova/SchemaForm";
 import { AuditTrailViewer } from "@/components/admin/nova/AuditTrailViewer";
+import { VisualTab } from "@/components/admin/program-editor/VisualTab";
+import { ContentTab } from "@/components/admin/program-editor/ContentTab";
+import { RulesTab } from "@/components/admin/program-editor/RulesTab";
+import { PreviewTab } from "@/components/admin/program-editor/PreviewTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, Save, Eye, History, Flag, Calendar, 
-  Play, Pause, Settings, Rocket 
+  Play, Pause, Settings, Rocket, Image, FileText, Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function AdminProgramEditorNova() {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
-  const { modules } = useProgramModules();
+  const { toast } = useToast();
+  const { modules, updateModule } = useProgramModules();
   const { configs, createConfig, updateConfig, publishConfig } = useProgramConfigs(moduleId);
   const { auditLogs } = useProgramAudit(moduleId);
   
@@ -74,6 +80,13 @@ export default function AdminProgramEditorNova() {
     const configToPublish = draftConfig || currentConfig;
     if (configToPublish) {
       publishConfig(configToPublish.id);
+    }
+  };
+
+  const handleModuleUpdate = (updates: any) => {
+    if (moduleId) {
+      updateModule({ id: moduleId, updates });
+      toast({ title: "Module updated successfully" });
     }
   };
 
@@ -135,10 +148,22 @@ export default function AdminProgramEditorNova() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4 mt-4">
-        <TabsList className="grid w-full grid-cols-5 bg-[hsl(229_30%_16%/0.5)]">
+        <TabsList className="grid w-full grid-cols-8 bg-[hsl(229_30%_16%/0.5)]">
           <TabsTrigger value="settings" className="gap-2">
             <Settings className="w-4 h-4" />
             <span className="hidden sm:inline">Settings</span>
+          </TabsTrigger>
+          <TabsTrigger value="visual" className="gap-2">
+            <Image className="w-4 h-4" />
+            <span className="hidden sm:inline">Visual</span>
+          </TabsTrigger>
+          <TabsTrigger value="content" className="gap-2">
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">Content</span>
+          </TabsTrigger>
+          <TabsTrigger value="rules" className="gap-2">
+            <Shield className="w-4 h-4" />
+            <span className="hidden sm:inline">Rules</span>
           </TabsTrigger>
           <TabsTrigger value="flags" className="gap-2" data-testid="program-flags">
             <Flag className="w-4 h-4" />
@@ -166,6 +191,18 @@ export default function AdminProgramEditorNova() {
               onChange={setFormData}
             />
           )}
+        </TabsContent>
+
+        <TabsContent value="visual" className="mt-4">
+          {moduleId && <VisualTab moduleId={moduleId} />}
+        </TabsContent>
+
+        <TabsContent value="content" className="mt-4">
+          {module && <ContentTab module={module} onUpdate={handleModuleUpdate} />}
+        </TabsContent>
+
+        <TabsContent value="rules" className="mt-4">
+          {moduleId && <RulesTab moduleId={moduleId} />}
         </TabsContent>
 
         <TabsContent value="flags" className="mt-4">
@@ -243,13 +280,7 @@ export default function AdminProgramEditorNova() {
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">
-          <div className="p-4 rounded-2xl border border-[hsl(225_24%_22%/0.16)] bg-[hsl(229_30%_16%/0.5)] text-center">
-            <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-            <h3 className="text-sm font-medium text-foreground mb-2">Preview Coming Soon</h3>
-            <p className="text-xs text-muted-foreground">
-              Preview how this configuration will appear to users
-            </p>
-          </div>
+          {module && <PreviewTab module={module} />}
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
