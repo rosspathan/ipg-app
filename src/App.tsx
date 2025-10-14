@@ -147,6 +147,7 @@ import AdminPurchaseBonusScreen from "./pages/AdminPurchaseBonusScreen";
 import AdminINRFundingScreen from "./pages/AdminINRFundingScreen";
 import AdminCredentialsTest from "./pages/AdminCredentialsTest";
 import AdminSystemScreen from "./pages/AdminSystemScreen";
+import CurrencyControlCenter from "./pages/admin/CurrencyControlCenter";
 
 // Utility Pages
 import EmailVerificationScreen from "./pages/EmailVerificationScreen";
@@ -382,6 +383,7 @@ function App() {
                 <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="funding" element={<AdminFunding />} />
                 <Route path="funding/inr" element={<AdminINRFundingScreen />} />
+                <Route path="currency" element={<CurrencyControlCenter />} />
                 
                 {/* Reports & Settings */}
                 <Route path="ads" element={<AdminAdsScreen />} />

@@ -113,6 +113,9 @@ export const ROUTES = {
   ADMIN_MARKET_FEED: '/admin/market-feed',
   ADMIN_CREDENTIALS_TEST: '/admin/test',
   
+  // Currency Management
+  ADMIN_CURRENCY_CONTROL: '/admin/currency',
+  
   // Special routes
   APP_LOCK: '/app/lock',
   NOT_FOUND: '/404',
@@ -208,7 +211,8 @@ export const ADMIN_STACK_ROUTES = [
   ROUTES.ADMIN_INSURANCE_CLAIMS,
   ROUTES.ADMIN_SYSTEM,
   ROUTES.ADMIN_MARKET_FEED,
-  ROUTES.ADMIN_CREDENTIALS_TEST
+  ROUTES.ADMIN_CREDENTIALS_TEST,
+  ROUTES.ADMIN_CURRENCY_CONTROL
 ] as const;
 
 export const AUTH_STACK_ROUTES = [

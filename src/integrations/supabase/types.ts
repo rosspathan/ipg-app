@@ -2078,6 +2078,45 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_rate_history: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_until: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          rate_inr_per_bsk: number
+          status: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          rate_inr_per_bsk: number
+          status?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          rate_inr_per_bsk?: number
+          status?: string | null
+        }
+        Relationships: []
+      }
       bsk_rate_snapshots: {
         Row: {
           changed_by: string | null
@@ -2168,6 +2207,45 @@ export type Database = {
           user_id?: string
           withdrawable_after?: number
           withdrawable_before?: number
+        }
+        Relationships: []
+      }
+      bsk_supply_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          performed_by: string | null
+          reason: string | null
+          target_user_id: string | null
+          total_supply_after: number
+          total_supply_before: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          performed_by?: string | null
+          reason?: string | null
+          target_user_id?: string | null
+          total_supply_after: number
+          total_supply_before: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          performed_by?: string | null
+          reason?: string | null
+          target_user_id?: string | null
+          total_supply_after?: number
+          total_supply_before?: number
         }
         Relationships: []
       }
@@ -7680,6 +7758,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_inr_balances: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          locked: number
+          total_deposited: number
+          total_withdrawn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          locked?: number
+          total_deposited?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          locked?: number
+          total_deposited?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_insurance_subscriptions: {
         Row: {
           claims_used_this_month: number | null
@@ -8327,6 +8438,16 @@ export type Database = {
           valid_from: string
         }[]
       }
+      get_inr_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_balance: number
+          total_deposited: number
+          total_locked: number
+          total_withdrawn: number
+          user_count: number
+        }[]
+      }
       get_masked_profile_data: {
         Args: {
           p_email?: string
@@ -8344,6 +8465,15 @@ export type Database = {
           spaces_remaining: number
           total_ipg_collected: number
           total_participants: number
+        }[]
+      }
+      get_total_bsk_circulation: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_holding: number
+          total_supply: number
+          total_withdrawable: number
+          user_count: number
         }[]
       }
       get_user_lucky_draw_tickets: {
