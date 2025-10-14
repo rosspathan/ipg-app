@@ -279,7 +279,7 @@ function App() {
               <Route path="wallet/send" element={<SendScreen />} />
               <Route path="wallet/transfer" element={<TransferScreen />} />
               <Route path="wallet/history" element={<HistoryScreen />} />
-              <Route path="programs" element={<ProgramsPagePro />} />
+              <Route path="programs" element={<ProgramsScreen />} />
               <Route path="trade" element={<TradingScreenRebuilt />} />
               <Route path="trading" element={<Navigate to="/app/trade" replace />} />
               <Route path="swap" element={<SwapScreen />} />

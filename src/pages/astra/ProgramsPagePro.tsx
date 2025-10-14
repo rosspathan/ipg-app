@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState } from "react"
-import { ArrowLeft, Gift, Target, Zap, Star, Users, TrendingUp, Shield, Coins } from "lucide-react"
+import { Monitor, Target, Zap, Star, Users, TrendingUp, Shield, Coins } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -22,7 +22,7 @@ const allPrograms: Program[] = [
     id: "1",
     title: "Ad Mining",
     description: "Watch ads daily and earn BSK rewards",
-    icon: <Gift className="h-6 w-6" />,
+    icon: <Monitor className="h-6 w-6" />,
     badge: "DAILY",
     badgeColor: "bg-success/20 text-success",
     route: "/app/programs/advertising"

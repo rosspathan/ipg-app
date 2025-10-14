@@ -1,18 +1,17 @@
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Star, Users, PiggyBank, Gift, Shield, Trophy, Target, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChevronLeft, Star, Users, Shield, Trophy, Target, TrendingUp, Monitor, Coins, Gift } from "lucide-react";
 import { ProgramGridCompact } from "@/components/programs-pro/ProgramGridCompact";
 import { ProgramTileUltra, type TileBadgeType } from "@/components/programs-pro/ProgramTileUltra";
 
 const ProgramsScreen = () => {
-  const navigate = useNavigate();
 
   const programs = [
     {
       id: "advertising",
       title: "Ad Mining",
       subtitle: "Watch ads & earn",
-      icon: <Users className="w-5 h-5" />,
+      icon: <Monitor className="w-5 h-5" />,
       badge: "DAILY" as TileBadgeType,
       route: "/app/programs/advertising"
     },
@@ -36,7 +35,7 @@ const ProgramsScreen = () => {
       id: "purchase",
       title: "Purchase",
       subtitle: "Get 50% extra!",
-      icon: <Gift className="w-5 h-5" />,
+      icon: <Coins className="w-5 h-5" />,
       badge: "NEW" as TileBadgeType,
       route: "/app/programs/bsk-bonus"
     },
@@ -67,13 +66,6 @@ const ProgramsScreen = () => {
       subtitle: "Protect assets",
       icon: <Shield className="w-5 h-5" />,
       route: "/app/programs/insurance"
-    },
-    {
-      id: "trading",
-      title: "Trade",
-      subtitle: "Trade markets",
-      icon: <TrendingUp className="w-5 h-5" />,
-      route: "/app/programs/trading"
     }
   ];
 
@@ -85,10 +77,12 @@ const ProgramsScreen = () => {
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => navigate(-1)}
+            asChild
             className="mr-2"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <Link to="/app/home">
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
           </Button>
           <div>
             <h1 className="text-xl font-[var(--font-heading)] font-bold text-foreground">Programs</h1>
@@ -111,14 +105,14 @@ const ProgramsScreen = () => {
       <div className="px-4 py-6 flex-1">
         <ProgramGridCompact>
           {programs.map((program) => (
-            <ProgramTileUltra
-              key={program.id}
-              icon={program.icon}
-              title={program.title}
-              subtitle={program.subtitle}
-              badge={program.badge}
-              onPress={() => navigate(program.route)}
-            />
+            <Link key={program.id} to={program.route}>
+              <ProgramTileUltra
+                icon={program.icon}
+                title={program.title}
+                subtitle={program.subtitle}
+                badge={program.badge}
+              />
+            </Link>
           ))}
         </ProgramGridCompact>
       </div>
