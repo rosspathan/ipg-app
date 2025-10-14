@@ -4,6 +4,9 @@ import { Home, Wallet, TrendingUp, Gift, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useNavigation } from "@/hooks/useNavigation"
 import { AppTopBar } from "./AppTopBar"
+import { DockNav } from "@/components/navigation/DockNav"
+import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
+import { QuickSwitch } from "./QuickSwitch"
 
 const navItems = [
   {
@@ -41,6 +44,7 @@ const navItems = [
 export function AppShell() {
   const location = useLocation()
   const { navigate } = useNavigation()
+  const [showQuickSwitch, setShowQuickSwitch] = React.useState(false)
 
   // Console marker for QA
   React.useEffect(() => {
@@ -67,6 +71,34 @@ export function AppShell() {
         >
           <Outlet />
         </main>
+
+        {/* WhatsApp Support - Fixed above dock */}
+        <SupportLinkWhatsApp variant="fab" className="fixed bottom-24 right-5 z-[60]" />
+
+        {/* Sticky Footer Navigation */}
+        <DockNav onNavigate={(path) => navigate(path)} onCenterPress={() => setShowQuickSwitch(true)} />
+
+        {/* Quick Switch Radial Menu */}
+        <QuickSwitch
+          isOpen={showQuickSwitch}
+          onClose={() => setShowQuickSwitch(false)}
+          onAction={(action) => {
+            switch (action) {
+              case "deposit":
+                navigate("/app/wallet/deposit")
+                break
+              case "convert":
+                navigate("/app/swap")
+                break
+              case "trade":
+                navigate("/app/trade")
+                break
+              case "programs":
+                navigate("/app/programs")
+                break
+            }
+          }}
+        />
 
         {/* Portal target for DockNav to ensure true fixed positioning */}
         <div id="dock-portal" />

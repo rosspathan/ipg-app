@@ -16,12 +16,8 @@ import { useWeb3 } from "@/contexts/Web3Context"
 import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress"
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 import { useDisplayName } from "@/hooks/useDisplayName"
-import { DockNav } from "@/components/navigation/DockNav"
-import { QuickSwitch } from "@/components/astra/QuickSwitch"
-import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 
 export function WalletPage() {
-  const [showQuickSwitch, setShowQuickSwitch] = React.useState(false)
   const { navigate } = useNavigation()
   const { user } = useAuthUser()
   const { wallet } = useWeb3()
@@ -263,33 +259,6 @@ export function WalletPage() {
         {/* Balance Cluster with Crypto Assets Grid */}
         <BalanceCluster />
       </div>
-
-      {/* Quick Switch Radial Menu */}
-      <QuickSwitch
-        isOpen={showQuickSwitch}
-        onClose={() => setShowQuickSwitch(false)}
-        onAction={(action) => {
-          switch (action) {
-            case "deposit":
-              navigate("/app/wallet/deposit")
-              break
-            case "convert":
-              navigate("/app/swap")
-              break
-            case "trade":
-              navigate("/app/trade")
-              break
-            case "programs":
-              navigate("/app/programs")
-              break
-          }
-        }}
-      />
-      {/* WhatsApp Support - Fixed above footer */}
-      <SupportLinkWhatsApp variant="fab" className="fixed bottom-24 right-5 z-[60]" />
-
-      {/* Sticky Footer Navigation */}
-      <DockNav onNavigate={(path) => navigate(path)} onCenterPress={() => setShowQuickSwitch(true)} />
 
       {/* QR Code Dialog */}
       <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
