@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
 import { openUrl } from '@/utils/linkHandler';
+import { extractUsernameFromEmail } from '@/lib/user/username';
 
 export interface ReferralCode {
   id: string;
