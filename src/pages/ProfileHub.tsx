@@ -143,23 +143,7 @@ export function ProfileHub() {
   }
 
   return (
-    <>
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40 safe-top -mx-4 -mt-4 mb-6">
-        <div className="flex items-center justify-between h-14 px-4">
-          <button
-            onClick={handleBack}
-            className="p-2 rounded-xl hover:bg-primary/10 transition-colors"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          
-          <span className="text-sm font-medium text-foreground">{displayName}</span>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="space-y-6" data-testid="page-profile">
+    <div className="space-y-6" data-testid="page-profile">
         {/* Premium Glassmorphic ID Card Preview */}
         {user && (
           <MiniIdCardPreview
@@ -238,13 +222,6 @@ export function ProfileHub() {
             Sign Out
           </Button>
         </div>
-      </div>
-
-      {/* Bottom Navigation */}
-      <DockNav
-        onNavigate={navigate}
-        onCenterPress={() => setShowQuickSwitch(true)}
-      />
 
       {/* Quick Switch */}
       <QuickSwitch
@@ -252,6 +229,6 @@ export function ProfileHub() {
         onClose={() => setShowQuickSwitch(false)}
         onAction={handleQuickSwitchAction}
       />
-    </>
+    </div>
   );
 }
