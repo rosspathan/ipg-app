@@ -121,16 +121,12 @@ export function ProgramsPageRebuilt() {
 
   return (
     <div className="min-h-screen bg-background pb-32" data-testid="page-programs">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border-subtle">
-        <div className="p-4">
+      {/* Programs Grid */}
+      <div className="p-4 pt-6 space-y-4">
+        <div>
           <h1 className="font-heading text-2xl font-bold text-foreground">Programs</h1>
           <p className="text-sm text-muted-foreground mt-1">Explore all available programs</p>
         </div>
-      </div>
-
-      {/* Programs Grid */}
-      <div className="p-4 pt-6">
         <ProgramGrid>
           {allPrograms.map((program) => (
             <ProgramTile key={program.id} {...program} />

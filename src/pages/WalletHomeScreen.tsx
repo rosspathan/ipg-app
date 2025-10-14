@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CyberCard, CyberCardContent, CyberCardHeader, CyberCardTitle } from "@/components/ui/cyber-card";
-import { CyberHeader } from "@/components/ui/cyber-header";
 import { NeonIconTile } from "@/components/ui/neon-icon-tile";
 import { Eye, EyeOff, ArrowUpCircle, ArrowDownCircle, Send, Repeat, Coins, Gift, TrendingUp, Shield, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -18,7 +17,6 @@ import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import InsuranceCard from "@/components/InsuranceCard";
 import BSKLoanCard from "@/components/BSKLoanCard";
 import { cn } from "@/lib/utils";
-import ipgLogo from "@/assets/ipg-logo.jpg";
 
 const WalletHomeScreen = () => {
   const navigate = useNavigate();
@@ -62,12 +60,6 @@ const WalletHomeScreen = () => {
     ...(isAdmin ? [{ name: "Admin", icon: Shield, color: "text-danger", route: "/admin" }] : []),
   ];
 
-  const kpis = [
-    { label: "24h P&L", value: "+5.67%", delta: 5.67, variant: "success" as const },
-    { label: "Assets", value: userAssets.length },
-    { label: "Network", value: "BSC" },
-  ];
-
   // Show loading only for the first few seconds, then show content regardless
   const showLoading = status === 'loading';
   const showError = status === 'error';
@@ -105,16 +97,11 @@ const WalletHomeScreen = () => {
         </div>
       )}
 
-      {/* Cyber Header */}
-      <CyberHeader
-        title="My Wallet"
-        subtitle="Manage your digital assets"
-        logo={ipgLogo}
-        kpis={kpis}
-        actions={<CurrencyPicker />}
-      />
-
       <div className="p-4 space-y-6">
+        {/* Currency Picker */}
+        <div className="flex justify-end">
+          <CurrencyPicker />
+        </div>
         {/* BSC Wallet Info */}
         <BSCWalletInfo />
 
