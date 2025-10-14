@@ -57,15 +57,18 @@ export const useReferrals = () => {
 
       // Determine referral code
       if (user) {
-        // Fetch or generate actual referral code from database
-        const { data: codeData, error: codeError } = await supabase
-          .rpc('get_or_create_referral_code', { p_user_id: user.id });
+        // Fetch referral code directly from profiles
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('referral_code, user_id')
+          .eq('user_id', user.id)
+          .single();
 
-        if (codeError) {
-          console.error('Error getting referral code:', codeError);
+        if (profileError) {
+          console.error('Error getting referral code:', profileError);
         }
 
-        const actualCode = codeData || user.id.substring(0, 8).toUpperCase();
+        const actualCode = profileData?.referral_code || user.id.substring(0, 8).toUpperCase();
 
         setReferralCode({
           id: user.id,

@@ -117,7 +117,7 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       .upsert({
         user_id: userId,
         sponsor_id: pending.sponsorId,
-        referral_code: pending.code, // Store the actual readable code
+        sponsor_code_used: pending.code, // Store the actual readable code
         locked_at: new Date().toISOString(),
         first_touch_at: new Date(pending.timestamp).toISOString(),
         source: 'manual_entry',

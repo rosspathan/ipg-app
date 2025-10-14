@@ -1970,6 +1970,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "bsk_loans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
         ]
       }
       bsk_manual_purchase_requests: {
@@ -5165,7 +5172,8 @@ export type Database = {
           id: string
           kyc_status: string | null
           phone: string | null
-          referral_code: string | null
+          referral_code: string
+          sponsor_id: string | null
           two_fa_enabled: boolean | null
           updated_at: string | null
           user_id: string
@@ -5183,7 +5191,8 @@ export type Database = {
           id?: string
           kyc_status?: string | null
           phone?: string | null
-          referral_code?: string | null
+          referral_code: string
+          sponsor_id?: string | null
           two_fa_enabled?: boolean | null
           updated_at?: string | null
           user_id: string
@@ -5201,7 +5210,8 @@ export type Database = {
           id?: string
           kyc_status?: string | null
           phone?: string | null
-          referral_code?: string | null
+          referral_code?: string
+          sponsor_id?: string | null
           two_fa_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string
@@ -5210,7 +5220,22 @@ export type Database = {
           wallet_addresses?: Json | null
           withdrawal_locked?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profiles_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
+        ]
       }
       program_audit: {
         Row: {
@@ -5644,27 +5669,6 @@ export type Database = {
         }
         Relationships: []
       }
-      referral_codes: {
-        Row: {
-          code: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       referral_configs: {
         Row: {
           bonus_currency: string | null
@@ -5887,8 +5891,8 @@ export type Database = {
           first_touch_at: string | null
           id: string
           locked_at: string | null
-          referral_code: string
           source: string | null
+          sponsor_code_used: string
           sponsor_id: string | null
           total_commissions: number
           total_referrals: number
@@ -5901,8 +5905,8 @@ export type Database = {
           first_touch_at?: string | null
           id?: string
           locked_at?: string | null
-          referral_code: string
           source?: string | null
+          sponsor_code_used: string
           sponsor_id?: string | null
           total_commissions?: number
           total_referrals?: number
@@ -5915,34 +5919,13 @@ export type Database = {
           first_touch_at?: string | null
           id?: string
           locked_at?: string | null
-          referral_code?: string
           source?: string | null
+          sponsor_code_used?: string
           sponsor_id?: string | null
           total_commissions?: number
           total_referrals?: number
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      referral_relationships: {
-        Row: {
-          created_at: string
-          id: string
-          referee_id: string
-          referrer_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          referee_id: string
-          referrer_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          referee_id?: string
-          referrer_id?: string
         }
         Relationships: []
       }
@@ -8230,7 +8213,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      referral_relationships: {
+        Row: {
+          first_touch_at: string | null
+          locked_at: string | null
+          referee_code: string | null
+          referee_id: string | null
+          referee_username: string | null
+          source: string | null
+          sponsor_code: string | null
+          sponsor_code_used: string | null
+          sponsor_id: string | null
+          sponsor_username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_reset_all_user_balances: {
@@ -8338,10 +8335,6 @@ export type Database = {
           p_wallet_address?: string
         }
         Returns: Json
-      }
-      get_or_create_referral_code: {
-        Args: { p_user_id: string }
-        Returns: string
       }
       get_pool_draw_stats: {
         Args: { p_config_id: string }

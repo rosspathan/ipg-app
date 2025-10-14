@@ -348,9 +348,9 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     setIsValidatingReferral(true);
     try {
       const { data, error } = await supabase
-        .from('referral_codes')
-        .select('user_id')
-        .eq('code', referralCode.trim().toUpperCase())
+        .from('profiles')
+        .select('user_id, username, display_name')
+        .eq('referral_code', referralCode.trim().toUpperCase())
         .maybeSingle();
 
       if (error) {
