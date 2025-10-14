@@ -18,8 +18,11 @@ export function ScrollingAnnouncement({
     <div 
       className={cn(
         "relative w-full h-8 rounded-xl overflow-hidden",
-        "bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10",
-        "border border-primary/20",
+        "bg-gradient-to-r from-primary/10 via-accent/20 to-primary/10",
+        "border border-primary/30",
+        "shadow-lg shadow-primary/10",
+        "backdrop-blur-xl",
+        "animate-fade-in",
         className
       )}
       data-testid="scrolling-announcement"
@@ -32,11 +35,11 @@ export function ScrollingAnnouncement({
             animation: 'scroll-left 30s linear infinite'
           }}
         >
-          <span className="text-sm font-[Inter] font-medium text-foreground/80 px-4">
+          <span className="text-sm font-[Inter] font-semibold text-foreground/90 px-4">
             {text}
           </span>
           {/* Duplicate for seamless loop */}
-          <span className="text-sm font-[Inter] font-medium text-foreground/80 px-4">
+          <span className="text-sm font-[Inter] font-semibold text-foreground/90 px-4">
             {text}
           </span>
         </div>

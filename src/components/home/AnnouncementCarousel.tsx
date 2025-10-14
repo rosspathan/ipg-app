@@ -92,11 +92,14 @@ export function AnnouncementCarousel({ slides, className }: AnnouncementCarousel
               <button
                 onClick={slide.onClick}
                 className={cn(
-                  "relative w-full h-28 rounded-2xl overflow-hidden",
+                  "relative w-full h-32 rounded-2xl overflow-hidden",
                   "bg-gradient-to-br from-card/95 via-card/90 to-card/95",
-                  "border border-border/50",
+                  "border border-primary/20",
+                  "shadow-lg shadow-primary/5",
+                  "backdrop-blur-xl",
                   "transition-all duration-300 ease-out",
-                  "hover:border-border/70",
+                  "hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10",
+                  "hover:scale-[1.02] active:scale-[0.98]",
                   "group cursor-pointer"
                 )}
               >
@@ -113,12 +116,12 @@ export function AnnouncementCarousel({ slides, className }: AnnouncementCarousel
                 <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
 
                 {/* Content */}
-                <div className="absolute bottom-0 left-0 right-0 p-3 space-y-0.5">
-                  <h3 className="text-base font-[Space_Grotesk] font-bold text-foreground leading-tight">
+                <div className="absolute bottom-0 left-0 right-0 p-4 space-y-1">
+                  <h3 className="text-lg font-[Space_Grotesk] font-bold text-foreground leading-tight drop-shadow-lg">
                     {slide.title}
                   </h3>
                   {slide.description && (
-                    <p className="text-xs font-[Inter] font-medium text-muted-foreground">
+                    <p className="text-sm font-[Inter] font-medium text-muted-foreground drop-shadow-md">
                       {slide.description}
                     </p>
                   )}

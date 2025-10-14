@@ -51,26 +51,31 @@ export function ProgramsGrid({
             onClick={program.onPress}
             className={cn(
               "flex flex-col items-center gap-2 p-2 rounded-xl",
-              "transition-all duration-200",
-              "hover:bg-muted/20"
+              "transition-all duration-300 ease-out",
+              "hover:bg-gradient-to-br hover:from-primary/5 hover:to-accent/5",
+              "active:scale-95"
             )}
           >
             {/* Icon Circle */}
             <div
               className={cn(
                 "h-14 w-14 rounded-full",
-                "bg-primary/10 border border-primary/20",
+                "bg-gradient-to-br from-primary/10 via-accent/10 to-primary/10",
+                "border border-primary/30",
+                "shadow-lg shadow-primary/10",
+                "backdrop-blur-xl",
                 "flex items-center justify-center",
                 "text-primary",
-                "transition-all duration-200",
-                "group-hover:bg-primary/20"
+                "transition-all duration-300 ease-out",
+                "hover:scale-110 hover:shadow-xl hover:shadow-primary/20",
+                "hover:border-primary/50"
               )}
             >
               {program.icon}
             </div>
 
             {/* Label */}
-            <span className="font-[Inter] text-[10px] text-center text-foreground leading-tight">
+            <span className="font-[Inter] text-[10px] text-center text-foreground/90 font-medium leading-tight">
               {program.title}
             </span>
           </button>
