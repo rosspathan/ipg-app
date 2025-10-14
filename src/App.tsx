@@ -17,6 +17,7 @@ import { AppStateManager } from "@/components/AppStateManager";
 // Layouts
 import UserLayout from "@/layouts/UserLayout";
 import AdminLayout from "@/layouts/AdminLayout";
+import AdminLayoutClean from "@/layouts/AdminLayoutClean";
 import { AdminShellAdaptive } from "@/components/admin/nova/AdminShellAdaptive";
 
 // Nova Admin Pages
@@ -348,11 +349,11 @@ function App() {
                 </AuthProviderAdmin>
               } />
 
-              {/* Admin Console Routes - Nova DS */}
+              {/* Admin Console Routes - Clean DS */}
               <Route path="/admin/*" element={
                 <AuthProviderAdmin>
                   <AdminRouteNew>
-                    <AdminLayout />
+                    <AdminLayoutClean />
                   </AdminRouteNew>
                 </AuthProviderAdmin>
               }>
