@@ -81,7 +81,8 @@ const RealUserCreation = () => {
           kyc_status: formData.kyc_status,
           account_status: formData.account_status,
           two_fa_enabled: formData.two_fa_enabled,
-          withdrawal_locked: formData.withdrawal_locked
+          withdrawal_locked: formData.withdrawal_locked,
+          referral_code: authData.user.id.substring(0, 8).toUpperCase() // Temporary code
         });
 
       if (profileError) {

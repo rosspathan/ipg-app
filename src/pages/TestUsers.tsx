@@ -62,7 +62,8 @@ const TestUsers = () => {
           kyc_status: 'pending',
           account_status: 'active',
           two_fa_enabled: false,
-          withdrawal_locked: false
+          withdrawal_locked: false,
+          referral_code: authData.user.id.substring(0, 8).toUpperCase() // Temporary code
         });
 
       if (profileError) {

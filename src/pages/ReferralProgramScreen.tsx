@@ -69,7 +69,7 @@ const ReferralProgramScreen = () => {
 
   const userReferralEvents = referralEvents.filter(event => event.referrer_id === user.id);
   const userBonusBalances = bonusBalances.filter(balance => balance.user_id === user.id);
-  const userReferees = referralRelationships.filter(rel => rel.referrer_id === user.id);
+  const userReferees = referralRelationships.filter(rel => rel.sponsor_id === user.id);
   
   const bskAsset = getBSKAsset();
   const bskBalance = userBonusBalances.find(balance => 
@@ -395,15 +395,15 @@ const ReferralProgramScreen = () => {
                     const referralLevel = referralEventsForUser.length > 0 ? referralEventsForUser[0].level : 1;
                     
                     return (
-                      <div key={referral.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={referral.referee_id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                             <Badge variant="outline" className="text-xs">L{referralLevel}</Badge>
                           </div>
                           <div>
-                            <p className="font-medium">User {referral.referee_id.slice(-6)}</p>
+                            <p className="font-medium">{referral.referee_username || `User ${referral.referee_id.slice(-6)}`}</p>
                             <p className="text-sm text-muted-foreground">
-                              Joined {new Date(referral.created_at).toLocaleDateString()}
+                              Joined {referral.locked_at ? new Date(referral.locked_at).toLocaleDateString() : 'Recently'}
                             </p>
                           </div>
                         </div>

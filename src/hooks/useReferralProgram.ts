@@ -59,10 +59,16 @@ export interface WalletBonusBalance {
 }
 
 export interface ReferralRelationship {
-  id: string;
-  referrer_id: string;
   referee_id: string;
-  created_at: string;
+  referee_username: string;
+  referee_code: string;
+  sponsor_id: string | null;
+  sponsor_username: string | null;
+  sponsor_code: string | null;
+  sponsor_code_used: string;
+  locked_at: string | null;
+  first_touch_at: string | null;
+  source: string | null;
 }
 
 export const useReferralProgram = () => {

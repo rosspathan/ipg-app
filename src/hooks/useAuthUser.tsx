@@ -102,15 +102,15 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
 
       console.log('🔗 Processing pending referral:', pendingReferral, 'for user:', userId);
 
-      // Check if referral relationship already exists
-      const { data: existingRelationship } = await supabase
-        .from('referral_relationships')
+      // Check if referral link already exists
+      const { data: existingLink } = await supabase
+        .from('referral_links_new')
         .select('id')
-        .eq('referee_id', userId)
+        .eq('user_id', userId)
         .maybeSingle();
 
-      if (existingRelationship) {
-        console.log('⚠️ Referral relationship already exists for this user');
+      if (existingLink) {
+        console.log('⚠️ Referral link already exists for this user');
         localStorage.removeItem('pending_referral');
         return;
       }
@@ -118,7 +118,7 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
       // Validate that the referrer exists and is not the same as the new user
       const { data: referrerProfile } = await supabase
         .from('profiles')
-        .select('user_id')
+        .select('user_id, referral_code')
         .eq('user_id', pendingReferral)
         .maybeSingle();
 
@@ -134,22 +134,26 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Create referral relationship
-      const { data: newRelationship, error } = await supabase
-        .from('referral_relationships')
+      // Create referral link using referral_links_new table
+      const { data: newLink, error } = await supabase
+        .from('referral_links_new')
         .insert({
-          referrer_id: pendingReferral,
-          referee_id: userId
+          user_id: userId,
+          sponsor_id: pendingReferral,
+          sponsor_code_used: referrerProfile.referral_code,
+          locked_at: new Date().toISOString(),
+          first_touch_at: new Date().toISOString(),
+          source: 'app_referral'
         })
         .select()
         .single();
 
       if (error) {
-        console.error('❌ Error creating referral relationship:', error);
+        console.error('❌ Error creating referral link:', error);
         return;
       }
 
-      console.log('✅ Referral relationship created successfully:', newRelationship);
+      console.log('✅ Referral link created successfully:', newLink);
       
       // Clear the pending referral
       localStorage.removeItem('pending_referral');

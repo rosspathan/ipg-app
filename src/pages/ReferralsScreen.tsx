@@ -99,7 +99,7 @@ const ReferralsScreen = () => {
   const userId = user?.id;
   const userReferralEvents = userId ? referralEvents.filter(event => event.referrer_id === userId) : [];
   const userBonusBalances = userId ? bonusBalances.filter(balance => balance.user_id === userId) : [];
-  const userReferees = userId ? referralRelationships.filter(rel => rel.referrer_id === userId) : [];
+  const userReferees = userId ? referralRelationships.filter(rel => rel.sponsor_id === userId) : [];
   
   const bskAsset = bonusAssets.find(asset => asset.symbol === 'BSK');
   const bskBalance = userBonusBalances.find(balance => 

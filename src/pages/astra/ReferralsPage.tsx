@@ -44,11 +44,11 @@ export default function ReferralsPage() {
     queryFn: async () => {
       if (!user?.id) return null;
 
-      // Get referral relationships
+      // Get referral relationships using the new view
       const { data: referrals, error } = await supabase
         .from("referral_relationships")
         .select("*")
-        .eq("referrer_id", user.id);
+        .eq("sponsor_id", user.id); // Changed from referrer_id to sponsor_id
 
       if (error) throw error;
 

@@ -31,8 +31,9 @@ export function useUsernameBackfill() {
               user_id: user.id, 
               email: user.email, 
               username,
-              account_status: 'active'
-            }, 
+              account_status: 'active',
+              referral_code: user.id.substring(0, 8).toUpperCase() // Temporary code
+            },
             { 
               onConflict: 'user_id',
               ignoreDuplicates: false 

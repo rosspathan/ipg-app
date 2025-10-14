@@ -91,6 +91,7 @@ const SecuritySetupScreen = () => {
           .upsert({
             user_id: session.user.id,
             email: session.user.email,
+            referral_code: session.user.id.substring(0, 8).toUpperCase() // Temporary code
           }, { onConflict: 'user_id' });
 
         if (profileError) console.warn('Profile upsert failed:', profileError);
