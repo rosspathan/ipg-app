@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/useAuth"
 
-export interface ProgramState {
+export interface UserProgramState {
   id: string
   user_id: string
   module_id: string
@@ -21,7 +21,7 @@ export interface ProgramState {
   updated_at: string
 }
 
-export interface Participation {
+export interface ProgramParticipation {
   id: string
   user_id: string
   module_id: string
@@ -35,12 +35,11 @@ export interface Participation {
   amount_paid: number
   amount_earned: number
   is_verified: boolean
-  verification_data?: any
   started_at: string
   completed_at?: string
-  metadata: any
-  created_at: string
 }
+
+export type { UserProgramState as ProgramState }
 
 export interface ProgressMilestone {
   id: string
@@ -58,10 +57,13 @@ export interface ProgressMilestone {
   updated_at: string
 }
 
-export function useProgramState(moduleId?: string) {
+export function useProgramParticipation(moduleId?: string) {
   const { user } = useAuth()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
-  return useQuery({
+  // Get user's program state
+  const { data: programState, isLoading: stateLoading } = useQuery({
     queryKey: ["program-state", user?.id, moduleId],
     queryFn: async () => {
       if (!user?.id || !moduleId) return null
@@ -74,76 +76,58 @@ export function useProgramState(moduleId?: string) {
         .maybeSingle()
 
       if (error) throw error
-      return data as ProgramState | null
+      return data as UserProgramState | null
     },
     enabled: !!user?.id && !!moduleId
   })
-}
 
-export function useParticipationHistory(moduleId?: string, limit = 10) {
-  const { user } = useAuth()
-
-  return useQuery({
-    queryKey: ["participation-history", user?.id, moduleId, limit],
-    queryFn: async () => {
-      if (!user?.id) return []
-
-      let query = supabase
-        .from("user_program_participations")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("started_at", { ascending: false })
-        .limit(limit)
-
-      if (moduleId) {
-        query = query.eq("module_id", moduleId)
-      }
-
-      const { data, error } = await query
-
-      if (error) throw error
-      return data as Participation[]
-    },
-    enabled: !!user?.id
-  })
-}
-
-export function useProgramProgress(moduleId?: string) {
-  const { user } = useAuth()
-
-  return useQuery({
-    queryKey: ["program-progress", user?.id, moduleId],
+  // Get participation history
+  const { data: participations, isLoading: participationsLoading } = useQuery({
+    queryKey: ["program-participations", user?.id, moduleId],
     queryFn: async () => {
       if (!user?.id || !moduleId) return []
 
       const { data, error } = await supabase
-        .from("user_program_progress")
+        .from("user_program_participations")
         .select("*")
         .eq("user_id", user.id)
         .eq("module_id", moduleId)
-        .order("created_at", { ascending: true })
+        .order("started_at", { ascending: false })
 
       if (error) throw error
-      return data as ProgressMilestone[]
+      return data as ProgramParticipation[]
     },
     enabled: !!user?.id && !!moduleId
   })
-}
 
-export function useParticipate() {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
-  const { user } = useAuth()
+  // Initialize program state
+  const initializeState = useMutation({
+    mutationFn: async (moduleId: string) => {
+      if (!user?.id) throw new Error("User not authenticated")
 
-  return useMutation({
-    mutationFn: async ({
-      moduleId,
-      participationType,
-      inputData = {},
-      outputData = {},
-      amountPaid = 0,
-      amountEarned = 0
-    }: {
+      const { data, error } = await supabase.rpc("initialize_user_program_state", {
+        p_user_id: user.id,
+        p_module_id: moduleId
+      })
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["program-state"] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to initialize program",
+        description: error.message,
+        variant: "destructive"
+      })
+    }
+  })
+
+  // Record participation
+  const recordParticipation = useMutation({
+    mutationFn: async (params: {
       moduleId: string
       participationType: string
       inputData?: any
@@ -155,128 +139,70 @@ export function useParticipate() {
 
       const { data, error } = await supabase.rpc("record_program_participation", {
         p_user_id: user.id,
-        p_module_id: moduleId,
-        p_participation_type: participationType,
-        p_input_data: inputData,
-        p_output_data: outputData,
-        p_amount_paid: amountPaid,
-        p_amount_earned: amountEarned
+        p_module_id: params.moduleId,
+        p_participation_type: params.participationType,
+        p_input_data: params.inputData || {},
+        p_output_data: params.outputData || {},
+        p_amount_paid: params.amountPaid || 0,
+        p_amount_earned: params.amountEarned || 0
       })
 
       if (error) throw error
       return data
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["program-state", user?.id, variables.moduleId] })
-      queryClient.invalidateQueries({ queryKey: ["participation-history", user?.id] })
-      queryClient.invalidateQueries({ queryKey: ["program-progress", user?.id, variables.moduleId] })
-      
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["program-state"] })
+      queryClient.invalidateQueries({ queryKey: ["program-participations"] })
       toast({
         title: "Participation recorded",
-        description: "Your participation has been successfully recorded."
+        description: "Your participation has been successfully recorded"
       })
     },
     onError: (error: any) => {
       toast({
-        title: "Participation failed",
+        title: "Failed to record participation",
         description: error.message,
         variant: "destructive"
       })
     }
   })
-}
 
-export function useUpdateProgramState() {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
-  const { user } = useAuth()
+  // Update program state
+  const updateState = useMutation({
+    mutationFn: async (updates: Partial<UserProgramState>) => {
+      if (!programState?.id) throw new Error("Program state not found")
 
-  return useMutation({
-    mutationFn: async ({
-      stateId,
-      updates
-    }: {
-      stateId: string
-      updates: Partial<ProgramState>
-    }) => {
       const { data, error } = await supabase
         .from("user_program_states")
         .update(updates)
-        .eq("id", stateId)
+        .eq("id", programState.id)
         .select()
         .single()
 
       if (error) throw error
       return data
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["program-state", user?.id, data.module_id] })
-      
-      toast({
-        title: "State updated",
-        description: "Program state has been updated successfully."
-      })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["program-state"] })
     },
     onError: (error: any) => {
       toast({
-        title: "Update failed",
+        title: "Failed to update state",
         description: error.message,
         variant: "destructive"
       })
     }
   })
-}
 
-export function useUpdateProgress() {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
-  const { user } = useAuth()
-
-  return useMutation({
-    mutationFn: async ({
-      progressId,
-      currentValue,
-      isCompleted
-    }: {
-      progressId: string
-      currentValue: number
-      isCompleted?: boolean
-    }) => {
-      const updates: any = { current_value: currentValue }
-      
-      if (isCompleted !== undefined) {
-        updates.is_completed = isCompleted
-        if (isCompleted) {
-          updates.completed_at = new Date().toISOString()
-        }
-      }
-
-      const { data, error } = await supabase
-        .from("user_program_progress")
-        .update(updates)
-        .eq("id", progressId)
-        .select()
-        .single()
-
-      if (error) throw error
-      return data
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["program-progress", user?.id, data.module_id] })
-      
-      if (data.is_completed) {
-        toast({
-          title: "Milestone completed!",
-          description: "Congratulations on reaching this milestone."
-        })
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Progress update failed",
-        description: error.message,
-        variant: "destructive"
-      })
-    }
-  })
+  return {
+    programState,
+    participations,
+    isLoading: stateLoading || participationsLoading,
+    initializeState: initializeState.mutate,
+    recordParticipation: recordParticipation.mutate,
+    updateState: updateState.mutate,
+    isInitializing: initializeState.isPending,
+    isRecording: recordParticipation.isPending,
+    isUpdating: updateState.isPending
+  }
 }

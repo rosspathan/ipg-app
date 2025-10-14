@@ -1,142 +1,165 @@
 import * as React from "react"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, CheckCircle, XCircle, AlertCircle } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useProgramParticipation } from "@/hooks/useProgramParticipation"
+import { useProgramProgress } from "@/hooks/useProgramProgress"
+import { Loader2, CheckCircle2, XCircle, Trophy } from "lucide-react"
 
 interface ParticipationFlowProps {
-  steps: {
-    id: string
-    title: string
-    description?: string
-    status: "pending" | "active" | "completed" | "failed"
-    icon?: React.ReactNode
-  }[]
-  currentStepIndex: number
-  onStepComplete?: (stepId: string) => void
-  onCancel?: () => void
-  className?: string
+  moduleId: string
+  moduleName: string
+  participationType: string
+  onComplete?: () => void
+  children?: ((props: {
+    programState: any
+    handleParticipate: (data: any) => void
+    isRecording: boolean
+  }) => React.ReactNode) | React.ReactNode
 }
 
 export function ParticipationFlow({
-  steps,
-  currentStepIndex,
-  onStepComplete,
-  onCancel,
-  className
+  moduleId,
+  moduleName,
+  participationType,
+  onComplete,
+  children
 }: ParticipationFlowProps) {
-  const currentStep = steps[currentStepIndex]
-  const progress = ((currentStepIndex + 1) / steps.length) * 100
+  const {
+    programState,
+    isLoading,
+    initializeState,
+    recordParticipation,
+    isInitializing,
+    isRecording
+  } = useProgramParticipation(moduleId)
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-5 w-5 text-green-500" />
-      case "failed":
-        return <XCircle className="h-5 w-5 text-red-500" />
-      case "active":
-        return <Loader2 className="h-5 w-5 animate-spin text-primary" />
-      default:
-        return <AlertCircle className="h-5 w-5 text-muted-foreground" />
+  const { progress, completionPercentage } = useProgramProgress(moduleId)
+
+  // Initialize state if needed
+  React.useEffect(() => {
+    if (!isLoading && !programState) {
+      initializeState(moduleId)
     }
+  }, [isLoading, programState, moduleId, initializeState])
+
+  const handleParticipate = async (data: {
+    inputData?: any
+    outputData?: any
+    amountPaid?: number
+    amountEarned?: number
+  }) => {
+    recordParticipation({
+      moduleId,
+      participationType,
+      ...data
+    })
+    onComplete?.()
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-500"
-      case "failed":
-        return "bg-red-500"
-      case "active":
-        return "bg-primary"
-      default:
-        return "bg-muted"
-    }
+  if (isLoading || isInitializing) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Card>
+    )
   }
 
   return (
-    <Card className={cn("p-6 space-y-6", className)}>
-      {/* Progress Bar */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Progress</span>
-          <span className="font-medium">{Math.round(progress)}%</span>
-        </div>
-        <Progress value={progress} className="h-2" />
-      </div>
-
-      {/* Steps List */}
-      <div className="space-y-3">
-        {steps.map((step, index) => (
-          <div
-            key={step.id}
-            className={cn(
-              "flex items-start gap-3 p-3 rounded-lg transition-colors",
-              index === currentStepIndex && "bg-muted/50",
-              step.status === "completed" && "opacity-60"
-            )}
-          >
-            {/* Step Icon/Number */}
-            <div className="flex-shrink-0">
-              {step.status === "pending" ? (
-                <div className="h-8 w-8 rounded-full border-2 border-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
-                  {index + 1}
-                </div>
-              ) : (
-                <div className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center",
-                  getStatusColor(step.status)
-                )}>
-                  {getStatusIcon(step.status)}
-                </div>
-              )}
+    <div className="space-y-4">
+      {/* Program State Card */}
+      <Card className="p-4">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-foreground">{moduleName}</h3>
+              <p className="text-sm text-muted-foreground">
+                Status: <Badge variant="outline">{programState?.status || "not_started"}</Badge>
+              </p>
             </div>
+            {programState?.status === "completed" && (
+              <Trophy className="h-6 w-6 text-primary" />
+            )}
+          </div>
 
-            {/* Step Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h4 className="font-semibold text-sm">{step.title}</h4>
-                {step.status !== "pending" && (
-                  <Badge
-                    variant={
-                      step.status === "completed" ? "default" :
-                      step.status === "failed" ? "destructive" :
-                      "secondary"
-                    }
-                    className="text-xs"
-                  >
-                    {step.status}
-                  </Badge>
-                )}
+          {/* Progress */}
+          {progress.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Progress</span>
+                <span className="font-medium">{Math.round(completionPercentage)}%</span>
               </div>
-              {step.description && (
-                <p className="text-xs text-muted-foreground">{step.description}</p>
-              )}
+              <Progress value={completionPercentage} />
+            </div>
+          )}
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Participations</p>
+              <p className="text-lg font-semibold">{programState?.participation_count || 0}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Earned</p>
+              <p className="text-lg font-semibold text-green-500">
+                {programState?.total_earned || 0}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Spent</p>
+              <p className="text-lg font-semibold text-red-500">
+                {programState?.total_spent || 0}
+              </p>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Actions */}
-      {currentStep && currentStep.status === "active" && (
-        <div className="flex gap-2 pt-4 border-t">
-          {onCancel && (
-            <Button variant="outline" onClick={onCancel} className="flex-1">
-              Cancel
-            </Button>
-          )}
-          {onStepComplete && (
-            <Button
-              onClick={() => onStepComplete(currentStep.id)}
-              className="flex-1"
-            >
-              Continue
-            </Button>
-          )}
         </div>
+      </Card>
+
+      {/* Participation Content */}
+      {children && (
+        <Card className="p-6">
+          {typeof children === "function" 
+            ? children({ 
+                programState, 
+                handleParticipate, 
+                isRecording 
+              })
+            : children
+          }
+        </Card>
       )}
-    </Card>
+
+      {/* Milestones */}
+      {progress.length > 0 && (
+        <Card className="p-4">
+          <h4 className="font-semibold mb-3">Milestones</h4>
+          <div className="space-y-2">
+            {progress.map((milestone) => (
+              <div
+                key={milestone.id}
+                className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+              >
+                <div className="flex items-center gap-2">
+                  {milestone.is_completed ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <div className="h-4 w-4 rounded-full border-2 border-border" />
+                  )}
+                  <span className="text-sm font-medium capitalize">
+                    {milestone.milestone_key.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {milestone.current_value} / {milestone.target_value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
   )
 }

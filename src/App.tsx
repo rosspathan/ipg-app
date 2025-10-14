@@ -40,6 +40,7 @@ const ProgramControlCenter = React.lazy(() => import("./pages/admin/ProgramContr
 const ProgramTemplates = React.lazy(() => import("./pages/admin/ProgramTemplates"));
 const ProgramsHub = React.lazy(() => import("./pages/ProgramsHub"));
 const ProgramDetail = React.lazy(() => import("./pages/ProgramDetail"));
+const ProgramParticipate = React.lazy(() => import("./pages/ProgramParticipate"));
 const AdminSystemHealth = React.lazy(() => import("./pages/admin/AdminSystemHealth"));
 const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
 const AdminMobileLinking = React.lazy(() => import("./pages/admin/AdminMobileLinking"));
@@ -453,6 +454,7 @@ function App() {
               {/* Public Program Hub Routes */}
               <Route path="/programs-hub" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramsHub /></React.Suspense>} />
               <Route path="/programs-hub/:key" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramDetail /></React.Suspense>} />
+              <Route path="/programs-hub/:key/participate" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramParticipate /></React.Suspense>} />
 
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
