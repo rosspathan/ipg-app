@@ -135,6 +135,45 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 220 30% 90%;
     --sidebar-border: 230 25% 25%;
     --sidebar-ring: 260 85% 65%;
+
+    /* ===============================================
+       CLEAN ADMIN DS - DESIGN TOKENS
+       Professional, minimal, world-class UX
+       Reference: src/design-system/admin-clean-tokens.ts
+       =============================================== */
+    
+    /* Clean Background System - Pure Dark */
+    --clean-bg-primary: 220 13% 4%;      /* #0A0B0D */
+    --clean-bg-secondary: 220 13% 7%;    /* #111318 */
+    --clean-bg-tertiary: 220 13% 10%;    /* #1A1D24 */
+    --clean-bg-hover: 220 13% 12%;       /* #1E2128 */
+    
+    /* Clean Border System - Subtle */
+    --clean-border-default: 220 13% 14%; /* #22252B */
+    --clean-border-subtle: 220 13% 14% / 0.4;
+    --clean-border-focus: 262 100% 65%;
+    
+    /* Clean Text System - High Contrast */
+    --clean-text-primary: 0 0% 98%;      /* #FAFAFA */
+    --clean-text-secondary: 220 9% 65%;  /* #9CA3AF */
+    --clean-text-muted: 220 9% 46%;      /* #6B7280 */
+    --clean-text-inverse: 220 13% 4%;
+    
+    /* Clean Interactive - Purple Accent Only */
+    --clean-interactive-primary: 262 100% 65%;    /* #7C4DFF */
+    --clean-interactive-hover: 262 100% 70%;      /* #8F5FFF */
+    --clean-interactive-active: 262 100% 60%;     /* #6A3FFF */
+    
+    /* Clean Status Colors */
+    --clean-success: 152 64% 48%;        /* #2BD67B */
+    --clean-warning: 33 93% 60%;         /* #F7A53B */
+    --clean-danger: 0 84% 60%;           /* #EF4444 */
+    --clean-info: 217 91% 60%;           /* #3B82F6 */
+    
+    /* Clean Shadows - Minimal */
+    --clean-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --clean-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --clean-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   }
 
   /* Light mode (Admin theme) */

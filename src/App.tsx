@@ -20,6 +20,11 @@ import AdminLayout from "@/layouts/AdminLayout";
 import AdminLayoutClean from "@/layouts/AdminLayoutClean";
 import { AdminShellAdaptive } from "@/components/admin/nova/AdminShellAdaptive";
 
+// Clean Admin Pages
+import AdminDashboardClean from "./pages/admin/AdminDashboardClean";
+import AdminUsersClean from "./pages/admin/AdminUsersClean";
+import AdminProgramsClean from "./pages/admin/AdminProgramsClean";
+import AdminSettingsClean from "./pages/admin/AdminSettingsClean";
 // Nova Admin Pages
 import AdminDashboardNova from "./pages/admin/AdminDashboardNova";
 import AdminUsersNova from "./pages/admin/AdminUsersNova";
@@ -357,11 +362,11 @@ function App() {
                   </AdminRouteNew>
                 </AuthProviderAdmin>
               }>
-                <Route index element={<AdminDashboardNova />} />
-                <Route path="dashboard" element={<AdminDashboardNova />} />
+                <Route index element={<AdminDashboardClean />} />
+                <Route path="dashboard" element={<AdminDashboardClean />} />
                 
                 {/* Users Management */}
-                <Route path="users" element={<React.Suspense fallback={<div>Loading...</div>}><AdminUsersManagementNova /></React.Suspense>} />
+                <Route path="users" element={<AdminUsersClean />} />
                 
                 {/* Markets Management */}
                 <Route path="markets" element={<AdminMarketsNova />} />
@@ -377,7 +382,7 @@ function App() {
                 <Route path="announcements" element={<AdminAnnouncementsScreen />} />
                 
                 {/* Programs */}
-                <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />
+                <Route path="programs" element={<AdminProgramsClean />} />
                 <Route path="programs/control-center" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramControlCenter /></React.Suspense>} />
                 <Route path="programs/templates" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramTemplates /></React.Suspense>} />
                 <Route path="programs/analytics" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramAnalytics /></React.Suspense>} />
@@ -402,7 +407,7 @@ function App() {
                 
                 {/* Reports & Settings */}
                 <Route path="ads" element={<AdminAdsScreen />} />
-                <Route path="settings" element={<AdminSettingsNova />} />
+                <Route path="settings" element={<AdminSettingsClean />} />
                 <Route path="system/health" element={<React.Suspense fallback={<div>Loading...</div>}><AdminSystemHealth /></React.Suspense>} />
                 <Route path="kyc" element={<React.Suspense fallback={<div>Loading...</div>}><KYCReviewNew /></React.Suspense>} />
                 <Route path="kyc-review" element={<AdminKYCReview />} />
