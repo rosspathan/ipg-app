@@ -8186,6 +8186,209 @@ export type Database = {
         }
         Relationships: []
       }
+      user_program_participations: {
+        Row: {
+          amount_earned: number | null
+          amount_paid: number | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          input_data: Json | null
+          is_verified: boolean | null
+          metadata: Json | null
+          module_id: string
+          outcome: string | null
+          output_data: Json | null
+          participation_type: string
+          rewards: Json | null
+          started_at: string
+          state_id: string | null
+          status: string
+          user_id: string
+          verification_data: Json | null
+        }
+        Insert: {
+          amount_earned?: number | null
+          amount_paid?: number | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          input_data?: Json | null
+          is_verified?: boolean | null
+          metadata?: Json | null
+          module_id: string
+          outcome?: string | null
+          output_data?: Json | null
+          participation_type: string
+          rewards?: Json | null
+          started_at?: string
+          state_id?: string | null
+          status?: string
+          user_id: string
+          verification_data?: Json | null
+        }
+        Update: {
+          amount_earned?: number | null
+          amount_paid?: number | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          input_data?: Json | null
+          is_verified?: boolean | null
+          metadata?: Json | null
+          module_id?: string
+          outcome?: string | null
+          output_data?: Json | null
+          participation_type?: string
+          rewards?: Json | null
+          started_at?: string
+          state_id?: string | null
+          status?: string
+          user_id?: string
+          verification_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_program_participations_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "program_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_program_participations_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "user_program_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_program_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_value: number | null
+          id: string
+          is_completed: boolean | null
+          metadata: Json | null
+          milestone_key: string
+          milestone_type: string
+          module_id: string
+          state_id: string | null
+          target_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          is_completed?: boolean | null
+          metadata?: Json | null
+          milestone_key: string
+          milestone_type: string
+          module_id: string
+          state_id?: string | null
+          target_value: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          is_completed?: boolean | null
+          metadata?: Json | null
+          milestone_key?: string
+          milestone_type?: string
+          module_id?: string
+          state_id?: string | null
+          target_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_program_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "program_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_program_progress_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "user_program_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_program_states: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          expires_at: string | null
+          first_participated_at: string | null
+          id: string
+          last_participated_at: string | null
+          metadata: Json | null
+          module_id: string
+          participation_count: number | null
+          progress_data: Json | null
+          status: string
+          total_earned: number | null
+          total_spent: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          first_participated_at?: string | null
+          id?: string
+          last_participated_at?: string | null
+          metadata?: Json | null
+          module_id: string
+          participation_count?: number | null
+          progress_data?: Json | null
+          status?: string
+          total_earned?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          first_participated_at?: string | null
+          id?: string
+          last_participated_at?: string | null
+          metadata?: Json | null
+          module_id?: string
+          participation_count?: number | null
+          progress_data?: Json | null
+          status?: string
+          total_earned?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_program_states_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "program_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_promotion_claims: {
         Row: {
           campaign_id: string
@@ -8850,6 +9053,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      initialize_user_program_state: {
+        Args: { p_module_id: string; p_user_id: string }
+        Returns: string
+      }
       lock_balance_for_order: {
         Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
         Returns: boolean
@@ -8900,6 +9107,18 @@ export type Database = {
       publish_program_config: {
         Args: { p_config_id: string; p_operator_id: string }
         Returns: Json
+      }
+      record_program_participation: {
+        Args: {
+          p_amount_earned?: number
+          p_amount_paid?: number
+          p_input_data?: Json
+          p_module_id: string
+          p_output_data?: Json
+          p_participation_type: string
+          p_user_id: string
+        }
+        Returns: string
       }
       reset_monthly_claim_counts: {
         Args: Record<PropertyKey, never>
