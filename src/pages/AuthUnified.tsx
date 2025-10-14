@@ -56,6 +56,20 @@ export default function AuthUnified() {
     }
   }, [location.search]);
 
+  // Prefill email from sessionStorage if available (for account switching)
+  useEffect(() => {
+    if (!loading) {
+      try {
+        const cached = sessionStorage.getItem('verificationEmail');
+        if (cached) {
+          setEmail(cached);
+        }
+      } catch (err) {
+        console.error('Error prefilling email:', err);
+      }
+    }
+  }, [loading]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");

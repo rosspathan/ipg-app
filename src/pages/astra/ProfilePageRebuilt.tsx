@@ -38,7 +38,7 @@ const profileSections = [
 
 export function ProfilePageRebuilt() {
   const { navigate } = useNavigation()
-  const { user } = useAuthUser()
+  const { user, signOut } = useAuthUser()
   const { badge } = useUserBadge()
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const [openSheet, setOpenSheet] = useState<string | null>(null)
@@ -56,9 +56,15 @@ export function ProfilePageRebuilt() {
     }
   }
 
-  const handleLogout = () => {
-    // TODO: Implement logout
-    navigate("/auth/login")
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      sessionStorage.removeItem('verificationEmail')
+      localStorage.removeItem('ipg_onboarding_state')
+    } catch (err) {
+      console.error('Logout error:', err)
+    }
+    navigate("/auth/login", { replace: true })
   }
 
   return (
