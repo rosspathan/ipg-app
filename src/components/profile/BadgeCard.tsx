@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Award, Sparkles, Shield, Crown, Star } from "lucide-react"
+import { Award, Sparkles, Shield, Crown, Star, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useUserBadge } from "@/hooks/useUserBadge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -90,12 +90,15 @@ export function BadgeCard() {
   const config = badgeConfigs[displayBadge] || badgeConfigs["None"]
   
   return (
-    <div className="relative w-full">
+    <button 
+      onClick={() => window.location.href = '/app/badges'}
+      className="w-full text-left relative"
+    >
       {/* Main Badge Card */}
       <div
         className={cn(
           "relative overflow-hidden rounded-3xl p-6 transition-all duration-500",
-          "border-2 backdrop-blur-xl",
+          "border-2 backdrop-blur-xl cursor-pointer",
           config.bgPattern,
           config.borderColor,
           config.glowColor,
@@ -189,12 +192,17 @@ export function BadgeCard() {
             config.gradient
           )} />
         </div>
-        <div className="absolute bottom-0 left-0 w-24 h-24 opacity-20">
+          <div className="absolute bottom-0 left-0 w-24 h-24 opacity-20">
           <div className={cn(
             "absolute bottom-0 left-0 w-full h-full rounded-tr-full",
             "bg-gradient-to-tr",
             config.gradient
           )} />
+        </div>
+        
+        {/* View More Indicator */}
+        <div className="absolute bottom-4 right-4">
+          <ChevronRight className="h-5 w-5 text-white/40" />
         </div>
       </div>
 
@@ -213,6 +221,6 @@ export function BadgeCard() {
           animation-delay: 300ms;
         }
       `}</style>
-    </div>
+    </button>
   )
 }

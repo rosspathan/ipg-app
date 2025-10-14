@@ -51,6 +51,23 @@ export const useAvatar = () => {
     try {
       setUploading(true);
       
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        throw new Error('Please upload a JPG, PNG, or WEBP image');
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('Image must be smaller than 5MB');
+      }
+      
+      // Validate dimensions
+      const img = await createImageBitmap(file);
+      if (img.width < 256 || img.height < 256) {
+        throw new Error('Image must be at least 256×256 pixels');
+      }
+      
       // Upload original
       const fileName = `${user.id}/avatar_${Date.now()}.webp`;
       const { error: uploadError } = await supabase.storage
@@ -80,11 +97,11 @@ export const useAvatar = () => {
         title: "Success",
         description: "Avatar uploaded successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading avatar:', error);
       toast({
         title: "Error",
-        description: "Failed to upload avatar",
+        description: error.message || "Failed to upload avatar",
         variant: "destructive",
       });
       throw error;

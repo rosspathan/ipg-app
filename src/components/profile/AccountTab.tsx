@@ -3,13 +3,16 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Loader2 } from "lucide-react";
+import { Copy, Loader2, User as UserIcon, Mail, Phone } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
+import { ProfileAvatarUploader } from "@/components/badge-id/ProfileAvatarUploader";
+import { useAvatar } from "@/hooks/useAvatar";
+import { useDisplayName } from "@/hooks/useDisplayName";
 
 interface AccountFormData {
   display_name: string;
@@ -21,6 +24,9 @@ export const AccountTab = () => {
   const { userApp, loading, updateUserApp } = useProfile();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const { avatar, uploading, uploadAvatar, getAvatarUrl } = useAvatar();
+  const displayName = useDisplayName();
+  const avatarUrl = getAvatarUrl('2x');
   
   const { register, handleSubmit, formState: { errors }, reset } = useForm<AccountFormData>({
     defaultValues: {
@@ -84,48 +90,81 @@ export const AccountTab = () => {
 
   return (
     <div className="space-y-6">
+      {/* Avatar Section */}
+      <Card className="border-2 border-primary/10">
+        <CardHeader>
+          <CardTitle>Profile Picture</CardTitle>
+          <CardDescription>
+            Upload a professional photo to personalize your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProfileAvatarUploader
+            avatarUrl={avatarUrl || undefined}
+            displayName={displayName || 'User'}
+            uploading={uploading}
+            onUpload={uploadAvatar}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Account Information */}
       <Card>
         <CardHeader>
           <CardTitle>Account Information</CardTitle>
+          <CardDescription>Manage your personal details</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="display_name">Display Name</Label>
+                <Label htmlFor="display_name" className="flex items-center gap-2">
+                  <UserIcon className="h-4 w-4 text-muted-foreground" />
+                  Display Name
+                </Label>
                 <Input
                   id="display_name"
                   {...register("display_name", { required: "Display name is required" })}
+                  className="transition-all focus:ring-2 focus:ring-primary/20"
                 />
                 {errors.display_name && (
-                  <p className="text-sm text-destructive">{errors.display_name.message}</p>
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    {errors.display_name.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   {...register("email")}
                   disabled
-                  className="bg-muted"
+                  className="bg-muted/50"
                 />
                 <p className="text-xs text-muted-foreground">Email cannot be changed</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  Phone Number
+                </Label>
                 <Input
                   id="phone"
                   type="tel"
                   {...register("phone")}
                   placeholder="+1234567890"
+                  className="transition-all focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
 
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving} className="w-full">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes
             </Button>
