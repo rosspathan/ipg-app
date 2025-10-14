@@ -41,8 +41,7 @@ const ReferralsScreen = () => {
     loading: teamLoading
   } = useTeamReferrals();
 
-  const { getReferralUrl, loading: referralLinkLoading } = useReferrals();
-  const referralLink = getReferralUrl();
+  const { referralCode, loading: referralLinkLoading } = useReferrals();
   
   const [currentBadge, setCurrentBadge] = useState<string>('None');
   
@@ -64,20 +63,20 @@ const ReferralsScreen = () => {
     }
   }, [user?.id]);
 
-  const handleCopyLink = async () => {
-    if (!referralLink) {
-      toast({ title: "Sign in required", description: "Login to get your personal referral link" });
+  const handleCopyCode = async () => {
+    if (!referralCode?.code) {
+      toast({ title: "Sign in required", description: "Login to get your personal referral code" });
       return;
     }
     
-    const success = await copyToClipboard(referralLink);
+    const success = await copyToClipboard(referralCode.code);
     
     if (success) {
-      toast({ title: "Link Copied!", description: "Referral link copied to clipboard" });
+      toast({ title: "Code Copied!", description: "Referral code copied to clipboard" });
     } else {
       toast({ 
         title: "Error", 
-        description: "Failed to copy referral link",
+        description: "Failed to copy referral code",
         variant: "destructive"
       });
     }

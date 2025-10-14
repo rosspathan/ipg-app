@@ -23,26 +23,6 @@ const TeamReferralsUserScreen = () => {
     loading 
   } = useTeamReferrals();
 
-  const { getReferralUrl } = useReferrals();
-  const referralLink = getReferralUrl();
-
-  const handleCopyLink = async () => {
-    const success = await copyToClipboard(referralLink);
-    
-    if (success) {
-      toast({
-        title: "Copied!",
-        description: "Referral link copied to clipboard",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to copy referral link",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (loading || !user) {
     return (
       <div className="container mx-auto p-6">

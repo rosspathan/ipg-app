@@ -135,20 +135,10 @@ export const useReferrals = () => {
     }
   };
 
-  const getReferralUrl = () => {
-    // APK-only: No URL needed, users share codes directly
-    return '';
-  };
-
-  const getDeepLink = () => {
-    // APK-only: No deep link needed
-    return '';
-  };
-
   const shareReferral = async (method: 'whatsapp' | 'native') => {
     if (!referralCode) return;
     
-    // Share just the code for APK-only system
+    // Share just the code
     const text = `Join me on IPG I-SMART! Use my referral code: ${referralCode.code} 🚀`;
 
     if (method === 'whatsapp') {
@@ -175,8 +165,6 @@ export const useReferrals = () => {
     settings,
     stats,
     loading,
-    getReferralUrl,
-    getDeepLink,
     shareReferral,
     refetch: fetchReferrals
   };

@@ -97,57 +97,56 @@ export default function ReferralsPage() {
     enabled: !!user?.id,
   });
 
-  // Unified referral link (works even when logged out)
-  const { referralCode, getReferralUrl, loading: refLoading, shareReferral } = useReferrals();
-  const url = getReferralUrl() || (referralCode ? `https://i-smartapp.com/r/${encodeURIComponent(referralCode.code)}` : "");
+  // Unified referral code (works even when logged out)
+  const { referralCode, loading: refLoading, shareReferral } = useReferrals();
 
-  const handleCopyLink = async () => {
-    if (!url) return;
+  const handleCopyCode = async () => {
+    if (!referralCode?.code) return;
 
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(referralCode.code);
       setCopied(true);
-      toast.success("Referral link copied!");
+      toast.success("Referral code copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      toast.error("Failed to copy link");
+      toast.error("Failed to copy code");
     }
   };
 
   const handleShare = async () => {
-    if (!url) return;
+    if (!referralCode?.code) return;
+
+    const text = `Join me on I-SMART Exchange! Use my referral code: ${referralCode.code} 🚀`;
 
     try {
       // Use Capacitor Share for native apps
       if (Capacitor.isNativePlatform()) {
         await Share.share({
           title: 'Join me on I-SMART Exchange',
-          text: 'Start trading crypto and earning rewards with I-SMART Exchange! Use my referral link:',
-          url,
-          dialogTitle: 'Share Referral Link'
+          text,
+          dialogTitle: 'Share Referral Code'
         });
         toast.success("Shared successfully!");
       } else if (navigator.share) {
         // Fallback to Web Share API
         await navigator.share({
           title: "Join me on I-SMART Exchange",
-          text: "Start trading crypto with I-SMART Exchange!",
-          url,
+          text,
         });
         toast.success("Shared successfully!");
       } else {
         // Final fallback: copy to clipboard
-        handleCopyLink();
+        handleCopyCode();
       }
     } catch (error: any) {
       // Check if it's a permission error or cancellation
       if (error?.name === 'NotAllowedError' || error?.message?.includes('Permission denied')) {
         // Share not available, fall back to copy
-        handleCopyLink();
+        handleCopyCode();
       } else if (error?.name !== 'AbortError' && error?.message !== 'Share canceled') {
         // Only log unexpected errors
         console.error("Share failed:", error);
-        handleCopyLink();
+        handleCopyCode();
       }
     }
   };
@@ -252,24 +251,24 @@ export default function ReferralsPage() {
           </CardContent>
         </Card>
 
-        {/* Referral Link Card */}
+        {/* Referral Code Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Your Referral Link</CardTitle>
+            <CardTitle className="text-lg">Your Referral Code</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="p-3 bg-muted/50 rounded-lg border border-border">
-              <p className="text-sm text-foreground font-mono break-all" data-testid="ref-share-link">
-                {url || 'Complete onboarding to generate your personal referral link'}
+            <div className="p-4 bg-muted/50 rounded-lg border border-border">
+              <p className="text-3xl text-foreground font-mono font-bold text-center tracking-widest" data-testid="ref-share-code">
+                {referralCode?.code || 'Loading...'}
               </p>
             </div>
 
             <div className="flex gap-2">
               <Button
-                onClick={handleCopyLink}
+                onClick={handleCopyCode}
                 className="flex-1 gap-2"
                 variant={copied ? "default" : "outline"}
-                disabled={!url}
+                disabled={!referralCode}
               >
                 {copied ? (
                   <>
@@ -279,45 +278,19 @@ export default function ReferralsPage() {
                 ) : (
                   <>
                     <Copy className="w-4 h-4" />
-                    Copy Link
+                    Copy Code
                   </>
                 )}
               </Button>
-              <Button onClick={handleShare} className="flex-1 gap-2 bg-primary" disabled={!url}>
+              <Button onClick={handleShare} className="flex-1 gap-2 bg-primary" disabled={!referralCode}>
                 <Share2 className="w-4 h-4" />
                 Share
               </Button>
             </div>
 
-            {/* Android Intent Link */}
-            {referralCode && (
-              <div className="pt-3 border-t border-border">
-                <p className="text-xs text-muted-foreground mb-2">Android APK Deep Link</p>
-                <div className="p-2 bg-muted/30 rounded-lg">
-                  <p className="text-xs font-mono text-foreground break-all line-clamp-2" data-testid="ref-share-intent">
-                    intent://r/{referralCode.code}#Intent;scheme=https;package=com.ismart.exchange;S.browser_fallback_url=https%3A%2F%2Fi-smartapp.com%2Fdownload%3Fref%3D{referralCode.code};end
-                  </p>
-                </div>
-                <Button
-                  onClick={async () => {
-                    const intentUrl = `intent://r/${referralCode.code}#Intent;scheme=https;package=com.ismart.exchange;S.browser_fallback_url=https%3A%2F%2Fi-smartapp.com%2Fdownload%3Fref%3D${referralCode.code};end`;
-                    try {
-                      await navigator.clipboard.writeText(intentUrl);
-                      toast.success("Android intent link copied!");
-                    } catch (error) {
-                      toast.error("Failed to copy link");
-                    }
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-2"
-                  disabled={!referralCode}
-                >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy Intent Link
-                </Button>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground text-center">
+              Share this code with friends. They'll enter it during signup to connect as your referral.
+            </p>
           </CardContent>
         </Card>
 
@@ -332,9 +305,9 @@ export default function ReferralsPage() {
                 <span className="text-sm font-bold text-primary">1</span>
               </div>
               <div>
-                <p className="font-medium text-foreground">Share Your Link</p>
+                <p className="font-medium text-foreground">Share Your Code</p>
                 <p className="text-sm text-muted-foreground">
-                  Send your referral link to friends
+                  Send your referral code to friends via WhatsApp or any app
                 </p>
               </div>
             </div>
@@ -346,7 +319,7 @@ export default function ReferralsPage() {
               <div>
                 <p className="font-medium text-foreground">Friends Sign Up</p>
                 <p className="text-sm text-muted-foreground">
-                  They create an account using your link
+                  They enter your code during registration or onboarding
                 </p>
               </div>
             </div>

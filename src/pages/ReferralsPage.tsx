@@ -12,11 +12,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 export function ReferralsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { referralCode, settings, stats, getReferralUrl, getDeepLink, shareReferral, loading } = useReferrals();
-  
-
-  const url = getReferralUrl();
-  const deepLink = getDeepLink();
+  const { referralCode, settings, stats, shareReferral, loading } = useReferrals();
 
   // QR rendered via QRCodeCanvas component
 
@@ -39,14 +35,6 @@ export function ReferralsPage() {
   }
 
   const handleBack = () => navigate("/app/profile");
-
-  const handleCopyLink = async () => {
-    const url = getReferralUrl();
-    const success = await copyToClipboard(url);
-    if (success) {
-      toast({ title: "Copied", description: "Referral link copied to clipboard" });
-    }
-  };
 
   const handleCopyCode = async () => {
     if (!referralCode) return;
@@ -176,7 +164,7 @@ export function ReferralsPage() {
               </div>
               <div>
                 <p className="font-medium text-foreground">They Sign Up</p>
-                <p className="text-sm text-muted-foreground">Friends enter your code during email verification</p>
+                <p className="text-sm text-muted-foreground">Friends enter your code during registration or onboarding</p>
               </div>
             </div>
 
