@@ -22,8 +22,8 @@ const AdminLayoutClean = () => {
   return (
     <NavigationStateManager>
       <SidebarProvider defaultOpen={false}>
-        <div className="flex min-h-screen w-full bg-[hsl(220_13%_4%)]">
-          <div className="flex flex-col min-h-screen w-full">
+        <div className="flex h-screen w-full bg-[hsl(220_13%_4%)] overflow-hidden">
+          <div className="flex flex-col h-screen w-full overflow-hidden">
             {/* Clean Header */}
             <header 
               className="sticky top-0 z-40 bg-[hsl(220_13%_7%)] border-b border-[hsl(220_13%_14%/0.4)]"
@@ -66,7 +66,7 @@ const AdminLayoutClean = () => {
 
             {/* Page Content */}
             <main 
-              className="flex-1 w-full px-4 py-6 max-w-screen-xl mx-auto"
+              className="flex-1 w-full px-4 py-6 max-w-screen-xl mx-auto overflow-y-auto"
               style={{
                 paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))',
               }}
