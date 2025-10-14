@@ -61,6 +61,7 @@ const navItems: NavItem[] = [
     icon: Package,
     children: [
       { title: "Overview", url: "/admin/programs" },
+      { title: "Analytics", url: "/admin/programs/analytics" },
       { title: "Editor", url: "/admin/programs/editor" },
     ],
   },

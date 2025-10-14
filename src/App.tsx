@@ -35,6 +35,7 @@ import AdminSettingsNova from "./pages/admin/AdminSettingsNova";
 const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNova"));
 const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
 const AdminProgramsControl = React.lazy(() => import("./pages/admin/AdminProgramsControl"));
+const AdminProgramAnalytics = React.lazy(() => import("./pages/admin/AdminProgramAnalytics"));
 const AdminSystemHealth = React.lazy(() => import("./pages/admin/AdminSystemHealth"));
 const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
 const AdminMobileLinking = React.lazy(() => import("./pages/admin/AdminMobileLinking"));
@@ -368,6 +369,7 @@ function App() {
                 
                 {/* Programs */}
                 <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />
+                <Route path="programs/analytics" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramAnalytics /></React.Suspense>} />
                 <Route path="programs/editor" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
                 <Route path="programs/control" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsControl /></React.Suspense>} />
                 

@@ -9,7 +9,7 @@ import { KPIStat } from "@/components/admin/nova/KPIStat";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Plus, Settings, Play, Pause, Archive, Package, Zap } from "lucide-react";
+import { Plus, Settings, Play, Pause, Archive, Package, Zap, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
 
@@ -166,14 +166,25 @@ export default function AdminProgramsNova() {
           <h1 className="text-xl font-heading font-bold text-foreground">
             Program Catalog
           </h1>
-          <Button
-            size="sm"
-            onClick={() => setShowNewModule(true)}
-            className="gap-2 bg-primary hover:bg-primary/90"
-          >
-            <Plus className="w-4 h-4" />
-            New Program
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/admin/programs/analytics')}
+              className="gap-2"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setShowNewModule(true)}
+              className="gap-2 bg-primary hover:bg-primary/90"
+            >
+              <Plus className="w-4 h-4" />
+              New Program
+            </Button>
+          </div>
         </div>
 
         {/* By Category */}
