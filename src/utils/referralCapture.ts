@@ -111,16 +111,16 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       return;
     }
 
-    // Create or update referral link - using sponsor_id as the code
+    // Create or update referral link - store the actual readable code
     const { error } = await supabase
       .from('referral_links_new')
       .upsert({
         user_id: userId,
         sponsor_id: pending.sponsorId,
-        referral_code: pending.sponsorId, // Store sponsor ID as code
+        referral_code: pending.code, // Store the actual readable code
         locked_at: new Date().toISOString(),
         first_touch_at: new Date(pending.timestamp).toISOString(),
-        source: 'applink',
+        source: 'manual_entry',
         capture_stage: 'after_email_verify'
       }, {
         onConflict: 'user_id'

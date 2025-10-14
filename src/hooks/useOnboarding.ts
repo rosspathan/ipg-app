@@ -16,6 +16,7 @@ export type OnboardingStep =
   | 'verify-wallet-email'
   | 'wallet-connect'
   | 'email-input'
+  | 'referral-code'
   | 'email-verification'
   | 'pin-setup'
   | 'biometric-setup'
@@ -27,6 +28,8 @@ export interface OnboardingState {
   email?: string;
   verificationCode?: string;
   pinHash?: string;
+  referralCode?: string;
+  sponsorId?: string;
   hasCompletedWallet: boolean;
   hasVerifiedEmail: boolean;
   hasSetupPin: boolean;
@@ -99,6 +102,10 @@ export function useOnboarding() {
 
   const markBiometricSetup = (success: boolean) => {
     updateState({ hasSetupBiometric: success });
+  };
+
+  const setReferralCode = (code: string, sponsorId: string) => {
+    updateState({ referralCode: code, sponsorId });
   };
 
   const nextStep = () => {
@@ -209,6 +216,7 @@ export function useOnboarding() {
     setWalletInfo,
     setEmail,
     setVerificationCode,
+    setReferralCode,
     markEmailVerified,
     setPinHash,
     markBiometricSetup,

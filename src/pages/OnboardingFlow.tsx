@@ -8,6 +8,7 @@ import CreateWalletScreen from './onboarding/CreateWalletScreen';
 import ImportWalletScreen from './onboarding/ImportWalletScreen';
 import VerifyWalletAndEmailScreen from './onboarding/VerifyWalletAndEmailScreen';
 import EmailInputScreen from './onboarding/EmailInputScreen';
+import ReferralCodeInputScreen from './onboarding/ReferralCodeInputScreen';
 import EmailVerificationScreen from './onboarding/EmailVerificationScreen';
 import PinSetupScreen from './onboarding/PinSetupScreen';
 import BiometricSetupScreen from './onboarding/BiometricSetupScreen';
@@ -18,6 +19,7 @@ const OnboardingFlow: React.FC = () => {
     setStep,
     setWalletInfo,
     setEmail,
+    setReferralCode,
     markEmailVerified,
     setPinHash,
     markBiometricSetup,
@@ -62,6 +64,15 @@ const OnboardingFlow: React.FC = () => {
   };
   const handleEmailSubmitted = (email: string) => {
     setEmail(email);
+    setStep('referral-code');
+  };
+  
+  const handleReferralCodeSubmitted = (code: string, sponsorId: string) => {
+    setReferralCode(code, sponsorId);
+    setStep('email-verification');
+  };
+  
+  const handleReferralSkipped = () => {
     setStep('email-verification');
   };
   
@@ -84,8 +95,15 @@ const OnboardingFlow: React.FC = () => {
     });
   };
   
-  const handleEmailVerified = () => {
+  const handleEmailVerified = async () => {
     markEmailVerified();
+    
+    // Store referral if code was entered
+    if (state.referralCode && state.sponsorId) {
+      const { storePendingReferral } = await import('@/utils/referralCapture');
+      storePendingReferral(state.referralCode, state.sponsorId);
+    }
+    
     setStep('pin-setup');
   };
   const handlePinSetup = (pinHash: string) => {
@@ -144,6 +162,15 @@ const OnboardingFlow: React.FC = () => {
           walletAddress={state.walletInfo?.address}
           onEmailSubmitted={handleEmailSubmitted}
           onBack={() => setStep('create-wallet')}
+        />
+      );
+    
+    case 'referral-code':
+      return (
+        <ReferralCodeInputScreen
+          onCodeSubmitted={handleReferralCodeSubmitted}
+          onSkip={handleReferralSkipped}
+          onBack={() => setStep('email-input')}
         />
       );
     
