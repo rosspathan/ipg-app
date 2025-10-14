@@ -148,9 +148,9 @@ export function HomePageRebuilt() {
   ]
 
   return (
-    <div className="min-h-screen" data-testid="page-home" data-version="usr-wallet-link-v3">
+    <>
       {/* Top Bar */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/40">
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/40 -mx-4 -mt-4 mb-4">
         <div className="flex items-center justify-between p-4">
           {/* Left: Avatar + Name */}
           <div className="flex items-center gap-3">
@@ -167,7 +167,7 @@ export function HomePageRebuilt() {
       </div>
 
       {/* Main Content */}
-      <main className="px-4 space-y-6 pt-4 pb-28">
+      <div className="space-y-6" data-testid="page-home" data-version="usr-wallet-link-v3">
         {/* Add Funds CTA */}
         <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
 
@@ -213,7 +213,7 @@ export function HomePageRebuilt() {
           programs={programs}
           onViewAll={() => navigate("/app/programs")}
         />
-      </main>
+      </div>
 
       {/* Rewards Breakdown Bottom Sheet */}
       <RewardsBreakdown
@@ -251,6 +251,6 @@ export function HomePageRebuilt() {
 
       {/* Footer - DO NOT MODIFY THIS SECTION */}
       <DockNav onNavigate={(path) => navigate(path)} onCenterPress={() => setShowQuickSwitch(true)} />
-    </div>
+    </>
   )
 }

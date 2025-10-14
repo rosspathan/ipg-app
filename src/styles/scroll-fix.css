@@ -1,0 +1,54 @@
+/* ============================================
+   SCROLL FIX - Single Scroll Architecture
+   ============================================ */
+
+:root {
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --dock-h: 72px; /* bottom nav height */
+  --pad: 16px;
+}
+
+/* Kill default body scroll - only .app-main scrolls */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: #0b0b14;
+  overscroll-behavior-y: none;
+}
+
+#root, .app-shell {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Single scroll container - THE ONLY scrollable element */
+.app-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable both-edges;
+  padding: calc(var(--pad) + var(--safe-t)) var(--pad) calc(var(--pad) + var(--safe-b));
+}
+
+.app-main.with-dock {
+  padding-bottom: calc(var(--dock-h) + 20px + var(--safe-b));
+}
+
+/* Kill accidental horizontal overflow from 100vw elements */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+img, svg, canvas, video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}

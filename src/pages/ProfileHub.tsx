@@ -143,9 +143,9 @@ export function ProfileHub() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32" data-testid="page-profile">
+    <>
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40 safe-top">
+      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40 safe-top -mx-4 -mt-4 mb-6">
         <div className="flex items-center justify-between h-14 px-4">
           <button
             onClick={handleBack}
@@ -159,7 +159,7 @@ export function ProfileHub() {
       </div>
 
       {/* Main Content */}
-      <div className="space-y-6 pt-6 px-4">
+      <div className="space-y-6" data-testid="page-profile">
         {/* Premium Glassmorphic ID Card Preview */}
         {user && (
           <MiniIdCardPreview
@@ -252,6 +252,6 @@ export function ProfileHub() {
         onClose={() => setShowQuickSwitch(false)}
         onAction={handleQuickSwitchAction}
       />
-    </div>
+    </>
   );
 }

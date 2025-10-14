@@ -157,12 +157,17 @@ export function WalletPage() {
   )
 
   return (
-    <div className="h-full bg-gradient-to-b from-background via-background to-muted/20" data-version="usr-wallet-link-v3">
-      <AppShellGlass topBar={topBar} data-testid="page-wallet">
-      <div className="space-y-6 pb-2">
+    <>
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 bg-card/95 backdrop-blur-xl border-b border-border/40 -mx-4 -mt-4 mb-6">
+        {topBar}
+      </div>
+
+      {/* Main Content */}
+      <div className="space-y-6" data-testid="page-wallet" data-version="usr-wallet-link-v3">
         {/* Address Panel with Network Badge */}
         <div 
-          className="mx-4 mt-4 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 transition-all duration-220"
+          className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 transition-all duration-220"
           data-testid="address-panel"
         >
           {/* Network Pill */}
@@ -253,16 +258,11 @@ export function WalletPage() {
         </div>
 
         {/* Quick Actions Ribbon */}
-        <div className="px-4">
-          <QuickActionsRibbon actions={quickActions} />
-        </div>
+        <QuickActionsRibbon actions={quickActions} />
 
         {/* Balance Cluster with Crypto Assets Grid */}
-        <div className="px-4">
         <BalanceCluster />
-        </div>
       </div>
-      </AppShellGlass>
 
       {/* Quick Switch Radial Menu */}
       <QuickSwitch
@@ -314,6 +314,6 @@ export function WalletPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }

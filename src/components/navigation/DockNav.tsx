@@ -67,13 +67,14 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
     <nav
       ref={navRef}
       className={cn(
-        "fixed bottom-0 inset-x-0 w-full max-w-[430px] mx-auto z-50",
+        "fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto z-50",
         className
       )}
       style={{
         paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
       }}
       data-testid="dock-nav"
+      id="qa-bottom-dock"
     >
       {/* Background with curved cutout for center button */}
       <div className="relative">
@@ -175,16 +176,5 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
     </nav>
   )
 
-  return (
-    <>
-      {/* Spacer to prevent content from being hidden behind the fixed dock */}
-      <div 
-        aria-hidden="true"
-        style={{
-          height: spacerHeight
-        }}
-      />
-      {portalRoot ? createPortal(navEl, portalRoot) : navEl}
-    </>
-  )
+  return portalRoot ? createPortal(navEl, portalRoot) : navEl
 }
