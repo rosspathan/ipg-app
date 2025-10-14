@@ -27,16 +27,10 @@ export function AppHeaderSticky({
   return (
     <header
       className={cn(
-        "sticky top-0 z-50",
-        "bg-card/40 backdrop-blur-xl border-b border-border/40",
+        "sticky top-0 z-50 bg-card border-b border-border",
         "pt-[env(safe-area-inset-top)]",
-        "transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
         className
       )}
-      style={{
-        WebkitBackdropFilter: 'blur(24px)',
-        backdropFilter: 'blur(24px)'
-      }}
       data-testid="header-sticky"
     >
       <div className="flex items-center justify-between px-4 py-2 h-16">

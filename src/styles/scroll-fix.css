@@ -52,3 +52,11 @@ img, svg, canvas, video {
   height: auto;
   display: block;
 }
+
+/* ============================================
+   BASIC CLEAN MODE - Disable animations/effects
+   ============================================ */
+*, *::before, *::after {
+  animation: none !important;
+  transition: none !important;
+}
