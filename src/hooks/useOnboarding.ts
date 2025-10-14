@@ -20,6 +20,7 @@ export type OnboardingStep =
   | 'email-verification'
   | 'pin-setup'
   | 'biometric-setup'
+  | 'success'
   | 'complete';
 
 export interface OnboardingState {
@@ -34,6 +35,7 @@ export interface OnboardingState {
   hasVerifiedEmail: boolean;
   hasSetupPin: boolean;
   hasSetupBiometric: boolean;
+  biometricSetup?: boolean;
 }
 
 const ONBOARDING_STORAGE_KEY = 'ipg_onboarding_state';
@@ -57,7 +59,8 @@ export function useOnboarding() {
       hasCompletedWallet: false,
       hasVerifiedEmail: false,
       hasSetupPin: false,
-      hasSetupBiometric: false
+      hasSetupBiometric: false,
+      biometricSetup: false
     };
   });
 
@@ -101,7 +104,10 @@ export function useOnboarding() {
   };
 
   const markBiometricSetup = (success: boolean) => {
-    updateState({ hasSetupBiometric: success });
+    updateState({ 
+      hasSetupBiometric: success,
+      biometricSetup: success
+    });
   };
 
   const setReferralCode = (code: string, sponsorId: string) => {
@@ -121,6 +127,7 @@ export function useOnboarding() {
       'email-verification',
       'pin-setup',
       'biometric-setup',
+      'success',
       'complete'
     ];
 
@@ -142,6 +149,7 @@ export function useOnboarding() {
       'email-verification',
       'pin-setup',
       'biometric-setup',
+      'success',
       'complete'
     ];
 
@@ -192,7 +200,8 @@ export function useOnboarding() {
       hasCompletedWallet: false,
       hasVerifiedEmail: false,
       hasSetupPin: false,
-      hasSetupBiometric: false
+      hasSetupBiometric: false,
+      biometricSetup: false
     });
   };
 

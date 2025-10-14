@@ -12,6 +12,7 @@ import ReferralCodeInputScreen from './onboarding/ReferralCodeInputScreen';
 import EmailVerificationScreen from './onboarding/EmailVerificationScreen';
 import PinSetupScreen from './onboarding/PinSetupScreen';
 import BiometricSetupScreen from './onboarding/BiometricSetupScreen';
+import SuccessCelebrationScreen from './onboarding/SuccessCelebrationScreen';
 
 const OnboardingFlow: React.FC = () => {
   const {
@@ -112,6 +113,10 @@ const OnboardingFlow: React.FC = () => {
   };
   const handleBiometricSetup = (success: boolean) => {
     markBiometricSetup(success);
+    setStep('success');
+  };
+  
+  const handleSuccessComplete = () => {
     completeOnboarding();
   };
 
@@ -199,6 +204,13 @@ const OnboardingFlow: React.FC = () => {
           onBiometricSetup={handleBiometricSetup}
           onSkip={() => handleBiometricSetup(false)}
           onBack={() => setStep('pin-setup')}
+        />
+      );
+    
+    case 'success':
+      return (
+        <SuccessCelebrationScreen 
+          hasBiometric={state.biometricSetup || false}
         />
       );
     

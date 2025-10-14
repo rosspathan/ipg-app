@@ -64,8 +64,6 @@ import AuthUnified from "./pages/AuthUnified";
 import AuthEmailVerification from "./pages/AuthEmailVerification";
 import AuthCallback from "./pages/AuthCallback";
 import AppLockScreen from "./pages/AppLockScreen";
-import SetupPinScreen from "./pages/lock/SetupPinScreen";
-import BiometricEnrollScreen from "./pages/lock/BiometricEnrollScreen";
 import LockScreen from "./pages/lock/LockScreen";
 import { AppLockGuard } from "@/components/AppLockGuard";
 import WalletLoginScreen from "./pages/WalletLoginScreen";
@@ -263,9 +261,7 @@ function App() {
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/lock" element={<AppLockScreen />} />
               
-              {/* Lock Flow - Module B */}
-              <Route path="/lock/setup-pin" element={<SetupPinScreen />} />
-              <Route path="/lock/biometric-enroll" element={<BiometricEnrollScreen />} />
+              {/* Lock Flow - Returning users only */}
               <Route path="/lock" element={<LockScreen />} />
 
               {/* Legacy User App removed */}

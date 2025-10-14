@@ -11,7 +11,7 @@ interface BrandSplashProps {
 
 const BrandSplash: React.FC<BrandSplashProps> = ({ 
   onComplete, 
-  duration = 2200,
+  duration = 1500,
   canSkip = true 
 }) => {
   const [isVisible, setIsVisible] = useState(true);
@@ -42,8 +42,8 @@ const BrandSplash: React.FC<BrandSplashProps> = ({
       setTimeout(() => setAnimationPhase(phase as any), delay)
     );
 
-    // Allow skipping after 1.5s
-    const skipTimer = setTimeout(() => setCanSkipNow(true), 1500);
+    // Allow skipping after 0.8s
+    const skipTimer = setTimeout(() => setCanSkipNow(true), 800);
 
     // Complete animation
     const completeTimer = setTimeout(() => {

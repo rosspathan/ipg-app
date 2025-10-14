@@ -1,18 +1,19 @@
 /* ═══════════════════════════════════════════════════════════
-   LOCK SCREEN - Module B
-   Try biometrics first, fall back to PIN
+   LOCK SCREEN - Unified Design
+   For returning user authentication only
    ═══════════════════════════════════════════════════════════ */
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, Eye, EyeOff, Fingerprint, AlertCircle, Loader2 } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Shield, Eye, EyeOff, Fingerprint, AlertCircle } from 'lucide-react';
 import { verifyPin } from '@/utils/pinCrypto';
-import { getPinCredentials, hasBiometricEnrolled, getBiometricCredId, unlockApp } from '@/utils/lockState';
+import { getPinCredentials, unlockApp, hasBiometricEnrolled, getBiometricCredId } from '@/utils/lockState';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import ipgLogo from '@/assets/ipg-logo.jpg';
 
 export default function LockScreen() {
   const navigate = useNavigate();
@@ -24,9 +25,6 @@ export default function LockScreen() {
   const [error, setError] = useState('');
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [biometricAvailable] = useState(hasBiometricEnrolled());
-
-  // Dev ribbon flag
-  const showDevRibbon = true;
 
   // Auto-try biometrics on mount
   useEffect(() => {
@@ -51,7 +49,6 @@ export default function LockScreen() {
       const challenge = new Uint8Array(32);
       crypto.getRandomValues(challenge);
 
-      // For APK WebView, this may fail - gracefully fall back to PIN
       const assertion = await navigator.credentials.get({
         publicKey: {
           challenge,
@@ -66,14 +63,12 @@ export default function LockScreen() {
 
       if (assertion) {
         unlockApp();
-        // Return to the page user was on before lock
         const returnPath = localStorage.getItem('ipg_return_path') || '/app/home';
         localStorage.removeItem('ipg_return_path');
         navigate(returnPath, { replace: true });
       }
     } catch (err: any) {
       console.error('Biometric auth failed:', err);
-      // Silently fall back to PIN entry
       setError('');
     } finally {
       setBioLoading(false);
@@ -86,8 +81,7 @@ export default function LockScreen() {
     if (error) setError('');
   };
 
-  const handlePinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePinSubmit = async () => {
     if (pin.length !== 6 || loading) return;
 
     setLoading(true);
@@ -106,7 +100,6 @@ export default function LockScreen() {
       if (isValid) {
         setFailedAttempts(0);
         unlockApp();
-        // Return to the page user was on before lock
         const returnPath = localStorage.getItem('ipg_return_path') || '/app/home';
         localStorage.removeItem('ipg_return_path');
         navigate(returnPath, { replace: true });
@@ -125,133 +118,206 @@ export default function LockScreen() {
   };
 
   return (
-    <div className="screen min-h-screen flex items-center justify-center bg-background px-6">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <Shield className="h-16 w-16 text-primary" />
-              <div className="absolute -top-2 -right-2 bg-background rounded-full p-1">
-                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
-              </div>
-            </div>
-          </div>
-          <CardTitle className="text-2xl">App Lock</CardTitle>
-          <CardDescription>
-            Enter your PIN to unlock the app
-          </CardDescription>
-        </CardHeader>
+    <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden" style={{ height: '100dvh' }}>
+      {/* Background glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-20 right-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+      </div>
 
-        <CardContent className="space-y-6">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+      <div className="relative z-10 h-full flex flex-col items-center justify-center px-6" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)', paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
+        {/* Logo */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
+          <img 
+            src={ipgLogo} 
+            alt="IPG I-SMART Logo" 
+            className="w-20 h-20 object-contain drop-shadow-2xl rounded-2xl"
+          />
+        </motion.div>
 
-          {failedAttempts > 0 && (
-            <Alert className="border-yellow-200 bg-yellow-50">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
-                {failedAttempts} failed attempt{failedAttempts > 1 ? 's' : ''}.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {bioLoading ? (
-            <div className="flex flex-col items-center justify-center py-8 space-y-4">
-              <Fingerprint className="h-16 w-16 text-primary animate-pulse" />
-              <div className="text-center space-y-2">
-                <p className="font-medium">Biometric Authentication</p>
-                <p className="text-sm text-muted-foreground">
-                  Please verify your identity
+        {/* Main card */}
+        <motion.div
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="w-full max-w-md"
+        >
+          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <div className="p-6 space-y-6">
+              {/* Icon and title */}
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+                  <Shield className="w-8 h-8 text-white" />
+                </div>
+                
+                <h1 className="text-2xl font-bold text-white">
+                  Welcome Back
+                </h1>
+                
+                <p className="text-white/70 text-sm">
+                  {bioLoading ? 'Authenticating with biometric...' : 'Enter your PIN to unlock'}
                 </p>
               </div>
-            </div>
-          ) : (
-            <form onSubmit={handlePinSubmit} className="space-y-4">
-              <div className="relative">
-                <Input
-                  data-testid="lock-pin-input"
-                  type={showPin ? 'text' : 'password'}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={pin}
-                  onChange={(e) => handlePinChange(e.target.value)}
-                  placeholder="••••••"
-                  className="pr-10 text-center text-2xl tracking-[0.5em] font-mono"
-                  autoFocus
-                  disabled={loading}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                  onClick={() => setShowPin(!showPin)}
-                >
-                  {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </Button>
-              </div>
 
-              <Button
-                data-testid="lock-unlock-btn"
-                type="submit"
-                className="w-full"
-                size="lg"
-                disabled={pin.length !== 6 || loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Unlocking...
-                  </>
-                ) : (
-                  'Unlock'
-                )}
-              </Button>
-            </form>
-          )}
+              {/* Errors */}
+              {error && (
+                <Alert variant="destructive" className="bg-red-500/20 border-red-500/30">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-red-200">{error}</AlertDescription>
+                </Alert>
+              )}
 
-          {biometricAvailable && !bioLoading && (
-            <div className="space-y-3">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+              {failedAttempts >= 3 && (
+                <Alert className="bg-yellow-500/20 border-yellow-500/30">
+                  <AlertCircle className="h-4 w-4 text-yellow-200" />
+                  <AlertDescription className="text-yellow-200">
+                    {failedAttempts} failed attempts. Account will lock after 5 failed attempts.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Biometric loading state */}
+              {bioLoading && (
+                <div className="text-center py-4">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                    className="w-16 h-16 mx-auto bg-blue-500/20 rounded-full flex items-center justify-center mb-3"
+                  >
+                    <Fingerprint className="w-8 h-8 text-blue-400" />
+                  </motion.div>
+                  <p className="text-white/70 text-sm">Waiting for biometric authentication...</p>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+              )}
+
+              {/* PIN input */}
+              {!bioLoading && (
+                <div className="space-y-4">
+                  {/* PIN dots display */}
+                  <div className="flex justify-center space-x-3 mb-4">
+                    {[...Array(6)].map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-12 h-12 border-2 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                          index < pin.length 
+                            ? 'border-blue-400 bg-blue-500/20 scale-110' 
+                            : 'border-white/30 bg-white/10'
+                        }`}
+                      >
+                        <span className="text-white text-xl font-bold">
+                          {index < pin.length ? (showPin ? pin[index] : '●') : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Number pad */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                      <Button
+                        key={num}
+                        variant="outline"
+                        size="lg"
+                        onClick={() => handlePinChange(pin + num.toString())}
+                        className="h-14 border-white/30 text-white hover:bg-white/20 text-lg font-semibold"
+                        disabled={loading || pin.length >= 6}
+                      >
+                        {num}
+                      </Button>
+                    ))}
+                    
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => setShowPin(!showPin)}
+                      className="h-14 border-white/30 text-white hover:bg-white/20"
+                    >
+                      {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => handlePinChange(pin + '0')}
+                      className="h-14 border-white/30 text-white hover:bg-white/20 text-lg font-semibold"
+                      disabled={loading || pin.length >= 6}
+                    >
+                      0
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => handlePinChange(pin.slice(0, -1))}
+                      className="h-14 border-white/30 text-white hover:bg-white/20"
+                    >
+                      ⌫
+                    </Button>
+                  </div>
+
+                  {/* Unlock button */}
+                  <Button
+                    onClick={handlePinSubmit}
+                    disabled={pin.length !== 6 || loading}
+                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 font-semibold py-3 rounded-xl"
+                    size="lg"
+                  >
+                    {loading ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-2"
+                        />
+                        Unlocking...
+                      </>
+                    ) : (
+                      'Unlock'
+                    )}
+                  </Button>
+
+                  {/* Biometric button */}
+                  {biometricAvailable && !bioLoading && (
+                    <Button
+                      onClick={handleBiometricUnlock}
+                      variant="outline"
+                      className="w-full border-blue-400/50 text-blue-300 hover:bg-blue-500/20"
+                    >
+                      <Fingerprint className="w-5 h-5 mr-2" />
+                      Use Biometrics
+                    </Button>
+                  )}
+
+                  {/* Forgot PIN link */}
+                  <div className="text-center pt-2">
+                    <button
+                      onClick={() => navigate('/recovery/verify')}
+                      className="text-white/60 hover:text-white text-sm transition-colors"
+                    >
+                      Forgot PIN?
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <Button
-                data-testid="lock-bio-btn"
-                type="button"
-                variant="outline"
-                className="w-full"
-                size="lg"
-                onClick={handleBiometricUnlock}
-                disabled={bioLoading}
-              >
-                <Fingerprint className="h-4 w-4 mr-2" />
-                Use Biometrics
-              </Button>
+              )}
             </div>
-          )}
-
-          <div className="pt-4 border-t">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full"
-              onClick={() => navigate('/recovery/verify')}
-            >
-              Forgot PIN?
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </Card>
+        </motion.div>
+      </div>
     </div>
   );
 }
