@@ -36,6 +36,8 @@ const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNo
 const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
 const AdminProgramsControl = React.lazy(() => import("./pages/admin/AdminProgramsControl"));
 const AdminProgramAnalytics = React.lazy(() => import("./pages/admin/AdminProgramAnalytics"));
+const ProgramControlCenter = React.lazy(() => import("./pages/admin/ProgramControlCenter"));
+const ProgramTemplates = React.lazy(() => import("./pages/admin/ProgramTemplates"));
 const AdminSystemHealth = React.lazy(() => import("./pages/admin/AdminSystemHealth"));
 const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
 const AdminMobileLinking = React.lazy(() => import("./pages/admin/AdminMobileLinking"));
@@ -372,8 +374,11 @@ function App() {
                 
                 {/* Programs */}
                 <Route path="programs" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsNova /></React.Suspense>} />
+                <Route path="programs/control-center" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramControlCenter /></React.Suspense>} />
+                <Route path="programs/templates" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramTemplates /></React.Suspense>} />
                 <Route path="programs/analytics" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramAnalytics /></React.Suspense>} />
                 <Route path="programs/editor" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
+                <Route path="programs/editor/:moduleId" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorNova /></React.Suspense>} />
                 <Route path="programs/control" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsControl /></React.Suspense>} />
                 
                 {/* Gamification & Programs */}

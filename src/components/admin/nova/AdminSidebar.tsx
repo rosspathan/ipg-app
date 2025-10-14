@@ -60,9 +60,10 @@ const navItems: NavItem[] = [
     url: "/admin/programs",
     icon: Package,
     children: [
-      { title: "Overview", url: "/admin/programs" },
+      { title: "All Programs", url: "/admin/programs" },
+      { title: "Control Center", url: "/admin/programs/control-center" },
+      { title: "Templates", url: "/admin/programs/templates" },
       { title: "Analytics", url: "/admin/programs/analytics" },
-      { title: "Editor", url: "/admin/programs/editor" },
     ],
   },
   {

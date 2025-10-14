@@ -5500,53 +5500,219 @@ export type Database = {
           },
         ]
       }
+      program_media: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          display_order: number | null
+          file_path: string
+          file_url: string | null
+          id: string
+          is_active: boolean | null
+          media_type: string
+          module_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          display_order?: number | null
+          file_path: string
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          media_type: string
+          module_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          display_order?: number | null
+          file_path?: string
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          media_type?: string
+          module_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_media_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "program_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       program_modules: {
         Row: {
           category: string
           created_at: string
           created_by: string | null
+          description: string | null
           enabled_regions: Json
           enabled_roles: Json
+          faqs: Json | null
+          featured: boolean | null
           icon: string | null
           id: string
           key: string
+          localized_content: Json | null
+          maintenance_mode: boolean | null
+          min_app_version: string | null
           name: string
           order_index: number
           route: string | null
+          seasonal: boolean | null
+          seo_metadata: Json | null
           status: string
+          tags: Json | null
+          terms_conditions: string | null
+          trending: boolean | null
           updated_at: string
         }
         Insert: {
           category: string
           created_at?: string
           created_by?: string | null
+          description?: string | null
           enabled_regions?: Json
           enabled_roles?: Json
+          faqs?: Json | null
+          featured?: boolean | null
           icon?: string | null
           id?: string
           key: string
+          localized_content?: Json | null
+          maintenance_mode?: boolean | null
+          min_app_version?: string | null
           name: string
           order_index?: number
           route?: string | null
+          seasonal?: boolean | null
+          seo_metadata?: Json | null
           status?: string
+          tags?: Json | null
+          terms_conditions?: string | null
+          trending?: boolean | null
           updated_at?: string
         }
         Update: {
           category?: string
           created_at?: string
           created_by?: string | null
+          description?: string | null
           enabled_regions?: Json
           enabled_roles?: Json
+          faqs?: Json | null
+          featured?: boolean | null
           icon?: string | null
           id?: string
           key?: string
+          localized_content?: Json | null
+          maintenance_mode?: boolean | null
+          min_app_version?: string | null
           name?: string
           order_index?: number
           route?: string | null
+          seasonal?: boolean | null
+          seo_metadata?: Json | null
           status?: string
+          tags?: Json | null
+          terms_conditions?: string | null
+          trending?: boolean | null
           updated_at?: string
         }
         Relationships: []
+      }
+      program_templates: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          template_config: Json
+          template_schema: Json
+          updated_at: string
+          usage_count: number | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+          template_config?: Json
+          template_schema?: Json
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          template_config?: Json
+          template_schema?: Json
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      program_visibility_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          module_id: string | null
+          priority: number | null
+          rule_config: Json
+          rule_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          module_id?: string | null
+          priority?: number | null
+          rule_config?: Json
+          rule_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          module_id?: string | null
+          priority?: number | null
+          rule_config?: Json
+          rule_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_visibility_rules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "program_modules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       promotion_events_log: {
         Row: {
@@ -8482,6 +8648,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      bulk_update_program_status: {
+        Args: {
+          p_module_ids: string[]
+          p_new_status: string
+          p_operator_id: string
+        }
+        Returns: number
+      }
       calculate_daily_metrics: {
         Args: { p_date: string }
         Returns: Json
@@ -8517,6 +8691,15 @@ export type Database = {
       check_badge_eligibility: {
         Args: { required_badge: string; sponsor_badge: string }
         Returns: boolean
+      }
+      clone_program_module: {
+        Args: {
+          p_module_id: string
+          p_new_key: string
+          p_new_name: string
+          p_operator_id: string
+        }
+        Returns: string
       }
       convert_bsk_to_inr: {
         Args: { bsk_amount: number }

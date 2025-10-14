@@ -16,6 +16,17 @@ export interface ProgramModule {
   created_at: string;
   updated_at: string;
   created_by?: string;
+  featured?: boolean;
+  trending?: boolean;
+  seasonal?: boolean;
+  maintenance_mode?: boolean;
+  min_app_version?: string;
+  tags?: any[];
+  seo_metadata?: any;
+  localized_content?: any;
+  description?: string;
+  terms_conditions?: string;
+  faqs?: any[];
 }
 
 export interface ProgramConfig {
