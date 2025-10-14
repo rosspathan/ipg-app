@@ -11,13 +11,17 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 export function TradingPairPage() {
-  const { symbol } = useParams<{ symbol: string }>();
+  const params = useParams<{ symbol: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { data: pairs } = useTradingPairs();
   const { data: balances } = useUserBalance();
   const { placeOrder } = useTradingAPI();
+
+  // Convert URL format (ETH-USDT) back to API format (ETH/USDT)
+  const urlSymbol = params.symbol || "";
+  const symbol = urlSymbol.replace('-', '/');
 
   const pair = pairs?.find((p) => p.symbol === symbol);
   const initialSide = searchParams.get("side") === "sell" ? "sell" : "buy";
@@ -154,6 +158,7 @@ export function TradingPairPage() {
           bestBid={pair.price * 0.999}
           bestAsk={pair.price * 1.001}
           onSubmit={handlePlaceOrder}
+          defaultSide={initialSide}
         />
       </div>
 

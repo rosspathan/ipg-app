@@ -71,7 +71,10 @@ export function TradingOverview() {
             <Card
               key={pair.symbol}
               className="p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-              onClick={() => navigate(`/app/trade/${pair.symbol}`)}
+              onClick={() => {
+                const urlSymbol = pair.symbol.replace('/', '-');
+                navigate(`/app/trade/${urlSymbol}`);
+              }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
@@ -122,7 +125,8 @@ export function TradingOverview() {
                     className="w-16 h-8"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/app/trade/${pair.symbol}?side=buy`);
+                      const urlSymbol = pair.symbol.replace('/', '-');
+                      navigate(`/app/trade/${urlSymbol}?side=buy`);
                     }}
                   >
                     Buy
@@ -133,7 +137,8 @@ export function TradingOverview() {
                     className="w-16 h-8"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/app/trade/${pair.symbol}?side=sell`);
+                      const urlSymbol = pair.symbol.replace('/', '-');
+                      navigate(`/app/trade/${urlSymbol}?side=sell`);
                     }}
                   >
                     Sell
