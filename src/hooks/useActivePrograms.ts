@@ -24,57 +24,68 @@ export function useActivePrograms() {
   const { data: programs, isLoading, error } = useQuery({
     queryKey: ['active-programs'],
     queryFn: async () => {
-      // Fetch live program modules with their current configs
-      const { data: modules, error: modulesError } = await supabase
-        .from('program_modules')
-        .select(`
-          *,
-          program_configs!inner(
-            config_json,
-            is_current,
-            status
-          )
-        `)
-        .eq('status', 'live')
-        .eq('program_configs.is_current', true)
-        .eq('program_configs.status', 'published')
-        .order('order_index', { ascending: true });
-      
-      if (modulesError) {
-        console.warn('Failed to fetch programs from database:', modulesError);
-        return null; // Return null to trigger fallback
-      }
-      
-      if (!modules || modules.length === 0) {
-        console.info('No programs configured in database, using defaults');
-        return null; // Return null to trigger fallback
-      }
-
-      // Transform database programs to UI format
-      return modules.map(module => {
-        const configData = Array.isArray(module.program_configs) 
-          ? module.program_configs[0]?.config_json 
-          : module.program_configs;
+      try {
+        // First try to fetch all live program modules
+        const { data: modules, error: modulesError } = await supabase
+          .from('program_modules')
+          .select('*')
+          .eq('status', 'live')
+          .order('order_index', { ascending: true });
         
-        // Cast config to object to access properties
-        const config = configData as any;
+        if (modulesError) {
+          console.error('Failed to fetch program modules:', modulesError);
+          return null;
+        }
+        
+        if (!modules || modules.length === 0) {
+          console.warn('No live programs found in database');
+          return null;
+        }
 
-        return {
-          id: module.id,
-          key: module.key,
-          name: module.name,
-          description: config?.description || config?.subtitle || 'Program description',
-          icon: module.icon || 'Box',
-          badge: config?.badge,
-          badgeColor: config?.badgeColor,
-          route: module.route,
-          category: module.category,
-          order_index: module.order_index,
-          config: config
-        } as ActiveProgram;
-      });
+        // Now fetch published configs separately
+        const { data: configs, error: configsError } = await supabase
+          .from('program_configs')
+          .select('*')
+          .eq('is_current', true)
+          .eq('status', 'published');
+        
+        if (configsError) {
+          console.warn('Failed to fetch program configs:', configsError);
+        }
+
+        // Create a map of configs by module_id for easy lookup
+        const configMap = new Map(
+          configs?.map(config => [config.module_id, config.config_json]) || []
+        );
+
+        // Transform modules to UI format, using configs when available
+        const programList = modules.map(module => {
+          const config = configMap.get(module.id) as any || {};
+          
+          return {
+            id: module.id,
+            key: module.key,
+            name: module.name,
+            description: config?.description || module.name,
+            icon: module.icon || 'Box',
+            badge: config?.badge,
+            badgeColor: config?.badgeColor,
+            route: module.route,
+            category: module.category,
+            order_index: module.order_index,
+            config: config
+          } as ActiveProgram;
+        });
+
+        console.log(`✅ Loaded ${programList.length} programs from database (${configs?.length || 0} with configs)`);
+        return programList;
+        
+      } catch (err) {
+        console.error('Error loading programs:', err);
+        return null;
+      }
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
     retry: 1
   });
 
