@@ -4,28 +4,48 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Shield, ScanLine } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Shield, ScanLine, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import INRWithdrawScreen from "./INRWithdrawScreen";
 import { QRScanner } from "@/components/scanner/QRScanner";
+import { useUserBalance } from "@/hooks/useUserBalance";
 
 const WithdrawScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedAsset, setSelectedAsset] = useState("BTC");
-  const [selectedNetwork, setSelectedNetwork] = useState("Bitcoin");
+  const [selectedAsset, setSelectedAsset] = useState("");
+  const [selectedNetwork, setSelectedNetwork] = useState("");
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
 
-  const assets = [
-    { symbol: "BTC", name: "Bitcoin", balance: "0.00234567", networks: ["Bitcoin"] },
-    { symbol: "ETH", name: "Ethereum", balance: "1.45", networks: ["Ethereum", "BSC"] },
-    { symbol: "USDT", name: "Tether", balance: "1250.00", networks: ["Ethereum", "BSC", "Tron"] },
-    { symbol: "USDC", name: "USD Coin", balance: "500.00", networks: ["Ethereum", "BSC"] }
-  ];
+  // Fetch real user balances
+  const { data: balances, isLoading, error } = useUserBalance();
+
+  // Filter assets with balance > 0 and add network info
+  const assets = balances?.filter(asset => asset.balance > 0).map(asset => ({
+    symbol: asset.symbol,
+    name: asset.name,
+    balance: asset.balance.toString(),
+    available: asset.available,
+    logo_url: asset.logo_url,
+    // Default networks based on asset type
+    networks: asset.symbol === 'BTC' ? ['Bitcoin'] :
+              asset.symbol === 'ETH' ? ['Ethereum', 'BSC'] :
+              asset.symbol === 'USDT' ? ['Ethereum', 'BSC', 'Tron'] :
+              asset.symbol === 'USDC' ? ['Ethereum', 'BSC'] :
+              ['Ethereum'] // default
+  })) || [];
+
+  // Set initial selected asset when balances load
+  useEffect(() => {
+    if (assets.length > 0 && !selectedAsset) {
+      setSelectedAsset(assets[0].symbol);
+      setSelectedNetwork(assets[0].networks[0]);
+    }
+  }, [assets, selectedAsset]);
 
   const feeInfo = {
     networkFee: "0.0005 BTC",
@@ -138,6 +158,38 @@ const WithdrawScreen = () => {
           </TabsList>
 
           <TabsContent value="crypto" className="space-y-6">
+            {/* Loading State */}
+            {isLoading && (
+              <Card className="bg-gradient-card shadow-card border-0">
+                <CardContent className="p-8 flex flex-col items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+                  <p className="text-muted-foreground">Loading balances...</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Error State */}
+            {error && (
+              <Card className="bg-gradient-card shadow-card border-0">
+                <CardContent className="p-6">
+                  <p className="text-destructive">Failed to load balances. Please try again.</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* No Assets Available */}
+            {!isLoading && !error && assets.length === 0 && (
+              <Card className="bg-gradient-card shadow-card border-0">
+                <CardContent className="p-8 text-center">
+                  <p className="text-muted-foreground mb-2">No crypto assets available for withdrawal</p>
+                  <p className="text-sm text-muted-foreground">Your crypto balances are currently zero.</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Withdrawal Form - Only show if assets available */}
+            {!isLoading && !error && assets.length > 0 && (
+              <>
 
         {/* Asset Selection */}
         <Card className="bg-gradient-card shadow-card border-0">
@@ -267,6 +319,8 @@ const WithdrawScreen = () => {
         <Button onClick={handleWithdraw} className="w-full" size="lg">
           Withdraw
         </Button>
+              </>
+            )}
               </TabsContent>
 
               <TabsContent value="inr">
