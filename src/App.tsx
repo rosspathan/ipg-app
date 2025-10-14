@@ -163,6 +163,7 @@ import { ProgramsPagePro } from "@/pages/astra/ProgramsPagePro";
 import { TradingPageRebuilt } from "@/pages/astra/TradingPageRebuilt";
 import { ProfileHub } from "@/pages/ProfileHub";
 import { KYCPage } from "@/pages/KYCPage";
+import KYCSubmission from "@/pages/KYCSubmission";
 import { IDCardPage } from "@/pages/IDCardPage";
 import { SecurityPage } from "@/pages/SecurityPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
@@ -282,7 +283,8 @@ function App() {
               
               {/* Profile Hub */}
               <Route path="profile" element={<ProfileHub />} />
-              <Route path="profile/kyc" element={<KYCPage />} />
+                    <Route path="profile/kyc" element={<KYCPage />} />
+                    <Route path="profile/kyc-submission" element={<KYCSubmission />} />
               <Route path="profile/id-card" element={<IDCardPage />} />
               <Route path="profile/security" element={<SecurityPage />} />
               <Route path="profile/notify" element={<NotificationsPage />} />
