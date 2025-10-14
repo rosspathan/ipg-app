@@ -116,6 +116,16 @@ import INRDepositScreen from "./pages/INRDepositScreen";
 import INRWithdrawScreen from "./pages/INRWithdrawScreen";
 import ProfileScreen from "./pages/ProfileScreen";
 
+// New Program Pages
+const AdvertisingPage = React.lazy(() => import("./pages/programs/AdvertisingPage"));
+const LuckyDrawPageNew = React.lazy(() => import("./pages/programs/LuckyDrawPage"));
+const StakingPageNew = React.lazy(() => import("./pages/programs/StakingPage"));
+const SpinWheelPage = React.lazy(() => import("./pages/programs/SpinWheelPage"));
+const ReferralsPageNew = React.lazy(() => import("./pages/programs/ReferralsPage"));
+const LoansPageNew = React.lazy(() => import("./pages/programs/LoansPage"));
+const InsurancePageNew = React.lazy(() => import("./pages/programs/InsurancePage"));
+const PurchasePage = React.lazy(() => import("./pages/programs/PurchasePage"));
+
 // Admin Pages
 import AdminLoginScreen from "./pages/AdminLoginScreen";
 const AdminDashboard = React.lazy(() => import("./pages/AdminDashboard"));
@@ -295,17 +305,17 @@ function App() {
               <Route path="support" element={<SupportPage />} />
                 
                 {/* Programs */}
-                <Route path="programs/insurance" element={<InsurancePage />} />
-                <Route path="programs/spin" element={<React.Suspense fallback={<div>Loading...</div>}><ISmartSpinScreen /></React.Suspense>} />
+                <Route path="programs/insurance" element={<React.Suspense fallback={<div>Loading...</div>}><InsurancePageNew /></React.Suspense>} />
+                <Route path="programs/spin" element={<React.Suspense fallback={<div>Loading...</div>}><SpinWheelPage /></React.Suspense>} />
                 <Route path="spin/history" element={<SpinHistoryScreen />} />
                 <Route path="spin/verify" element={<SpinVerifyScreen />} />
-                <Route path="programs/ads" element={<AdMiningPage />} />
-                <Route path="programs/advertising" element={<AdMiningPage />} />
-                <Route path="programs/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPageAstra /></React.Suspense>} />
-                <Route path="programs/lucky-draw" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawPage /></React.Suspense>} />
-                <Route path="programs/loans" element={<React.Suspense fallback={<div>Loading...</div>}><LoansPage /></React.Suspense>} />
-                <Route path="programs/bsk-bonus" element={<BSKPromotionScreen />} />
-                <Route path="programs/staking" element={<StakingScreen />} />
+                <Route path="programs/ads" element={<React.Suspense fallback={<div>Loading...</div>}><AdvertisingPage /></React.Suspense>} />
+                <Route path="programs/advertising" element={<React.Suspense fallback={<div>Loading...</div>}><AdvertisingPage /></React.Suspense>} />
+                <Route path="programs/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPageNew /></React.Suspense>} />
+                <Route path="programs/lucky-draw" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawPageNew /></React.Suspense>} />
+                <Route path="programs/loans" element={<React.Suspense fallback={<div>Loading...</div>}><LoansPageNew /></React.Suspense>} />
+                <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<div>Loading...</div>}><PurchasePage /></React.Suspense>} />
+                <Route path="programs/staking" element={<React.Suspense fallback={<div>Loading...</div>}><StakingPageNew /></React.Suspense>} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/staking/:poolId/submit" element={<StakingSubmissionScreen />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
