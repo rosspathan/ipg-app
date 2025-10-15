@@ -36,6 +36,7 @@ const UserRoute = ({ children }: UserRouteProps) => {
   // 1. User has a Supabase session
   // 2. User has a connected web3 wallet
   // 3. User has local security configured (PIN setup)
+  // 4. DUAL AUTH: Admin users viewing as user (has session but checking user routes)
   const hasAccess = !!(user && session) || isConnected || hasLocalSecurity();
 
   if (!hasAccess) {

@@ -95,15 +95,15 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
 
         {/* Right Section */}
         <div className="flex items-center gap-2">
-          {/* Stack switcher for admin users */}
+          {/* Stack switcher for admin users - ALWAYS VISIBLE */}
           {user && isAdmin && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleStackSwitch}
-              className="text-xs"
+              className="text-xs font-medium"
             >
-              {isUserStack ? 'Admin' : 'User App'}
+              {isUserStack ? '👑 Admin View' : '👤 User View'}
             </Button>
           )}
 
