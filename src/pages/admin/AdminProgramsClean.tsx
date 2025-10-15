@@ -1,4 +1,4 @@
-import { FolderKanban, Plus, Search, Loader2 } from "lucide-react";
+import { FolderKanban, Plus, Search, Loader2, Activity } from "lucide-react";
 import { useState, useMemo } from "react";
 import { CleanGrid } from "@/components/admin/clean/CleanGrid";
 import { CleanCard } from "@/components/admin/clean/CleanCard";
@@ -233,13 +233,23 @@ export default function AdminProgramsClean() {
             Manage all platform programs and modules
           </p>
         </div>
-        <Button 
-          onClick={() => navigate("/admin/programs/editor/new")}
-          className="bg-[hsl(262_100%_65%)] hover:bg-[hsl(262_100%_70%)] text-white"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Program
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={() => navigate("/admin/programs/control")}
+            variant="outline"
+            className="border-[hsl(220_13%_14%)] text-[hsl(0_0%_98%)]"
+          >
+            <Activity className="w-4 h-4 mr-2" />
+            Control Center
+          </Button>
+          <Button 
+            onClick={() => navigate("/admin/programs/editor/new")}
+            className="bg-[hsl(262_100%_65%)] hover:bg-[hsl(262_100%_70%)] text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Program
+          </Button>
+        </div>
       </div>
 
       {/* Search & Filters */}

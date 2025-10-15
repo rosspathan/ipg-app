@@ -1,315 +1,270 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Save, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuthAdmin } from '@/hooks/useAuthAdmin';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useProgramModules } from "@/hooks/useProgramRegistry";
+import { useProgramAnalytics } from "@/hooks/useProgramAnalytics";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { 
+  Activity, 
+  Users, 
+  DollarSign, 
+  TrendingUp,
+  Settings,
+  Eye,
+  AlertCircle,
+  CheckCircle,
+  Pause,
+  Play
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
-interface ProgramConfig {
-  id: string;
-  name: string;
-  enabled: boolean;
-  params: Record<string, any>;
-}
-
-const PROGRAMS = [
-  { 
-    id: 'spin', 
-    name: 'Spin Wheel',
-    params: {
-      free_spins_daily: { type: 'number', label: 'Free Spins/Day', min: 0, max: 100 },
-      min_bet_bsk: { type: 'number', label: 'Min Bet (BSK)', min: 1, max: 1000 }
-    }
-  },
-  { 
-    id: 'lucky_draw', 
-    name: 'Lucky Draw',
-    params: {
-      pool_size: { type: 'number', label: 'Pool Size', min: 10, max: 1000 },
-      ticket_price_bsk: { type: 'number', label: 'Ticket Price (BSK)', min: 1, max: 100 }
-    }
-  },
-  { 
-    id: 'referrals', 
-    name: 'Referral Program',
-    params: {
-      direct_commission_percent: { type: 'number', label: 'Direct Commission %', min: 0, max: 50 },
-      max_levels: { type: 'number', label: 'Max Levels', min: 1, max: 50 }
-    }
-  },
-  { 
-    id: 'ad_mining', 
-    name: 'Ad Mining',
-    params: {
-      reward_per_ad_bsk: { type: 'number', label: 'Reward/Ad (BSK)', min: 0.1, max: 10 },
-      max_ads_daily: { type: 'number', label: 'Max Ads/Day', min: 1, max: 100 }
-    }
-  },
-  { 
-    id: 'insurance', 
-    name: 'Trading Insurance',
-    params: {
-      coverage_percent: { type: 'number', label: 'Coverage %', min: 10, max: 100 },
-      max_claim_amount: { type: 'number', label: 'Max Claim', min: 100, max: 10000 }
-    }
-  },
-  { 
-    id: 'kyc', 
-    name: 'KYC Verification',
-    params: {
-      min_age_years: { type: 'number', label: 'Min Age', min: 13, max: 100 },
-      manual_review: { type: 'boolean', label: 'Manual Review Required' }
-    }
-  }
-];
-
-export default function AdminProgramsControl() {
+export default function AdminProgramControl() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isAdmin, loading: authLoading } = useAuthAdmin();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [programs, setPrograms] = useState<ProgramConfig[]>([]);
+  const queryClient = useQueryClient();
+  const { modules, updateModule, isLoading } = useProgramModules();
+  const { analytics } = useProgramAnalytics();
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to access admin controls",
-        variant: "destructive"
-      });
-      navigate("/onboarding", { replace: true });
-    } else if (!authLoading && user && !isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "Admin privileges required",
-        variant: "destructive"
-      });
-      navigate("/app", { replace: true });
-    }
-  }, [authLoading, user, isAdmin, navigate, toast]);
+  const livePrograms = modules?.filter(m => m.status === 'live') || [];
+  const totalUsers = analytics?.reduce((sum, a) => sum + (a.activeUsers || 0), 0) || 0;
+  const totalRevenue = analytics?.reduce((sum, a) => sum + (a.revenue || 0), 0) || 0;
 
-  useEffect(() => {
-    if (user && isAdmin) {
-      fetchPrograms();
-    }
-  }, [user, isAdmin]);
-
-  const fetchPrograms = async () => {
+  const handleStatusToggle = async (moduleId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'live' ? 'paused' : 'live';
+    
     try {
-      setLoading(true);
-      
-      if (!user) {
-        throw new Error("Not authenticated");
-      }
-      
-      // Load from system_settings table
-      const { data, error } = await supabase
-        .from('system_settings')
-        .select('*')
-        .in('key', PROGRAMS.map(p => `program_${p.id}_enabled`));
-
-      if (error) {
-        if (error.code === 'PGRST116' || error.message.includes('JWT')) {
-          toast({
-            title: "Session Expired",
-            description: "Please log in again",
-            variant: "destructive"
-          });
-          navigate("/onboarding", { replace: true });
-          return;
-        }
-        throw error;
-      }
-
-      // Initialize with defaults
-      const configs = PROGRAMS.map(prog => {
-        const enabledSetting = data?.find(s => s.key === `program_${prog.id}_enabled`);
-        return {
-          id: prog.id,
-          name: prog.name,
-          enabled: enabledSetting?.value === 'true',
-          params: prog.params ? Object.keys(prog.params).reduce((acc, key) => {
-            acc[key] = prog.params[key].type === 'number' ? 10 : true;
-            return acc;
-          }, {} as Record<string, any>) : {}
-        };
+      await updateModule({ 
+        id: moduleId, 
+        updates: { status: newStatus as any }
       });
-
-      setPrograms(configs);
-    } catch (error) {
-      console.error('Error fetching programs:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load program settings',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleToggle = (programId: string, enabled: boolean) => {
-    setPrograms(prev => prev.map(p => 
-      p.id === programId ? { ...p, enabled } : p
-    ));
-  };
-
-  const handleParamChange = (programId: string, paramKey: string, value: any) => {
-    setPrograms(prev => prev.map(p => 
-      p.id === programId 
-        ? { ...p, params: { ...p.params, [paramKey]: value } }
-        : p
-    ));
-  };
-
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-
-      if (!user) {
-        throw new Error("Not authenticated");
-      }
-
-      // Save each program's enabled state
-      for (const prog of programs) {
-        const { error } = await supabase
-          .from('system_settings')
-          .upsert({
-            key: `program_${prog.id}_enabled`,
-            value: prog.enabled.toString(),
-            description: `${prog.name} program toggle`
-          }, {
-            onConflict: 'key'
-          });
-
-        if (error) {
-          if (error.code === 'PGRST116' || error.message.includes('JWT')) {
-            toast({
-              title: "Session Expired",
-              description: "Please log in again",
-              variant: "destructive"
-            });
-            navigate("/onboarding", { replace: true });
-            return;
-          }
-          throw error;
-        }
-      }
-
-      console.log('PROGRAMS_READY');
+      
+      queryClient.invalidateQueries({ queryKey: ['program-modules'] });
       
       toast({
-        title: 'Success',
-        description: 'Program settings saved successfully'
+        title: newStatus === 'live' ? "Program activated" : "Program paused",
+        description: `Successfully ${newStatus === 'live' ? 'activated' : 'paused'} the program`
       });
     } catch (error) {
-      console.error('Error saving programs:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to save program settings',
-        variant: 'destructive'
+        title: "Failed to update program",
+        description: "Please try again",
+        variant: "destructive"
       });
-    } finally {
-      setSaving(false);
     }
   };
 
-  if (authLoading || loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">
-            {authLoading ? "Authenticating..." : "Loading program settings..."}
-          </p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading control center...</p>
         </div>
       </div>
     );
   }
 
-  if (!user || !isAdmin) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background p-6">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40 safe-top">
-        <div className="flex items-center justify-between h-14 px-4">
-          <button
-            onClick={() => navigate('/admin')}
-            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
-          >
-            <ChevronLeft className="h-5 w-5" />
-            <span className="font-medium">Programs Control</span>
-          </button>
-          <Button onClick={handleSave} disabled={saving} size="sm">
-            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-            Save
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-foreground mb-2">Program Control Center</h1>
+        <p className="text-muted-foreground">
+          Manage all programs, view metrics, and control access
+        </p>
+      </div>
+
+      {/* Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Total Programs</p>
+                <p className="text-2xl font-bold">{modules?.length || 0}</p>
+              </div>
+              <Activity className="w-8 h-8 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Live Programs</p>
+                <p className="text-2xl font-bold text-success">{livePrograms.length}</p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-success" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Active Users</p>
+                <p className="text-2xl font-bold">{totalUsers.toLocaleString()}</p>
+              </div>
+              <Users className="w-8 h-8 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Total Revenue</p>
+                <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
+              </div>
+              <DollarSign className="w-8 h-8 text-success" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Program Control Grid */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Program Controls</h2>
+          <Button onClick={() => navigate('/admin/programs')}>
+            View All Programs
           </Button>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="space-y-4 pt-6 px-4">
-        <p className="text-sm text-muted-foreground mb-4">
-          Enable or disable programs and configure their parameters
-        </p>
+        {modules && modules.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {modules.map((program) => {
+              const programAnalytics = analytics?.find(a => a.moduleId === program.id);
+              const isLive = program.status === 'live';
 
-        {(
-          programs.map(prog => (
-            <Card key={prog.id} className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-semibold text-foreground">{prog.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {prog.enabled ? 'Active' : 'Disabled'}
-                  </p>
-                </div>
-                <Switch
-                  checked={prog.enabled}
-                  onCheckedChange={(checked) => handleToggle(prog.id, checked)}
-                  disabled={saving}
-                />
-              </div>
-
-              {/* Parameters */}
-              {Object.keys(prog.params).length > 0 && prog.enabled && (
-                <div className="space-y-3 pt-4 border-t border-border/40">
-                  {Object.entries(prog.params).map(([key, config]: [string, any]) => (
-                    <div key={key} className="space-y-2">
-                      <Label htmlFor={`${prog.id}_${key}`}>{config.label}</Label>
-                      {config.type === 'number' ? (
-                        <Input
-                          id={`${prog.id}_${key}`}
-                          type="number"
-                          value={prog.params[key]}
-                          onChange={(e) => handleParamChange(prog.id, key, parseFloat(e.target.value) || 0)}
-                          disabled={saving}
-                          min={config.min}
-                          max={config.max}
-                        />
-                      ) : (
-                        <Switch
-                          checked={prog.params[key]}
-                          onCheckedChange={(checked) => handleParamChange(prog.id, key, checked)}
-                          disabled={saving}
-                        />
-                      )}
+              return (
+                <Card key={program.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg mb-1">{program.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {program.description || 'No description'}
+                        </p>
+                      </div>
+                      <Badge 
+                        variant={
+                          program.status === 'live' ? 'default' :
+                          program.status === 'paused' ? 'secondary' :
+                          'outline'
+                        }
+                        className="ml-2"
+                      >
+                        {program.status}
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          ))
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Users</p>
+                        <p className="text-lg font-bold">
+                          {programAnalytics?.activeUsers?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Revenue</p>
+                        <p className="text-lg font-bold text-success">
+                          ${(programAnalytics?.revenue || 0).toFixed(0)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Quick Controls */}
+                    <div className="space-y-3">
+                      {/* Live Toggle */}
+                      <div className="flex items-center justify-between p-2 hover:bg-muted/30 rounded transition-colors">
+                        <div className="flex items-center gap-2">
+                          {isLive ? (
+                            <Play className="w-4 h-4 text-success" />
+                          ) : (
+                            <Pause className="w-4 h-4 text-warning" />
+                          )}
+                          <span className="text-sm font-medium">
+                            {isLive ? 'Active' : 'Paused'}
+                          </span>
+                        </div>
+                        <Switch
+                          checked={isLive}
+                          onCheckedChange={() => handleStatusToggle(program.id, program.status)}
+                        />
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => navigate(`/admin/programs/editor/${program.id}`)}
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Configure
+                        </Button>
+                        <Button
+                          onClick={() => navigate(program.route)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Alerts */}
+                    {program.maintenance_mode && (
+                      <div className="flex items-center gap-2 p-2 bg-warning/10 border border-warning/20 rounded text-xs text-warning">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>Maintenance mode active</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground mb-4">No programs found</p>
+              <Button onClick={() => navigate('/admin/programs')}>
+                Create First Program
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </div>
+
+      {/* System Alerts */}
+      {livePrograms.some(p => p.maintenance_mode) && (
+        <Card className="mt-6 border-warning">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-warning">
+              <AlertCircle className="w-5 h-5" />
+              System Alerts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {livePrograms.filter(p => p.maintenance_mode).length} program(s) in maintenance mode
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
