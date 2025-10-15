@@ -4,6 +4,7 @@ import { useAuthLock } from '@/hooks/useAuthLock';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AppStateManager = () => {
   const { lock, isUnlockRequired } = useAuthLock();
@@ -15,11 +16,23 @@ export const AppStateManager = () => {
     if (!Capacitor.isNativePlatform()) return;
 
     // Check if unlock is needed on initial app load (when app is reopened from task switcher)
-    const checkInitialLockState = () => {
+    const checkInitialLockState = async () => {
       const isAuthRoute = location.pathname.startsWith('/auth') || 
                          location.pathname.startsWith('/onboarding');
       
       if (user && !isAuthRoute) {
+        // Check if onboarding is completed
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_completed_at')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (!profile?.onboarding_completed_at) {
+          // User hasn't finished onboarding, don't lock
+          return;
+        }
+
         const needsUnlock = isUnlockRequired(false);
         if (needsUnlock) {
           console.log('App opened - lock required, redirecting to lock screen');
@@ -47,7 +60,7 @@ export const AppStateManager = () => {
       });
 
       // Handle app coming to foreground - check if unlock needed
-      resumeListener = await CapacitorApp.addListener('resume', () => {
+      resumeListener = await CapacitorApp.addListener('resume', async () => {
         console.log('App resuming from background');
         
         // Don't lock if on auth/onboarding routes
@@ -55,6 +68,18 @@ export const AppStateManager = () => {
                            location.pathname.startsWith('/onboarding');
         
         if (user && !isAuthRoute) {
+          // Check if onboarding is completed
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('onboarding_completed_at')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          if (!profile?.onboarding_completed_at) {
+            // User hasn't finished onboarding, don't lock
+            return;
+          }
+
           const needsUnlock = isUnlockRequired(false);
           if (needsUnlock) {
             console.log('Redirecting to lock screen');

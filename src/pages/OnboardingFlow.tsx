@@ -156,11 +156,28 @@ const OnboardingFlow: React.FC = () => {
       return (
         <EmailInputScreen
           walletAddress={state.walletInfo?.address}
-          onEmailSubmitted={handleEmailSubmitted}
+          onEmailSubmitted={(email) => {
+            setEmail(email);
+            setStep('referral-code');
+          }}
           onBack={() => setStep('create-wallet')}
         />
       );
     
+    case 'referral-code':
+      return (
+        <ReferralCodeInputScreen
+          onCodeSubmitted={async (code, sponsorId) => {
+            setReferralCode(code, sponsorId);
+            const { storePendingReferral } = await import('@/utils/referralCapture');
+            storePendingReferral(code, sponsorId);
+            setStep('email-verification');
+          }}
+          onSkip={() => setStep('email-verification')}
+          onBack={() => setStep('email-input')}
+        />
+      );
+
     case 'email-verification':
       return (
         <EmailVerificationScreen

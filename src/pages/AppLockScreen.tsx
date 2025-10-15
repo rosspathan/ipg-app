@@ -82,7 +82,10 @@ const AppLockScreen = () => {
     try {
       const success = await unlockWithPin(pin);
       if (success) {
-        navigate('/app/home', { replace: true });
+        // Restore return path or default to home
+        const returnPath = localStorage.getItem('ipg_return_path') || '/app/home';
+        localStorage.removeItem('ipg_return_path');
+        navigate(returnPath, { replace: true });
       } else {
         setPin(""); // Clear PIN on failure
       }
@@ -103,7 +106,10 @@ const AppLockScreen = () => {
     try {
       const success = await unlockWithBiometrics();
       if (success) {
-        navigate('/app/home', { replace: true });
+        // Restore return path or default to home
+        const returnPath = localStorage.getItem('ipg_return_path') || '/app/home';
+        localStorage.removeItem('ipg_return_path');
+        navigate(returnPath, { replace: true });
       } else {
         setError("Biometric authentication failed. Please use PIN instead.");
       }

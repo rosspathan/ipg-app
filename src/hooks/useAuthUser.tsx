@@ -167,6 +167,7 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("cryptoflow_antiphishing");
     localStorage.removeItem("cryptoflow_setup_complete");
     localStorage.removeItem("pending_referral");
+    localStorage.removeItem("ipg_return_path"); // Clear return path on logout
     
     await supabase.auth.signOut();
   };

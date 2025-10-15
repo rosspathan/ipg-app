@@ -5306,6 +5306,7 @@ export type Database = {
           full_name: string | null
           id: string
           kyc_status: string | null
+          onboarding_completed_at: string | null
           phone: string | null
           referral_code: string
           sponsor_id: string | null
@@ -5325,6 +5326,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           kyc_status?: string | null
+          onboarding_completed_at?: string | null
           phone?: string | null
           referral_code: string
           sponsor_id?: string | null
@@ -5344,6 +5346,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           kyc_status?: string | null
+          onboarding_completed_at?: string | null
           phone?: string | null
           referral_code?: string
           sponsor_id?: string | null

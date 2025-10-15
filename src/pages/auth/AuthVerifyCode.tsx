@@ -38,6 +38,10 @@ export default function AuthVerifyCode() {
       if (error) throw error;
 
       if (data.user) {
+        // Capture referral after email verification
+        const { captureReferralAfterEmailVerify } = await import('@/utils/referralCapture');
+        await captureReferralAfterEmailVerify(data.user.id);
+
         toast({
           title: "Email Verified! ✓",
           description: "Your account is now active"

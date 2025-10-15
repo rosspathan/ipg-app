@@ -16,6 +16,7 @@ export type OnboardingStep =
   | 'verify-wallet-email'
   | 'wallet-connect'
   | 'email-input'
+  | 'referral-code'
   | 'email-verification'
   | 'pin-setup'
   | 'biometric-setup'
@@ -123,6 +124,7 @@ export function useOnboarding() {
       'wallet-choice',
       // Wallet creation steps are handled dynamically
       'email-input',
+      'referral-code',
       'email-verification',
       'pin-setup',
       'biometric-setup',
@@ -145,6 +147,7 @@ export function useOnboarding() {
       'support-intro',
       'wallet-choice',
       'email-input',
+      'referral-code',
       'email-verification',
       'pin-setup',
       'biometric-setup',
@@ -180,6 +183,15 @@ export function useOnboarding() {
         lastUnlockTime: Date.now()
       };
       storeSecuritySetup(securitySetup);
+
+      // Mark onboarding as complete in database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ onboarding_completed_at: new Date().toISOString() })
+          .eq('user_id', user.id);
+      }
 
       // Clear onboarding state
       localStorage.removeItem(ONBOARDING_STORAGE_KEY);
