@@ -1,7 +1,8 @@
-import { X, Monitor, Smartphone } from "lucide-react";
+import { X, CheckCircle2, AlertCircle, Calendar, Users, Settings } from "lucide-react";
 import { ProgramModule } from "@/hooks/useProgramRegistry";
-import { CleanCard } from "@/components/admin/clean/CleanCard";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
 interface ProgramPreviewModalProps {
   module: ProgramModule;
@@ -10,92 +11,157 @@ interface ProgramPreviewModalProps {
 
 export function ProgramPreviewModal({ module, onClose }: ProgramPreviewModalProps) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6">
-      <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        <CleanCard padding="lg" className="relative">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-card rounded-xl border w-full max-w-5xl max-h-[90vh] overflow-auto shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 bg-card border-b px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {module.icon && (
+              <img src={module.icon} alt="" className="w-10 h-10 rounded-lg" />
+            )}
             <div>
-              <h2 className="text-lg font-semibold text-[hsl(0_0%_98%)]">
-                Program Preview
-              </h2>
-              <p className="text-sm text-[hsl(220_9%_65%)]">
-                How users will see this program
-              </p>
+              <h2 className="text-xl font-semibold">Program Preview</h2>
+              <p className="text-sm text-muted-foreground">How users will see this program</p>
             </div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="icon"
-                className="border-[hsl(220_13%_14%)]"
-              >
-                <Monitor className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="border-[hsl(220_13%_14%)]"
-              >
-                <Smartphone className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="text-[hsl(220_9%_65%)] hover:text-[hsl(0_0%_98%)]"
-              >
-                <X className="w-5 h-5" />
-              </Button>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="p-8 space-y-8">
+          {/* Hero Section */}
+          <div className="text-center space-y-4">
+            {module.icon && (
+              <img src={module.icon} alt={module.name} className="w-20 h-20 rounded-2xl mx-auto shadow-lg" />
+            )}
+            <div>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <h3 className="text-3xl font-bold">{module.name}</h3>
+                <Badge variant={module.status === 'live' ? 'default' : 'secondary'}>
+                  {module.status}
+                </Badge>
+              </div>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                {module.description}
+              </p>
             </div>
           </div>
 
-          {/* Preview Content */}
-          <div className="bg-[hsl(220_13%_4%)] rounded-lg p-8 border border-[hsl(220_13%_14%)]">
-            <div className="max-w-2xl mx-auto">
-              {/* Program Card Preview */}
-              <div className="bg-[hsl(220_13%_7%)] rounded-xl border border-[hsl(220_13%_14%/0.4)] p-6">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-16 h-16 rounded-lg bg-[hsl(262_100%_65%/0.1)] flex items-center justify-center">
-                    <span className="text-2xl">📦</span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-[hsl(0_0%_98%)] mb-2">
-                      {module.name}
-                    </h3>
-                    <p className="text-sm text-[hsl(220_9%_65%)]">
-                      {module.description || "No description provided"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      module.status === 'live'
-                        ? 'bg-[hsl(142_71%_45%/0.2)] text-[hsl(142_71%_45%)]'
-                        : 'bg-[hsl(220_13%_10%)] text-[hsl(220_9%_46%)]'
-                    }`}>
-                      {module.status}
-                    </div>
-                  </div>
-                </div>
+          {/* Status Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg border bg-card">
+              <div className="flex items-center gap-2 mb-2">
+                {module.featured ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-muted-foreground" />
+                )}
+                <p className="font-medium">Featured</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {module.featured ? 'Yes' : 'No'}
+              </p>
+            </div>
 
-                <div className="flex items-center gap-4 pt-4 border-t border-[hsl(220_13%_14%)]">
-                  <Button className="bg-[hsl(262_100%_65%)] hover:bg-[hsl(262_100%_70%)] text-white">
-                    Participate Now
-                  </Button>
-                  <Button variant="outline" className="border-[hsl(220_13%_14%)]">
-                    Learn More
-                  </Button>
+            <div className="p-4 rounded-lg border bg-card">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-5 h-5 text-primary" />
+                <p className="font-medium">Access</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {module.enabled_regions?.length || 0} regions, {module.enabled_roles?.length || 0} roles
+              </p>
+            </div>
+
+            <div className="p-4 rounded-lg border bg-card">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-5 h-5 text-primary" />
+                <p className="font-medium">Updated</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {module.updated_at ? format(new Date(module.updated_at), "MMM d, yyyy") : 'N/A'}
+              </p>
+            </div>
+          </div>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Configuration */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
+                <h4 className="font-semibold">Configuration</h4>
+              </div>
+              <div className="space-y-2 pl-7">
+                <div>
+                  <p className="text-sm text-muted-foreground">Module Key</p>
+                  <p className="font-mono text-sm">{module.key}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Maintenance Mode</p>
+                  <Badge variant={module.maintenance_mode ? 'destructive' : 'outline'}>
+                    {module.maintenance_mode ? 'Enabled' : 'Disabled'}
+                  </Badge>
                 </div>
               </div>
+            </div>
 
-              {/* Additional Info */}
-              <div className="mt-6 p-4 bg-[hsl(220_13%_10%)] rounded-lg border border-[hsl(220_13%_14%)]">
-                <p className="text-xs text-[hsl(220_9%_65%)] text-center">
-                  This is a preview of how the program card will appear to eligible users
+            {/* Access Control */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                <h4 className="font-semibold">Access Control</h4>
+              </div>
+              <div className="space-y-2 pl-7">
+                <div>
+                  <p className="text-sm text-muted-foreground">Enabled Regions</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {module.enabled_regions?.map(region => (
+                      <Badge key={region} variant="secondary" className="text-xs">
+                        {region}
+                      </Badge>
+                    )) || <span className="text-sm text-muted-foreground">None</span>}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Allowed Roles</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {module.enabled_roles?.map(role => (
+                      <Badge key={role} variant="secondary" className="text-xs">
+                        {role}
+                      </Badge>
+                    )) || <span className="text-sm text-muted-foreground">None</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          {module.description && (
+            <div className="p-6 rounded-lg border bg-muted/30">
+              <h4 className="font-semibold mb-3">About this Program</h4>
+              <div className="prose prose-sm max-w-none">
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {module.description}
                 </p>
               </div>
             </div>
-          </div>
-        </CleanCard>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-card border-t px-6 py-4 flex justify-end">
+          <Button onClick={onClose}>
+            Close Preview
+          </Button>
+        </div>
       </div>
     </div>
   );
