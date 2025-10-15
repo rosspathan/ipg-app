@@ -7,14 +7,13 @@ import { NavigationStateManager } from '@/components/navigation/NavigationGuards
 const AUTH_ROUTE_TITLES: Record<string, string> = {
   '/auth': 'Authentication',
   '/auth/login': 'Sign In',
+  '/auth/check-email': 'Check Your Email',
+  '/auth/verified': 'Email Verified',
   '/auth/register': 'Create Account',
-  '/auth/verify': 'Verify Email',
   '/auth/reset': 'Reset Password',
   '/onboarding': 'Welcome',
-  '/welcome': 'Welcome to IPG',
-  '/security-setup': 'Security Setup',
-  '/verify-email': 'Verify Email',
-  '/email-verified': 'Email Verified'
+  '/onboarding/security': 'Security Setup',
+  '/welcome': 'Welcome to IPG'
 };
 
 export const AuthLayout: React.FC = () => {
@@ -34,12 +33,14 @@ export const AuthLayout: React.FC = () => {
         return 'Sign in to your account';
       case '/auth/register':
         return 'Join the IPG ecosystem';
-      case '/auth/verify':
-        return 'Check your email for verification';
+      case '/auth/check-email':
+        return 'Confirm your email to continue';
+      case '/auth/verified':
+        return 'Your email has been confirmed';
       case '/onboarding':
         return 'Let\'s get you started';
-      case '/security-setup':
-        return 'Secure your account';
+      case '/onboarding/security':
+        return 'Protect your account';
       default:
         return undefined;
     }

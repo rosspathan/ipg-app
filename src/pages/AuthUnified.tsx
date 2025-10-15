@@ -107,23 +107,26 @@ export default function AuthUnified() {
 
     setIsLoading(true);
     try {
-      // Use OTP-based signup instead of password
-      const { error: otpError } = await supabase.auth.signInWithOtp({
+      // Use Supabase's built-in signup with email confirmation
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
+        password,
         options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/verified`
         }
       });
 
-      if (otpError) {
-        setError(otpError.message || "Failed to send verification code");
-      } else {
-        // Navigate to email verification with OTP
-        navigate("/auth/email-verification", { 
+      if (signUpError) {
+        setError(signUpError.message || "Failed to create account");
+      } else if (data.user && !data.session) {
+        // User created but needs email confirmation
+        navigate("/auth/check-email", { 
           state: { email },
           replace: true 
         });
+      } else {
+        // Account created and logged in (email confirmation disabled)
+        navigate("/onboarding/security", { replace: true });
       }
     } catch (err) {
       setError("An unexpected error occurred");

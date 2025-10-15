@@ -76,7 +76,8 @@ import WelcomeScreen1 from "./pages/WelcomeScreen1";
 import WelcomeScreen2 from "./pages/WelcomeScreen2";
 import WelcomeScreen3 from "./pages/WelcomeScreen3";
 import AuthUnified from "./pages/AuthUnified";
-import AuthEmailVerification from "./pages/AuthEmailVerification";
+import AuthCheckEmail from "./pages/auth/AuthCheckEmail";
+import AuthVerified from "./pages/auth/AuthVerified";
 import AuthCallback from "./pages/AuthCallback";
 import AppLockScreen from "./pages/AppLockScreen";
 import LockScreen from "./pages/lock/LockScreen";
@@ -171,8 +172,6 @@ import FinancialReports from "./pages/admin/FinancialReports";
 import FinancialAnalytics from "./pages/admin/FinancialAnalytics";
 
 // Utility Pages
-import EmailVerificationScreen from "./pages/EmailVerificationScreen";
-import EmailVerifiedScreen from "./pages/EmailVerifiedScreen";
 import ResetPasswordScreen from "./pages/ResetPasswordScreen";
 import DebugCatalogScreen from "./pages/DebugCatalogScreen";
 import { SupportScreen } from "@/pages/SupportScreen";
@@ -281,9 +280,14 @@ function App() {
                   <AuthUnified />
                 </AuthProviderUser>
               } />
-              <Route path="/auth/email-verification" element={
+              <Route path="/auth/check-email" element={
                 <AuthProviderUser>
-                  <AuthEmailVerification />
+                  <AuthCheckEmail />
+                </AuthProviderUser>
+              } />
+              <Route path="/auth/verified" element={
+                <AuthProviderUser>
+                  <AuthVerified />
                 </AuthProviderUser>
               } />
               <Route path="/auth/callback" element={<AuthCallback />} />
@@ -448,10 +452,6 @@ function App() {
               <Route path="/admin-legacy/*" element={<RemovedPage admin home="/admin" removed="Legacy admin routes have been removed." />} />
 
               {/* Utility Routes */}
-            <Route path="/email-verification" element={<EmailVerificationScreen />} />
-            <Route path="/email-verified" element={<EmailVerifiedScreen />} />
-            <Route path="/email-verified" element={<EmailVerifiedScreen />} />
-              <Route path="/email-verified" element={<EmailVerifiedScreen />} />
               <Route path="/reset-password" element={<ResetPasswordScreen />} />
               <Route path="/debug/catalog" element={<DebugCatalogScreen />} />
               <Route path="/debug/funding" element={<DebugFunding />} />
