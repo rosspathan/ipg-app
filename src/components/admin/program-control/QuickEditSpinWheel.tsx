@@ -29,43 +29,52 @@ export function QuickEditSpinWheel({ moduleKey, currentConfig }: QuickEditSpinWh
 
   const handleSave = async () => {
     setSaving(true);
+    
+    toast({
+      title: "Saving...",
+      description: "Updating configuration"
+    });
+    
     try {
-      // Get module ID from key
-      const { data: module } = await supabase
+      const { data: module, error: moduleError } = await supabase
         .from('program_modules')
         .select('id')
         .eq('key', moduleKey)
         .maybeSingle();
 
+      if (moduleError) throw moduleError;
       if (!module) {
         throw new Error('Program module not found');
       }
 
-      // Create new config version
       const { error } = await supabase
         .from('program_configs')
-        .insert({
+        .upsert({
           module_id: module.id,
           config_json: {
             ...currentConfig,
             minBet,
             maxBet,
-            freeSpinsPerDay
+            freeSpinsPerDay,
+            updatedAt: new Date().toISOString()
           },
           status: 'published',
           is_current: true
+        }, {
+          onConflict: 'module_id,is_current'
         });
 
       if (error) throw error;
 
       toast({
-        title: "Settings saved",
-        description: "Spin Wheel configuration updated successfully"
+        title: "✓ Settings saved",
+        description: "Spin Wheel configuration updated"
       });
     } catch (error) {
+      console.error('Failed to save Spin Wheel config:', error);
       toast({
         title: "Failed to save",
-        description: "Please try again",
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive"
       });
     } finally {
@@ -75,12 +84,12 @@ export function QuickEditSpinWheel({ moduleKey, currentConfig }: QuickEditSpinWh
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">Minimum Bet (BSK)</Label>
-          <div className="flex items-center gap-1">
-            <DollarSign className="w-3 h-3 text-primary" />
-            <span className="text-sm font-semibold">{minBet}</span>
+          <Label className="text-sm font-medium">Minimum Bet (BSK)</Label>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-lg">
+            <DollarSign className="w-3.5 h-3.5 text-primary" />
+            <span className="text-sm font-bold text-primary">{minBet}</span>
           </div>
         </div>
         <Slider
@@ -90,6 +99,8 @@ export function QuickEditSpinWheel({ moduleKey, currentConfig }: QuickEditSpinWh
           max={100}
           step={1}
           className="w-full"
+          disabled={saving}
+          aria-label="Minimum bet"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>1 BSK</span>
@@ -97,12 +108,12 @@ export function QuickEditSpinWheel({ moduleKey, currentConfig }: QuickEditSpinWh
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">Maximum Bet (BSK)</Label>
-          <div className="flex items-center gap-1">
-            <DollarSign className="w-3 h-3 text-success" />
-            <span className="text-sm font-semibold">{maxBet}</span>
+          <Label className="text-sm font-medium">Maximum Bet (BSK)</Label>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-success/10 rounded-lg">
+            <DollarSign className="w-3.5 h-3.5 text-success" />
+            <span className="text-sm font-bold text-success">{maxBet}</span>
           </div>
         </div>
         <Slider
@@ -112,6 +123,8 @@ export function QuickEditSpinWheel({ moduleKey, currentConfig }: QuickEditSpinWh
           max={10000}
           step={100}
           className="w-full"
+          disabled={saving}
+          aria-label="Maximum bet"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>100 BSK</span>
@@ -119,12 +132,12 @@ export function QuickEditSpinWheel({ moduleKey, currentConfig }: QuickEditSpinWh
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">Free Spins Per Day</Label>
-          <div className="flex items-center gap-1">
-            <Coins className="w-3 h-3 text-warning" />
-            <span className="text-sm font-semibold">{freeSpinsPerDay}</span>
+          <Label className="text-sm font-medium">Free Spins Per Day</Label>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-warning/10 rounded-lg">
+            <Coins className="w-3.5 h-3.5 text-warning" />
+            <span className="text-sm font-bold text-warning">{freeSpinsPerDay}</span>
           </div>
         </div>
         <Slider
@@ -134,6 +147,8 @@ export function QuickEditSpinWheel({ moduleKey, currentConfig }: QuickEditSpinWh
           max={10}
           step={1}
           className="w-full"
+          disabled={saving}
+          aria-label="Free spins per day"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>0 spins</span>
@@ -145,9 +160,9 @@ export function QuickEditSpinWheel({ moduleKey, currentConfig }: QuickEditSpinWh
         onClick={handleSave}
         disabled={saving}
         size="sm"
-        className="w-full"
+        className="w-full min-h-[44px] mt-2"
       >
-        <Save className="w-3.5 h-3.5 mr-1.5" />
+        <Save className="w-4 h-4 mr-2" />
         {saving ? "Saving..." : "Save Changes"}
       </Button>
     </div>

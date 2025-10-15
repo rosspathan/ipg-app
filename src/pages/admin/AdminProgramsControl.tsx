@@ -98,19 +98,19 @@ export default function AdminProgramControl() {
   }
 
   return (
-    <div className={`min-h-screen bg-background ${isMobile ? 'p-4 pb-20' : 'p-4 md:p-6'}`}>
+    <div className="min-h-screen bg-background p-3 pb-20 md:p-6">
       {/* Header */}
-      <div className={isMobile ? 'mb-4' : 'mb-6'}>
-        <h1 className={`font-bold text-foreground mb-1 ${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'}`}>
+      <div className="mb-4 md:mb-6">
+        <h1 className="font-bold text-foreground mb-1 text-lg md:text-2xl lg:text-3xl">
           Control Center
         </h1>
-        <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
+        <p className="text-muted-foreground text-sm md:text-base">
           Manage programs with quick settings
         </p>
       </div>
 
       {/* Overview Stats - Mobile Optimized */}
-      <div className={`grid gap-3 mb-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'} ${isMobile ? 'mb-4' : 'md:mb-6'}`}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-6">
         <MobileStatCard
           title="Total Programs"
           value={modules?.length || 0}
@@ -140,7 +140,7 @@ export default function AdminProgramControl() {
       {/* Program Cards with Quick Edit */}
       <div className="space-y-3">
         <div className="flex items-center justify-between mb-3">
-          <h2 className={`font-bold ${isMobile ? 'text-base' : 'text-lg md:text-xl'}`}>
+          <h2 className="font-bold text-base md:text-lg lg:text-xl">
             Programs
           </h2>
           {!isMobile && (
@@ -148,6 +148,7 @@ export default function AdminProgramControl() {
               onClick={() => navigate('/admin/programs')}
               size="sm"
               variant="outline"
+              className="min-h-[44px]"
             >
               <Plus className="w-4 h-4 mr-1.5" />
               New Program
@@ -156,7 +157,7 @@ export default function AdminProgramControl() {
         </div>
 
         {modules && modules.length > 0 ? (
-          <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {modules.map((program) => {
               const programAnalytics = analytics?.find(a => a.moduleId === program.id);
 
@@ -174,14 +175,15 @@ export default function AdminProgramControl() {
           </div>
         ) : (
           <Card>
-            <CardContent className={isMobile ? 'p-8 text-center' : 'p-12 text-center'}>
-              <Activity className={`text-muted-foreground mx-auto mb-3 ${isMobile ? 'w-8 h-8' : 'w-12 h-12'}`} />
-              <p className={`text-muted-foreground mb-4 ${isMobile ? 'text-sm' : ''}`}>
+            <CardContent className="p-8 md:p-12 text-center">
+              <Activity className="w-10 h-10 md:w-12 md:h-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm md:text-base text-muted-foreground mb-4">
                 No programs found
               </p>
               <Button 
                 onClick={() => navigate('/admin/programs')}
-                size={isMobile ? "sm" : "default"}
+                size="default"
+                className="min-h-[44px]"
               >
                 Create First Program
               </Button>
@@ -195,7 +197,8 @@ export default function AdminProgramControl() {
         <Button
           onClick={() => navigate('/admin/programs')}
           size="lg"
-          className="fixed bottom-20 right-4 rounded-full w-14 h-14 shadow-lg z-50"
+          className="fixed bottom-20 right-4 rounded-full min-w-[56px] min-h-[56px] w-14 h-14 shadow-lg z-50"
+          aria-label="Create new program"
         >
           <Plus className="w-6 h-6" />
         </Button>

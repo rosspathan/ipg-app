@@ -29,43 +29,52 @@ export function QuickEditLuckyDraw({ moduleKey, currentConfig }: QuickEditLuckyD
 
   const handleSave = async () => {
     setSaving(true);
+    
+    toast({
+      title: "Saving...",
+      description: "Updating configuration"
+    });
+    
     try {
-      // Get module ID from key
-      const { data: module } = await supabase
+      const { data: module, error: moduleError } = await supabase
         .from('program_modules')
         .select('id')
         .eq('key', moduleKey)
         .maybeSingle();
 
+      if (moduleError) throw moduleError;
       if (!module) {
         throw new Error('Program module not found');
       }
 
-      // Create new config version
       const { error } = await supabase
         .from('program_configs')
-        .insert({
+        .upsert({
           module_id: module.id,
           config_json: {
             ...currentConfig,
             ticketPrice,
             maxTicketsPerUser,
-            prizes: [firstPrize, Math.floor(firstPrize * 0.3), Math.floor(firstPrize * 0.15)]
+            prizes: [firstPrize, Math.floor(firstPrize * 0.3), Math.floor(firstPrize * 0.15)],
+            updatedAt: new Date().toISOString()
           },
           status: 'published',
           is_current: true
+        }, {
+          onConflict: 'module_id,is_current'
         });
 
       if (error) throw error;
 
       toast({
-        title: "Settings saved",
-        description: "Lucky Draw configuration updated successfully"
+        title: "✓ Settings saved",
+        description: "Lucky Draw configuration updated"
       });
     } catch (error) {
+      console.error('Failed to save Lucky Draw config:', error);
       toast({
         title: "Failed to save",
-        description: "Please try again",
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive"
       });
     } finally {
@@ -75,12 +84,12 @@ export function QuickEditLuckyDraw({ moduleKey, currentConfig }: QuickEditLuckyD
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">Ticket Price (BSK)</Label>
-          <div className="flex items-center gap-1">
-            <Ticket className="w-3 h-3 text-primary" />
-            <span className="text-sm font-semibold">{ticketPrice}</span>
+          <Label className="text-sm font-medium">Ticket Price (BSK)</Label>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-lg">
+            <Ticket className="w-3.5 h-3.5 text-primary" />
+            <span className="text-sm font-bold text-primary">{ticketPrice}</span>
           </div>
         </div>
         <Slider
@@ -90,6 +99,8 @@ export function QuickEditLuckyDraw({ moduleKey, currentConfig }: QuickEditLuckyD
           max={1000}
           step={10}
           className="w-full"
+          disabled={saving}
+          aria-label="Ticket price"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>10 BSK</span>
@@ -97,12 +108,12 @@ export function QuickEditLuckyDraw({ moduleKey, currentConfig }: QuickEditLuckyD
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">First Prize (BSK)</Label>
-          <div className="flex items-center gap-1">
-            <Trophy className="w-3 h-3 text-warning" />
-            <span className="text-sm font-semibold">{firstPrize.toLocaleString()}</span>
+          <Label className="text-sm font-medium">First Prize (BSK)</Label>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-warning/10 rounded-lg">
+            <Trophy className="w-3.5 h-3.5 text-warning" />
+            <span className="text-sm font-bold text-warning">{firstPrize.toLocaleString()}</span>
           </div>
         </div>
         <Input
@@ -112,14 +123,16 @@ export function QuickEditLuckyDraw({ moduleKey, currentConfig }: QuickEditLuckyD
           min={1000}
           max={1000000}
           step={1000}
-          className="h-8 text-sm"
+          className="h-10 text-sm"
+          disabled={saving}
+          aria-label="First prize amount"
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">Max Tickets Per User</Label>
-          <span className="text-sm font-semibold">{maxTicketsPerUser}</span>
+          <Label className="text-sm font-medium">Max Tickets Per User</Label>
+          <span className="text-sm font-bold px-2 py-1 bg-muted/30 rounded-lg">{maxTicketsPerUser}</span>
         </div>
         <Slider
           value={[maxTicketsPerUser]}
@@ -128,6 +141,8 @@ export function QuickEditLuckyDraw({ moduleKey, currentConfig }: QuickEditLuckyD
           max={50}
           step={1}
           className="w-full"
+          disabled={saving}
+          aria-label="Maximum tickets per user"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>1 ticket</span>
@@ -139,9 +154,9 @@ export function QuickEditLuckyDraw({ moduleKey, currentConfig }: QuickEditLuckyD
         onClick={handleSave}
         disabled={saving}
         size="sm"
-        className="w-full"
+        className="w-full min-h-[44px] mt-2"
       >
-        <Save className="w-3.5 h-3.5 mr-1.5" />
+        <Save className="w-4 h-4 mr-2" />
         {saving ? "Saving..." : "Save Changes"}
       </Button>
     </div>
