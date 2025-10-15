@@ -8,6 +8,7 @@ import { useAuthLock } from "@/hooks/useAuthLock";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { hasLocalSecurity } from "@/utils/localSecurityStorage";
+import { supabase } from "@/integrations/supabase/client";
 
 const AppLockScreen = () => {
   const navigate = useNavigate();
@@ -20,6 +21,25 @@ const AppLockScreen = () => {
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [error, setError] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [antiPhishingCode, setAntiPhishingCode] = useState("");
+
+  // Load anti-phishing code
+  useEffect(() => {
+    const loadAntiPhishing = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('security')
+        .select('anti_phishing_code')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (data?.anti_phishing_code) {
+        setAntiPhishingCode(data.anti_phishing_code);
+      }
+    };
+    loadAntiPhishing();
+  }, [user]);
 
   // Check biometric availability and auto-trigger if enabled
   useEffect(() => {
@@ -115,7 +135,7 @@ const AppLockScreen = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+        <CardHeader className="text-center space-y-4">
           <div className="flex justify-center mb-4">
             <div className="relative">
               <Shield className="h-16 w-16 text-primary" />
@@ -131,6 +151,20 @@ const AppLockScreen = () => {
               : "Enter your PIN to unlock the app"
             }
           </CardDescription>
+          
+          {/* Anti-Phishing Code Display */}
+          {antiPhishingCode && (
+            <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <div className="flex items-center gap-2 justify-center">
+                <Shield className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Your Security Code:</span>
+                <span className="text-sm font-mono font-bold text-primary">{antiPhishingCode}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Verify this code matches official communications
+              </p>
+            </div>
+          )}
         </CardHeader>
         
         <CardContent className="space-y-6">
