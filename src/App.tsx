@@ -228,9 +228,6 @@ const ISmartSpinScreen = React.lazy(() => import("@/pages/ISmartSpinScreen"));
 const queryClient = new QueryClient();
 
 function App() {
-  // Initialize security sync hook
-  useSecuritySync();
-  
   return (
     <QueryClientProvider client={queryClient}>
       <Web3Provider>
@@ -238,20 +235,35 @@ function App() {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <AppStateManager />
-            <RouterWrapper>
-              <Routes>
-              {/* Landing & Splash */}
-              <Route path="/" element={<AppInitializer><Navigate to="/onboarding" replace /></AppInitializer>} />
-              <Route path="/splash" element={<SplashScreen />} />
-              <Route path="/download" element={<DownloadPage />} />
-              <Route path="/deeplink/r/:code" element={<DeepLinkResolver />} />
-              <Route path="/welcome" element={<WelcomeScreen />} />
-              <Route path="/welcome-1" element={<WelcomeScreen1 />} />
-              <Route path="/welcome-2" element={<WelcomeScreen2 />} />
-              <Route path="/welcome-3" element={<WelcomeScreen3 />} />
+            <AppContent />
+          </BrowserRouter>
+        </TooltipProvider>
+      </Web3Provider>
+    </QueryClientProvider>
+  );
+}
 
-              {/* Onboarding Flow */}
+// Separate component that uses hooks requiring providers
+function AppContent() {
+  // Initialize security sync hook (now inside providers)
+  useSecuritySync();
+  
+  return (
+    <>
+      <AppStateManager />
+      <RouterWrapper>
+        <Routes>
+          {/* Landing & Splash */}
+          <Route path="/" element={<AppInitializer><Navigate to="/onboarding" replace /></AppInitializer>} />
+          <Route path="/splash" element={<SplashScreen />} />
+          <Route path="/download" element={<DownloadPage />} />
+          <Route path="/deeplink/r/:code" element={<DeepLinkResolver />} />
+          <Route path="/welcome" element={<WelcomeScreen />} />
+          <Route path="/welcome-1" element={<WelcomeScreen1 />} />
+          <Route path="/welcome-2" element={<WelcomeScreen2 />} />
+          <Route path="/welcome-3" element={<WelcomeScreen3 />} />
+
+          {/* Onboarding Flow */}
               <Route path="/onboarding" element={<OnboardingFlow />} />
               <Route path="/onboarding/create-wallet" element={<CreateWalletScreen />} />
               <Route path="/onboarding/import-wallet" element={<ImportWalletScreen />} />
@@ -487,10 +499,7 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </RouterWrapper>
-          </BrowserRouter>
-        </TooltipProvider>
-      </Web3Provider>
-    </QueryClientProvider>
+        </>
   );
 }
 
