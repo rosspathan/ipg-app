@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronLeft, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { ChevronLeft, Eye, EyeOff, CheckCircle, Clipboard, Copy, QrCode, CheckCircle2, Sparkles } from 'lucide-react';
 import { importWallet, validateMnemonic, WalletInfo } from '@/utils/wallet';
 import { useToast } from '@/hooks/use-toast';
 import { Preferences } from '@capacitor/preferences';
@@ -21,14 +21,19 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
   const [mnemonic, setMnemonic] = useState('');
   const [showMnemonic, setShowMnemonic] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
+  const [pasteDetected, setPasteDetected] = useState(false);
   const [validationState, setValidationState] = useState<{
     isValid: boolean;
     error?: string;
   } | null>(null);
   const { toast } = useToast();
 
+  const wordCount = mnemonic.trim().split(/\s+/).filter(w => w.length > 0).length;
+  const words = mnemonic.trim().split(/\s+/).filter(w => w.length > 0);
+
   const handleMnemonicChange = (value: string) => {
     setMnemonic(value);
+    setPasteDetected(false);
     
     // Validate in real-time if there's enough text
     const trimmed = value.trim();
@@ -37,6 +42,31 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
       setValidationState(validation);
     } else {
       setValidationState(null);
+    }
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setMnemonic(text);
+      setPasteDetected(true);
+      handleMnemonicChange(text);
+      
+      toast({
+        title: "Pasted from Clipboard",
+        description: "Please verify your recovery phrase",
+      });
+      
+      // Show security warning
+      setTimeout(() => {
+        setPasteDetected(false);
+      }, 5000);
+    } catch (error) {
+      toast({
+        title: "Paste Failed",
+        description: "Unable to read from clipboard",
+        variant: "destructive"
+      });
     }
   };
 
@@ -199,16 +229,57 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
             <Card className="bg-white/10 backdrop-blur-sm border-white/20">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-white font-semibold">Recovery Phrase</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowMnemonic(!showMnemonic)}
-                    className="text-white/60 hover:bg-white/10"
-                  >
-                    {showMnemonic ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-white font-semibold">Recovery Phrase</h3>
+                    {wordCount > 0 && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          validationState?.isValid
+                            ? 'bg-green-500/20 text-green-400'
+                            : wordCount === 12 || wordCount === 18 || wordCount === 24
+                            ? 'bg-blue-500/20 text-blue-400'
+                            : 'bg-white/10 text-white/60'
+                        }`}
+                      >
+                        {wordCount}/24 words
+                      </motion.span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handlePasteFromClipboard}
+                      className="text-white/60 hover:bg-white/10 h-8 px-2"
+                      title="Paste from clipboard"
+                    >
+                      <Clipboard className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowMnemonic(!showMnemonic)}
+                      className="text-white/60 hover:bg-white/10 h-8 px-2"
+                    >
+                      {showMnemonic ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </Button>
+                  </div>
                 </div>
+
+                {pasteDetected && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg"
+                  >
+                    <p className="text-yellow-200 text-xs flex items-center gap-2">
+                      <span>⚠️</span>
+                      <span>Pasted from clipboard - verify each word carefully</span>
+                    </p>
+                  </motion.div>
+                )}
 
                 <Textarea
                   value={mnemonic}
@@ -218,6 +289,27 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
                     showMnemonic ? '' : 'blur-sm'
                   }`}
                 />
+
+                {/* Word-by-word validation */}
+                {words.length > 0 && showMnemonic && (
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {words.map((word, index) => (
+                      <motion.span
+                        key={index}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.02 }}
+                        className={`text-xs px-2 py-1 rounded ${
+                          validationState?.isValid
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-white/10 text-white/60'
+                        }`}
+                      >
+                        {word}
+                      </motion.span>
+                    ))}
+                  </div>
+                )}
 
                 {/* Real-time validation */}
                 {validationState && (
@@ -229,16 +321,19 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
                     }`}
                   >
                     {validationState.isValid ? (
-                      <CheckCircle className="w-4 h-4" />
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span className="flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          Valid {wordCount}-word recovery phrase
+                        </span>
+                      </>
                     ) : (
-                      <span className="w-4 h-4 flex items-center justify-center text-xs">❌</span>
+                      <>
+                        <span className="w-4 h-4 flex items-center justify-center text-xs">❌</span>
+                        <span>{validationState.error}</span>
+                      </>
                     )}
-                    <span>
-                      {validationState.isValid 
-                        ? `Valid ${mnemonic.trim().split(/\s+/).length}-word recovery phrase` 
-                        : validationState.error
-                      }
-                    </span>
                   </motion.div>
                 )}
               </div>

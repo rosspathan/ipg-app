@@ -16,9 +16,10 @@ import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
-import { useDisplayName } from "@/hooks/useDisplayName"
-import { supabase } from "@/integrations/supabase/client"
-import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms"
+import { useDisplayName } from "@/hooks/useDisplayName";
+import { supabase } from "@/integrations/supabase/client";
+import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms";
+import { useUserBSKBalance } from "@/hooks/useUserBSKBalance";
 /**
  * HomePageRebuilt - World-class mobile-first home screen
  * DO NOT MODIFY THE FOOTER - DockNav remains untouched
@@ -29,6 +30,9 @@ export function HomePageRebuilt() {
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const displayName = useDisplayName()
   const { programs: allPrograms } = useActivePrograms()
+  const { balance, loading: balanceLoading } = useUserBSKBalance()
+
+  const BSK_TO_INR = 1; // 1 BSK = 1 INR
 
   React.useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -120,9 +124,25 @@ export function HomePageRebuilt() {
         <KPICardUnified 
           onCardPress={handleKPIPress}
           data={[
-            { label: "Portfolio", value: "₹0", subValue: "+0%", trend: "up", type: "portfolio" },
-            { label: "24h Change", value: "+0%", subValue: "+₹0", trend: "up", type: "change" },
-            { label: "User", value: displayName, type: "status" }
+            { 
+              label: "Portfolio", 
+              value: balanceLoading ? "..." : `₹${(balance.total * BSK_TO_INR).toFixed(2)}`,
+              subValue: balanceLoading ? "" : `${balance.total.toFixed(2)} BSK`,
+              trend: "up", 
+              type: "portfolio" 
+            },
+            { 
+              label: "Today's Earnings", 
+              value: balanceLoading ? "..." : `+₹${(balance.todayEarned * BSK_TO_INR).toFixed(2)}`,
+              subValue: balanceLoading ? "" : `+${balance.todayEarned.toFixed(2)} BSK`,
+              trend: balance.todayEarned > 0 ? "up" : "neutral",
+              type: "change" 
+            },
+            { 
+              label: "User", 
+              value: displayName, 
+              type: "status" 
+            }
           ]}
         />
 
@@ -130,9 +150,13 @@ export function HomePageRebuilt() {
         <BalanceDuoGrid>
           <BskCardCompact
             variant="withdrawable"
-            balance={0}
-            fiatValue={0}
-            bonusMetrics={{ today: 0, week: 0, lifetime: 0 }}
+            balance={balanceLoading ? 0 : balance.withdrawable}
+            fiatValue={balanceLoading ? 0 : balance.withdrawable * BSK_TO_INR}
+            bonusMetrics={{ 
+              today: balanceLoading ? 0 : balance.todayEarned, 
+              week: balanceLoading ? 0 : balance.weekEarned, 
+              lifetime: balanceLoading ? 0 : balance.earnedWithdrawable 
+            }}
             onWithdraw={() => navigate("/app/programs/bsk-withdraw")}
             onTransfer={() => navigate("/app/programs/bsk-transfer")}
             onHistory={() => navigate("/app/wallet/history")}
@@ -141,8 +165,8 @@ export function HomePageRebuilt() {
           
           <BskCardCompact
             variant="holding"
-            balance={0}
-            fiatValue={0}
+            balance={balanceLoading ? 0 : balance.holding}
+            fiatValue={balanceLoading ? 0 : balance.holding * BSK_TO_INR}
             onViewSchedule={() => setShowRewardsBreakdown(true)}
           />
         </BalanceDuoGrid>
