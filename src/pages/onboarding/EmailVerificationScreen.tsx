@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, Mail, RefreshCw, CheckCircle, Link as LinkIcon, Gift } from 'lucide-react';
+import { ChevronLeft, Mail, RefreshCw, CheckCircle, Link as LinkIcon, Gift, AlertCircle } from 'lucide-react';
+import { OTPInput } from '@/components/auth/OTPInput';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { storeEvmAddress } from '@/lib/wallet/evmAddress';
@@ -45,7 +46,8 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   const [code, setCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [canResend, setCanResend] = useState(false);
-  const [resendCountdown, setResendCountdown] = useState(60); // Resend cooldown 60s
+  const [resendCountdown, setResendCountdown] = useState(60);
+  const [codeError, setCodeError] = useState(false);
   const [showMagicLink, setShowMagicLink] = useState(false);
   const [referralCode, setReferralCode] = useState('');
   const [isValidatingReferral, setIsValidatingReferral] = useState(false);
@@ -323,13 +325,12 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   };
 
   const handleCodeChange = (value: string) => {
-    // Only allow digits and limit to 6 characters
-    const cleanValue = value.replace(/\D/g, '').slice(0, 6);
-    setCode(cleanValue);
+    setCode(value);
+    setCodeError(false);
     
     // Auto-verify when 6 digits are entered
-    if (cleanValue.length === 6) {
-      setTimeout(() => handleVerifyCode(), 500);
+    if (value.length === 6) {
+      setTimeout(() => handleVerifyCode(), 300);
     }
   };
 
@@ -595,121 +596,130 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
               transition={{ duration: 0.6, delay: 0.6 }}
             >
               <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                <div className="p-6 space-y-4">
-                  <div>
-                    <label className="text-white/90 text-sm font-medium block mb-2">
-                      Verification Code
+                <div className="p-6 space-y-6">
+                  <div className="text-center">
+                    <label className="text-white/90 text-sm font-medium block mb-4">
+                      Enter Verification Code
                     </label>
-                    <Input
-                      ref={inputRef}
-                      data-testid="email-otp-input"
-                      type="text"
-                      inputMode="numeric"
+                    
+                    <OTPInput
                       value={code}
-                      onChange={(e) => handleCodeChange(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      onPaste={(e) => {
-                        e.preventDefault();
-                        const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-                        handleCodeChange(paste);
-                      }}
-                      placeholder="000000"
-                      className="bg-black/30 border-white/30 text-white placeholder:text-white/50 focus:border-green-400 text-center text-2xl font-mono tracking-widest"
+                      onChange={handleCodeChange}
                       disabled={isVerifying}
-                      maxLength={6}
+                      error={codeError}
+                      length={6}
+                      autoFocus
                     />
                     
-                    {/* Visual progress indicators */}
-                    <div className="flex justify-center mt-3 space-x-2">
-                      {[...Array(6)].map((_, index) => (
-                        <div
-                          key={index}
-                          className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                            index < code.length 
-                              ? 'bg-green-400 scale-110' 
-                              : 'bg-white/30'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <Button
-                    data-testid="email-otp-submit"
-                    onClick={handleVerifyCode}
-                    disabled={isVerifying || code.length !== 6}
-                    className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 font-semibold py-3 rounded-xl"
-                  >
-                    {isVerifying ? (
-                      <>
+                    {isVerifying && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="mt-4 flex items-center justify-center gap-2 text-sm text-white/60"
+                      >
                         <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-2"
+                          className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
                         />
                         Verifying...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-5 h-5 mr-2" />
-                        Verify Code
-                      </>
+                      </motion.div>
                     )}
-                  </Button>
+                  </div>
                 </div>
               </Card>
             </motion.div>
 
-            {/* Resend code */}
+            {/* Resend code with improved UI */}
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-center space-y-3"
             >
-              {canResend ? (
-                <Button
-                  data-testid="email-otp-resend"
-                  variant="outline"
-                  onClick={() => handleResendCode()}
-                  className="border-white/30 text-white hover:bg-white/20"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Resend Code
-                </Button>
-              ) : (
-                <p className="text-white/60 text-sm">
-                  Resend code in {Math.floor(resendCountdown / 60)}:{String(resendCountdown % 60).padStart(2, '0')}
-                </p>
-              )}
-
-              {showMagicLink && (
-                <Button
-                  data-testid="email-otp-fallback-magic"
-                  variant="outline"
-                  onClick={handleMagicLink}
-                  className="border-amber-400/50 text-amber-300 hover:bg-amber-400/20"
-                >
-                  <LinkIcon className="w-4 h-4 mr-2" />
-                  Send Magic Link Instead
-                </Button>
-              )}
+              <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+                <div className="p-4 space-y-3">
+                  <div className="text-center">
+                    {canResend ? (
+                      <div className="space-y-2">
+                        <Button
+                          data-testid="email-otp-resend"
+                          variant="ghost"
+                          onClick={() => handleResendCode()}
+                          className="w-full border-white/30 text-white hover:bg-white/20"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Resend Verification Code
+                        </Button>
+                        <p className="text-white/50 text-xs">Didn't receive it? Send a new code</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="relative w-10 h-10">
+                            <svg className="transform -rotate-90 w-10 h-10">
+                              <circle
+                                cx="20"
+                                cy="20"
+                                r="16"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                fill="none"
+                                className="text-white/10"
+                              />
+                              <circle
+                                cx="20"
+                                cy="20"
+                                r="16"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                fill="none"
+                                strokeDasharray={`${2 * Math.PI * 16}`}
+                                strokeDashoffset={`${2 * Math.PI * 16 * (1 - resendCountdown / 60)}`}
+                                className="text-green-400 transition-all duration-1000"
+                              />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center text-xs text-white font-bold">
+                              {resendCountdown}
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-white/60 text-sm">
+                          Code expires in {Math.floor(resendCountdown / 60)}:{String(resendCountdown % 60).padStart(2, '0')}
+                        </p>
+                        <p className="text-white/40 text-xs">
+                          New code available in {resendCountdown}s
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Help section */}
+                  <div className="pt-3 border-t border-white/10">
+                    <details className="group">
+                      <summary className="flex items-center justify-center gap-2 text-white/60 text-sm cursor-pointer hover:text-white/80 transition-colors">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>Didn't receive the code?</span>
+                      </summary>
+                      <div className="mt-3 space-y-2 text-xs text-white/50">
+                        <p>• Check your spam/junk folder</p>
+                        <p>• Make sure {maskedEmail} is correct</p>
+                        <p>• Wait {resendCountdown}s to request a new code</p>
+                      </div>
+                    </details>
+                  </div>
+                </div>
+              </Card>
             </motion.div>
 
             {/* Help text */}
-            <motion.div
+            <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className="text-center space-y-2"
+              className="text-center text-white/40 text-xs"
             >
-              <p className="text-white/50 text-xs">
-                Code expires in 10 minutes
-              </p>
-              <p className="text-white/50 text-xs">
-                Check your spam folder if you don't see the email
-              </p>
-            </motion.div>
+              Email verification code • Expires in 10 minutes
+            </motion.p>
           </motion.div>
         </div>
       </div>

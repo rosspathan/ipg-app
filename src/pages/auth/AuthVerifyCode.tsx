@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, CheckCircle, RefreshCw, Loader2 } from "lucide-react";
+import { Mail, CheckCircle, RefreshCw, Loader2, AlertCircle } from "lucide-react";
+import { OTPInput } from "@/components/auth/OTPInput";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper";
@@ -21,6 +23,7 @@ export default function AuthVerifyCode() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [otpError, setOtpError] = useState(false);
 
   const email = location.state?.email || "";
 
@@ -56,7 +59,9 @@ export default function AuthVerifyCode() {
         description: error.message || "Invalid or expired code",
         variant: "destructive"
       });
-      setOtp(""); // Clear OTP on error
+      setOtp("");
+      setOtpError(true);
+      setTimeout(() => setOtpError(false), 2000);
     } finally {
       setIsVerifying(false);
     }
@@ -64,7 +69,7 @@ export default function AuthVerifyCode() {
 
   const handleOtpChange = (value: string) => {
     setOtp(value);
-    // Auto-submit when 6 digits entered
+    setOtpError(false);
     if (value.length === 6) {
       handleVerifyOtp(value);
     }
@@ -132,35 +137,46 @@ export default function AuthVerifyCode() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <div className="flex justify-center">
-              <InputOTP
-                maxLength={6}
+            <div className="space-y-4">
+              <div className="text-center text-sm text-muted-foreground mb-2">
+                Enter the 6-digit code
+              </div>
+              
+              <OTPInput
                 value={otp}
                 onChange={handleOtpChange}
                 disabled={isVerifying}
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
+                error={otpError}
+                length={6}
+                autoFocus
+              />
             </div>
 
             {isVerifying && (
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
+              >
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Verifying...
-              </div>
+              </motion.div>
             )}
 
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground text-center">
-                Don't see the code? Check your spam folder.
-              </p>
+            <div className="space-y-3 pt-2">
+              <div className="pt-3 border-t border-border/50">
+                <details className="group">
+                  <summary className="flex items-center justify-center gap-2 text-muted-foreground text-sm cursor-pointer hover:text-foreground transition-colors">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Didn't receive the code?</span>
+                  </summary>
+                  <div className="mt-3 space-y-2 text-xs text-muted-foreground px-4">
+                    <p>• Check your spam/junk folder</p>
+                    <p>• Verify the email address is correct</p>
+                    <p>• Wait for the timer to request a new code</p>
+                  </div>
+                </details>
+              </div>
 
               <Button
                 variant="outline"
@@ -174,7 +190,33 @@ export default function AuthVerifyCode() {
                     Resending...
                   </>
                 ) : resendCooldown > 0 ? (
-                  <>Resend Code ({resendCooldown}s)</>
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-4 h-4">
+                      <svg className="transform -rotate-90 w-4 h-4">
+                        <circle
+                          cx="8"
+                          cy="8"
+                          r="6"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          fill="none"
+                          className="text-muted"
+                        />
+                        <circle
+                          cx="8"
+                          cy="8"
+                          r="6"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          fill="none"
+                          strokeDasharray={`${2 * Math.PI * 6}`}
+                          strokeDashoffset={`${2 * Math.PI * 6 * (1 - resendCooldown / 30)}`}
+                          className="text-primary transition-all duration-1000"
+                        />
+                      </svg>
+                    </div>
+                    Resend Code ({resendCooldown}s)
+                  </div>
                 ) : (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4" />
@@ -188,7 +230,7 @@ export default function AuthVerifyCode() {
               <Alert className="border-primary/30 bg-primary/5">
                 <CheckCircle className="h-4 w-4 text-primary" />
                 <AlertDescription className="text-xs">
-                  Code expires in 1 hour. Paste support enabled.
+                  Code expires in 1 hour • Paste support enabled
                 </AlertDescription>
               </Alert>
             </div>
