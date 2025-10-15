@@ -42,6 +42,9 @@ const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNo
 const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
 const AdminProgramEditorClean = React.lazy(() => import("./pages/admin/AdminProgramEditorClean"));
 const AdminProgramsControl = React.lazy(() => import("./pages/admin/AdminProgramsControl"));
+const AdMiningControlPanel = React.lazy(() => import("./pages/admin/program-controls/AdMiningControlPanel"));
+const LuckyDrawControlPanel = React.lazy(() => import("./pages/admin/program-controls/LuckyDrawControlPanel"));
+const SpinWheelControlPanel = React.lazy(() => import("./pages/admin/program-controls/SpinWheelControlPanel"));
 const AdminProgramAnalytics = React.lazy(() => import("./pages/admin/AdminProgramAnalytics"));
 const ProgramControlCenter = React.lazy(() => import("./pages/admin/ProgramControlCenter"));
 const ProgramTemplates = React.lazy(() => import("./pages/admin/ProgramTemplates"));
@@ -390,6 +393,9 @@ function App() {
                 <Route path="programs/editor/new" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
                 <Route path="programs/editor/:id" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
                 <Route path="programs/control" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsControl /></React.Suspense>} />
+                <Route path="programs/control/ad-mining/:moduleId?" element={<React.Suspense fallback={<div>Loading...</div>}><AdMiningControlPanel /></React.Suspense>} />
+                <Route path="programs/control/lucky-draw/:moduleId?" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawControlPanel /></React.Suspense>} />
+                <Route path="programs/control/spin-wheel/:moduleId?" element={<React.Suspense fallback={<div>Loading...</div>}><SpinWheelControlPanel /></React.Suspense>} />
                 
                 {/* Gamification & Programs */}
                 <Route path="spin" element={<AdminSpinNova />} />

@@ -115,7 +115,16 @@ export function MobileProgramCard({
             )}
           </Button>
           <Button
-            onClick={() => navigate(`/admin/programs/editor/${program.id}`)}
+            onClick={() => {
+              const controlPath = program.name === 'Ad Mining' 
+                ? '/admin/programs/control/ad-mining'
+                : program.name === 'Lucky Draw'
+                ? '/admin/programs/control/lucky-draw'
+                : program.name === 'iSmart Spin'
+                ? '/admin/programs/control/spin-wheel'
+                : `/admin/programs/editor/${program.id}`;
+              navigate(controlPath);
+            }}
             size="sm"
             variant="outline"
           >
