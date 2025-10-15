@@ -59,7 +59,7 @@ import AdminBSKLoansNova from "./pages/admin/AdminBSKLoansNova";
 import AdminManualPurchasesScreen from "./pages/AdminManualPurchasesScreen";
 import ManualBSKPurchaseScreen from "./pages/ManualBSKPurchaseScreen";
 import AdminCryptoConversionsScreen from "./pages/AdminCryptoConversionsScreen";
-import AdminAnnouncementsScreen from "./pages/AdminAnnouncementsScreen";
+const AdminAnnouncementsManager = React.lazy(() => import("./pages/admin/AdminAnnouncementsManager"));
 import BSKTransferScreen from "./pages/BSKTransferScreen";
 import AdminKYCReview from "./pages/AdminKYCReview";
 const KYCReviewNew = React.lazy(() => import("./pages/admin/KYCReviewNew"));
@@ -413,7 +413,7 @@ function AppContent() {
                 <Route path="bsk-manual-purchases" element={<AdminManualPurchasesScreen />} />
                 <Route path="crypto-conversions" element={<AdminCryptoConversionsScreen />} />
                 <Route path="bsk-withdrawals" element={<AdminBSKWithdrawalsScreen />} />
-                <Route path="announcements" element={<AdminAnnouncementsScreen />} />
+                <Route path="announcements" element={<React.Suspense fallback={<div>Loading...</div>}><AdminAnnouncementsManager /></React.Suspense>} />
                 
                 {/* Programs */}
                 <Route path="programs" element={<AdminProgramsClean />} />

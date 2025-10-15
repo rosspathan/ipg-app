@@ -6,6 +6,7 @@ import { CyberCard, CyberCardContent, CyberCardHeader, CyberCardTitle } from "@/
 import { CyberHeader } from "@/components/ui/cyber-header";
 import BalanceDisplay from "@/components/BalanceDisplay";
 import { UnifiedTransactionFeed } from "@/components/UnifiedTransactionFeed";
+import { AnnouncementTicker } from "@/components/AnnouncementTicker";
 import QuickActionGrid from "@/components/QuickActionGrid";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { BSKBalanceCard } from "@/components/BSKBalanceCard";
@@ -133,6 +134,9 @@ const AppHomeScreen = () => {
 
   return (
     <div className="min-h-screen w-full animate-slide-in-right">
+      {/* Announcement Ticker at Top */}
+      <AnnouncementTicker />
+
       {/* Content */}
       <div>
         {/* Cyber Header with KPIs */}
