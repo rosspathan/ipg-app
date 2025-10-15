@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CleanCard } from "@/components/admin/clean/CleanCard";
-import { Upload, X } from "lucide-react";
-import { useRef } from "react";
+import { Upload, X, AlertCircle } from "lucide-react";
+import { useRef, useState } from "react";
+import { programOverviewSchema } from "@/lib/validations/programSchema";
+import { z } from "zod";
 
 interface OverviewTabProps {
   module?: ProgramModule;
@@ -17,6 +19,7 @@ export function OverviewTab({ module, onChange }: OverviewTabProps) {
   const { uploadAsset, uploading } = useProgramAssets(module?.id);
   const iconInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (!module) {
     return <div className="text-muted-foreground">No module data available</div>;
@@ -43,12 +46,35 @@ export function OverviewTab({ module, onChange }: OverviewTabProps) {
     }
   };
 
+  const validateField = (field: string, value: any) => {
+    try {
+      const schema = programOverviewSchema.pick({ [field]: true } as any);
+      schema.parse({ [field]: value });
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setErrors(prev => ({ ...prev, [field]: error.errors[0].message }));
+      }
+      return false;
+    }
+  };
+
+  const handleFieldChange = (field: string, value: any) => {
+    onChange({ [field]: value });
+    setTimeout(() => validateField(field, value), 300);
+  };
+
   const toggleRegion = (region: string) => {
     const current = module.enabled_regions || [];
     const updated = current.includes(region)
       ? current.filter(r => r !== region)
       : [...current, region];
-    onChange({ enabled_regions: updated });
+    handleFieldChange('enabled_regions', updated);
   };
 
   const toggleRole = (role: string) => {
@@ -56,7 +82,7 @@ export function OverviewTab({ module, onChange }: OverviewTabProps) {
     const updated = current.includes(role)
       ? current.filter(r => r !== role)
       : [...current, role];
-    onChange({ enabled_roles: updated });
+    handleFieldChange('enabled_roles', updated);
   };
 
   return (
@@ -69,9 +95,16 @@ export function OverviewTab({ module, onChange }: OverviewTabProps) {
           </Label>
           <Input
             value={module.name}
-            onChange={(e) => onChange({ name: e.target.value })}
+            onChange={(e) => handleFieldChange('name', e.target.value)}
             placeholder="Enter program name"
+            className={errors.name ? "border-destructive" : ""}
           />
+          {errors.name && (
+            <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.name}
+            </div>
+          )}
         </div>
 
         <div>
@@ -80,13 +113,20 @@ export function OverviewTab({ module, onChange }: OverviewTabProps) {
           </Label>
           <Input
             value={module.key}
-            onChange={(e) => onChange({ key: e.target.value })}
+            onChange={(e) => handleFieldChange('key', e.target.value)}
             placeholder="program-key-slug"
-            className="font-mono"
+            className={`font-mono ${errors.key ? "border-destructive" : ""}`}
           />
-          <p className="text-xs text-muted-foreground mt-1">
-            Unique identifier for this program
-          </p>
+          {errors.key ? (
+            <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.key}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-1">
+              Unique identifier for this program
+            </p>
+          )}
         </div>
 
         <div>
@@ -95,10 +135,16 @@ export function OverviewTab({ module, onChange }: OverviewTabProps) {
           </Label>
           <Textarea
             value={module.description || ""}
-            onChange={(e) => onChange({ description: e.target.value })}
+            onChange={(e) => handleFieldChange('description', e.target.value)}
             placeholder="Describe what this program does..."
-            className="min-h-[100px]"
+            className={`min-h-[100px] ${errors.description ? "border-destructive" : ""}`}
           />
+          {errors.description && (
+            <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.description}
+            </div>
+          )}
         </div>
       </div>
 
@@ -225,6 +271,12 @@ export function OverviewTab({ module, onChange }: OverviewTabProps) {
                 );
               })}
             </div>
+            {errors.enabled_regions && (
+              <div className="flex items-center gap-2 text-sm text-destructive mt-2">
+                <AlertCircle className="h-4 w-4" />
+                {errors.enabled_regions}
+              </div>
+            )}
           </div>
 
           <div>
@@ -249,6 +301,12 @@ export function OverviewTab({ module, onChange }: OverviewTabProps) {
                 );
               })}
             </div>
+            {errors.enabled_roles && (
+              <div className="flex items-center gap-2 text-sm text-destructive mt-2">
+                <AlertCircle className="h-4 w-4" />
+                {errors.enabled_roles}
+              </div>
+            )}
           </div>
         </div>
       </CleanCard>

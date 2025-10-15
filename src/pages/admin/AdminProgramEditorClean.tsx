@@ -71,14 +71,42 @@ export default function AdminProgramEditorClean() {
   const handlePublish = async () => {
     if (!localModule || !id) return;
     
+    // Validate before publishing
+    if (!localModule.name || localModule.name.length < 3) {
+      toast({ 
+        title: "Validation Error", 
+        description: "Program name must be at least 3 characters",
+        variant: "destructive" 
+      });
+      setActiveTab("overview");
+      return;
+    }
+    
+    if (!localModule.enabled_regions || localModule.enabled_regions.length === 0) {
+      toast({ 
+        title: "Validation Error", 
+        description: "Select at least one region",
+        variant: "destructive" 
+      });
+      setActiveTab("overview");
+      return;
+    }
+    
     try {
       await updateModule({ 
         id, 
         updates: { ...localModule, status: 'live' } 
       });
-      toast({ title: "Program published successfully" });
-    } catch (error) {
-      toast({ title: "Failed to publish program", variant: "destructive" });
+      toast({ 
+        title: "Program published successfully",
+        description: "Your program is now live!"
+      });
+    } catch (error: any) {
+      toast({ 
+        title: "Failed to publish program", 
+        description: error.message || "Please try again",
+        variant: "destructive" 
+      });
     }
   };
 
