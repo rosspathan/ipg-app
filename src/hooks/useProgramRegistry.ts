@@ -21,12 +21,13 @@ export interface ProgramModule {
   seasonal?: boolean;
   maintenance_mode?: boolean;
   min_app_version?: string;
-  tags?: any[];
+  tags?: string[];
+  media_gallery?: string[];
   seo_metadata?: any;
   localized_content?: any;
   description?: string;
   terms_conditions?: string;
-  faqs?: any[];
+  faqs?: { question: string; answer: string }[];
 }
 
 export interface ProgramConfig {
