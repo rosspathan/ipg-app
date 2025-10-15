@@ -77,7 +77,7 @@ import WelcomeScreen2 from "./pages/WelcomeScreen2";
 import WelcomeScreen3 from "./pages/WelcomeScreen3";
 import AuthUnified from "./pages/AuthUnified";
 import AuthCheckEmail from "./pages/auth/AuthCheckEmail";
-import AuthVerified from "./pages/auth/AuthVerified";
+import AuthVerifyCode from "./pages/auth/AuthVerifyCode";
 import AuthCallback from "./pages/AuthCallback";
 import AppLockScreen from "./pages/AppLockScreen";
 import LockScreen from "./pages/lock/LockScreen";
@@ -285,9 +285,9 @@ function App() {
                   <AuthCheckEmail />
                 </AuthProviderUser>
               } />
-              <Route path="/auth/verified" element={
+              <Route path="/auth/verify-code" element={
                 <AuthProviderUser>
-                  <AuthVerified />
+                  <AuthVerifyCode />
                 </AuthProviderUser>
               } />
               <Route path="/auth/callback" element={<AuthCallback />} />

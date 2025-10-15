@@ -20,7 +20,7 @@ export default function AuthCheckEmail() {
 
   const email = location.state?.email || "";
 
-  const handleResendEmail = async () => {
+  const handleResendCode = async () => {
     if (!email) {
       toast({
         title: "Error",
@@ -32,24 +32,23 @@ export default function AuthCheckEmail() {
 
     setIsResending(true);
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
+      const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/verified`
+          shouldCreateUser: false
         }
       });
 
       if (error) throw error;
 
       toast({
-        title: "Email Resent",
-        description: "Check your inbox for the confirmation link"
+        title: "Code Resent",
+        description: "Check your inbox for the new verification code"
       });
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to resend email",
+        description: error.message || "Failed to resend code",
         variant: "destructive"
       });
     } finally {
@@ -71,7 +70,7 @@ export default function AuthCheckEmail() {
             </div>
             <CardTitle className="text-2xl">Check Your Email</CardTitle>
             <CardDescription>
-              We sent a confirmation link to
+              We sent a 6-digit verification code to
               <br />
               <span className="font-semibold text-foreground">{email}</span>
             </CardDescription>
@@ -81,19 +80,26 @@ export default function AuthCheckEmail() {
             <Alert className="border-primary/30 bg-primary/5">
               <CheckCircle className="h-4 w-4 text-primary" />
               <AlertDescription>
-                Click the link in your email to verify your account and continue to security setup.
+                Enter the code on the next screen to verify your account.
               </AlertDescription>
             </Alert>
 
+            <Button
+              className="w-full"
+              onClick={() => navigate("/auth/verify-code", { state: { email }, replace: true })}
+            >
+              I Have My Code →
+            </Button>
+
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground text-center">
-                Don't see the email? Check your spam folder.
+                Don't see the code? Check your spam folder.
               </p>
 
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={handleResendEmail}
+                onClick={handleResendCode}
                 disabled={isResending}
               >
                 {isResending ? (
@@ -104,7 +110,7 @@ export default function AuthCheckEmail() {
                 ) : (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4" />
-                    Resend Confirmation Email
+                    Resend Verification Code
                   </>
                 )}
               </Button>
@@ -112,7 +118,7 @@ export default function AuthCheckEmail() {
 
             <div className="pt-4 border-t border-border/50">
               <p className="text-xs text-muted-foreground text-center">
-                The confirmation link expires in 24 hours.
+                The verification code expires in 1 hour.
               </p>
             </div>
           </CardContent>

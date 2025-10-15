@@ -107,26 +107,25 @@ export default function AuthUnified() {
 
     setIsLoading(true);
     try {
-      // Use Supabase's built-in signup with email confirmation
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      // Use OTP flow for email verification
+      const { data, error: signUpError } = await supabase.auth.signInWithOtp({
         email,
-        password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/verified`
+          shouldCreateUser: true,
+          data: {
+            password // Store password for future signInWithPassword
+          }
         }
       });
 
       if (signUpError) {
         setError(signUpError.message || "Failed to create account");
-      } else if (data.user && !data.session) {
-        // User created but needs email confirmation
-        navigate("/auth/check-email", { 
+      } else {
+        // Navigate to OTP verification screen
+        navigate("/auth/verify-code", { 
           state: { email },
           replace: true 
         });
-      } else {
-        // Account created and logged in (email confirmation disabled)
-        navigate("/onboarding/security", { replace: true });
       }
     } catch (err) {
       setError("An unexpected error occurred");

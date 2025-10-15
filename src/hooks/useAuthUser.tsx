@@ -69,24 +69,19 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/app/home`;
-    
-    const { data, error } = await supabase.auth.signUp({
+    // Use OTP flow for email verification
+    const { data, error } = await supabase.auth.signInWithOtp({
       email,
-      password,
       options: {
-        emailRedirectTo: redirectUrl,
-        // Skip email confirmation for faster onboarding
+        shouldCreateUser: true,
         data: {
-          email_confirmed: true
+          password // Store password for future signInWithPassword
         }
       }
     });
     
-    // If signup successful and user is created, proceed to onboarding
-    if (!error && data.user) {
-      // User is auto-confirmed and can proceed
-      console.log('✅ User signed up and auto-confirmed');
+    if (!error) {
+      console.log('✅ OTP sent to:', email);
     }
     
     return { error };

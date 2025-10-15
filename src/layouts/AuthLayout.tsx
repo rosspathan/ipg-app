@@ -8,7 +8,7 @@ const AUTH_ROUTE_TITLES: Record<string, string> = {
   '/auth': 'Authentication',
   '/auth/login': 'Sign In',
   '/auth/check-email': 'Check Your Email',
-  '/auth/verified': 'Email Verified',
+  '/auth/verify-code': 'Verify Email',
   '/auth/register': 'Create Account',
   '/auth/reset': 'Reset Password',
   '/onboarding': 'Welcome',
@@ -34,9 +34,9 @@ export const AuthLayout: React.FC = () => {
       case '/auth/register':
         return 'Join the IPG ecosystem';
       case '/auth/check-email':
-        return 'Confirm your email to continue';
-      case '/auth/verified':
-        return 'Your email has been confirmed';
+        return 'Check your inbox for verification code';
+      case '/auth/verify-code':
+        return 'Enter the 6-digit code from your email';
       case '/onboarding':
         return 'Let\'s get you started';
       case '/onboarding/security':
