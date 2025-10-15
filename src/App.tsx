@@ -94,6 +94,8 @@ import RecoveryVerifyScreen from "./pages/RecoveryVerifyScreen";
 
 // User App Pages
 import AppHomeScreen from "./pages/AppHomeScreen";
+import ProgramsListPage from "./pages/ProgramsListPage";
+import ProgramDetailPage from "./pages/ProgramDetailPage";
 import WalletHomeScreen from "./pages/WalletHomeScreen";
 import DepositScreen from "./pages/DepositScreen";
 import WithdrawScreen from "./pages/WithdrawScreen";
@@ -307,7 +309,8 @@ function App() {
               <Route path="wallet/send" element={<SendScreen />} />
               <Route path="wallet/transfer" element={<TransferScreen />} />
               <Route path="wallet/history" element={<HistoryScreen />} />
-              <Route path="programs" element={<ProgramsScreen />} />
+              <Route path="programs" element={<ProgramsListPage />} />
+              <Route path="programs/:programKey" element={<ProgramDetailPage />} />
               <Route path="trade" element={<TradingOverview />} />
               <Route path="trade/:symbol" element={<TradingPairPage />} />
               <Route path="trading" element={<Navigate to="/app/trade" replace />} />
