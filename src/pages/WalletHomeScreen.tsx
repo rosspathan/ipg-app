@@ -105,10 +105,8 @@ const WalletHomeScreen = () => {
         {/* BSC Wallet Info */}
         <BSCWalletInfo />
 
-        {/* Total Balance Card */}
+        {/* Total Balance Card - Now with Real Data */}
         <BalanceDisplay
-          balance={totalBalance}
-          change24h={2.4}
           onAddFunds={() => navigate("/app/wallet/deposit")}
           className="animate-fade-in-scale"
           style={{ animationDelay: "200ms", animationFillMode: "both" }}

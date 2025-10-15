@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CyberCard, CyberCardContent, CyberCardHeader, CyberCardTitle } from "@/components/ui/cyber-card";
 import { CyberHeader } from "@/components/ui/cyber-header";
-import { NeonIconTile } from "@/components/ui/neon-icon-tile";
 import BalanceDisplay from "@/components/BalanceDisplay";
+import { UnifiedTransactionFeed } from "@/components/UnifiedTransactionFeed";
 import QuickActionGrid from "@/components/QuickActionGrid";
 import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { BSKBalanceCard } from "@/components/BSKBalanceCard";
@@ -203,10 +203,8 @@ const AppHomeScreen = () => {
           <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-[400ms] -z-10" />
         </div>
 
-        {/* Balance Display */}
+        {/* Balance Display - Now Connected to Real Data */}
         <BalanceDisplay
-          balance={totalBalance}
-          change24h={change24h}
           onAddFunds={handleAddFunds}
           className="animate-fade-in-scale"
           style={{ animationDelay: "200ms", animationFillMode: "both" }}
@@ -341,47 +339,8 @@ const AppHomeScreen = () => {
           </div>
         </div>
 
-        {/* Recent Activity - Cyberpunk Enhanced */}
-        <CyberCard 
-          variant="glow"
-          className="animate-fade-in-scale border-white/10" 
-          style={{ animationDelay: "1200ms", animationFillMode: "both" }}
-        >
-          <CyberCardHeader>
-            <div className="flex items-center justify-between">
-              <CyberCardTitle className="text-lg flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-                  <Activity className="h-5 w-5 text-primary" />
-                </div>
-                Recent Activity
-              </CyberCardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/app-legacy/wallet/history")}
-                className="text-text-secondary text-sm font-medium"
-              >
-                View All →
-              </Button>
-            </div>
-          </CyberCardHeader>
-          <CyberCardContent>
-            <div className="text-center py-12 text-muted-foreground">
-              <div className="relative">
-                <Gift className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                <div className="absolute inset-0 bg-gradient-ring blur-xl opacity-20" />
-              </div>
-              <p className="font-bold text-lg mb-2">No Activity Yet</p>
-              <p className="text-sm">Start trading to see your activity here</p>
-              <Button 
-                onClick={() => navigate("/app-legacy/trade")}
-                className="mt-4 bg-gradient-primary border-0 shadow-glow-primary"
-              >
-                Start Trading
-              </Button>
-            </div>
-          </CyberCardContent>
-        </CyberCard>
+        {/* Unified Transaction Feed - Real Data */}
+        <UnifiedTransactionFeed />
       </div>
       </div>
 

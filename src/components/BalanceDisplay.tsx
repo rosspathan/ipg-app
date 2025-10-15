@@ -1,33 +1,35 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card";
+import { CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, Plus, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useWalletBalances } from "@/hooks/useWalletBalances";
 
 interface BalanceDisplayProps {
-  balance: number;
-  change24h: number;
   onAddFunds: () => void;
   className?: string;
   style?: React.CSSProperties;
 }
 
 const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
-  balance,
-  change24h,
   onAddFunds,
   className,
   style
 }) => {
+  const { portfolio, loading } = useWalletBalances();
   const [showBalance, setShowBalance] = useState(true);
   const [currency, setCurrency] = useState("USD");
   const [animatedBalance, setAnimatedBalance] = useState(0);
 
+  const balance = portfolio?.total_usd || 0;
+  const change24h = portfolio?.change_24h_percent || 0;
+
   // Animate balance counter
   useEffect(() => {
-    if (showBalance) {
+    if (showBalance && balance > 0) {
       const duration = 1000;
       const steps = 30;
       const increment = balance / steps;
@@ -44,6 +46,8 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
       }, duration / steps);
 
       return () => clearInterval(timer);
+    } else {
+      setAnimatedBalance(balance);
     }
   }, [balance, showBalance]);
 
@@ -77,6 +81,16 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
     if (change24h < 0) return <TrendingDown className="h-4 w-4" />;
     return null;
   };
+
+  if (loading) {
+    return (
+      <GlassCard variant="accent" hover="glow" className={cn("overflow-hidden animate-pulse", className)} style={style}>
+        <CardContent className="p-6">
+          <div className="h-24 bg-muted/30 rounded"></div>
+        </CardContent>
+      </GlassCard>
+    );
+  }
 
   return (
     <GlassCard 
@@ -149,10 +163,10 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
 
         <div className="flex items-center gap-2 pt-2 border-t border-border/30">
           <Badge variant="secondary" className="bg-background/20 text-foreground/70">
-            Available: {showBalance ? formatBalance(balance * 0.95) : "•••"}
+            Available: {showBalance ? formatBalance(portfolio?.available_usd || 0) : "•••"}
           </Badge>
           <Badge variant="secondary" className="bg-background/20 text-foreground/70">
-            In Orders: {showBalance ? formatBalance(balance * 0.05) : "•••"}
+            In Orders: {showBalance ? formatBalance(portfolio?.locked_usd || 0) : "•••"}
           </Badge>
         </div>
       </GlassCardContent>
