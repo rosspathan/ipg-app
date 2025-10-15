@@ -10,11 +10,10 @@ export function useProgramConfig(programKey: string) {
         .from("program_modules")
         .select("id")
         .eq("key", programKey)
-        .eq("status", "live")
-        .single();
+        .maybeSingle();
 
       if (moduleError) throw moduleError;
-      if (!module) return null;
+      if (!module) return { config: null, moduleId: null };
 
       // Get the current published config
       const { data: config, error: configError } = await supabase
@@ -23,11 +22,14 @@ export function useProgramConfig(programKey: string) {
         .eq("module_id", module.id)
         .eq("is_current", true)
         .eq("status", "published")
-        .single();
+        .maybeSingle();
 
-      if (configError && configError.code !== "PGRST116") throw configError;
+      if (configError) throw configError;
       
-      return config?.config_json || null;
+      return { 
+        config: config?.config_json || null,
+        moduleId: module.id
+      };
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });

@@ -1,30 +1,60 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProgramModules } from "@/hooks/useProgramRegistry";
 import { useProgramAnalytics } from "@/hooks/useProgramAnalytics";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   Activity, 
   Users, 
   DollarSign, 
-  TrendingUp,
-  Settings,
-  Eye,
-  AlertCircle,
   CheckCircle,
-  Pause,
-  Play
+  Plus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { MobileStatCard } from "@/components/admin/mobile/MobileStatCard";
+import { MobileProgramCard } from "@/components/admin/mobile/MobileProgramCard";
+import { QuickEditAdMining } from "@/components/admin/program-control/QuickEditAdMining";
+import { QuickEditLuckyDraw } from "@/components/admin/program-control/QuickEditLuckyDraw";
+import { QuickEditSpinWheel } from "@/components/admin/program-control/QuickEditSpinWheel";
+import { useProgramConfig } from "@/hooks/useProgramConfig";
+
+function ProgramQuickEdit({ program }: { program: any }) {
+  const programKeyMap: Record<string, string> = {
+    'Ad Mining': 'ad_mining',
+    'Lucky Draw': 'lucky_draw',
+    'iSmart Spin': 'spin_wheel'
+  };
+
+  const moduleKey = programKeyMap[program.name] || program.key;
+  const { data } = useProgramConfig(moduleKey);
+  const config = data?.config;
+
+  if (program.name === 'Ad Mining') {
+    return <QuickEditAdMining moduleKey={moduleKey} currentConfig={config} />;
+  }
+  
+  if (program.name === 'Lucky Draw') {
+    return <QuickEditLuckyDraw moduleKey={moduleKey} currentConfig={config} />;
+  }
+  
+  if (program.name === 'iSmart Spin') {
+    return <QuickEditSpinWheel moduleKey={moduleKey} currentConfig={config} />;
+  }
+
+  return (
+    <div className="text-xs text-muted-foreground text-center py-2">
+      No quick settings available for this program
+    </div>
+  );
+}
 
 export default function AdminProgramControl() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { modules, updateModule, isLoading } = useProgramModules();
   const { analytics } = useProgramAnalytics();
 
@@ -68,180 +98,91 @@ export default function AdminProgramControl() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className={`min-h-screen bg-background ${isMobile ? 'p-4 pb-20' : 'p-4 md:p-6'}`}>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Program Control Center</h1>
-        <p className="text-muted-foreground">
-          Manage all programs, view metrics, and control access
+      <div className={isMobile ? 'mb-4' : 'mb-6'}>
+        <h1 className={`font-bold text-foreground mb-1 ${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'}`}>
+          Control Center
+        </h1>
+        <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
+          Manage programs with quick settings
         </p>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Total Programs</p>
-                <p className="text-2xl font-bold">{modules?.length || 0}</p>
-              </div>
-              <Activity className="w-8 h-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Live Programs</p>
-                <p className="text-2xl font-bold text-success">{livePrograms.length}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-success" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Active Users</p>
-                <p className="text-2xl font-bold">{totalUsers.toLocaleString()}</p>
-              </div>
-              <Users className="w-8 h-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Total Revenue</p>
-                <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-success" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Overview Stats - Mobile Optimized */}
+      <div className={`grid gap-3 mb-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'} ${isMobile ? 'mb-4' : 'md:mb-6'}`}>
+        <MobileStatCard
+          title="Total Programs"
+          value={modules?.length || 0}
+          icon={Activity}
+          variant="default"
+        />
+        <MobileStatCard
+          title="Live Programs"
+          value={livePrograms.length}
+          icon={CheckCircle}
+          variant="success"
+        />
+        <MobileStatCard
+          title="Active Users"
+          value={totalUsers.toLocaleString()}
+          icon={Users}
+          variant="default"
+        />
+        <MobileStatCard
+          title="Total Revenue"
+          value={`$${totalRevenue.toFixed(0)}`}
+          icon={DollarSign}
+          variant="success"
+        />
       </div>
 
-      {/* Program Control Grid */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Program Controls</h2>
-          <Button onClick={() => navigate('/admin/programs')}>
-            View All Programs
-          </Button>
+      {/* Program Cards with Quick Edit */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className={`font-bold ${isMobile ? 'text-base' : 'text-lg md:text-xl'}`}>
+            Programs
+          </h2>
+          {!isMobile && (
+            <Button 
+              onClick={() => navigate('/admin/programs')}
+              size="sm"
+              variant="outline"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              New Program
+            </Button>
+          )}
         </div>
 
         {modules && modules.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {modules.map((program) => {
               const programAnalytics = analytics?.find(a => a.moduleId === program.id);
-              const isLive = program.status === 'live';
 
               return (
-                <Card key={program.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg mb-1">{program.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {program.description || 'No description'}
-                        </p>
-                      </div>
-                      <Badge 
-                        variant={
-                          program.status === 'live' ? 'default' :
-                          program.status === 'paused' ? 'secondary' :
-                          'outline'
-                        }
-                        className="ml-2"
-                      >
-                        {program.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-lg">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Users</p>
-                        <p className="text-lg font-bold">
-                          {programAnalytics?.activeUsers?.toLocaleString() || 0}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Revenue</p>
-                        <p className="text-lg font-bold text-success">
-                          ${(programAnalytics?.revenue || 0).toFixed(0)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Quick Controls */}
-                    <div className="space-y-3">
-                      {/* Live Toggle */}
-                      <div className="flex items-center justify-between p-2 hover:bg-muted/30 rounded transition-colors">
-                        <div className="flex items-center gap-2">
-                          {isLive ? (
-                            <Play className="w-4 h-4 text-success" />
-                          ) : (
-                            <Pause className="w-4 h-4 text-warning" />
-                          )}
-                          <span className="text-sm font-medium">
-                            {isLive ? 'Active' : 'Paused'}
-                          </span>
-                        </div>
-                        <Switch
-                          checked={isLive}
-                          onCheckedChange={() => handleStatusToggle(program.id, program.status)}
-                        />
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => navigate(`/admin/programs/editor/${program.id}`)}
-                          size="sm"
-                          variant="outline"
-                          className="flex-1"
-                        >
-                          <Settings className="w-4 h-4 mr-2" />
-                          Configure
-                        </Button>
-                        <Button
-                          onClick={() => navigate(program.route)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Alerts */}
-                    {program.maintenance_mode && (
-                      <div className="flex items-center gap-2 p-2 bg-warning/10 border border-warning/20 rounded text-xs text-warning">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>Maintenance mode active</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <MobileProgramCard
+                  key={program.id}
+                  program={program}
+                  analytics={programAnalytics}
+                  onStatusToggle={handleStatusToggle}
+                >
+                  <ProgramQuickEdit program={program} />
+                </MobileProgramCard>
               );
             })}
           </div>
         ) : (
           <Card>
-            <CardContent className="p-12 text-center">
-              <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground mb-4">No programs found</p>
-              <Button onClick={() => navigate('/admin/programs')}>
+            <CardContent className={isMobile ? 'p-8 text-center' : 'p-12 text-center'}>
+              <Activity className={`text-muted-foreground mx-auto mb-3 ${isMobile ? 'w-8 h-8' : 'w-12 h-12'}`} />
+              <p className={`text-muted-foreground mb-4 ${isMobile ? 'text-sm' : ''}`}>
+                No programs found
+              </p>
+              <Button 
+                onClick={() => navigate('/admin/programs')}
+                size={isMobile ? "sm" : "default"}
+              >
                 Create First Program
               </Button>
             </CardContent>
@@ -249,21 +190,15 @@ export default function AdminProgramControl() {
         )}
       </div>
 
-      {/* System Alerts */}
-      {livePrograms.some(p => p.maintenance_mode) && (
-        <Card className="mt-6 border-warning">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-warning">
-              <AlertCircle className="w-5 h-5" />
-              System Alerts
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {livePrograms.filter(p => p.maintenance_mode).length} program(s) in maintenance mode
-            </p>
-          </CardContent>
-        </Card>
+      {/* Mobile FAB */}
+      {isMobile && (
+        <Button
+          onClick={() => navigate('/admin/programs')}
+          size="lg"
+          className="fixed bottom-20 right-4 rounded-full w-14 h-14 shadow-lg z-50"
+        >
+          <Plus className="w-6 h-6" />
+        </Button>
       )}
     </div>
   );
