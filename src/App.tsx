@@ -215,6 +215,12 @@ import { SupportPage } from "@/pages/SupportPage";
 const ReferralsPageAstra = React.lazy(() => import("./pages/astra/ReferralsPage"));
 const AdMiningPageNew = React.lazy(() => import("./pages/programs/AdMiningPageNew"));
 const LuckyDrawPageNew = React.lazy(() => import("./pages/programs/LuckyDrawPageNew"));
+const TeamReferralsPageNew = React.lazy(() => import("./pages/programs/TeamReferralsPageNew"));
+const StakingPageNewV2 = React.lazy(() => import("./pages/programs/StakingPageNew"));
+const TradingPageNew = React.lazy(() => import("./pages/programs/TradingPageNew"));
+const InsurancePageNewV2 = React.lazy(() => import("./pages/programs/InsurancePageNew"));
+const BSKLoansPageNew = React.lazy(() => import("./pages/programs/BSKLoansPageNew"));
+const BSKPromotionsPageNew = React.lazy(() => import("./pages/programs/BSKPromotionsPageNew"));
 const LoansPage = React.lazy(() => import("./pages/astra/LoansPage"));
 
 // ✅ V3 Spin Wheel with SpinWheel3D (4 segments, premium design)
@@ -330,13 +336,19 @@ function App() {
                 <Route path="programs/ad-mining" element={<React.Suspense fallback={<div>Loading...</div>}><AdMiningPageNew /></React.Suspense>} />
                 <Route path="programs/advertising" element={<React.Suspense fallback={<div>Loading...</div>}><AdMiningPageNew /></React.Suspense>} />
                 <Route path="programs/lucky-draw" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawPageNew /></React.Suspense>} />
-                <Route path="programs/spin" element={<React.Suspense fallback={<div>Loading...</div>}><SpinWheelPage /></React.Suspense>} />
-                <Route path="programs/insurance" element={<React.Suspense fallback={<div>Loading...</div>}><InsurancePageNew /></React.Suspense>} />
+                <Route path="programs/spin" element={<React.Suspense fallback={<div>Loading...</div>}><ISmartSpinScreen /></React.Suspense>} />
+                <Route path="programs/team-referrals" element={<React.Suspense fallback={<div>Loading...</div>}><TeamReferralsPageNew /></React.Suspense>} />
+                <Route path="programs/staking" element={<React.Suspense fallback={<div>Loading...</div>}><StakingPageNewV2 /></React.Suspense>} />
+                <Route path="programs/trading" element={<React.Suspense fallback={<div>Loading...</div>}><TradingPageNew /></React.Suspense>} />
+                <Route path="programs/insurance" element={<React.Suspense fallback={<div>Loading...</div>}><InsurancePageNewV2 /></React.Suspense>} />
+                <Route path="programs/bsk-loans" element={<React.Suspense fallback={<div>Loading...</div>}><BSKLoansPageNew /></React.Suspense>} />
+                <Route path="programs/bsk-promotions" element={<React.Suspense fallback={<div>Loading...</div>}><BSKPromotionsPageNew /></React.Suspense>} />
+                
+                {/* Legacy program routes */}
                 <Route path="programs/ads" element={<React.Suspense fallback={<div>Loading...</div>}><AdvertisingPage /></React.Suspense>} />
                 <Route path="programs/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPageNew /></React.Suspense>} />
                 <Route path="programs/loans" element={<React.Suspense fallback={<div>Loading...</div>}><LoansPageNew /></React.Suspense>} />
                 <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<div>Loading...</div>}><PurchasePage /></React.Suspense>} />
-                <Route path="programs/staking" element={<React.Suspense fallback={<div>Loading...</div>}><StakingPageNew /></React.Suspense>} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/staking/:poolId/submit" element={<StakingSubmissionScreen />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
