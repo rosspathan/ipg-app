@@ -1,15 +1,13 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.ismart.exchange',
-  appName: 'I-SMART',
+  appId: 'app.lovable.3e2392ce491947528d0d0528c0668ead',
+  appName: 'IPG Exchange',
   webDir: 'dist',
-  // For PRODUCTION: Server section should be commented out to use local build
-  // For DEVELOPMENT: Uncomment server section below to use live server
-  // server: {
-  //   url: 'https://3e2392ce-4919-4752-8d0d-0528c0668ead.lovableproject.com?forceHideBadge=true',
-  //   cleartext: true
-  // },
+  server: {
+    url: 'https://3e2392ce-4919-4752-8d0d-0528c0668ead.lovableproject.com?forceHideBadge=true',
+    cleartext: true
+  },
   appUrlScheme: 'ismart',
   ios: {
     contentInset: 'automatic',
