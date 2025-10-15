@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { useProgramConfig } from "@/hooks/useProgramConfig";
 import {
   Ticket,
   Trophy,
@@ -26,6 +27,15 @@ export default function LuckyDrawPage() {
   const [buyDialog, setBuyDialog] = useState(false);
   const [selectedDraw, setSelectedDraw] = useState<any>(null);
   const [ticketCount, setTicketCount] = useState(1);
+
+  // Fetch program configuration
+  const { data: programConfig } = useProgramConfig("lucky-draw");
+  const config = programConfig as any || {};
+  
+  // Extract config values with defaults
+  const maxTicketsPerUser = config?.rules?.maxTicketsPerUser || 10;
+  const defaultTicketPrice = config?.pool?.ticketPrice || 50;
+  const currency = config?.pool?.currency || "BSK";
 
   // Fetch active draws
   const { data: draws, isLoading } = useQuery({
@@ -292,10 +302,13 @@ export default function LuckyDrawPage() {
               <Input
                 type="number"
                 min="1"
-                max="10"
+                max={maxTicketsPerUser}
                 value={ticketCount}
                 onChange={(e) => setTicketCount(Number(e.target.value))}
               />
+              <p className="text-xs text-muted-foreground">
+                Maximum {maxTicketsPerUser} tickets per draw
+              </p>
             </div>
 
             <div className="p-4 bg-muted/50 rounded-lg space-y-2">

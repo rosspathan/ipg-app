@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Eye, Copy, Archive, Trash2, Check, Loader2 } from "lucide-react";
-import { useProgramModules, ProgramModule } from "@/hooks/useProgramRegistry";
+import { useProgramModules, useProgramConfigs, ProgramModule, ProgramConfig } from "@/hooks/useProgramRegistry";
 import { useProgramAnalytics } from "@/hooks/useProgramAnalytics";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,7 @@ import { OverviewTab } from "@/components/admin/program-editor-clean/OverviewTab
 import { ContentTab } from "@/components/admin/program-editor-clean/ContentTab";
 import { AccessTab } from "@/components/admin/program-editor-clean/AccessTab";
 import { HistoryTab } from "@/components/admin/program-editor-clean/HistoryTab";
+import { ProgramConfigEditor } from "@/components/admin/program-editor-clean/settings/ProgramConfigEditor";
 import { ProgramPreviewModal } from "@/components/admin/program-editor-clean/ProgramPreviewModal";
 
 export default function AdminProgramEditorClean() {
@@ -19,17 +20,33 @@ export default function AdminProgramEditorClean() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { modules, updateModule, isLoading } = useProgramModules();
+  const { configs, updateConfig } = useProgramConfigs(id);
   const { analytics } = useProgramAnalytics();
   
   const [activeTab, setActiveTab] = useState("overview");
   const [showPreview, setShowPreview] = useState(false);
   const [localModule, setLocalModule] = useState<ProgramModule | undefined>(undefined);
+  const [localConfig, setLocalConfig] = useState<ProgramConfig | undefined>(undefined);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [hasUnsavedConfigChanges, setHasUnsavedConfigChanges] = useState(false);
 
   const module = modules?.find(m => m.id === id);
+  const currentConfig = configs?.find(c => c.is_current && c.status === 'published');
   const moduleAnalytics = analytics?.find(a => a.moduleId === id);
   const isNewModule = id === "new";
+
+  useEffect(() => {
+    if (module) {
+      setLocalModule(module);
+    }
+  }, [module]);
+
+  useEffect(() => {
+    if (currentConfig) {
+      setLocalConfig(currentConfig);
+    }
+  }, [currentConfig]);
 
   useEffect(() => {
     if (module) {
@@ -44,7 +61,14 @@ export default function AdminProgramEditorClean() {
     setSaveStatus('idle');
   };
 
-  // Auto-save with debounce
+  const handleConfigSave = (configJson: any) => {
+    if (!localConfig || !id) return;
+    setLocalConfig({ ...localConfig, config_json: configJson });
+    setHasUnsavedConfigChanges(true);
+    setSaveStatus('idle');
+  };
+
+  // Auto-save module changes with debounce
   useEffect(() => {
     if (!hasUnsavedChanges || !id || !localModule) return;
 
@@ -67,6 +91,30 @@ export default function AdminProgramEditorClean() {
 
     return () => clearTimeout(timer);
   }, [localModule, hasUnsavedChanges, id, updateModule, toast]);
+
+  // Auto-save config changes with debounce
+  useEffect(() => {
+    if (!hasUnsavedConfigChanges || !localConfig || !id) return;
+
+    setSaveStatus('saving');
+    const timer = setTimeout(async () => {
+      try {
+        await updateConfig({ id: localConfig.id, updates: localConfig });
+        setHasUnsavedConfigChanges(false);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } catch (error) {
+        toast({
+          title: "Config save failed",
+          description: "Please try again",
+          variant: "destructive"
+        });
+        setSaveStatus('idle');
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [localConfig, hasUnsavedConfigChanges, updateConfig, toast]);
 
   const handlePublish = async () => {
     if (!localModule || !id) return;
@@ -262,9 +310,10 @@ export default function AdminProgramEditorClean() {
         <div className="lg:col-span-6">
           <div className="bg-card rounded-xl border p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="content">Content</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
                 <TabsTrigger value="access">Access</TabsTrigger>
                 <TabsTrigger value="history">History</TabsTrigger>
               </TabsList>
@@ -281,6 +330,14 @@ export default function AdminProgramEditorClean() {
                   <ContentTab 
                     module={localModule}
                     onChange={handleSave}
+                  />
+                </TabsContent>
+
+                <TabsContent value="settings" className="space-y-6">
+                  <ProgramConfigEditor
+                    module={localModule}
+                    configJson={localConfig?.config_json || {}}
+                    onChange={handleConfigSave}
                   />
                 </TabsContent>
 

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { useProgramConfig } from "@/hooks/useProgramConfig";
 import {
   Play,
   Clock,
@@ -24,6 +25,16 @@ export default function AdMiningPage() {
   const queryClient = useQueryClient();
   const [watchingAd, setWatchingAd] = useState<any>(null);
   const [watchProgress, setWatchProgress] = useState(0);
+
+  // Fetch program configuration
+  const { data: programConfig } = useProgramConfig("advertising");
+  
+  // Extract config values with defaults
+  const config = programConfig as any || {};
+  const rewardPerAd = config?.rewards?.rewardPerAd || 10;
+  const maxDailyEarnings = config?.rewards?.maxDailyEarnings || 500;
+  const adsPerDay = config?.limits?.adsPerDay || 5;
+  const minViewTime = config?.limits?.minViewTime || 30;
 
   // Fetch available ads
   const { data: ads, isLoading } = useQuery({
@@ -99,8 +110,8 @@ export default function AdMiningPage() {
     setWatchingAd(ad);
     setWatchProgress(0);
 
-    // Simulate watching progress
-    const duration = ad.required_view_time_seconds || 30;
+    // Use configured view time or ad-specific time
+    const duration = ad.required_view_time_seconds || minViewTime;
     const interval = setInterval(() => {
       setWatchProgress((prev) => {
         if (prev >= 100) {
@@ -132,7 +143,7 @@ export default function AdMiningPage() {
       <div className="p-4 space-y-4">
         {/* Subtitle */}
         <p className="text-sm text-muted-foreground mb-4">
-          Watch ads and earn BSK tokens
+          Watch ads and earn BSK tokens. Up to {adsPerDay} ads per day, max {maxDailyEarnings} BSK daily.
         </p>
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">

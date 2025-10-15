@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useISmartSpin } from '@/hooks/useISmartSpin'
+import { useProgramConfig } from '@/hooks/useProgramConfig'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { SpinWheelBasic } from '@/components/spin/SpinWheelBasic'
 import { BetCardPro } from '@/components/spin/BetCardPro'
@@ -19,6 +20,11 @@ export default function ISmartSpinScreen() {
   const [winningSegmentIndex, setWinningSegmentIndex] = useState<number>()
   const [showHistory, setShowHistory] = useState(false)
   const [spinHistory, setSpinHistory] = useState<any[]>([])
+
+  // Fetch program configuration
+  const { data: programConfig } = useProgramConfig("spin");
+  const programCfg = programConfig as any || {};
+  const allowedBets = programCfg?.betting?.allowedBets || [10, 50, 100, 500];
 
   const spinMachine = useSpinMachine()
   
