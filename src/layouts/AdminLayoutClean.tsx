@@ -5,6 +5,7 @@ import { BrandLogoBlink } from "@/components/admin/nova/BrandLogoBlink";
 import { Bell, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminDockClean } from "@/components/admin/clean/AdminDockClean";
+import { ViewAsUserButton } from "@/components/admin/clean/ViewAsUserButton";
 
 // Page title mapping
 const pageTitles: Record<string, string> = {
@@ -44,7 +45,10 @@ const AdminLayoutClean = () => {
                 </div>
 
                 {/* Right: Actions */}
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="hidden sm:block">
+                    <ViewAsUserButton />
+                  </div>
                   <Button
                     variant="ghost"
                     size="icon"

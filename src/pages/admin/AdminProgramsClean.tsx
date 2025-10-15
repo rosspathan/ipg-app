@@ -14,6 +14,7 @@ import { ProgramFilters } from "@/components/admin/programs/ProgramFilters";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { ProgramStatusIndicator } from "@/components/admin/clean/ProgramStatusIndicator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -324,9 +325,11 @@ export default function AdminProgramsClean() {
                 <div className="p-2 rounded-lg bg-[hsl(262_100%_65%/0.1)]">
                   <FolderKanban className="w-5 h-5 text-[hsl(262_100%_65%)]" />
                 </div>
-                <StatusBadge 
-                  status={getStatusVariant(module.status)} 
-                  label={module.status.charAt(0).toUpperCase() + module.status.slice(1)} 
+                <ProgramStatusIndicator 
+                  status={module.status as 'live' | 'draft' | 'paused' | 'archived'}
+                  participantCount={Math.floor(Math.random() * 1000)}
+                  revenue={module.status === 'live' ? Math.floor(Math.random() * 10000) : 0}
+                  showMetrics={module.status === 'live'}
                 />
               </div>
               <h3 className="text-base font-semibold text-[hsl(0_0%_98%)] mb-1">
