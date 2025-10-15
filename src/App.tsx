@@ -387,8 +387,7 @@ function App() {
                 <Route path="programs/control-center" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramControlCenter /></React.Suspense>} />
                 <Route path="programs/templates" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramTemplates /></React.Suspense>} />
                 <Route path="programs/analytics" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramAnalytics /></React.Suspense>} />
-                <Route path="programs/editor" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
-                <Route path="programs/editor/:moduleId" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
+                <Route path="programs/editor/new" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
                 <Route path="programs/editor/:id" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
                 <Route path="programs/control" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsControl /></React.Suspense>} />
                 
