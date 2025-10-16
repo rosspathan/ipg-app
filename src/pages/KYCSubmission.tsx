@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -13,10 +13,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { validateKYCSubmission } from '@/lib/kyc-validation-new';
 import { Loader2 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function KYCSubmission() {
   const navigate = useNavigate();
-  const { submission, loading, uploading, savingDraft, progress, saveDraft, uploadDocument, submitForReview } = useKYCSubmission();
+  const { submission, loading, uploading, savingDraft, progress, lastSaved, saveDraft, uploadDocument, submitForReview } = useKYCSubmission();
   const [formData, setFormData] = useState<any>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmAccuracy, setConfirmAccuracy] = useState(false);
@@ -110,12 +111,23 @@ export default function KYCSubmission() {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Completion Progress</span>
-              <span className="font-medium">{progress}%</span>
+              <div className="flex items-center gap-2">
+                {savingDraft && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Saving...
+                  </span>
+                )}
+                {lastSaved && !savingDraft && (
+                  <span className="text-xs text-success flex items-center gap-1 animate-fade-in">
+                    <Check className="h-3 w-3" />
+                    Saved {formatDistanceToNow(lastSaved, { addSuffix: true })}
+                  </span>
+                )}
+                <span className="font-medium">{progress}%</span>
+              </div>
             </div>
             <Progress value={progress} className="h-2" />
-            {savingDraft && (
-              <p className="text-xs text-muted-foreground">Auto-saving draft...</p>
-            )}
           </div>
         </Card>
 

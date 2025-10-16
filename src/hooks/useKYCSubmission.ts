@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { toast } from 'sonner';
-import { useDebouncedCallback } from 'use-debounce';
 
 export interface KYCSubmission {
   id?: string;
@@ -36,6 +35,7 @@ export const useKYCSubmission = () => {
   const [uploading, setUploading] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const calculateProgress = useCallback((data: Partial<KYCSubmission>) => {
     const requiredFields = [
@@ -92,7 +92,7 @@ export const useKYCSubmission = () => {
     fetchSubmission();
   }, [fetchSubmission]);
 
-  const saveDraft = useDebouncedCallback(
+  const saveDraft = useCallback(
     async (data: Partial<KYCSubmission>) => {
       if (!user) return;
 
@@ -116,14 +116,20 @@ export const useKYCSubmission = () => {
         if (error) throw error;
 
         setProgress(calculateProgress(data));
-        console.log('KYC draft saved');
+        setLastSaved(new Date());
+        
+        // Clear last saved indicator after 3 seconds
+        setTimeout(() => setLastSaved(null), 3000);
+        
+        console.log('KYC draft saved instantly');
       } catch (error) {
         console.error('Error saving draft:', error);
+        toast.error('Failed to save changes');
       } finally {
         setSavingDraft(false);
       }
     },
-    2000
+    [user, calculateProgress]
   );
 
   const uploadDocument = async (file: File, docType: 'id_front' | 'id_back' | 'selfie'): Promise<string> => {
@@ -214,6 +220,7 @@ export const useKYCSubmission = () => {
     uploading,
     savingDraft,
     progress,
+    lastSaved,
     saveDraft,
     uploadDocument,
     submitForReview,
