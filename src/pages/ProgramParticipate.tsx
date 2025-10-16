@@ -22,7 +22,7 @@ export default function ProgramParticipate() {
         .from("program_modules")
         .select("*")
         .eq("key", key)
-        .eq("status", "published")
+        .eq("status", "live")
         .single()
 
       if (error) throw error

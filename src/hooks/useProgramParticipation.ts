@@ -117,9 +117,17 @@ export function useProgramParticipation(moduleId?: string) {
       queryClient.invalidateQueries({ queryKey: ["program-state"] })
     },
     onError: (error: any) => {
+      console.error("[INIT STATE ERROR]", {
+        error,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
+      
       toast({
         title: "Failed to initialize program",
-        description: error.message,
+        description: error.message || "Please try again",
         variant: "destructive"
       })
     }
@@ -159,9 +167,17 @@ export function useProgramParticipation(moduleId?: string) {
       })
     },
     onError: (error: any) => {
+      console.error("[PARTICIPATION ERROR]", {
+        error,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
+      
       toast({
         title: "Failed to record participation",
-        description: error.message,
+        description: error.message || "Please try again or contact support",
         variant: "destructive"
       })
     }
