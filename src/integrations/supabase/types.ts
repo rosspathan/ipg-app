@@ -9108,6 +9108,16 @@ export type Database = {
         }
         Returns: Json
       }
+      create_trading_pair: {
+        Args: {
+          p_base_symbol: string
+          p_lot_size?: number
+          p_min_notional?: number
+          p_quote_symbol: string
+          p_tick_size?: number
+        }
+        Returns: string
+      }
       credit_deposit_balance: {
         Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
         Returns: boolean
