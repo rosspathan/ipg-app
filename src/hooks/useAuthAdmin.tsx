@@ -32,9 +32,8 @@ export function AuthProviderAdmin({ children }: { children: React.ReactNode }) {
 
   const checkAdminRole = async (userId: string) => {
     try {
-      console.log('Checking admin role for user (server-side):', userId);
-      
-      // Use secure server-side function instead of direct table query
+      console.log('Checking admin role for user:', userId);
+      // Server-side validation using security definer function
       const { data, error } = await supabase.rpc('has_role', {
         _user_id: userId,
         _role: 'admin'
@@ -63,10 +62,10 @@ export function AuthProviderAdmin({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        // Always use server-side validation - NEVER trust client-side storage
+        // Always validate admin status server-side
         await checkAdminRole(session.user.id);
       } else {
-        // Clear admin status on logout
+        // Clear admin status on logout (remove insecure localStorage)
         localStorage.removeItem('cryptoflow_web3_admin');
         localStorage.removeItem('cryptoflow_admin_wallet');
         setIsAdmin(false);
@@ -104,7 +103,7 @@ export function AuthProviderAdmin({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    // Clear any cached admin status
+    // Clear Web3 admin status (legacy)
     localStorage.removeItem('cryptoflow_web3_admin');
     localStorage.removeItem('cryptoflow_admin_wallet');
     setIsAdmin(false);

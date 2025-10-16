@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -9,9 +8,6 @@ interface AdminRouteProps {
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, session, loading, isAdmin } = useAuth();
-  
-  // SECURITY: Never trust client-side storage for admin checks
-  // The isAdmin value comes from server-side validation via has_role() RPC
 
   if (loading) {
     return (
@@ -22,9 +18,10 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   }
 
   if (!user || !session) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/onboarding" replace />;
   }
 
+  // Server-side validation only (no localStorage bypass)
   if (!isAdmin) {
     return <Navigate to="/admin-login" replace />;
   }
