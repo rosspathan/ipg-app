@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, XCircle, Clock, Banknote, Bitcoin } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Banknote, Bitcoin, Eye } from 'lucide-react';
+import { TransactionPreviewModal } from '@/components/admin/TransactionPreviewModal';
 
 interface WithdrawalRequest {
   id: string;
@@ -38,6 +39,7 @@ export const AdminBSKWithdrawals = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<WithdrawalRequest | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
   const [processing, setProcessing] = useState(false);
 
@@ -86,17 +88,28 @@ export const AdminBSKWithdrawals = () => {
   const handleAction = async (requestId: string, newStatus: 'approved' | 'rejected' | 'completed') => {
     setProcessing(true);
     try {
+      const user = await supabase.auth.getUser();
+
       const { error } = await supabase
         .from('bsk_withdrawal_requests')
         .update({
           status: newStatus,
           admin_notes: adminNotes || null,
           processed_at: new Date().toISOString(),
-          processed_by: (await supabase.auth.getUser()).data.user?.id
+          processed_by: user.data.user?.id
         })
         .eq('id', requestId);
 
       if (error) throw error;
+
+      // Create audit log
+      await supabase.from('audit_logs').insert({
+        user_id: user.data.user?.id,
+        action: `bsk_withdrawal_${newStatus}`,
+        resource_type: 'bsk_withdrawal_requests',
+        resource_id: requestId,
+        new_values: { status: newStatus, admin_notes: adminNotes }
+      });
 
       toast({
         title: 'Status Updated',
@@ -104,6 +117,7 @@ export const AdminBSKWithdrawals = () => {
       });
 
       setDialogOpen(false);
+      setPreviewModalOpen(false);
       setSelectedRequest(null);
       setAdminNotes('');
       loadRequests();
@@ -122,7 +136,7 @@ export const AdminBSKWithdrawals = () => {
   const openDialog = (request: WithdrawalRequest) => {
     setSelectedRequest(request);
     setAdminNotes(request.admin_notes || '');
-    setDialogOpen(true);
+    setPreviewModalOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -232,7 +246,8 @@ export const AdminBSKWithdrawals = () => {
                         <TableCell>{getStatusBadge(request.status)}</TableCell>
                         <TableCell>
                           <Button size="sm" onClick={() => openDialog(request)}>
-                            Process
+                            <Eye className="h-4 w-4 mr-1" />
+                            Review
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -295,88 +310,20 @@ export const AdminBSKWithdrawals = () => {
         </CardContent>
       </Card>
 
+      {/* Transaction Preview Modal */}
+      <TransactionPreviewModal
+        open={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+        transaction={selectedRequest}
+        type="withdrawal"
+        onApprove={() => selectedRequest && handleAction(selectedRequest.id, 'approved')}
+        onReject={() => selectedRequest && handleAction(selectedRequest.id, 'rejected')}
+        isProcessing={processing}
+      />
+
+      {/* Legacy Dialog - kept for backwards compatibility */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Process Withdrawal Request</DialogTitle>
-            <DialogDescription>
-              Review and process the withdrawal request
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedRequest && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <strong>User:</strong> {selectedRequest.profiles?.full_name || 'N/A'}
-                  <div className="text-muted-foreground">{selectedRequest.profiles?.email}</div>
-                </div>
-                <div>
-                  <strong>Amount:</strong> {selectedRequest.amount_bsk} BSK
-                </div>
-                <div>
-                  <strong>Type:</strong> {selectedRequest.withdrawal_type === 'bank' ? 'Bank Account' : 'Crypto'}
-                </div>
-                <div>
-                  <strong>Date:</strong> {new Date(selectedRequest.created_at).toLocaleString()}
-                </div>
-              </div>
-
-              <div className="p-4 bg-muted rounded-lg">
-                {selectedRequest.withdrawal_type === 'bank' ? (
-                  <div className="space-y-2">
-                    <div><strong>Bank:</strong> {selectedRequest.bank_name}</div>
-                    <div><strong>Account Holder:</strong> {selectedRequest.account_holder_name}</div>
-                    <div><strong>Account Number:</strong> {selectedRequest.account_number}</div>
-                    <div><strong>IFSC Code:</strong> {selectedRequest.ifsc_code}</div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div><strong>Crypto:</strong> {selectedRequest.crypto_symbol}</div>
-                    <div><strong>Network:</strong> {selectedRequest.crypto_network}</div>
-                    <div><strong>Address:</strong> 
-                      <div className="font-mono text-xs break-all mt-1">{selectedRequest.crypto_address}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="adminNotes">Admin Notes</Label>
-                <Textarea
-                  id="adminNotes"
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Add notes about this withdrawal..."
-                  rows={3}
-                />
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="gap-2">
-            <Button
-              variant="destructive"
-              onClick={() => selectedRequest && handleAction(selectedRequest.id, 'rejected')}
-              disabled={processing}
-            >
-              Reject
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => selectedRequest && handleAction(selectedRequest.id, 'approved')}
-              disabled={processing}
-            >
-              Approve
-            </Button>
-            <Button
-              onClick={() => selectedRequest && handleAction(selectedRequest.id, 'completed')}
-              disabled={processing}
-            >
-              Mark as Completed
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+...
       </Dialog>
     </>
   );

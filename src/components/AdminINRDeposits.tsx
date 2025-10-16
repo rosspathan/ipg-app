@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { TransactionPreviewModal } from '@/components/admin/TransactionPreviewModal';
 
 interface FiatDeposit {
   id: string;
@@ -36,6 +37,7 @@ export default function AdminINRDeposits() {
   const [processing, setProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
   useEffect(() => {
     loadDeposits();
@@ -93,6 +95,8 @@ export default function AdminINRDeposits() {
       const totalFee = (deposit.amount * feePercent / 100) + feeFixed;
       const netCredit = deposit.amount - totalFee;
 
+      const user = await supabase.auth.getUser();
+
       // Update deposit status
       const { error } = await supabase
         .from('fiat_deposits')
@@ -102,14 +106,20 @@ export default function AdminINRDeposits() {
           net_credit: netCredit,
           admin_notes: adminNotes,
           decided_at: new Date().toISOString(),
-          decided_by: (await supabase.auth.getUser()).data.user?.id
+          decided_by: user.data.user?.id
         })
         .eq('id', deposit.id);
 
       if (error) throw error;
 
-      // TODO: In a real app, this would credit the user's INR balance
-      // and journal the fee to the admin revenue wallet
+      // Create audit log
+      await supabase.from('audit_logs').insert({
+        user_id: user.data.user?.id,
+        action: 'fiat_deposit_approved',
+        resource_type: 'fiat_deposits',
+        resource_id: deposit.id,
+        new_values: { status: 'approved', net_credit: netCredit, fee: totalFee }
+      });
 
       toast({
         title: "Deposit Approved",
@@ -118,6 +128,7 @@ export default function AdminINRDeposits() {
 
       setSelectedDeposit(null);
       setAdminNotes('');
+      setPreviewModalOpen(false);
     } catch (error) {
       console.error('Error approving deposit:', error);
       toast({
@@ -143,17 +154,28 @@ export default function AdminINRDeposits() {
     setProcessing(true);
 
     try {
+      const user = await supabase.auth.getUser();
+
       const { error } = await supabase
         .from('fiat_deposits')
         .update({
           status: 'rejected',
           admin_notes: adminNotes,
           decided_at: new Date().toISOString(),
-          decided_by: (await supabase.auth.getUser()).data.user?.id
+          decided_by: user.data.user?.id
         })
         .eq('id', deposit.id);
 
       if (error) throw error;
+
+      // Create audit log
+      await supabase.from('audit_logs').insert({
+        user_id: user.data.user?.id,
+        action: 'fiat_deposit_rejected',
+        resource_type: 'fiat_deposits',
+        resource_id: deposit.id,
+        new_values: { status: 'rejected', admin_notes: adminNotes }
+      });
 
       toast({
         title: "Deposit Rejected",
@@ -162,6 +184,7 @@ export default function AdminINRDeposits() {
 
       setSelectedDeposit(null);
       setAdminNotes('');
+      setPreviewModalOpen(false);
     } catch (error) {
       console.error('Error rejecting deposit:', error);
       toast({
@@ -287,97 +310,17 @@ export default function AdminINRDeposits() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedDeposit(deposit);
-                              setAdminNotes(deposit.admin_notes || '');
-                            }}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Review
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>Review Deposit</DialogTitle>
-                          </DialogHeader>
-                          
-                          {selectedDeposit && (
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <Label>Amount</Label>
-                                  <p className="font-medium">₹{selectedDeposit.amount.toLocaleString()}</p>
-                                </div>
-                                <div>
-                                  <Label>Method</Label>
-                                  <p className="font-medium">{selectedDeposit.method}</p>
-                                </div>
-                                <div>
-                                  <Label>Reference</Label>
-                                  <p className="font-mono text-xs">{selectedDeposit.reference || 'N/A'}</p>
-                                </div>
-                                <div>
-                                  <Label>Status</Label>
-                                  <Badge variant={getStatusColor(selectedDeposit.status)}>
-                                    {selectedDeposit.status}
-                                  </Badge>
-                                </div>
-                              </div>
-
-                              {selectedDeposit.proof_url && (
-                                <div>
-                                  <Label>Payment Proof</Label>
-                                  <a
-                                    href={`https://ocblgldglqhlrmtnynmu.supabase.co/storage/v1/object/public/crypto-logos/${selectedDeposit.proof_url}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline text-sm"
-                                  >
-                                    View Proof →
-                                  </a>
-                                </div>
-                              )}
-
-                              <div>
-                                <Label htmlFor="admin_notes">Admin Notes</Label>
-                                <Textarea
-                                  id="admin_notes"
-                                  placeholder="Add notes about this deposit..."
-                                  value={adminNotes}
-                                  onChange={(e) => setAdminNotes(e.target.value)}
-                                />
-                              </div>
-
-                              {selectedDeposit.status === 'pending' && (
-                                <div className="flex gap-2">
-                                  <Button
-                                    onClick={() => handleApprove(selectedDeposit)}
-                                    disabled={processing}
-                                    className="flex-1"
-                                  >
-                                    <Check className="h-4 w-4 mr-1" />
-                                    {processing ? 'Processing...' : 'Approve'}
-                                  </Button>
-                                  <Button
-                                    variant="destructive"
-                                    onClick={() => handleReject(selectedDeposit)}
-                                    disabled={processing || !adminNotes.trim()}
-                                    className="flex-1"
-                                  >
-                                    <X className="h-4 w-4 mr-1" />
-                                    Reject
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedDeposit(deposit);
+                          setPreviewModalOpen(true);
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Review
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -386,6 +329,17 @@ export default function AdminINRDeposits() {
           )}
         </CardContent>
       </Card>
+
+      {/* Transaction Preview Modal */}
+      <TransactionPreviewModal
+        open={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+        transaction={selectedDeposit}
+        type="deposit"
+        onApprove={() => selectedDeposit && handleApprove(selectedDeposit)}
+        onReject={() => selectedDeposit && handleReject(selectedDeposit)}
+        isProcessing={processing}
+      />
     </div>
   );
 }

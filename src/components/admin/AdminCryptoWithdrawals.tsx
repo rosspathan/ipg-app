@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, RefreshCw } from "lucide-react";
+import { ExternalLink, RefreshCw, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TransactionPreviewModal } from "@/components/admin/TransactionPreviewModal";
 
 interface CryptoWithdrawal {
   id: string;
@@ -29,6 +30,8 @@ interface CryptoWithdrawal {
 export const AdminCryptoWithdrawals = () => {
   const [withdrawals, setWithdrawals] = useState<CryptoWithdrawal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<CryptoWithdrawal | null>(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const { toast } = useToast();
 
   const loadWithdrawals = async () => {
@@ -116,7 +119,19 @@ export const AdminCryptoWithdrawals = () => {
                       {new Date(withdrawal.created_at).toLocaleString()}
                     </p>
                   </div>
-                  {getStatusBadge(withdrawal.status)}
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(withdrawal.status)}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedWithdrawal(withdrawal);
+                        setPreviewModalOpen(true);
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -207,6 +222,14 @@ export const AdminCryptoWithdrawals = () => {
           <WithdrawalTable data={failedWithdrawals} />
         </TabsContent>
       </Tabs>
+
+      {/* Transaction Preview Modal */}
+      <TransactionPreviewModal
+        open={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+        transaction={selectedWithdrawal}
+        type="withdrawal"
+      />
     </div>
   );
 };
