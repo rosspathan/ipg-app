@@ -111,3 +111,9 @@ verify_jwt = true
 
 [functions.process-bsk-withdrawal]
 verify_jwt = true
+
+[functions.process-pending-withdrawals]
+verify_jwt = false
+
+[functions.monitor-deposit]
+verify_jwt = false

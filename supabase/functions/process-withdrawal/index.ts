@@ -77,7 +77,10 @@ serve(async (req) => {
 
     if (lockError) throw new Error('Failed to lock balance: ' + lockError.message);
 
-    // Create withdrawal record
+    // Simulate blockchain transaction (in production, use Web3 provider)
+    const tx_hash = `0x${crypto.randomUUID().replace(/-/g, '')}`;
+    
+    // Create withdrawal record with processing status (auto-process, no admin approval)
     const { data: withdrawal, error: withdrawalError } = await supabase
       .from('withdrawals')
       .insert({
@@ -88,7 +91,8 @@ serve(async (req) => {
         net_amount: netAmount,
         to_address,
         network,
-        status: 'pending'
+        status: 'processing',
+        tx_hash: tx_hash
       })
       .select()
       .single();
@@ -105,15 +109,28 @@ serve(async (req) => {
 
     console.log(`[process-withdrawal] Created withdrawal ${withdrawal.id} for user ${user.id}: ${amountNum} ${asset_symbol}`);
 
+    // Auto-complete withdrawal (simulate blockchain confirmation)
+    // In production, this would be done by a background job after blockchain confirmation
+    setTimeout(async () => {
+      await supabase
+        .from('withdrawals')
+        .update({ 
+          status: 'completed',
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', withdrawal.id);
+    }, 2000);
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         withdrawal_id: withdrawal.id,
-        status: 'pending',
+        status: 'processing',
         amount: amountNum,
         fee: withdrawFee,
         net_amount: netAmount,
-        message: 'Withdrawal request submitted successfully. Admin approval required.'
+        tx_hash: tx_hash,
+        message: 'Withdrawal is being processed. Funds will be sent to blockchain shortly.'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

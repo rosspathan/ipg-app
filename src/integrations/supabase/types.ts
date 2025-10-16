@@ -9057,6 +9057,10 @@ export type Database = {
         }
         Returns: Json
       }
+      credit_deposit_balance: {
+        Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
+        Returns: boolean
+      }
       generate_referral_code: {
         Args: { code_length?: number }
         Returns: string

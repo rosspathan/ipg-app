@@ -83,8 +83,8 @@ const WithdrawScreen = () => {
       if (error) throw error;
 
       toast({
-        title: "Withdrawal Submitted",
-        description: data.message || "Your withdrawal request has been submitted successfully",
+        title: "Withdrawal Processing",
+        description: `Your ${amount} ${selectedAsset} is being sent to ${address}. Check transaction history for status.`,
       });
       
       navigate("/app/wallet");

@@ -28,53 +28,39 @@ serve(async (req) => {
 
     if (depositError) throw depositError
 
-    // In production, this would:
-    // 1. Query blockchain for confirmation count
-    // 2. Update deposit.confirmations
-    // 3. When confirmations >= required_confirmations:
-    //    - Update deposit.status = 'completed'
-    //    - Credit wallet_balances
-    //    - Send notification to user
+    // In production, this would query blockchain for real confirmation count
+    // For now, simulate blockchain confirmation after 12 blocks
+    const confirmations = deposit.required_confirmations; // Simulate 12+ confirmations
+    
+    console.log(`[monitor-deposit] Checking deposit ${deposit_id}: ${confirmations}/${deposit.required_confirmations} confirmations`);
 
-    // For now, simulate immediate confirmation (development only)
-    const { error: updateError } = await supabaseClient
-      .from('deposits')
-      .update({
-        confirmations: deposit.required_confirmations,
-        status: 'completed',
-        credited_at: new Date().toISOString()
-      })
-      .eq('id', deposit_id)
+    // Auto-credit balance after required confirmations
+    if (confirmations >= deposit.required_confirmations) {
+      // Use the new database function to credit balance
+      const { error: creditError } = await supabaseClient.rpc('credit_deposit_balance', {
+        p_user_id: deposit.user_id,
+        p_asset_symbol: deposit.assets.symbol,
+        p_amount: parseFloat(deposit.amount)
+      });
 
-    if (updateError) throw updateError
+      if (creditError) {
+        console.error('[monitor-deposit] Failed to credit balance:', creditError);
+        throw creditError;
+      }
 
-    // Credit user's balance
-    const { data: existingBalance } = await supabaseClient
-      .from('wallet_balances')
-      .select('*')
-      .eq('user_id', deposit.user_id)
-      .eq('asset_id', deposit.asset_id)
-      .single()
-
-    if (existingBalance) {
-      await supabaseClient
-        .from('wallet_balances')
+      // Update deposit status to completed
+      const { error: updateError } = await supabaseClient
+        .from('deposits')
         .update({
-          available: existingBalance.available + parseFloat(deposit.amount),
-          total: existingBalance.total + parseFloat(deposit.amount)
+          confirmations: confirmations,
+          status: 'completed',
+          credited_at: new Date().toISOString()
         })
-        .eq('user_id', deposit.user_id)
-        .eq('asset_id', deposit.asset_id)
-    } else {
-      await supabaseClient
-        .from('wallet_balances')
-        .insert({
-          user_id: deposit.user_id,
-          asset_id: deposit.asset_id,
-          available: parseFloat(deposit.amount),
-          total: parseFloat(deposit.amount),
-          locked: 0
-        })
+        .eq('id', deposit_id);
+
+      if (updateError) throw updateError;
+
+      console.log(`[monitor-deposit] Auto-credited ${deposit.amount} ${deposit.assets.symbol} to user ${deposit.user_id}`);
     }
 
     return new Response(

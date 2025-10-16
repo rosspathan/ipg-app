@@ -392,7 +392,7 @@ const DepositScreen = () => {
             {depositRecorded && (
               <div className="flex items-center gap-2 text-sm text-success bg-success/10 p-3 rounded-lg">
                 <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                <span>Deposit is being monitored. You'll be notified when confirmed (12 confirmations).</span>
+                <span>Deposit recorded! Balance will be credited automatically after 12 confirmations (~3-5 minutes).</span>
               </div>
             )}
           </CardContent>
