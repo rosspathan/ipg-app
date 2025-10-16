@@ -5,6 +5,8 @@ import { KPIStat } from "@/components/admin/nova/KPIStat";
 import { RecordCard } from "@/components/admin/nova/RecordCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAdminDashboardData } from "@/hooks/useAdminDashboardData";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Users,
   FileCheck,
@@ -19,134 +21,88 @@ import {
 } from "lucide-react";
 
 /**
- * AdminDashboardNova - Main dashboard for Nova Admin
- * - KPI lane: top metrics
- * - Queues lane: pending review items
- * - Programs Health lane: program KPIs
- * - Quick Actions lane: common admin tasks
- * - Recent Activity feed
+ * AdminDashboardNova - Main dashboard with real-time data
  */
 export default function AdminDashboardNova() {
   const navigate = useNavigate();
+  const { data, loading } = useAdminDashboardData();
+
+  if (loading || !data) {
+    return (
+      <div data-testid="page-admin-home" className="w-full space-y-6 pb-6">
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-48 w-full rounded-2xl" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  const iconMap: Record<string, React.ReactNode> = {
+    "Total Users": <Users className="w-4 h-4" />,
+    "KYC Pending": <FileCheck className="w-4 h-4" />,
+    "Deposits Today": <TrendingUp className="w-4 h-4" />,
+    "Payouts Today": <DollarSign className="w-4 h-4" />,
+    "Staking TVL": <Coins className="w-4 h-4" />,
+    "Spin RTP": <RefreshCw className="w-4 h-4" />,
+    "Draw Fill Rate": <Gift className="w-4 h-4" />,
+    "Ads Impressions": <Megaphone className="w-4 h-4" />,
+  };
+
   return (
     <div data-testid="page-admin-home" className="w-full space-y-3 sm:space-y-4 md:space-y-6 pb-4 sm:pb-6">
-      {/* KPI Lane */}
+      {/* KPI Lane - Real Data */}
       <CardLane title="Key Metrics">
-        <KPIStat
-          label="Total Users"
-          value="12,847"
-          delta={{ value: 8.2, trend: "up" }}
-          sparkline={[100, 120, 115, 140, 135, 150, 155]}
-          icon={<Users className="w-4 h-4" />}
-        />
-        <KPIStat
-          label="KYC Pending"
-          value={234}
-          delta={{ value: 12, trend: "up" }}
-          icon={<FileCheck className="w-4 h-4" />}
-          variant="warning"
-        />
-        <KPIStat
-          label="Deposits Today"
-          value="$128k"
-          delta={{ value: 15.3, trend: "up" }}
-          sparkline={[80, 90, 95, 110, 105, 120, 128]}
-          icon={<TrendingUp className="w-4 h-4" />}
-          variant="success"
-        />
-        <KPIStat
-          label="Payouts Today"
-          value="$95k"
-          delta={{ value: 3.7, trend: "down" }}
-          sparkline={[100, 98, 95, 92, 95, 93, 95]}
-          icon={<DollarSign className="w-4 h-4" />}
-        />
-        <KPIStat
-          label="Spin P&L"
-          value="$12.4k"
-          delta={{ value: 22.1, trend: "up" }}
-          icon={<RefreshCw className="w-4 h-4" />}
-          variant="success"
-        />
-        <KPIStat
-          label="Draw P&L"
-          value="$8.2k"
-          delta={{ value: 5.4, trend: "up" }}
-          icon={<Gift className="w-4 h-4" />}
-          variant="success"
-        />
-        <KPIStat
-          label="Ads Revenue"
-          value="$22.1k"
-          delta={{ value: 18.9, trend: "up" }}
-          sparkline={[15, 17, 16, 19, 20, 21, 22]}
-          icon={<Megaphone className="w-4 h-4" />}
-          variant="success"
-        />
+        {data.kpiMetrics.map((metric) => (
+          <KPIStat
+            key={metric.label}
+            label={metric.label}
+            value={metric.value}
+            delta={metric.delta}
+            sparkline={metric.sparkline}
+            icon={iconMap[metric.label]}
+            variant={
+              metric.label === "KYC Pending" && Number(metric.value) > 50
+                ? "warning"
+                : metric.delta?.trend === "up"
+                ? "success"
+                : "default"
+            }
+          />
+        ))}
       </CardLane>
 
-      {/* Queues Lane */}
+      {/* Queues Lane - Real Data */}
       <CardLane title="Queues">
-        <QueueCard
-          title="KYC Review"
-          count={234}
-          icon={<FileCheck className="w-5 h-5" />}
-          variant="warning"
-          action={() => console.log("Review KYC")}
-        />
-        <QueueCard
-          title="Withdrawals"
-          count={47}
-          icon={<DollarSign className="w-5 h-5" />}
-          variant="default"
-          action={() => console.log("Review Withdrawals")}
-        />
-        <QueueCard
-          title="Insurance Claims"
-          count={12}
-          icon={<Shield className="w-5 h-5" />}
-          variant="default"
-          action={() => console.log("Review Claims")}
-        />
-        <QueueCard
-          title="Disputes"
-          count={8}
-          icon={<AlertCircle className="w-5 h-5" />}
-          variant="danger"
-          action={() => console.log("Review Disputes")}
-        />
+        {data.queues.map((queue) => (
+          <QueueCard
+            key={queue.title}
+            title={queue.title}
+            count={queue.count}
+            icon={
+              queue.title === "KYC Review" ? <FileCheck className="w-5 h-5" /> :
+              queue.title === "Withdrawals" ? <DollarSign className="w-5 h-5" /> :
+              queue.title === "Insurance Claims" ? <Shield className="w-5 h-5" /> :
+              <AlertCircle className="w-5 h-5" />
+            }
+            variant={queue.variant}
+            action={() => console.log(`Review ${queue.title}`)}
+          />
+        ))}
       </CardLane>
 
-      {/* Programs Health Lane */}
+      {/* Programs Health Lane - Real Data */}
       <CardLane title="Programs Health">
-        <KPIStat
-          label="Staking TVL"
-          value="$2.4M"
-          delta={{ value: 12.5, trend: "up" }}
-          icon={<Coins className="w-4 h-4" />}
-          variant="success"
-        />
-        <KPIStat
-          label="Spin RTP"
-          value="96.2%"
-          delta={{ value: 0.3, trend: "up" }}
-          icon={<RefreshCw className="w-4 h-4" />}
-        />
-        <KPIStat
-          label="Draw Fill Rate"
-          value="87%"
-          delta={{ value: 5, trend: "up" }}
-          icon={<Gift className="w-4 h-4" />}
-          variant="success"
-        />
-        <KPIStat
-          label="Ads Impressions"
-          value="1.2M"
-          delta={{ value: 22, trend: "up" }}
-          sparkline={[900, 950, 1000, 1050, 1100, 1150, 1200]}
-          icon={<Megaphone className="w-4 h-4" />}
-          variant="success"
-        />
+        {data.programHealth.map((metric) => (
+          <KPIStat
+            key={metric.label}
+            label={metric.label}
+            value={metric.value}
+            delta={metric.delta}
+            sparkline={metric.sparkline}
+            icon={iconMap[metric.label]}
+            variant={metric.delta?.trend === "up" ? "success" : "default"}
+          />
+        ))}
       </CardLane>
 
       {/* Quick Actions Lane */}

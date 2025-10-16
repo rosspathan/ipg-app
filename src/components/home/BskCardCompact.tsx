@@ -71,15 +71,19 @@ export function BskCardCompact({
 
   return (
     <div
+      role="region"
+      aria-label={`BSK ${isWithdrawable ? "Withdrawable" : "Holding"} Balance Card`}
       className={cn(
         "p-4 rounded-2xl border-2 space-y-3",
         "glass-card",
-        "transition-all duration-[220ms]",
+        "transition-all duration-300 ease-out",
         "flex flex-col h-full",
-        "hover:shadow-elevated active:scale-[0.99]",
+        "hover:shadow-elevated hover:scale-[1.02] active:scale-[0.99]",
+        "animate-fade-in-scale",
+        "focus-within:ring-2 focus-within:ring-offset-2",
         isWithdrawable 
-          ? "bg-gradient-to-br from-success/10 via-success/5 to-transparent border-success/30 hover:border-success/50" 
-          : "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30 hover:border-primary/50",
+          ? "bg-gradient-to-br from-success/10 via-success/5 to-transparent border-success/30 hover:border-success/50 focus-within:ring-success/30" 
+          : "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30 hover:border-primary/50 focus-within:ring-primary/30",
         className
       )}
       style={{
@@ -108,37 +112,38 @@ export function BskCardCompact({
           variant="ghost"
           size="sm"
           onClick={() => setIsPrivate(!isPrivate)}
-          className="h-6 w-6 p-0 hover:bg-muted/20 transition-all duration-[120ms] flex-shrink-0"
+          className="h-8 w-8 p-0 hover:bg-muted/20 transition-all duration-200 hover:scale-110 flex-shrink-0 touch-manipulation"
           aria-label={isPrivate ? "Show balance" : "Hide balance"}
+          aria-pressed={isPrivate}
         >
           {isPrivate ? (
-            <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+            <EyeOff className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           ) : (
-            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+            <Eye className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           )}
         </Button>
       </div>
 
       {/* Amount Row */}
-      <div className="relative">
+      <div className="relative" role="status" aria-live="polite">
         <div className={cn(
-          "font-heading font-bold text-2xl tabular-nums animate-fade-in",
+          "font-heading font-bold text-2xl tabular-nums animate-count-up",
           isWithdrawable ? "text-success" : "text-primary"
         )}>
           {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`}{" "}
           <span className={cn(
             "text-base font-semibold",
             isWithdrawable ? "text-success/70" : "text-primary/70"
-          )}>BSK</span>
+          )} aria-hidden="true">BSK</span>
         </div>
         <div className="font-body text-xs text-muted-foreground tabular-nums mt-1">
           {isPrivate ? "••••••" : `≈ ₹${fiatValue.toLocaleString()}`}
         </div>
         {/* Subtle glow behind amount */}
         <div className={cn(
-          "absolute -inset-4 blur-2xl opacity-20 pointer-events-none",
+          "absolute -inset-4 blur-2xl opacity-20 pointer-events-none animate-pulse-slow",
           isWithdrawable ? "bg-success" : "bg-primary"
-        )} />
+        )} aria-hidden="true" />
       </div>
 
       {/* Actions Row */}
@@ -149,14 +154,16 @@ export function BskCardCompact({
             variant="outline"
             size="sm"
             className={cn(
-              "flex-1 h-9 px-2 min-w-0",
+              "flex-1 h-11 px-3 min-w-0",
               "border-success/40 hover:border-success/60 hover:bg-success/15",
               "text-success font-body font-semibold text-xs",
               "focus:ring-2 focus:ring-success/30",
-              "transition-all duration-200 active:scale-95"
+              "transition-all duration-200 hover:scale-105 active:scale-95",
+              "touch-manipulation"
             )}
+            aria-label="Withdraw BSK"
           >
-            <ArrowDownToLine className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+            <ArrowDownToLine className="h-4 w-4 mr-1.5 flex-shrink-0" aria-hidden="true" />
             <span className="truncate">Withdraw</span>
           </Button>
           <Button
@@ -164,14 +171,16 @@ export function BskCardCompact({
             variant="outline"
             size="sm"
             className={cn(
-              "flex-1 h-9 px-2 min-w-0",
+              "flex-1 h-11 px-3 min-w-0",
               "border-primary/40 hover:border-primary/60 hover:bg-primary/15",
               "text-primary font-body font-semibold text-xs",
               "focus:ring-2 focus:ring-primary/30",
-              "transition-all duration-200 active:scale-95"
+              "transition-all duration-200 hover:scale-105 active:scale-95",
+              "touch-manipulation"
             )}
+            aria-label="Transfer BSK"
           >
-            <ArrowRightLeft className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+            <ArrowRightLeft className="h-4 w-4 mr-1.5 flex-shrink-0" aria-hidden="true" />
             <span className="truncate">Transfer</span>
           </Button>
         </div>

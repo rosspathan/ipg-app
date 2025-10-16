@@ -65,18 +65,20 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
       <button
         onClick={onCardPress}
         className={cn(
-          "relative w-full px-4 py-4 pr-10 rounded-2xl overflow-hidden",
+          "relative w-full px-4 py-4 pr-12 rounded-2xl overflow-hidden",
           "glass-card",
           "bg-gradient-to-br from-card/95 via-card/85 to-card/95",
           "backdrop-blur-xl border-2 border-primary/20",
           "transition-all duration-300 ease-out",
-          "hover:border-primary/40 hover:shadow-glow-primary",
+          "hover:border-primary/40 hover:shadow-glow-primary hover:scale-[1.01]",
           "active:scale-[0.99]",
           "focus:outline-none focus:ring-2 focus:ring-primary/30",
-          "group cursor-pointer",
+          "group cursor-pointer touch-manipulation",
+          "animate-fade-in-scale",
           className
         )}
         data-testid="kpi-card-unified"
+        aria-label="Portfolio overview card"
       >
         {/* Gradient overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />

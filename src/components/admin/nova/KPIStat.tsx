@@ -40,10 +40,14 @@ export function KPIStat({
   return (
     <div
       data-testid="kpi-stat"
+      role="article"
+      aria-label={`${label}: ${value}`}
       className={cn(
         "min-w-[160px] p-4 rounded-2xl",
         "bg-[hsl(229_30%_16%/0.5)] border",
         "backdrop-blur-sm",
+        "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg",
+        "animate-fade-in-scale",
         variantStyles[variant],
         className
       )}
@@ -53,28 +57,30 @@ export function KPIStat({
           {label}
         </p>
         {icon && (
-          <div className="text-muted-foreground">
+          <div className="text-muted-foreground transition-transform duration-200 hover:scale-110" aria-hidden="true">
             {icon}
           </div>
         )}
       </div>
 
       <div className="flex items-baseline gap-2 mb-1">
-        <p className="text-2xl font-heading font-bold text-foreground tabular-nums">
+        <p className="text-2xl font-heading font-bold text-foreground tabular-nums animate-count-up">
           {value}
         </p>
         
         {delta && (
           <div
             className={cn(
-              "flex items-center gap-0.5 text-xs font-medium",
+              "flex items-center gap-0.5 text-xs font-medium transition-colors duration-200",
               delta.trend === "up" ? "text-success" : "text-danger"
             )}
+            role="status"
+            aria-label={`${delta.trend === "up" ? "Increased" : "Decreased"} by ${Math.abs(delta.value)} percent`}
           >
             {delta.trend === "up" ? (
-              <TrendingUp className="w-3 h-3" />
+              <TrendingUp className="w-3 h-3 animate-bounce-subtle" aria-hidden="true" />
             ) : (
-              <TrendingDown className="w-3 h-3" />
+              <TrendingDown className="w-3 h-3 animate-bounce-subtle" aria-hidden="true" />
             )}
             <span className="tabular-nums">{Math.abs(delta.value)}%</span>
           </div>
