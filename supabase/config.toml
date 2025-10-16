@@ -99,3 +99,15 @@ verify_jwt = true
 
 # [functions.admin-create-default]
 # verify_jwt = false
+
+[functions.execute-swap]
+verify_jwt = true
+
+[functions.purchase-draw-tickets]
+verify_jwt = true
+
+[functions.process-withdrawal]
+verify_jwt = true
+
+[functions.process-bsk-withdrawal]
+verify_jwt = true

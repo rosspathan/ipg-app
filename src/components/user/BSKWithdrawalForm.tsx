@@ -62,7 +62,6 @@ export const BSKWithdrawalForm = () => {
 
     try {
       const requestData: any = {
-        user_id: user.id,
         amount_bsk: amountNum,
         withdrawal_type: withdrawalType
       };
@@ -96,15 +95,15 @@ export const BSKWithdrawalForm = () => {
         requestData.crypto_network = cryptoNetwork;
       }
 
-      const { error } = await supabase
-        .from('bsk_withdrawal_requests')
-        .insert(requestData);
+      const { data, error } = await supabase.functions.invoke('process-bsk-withdrawal', {
+        body: requestData
+      });
 
       if (error) throw error;
 
       toast({
         title: 'Withdrawal Request Submitted',
-        description: 'Your request has been sent to admin for processing'
+        description: data.message || 'Your request has been sent to admin for processing'
       });
 
       // Reset form

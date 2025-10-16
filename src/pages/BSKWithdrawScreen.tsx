@@ -8,14 +8,22 @@ const BSKWithdrawScreen = () => {
 
   return (
     <div className="container max-w-2xl mx-auto py-8 px-4">
-      <Button
-        variant="ghost"
-        onClick={() => navigate('/app/programs')}
-        className="mb-4"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
+      <div className="flex items-center justify-between mb-4">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/app/programs')}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate('/app/history/bsk-withdrawals')}
+        >
+          History
+        </Button>
+      </div>
 
       <BSKWithdrawalForm />
     </div>

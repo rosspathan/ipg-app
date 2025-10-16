@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import INRWithdrawScreen from "./INRWithdrawScreen";
 import { QRScanner } from "@/components/scanner/QRScanner";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { supabase } from "@/integrations/supabase/client";
 
 const WithdrawScreen = () => {
   const navigate = useNavigate();
@@ -68,13 +69,33 @@ const WithdrawScreen = () => {
     setShowConfirmation(true);
   };
 
-  const confirmWithdraw = () => {
-    // Simulate PIN/biometric confirmation
-    toast({
-      title: "Withdrawal Submitted",
-      description: "Your withdrawal request has been submitted successfully",
-    });
-    navigate("/app/wallet");
+  const confirmWithdraw = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('process-withdrawal', {
+        body: {
+          asset_symbol: selectedAsset,
+          network: selectedNetwork,
+          to_address: address,
+          amount: amount
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Withdrawal Submitted",
+        description: data.message || "Your withdrawal request has been submitted successfully",
+      });
+      
+      navigate("/app/wallet");
+    } catch (error: any) {
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to process withdrawal",
+        variant: "destructive"
+      });
+      setShowConfirmation(false);
+    }
   };
 
   if (showConfirmation) {
@@ -138,16 +159,25 @@ const WithdrawScreen = () => {
     <div className="min-h-screen bg-background px-6 py-8">
       <div className="max-w-sm mx-auto w-full space-y-6">
         {/* Header */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/app/wallet")}
+              className="p-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-2xl font-bold text-foreground">Withdraw</h1>
+          </div>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={() => navigate("/app/wallet")}
-            className="p-2"
+            onClick={() => navigate("/app/history/withdrawals")}
           >
-            <ArrowLeft className="w-5 h-5" />
+            History
           </Button>
-          <h1 className="text-2xl font-bold text-foreground">Withdraw</h1>
         </div>
 
         {/* Tabs for Crypto and INR */}
