@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Shield, Star, Crown, Gem, Sparkles, ArrowUp } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigation } from "@/hooks/useNavigation";
 import { useAuthUser } from '@/hooks/useAuthUser';
@@ -18,7 +16,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useDisplayName } from "@/hooks/useDisplayName"
+import { useDisplayName } from "@/hooks/useDisplayName";
+import { BadgeHero } from "@/components/badges/BadgeHero";
+import { TierTimeline } from "@/components/badges/TierTimeline";
+import { BadgeGrid } from "@/components/badges/BadgeGrid";
+import { BadgeComparisonTable } from "@/components/badges/BadgeComparisonTable";
+import { BadgeBenefits, generateTierBenefits } from "@/components/badges/BadgeBenefits";
+import { BadgeSocialProof } from "@/components/badges/BadgeSocialProof";
+import type { BadgeGridItem } from "@/components/badges/BadgeGrid";
 
 const BadgeSubscriptionScreen = () => {
   const { goBack } = useNavigation();
@@ -37,13 +42,14 @@ const BadgeSubscriptionScreen = () => {
     upgradeCost: number;
   } | null>(null);
 
+  const badgeOrder = ['SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'VIP'];
+
   // Load current badge and BSK balance
   useEffect(() => {
     if (!user?.id) return;
     
     const loadUserData = async () => {
       try {
-        // Get current badge from user_badge_holdings
         const { data: badgeData } = await supabase
           .from('user_badge_holdings')
           .select('current_badge')
@@ -54,7 +60,6 @@ const BadgeSubscriptionScreen = () => {
           setCurrentBadge(badgeData.current_badge);
         }
 
-        // Get BSK balance
         const { data: balanceData } = await supabase
           .from('user_bsk_balances')
           .select('withdrawable_balance, holding_balance')
@@ -72,48 +77,12 @@ const BadgeSubscriptionScreen = () => {
     loadUserData();
   }, [user?.id]);
 
-  const getBadgeIcon = (badgeName: string) => {
-    switch (badgeName.toUpperCase()) {
-      case 'SILVER': return <Shield className="w-6 h-6" />;
-      case 'GOLD': return <Star className="w-6 h-6" />;
-      case 'PLATINUM': return <Gem className="w-6 h-6" />;
-      case 'DIAMOND': return <Sparkles className="w-6 h-6" />;
-      case 'VIP': return <Crown className="w-6 h-6" />;
-      default: return <Shield className="w-6 h-6" />;
-    }
-  };
-
-  const getBadgeColor = (badgeName: string) => {
-    switch (badgeName.toUpperCase()) {
-      case 'SILVER': return 'text-gray-400';
-      case 'GOLD': return 'text-yellow-500';
-      case 'PLATINUM': return 'text-cyan-400';
-      case 'DIAMOND': return 'text-blue-400';
-      case 'VIP': return 'text-purple-500';
-      default: return 'text-gray-400';
-    }
-  };
-
-  const badgeOrder = ['SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'VIP'];
-  const currentBadgeIndex = badgeOrder.indexOf(currentBadge.toUpperCase());
-
-  const handleBadgePurchase = (badge: typeof badgeThresholds[0]) => {
-    const badgeIndex = badgeOrder.indexOf(badge.badge_name.toUpperCase());
-    const isUpgrade = currentBadgeIndex >= 0 && badgeIndex > currentBadgeIndex;
-    
-    let upgradeCost = badge.bsk_threshold;
-    if (isUpgrade) {
-      const currentBadgeData = badgeThresholds.find(b => b.badge_name.toUpperCase() === currentBadge.toUpperCase());
-      if (currentBadgeData) {
-        upgradeCost = badge.bsk_threshold - currentBadgeData.bsk_threshold;
-      }
-    }
-
+  const handleBadgePurchase = (badge: BadgeGridItem) => {
     setSelectedBadge({
-      name: badge.badge_name,
-      price: badge.bsk_threshold,
-      isUpgrade,
-      upgradeCost
+      name: badge.name,
+      price: badge.fullPrice,
+      isUpgrade: badge.isUpgrade,
+      upgradeCost: badge.upgradeCost || badge.fullPrice
     });
   };
 
@@ -135,7 +104,6 @@ const BadgeSubscriptionScreen = () => {
     setPurchasingBadge(selectedBadge.name);
     
     try {
-      // Call edge function to process badge purchase
       const { data, error } = await supabase.functions.invoke('badge-purchase', {
         body: {
           user_id: user.id,
@@ -153,7 +121,7 @@ const BadgeSubscriptionScreen = () => {
         description: `${selectedBadge.isUpgrade ? 'Upgraded to' : 'Purchased'} ${selectedBadge.name} badge. Your referrer earned 10% commission.`
       });
 
-      // Refresh data from server
+      // Refresh data
       const { data: badgeData } = await supabase
         .from('user_badge_holdings')
         .select('current_badge')
@@ -206,137 +174,181 @@ const BadgeSubscriptionScreen = () => {
       return badgeOrder.indexOf(a.badge_name.toUpperCase()) - badgeOrder.indexOf(b.badge_name.toUpperCase());
     });
 
+  const currentBadgeIndex = badgeOrder.indexOf(currentBadge.toUpperCase());
+  const nextTier = activeBadges.find((b) => {
+    const badgeIndex = badgeOrder.indexOf(b.badge_name.toUpperCase());
+    return badgeIndex > currentBadgeIndex;
+  });
+
+  // Transform badges for BadgeGrid
+  const gridBadges: BadgeGridItem[] = activeBadges.map((badge) => {
+    const badgeIndex = badgeOrder.indexOf(badge.badge_name.toUpperCase());
+    const isCurrentBadge = badge.badge_name.toUpperCase() === currentBadge.toUpperCase();
+    const canPurchase = currentBadgeIndex < 0 || badgeIndex > currentBadgeIndex;
+    const isLowerTier = currentBadgeIndex >= 0 && badgeIndex <= currentBadgeIndex;
+    
+    let displayCost = badge.bsk_threshold;
+    let isUpgrade = false;
+    
+    if (currentBadgeIndex >= 0 && badgeIndex > currentBadgeIndex) {
+      const currentBadgeData = badgeThresholds.find(b => b.badge_name.toUpperCase() === currentBadge.toUpperCase());
+      if (currentBadgeData) {
+        displayCost = badge.bsk_threshold - currentBadgeData.bsk_threshold;
+        isUpgrade = true;
+      }
+    }
+
+    return {
+      id: badge.id,
+      name: badge.badge_name,
+      description: badge.description || '',
+      fullPrice: badge.bsk_threshold,
+      upgradeCost: displayCost,
+      unlockLevels: badge.unlock_levels,
+      bonusBSK: badge.bonus_bsk_holding,
+      isCurrent: isCurrentBadge,
+      isUpgrade,
+      isLowerTier,
+      canPurchase: canPurchase && !isCurrentBadge,
+    };
+  });
+
+  // Timeline tiers
+  const timelineTiers = activeBadges.map(b => ({
+    name: b.badge_name,
+    unlockLevels: b.unlock_levels,
+    cost: b.bsk_threshold,
+  }));
+
+  // Comparison features
+  const comparisonFeatures = [
+    {
+      name: 'Referral Levels',
+      values: Object.fromEntries(
+        activeBadges.map(b => [b.badge_name.toUpperCase(), b.unlock_levels])
+      )
+    },
+    {
+      name: 'Bonus BSK',
+      values: Object.fromEntries(
+        activeBadges.map(b => [b.badge_name.toUpperCase(), `${b.bonus_bsk_holding} BSK`])
+      )
+    },
+    {
+      name: 'Commission Rate',
+      values: {
+        SILVER: '5%',
+        GOLD: '7%',
+        PLATINUM: '10%',
+        DIAMOND: '12%',
+        VIP: '15%'
+      }
+    },
+    {
+      name: 'Priority Support',
+      values: {
+        SILVER: false,
+        GOLD: true,
+        PLATINUM: true,
+        DIAMOND: true,
+        VIP: true
+      }
+    },
+    {
+      name: 'Early Access',
+      values: {
+        SILVER: false,
+        GOLD: false,
+        PLATINUM: true,
+        DIAMOND: true,
+        VIP: true
+      }
+    },
+    {
+      name: 'VIP Physical Card',
+      values: {
+        SILVER: false,
+        GOLD: false,
+        PLATINUM: false,
+        DIAMOND: false,
+        VIP: true
+      }
+    }
+  ];
+
+  const tierBenefits = generateTierBenefits(activeBadges);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="flex items-center gap-4 px-6 py-4">
+      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-lg border-b border-border">
+        <div className="flex items-center gap-4 px-6 py-4 max-w-7xl mx-auto">
           <Button variant="ghost" size="icon" onClick={goBack}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{displayName}'s Badges</h1>
-            <p className="text-sm text-muted-foreground">Subscribe or upgrade to unlock more benefits</p>
+            <h1 className="text-2xl font-bold">{displayName}'s Badge Upgrade</h1>
+            <p className="text-sm text-muted-foreground">Unlock more benefits and higher earnings</p>
           </div>
         </div>
       </div>
 
-      <div className="px-6 py-6 space-y-6">
-        {/* Current Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Current Badge</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={getBadgeColor(currentBadge)}>{getBadgeIcon(currentBadge)}</span>
-                  <span className="text-lg font-bold">{currentBadge}</span>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">BSK Balance</p>
-                <p className="text-lg font-bold">{bskBalance.toFixed(2)} BSK</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-12">
+        {/* Hero Section */}
+        <BadgeHero
+          currentBadge={currentBadge}
+          bskBalance={bskBalance}
+          nextTierCost={nextTier?.bsk_threshold}
+          nextTierName={nextTier?.badge_name}
+        />
 
-        {/* Available Badges */}
+        {/* Social Proof */}
+        <BadgeSocialProof />
+
+        {/* Tier Timeline */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Available Badges</h2>
-          
-          {activeBadges.map((badge) => {
-            const badgeIndex = badgeOrder.indexOf(badge.badge_name.toUpperCase());
-            const isCurrentBadge = badge.badge_name.toUpperCase() === currentBadge.toUpperCase();
-            const canPurchase = currentBadgeIndex < 0 || badgeIndex > currentBadgeIndex;
-            const isLowerTier = currentBadgeIndex >= 0 && badgeIndex <= currentBadgeIndex;
-            
-            let displayCost = badge.bsk_threshold;
-            let isUpgrade = false;
-            
-            if (currentBadgeIndex >= 0 && badgeIndex > currentBadgeIndex) {
-              const currentBadgeData = badgeThresholds.find(b => b.badge_name.toUpperCase() === currentBadge.toUpperCase());
-              if (currentBadgeData) {
-                displayCost = badge.bsk_threshold - currentBadgeData.bsk_threshold;
-                isUpgrade = true;
-              }
-            }
+          <div className="text-center">
+            <h2 className="text-3xl font-bold">Your Badge Journey</h2>
+            <p className="text-muted-foreground mt-2">Track your progress through the tiers</p>
+          </div>
+          <TierTimeline currentBadge={currentBadge} tiers={timelineTiers} />
+        </div>
 
-            return (
-              <Card key={badge.id} className={isCurrentBadge ? 'border-primary' : ''}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className={getBadgeColor(badge.badge_name)}>
-                        {getBadgeIcon(badge.badge_name)}
-                      </span>
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          {badge.badge_name}
-                          {isCurrentBadge && (
-                            <Badge variant="secondary">Current</Badge>
-                          )}
-                        </CardTitle>
-                        <CardDescription>{badge.description}</CardDescription>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Full Price</p>
-                        <p className="font-bold">{badge.bsk_threshold} BSK</p>
-                      </div>
-                      {isUpgrade && displayCost !== badge.bsk_threshold && (
-                        <div className="bg-green-500/10 p-2 rounded-lg border border-green-500/20">
-                          <p className="text-muted-foreground text-xs">Upgrade Cost (You Save {badge.bsk_threshold - displayCost} BSK)</p>
-                          <p className="font-bold text-green-500 text-lg">{displayCost} BSK</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-muted-foreground">Unlocks Levels</p>
-                        <p className="font-bold">{badge.unlock_levels}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Bonus BSK (Holding)</p>
-                        <p className="font-bold">{badge.bonus_bsk_holding} BSK</p>
-                      </div>
-                    </div>
+        {/* Badge Grid */}
+        <div className="space-y-4">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold">Available Badges</h2>
+            <p className="text-muted-foreground mt-2">Choose the perfect tier for your goals</p>
+          </div>
+          <BadgeGrid
+            badges={gridBadges}
+            onPurchase={handleBadgePurchase}
+            isProcessing={purchasingBadge !== null}
+          />
+        </div>
 
-                    {isCurrentBadge ? (
-                      <Button disabled className="w-full">
-                        Current Badge
-                      </Button>
-                    ) : isLowerTier ? (
-                      <Button disabled variant="outline" className="w-full">
-                        Lower Tier
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={() => handleBadgePurchase(badge)}
-                        disabled={purchasingBadge !== null}
-                        className="w-full"
-                      >
-                        {isUpgrade && <ArrowUp className="w-4 h-4 mr-2" />}
-                        {isUpgrade ? `Upgrade for ${displayCost} BSK` : `Purchase for ${displayCost} BSK`}
-                      </Button>
-                    )}
-                    
-                    {displayCost > 0 && (
-                      <p className="text-xs text-muted-foreground text-center">
-                        ✨ Your referrer earns 10% commission on this purchase
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        {/* Comparison Table */}
+        <div className="space-y-4">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold">Compare All Tiers</h2>
+            <p className="text-muted-foreground mt-2">See what each badge offers</p>
+          </div>
+          <div className="rounded-2xl border border-border overflow-hidden bg-card">
+            <BadgeComparisonTable
+              tiers={activeBadges.map(b => b.badge_name)}
+              features={comparisonFeatures}
+              currentBadge={currentBadge}
+            />
+          </div>
+        </div>
+
+        {/* Benefits Showcase */}
+        <div className="space-y-4">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold">Exclusive Benefits</h2>
+            <p className="text-muted-foreground mt-2">Explore what you'll unlock at each tier</p>
+          </div>
+          <BadgeBenefits tierBenefits={tierBenefits} currentBadge={currentBadge} />
         </div>
       </div>
 
@@ -347,20 +359,32 @@ const BadgeSubscriptionScreen = () => {
             <AlertDialogTitle>
               {selectedBadge?.isUpgrade ? 'Confirm Badge Upgrade' : 'Confirm Badge Purchase'}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              You are about to {selectedBadge?.isUpgrade ? 'upgrade to' : 'purchase'} the <strong>{selectedBadge?.name}</strong> badge.
-              <br /><br />
-              <strong>Cost:</strong> {selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price} BSK
-              <br />
-              <strong>Your Balance:</strong> {bskBalance.toFixed(2)} BSK
-              <br /><br />
-              Your referrer will automatically receive 10% commission ({((selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price || 0) * 0.1).toFixed(2)} BSK).
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                You are about to {selectedBadge?.isUpgrade ? 'upgrade to' : 'purchase'} the <strong>{selectedBadge?.name}</strong> badge.
+              </p>
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Cost:</span>
+                  <span className="font-semibold">{selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price} BSK</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Your Balance:</span>
+                  <span className="font-semibold">{bskBalance.toFixed(2)} BSK</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Referrer Commission:</span>
+                  <span className="font-semibold text-accent">
+                    {((selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price || 0) * 0.1).toFixed(2)} BSK (10%)
+                  </span>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={purchasingBadge !== null}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmPurchase} disabled={purchasingBadge !== null}>
-              {purchasingBadge ? 'Processing...' : 'Confirm'}
+              {purchasingBadge ? 'Processing...' : 'Confirm Purchase'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
