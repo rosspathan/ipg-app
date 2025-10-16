@@ -7,8 +7,8 @@ import { ChevronLeft, Mail, RefreshCw, CheckCircle, Link as LinkIcon, Gift, Aler
 import { OTPInput } from '@/components/auth/OTPInput';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { storeEvmAddress } from '@/lib/wallet/evmAddress';
 import { extractUsernameFromEmail } from '@/lib/user/username';
+import { storeEvmAddress } from '@/lib/wallet/evmAddress';
 import { useNavigate } from 'react-router-dom';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
@@ -293,7 +293,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         body: {
           email,
           verificationCode: code,
-          userName: email.split('@')[0],
+          userName: extractUsernameFromEmail(email),
           isOnboarding: true
         }
       });

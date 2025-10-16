@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ChevronLeft, Wallet, Mail, CheckCircle, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { extractUsernameFromEmail } from '@/lib/user/username';
 
 interface VerifyWalletAndEmailScreenProps {
   walletAddress: string;
@@ -76,7 +77,7 @@ const VerifyWalletAndEmailScreen: React.FC<VerifyWalletAndEmailScreenProps> = ({
         body: {
           email: email.trim(),
           verificationCode: code,
-          userName: email.split('@')[0],
+          userName: extractUsernameFromEmail(email.trim()),
           isOnboarding: true
         }
       });

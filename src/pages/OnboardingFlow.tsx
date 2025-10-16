@@ -1,6 +1,7 @@
 import React from 'react';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useWeb3 } from '@/contexts/Web3Context';
+import { extractUsernameFromEmail } from '@/lib/user/username';
 import SplashScreen from './onboarding/SplashScreen';
 import WelcomeScreens from './onboarding/WelcomeScreens';
 import WalletChoiceScreen from './onboarding/WalletChoiceScreen';
@@ -81,7 +82,7 @@ const OnboardingFlow: React.FC = () => {
       body: {
         email: state.email,
         verificationCode,
-        userName: state.email.split('@')[0],
+        userName: extractUsernameFromEmail(state.email),
         isOnboarding: true
       }
     });

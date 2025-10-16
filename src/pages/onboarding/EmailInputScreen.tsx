@@ -7,6 +7,7 @@ import { ChevronLeft, Mail, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { generateVerificationCode, storeVerificationCode } from '@/utils/security';
 import { useToast } from '@/hooks/use-toast';
+import { extractUsernameFromEmail } from '@/lib/user/username';
 
 interface EmailInputScreenProps {
   onEmailSubmitted: (email: string) => void;
@@ -69,7 +70,7 @@ const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
         body: {
           email: email.trim(),
           verificationCode: code,
-          userName: email.split('@')[0],
+          userName: extractUsernameFromEmail(email.trim()),
           isOnboarding: true
         }
       });

@@ -2,6 +2,29 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
+import { extractUsernameFromEmail } from '@/lib/user/username';
+
+/**
+ * Profile Fields Usage Guide:
+ * 
+ * - `username`: Auto-generated from email (e.g., "john" from john@example.com)
+ *               Used for display in UI, referrals, and as default display name
+ *               Set on profile creation and immutable
+ * 
+ * - `display_name`: User-customizable display name (optional)
+ *                   Takes priority over username if set
+ *                   Can be changed in profile settings
+ * 
+ * - `full_name`: Legal full name from KYC (e.g., "John Doe")
+ *                Only used for KYC/legal purposes
+ *                NOT for display in general UI
+ * 
+ * - `email`: User's email address
+ *            NEVER display directly in UI (privacy)
+ *            Use masked version (e.g., "jo***@example.com")
+ * 
+ * Display Priority: display_name > username > "user{id}"
+ */
 
 export interface UserApp {
   id: string;
@@ -9,6 +32,7 @@ export interface UserApp {
   email?: string;
   phone?: string;
   username?: string;
+  display_name?: string;
   full_name?: string;
   wallet_address?: string;
   referral_code?: string;
@@ -39,12 +63,14 @@ export const useProfile = () => {
       if (error) throw error;
 
       if (!data) {
-        // Create initial user app record with required referral_code
+        // Create initial user app record with username and required referral_code
+        const username = extractUsernameFromEmail(user.email, user.id);
         const { data: newUserApp, error: createError } = await supabase
           .from('profiles')
           .insert([{
             user_id: user.id,
             email: user.email,
+            username: username,
             account_status: 'active',
             referral_code: user.id.substring(0, 8).toUpperCase()
           }])

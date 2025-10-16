@@ -9,6 +9,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useAvatar } from "@/hooks/useAvatar";
 import { useUserBadge } from "@/hooks/useUserBadge";
+import { useUsername } from "@/hooks/useUsername";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,7 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { DockNav } from "@/components/navigation/DockNav";
 import { QuickSwitch } from "@/components/astra/QuickSwitch";
 import { MiniIdCardPreview } from "@/components/profile/MiniIdCardPreview";
-import { useDisplayName } from "@/hooks/useDisplayName";
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
 
 const profileSections = [
@@ -80,6 +80,7 @@ export function ProfileHub() {
   const { completion } = useProfileCompletion();
   const { getAvatarUrl } = useAvatar();
   const { badge } = useUserBadge();
+  const username = useUsername();
   const [showQuickSwitch, setShowQuickSwitch] = useState(false);
   
   // Note: Profile is protected by UserRoute, no need for additional redirect check
@@ -110,7 +111,6 @@ export function ProfileHub() {
 
   const avatarUrl = getAvatarUrl('1x');
   useUsernameBackfill();
-  const displayName = useDisplayName();
   const completionScore = completion?.completion_score || 0;
   
   // Show loading state while auth is initializing
@@ -148,7 +148,7 @@ export function ProfileHub() {
         {user && (
           <MiniIdCardPreview
             avatarUrl={avatarUrl || undefined}
-            displayName={displayName}
+            displayName={username}
             email={user.email || ''}
             badge={badge}
             userId={user.id || ''}
