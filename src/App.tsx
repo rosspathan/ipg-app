@@ -118,6 +118,7 @@ import StakingSubmissionScreen from "./pages/StakingSubmissionScreen";
 import NewLuckyDraw from "./components/NewLuckyDraw";
 import BSKWithdrawScreen from "@/pages/BSKWithdrawScreen";
 import AdminBSKWithdrawalsScreen from "@/pages/AdminBSKWithdrawalsScreen";
+import AdminCryptoWithdrawalsScreen from "@/pages/AdminCryptoWithdrawalsScreen";
 import CryptoConversionScreen from "./pages/CryptoConversionScreen";
 
 import SpinHistoryScreen from "./pages/SpinHistoryScreen";
@@ -413,6 +414,7 @@ function AppContent() {
                 <Route path="bsk-manual-purchases" element={<AdminManualPurchasesScreen />} />
                 <Route path="crypto-conversions" element={<AdminCryptoConversionsScreen />} />
                 <Route path="bsk-withdrawals" element={<AdminBSKWithdrawalsScreen />} />
+                <Route path="crypto-withdrawals" element={<AdminCryptoWithdrawalsScreen />} />
                 <Route path="announcements" element={<React.Suspense fallback={<div>Loading...</div>}><AdminAnnouncementsManager /></React.Suspense>} />
                 
                 {/* Programs */}
