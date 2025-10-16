@@ -611,19 +611,44 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                       autoFocus
                     />
                     
-                    {isVerifying && (
-                      <motion.div
+                    {/* Verify Button */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                      className="mt-6"
+                    >
+                      <Button
+                        onClick={handleVerifyCode}
+                        disabled={code.length !== 6 || isVerifying}
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed h-12"
+                      >
+                        {isVerifying ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                            />
+                            Verifying...
+                          </div>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-5 h-5 mr-2" />
+                            Verify Email
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
+                    
+                    {code.length === 6 && !isVerifying && (
+                      <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="mt-4 flex items-center justify-center gap-2 text-sm text-white/60"
+                        className="mt-3 text-center text-green-400 text-sm"
                       >
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                        />
-                        Verifying...
-                      </motion.div>
+                        Ready to verify
+                      </motion.p>
                     )}
                   </div>
                 </div>
