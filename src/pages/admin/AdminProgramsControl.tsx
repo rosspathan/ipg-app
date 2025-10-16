@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProgramModules } from "@/hooks/useProgramRegistry";
 import { useProgramAnalytics } from "@/hooks/useProgramAnalytics";
@@ -61,6 +62,41 @@ export default function AdminProgramControl() {
   const livePrograms = modules?.filter(m => m.status === 'live') || [];
   const totalUsers = analytics?.reduce((sum, a) => sum + (a.activeUsers || 0), 0) || 0;
   const totalRevenue = analytics?.reduce((sum, a) => sum + (a.revenue || 0), 0) || 0;
+
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+
+  const validateProgramConfig = (moduleKey: string, config: any) => {
+    const errors: string[] = [];
+
+    if (moduleKey === 'ad_mining') {
+      if (!config?.reward_bsk || config.reward_bsk <= 0) {
+        errors.push('Reward BSK must be greater than 0');
+      }
+      if (config?.required_view_time_seconds < 5) {
+        errors.push('View time must be at least 5 seconds');
+      }
+    }
+
+    if (moduleKey === 'lucky_draw') {
+      if (!config?.ticket_price || config.ticket_price <= 0) {
+        errors.push('Ticket price must be greater than 0');
+      }
+      if (!config?.first_prize || config.first_prize <= 0) {
+        errors.push('First prize must be greater than 0');
+      }
+    }
+
+    if (moduleKey === 'spin_wheel') {
+      if (config?.min_bet >= config?.max_bet) {
+        errors.push('Min bet must be less than max bet');
+      }
+      if (config?.free_spins_per_day < 0) {
+        errors.push('Free spins cannot be negative');
+      }
+    }
+
+    return { success: errors.length === 0, errors };
+  };
 
   const handleStatusToggle = async (moduleId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'live' ? 'paused' : 'live';
@@ -197,7 +233,7 @@ export default function AdminProgramControl() {
         <Button
           onClick={() => navigate('/admin/programs')}
           size="lg"
-          className="fixed bottom-20 right-4 rounded-full min-w-[56px] min-h-[56px] w-14 h-14 shadow-lg z-50"
+          className="fixed bottom-20 right-4 rounded-full min-w-[56px] min-h-[56px] w-14 h-14 shadow-lg z-[55]"
           aria-label="Create new program"
         >
           <Plus className="w-6 h-6" />
