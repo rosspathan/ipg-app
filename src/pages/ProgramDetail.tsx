@@ -50,7 +50,7 @@ export default function ProgramDetail() {
           <p className="text-muted-foreground mb-4">
             The program you're looking for doesn't exist or is not available.
           </p>
-          <Button onClick={() => navigate("/programs")}>Browse Programs</Button>
+          <Button onClick={() => navigate("/programs-hub")}>Browse Programs</Button>
         </div>
       </div>
     )
@@ -71,7 +71,7 @@ export default function ProgramDetail() {
           <Button variant="outline" size="icon">
             <Bookmark className="h-4 w-4" />
           </Button>
-          <Button onClick={() => navigate(`/programs/${key}/participate`)}>
+          <Button onClick={() => navigate(`/programs-hub/${key}/participate`)}>
             <Play className="h-4 w-4 mr-2" />
             Start Now
           </Button>

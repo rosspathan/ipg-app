@@ -13,9 +13,9 @@ import { useSecuritySync } from "@/hooks/useSecuritySync";
 import { RouterWrapper } from "@/components/RouterWrapper";
 import { AppInitializer } from "@/components/AppInitializer";
 import { AppStateManager } from "@/components/AppStateManager";
+import PrefixRedirect from "@/components/routing/PrefixRedirect";
 
 // Layouts
-import UserLayout from "@/layouts/UserLayout";
 import AdminLayout from "@/layouts/AdminLayout";
 import AdminLayoutClean from "@/layouts/AdminLayoutClean";
 import { AdminShellAdaptive } from "@/components/admin/nova/AdminShellAdaptive";
@@ -497,6 +497,8 @@ function AppContent() {
               <Route path="/programs-hub/:key" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramDetail /></React.Suspense>} />
               <Route path="/programs-hub/:key/participate" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramParticipate /></React.Suspense>} />
 
+              {/* Redirect legacy /programs/* to /app/programs/* */}
+              <Route path="/programs/*" element={<PrefixRedirect prefix="/app" />} />
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
