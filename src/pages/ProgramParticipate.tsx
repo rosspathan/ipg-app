@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft } from "lucide-react"
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar"
 
 export default function ProgramParticipate() {
   const { key } = useParams<{ key: string }>()
@@ -51,16 +52,9 @@ export default function ProgramParticipate() {
   }
 
   return (
-    <ProgramPageTemplate
-      title={program.name}
-      subtitle="Participate Now"
-      headerActions={
-        <Button variant="ghost" onClick={() => navigate(`/programs-hub/${key}`)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-      }
-    >
+    <div className="min-h-screen bg-gradient-to-b from-background to-background/95">
+      <BacklinkBar programName={program.name} />
+      <div className="p-4">
       <ParticipationFlow
         moduleId={program.id}
         moduleName={program.name}
@@ -122,6 +116,7 @@ export default function ProgramParticipate() {
           </div>
         )}
       </ParticipationFlow>
-    </ProgramPageTemplate>
+      </div>
+    </div>
   )
 }

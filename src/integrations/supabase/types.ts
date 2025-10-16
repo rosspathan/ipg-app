@@ -1135,6 +1135,42 @@ export type Database = {
           },
         ]
       }
+      bsk_admin_operations: {
+        Row: {
+          admin_id: string
+          amount: number | null
+          config_id: string | null
+          created_at: string
+          destination: string | null
+          id: string
+          notes: string | null
+          operation_type: string
+          recipient_id: string | null
+        }
+        Insert: {
+          admin_id: string
+          amount?: number | null
+          config_id?: string | null
+          created_at?: string
+          destination?: string | null
+          id?: string
+          notes?: string | null
+          operation_type: string
+          recipient_id?: string | null
+        }
+        Update: {
+          admin_id?: string
+          amount?: number | null
+          config_id?: string | null
+          created_at?: string
+          destination?: string | null
+          id?: string
+          notes?: string | null
+          operation_type?: string
+          recipient_id?: string | null
+        }
+        Relationships: []
+      }
       bsk_admin_settings: {
         Row: {
           created_at: string
@@ -8971,8 +9007,23 @@ export type Database = {
       }
     }
     Functions: {
+      admin_mint_bsk: {
+        Args: {
+          p_admin_id: string
+          p_amount: number
+          p_config_id?: string
+          p_destination: string
+          p_notes?: string
+          p_recipient_id?: string
+        }
+        Returns: Json
+      }
       admin_reset_all_user_balances: {
         Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      admin_update_bsk_rate: {
+        Args: { p_admin_id: string; p_new_rate: number; p_notes?: string }
         Returns: Json
       }
       bulk_update_program_status: {

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Play, Share2, Bookmark } from "lucide-react"
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar"
 
 export default function ProgramDetail() {
   const { key } = useParams<{ key: string }>()
@@ -60,24 +61,26 @@ export default function ProgramDetail() {
   const iconMedia = program.program_media?.find((m: any) => m.media_type === "icon")
 
   return (
-    <ProgramPageTemplate
-      title={program.name}
-      subtitle={(program as any).subtitle || ""}
-      headerActions={
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon">
-            <Share2 className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon">
-            <Bookmark className="h-4 w-4" />
-          </Button>
-          <Button onClick={() => navigate(`/programs-hub/${key}/participate`)}>
-            <Play className="h-4 w-4 mr-2" />
-            Start Now
-          </Button>
-        </div>
-      }
-    >
+    <div className="min-h-screen bg-gradient-to-b from-background to-background/95">
+      <BacklinkBar programName={program.name} />
+      <ProgramPageTemplate
+        title={program.name}
+        subtitle={(program as any).subtitle || ""}
+        headerActions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon">
+              <Share2 className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Bookmark className="h-4 w-4" />
+            </Button>
+            <Button onClick={() => navigate(`/programs-hub/${key}/participate`)}>
+              <Play className="h-4 w-4 mr-2" />
+              Start Now
+            </Button>
+          </div>
+        }
+      >
       {/* Hero Banner */}
       {bannerMedia?.file_url && (
         <div className="relative h-48 rounded-lg overflow-hidden mb-6">
@@ -166,5 +169,6 @@ export default function ProgramDetail() {
         </TabsContent>
       </Tabs>
     </ProgramPageTemplate>
+    </div>
   )
 }
