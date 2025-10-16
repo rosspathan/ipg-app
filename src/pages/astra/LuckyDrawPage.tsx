@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useProgramConfig } from "@/hooks/useProgramConfig";
+import { useUserBSKBalance } from "@/hooks/useUserBSKBalance";
 import {
   Ticket,
   Trophy,
@@ -12,6 +13,8 @@ import {
   DollarSign,
   Plus,
   Sparkles,
+  Coins,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,9 +27,11 @@ import { toast } from "sonner";
 export default function LuckyDrawPage() {
   const { user } = useAuthUser();
   const queryClient = useQueryClient();
+  const { balance, loading: balanceLoading, refresh: refreshBalance } = useUserBSKBalance();
   const [buyDialog, setBuyDialog] = useState(false);
   const [selectedDraw, setSelectedDraw] = useState<any>(null);
   const [ticketCount, setTicketCount] = useState(1);
+  const [purchasing, setPurchasing] = useState(false);
 
   // Fetch program configuration
   const { data: programConfig } = useProgramConfig("lucky-draw");
@@ -77,18 +82,49 @@ export default function LuckyDrawPage() {
   };
 
   const totalCost = selectedDraw
-    ? (selectedDraw.ticket_price * ticketCount).toFixed(2)
-    : "0.00";
+    ? (selectedDraw.ticket_price_bsk * ticketCount)
+    : 0;
 
   const handlePurchase = async () => {
     if (!user || !selectedDraw) return;
 
+    // Check balance
+    if (balance.withdrawable < totalCost) {
+      toast.error(`Insufficient BSK balance. You need ${totalCost} BSK but only have ${balance.withdrawable.toFixed(2)} BSK`);
+      return;
+    }
+
     try {
-      toast.success(`Purchased ${ticketCount} ticket(s)!`);
+      setPurchasing(true);
+      
+      // Call edge function to purchase tickets
+      const { data, error } = await supabase.functions.invoke('purchase-draw-tickets', {
+        body: {
+          drawId: selectedDraw.id,
+          ticketCount: ticketCount,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      toast.success(`Successfully purchased ${ticketCount} ticket(s)! Remaining balance: ${data.remaining_balance.toFixed(2)} BSK`);
       setBuyDialog(false);
+      setTicketCount(1);
+      
+      // Refresh data
       queryClient.invalidateQueries({ queryKey: ["user-tickets"] });
-    } catch (error) {
-      toast.error("Failed to purchase tickets");
+      queryClient.invalidateQueries({ queryKey: ["lucky-draws"] });
+      refreshBalance();
+    } catch (error: any) {
+      console.error('Purchase error:', error);
+      toast.error(error.message || "Failed to purchase tickets");
+    } finally {
+      setPurchasing(false);
     }
   };
 
@@ -102,6 +138,34 @@ export default function LuckyDrawPage() {
         <p className="text-sm text-muted-foreground mb-4">
           Win big prizes with lucky draw tickets
         </p>
+
+        {/* BSK Balance Card */}
+        <Card className="bg-gradient-to-br from-warning/20 via-warning/10 to-warning/5 border-warning/30">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-warning/20 rounded-lg">
+                  <Wallet className="w-5 h-5 text-warning" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Your BSK Balance</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {balanceLoading ? '...' : balance.withdrawable.toFixed(2)} <span className="text-sm text-warning">BSK</span>
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refreshBalance}
+                disabled={balanceLoading}
+              >
+                Refresh
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* User Stats */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
@@ -213,13 +277,13 @@ export default function LuckyDrawPage() {
                     </div>
 
                     {/* Ticket Info */}
-                    <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-warning/10 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-primary" />
+                        <Coins className="w-4 h-4 text-warning" />
                         <span className="text-sm text-foreground">Ticket Price</span>
                       </div>
-                      <span className="font-bold text-primary">
-                        {draw.ticket_price} INR
+                      <span className="font-bold text-warning">
+                        {draw.ticket_price_bsk} BSK
                       </span>
                     </div>
 
@@ -311,11 +375,21 @@ export default function LuckyDrawPage() {
               </p>
             </div>
 
+            {/* Balance Check */}
+            <div className="p-4 bg-warning/10 rounded-lg space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Your BSK Balance</span>
+                <span className="font-medium text-foreground">
+                  {balance.withdrawable.toFixed(2)} BSK
+                </span>
+              </div>
+            </div>
+
             <div className="p-4 bg-muted/50 rounded-lg space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Ticket Price</span>
                 <span className="font-medium">
-                  {selectedDraw?.ticket_price} INR
+                  {selectedDraw?.ticket_price_bsk} BSK
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
@@ -324,15 +398,24 @@ export default function LuckyDrawPage() {
               </div>
               <div className="h-px bg-border my-2" />
               <div className="flex items-center justify-between">
-                <span className="font-medium text-foreground">Total</span>
-                <span className="text-lg font-bold text-primary">
-                  {totalCost} INR
+                <span className="font-medium text-foreground">Total Cost</span>
+                <span className="text-lg font-bold text-warning">
+                  {totalCost} BSK
                 </span>
               </div>
+              {balance.withdrawable < totalCost && (
+                <p className="text-xs text-destructive mt-2">
+                  ⚠️ Insufficient balance. You need {(totalCost - balance.withdrawable).toFixed(2)} more BSK
+                </p>
+              )}
             </div>
 
-            <Button onClick={handlePurchase} className="w-full bg-primary">
-              Confirm Purchase
+            <Button 
+              onClick={handlePurchase} 
+              className="w-full bg-warning hover:bg-warning/90 text-warning-foreground"
+              disabled={purchasing || balance.withdrawable < totalCost}
+            >
+              {purchasing ? 'Processing...' : 'Confirm Purchase'}
             </Button>
           </div>
         </DialogContent>
