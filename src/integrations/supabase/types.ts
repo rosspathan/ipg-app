@@ -9338,6 +9338,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      validate_referral_code: {
+        Args: { code: string }
+        Returns: string
+      }
     }
     Enums: {
       announcement_type: "carousel" | "ticker"
