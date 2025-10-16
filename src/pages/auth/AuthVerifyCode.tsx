@@ -38,20 +38,48 @@ export default function AuthVerifyCode() {
         type: 'email'
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check if user already exists and needs password login
+        if (error.message.includes('User already registered') || 
+            error.message.includes('Email link is invalid') ||
+            error.message.includes('Token has expired') ||
+            error.message.includes('already confirmed')) {
+          toast({
+            title: "Account Already Exists",
+            description: "Please sign in with your password instead",
+          });
+          navigate("/auth", { 
+            state: { email, mode: 'login' },
+            replace: true 
+          });
+          return;
+        }
+        throw error;
+      }
 
       if (data.user) {
         // Capture referral after email verification
         const { captureReferralAfterEmailVerify } = await import('@/utils/referralCapture');
         await captureReferralAfterEmailVerify(data.user.id);
 
+        // Check if user has completed security setup
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('setup_complete')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
         toast({
           title: "Email Verified! ✓",
-          description: "Your account is now active"
+          description: "Your account is now active",
+          className: "bg-success/10 border-success/50 text-success",
         });
 
-        // Navigate to security setup (profile creation handled by DB trigger)
-        navigate("/onboarding/security", { replace: true });
+        if (!profile?.setup_complete) {
+          navigate("/onboarding/security", { replace: true });
+        } else {
+          navigate("/app/home", { replace: true });
+        }
       }
     } catch (error: any) {
       toast({

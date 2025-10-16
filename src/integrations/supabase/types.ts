@@ -2935,6 +2935,59 @@ export type Database = {
         }
         Relationships: []
       }
+      deposits: {
+        Row: {
+          amount: number
+          asset_id: string
+          confirmations: number | null
+          created_at: string | null
+          credited_at: string | null
+          id: string
+          network: string
+          required_confirmations: number | null
+          status: string
+          tx_hash: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          confirmations?: number | null
+          created_at?: string | null
+          credited_at?: string | null
+          id?: string
+          network: string
+          required_confirmations?: number | null
+          status?: string
+          tx_hash?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          confirmations?: number | null
+          created_at?: string | null
+          credited_at?: string | null
+          id?: string
+          network?: string
+          required_confirmations?: number | null
+          status?: string
+          tx_hash?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deposits_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           created_at: string | null
@@ -5307,8 +5360,10 @@ export type Database = {
           id: string
           kyc_status: string | null
           onboarding_completed_at: string | null
+          onboarding_step: string | null
           phone: string | null
           referral_code: string
+          setup_complete: boolean | null
           sponsor_id: string | null
           two_fa_enabled: boolean | null
           updated_at: string | null
@@ -5327,8 +5382,10 @@ export type Database = {
           id?: string
           kyc_status?: string | null
           onboarding_completed_at?: string | null
+          onboarding_step?: string | null
           phone?: string | null
           referral_code: string
+          setup_complete?: boolean | null
           sponsor_id?: string | null
           two_fa_enabled?: boolean | null
           updated_at?: string | null
@@ -5347,8 +5404,10 @@ export type Database = {
           id?: string
           kyc_status?: string | null
           onboarding_completed_at?: string | null
+          onboarding_step?: string | null
           phone?: string | null
           referral_code?: string
+          setup_complete?: boolean | null
           sponsor_id?: string | null
           two_fa_enabled?: boolean | null
           updated_at?: string | null
@@ -8830,6 +8889,68 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      withdrawals: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          asset_id: string
+          created_at: string | null
+          fee: number
+          id: string
+          net_amount: number
+          network: string
+          rejected_reason: string | null
+          status: string
+          to_address: string
+          tx_hash: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_id: string
+          created_at?: string | null
+          fee?: number
+          id?: string
+          net_amount: number
+          network: string
+          rejected_reason?: string | null
+          status?: string
+          to_address: string
+          tx_hash?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_id?: string
+          created_at?: string | null
+          fee?: number
+          id?: string
+          net_amount?: number
+          network?: string
+          rejected_reason?: string | null
+          status?: string
+          to_address?: string
+          tx_hash?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawals_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

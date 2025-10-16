@@ -131,7 +131,7 @@ export default function SwapScreen() {
       const amount = parseFloat(fromAmount);
       
       // Create swap record
-      const { data: swap, error } = await supabase
+      const { data: swap, error: swapError } = await supabase
         .from('swaps')
         .insert({
           user_id: user.id,
@@ -146,26 +146,48 @@ export default function SwapScreen() {
           min_receive: minReceive,
           platform_fee: swapRoute.platformFee,
           trading_fees: swapRoute.tradingFees,
-          total_fees: swapRoute.totalFees
+          total_fees: swapRoute.totalFees,
+          status: 'pending'
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (swapError) throw swapError;
 
-      toast({
-        title: "Swap Initiated",
-        description: `Swapping ${amount} ${fromAsset} for ${toAsset}`,
+      // Execute swap via edge function
+      const { data: executeResult, error: executeError } = await supabase.functions.invoke('execute-swap', {
+        body: { swap_id: swap.id }
       });
 
-      // Navigate to success screen or trading receipt
-      navigate(`/trade-receipt/${swap.id}`);
+      if (executeError) {
+        console.warn('Edge function not available, swap created but not executed');
+      }
+
+      if (executeResult?.success) {
+        toast({
+          title: "Swap Completed ✓",
+          description: `Successfully swapped ${executeResult.from_amount} ${executeResult.from_asset} for ${Number(executeResult.to_amount).toFixed(6)} ${executeResult.to_asset}`,
+          className: "bg-success/10 border-success/50 text-success",
+        });
+        
+        // Reset and navigate
+        setFromAmount("");
+        setTimeout(() => {
+          navigate("/app/wallet");
+        }, 1500);
+      } else {
+        toast({
+          title: "Swap Initiated",
+          description: `Swapping ${amount} ${fromAsset} for ${toAsset}`,
+        });
+        navigate(`/app/wallet`);
+      }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Swap error:', error);
       toast({
         title: "Swap Failed",
-        description: "Failed to execute swap. Please try again.",
+        description: error.message || "Failed to execute swap. Please try again.",
         variant: "destructive"
       });
     } finally {

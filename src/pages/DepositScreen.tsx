@@ -2,12 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, QrCode, ExternalLink } from "lucide-react";
+import { ArrowLeft, Copy, QrCode, ExternalLink, CheckCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useCatalog } from "@/hooks/useCatalog";
+import { useDepositTracking } from "@/hooks/useDepositTracking";
 import AssetLogo from "@/components/AssetLogo";
 import QRCode from "qrcode";
 import INRDepositScreen from "./INRDepositScreen";
@@ -22,11 +24,14 @@ const DepositScreen = () => {
   const { user } = useAuthUser();
   const displayName = useDisplayName();
   const { assetsList, loading: assetsLoading } = useCatalog();
+  const { recordDeposit, loading: depositLoading } = useDepositTracking();
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [selectedAsset, setSelectedAsset] = useState("");
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+  const [txHash, setTxHash] = useState("");
+  const [depositRecorded, setDepositRecorded] = useState(false);
 
   useUsernameBackfill(); // Backfill username if missing
 
@@ -143,6 +148,36 @@ const DepositScreen = () => {
         description: "Failed to copy address",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleRecordDeposit = async () => {
+    if (!txHash || txHash.length < 10) {
+      toast({
+        title: "Invalid Transaction Hash",
+        description: "Please enter a valid transaction hash",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await recordDeposit({
+        asset_symbol: selectedAsset,
+        amount: 0, // In production, parse from blockchain or let user input
+        tx_hash: txHash,
+        network: selectedNetwork
+      });
+      
+      setDepositRecorded(true);
+      setTxHash("");
+      
+      // Reset after 5 seconds
+      setTimeout(() => {
+        setDepositRecorded(false);
+      }, 5000);
+    } catch (error) {
+      console.error('Record deposit error:', error);
     }
   };
 
@@ -323,6 +358,43 @@ const DepositScreen = () => {
               <span className="text-muted-foreground">Deposit Fee</span>
               <span className="font-medium text-green-600">{depositInfo.fee}</span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Transaction Hash Tracking */}
+        <Card className="bg-gradient-card shadow-card border-0">
+          <CardHeader>
+            <CardTitle className="text-lg">Track Your Deposit</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">
+                Transaction Hash (Optional)
+              </label>
+              <Input
+                placeholder="0x..."
+                value={txHash}
+                onChange={(e) => setTxHash(e.target.value)}
+                disabled={depositLoading || depositRecorded}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Enter your transaction hash to track deposit confirmation
+              </p>
+            </div>
+            <Button 
+              onClick={handleRecordDeposit}
+              disabled={depositLoading || !txHash || depositRecorded}
+              className="w-full"
+            >
+              {depositLoading ? "Recording..." : depositRecorded ? "Deposit Recorded ✓" : "Record Deposit"}
+            </Button>
+            {depositRecorded && (
+              <div className="flex items-center gap-2 text-sm text-success bg-success/10 p-3 rounded-lg">
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                <span>Deposit is being monitored. You'll be notified when confirmed (12 confirmations).</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
