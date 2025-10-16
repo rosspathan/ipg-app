@@ -16,8 +16,8 @@ const Index = () => {
       localStorage.removeItem("cryptoflow_setup_complete");
       console.log('Calling signOut...');
       await signOut();
-      console.log('SignOut completed, navigating to auth...');
-      navigate("/auth");
+      console.log('SignOut completed, navigating to onboarding...');
+      navigate("/onboarding");
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -115,11 +115,11 @@ const Index = () => {
             </>
           ) : (
             <Button 
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate("/onboarding")}
               className="w-full"
               size="lg"
             >
-              Sign In / Sign Up
+              Get Started
             </Button>
           )}
         </div>

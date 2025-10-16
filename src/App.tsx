@@ -276,17 +276,9 @@ function AppContent() {
               <Route path="/create-wallet" element={<Navigate to="/onboarding/create-wallet" replace />} />
               <Route path="/import-wallet" element={<Navigate to="/onboarding/import-wallet" replace />} />
 
-              {/* User Authentication */}
-              <Route path="/auth" element={
-                <AuthProviderUser>
-                  <AuthUnified />
-                </AuthProviderUser>
-              } />
-              <Route path="/auth/login" element={
-                <AuthProviderUser>
-                  <AuthUnified />
-                </AuthProviderUser>
-              } />
+              {/* User Authentication - Redirect to wallet onboarding (no traditional login for users) */}
+              <Route path="/auth" element={<Navigate to="/onboarding" replace />} />
+              <Route path="/auth/login" element={<Navigate to="/onboarding" replace />} />
               <Route path="/auth/wallet-login" element={<WalletLoginScreen />} />
               <Route path="/auth/register" element={
                 <AuthProviderUser>

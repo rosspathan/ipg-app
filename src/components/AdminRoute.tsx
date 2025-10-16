@@ -9,12 +9,9 @@ interface AdminRouteProps {
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, session, loading, isAdmin } = useAuth();
-  const [web3Admin, setWeb3Admin] = useState<boolean>(false);
-
-  useEffect(() => {
-    const flag = localStorage.getItem('cryptoflow_web3_admin') === 'true';
-    setWeb3Admin(flag);
-  }, []);
+  
+  // SECURITY: Never trust client-side storage for admin checks
+  // The isAdmin value comes from server-side validation via has_role() RPC
 
   if (loading) {
     return (
@@ -28,7 +25,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!(isAdmin || web3Admin)) {
+  if (!isAdmin) {
     return <Navigate to="/admin-login" replace />;
   }
 

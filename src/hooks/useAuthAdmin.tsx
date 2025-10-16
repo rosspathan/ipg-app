@@ -32,13 +32,13 @@ export function AuthProviderAdmin({ children }: { children: React.ReactNode }) {
 
   const checkAdminRole = async (userId: string) => {
     try {
-      console.log('Checking admin role for user:', userId);
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
+      console.log('Checking admin role for user (server-side):', userId);
+      
+      // Use secure server-side function instead of direct table query
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: userId,
+        _role: 'admin'
+      });
       
       if (error) {
         console.error('Admin role check error:', error);
@@ -57,24 +57,14 @@ export function AuthProviderAdmin({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Check for Web3 admin status on load
-    const web3AdminStatus = localStorage.getItem('cryptoflow_web3_admin');
-    if (web3AdminStatus === 'true') {
-      setIsAdmin(true);
-    }
-
     const resolveSession = async (session: Session | null) => {
       console.log('Admin auth state change:', session ? 'SIGNED_IN' : 'SIGNED_OUT', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        const latestWeb3Admin = localStorage.getItem('cryptoflow_web3_admin');
-        if (latestWeb3Admin === 'true') {
-          setIsAdmin(true);
-        } else {
-          await checkAdminRole(session.user.id);
-        }
+        // Always use server-side validation - NEVER trust client-side storage
+        await checkAdminRole(session.user.id);
       } else {
         // Clear admin status on logout
         localStorage.removeItem('cryptoflow_web3_admin');
@@ -114,7 +104,7 @@ export function AuthProviderAdmin({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    // Clear Web3 admin status
+    // Clear any cached admin status
     localStorage.removeItem('cryptoflow_web3_admin');
     localStorage.removeItem('cryptoflow_admin_wallet');
     setIsAdmin(false);
