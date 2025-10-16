@@ -279,6 +279,12 @@ export const badgeTokens = {
   },
 } as const;
 
+// Helper function to convert badge name to tier key
+export const getTierKey = (badge: string): keyof typeof badgeTokens.tiers => {
+  const key = badge.toLowerCase() as keyof typeof badgeTokens.tiers;
+  return badgeTokens.tiers[key] ? key : 'none';
+};
+
 // Helper function to get tier tokens
 export const getTierTokens = (tier: keyof typeof badgeTokens.tiers) => {
   return badgeTokens.tiers[tier] || badgeTokens.tiers.none;
