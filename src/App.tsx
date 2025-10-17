@@ -69,6 +69,8 @@ const KYCReviewNew = React.lazy(() => import("./pages/admin/KYCReviewNew"));
 const AdminKYCSettings = React.lazy(() => import("./pages/AdminKYCSettings"));
 const AdminRoleManagement = React.lazy(() => import("./pages/admin/AdminRoleManagement"));
 const AdminBadgeSystem = React.lazy(() => import("./pages/admin/AdminBadgeSystem"));
+const AdminBSKManagement = React.lazy(() => import("./pages/admin/AdminBSKManagement"));
+const WalletScreen = React.lazy(() => import("./pages/WalletScreen"));
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -347,6 +349,7 @@ function AppContent() {
               <Route path="profile/settings" element={<SettingsPage />} />
               <Route path="profile/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPageAstra /></React.Suspense>} />
               <Route path="support" element={<SupportPage />} />
+              <Route path="wallet" element={<React.Suspense fallback={<div>Loading...</div>}><WalletScreen /></React.Suspense>} />
                 
                 {/* Programs */}
                 <Route path="programs/ad-mining" element={<React.Suspense fallback={<div>Loading...</div>}><AdMiningPageNew /></React.Suspense>} />
@@ -456,6 +459,9 @@ function AppContent() {
                 {/* Phase 5: Role & Badge Management */}
                 <Route path="roles" element={<React.Suspense fallback={<div>Loading...</div>}><AdminRoleManagement /></React.Suspense>} />
                 <Route path="badges" element={<React.Suspense fallback={<div>Loading...</div>}><AdminBadgeSystem /></React.Suspense>} />
+                
+                {/* Phase 6: BSK Management */}
+                <Route path="bsk" element={<React.Suspense fallback={<div>Loading...</div>}><AdminBSKManagement /></React.Suspense>} />
                 
                 {/* Financial Management Routes - Phase 2-4 */}
                 <Route path="transactions" element={<TransactionControlCenter />} />
