@@ -69,6 +69,18 @@ export function useOnboarding() {
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
+  // Log loaded state for debugging
+  useEffect(() => {
+    console.log('[ONBOARDING] Loaded state:', {
+      step: state.step,
+      hasCompletedWallet: state.hasCompletedWallet,
+      hasVerifiedEmail: state.hasVerifiedEmail,
+      hasSetupPin: state.hasSetupPin,
+      hasEmail: !!state.email,
+      hasWallet: !!state.walletInfo
+    });
+  }, []);
+
   const updateState = (updates: Partial<OnboardingState>) => {
     setState(prev => ({ ...prev, ...updates }));
   };

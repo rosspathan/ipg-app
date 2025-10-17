@@ -91,12 +91,27 @@ export function ProfileHub() {
 
   const handleSignOut = async () => {
     try {
+      // 1. Sign out from Supabase
       const { supabase } = await import('@/integrations/supabase/client');
       await supabase.auth.signOut();
-      navigate("/");
+      
+      // 2. Clear ALL onboarding and user-related state
+      localStorage.removeItem('ipg_onboarding_state');
+      sessionStorage.removeItem('verificationEmail');
+      localStorage.removeItem('ipg_user_email');
+      localStorage.removeItem('ipg_wallet_address');
+      
+      console.log('[SIGN_OUT] Cleared all user session data');
+      
+      // 3. Navigate to root (which redirects to onboarding)
+      navigate("/", { replace: true });
     } catch (error) {
       console.error('Error signing out:', error);
-      navigate("/");
+      // Even if sign-out fails, clear local state and redirect
+      localStorage.removeItem('ipg_onboarding_state');
+      sessionStorage.removeItem('verificationEmail');
+      localStorage.removeItem('ipg_user_email');
+      navigate("/", { replace: true });
     }
   };
 

@@ -129,9 +129,19 @@ const AppLockScreen = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
+      
+      // Clear onboarding and user state for consistency
+      localStorage.removeItem('ipg_onboarding_state');
+      sessionStorage.removeItem('verificationEmail');
+      localStorage.removeItem('ipg_user_email');
+      localStorage.removeItem('ipg_wallet_address');
+      
       navigate('/auth', { replace: true });
     } catch (error) {
       console.error('Sign out failed:', error);
+      // Clear state even on error
+      localStorage.removeItem('ipg_onboarding_state');
+      navigate('/auth', { replace: true });
     }
   };
 
