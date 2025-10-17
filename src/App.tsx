@@ -145,7 +145,7 @@ import ProfileScreen from "./pages/ProfileScreen";
 const AdvertisingPage = React.lazy(() => import("./pages/programs/AdvertisingPage"));
 const LuckyDrawPage = React.lazy(() => import("./pages/programs/LuckyDrawPage"));
 const StakingPage = React.lazy(() => import("./pages/programs/StakingPage"));
-const SpinWheelPage = React.lazy(() => import("./pages/programs/SpinWheelPage"));
+
 const InsurancePage = React.lazy(() => import("./pages/programs/InsurancePage"));
 const BSKLoansPage = React.lazy(() => import("./pages/programs/BSKLoansPage"));
 const BSKPromotionsPage = React.lazy(() => import("./pages/programs/BSKPromotionsPage"));
@@ -357,7 +357,7 @@ function AppContent() {
                 <Route path="programs/ad-mining" element={<React.Suspense fallback={<div>Loading...</div>}><AdMiningPageNew /></React.Suspense>} />
                 <Route path="programs/advertising" element={<React.Suspense fallback={<div>Loading...</div>}><AdMiningPageNew /></React.Suspense>} />
                 <Route path="programs/lucky-draw" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawPage /></React.Suspense>} />
-                <Route path="programs/spin" element={<React.Suspense fallback={<div>Loading...</div>}><SpinWheelPage /></React.Suspense>} />
+                <Route path="programs/spin" element={<React.Suspense fallback={<div>Loading...</div>}><ISmartSpinScreen /></React.Suspense>} />
                 <Route path="programs/team-referrals" element={<React.Suspense fallback={<div>Loading...</div>}><TeamReferralsPageNew /></React.Suspense>} />
                 <Route path="programs/staking" element={<React.Suspense fallback={<div>Loading...</div>}><StakingPage /></React.Suspense>} />
                 <Route path="programs/trading" element={<React.Suspense fallback={<div>Loading...</div>}><TradingPageNew /></React.Suspense>} />
