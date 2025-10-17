@@ -343,7 +343,17 @@ serve(async (req) => {
       console.warn('Referral capture warning:', err);
     }
 
-    // Return success with MNEMONIC (only shown once!)
+    // Generate session for the user using admin API
+    const { data: userSession, error: userSessionError } = await supabaseAdmin.auth.admin.createSession({
+      user_id: userId,
+    });
+
+    if (userSessionError || !userSession) {
+      console.error('[complete-onboarding] Failed to create session:', userSessionError);
+      throw new Error('Failed to create user session');
+    }
+
+    // Return success with MNEMONIC (only shown once!) and session tokens
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -352,7 +362,11 @@ serve(async (req) => {
         referralCode,
         walletAddress: walletData.address,
         mnemonic: mnemonic, // CRITICAL: User must save this!
-        warning: "Save your mnemonic phrase! This is the ONLY time it will be shown."
+        warning: "Save your mnemonic phrase! This is the ONLY time it will be shown.",
+        session: {
+          access_token: userSession.session.access_token,
+          refresh_token: userSession.session.refresh_token,
+        }
       }),
       { 
         status: 200, 

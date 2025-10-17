@@ -190,38 +190,41 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         console.log('[VERIFY] Cleaned up imported wallet data');
       }
       
-      // Now verify OTP to create session
-      const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
-        email,
-        token: code,
-        type: 'email',
-      });
+      // Establish session with the token returned from edge function
+      if (data.session) {
+        console.info('[VERIFY] Setting session from edge function...');
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
 
-      if (otpError) {
-        console.error('[VERIFY] OTP verification failed:', otpError);
-        throw new Error('Failed to verify OTP. Please try again or request a new code.');
-      }
-
-      // Wait for session to be established (critical for session persistence)
-      console.info('[VERIFY] Waiting for session to establish...');
-      let sessionEstablished = false;
-      let attempts = 0;
-      const maxAttempts = 10;
-      
-      while (!sessionEstablished && attempts < maxAttempts) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id) {
-          sessionEstablished = true;
-          console.info('[VERIFY] Session established:', session.user.id);
-        } else {
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, 500));
+        if (sessionError) {
+          console.error('[VERIFY] Failed to set session:', sessionError);
+          throw new Error('Failed to establish session. Please try signing in.');
         }
-      }
 
-      if (!sessionEstablished) {
-        console.error('[VERIFY] Session not established after verification');
-        throw new Error('Session could not be established. Please try signing in again.');
+        // Wait for session to be established
+        let sessionEstablished = false;
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        while (!sessionEstablished && attempts < maxAttempts) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.id) {
+            sessionEstablished = true;
+            console.info('[VERIFY] Session established:', session.user.id);
+          } else {
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        }
+
+        if (!sessionEstablished) {
+          console.error('[VERIFY] Session not established');
+          throw new Error('Session could not be established. Please try signing in.');
+        }
+      } else {
+        throw new Error('No session token returned from server');
       }
 
       // Emit events for UI refresh
