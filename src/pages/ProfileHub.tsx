@@ -113,6 +113,25 @@ export function ProfileHub() {
   useUsernameBackfill();
   const completionScore = completion?.completion_score || 0;
   
+  // Check for session recovery scenario
+  useEffect(() => {
+    const checkSessionRecovery = async () => {
+      // If we have a stored email but no user session, we need to recover
+      const storedEmail = sessionStorage.getItem('verificationEmail') || localStorage.getItem('ipg_user_email');
+      
+      if (storedEmail && !user && !authLoading) {
+        console.warn('[PROFILE] Detected profile without session - triggering recovery');
+        // User completed onboarding but session was lost
+        // Redirect to onboarding to re-establish session
+        navigate('/onboarding', { replace: true });
+      }
+    };
+
+    if (!authLoading) {
+      checkSessionRecovery();
+    }
+  }, [user, authLoading, navigate]);
+  
   // Show loading state while auth is initializing
   if (authLoading) {
     return (
@@ -130,9 +149,9 @@ export function ProfileHub() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="text-center space-y-4">
-          <p className="text-muted-foreground">Please sign in to view your profile</p>
+          <p className="text-muted-foreground">Session expired. Please sign in again.</p>
           <button 
-            onClick={() => navigate('/auth/login')}
+            onClick={() => navigate('/onboarding')}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
           >
             Sign In

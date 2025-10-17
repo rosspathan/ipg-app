@@ -191,15 +191,37 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       }
       
       // Now verify OTP to create session
-      const { error: otpError } = await supabase.auth.verifyOtp({
+      const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
         email,
         token: code,
         type: 'email',
       });
 
       if (otpError) {
-        console.warn('[VERIFY] OTP verify failed, but user created:', otpError);
-        // User is created, continue anyway
+        console.error('[VERIFY] OTP verification failed:', otpError);
+        throw new Error('Failed to verify OTP. Please try again or request a new code.');
+      }
+
+      // Wait for session to be established (critical for session persistence)
+      console.info('[VERIFY] Waiting for session to establish...');
+      let sessionEstablished = false;
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (!sessionEstablished && attempts < maxAttempts) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          sessionEstablished = true;
+          console.info('[VERIFY] Session established:', session.user.id);
+        } else {
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      if (!sessionEstablished) {
+        console.error('[VERIFY] Session not established after verification');
+        throw new Error('Session could not be established. Please try signing in again.');
       }
 
       // Emit events for UI refresh

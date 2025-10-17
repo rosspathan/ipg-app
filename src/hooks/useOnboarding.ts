@@ -167,6 +167,17 @@ export function useOnboarding() {
         throw new Error('Missing required onboarding data');
       }
 
+      // Verify session exists before completing onboarding
+      console.info('[ONBOARDING] Verifying session before completion...');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        console.error('[ONBOARDING] No active session found!');
+        throw new Error('Session not found. Please sign in again.');
+      }
+
+      console.info('[ONBOARDING] Session verified:', session.user.id);
+
       // Save security data locally first
       const { saveLocalSecurityData } = await import('@/utils/localSecurityStorage');
       await saveLocalSecurityData({
@@ -185,13 +196,13 @@ export function useOnboarding() {
       storeSecuritySetup(securitySetup);
 
       // Mark onboarding as complete in database
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('profiles')
-          .update({ onboarding_completed_at: new Date().toISOString() })
-          .eq('user_id', user.id);
-      }
+      await supabase
+        .from('profiles')
+        .update({ 
+          onboarding_completed_at: new Date().toISOString(),
+          setup_complete: true
+        })
+        .eq('user_id', session.user.id);
 
       // Clear onboarding state
       localStorage.removeItem(ONBOARDING_STORAGE_KEY);
