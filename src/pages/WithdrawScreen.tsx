@@ -25,20 +25,21 @@ const WithdrawScreen = () => {
   // Fetch real user balances
   const { data: balances, isLoading, error } = useUserBalance();
 
-  // Filter assets with balance > 0 and add network info
-  const assets = balances?.filter(asset => asset.balance > 0).map(asset => ({
+  // Filter assets and add network info - show all assets even with zero balance
+  const assets = (balances || []).map(asset => ({
     symbol: asset.symbol,
     name: asset.name,
-    balance: asset.balance.toString(),
+    balance: asset.available.toString(), // Use available balance
     available: asset.available,
+    locked: asset.locked,
     logo_url: asset.logo_url,
     // Default networks based on asset type
     networks: asset.symbol === 'BTC' ? ['Bitcoin'] :
-              asset.symbol === 'ETH' ? ['Ethereum', 'BSC'] :
-              asset.symbol === 'USDT' ? ['Ethereum', 'BSC', 'Tron'] :
-              asset.symbol === 'USDC' ? ['Ethereum', 'BSC'] :
-              ['Ethereum'] // default
-  })) || [];
+              asset.symbol === 'ETH' ? ['Ethereum', 'BEP20'] :
+              asset.symbol === 'USDT' ? ['Ethereum', 'BEP20', 'Tron'] :
+              asset.symbol === 'USDC' ? ['Ethereum', 'BEP20'] :
+              ['BEP20'] // default to BEP20
+  }));
 
   // Set initial selected asset when balances load
   useEffect(() => {
@@ -207,12 +208,12 @@ const WithdrawScreen = () => {
               </Card>
             )}
 
-            {/* No Assets Available */}
+            {/* Show assets even if zero balance */}
             {!isLoading && !error && assets.length === 0 && (
               <Card className="bg-gradient-card shadow-card border-0">
                 <CardContent className="p-8 text-center">
-                  <p className="text-muted-foreground mb-2">No crypto assets available for withdrawal</p>
-                  <p className="text-sm text-muted-foreground">Your crypto balances are currently zero.</p>
+                  <p className="text-muted-foreground mb-2">No assets configured</p>
+                  <p className="text-sm text-muted-foreground">Please contact support to add crypto assets.</p>
                 </CardContent>
               </Card>
             )}
