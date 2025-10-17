@@ -118,11 +118,11 @@ export default function LockScreen() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden" style={{ height: '100dvh' }}>
+    <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900 relative overflow-hidden" style={{ height: '100dvh' }}>
       {/* Background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute top-20 right-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"
+          className="absolute top-20 right-10 w-72 h-72 bg-blue-500/20 dark:bg-blue-500/10 rounded-full blur-3xl"
           animate={{
             scale: [1, 1.2, 1],
             opacity: [0.2, 0.4, 0.2],
@@ -157,7 +157,7 @@ export default function LockScreen() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="w-full max-w-md"
         >
-          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+          <Card className="bg-card/90 dark:bg-white/10 backdrop-blur-sm border">
             <div className="p-6 space-y-6">
               {/* Icon and title */}
               <div className="text-center space-y-3">
@@ -165,11 +165,11 @@ export default function LockScreen() {
                   <Shield className="w-8 h-8 text-white" />
                 </div>
                 
-                <h1 className="text-2xl font-bold text-white">
+                <h1 className="text-2xl font-bold text-foreground">
                   Welcome Back
                 </h1>
                 
-                <p className="text-white/70 text-sm">
+                <p className="text-muted-foreground text-sm">
                   {bioLoading ? 'Authenticating with biometric...' : 'Enter your PIN to unlock'}
                 </p>
               </div>
@@ -201,7 +201,7 @@ export default function LockScreen() {
                   >
                     <Fingerprint className="w-8 h-8 text-blue-400" />
                   </motion.div>
-                  <p className="text-white/70 text-sm">Waiting for biometric authentication...</p>
+                  <p className="text-muted-foreground text-sm">Waiting for biometric authentication...</p>
                 </div>
               )}
 
@@ -216,10 +216,10 @@ export default function LockScreen() {
                         className={`w-12 h-12 border-2 rounded-xl flex items-center justify-center transition-all duration-300 ${
                           index < pin.length 
                             ? 'border-blue-400 bg-blue-500/20 scale-110' 
-                            : 'border-white/30 bg-white/10'
+                            : 'border-muted bg-muted/50 dark:border-white/30 dark:bg-white/10'
                         }`}
                       >
-                        <span className="text-white text-xl font-bold">
+                        <span className="text-foreground text-xl font-bold">
                           {index < pin.length ? (showPin ? pin[index] : '●') : ''}
                         </span>
                       </div>
@@ -234,7 +234,7 @@ export default function LockScreen() {
                         variant="outline"
                         size="lg"
                         onClick={() => handlePinChange(pin + num.toString())}
-                        className="h-14 border-white/30 text-white hover:bg-white/20 text-lg font-semibold"
+                        className="h-14 text-lg font-semibold"
                         disabled={loading || pin.length >= 6}
                       >
                         {num}
@@ -245,7 +245,7 @@ export default function LockScreen() {
                       variant="outline"
                       size="lg"
                       onClick={() => setShowPin(!showPin)}
-                      className="h-14 border-white/30 text-white hover:bg-white/20"
+                      className="h-14"
                     >
                       {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </Button>
@@ -254,7 +254,7 @@ export default function LockScreen() {
                       variant="outline"
                       size="lg"
                       onClick={() => handlePinChange(pin + '0')}
-                      className="h-14 border-white/30 text-white hover:bg-white/20 text-lg font-semibold"
+                      className="h-14 text-lg font-semibold"
                       disabled={loading || pin.length >= 6}
                     >
                       0
@@ -264,7 +264,7 @@ export default function LockScreen() {
                       variant="outline"
                       size="lg"
                       onClick={() => handlePinChange(pin.slice(0, -1))}
-                      className="h-14 border-white/30 text-white hover:bg-white/20"
+                      className="h-14"
                     >
                       ⌫
                     </Button>
@@ -296,7 +296,7 @@ export default function LockScreen() {
                     <Button
                       onClick={handleBiometricUnlock}
                       variant="outline"
-                      className="w-full border-blue-400/50 text-blue-300 hover:bg-blue-500/20"
+                      className="w-full"
                     >
                       <Fingerprint className="w-5 h-5 mr-2" />
                       Use Biometrics
@@ -307,7 +307,7 @@ export default function LockScreen() {
                   <div className="text-center pt-2">
                     <button
                       onClick={() => navigate('/recovery/verify')}
-                      className="text-white/60 hover:text-white text-sm transition-colors"
+                      className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                     >
                       Forgot PIN?
                     </button>
