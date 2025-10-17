@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { toast } from "sonner";
+import { ProgramAccessGate } from "@/components/programs/ProgramAccessGate";
 
 export default function LuckyDrawPage() {
   const { user } = useAuthUser();
