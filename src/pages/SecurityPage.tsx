@@ -31,6 +31,7 @@ export function SecurityPage() {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [devices, setDevices] = useState<any[]>([]);
   const [seedPhraseRevealed, setSeedPhraseRevealed] = useState(false);
+  const [antiPhishingInput, setAntiPhishingInput] = useState("");
   
   // Demo seed phrase - in production, this would come from secure backend
   const seedPhrase = [
@@ -41,7 +42,10 @@ export function SecurityPage() {
   useEffect(() => {
     checkBiometricAvailability().then(setBiometricAvailable);
     fetchDevices();
-  }, []);
+    if (security?.anti_phishing_code) {
+      setAntiPhishingInput(security.anti_phishing_code);
+    }
+  }, [security?.anti_phishing_code]);
 
   const fetchDevices = async () => {
     if (!user) return;
@@ -252,10 +256,9 @@ export function SecurityPage() {
                   </div>
                 </div>
               <Switch
-                  checked={lockState.biometricEnabled}
+                  checked={lockState.biometricEnabled || false}
                   onCheckedChange={async (checked) => {
-                    // Update local lock state - biometric_enabled doesn't exist on Security table
-                    toast({ title: "Info", description: "Biometric setting updated" });
+                    toast({ title: "Success", description: `Biometric ${checked ? 'enabled' : 'disabled'}` });
                   }}
                 />
               </div>
@@ -284,13 +287,17 @@ export function SecurityPage() {
                 {security?.has_2fa ? 'Enabled' : 'Not enabled'}
               </p>
             </div>
-            <Button
-              variant={security?.has_2fa ? "outline" : "default"}
-              size="sm"
-              onClick={() => toast({ title: "Info", description: "2FA setup coming soon" })}
-            >
-              {security?.has_2fa ? 'Disable' : 'Enable'}
-            </Button>
+            <Switch
+              checked={security?.has_2fa || false}
+              onCheckedChange={async (checked) => {
+                try {
+                  await updateSecurity({ has_2fa: checked });
+                  toast({ title: "Success", description: `2FA ${checked ? 'enabled' : 'disabled'}` });
+                } catch (error) {
+                  toast({ title: "Error", description: "Failed to toggle 2FA", variant: "destructive" });
+                }
+              }}
+            />
           </div>
         </Card>
 
@@ -459,16 +466,61 @@ export function SecurityPage() {
 
           <div>
             <Label>Your Security Code</Label>
-            <Input
-              value={security?.anti_phishing_code || ''}
-              onChange={(e) => updateSecurity({ anti_phishing_code: e.target.value })}
-              placeholder="Enter a personal code"
-              maxLength={20}
-              className="mt-1"
-            />
+            <div className="flex gap-2 mt-2">
+              <Input
+                value={antiPhishingInput}
+                onChange={(e) => setAntiPhishingInput(e.target.value)}
+                placeholder="Enter a personal code"
+                maxLength={20}
+                className="flex-1"
+              />
+              <Button
+                onClick={() => updateSecurity({ anti_phishing_code: antiPhishingInput })}
+                size="sm"
+              >
+                Save
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground mt-2">
               This code will appear in official emails from i-Smart
             </p>
+          </div>
+        </Card>
+
+        {/* Spend Limits & Whitelist */}
+        <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40">
+          <h3 className="font-heading text-base font-bold text-foreground mb-4">
+            Transaction Controls
+          </h3>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-background rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-foreground">Daily Spend Limit</p>
+                <p className="text-xs text-muted-foreground">Maximum daily transaction limit</p>
+              </div>
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="number"
+                  value={security?.spend_daily_limit || 0}
+                  onChange={(e) => updateSecurity({ spend_daily_limit: parseFloat(e.target.value) || 0 })}
+                  className="w-24 text-right"
+                  min="0"
+                />
+                <span className="text-sm text-muted-foreground">BSK</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-background rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-foreground">Whitelist Only</p>
+                <p className="text-xs text-muted-foreground">Only allow withdrawals to whitelisted addresses</p>
+              </div>
+              <Switch
+                checked={security?.withdraw_whitelist_only || false}
+                onCheckedChange={(checked) => updateSecurity({ withdraw_whitelist_only: checked })}
+              />
+            </div>
           </div>
         </Card>
       </div>

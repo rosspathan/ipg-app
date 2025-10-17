@@ -14,6 +14,7 @@ import { RouterWrapper } from "@/components/RouterWrapper";
 import { AppInitializer } from "@/components/AppInitializer";
 import { AppStateManager } from "@/components/AppStateManager";
 import PrefixRedirect from "@/components/routing/PrefixRedirect";
+import { ThemeProvider } from "next-themes";
 
 // Layouts
 import AdminLayout from "@/layouts/AdminLayout";
@@ -233,15 +234,17 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Web3Provider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
-      </Web3Provider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <Web3Provider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </TooltipProvider>
+        </Web3Provider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
