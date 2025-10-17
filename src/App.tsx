@@ -67,6 +67,8 @@ import BSKTransferScreen from "./pages/BSKTransferScreen";
 import AdminKYCReview from "./pages/AdminKYCReview";
 const KYCReviewNew = React.lazy(() => import("./pages/admin/KYCReviewNew"));
 const AdminKYCSettings = React.lazy(() => import("./pages/AdminKYCSettings"));
+const AdminRoleManagement = React.lazy(() => import("./pages/admin/AdminRoleManagement"));
+const AdminBadgeSystem = React.lazy(() => import("./pages/admin/AdminBadgeSystem"));
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -450,6 +452,10 @@ function AppContent() {
                 <Route path="kyc" element={<React.Suspense fallback={<div>Loading...</div>}><KYCReviewNew /></React.Suspense>} />
                 <Route path="kyc-review" element={<AdminKYCReview />} />
                 <Route path="kyc/settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminKYCSettings /></React.Suspense>} />
+                
+                {/* Phase 5: Role & Badge Management */}
+                <Route path="roles" element={<React.Suspense fallback={<div>Loading...</div>}><AdminRoleManagement /></React.Suspense>} />
+                <Route path="badges" element={<React.Suspense fallback={<div>Loading...</div>}><AdminBadgeSystem /></React.Suspense>} />
                 
                 {/* Financial Management Routes - Phase 2-4 */}
                 <Route path="transactions" element={<TransactionControlCenter />} />
