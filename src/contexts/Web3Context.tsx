@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { WalletInfo } from '@/utils/wallet';
+import { detectAndResolveSessionConflict } from '@/utils/sessionConflictDetector';
 
 // Extend Window interface for MetaMask
 declare global {
@@ -127,7 +128,24 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initializeWallet();
+  }, []);
 
+  // Session conflict detector: Ensure Supabase session matches wallet owner
+  useEffect(() => {
+    if (wallet?.address) {
+      console.log('[WEB3] Checking session conflict for wallet:', wallet.address);
+      detectAndResolveSessionConflict(wallet.address)
+        .then(result => {
+          if (result.conflict && result.resolved) {
+            console.log('[WEB3] ✓ Session conflict resolved, reloading profile...');
+            // Trigger profile reload by dispatching custom event
+            window.dispatchEvent(new CustomEvent('profile:updated'));
+          }
+        });
+    }
+  }, [wallet?.address]);
+
+  useEffect(() => {
     // Listen for account changes in MetaMask
     if (typeof window.ethereum !== 'undefined') {
       const handleAccountsChanged = async (accounts: string[]) => {

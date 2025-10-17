@@ -1,17 +1,26 @@
 import { useMemo, useEffect, useState } from "react";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useProfile } from "@/hooks/useProfile";
+import { useWeb3 } from "@/contexts/Web3Context";
 import { extractUsernameFromEmail } from "@/lib/user/username";
 
 /**
  * useDisplayName
  * Consistently derive a user-facing display name across the app.
- * Priority: profile.username > session email > profile.full_name > profile.email > cached verification email > fallback
+ * 
+ * Priority (Web3-first):
+ * 0. Web3 wallet-linked profile username (if wallet connected)
+ * 1. Profile username (for auth session)
+ * 2. Profile full_name (if set and not default)
+ * 3. Storage email during onboarding (only if not authenticated)
+ * 4. User ID fallback
+ * 
  * Reacts to verification:email-updated, storage, and window focus events.
  */
 export function useDisplayName() {
   const { user } = useAuthUser();
   const { userApp } = useProfile();
+  const { wallet, isConnected } = useWeb3();
 
   const [storageEmail, setStorageEmail] = useState<string | null>(() => {
     try {
@@ -68,16 +77,32 @@ export function useDisplayName() {
 
   const displayName = useMemo(() => {
     console.log('[DISPLAY_NAME] Computing display name:', {
+      walletAddress: wallet?.address,
+      isConnected,
       storageEmail,
       'userApp?.username': userApp?.username,
+      'userApp?.wallet_address': userApp?.wallet_address,
       'user?.email': user?.email,
-      'userApp?.email': userApp?.email,
       'user?.id': user?.id
     });
 
-    // Priority 1: Profile username (most reliable for authenticated users)
+    // Priority 0: Web3 wallet-linked profile (Web3-first auth)
+    // If a wallet is connected and we have a profile with a matching wallet address,
+    // use that profile's username regardless of Supabase session state
+    if (isConnected && wallet?.address && userApp?.wallet_address === wallet.address && userApp?.username) {
+      console.log('[DISPLAY_NAME] ✓ Using wallet-linked username:', userApp.username);
+      return userApp.username;
+    }
+
+    // Priority 1: Profile username matching auth session (backward compatibility)
+    if (userApp?.username && user?.id && userApp?.user_id === user.id) {
+      console.log('[DISPLAY_NAME] Using authenticated profile username:', userApp.username);
+      return userApp.username;
+    }
+    
+    // Priority 1.5: Profile username exists (even if session mismatch - during transition)
     if (userApp?.username) {
-      console.log('[DISPLAY_NAME] Using userApp.username:', userApp.username);
+      console.log('[DISPLAY_NAME] Using profile username (no session check):', userApp.username);
       return userApp.username;
     }
 
@@ -103,7 +128,7 @@ export function useDisplayName() {
     
     console.log('[DISPLAY_NAME] Using default: User');
     return "User";
-  }, [userApp?.username, userApp?.full_name, user?.id, storageEmail]);
+  }, [userApp?.username, userApp?.full_name, userApp?.wallet_address, userApp?.user_id, user?.id, wallet?.address, isConnected, storageEmail]);
 
   useEffect(() => {
     try {

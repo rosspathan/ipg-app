@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
 import { extractUsernameFromEmail } from '@/lib/user/username';
+import { useWeb3 } from '@/contexts/Web3Context';
 
 /**
  * Profile Fields Usage Guide:
@@ -42,29 +43,58 @@ export interface UserApp {
 
 export const useProfile = () => {
   const { user } = useAuthUser();
+  const { wallet, isConnected } = useWeb3();
   const { toast } = useToast();
   const [userApp, setUserApp] = useState<UserApp | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserApp = async () => {
-    if (!user) {
+  const fetchUserApp = useCallback(async () => {
+    // Web3-first: Prioritize wallet address over Supabase session
+    if (!user && !wallet?.address) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      
+      // Priority 1: Query by wallet address (Web3-first)
+      if (wallet?.address) {
+        console.log('[PROFILE] Fetching profile by wallet address:', wallet.address);
+        const { data: walletProfile, error: walletError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('wallet_address', wallet.address)
+          .maybeSingle();
 
-      if (error) throw error;
+        if (!walletError && walletProfile) {
+          console.log('[PROFILE] ✓ Found profile by wallet address:', walletProfile.username);
+          setUserApp(walletProfile);
+          setLoading(false);
+          return;
+        }
+        
+        console.log('[PROFILE] No profile found for wallet, trying user_id fallback');
+      }
 
-      if (!data) {
-        // Create initial user app record with username and required referral_code
-        const username = extractUsernameFromEmail(user.email, user.id);
+      // Priority 2: Fallback to user_id (backward compatibility)
+      if (user?.id) {
+        console.log('[PROFILE] Fetching profile by user_id:', user.id);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          console.log('[PROFILE] ✓ Found profile by user_id:', data.username);
+          setUserApp(data);
+        } else {
+          // Create initial user app record with username and required referral_code
+          console.log('[PROFILE] Creating new profile for user:', user.id);
+          const username = extractUsernameFromEmail(user.email, user.id);
         const { data: newUserApp, error: createError } = await supabase
           .from('profiles')
           .insert([{
@@ -77,13 +107,12 @@ export const useProfile = () => {
           .select()
           .single();
 
-        if (createError) throw createError;
-        setUserApp(newUserApp);
-      } else {
-        setUserApp(data);
+          if (createError) throw createError;
+          setUserApp(newUserApp);
+        }
       }
     } catch (error) {
-      console.error('Error fetching user app:', error);
+      console.error('[PROFILE] Error fetching profile:', error);
       toast({
         title: "Error",
         description: "Failed to load profile data",
@@ -92,7 +121,7 @@ export const useProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, user?.email, wallet?.address, toast]);
 
   const updateUserApp = async (updates: Partial<UserApp>) => {
     if (!user) return;
@@ -126,7 +155,7 @@ export const useProfile = () => {
 
   useEffect(() => {
     fetchUserApp();
-  }, [user]);
+  }, [fetchUserApp]);
 
   // Listen for profile update events
   useEffect(() => {
@@ -137,7 +166,7 @@ export const useProfile = () => {
 
     window.addEventListener('profile:updated', handleProfileUpdate);
     return () => window.removeEventListener('profile:updated', handleProfileUpdate);
-  }, []);
+  }, [fetchUserApp]);
 
   return {
     userApp,
