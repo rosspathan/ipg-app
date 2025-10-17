@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { ProgramPageTemplate } from "@/components/programs-pro/ProgramPageTemplate"
+import { ProgramAccessGate } from "@/components/programs/ProgramAccessGate"
 import { useSpinWheel } from "@/hooks/useSpinWheel"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
@@ -7,6 +8,14 @@ import { History, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 export default function SpinWheelPage() {
+  return (
+    <ProgramAccessGate programKey="spin_wheel" title="Spin Wheel">
+      <SpinWheelContent />
+    </ProgramAccessGate>
+  )
+}
+
+function SpinWheelContent() {
   const { segments, config, loading, executeSpin } = useSpinWheel()
   const [betAmount, setBetAmount] = useState(100)
   const [isSpinning, setIsSpinning] = useState(false)

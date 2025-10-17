@@ -2,6 +2,7 @@ import * as React from "react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ProgramPageTemplate } from "@/components/programs-pro/ProgramPageTemplate"
+import { ProgramAccessGate } from "@/components/programs/ProgramAccessGate"
 import { ProgramGrid } from "@/components/programs-pro/ProgramGrid"
 import { ProgramTileUltra } from "@/components/programs-pro/ProgramTileUltra"
 import { Target } from "lucide-react"
@@ -19,6 +20,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export default function LuckyDrawPage() {
+  return (
+    <ProgramAccessGate programKey="lucky_draw" title="Lucky Draw">
+      <LuckyDrawContent />
+    </ProgramAccessGate>
+  )
+}
+
+function LuckyDrawContent() {
   const navigate = useNavigate()
   const { pools, userTickets, loading, purchaseTickets } = useLuckyDrawPools()
   const [selectedPool, setSelectedPool] = useState<string | null>(null)

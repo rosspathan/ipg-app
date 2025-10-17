@@ -1,65 +1,92 @@
-import * as React from "react"
 import { ProgramPageTemplate } from "@/components/programs-pro/ProgramPageTemplate"
-import { ProgramGrid } from "@/components/programs-pro/ProgramGrid"
-import { ProgramTileUltra } from "@/components/programs-pro/ProgramTileUltra"
-import { Star, TrendingUp, Zap } from "lucide-react"
+import { ProgramAccessGate } from "@/components/programs/ProgramAccessGate"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { TrendingUp, Lock, Clock } from "lucide-react"
 
 export default function StakingPage() {
-  const pools = [
-    {
-      id: "bsk-flexible",
-      title: "BSK Flexible",
-      subtitle: "Flexible staking",
-      icon: <Star className="h-5 w-5" />,
-      badge: "DAILY" as const,
-      sparkline: [10, 12, 15, 13, 18, 20, 22],
-      footer: "APY: 12%",
-      onPress: () => console.log("BSK Flexible")
-    },
-    {
-      id: "bsk-30day",
-      title: "BSK 30-Day",
-      subtitle: "Locked for 30d",
-      icon: <TrendingUp className="h-5 w-5" />,
-      sparkline: [15, 17, 20, 18, 25, 28, 30],
-      footer: "APY: 18%",
-      onPress: () => console.log("BSK 30-Day")
-    },
-    {
-      id: "bsk-90day",
-      title: "BSK 90-Day",
-      subtitle: "Locked for 90d",
-      icon: <Zap className="h-5 w-5" />,
-      badge: "HOT" as const,
-      sparkline: [20, 22, 28, 25, 35, 38, 40],
-      footer: "APY: 25%",
-      onPress: () => console.log("BSK 90-Day")
-    }
-  ]
+  return (
+    <ProgramAccessGate programKey="staking" title="Staking">
+      <StakingContent />
+    </ProgramAccessGate>
+  )
+}
 
+function StakingContent() {
   return (
     <ProgramPageTemplate
       title="Staking"
-      subtitle="Stake BSK and earn passive rewards"
-      headerActions={
-        <Button size="sm" variant="outline">
-          My Stakes
-        </Button>
-      }
+      subtitle="Earn passive rewards on your BSK"
     >
-      <div className="space-y-6" data-testid="staking-grid">
-        <div className="rounded-lg bg-success/5 border border-success/20 p-4">
-          <p className="text-sm text-muted-foreground">
-            Choose a pool to start earning rewards on your BSK
-          </p>
-        </div>
+      <div className="space-y-6">
+        <Card className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 rounded-full bg-primary/10">
+              <TrendingUp className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg">Flexible Staking</h3>
+              <p className="text-sm text-muted-foreground">No lock-in period</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">APY</p>
+              <p className="text-2xl font-bold text-primary">12%</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Min Stake</p>
+              <p className="text-2xl font-bold">10 BSK</p>
+            </div>
+          </div>
+          <Button className="w-full">Stake Now</Button>
+        </Card>
 
-        <ProgramGrid>
-          {pools.map((pool) => (
-            <ProgramTileUltra key={pool.id} {...pool} />
-          ))}
-        </ProgramGrid>
+        <Card className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 rounded-full bg-primary/10">
+              <Lock className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg">Locked Staking (30 Days)</h3>
+              <p className="text-sm text-muted-foreground">Higher rewards</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">APY</p>
+              <p className="text-2xl font-bold text-primary">25%</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Min Stake</p>
+              <p className="text-2xl font-bold">100 BSK</p>
+            </div>
+          </div>
+          <Button className="w-full">Stake Now</Button>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 rounded-full bg-primary/10">
+              <Clock className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg">Locked Staking (90 Days)</h3>
+              <p className="text-sm text-muted-foreground">Maximum rewards</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">APY</p>
+              <p className="text-2xl font-bold text-primary">40%</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Min Stake</p>
+              <p className="text-2xl font-bold">500 BSK</p>
+            </div>
+          </div>
+          <Button className="w-full">Stake Now</Button>
+        </Card>
       </div>
     </ProgramPageTemplate>
   )

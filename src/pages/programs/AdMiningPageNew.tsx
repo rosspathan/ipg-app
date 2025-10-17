@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { ProgramAccessGate } from "@/components/programs/ProgramAccessGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,14 @@ import { toast } from "sonner";
 import { useProgramConfig } from "@/hooks/useProgramConfig";
 
 export default function AdMiningPageNew() {
+  return (
+    <ProgramAccessGate programKey="adverts_mining" title="Ad Mining">
+      <AdMiningContent />
+    </ProgramAccessGate>
+  )
+}
+
+function AdMiningContent() {
   const { user } = useAuthUser();
   const queryClient = useQueryClient();
   const programConfig = useProgramConfig("ad-mining");
