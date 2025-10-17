@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { Camera, Upload, X, Loader2 } from 'lucide-react';
+import { Camera, Upload, X, Loader2, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
 interface DocumentUploaderProps {
@@ -8,9 +9,11 @@ interface DocumentUploaderProps {
   value?: string;
   onChange: (file: File) => Promise<void>;
   uploading?: boolean;
+  uploadProgress?: number;
   required?: boolean;
   error?: string;
   accept?: string;
+  isSelfie?: boolean;
 }
 
 export function DocumentUploader({
@@ -18,11 +21,14 @@ export function DocumentUploader({
   value,
   onChange,
   uploading,
+  uploadProgress = 0,
   required,
   error,
-  accept = 'image/*,.pdf'
+  accept = 'image/*',
+  isSelfie = false
 }: DocumentUploaderProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(value || null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,122 +36,166 @@ export function DocumentUploader({
     if (!file) return;
 
     // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic'];
     if (!validTypes.includes(file.type)) {
-      alert('Please upload JPG, PNG, or PDF files only');
+      alert('Please upload JPG, PNG, WEBP, or HEIC images only');
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
       return;
     }
 
     // Create preview for images
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setPreview('PDF Document');
-    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
 
     await onChange(file);
   };
 
   const handleRemove = () => {
     setPreview(null);
-    if (inputRef.current) {
-      inputRef.current.value = '';
-    }
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
   };
 
+  const captureAttribute = isSelfie ? 'user' : 'environment';
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <label className="flex items-center gap-1 text-sm font-medium">
         {label}
         {required && <span className="text-danger">*</span>}
       </label>
 
-      {preview ? (
+      {/* Upload Instructions */}
+      {!preview && !uploading && (
+        <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+          <p className="text-xs text-muted-foreground">
+            {isSelfie 
+              ? '📸 Take a clear selfie with your face fully visible' 
+              : '📄 Capture all corners of your ID - ensure text is readable and no glare'}
+          </p>
+        </div>
+      )}
+
+      {preview && !uploading ? (
         <div className="relative">
-          {preview === 'PDF Document' ? (
-            <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-card">
-              <span className="text-sm">PDF Document Uploaded</span>
+          <div className="relative group">
+            <img
+              src={preview}
+              alt={label}
+              className="w-full h-56 object-cover rounded-lg border-2 border-border"
+            />
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 onClick={handleRemove}
-                disabled={uploading}
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 mr-1" />
+                Remove
               </Button>
             </div>
-          ) : (
-            <div className="relative">
-              <img
-                src={preview}
-                alt={label}
-                className="w-full h-48 object-cover rounded-lg border border-border"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={handleRemove}
-                disabled={uploading}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+          </div>
+          <div className="mt-2 flex items-center justify-center gap-2 text-xs text-success">
+            <span className="w-2 h-2 bg-success rounded-full"></span>
+            Uploaded successfully
+          </div>
+        </div>
+      ) : uploading ? (
+        <div className="relative flex flex-col items-center justify-center h-56 border-2 border-primary/50 rounded-lg bg-primary/5">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+          <p className="text-sm font-medium mb-2">Uploading...</p>
+          <div className="w-3/4">
+            <Progress value={uploadProgress} className="h-2" />
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              {uploadProgress}% complete
+            </p>
+          </div>
+          <p className="text-xs text-warning mt-3 font-medium">
+            ⚠️ Do not close or navigate away
+          </p>
         </div>
       ) : (
-        <div
-          onClick={() => inputRef.current?.click()}
-          className={cn(
-            "relative flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
-            error ? "border-danger bg-danger/5" : "border-border hover:border-primary/50 bg-card/50",
-            uploading && "opacity-50 cursor-not-allowed"
-          )}
-        >
+        <div className="space-y-3">
+          {/* Hidden file inputs */}
           <input
-            ref={inputRef}
+            ref={cameraInputRef}
+            type="file"
+            className="hidden"
+            accept={accept}
+            capture={captureAttribute}
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+          <input
+            ref={galleryInputRef}
             type="file"
             className="hidden"
             accept={accept}
             onChange={handleFileChange}
             disabled={uploading}
           />
-          
-          {uploading ? (
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          ) : (
-            <>
-              <div className="flex items-center gap-4 mb-2">
-                <Upload className="h-6 w-6 text-muted-foreground" />
-                <Camera className="h-6 w-6 text-muted-foreground" />
+
+          {/* Camera Button */}
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "w-full h-20 text-base border-2",
+              error && "border-danger"
+            )}
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={uploading}
+          >
+            <Camera className="h-6 w-6 mr-3" />
+            <div className="text-left">
+              <div className="font-semibold">Take Photo</div>
+              <div className="text-xs text-muted-foreground">
+                {isSelfie ? 'Use front camera' : 'Use back camera'}
               </div>
-              <p className="text-sm text-muted-foreground text-center px-4">
-                Click to upload or take a photo
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                JPG, PNG, or PDF (max 5MB)
-              </p>
-            </>
-          )}
+            </div>
+          </Button>
+
+          {/* Gallery Button */}
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "w-full h-20 text-base border-2",
+              error && "border-danger"
+            )}
+            onClick={() => galleryInputRef.current?.click()}
+            disabled={uploading}
+          >
+            <ImagePlus className="h-6 w-6 mr-3" />
+            <div className="text-left">
+              <div className="font-semibold">Choose from Gallery</div>
+              <div className="text-xs text-muted-foreground">
+                Select existing photo
+              </div>
+            </div>
+          </Button>
+
+          <p className="text-xs text-muted-foreground text-center">
+            JPG, PNG, WEBP (max 10MB)
+          </p>
         </div>
       )}
 
       {error && (
-        <p className="text-xs text-danger animate-in slide-in-from-top-1">
-          {error}
-        </p>
+        <div className="p-3 bg-danger/10 border border-danger/30 rounded-lg">
+          <p className="text-xs text-danger font-medium">
+            {error}
+          </p>
+        </div>
       )}
     </div>
   );

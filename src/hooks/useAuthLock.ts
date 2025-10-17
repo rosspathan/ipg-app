@@ -15,6 +15,7 @@ interface LockState {
   biometricEnabled: boolean;
   requireOnActions: boolean;
   sessionLockMinutes: number;
+  criticalOperationInProgress: boolean;
 }
 
 const STORAGE_KEY = 'cryptoflow_lock_state';
@@ -34,7 +35,8 @@ export const useAuthLock = () => {
     lockedUntil: null,
     biometricEnabled: false,
     requireOnActions: true,
-    sessionLockMinutes: 5
+    sessionLockMinutes: 5,
+    criticalOperationInProgress: false
   });
 
   // Load lock state from localStorage and sync with database
@@ -447,11 +449,34 @@ export const useAuthLock = () => {
     return false;
   }, [lockState]);
 
+  // Start critical operation (prevents auto-lock)
+  const startCriticalOperation = useCallback(() => {
+    setLockState(prev => ({ ...prev, criticalOperationInProgress: true }));
+    console.log('🔒 Critical operation started - auto-lock disabled');
+  }, []);
+
+  // End critical operation (re-enables auto-lock)
+  const endCriticalOperation = useCallback(() => {
+    setLockState(prev => ({ ...prev, criticalOperationInProgress: false }));
+    console.log('🔓 Critical operation ended - auto-lock re-enabled');
+  }, []);
+
+  // Update activity timestamp (extends session)
+  const updateActivity = useCallback(() => {
+    setLockState(prev => ({ ...prev, lastUnlockAt: Date.now() }));
+  }, []);
+
   // Auto-lock check
   useEffect(() => {
     if (!user || !lockState.isUnlocked) return;
 
     const checkAutoLock = () => {
+      // Skip auto-lock if critical operation in progress
+      if (lockState.criticalOperationInProgress) {
+        console.log('⏸️  Auto-lock skipped - critical operation in progress');
+        return;
+      }
+
       if (isUnlockRequired()) {
         lock();
       }
@@ -474,6 +499,9 @@ export const useAuthLock = () => {
     lock,
     isUnlockRequired,
     checkBiometricAvailability,
-    saveLockState
+    saveLockState,
+    startCriticalOperation,
+    endCriticalOperation,
+    updateActivity
   };
 };

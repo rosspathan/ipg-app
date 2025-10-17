@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { useAuthLock } from '@/hooks/useAuthLock';
 import { toast } from 'sonner';
 
 export interface KYCSubmission {
@@ -30,11 +31,13 @@ export interface KYCSubmission {
 
 export const useKYCSubmission = () => {
   const { user } = useAuthUser();
+  const { startCriticalOperation, endCriticalOperation, updateActivity } = useAuthLock();
   const [submission, setSubmission] = useState<KYCSubmission | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const calculateProgress = useCallback((data: Partial<KYCSubmission>) => {
@@ -135,16 +138,35 @@ export const useKYCSubmission = () => {
   const uploadDocument = async (file: File, docType: 'id_front' | 'id_back' | 'selfie'): Promise<string> => {
     if (!user) throw new Error('User not authenticated');
 
+    // Prevent auto-lock during upload
+    startCriticalOperation();
     setUploading(true);
+    setUploadProgress(0);
+
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${docType}_${Date.now()}.${fileExt}`;
       
+      // Update activity every 5 seconds during upload
+      const activityInterval = setInterval(() => {
+        updateActivity();
+        console.log('📸 Keeping session active during upload...');
+      }, 5000);
+
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
       const { error: uploadError } = await supabase.storage
         .from('kyc-documents')
         .upload(fileName, file, {
           upsert: true
         });
+
+      clearInterval(activityInterval);
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
       if (uploadError) throw uploadError;
 
@@ -152,9 +174,16 @@ export const useKYCSubmission = () => {
         .from('kyc-documents')
         .getPublicUrl(fileName);
 
+      toast.success('Document uploaded successfully');
       return publicUrl;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      toast.error('Upload failed. Please try again.');
+      throw error;
     } finally {
       setUploading(false);
+      setUploadProgress(0);
+      endCriticalOperation();
     }
   };
 
@@ -220,6 +249,7 @@ export const useKYCSubmission = () => {
     uploading,
     savingDraft,
     progress,
+    uploadProgress,
     lastSaved,
     saveDraft,
     uploadDocument,

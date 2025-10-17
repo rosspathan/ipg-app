@@ -17,7 +17,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 export default function KYCSubmission() {
   const navigate = useNavigate();
-  const { submission, loading, uploading, savingDraft, progress, lastSaved, saveDraft, uploadDocument, submitForReview } = useKYCSubmission();
+  const { submission, loading, uploading, savingDraft, progress, uploadProgress, lastSaved, saveDraft, uploadDocument, submitForReview } = useKYCSubmission();
   const [formData, setFormData] = useState<any>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmAccuracy, setConfirmAccuracy] = useState(false);
@@ -338,30 +338,36 @@ export default function KYCSubmission() {
               error={errors.id_number}
               placeholder="Enter your ID number"
             />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-6">
               <DocumentUploader
-                label="ID Front"
+                label="ID Front Side"
                 value={formData.id_front_url}
                 onChange={(file) => handleFileUpload('id_front_url', file)}
                 uploading={uploading}
+                uploadProgress={uploadProgress}
                 required
                 error={errors.id_front_url}
+                isSelfie={false}
               />
               <DocumentUploader
-                label="ID Back"
+                label="ID Back Side"
                 value={formData.id_back_url}
                 onChange={(file) => handleFileUpload('id_back_url', file)}
                 uploading={uploading}
+                uploadProgress={uploadProgress}
                 required
                 error={errors.id_back_url}
+                isSelfie={false}
               />
               <DocumentUploader
-                label="Selfie"
+                label="Selfie with ID"
                 value={formData.selfie_url}
                 onChange={(file) => handleFileUpload('selfie_url', file)}
                 uploading={uploading}
+                uploadProgress={uploadProgress}
                 required
                 error={errors.selfie_url}
+                isSelfie={true}
                 accept="image/*"
               />
             </div>
