@@ -9,7 +9,7 @@ import CreateWalletScreen from './onboarding/CreateWalletScreen';
 import ImportWalletScreen from './onboarding/ImportWalletScreen';
 import VerifyWalletAndEmailScreen from './onboarding/VerifyWalletAndEmailScreen';
 import EmailInputScreen from './onboarding/EmailInputScreen';
-import ReferralCodeInputScreen from './onboarding/ReferralCodeInputScreen';
+// ReferralCodeInputScreen removed - now integrated in EmailVerificationScreen
 import EmailVerificationScreen from './onboarding/EmailVerificationScreen';
 import PinSetupScreen from './onboarding/PinSetupScreen';
 import BiometricSetupScreen from './onboarding/BiometricSetupScreen';
@@ -66,27 +66,10 @@ const OnboardingFlow: React.FC = () => {
   };
   const handleEmailSubmitted = (email: string) => {
     setEmail(email);
-    setStep('email-verification');
+    setStep('email-verification'); // Skip referral-code step
   };
   
-  const handleResendCode = async () => {
-    if (!state.email) return;
-    
-    const { generateVerificationCode, storeVerificationCode } = await import('@/utils/security');
-    const { supabase } = await import('@/integrations/supabase/client');
-    
-    const verificationCode = generateVerificationCode();
-    storeVerificationCode((state.email || '').trim().toLowerCase(), verificationCode);
-    
-    await supabase.functions.invoke('send-verification-email', {
-      body: {
-        email: state.email,
-        verificationCode,
-        userName: extractUsernameFromEmail(state.email),
-        isOnboarding: true
-      }
-    });
-  };
+  // handleResendCode removed - EmailVerificationScreen handles resends internally
   
   const handleEmailVerified = async () => {
     markEmailVerified();
@@ -157,27 +140,12 @@ const OnboardingFlow: React.FC = () => {
       return (
         <EmailInputScreen
           walletAddress={state.walletInfo?.address}
-          onEmailSubmitted={(email) => {
-            setEmail(email);
-            setStep('referral-code');
-          }}
+          onEmailSubmitted={handleEmailSubmitted}
           onBack={() => setStep('create-wallet')}
         />
       );
     
-    case 'referral-code':
-      return (
-        <ReferralCodeInputScreen
-          onCodeSubmitted={async (code, sponsorId) => {
-            setReferralCode(code, sponsorId);
-            const { storePendingReferral } = await import('@/utils/referralCapture');
-            storePendingReferral(code, sponsorId);
-            setStep('email-verification');
-          }}
-          onSkip={() => setStep('email-verification')}
-          onBack={() => setStep('email-input')}
-        />
-      );
+    // 'referral-code' step removed - now integrated in EmailVerificationScreen
 
     case 'email-verification':
       return (
@@ -185,7 +153,6 @@ const OnboardingFlow: React.FC = () => {
           email={state.email || ''}
           walletAddress={state.walletInfo?.address}
           onVerified={handleEmailVerified}
-          onResendCode={handleResendCode}
           onBack={() => setStep('email-input')}
         />
       );

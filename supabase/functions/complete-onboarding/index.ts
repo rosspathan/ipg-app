@@ -9,8 +9,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Bump function version to force fresh deploy and aid debugging
-const FUNCTION_VERSION = 'v2025-10-14-2';
+// [STEP 2] Bump function version to force fresh deploy and aid debugging
+const FUNCTION_VERSION = 'v2025-10-17-1';
 
 interface OnboardingRequest {
   email: string;
@@ -343,17 +343,25 @@ serve(async (req) => {
       console.warn('Referral capture warning:', err);
     }
 
-    // Generate session for the user using admin API
+    // [STEP 2] Generate session for the user using admin API
     const { data: userSession, error: userSessionError } = await supabaseAdmin.auth.admin.createSession({
       user_id: userId,
     });
 
-    if (userSessionError || !userSession) {
+    if (userSessionError || !userSession?.session) {
       console.error('[complete-onboarding] Failed to create session:', userSessionError);
       throw new Error('Failed to create user session');
     }
 
-    // Return success with MNEMONIC (only shown once!) and session tokens
+    // [STEP 2 & 7] Log session token creation for debugging
+    console.log('[complete-onboarding] ✓ Returning session tokens:', {
+      hasAccessToken: !!userSession.session.access_token,
+      hasRefreshToken: !!userSession.session.refresh_token,
+      userId,
+      version: FUNCTION_VERSION
+    });
+
+    // [STEP 2] Return success with MNEMONIC (only shown once!) and session tokens
     return new Response(
       JSON.stringify({ 
         success: true, 

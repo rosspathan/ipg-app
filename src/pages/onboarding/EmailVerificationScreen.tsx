@@ -32,15 +32,13 @@ interface EmailVerificationScreenProps {
   email: string;
   walletAddress?: string; // EVM address from onboarding
   onVerified: (mnemonic?: string, walletAddress?: string) => void;
-  onResendCode: () => void;
-  onBack: () => void;
+  onBack: () => void; // onResendCode removed - handled internally
 }
 
 const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
   email,
   walletAddress,
   onVerified,
-  onResendCode,
   onBack
 }) => {
   const [code, setCode] = useState('');
@@ -190,8 +188,16 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         console.log('[VERIFY] Cleaned up imported wallet data');
       }
       
-      // Establish session with the token returned from edge function
-      if (data.session) {
+      // [STEP 3] Establish session with tokens returned from edge function
+      console.info('[VERIFY] complete-onboarding response keys:', {
+        success: data.success,
+        userId: data.userId,
+        hasSession: !!data.session,
+        hasAccessToken: !!data.session?.access_token,
+        hasRefreshToken: !!data.session?.refresh_token
+      });
+
+      if (data.session?.access_token && data.session?.refresh_token) {
         console.info('[VERIFY] Setting session from edge function...');
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: data.session.access_token,
@@ -200,30 +206,50 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
         if (sessionError) {
           console.error('[VERIFY] Failed to set session:', sessionError);
-          throw new Error('Failed to establish session. Please try signing in.');
+          toast({
+            title: "Session Error",
+            description: "Verification succeeded but session could not be created. Please sign in to continue.",
+            variant: "destructive",
+            duration: 7000
+          });
+          throw new Error('Failed to establish session');
         }
 
-        // Wait for session to be established
+        // Wait for session to be established (polling with timeout)
         let sessionEstablished = false;
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 15; // Increased attempts
         
         while (!sessionEstablished && attempts < maxAttempts) {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user?.id) {
             sessionEstablished = true;
-            console.info('[VERIFY] Session established:', session.user.id);
+            console.info('[VERIFY] ✓ Session established successfully:', session.user.id);
           } else {
             attempts++;
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 400));
           }
         }
 
         if (!sessionEstablished) {
-          console.error('[VERIFY] Session not established');
-          throw new Error('Session could not be established. Please try signing in.');
+          console.error('[VERIFY] Session polling timed out after', maxAttempts, 'attempts');
+          toast({
+            title: "Session Timeout",
+            description: "Please sign in with your email to complete setup.",
+            variant: "destructive",
+            duration: 7000
+          });
+          throw new Error('Session establishment timeout');
         }
       } else {
+        // Safety net: should not happen after Step 2 fix
+        console.error('[VERIFY] No session tokens in response!', data);
+        toast({
+          title: "Missing Session",
+          description: "Server did not return session tokens. Please contact support.",
+          variant: "destructive",
+          duration: 7000
+        });
         throw new Error('No session token returned from server');
       }
 
@@ -301,22 +327,30 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
   const [isResending, setIsResending] = useState(false);
 
+  // [STEP 1 & 5] Internal resend handler - no parent onResendCode call
   const handleResendCode = async (force: boolean = false) => {
     if ((!canResend && !force) || isResending) return;
     
+    console.info('[VERIFY] Resending OTP...');
     setIsResending(true);
     setResendCountdown(60);
     setCanResend(false);
     
     try {
+      // Generate fresh code and store in sessionStorage only
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       sessionStorage.setItem('verificationCode', code);
       sessionStorage.setItem('verificationEmail', email);
+      
+      // Sync with localStorage for persistence
       try {
         const raw = localStorage.getItem('ipg_onboarding_state');
         const parsed = raw ? JSON.parse(raw) : {};
         localStorage.setItem('ipg_onboarding_state', JSON.stringify({ ...parsed, email }));
-      } catch {}
+      } catch (e) {
+        console.warn('[VERIFY] Failed to sync localStorage:', e);
+      }
+      
       window.dispatchEvent(new Event('verification:email-updated'));
       
       const { error } = await supabase.functions.invoke('send-verification-email', {
@@ -329,15 +363,15 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       });
 
       if (error) throw error;
-
-      onResendCode();
       
+      console.info('[VERIFY] OTP resent successfully');
       toast({
         title: "Code Resent",
         description: "A new 6-digit code has been sent to your email",
         variant: "default",
       });
     } catch (error: any) {
+      console.error('[VERIFY] Resend failed:', error);
       toast({
         title: "Failed to Resend",
         description: error.message,
@@ -635,11 +669,63 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
               </Card>
             </motion.div>
 
+            {/* [STEP 4] Referral Code Input (Optional) */}
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.65 }}
+            >
+              <Card className="bg-purple-500/10 backdrop-blur-sm border-purple-500/30">
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Gift className="w-4 h-4 text-purple-400" />
+                    <span className="text-purple-300 text-sm font-medium">Have a Referral Code? (Optional)</span>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      placeholder="Enter code"
+                      disabled={referralValidated || isValidatingReferral}
+                      className="flex-1 bg-black/30 border-purple-400/30 text-white placeholder:text-white/50 uppercase font-mono disabled:opacity-60"
+                      maxLength={12}
+                    />
+                    <Button
+                      onClick={handleValidateReferral}
+                      disabled={!referralCode.trim() || referralValidated || isValidatingReferral}
+                      className="bg-purple-500 hover:bg-purple-600 text-white disabled:opacity-50"
+                    >
+                      {isValidatingReferral ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : referralValidated ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        'Apply'
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {referralValidated && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 text-green-400 text-xs"
+                    >
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Referral applied! You'll be linked after verification</span>
+                    </motion.div>
+                  )}
+                </div>
+              </Card>
+            </motion.div>
+
             {/* Resend code with improved UI */}
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
+              transition={{ duration: 0.6, delay: 0.75 }}
             >
               <Card className="bg-white/5 backdrop-blur-sm border-white/10">
                 <div className="p-4 space-y-3">
