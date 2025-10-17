@@ -66,7 +66,15 @@ export function BottomNavBar() {
             return (
               <button
                 key={item.id}
-                onClick={() => navigate(item.route)}
+                onClick={(e) => {
+                  console.log('[NAV] Button clicked:', {
+                    id: item.id,
+                    route: item.route,
+                    target: e.target,
+                    timestamp: Date.now()
+                  });
+                  navigate(item.route);
+                }}
                 className={cn(
                   "flex flex-col items-center justify-center px-2 py-1 rounded-md min-w-[56px]",
                   active ? "text-accent" : "text-muted-foreground"

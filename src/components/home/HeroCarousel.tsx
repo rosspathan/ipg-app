@@ -64,8 +64,11 @@ export function HeroCarousel({
             key={slide.id}
             className={cn(
               "absolute inset-0 transition-opacity duration-[600ms]",
-              index === currentIndex ? "opacity-100" : "opacity-0"
+              index === currentIndex 
+                ? "opacity-100 pointer-events-auto" 
+                : "opacity-0 pointer-events-none"
             )}
+            style={{ willChange: index === currentIndex ? 'auto' : 'transform' }}
           >
             <img
               src={slide.image}

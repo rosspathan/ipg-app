@@ -49,6 +49,11 @@ export const SupportLinkWhatsApp: FC<SupportLinkWhatsAppProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
+    console.log('[WHATSAPP_FAB] Clicked', { 
+      variant, 
+      timestamp: Date.now() 
+    });
+    
     // Merge admin defaults with props and custom config
     const finalConfig = {
       ...DEFAULT_WA_CONFIG,
@@ -67,7 +72,7 @@ export const SupportLinkWhatsApp: FC<SupportLinkWhatsAppProps> = ({
   const waLink = `https://wa.me/${finalPhone.replace(/\D/g, '')}?text=${encodeURIComponent(finalText)}`;
 
   const computedClass = cn(
-    variant === 'fab' ? 'fixed right-4 bottom-[calc(var(--dock-h)+24px+var(--safe-b))] z-[60]' : undefined,
+    variant === 'fab' ? 'fixed right-4 bottom-[calc(var(--dock-h)+16px)] z-40' : undefined,
     className
   );
 
