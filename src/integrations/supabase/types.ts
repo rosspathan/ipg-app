@@ -3681,6 +3681,39 @@ export type Database = {
         }
         Relationships: []
       }
+      image_carousels: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          link_url: string | null
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          link_url?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          link_url?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inr_funding_routes: {
         Row: {
           account_name: string | null

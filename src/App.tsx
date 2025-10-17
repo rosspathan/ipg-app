@@ -60,6 +60,7 @@ import AdminManualPurchasesScreen from "./pages/AdminManualPurchasesScreen";
 import ManualBSKPurchaseScreen from "./pages/ManualBSKPurchaseScreen";
 import AdminCryptoConversionsScreen from "./pages/AdminCryptoConversionsScreen";
 const AdminAnnouncementsManager = React.lazy(() => import("./pages/admin/AdminAnnouncementsManager"));
+const AdminCarouselManager = React.lazy(() => import("./pages/admin/AdminCarouselManager"));
 import BSKTransferScreen from "./pages/BSKTransferScreen";
 import AdminKYCReview from "./pages/AdminKYCReview";
 const KYCReviewNew = React.lazy(() => import("./pages/admin/KYCReviewNew"));
@@ -438,6 +439,7 @@ function AppContent() {
                 
                 {/* Reports & Settings */}
                 <Route path="ads" element={<AdminAdsScreen />} />
+                <Route path="carousel" element={<React.Suspense fallback={<div>Loading...</div>}><AdminCarouselManager /></React.Suspense>} />
                 <Route path="settings" element={<AdminSettingsClean />} />
                 <Route path="system/health" element={<React.Suspense fallback={<div>Loading...</div>}><AdminSystemHealth /></React.Suspense>} />
                 <Route path="kyc" element={<React.Suspense fallback={<div>Loading...</div>}><KYCReviewNew /></React.Suspense>} />

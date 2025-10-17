@@ -16,6 +16,7 @@ import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
+import { ImageCarousel } from "@/components/home/ImageCarousel"
 import { useDisplayName } from "@/hooks/useDisplayName";
 import { supabase } from "@/integrations/supabase/client";
 import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms";
@@ -176,6 +177,9 @@ export function HomePageRebuilt() {
 
         {/* Announcement Carousel */}
         <AnnouncementCarousel />
+
+        {/* Image Carousel - Admin uploaded banners */}
+        <ImageCarousel />
 
         {/* Programs Grid */}
         <ProgramsGrid
