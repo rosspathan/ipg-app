@@ -137,24 +137,6 @@ export function ProfileHub() {
     );
   }
   
-  // If no user after loading, show message (shouldn't happen due to UserRoute)
-  if (!user && !authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="text-center space-y-4">
-          <p className="text-muted-foreground">
-            Profile temporarily unavailable. Please try again.
-          </p>
-          <button 
-            onClick={() => navigate('/app/home')}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6" data-testid="page-profile">
