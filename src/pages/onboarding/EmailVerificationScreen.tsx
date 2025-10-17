@@ -175,7 +175,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         return;
       }
       
-      console.info('[VERIFY] User registered:', data.userId, data.username);
+      console.info('[VERIFY] ✓ Email verified, wallet linked to user:', data.userId);
       
       // Clean up imported wallet data
       if (importedWallet) {
@@ -188,69 +188,14 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         console.log('[VERIFY] Cleaned up imported wallet data');
       }
       
-      // [STEP 3] Establish session with tokens returned from edge function
-      console.info('[VERIFY] complete-onboarding response keys:', {
-        success: data.success,
-        userId: data.userId,
-        hasSession: !!data.session,
-        hasAccessToken: !!data.session?.access_token,
-        hasRefreshToken: !!data.session?.refresh_token
-      });
-
-      if (data.session?.access_token && data.session?.refresh_token) {
-        console.info('[VERIFY] Setting session from edge function...');
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-        });
-
-        if (sessionError) {
-          console.error('[VERIFY] Failed to set session:', sessionError);
-          toast({
-            title: "Session Error",
-            description: "Verification succeeded but session could not be created. Please sign in to continue.",
-            variant: "destructive",
-            duration: 7000
-          });
-          throw new Error('Failed to establish session');
-        }
-
-        // Wait for session to be established (polling with timeout)
-        let sessionEstablished = false;
-        let attempts = 0;
-        const maxAttempts = 15; // Increased attempts
-        
-        while (!sessionEstablished && attempts < maxAttempts) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user?.id) {
-            sessionEstablished = true;
-            console.info('[VERIFY] ✓ Session established successfully:', session.user.id);
-          } else {
-            attempts++;
-            await new Promise(resolve => setTimeout(resolve, 400));
-          }
-        }
-
-        if (!sessionEstablished) {
-          console.error('[VERIFY] Session polling timed out after', maxAttempts, 'attempts');
-          toast({
-            title: "Session Timeout",
-            description: "Please sign in with your email to complete setup.",
-            variant: "destructive",
-            duration: 7000
-          });
-          throw new Error('Session establishment timeout');
-        }
-      } else {
-        // Safety net: should not happen after Step 2 fix
-        console.error('[VERIFY] No session tokens in response!', data);
-        toast({
-          title: "Missing Session",
-          description: "Server did not return session tokens. Please contact support.",
-          variant: "destructive",
-          duration: 7000
-        });
-        throw new Error('No session token returned from server');
+      // Web3-first: Store email verification flag locally (for BSK features)
+      // NO Supabase session needed - wallet is the authentication
+      localStorage.setItem('email_verified', 'true');
+      localStorage.setItem('verified_email', email);
+      
+      // Store referral code if validated
+      if (referralValidated && referralCode) {
+        storePendingReferral(referralCode, 'email_verification_screen');
       }
 
       // Emit events for UI refresh

@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 // [STEP 2] Bump function version to force fresh deploy and aid debugging
-const FUNCTION_VERSION = 'v2025-10-17-2';
+const FUNCTION_VERSION = 'v2025-10-17-3-web3-first';
 
 interface OnboardingRequest {
   email: string;
@@ -343,25 +343,16 @@ serve(async (req) => {
       console.warn('Referral capture warning:', err);
     }
 
-    // [STEP 2] Generate session for the user using admin API
-    const { data: userSession, error: userSessionError } = await supabaseAdmin.auth.admin.createSession({
-      user_id: userId,
-    });
-
-    if (userSessionError || !userSession?.session) {
-      console.error('[complete-onboarding] Failed to create session:', userSessionError);
-      throw new Error('Failed to create user session');
-    }
-
-    // [STEP 2 & 7] Log session token creation for debugging
-    console.log('[complete-onboarding] ✓ Returning session tokens:', {
-      hasAccessToken: !!userSession.session.access_token,
-      hasRefreshToken: !!userSession.session.refresh_token,
+    // Web3-first: Return success without Supabase session tokens
+    // Email is just metadata for BSK features, wallet is the primary identity
+    console.log('[complete-onboarding] ✓ Email verified, wallet linked:', {
       userId,
+      username,
+      walletAddress: walletData.address,
       version: FUNCTION_VERSION
     });
 
-    // [STEP 2] Return success with MNEMONIC (only shown once!) and session tokens
+    // Return success with MNEMONIC (only shown once!) - NO session tokens
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -371,10 +362,6 @@ serve(async (req) => {
         walletAddress: walletData.address,
         mnemonic: mnemonic, // CRITICAL: User must save this!
         warning: "Save your mnemonic phrase! This is the ONLY time it will be shown.",
-        session: {
-          access_token: userSession.session.access_token,
-          refresh_token: userSession.session.refresh_token,
-        }
       }),
       { 
         status: 200, 

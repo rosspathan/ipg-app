@@ -32,12 +32,11 @@ const UserRoute = ({ children }: UserRouteProps) => {
     );
   }
 
-  // Allow access if any of these conditions are met:
-  // 1. User has a Supabase session
-  // 2. User has a connected web3 wallet
-  // 3. User has local security configured (PIN setup)
-  // 4. DUAL AUTH: Admin users viewing as user (has session but checking user routes)
-  const hasAccess = !!(user && session) || isConnected || hasLocalSecurity();
+  // Web3-first access control: Dashboard access based on wallet + PIN, not Supabase sessions
+  // 1. User has a connected web3 wallet (primary authentication)
+  // 2. User has local security configured (PIN setup for offline security)
+  // Email is optional metadata for BSK features, not for access control
+  const hasAccess = isConnected || hasLocalSecurity();
 
   if (!hasAccess) {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
