@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.55.0";
 import { generateMnemonic, mnemonicToSeedSync } from "npm:bip39@3.1.0";
 import { HDKey } from "npm:@scure/bip32@1.3.3";
 import { keccak_256 } from "npm:@noble/hashes@1.3.3/sha3";
@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 // [STEP 2] Bump function version to force fresh deploy and aid debugging
-const FUNCTION_VERSION = 'v2025-10-17-1';
+const FUNCTION_VERSION = 'v2025-10-17-2';
 
 interface OnboardingRequest {
   email: string;
