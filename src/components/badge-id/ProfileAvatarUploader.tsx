@@ -1,8 +1,10 @@
-import { FC, useRef, ChangeEvent } from 'react';
-import { Upload, Camera } from 'lucide-react';
+import { FC, useRef, ChangeEvent, useEffect, useState } from 'react';
+import { Upload, Camera, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuthUser } from '@/hooks/useAuthUser';
 
 interface ProfileAvatarUploaderProps {
   avatarUrl?: string;
@@ -12,6 +14,17 @@ interface ProfileAvatarUploaderProps {
   className?: string;
 }
 
+const getBadgeColor = (badge: string) => {
+  const colors: Record<string, string> = {
+    SILVER: 'from-gray-400 to-gray-600',
+    GOLD: 'from-yellow-400 to-yellow-600',
+    PLATINUM: 'from-cyan-400 to-cyan-600',
+    DIAMOND: 'from-blue-400 to-blue-600',
+    VIP: 'from-purple-400 to-purple-600',
+  };
+  return colors[badge.toUpperCase()] || 'from-gray-400 to-gray-600';
+};
+
 export const ProfileAvatarUploader: FC<ProfileAvatarUploaderProps> = ({
   avatarUrl,
   displayName,
@@ -20,6 +33,50 @@ export const ProfileAvatarUploader: FC<ProfileAvatarUploaderProps> = ({
   className = ''
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuthUser();
+  const [currentBadge, setCurrentBadge] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchBadge = async () => {
+      const { data } = await supabase
+        .from('user_badge_holdings')
+        .select('current_badge')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (data?.current_badge && data.current_badge !== 'NONE') {
+        setCurrentBadge(data.current_badge);
+      }
+    };
+
+    fetchBadge();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('badge-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_badge_holdings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new && typeof payload.new === 'object' && 'current_badge' in payload.new) {
+            const badge = (payload.new as any).current_badge;
+            setCurrentBadge(badge !== 'NONE' ? badge : null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,6 +104,22 @@ export const ProfileAvatarUploader: FC<ProfileAvatarUploaderProps> = ({
             {displayName.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
+
+        {/* Badge Indicator */}
+        {currentBadge && (
+          <div
+            className={cn(
+              "absolute -top-2 -right-2 p-2 rounded-full",
+              "bg-gradient-to-br",
+              getBadgeColor(currentBadge),
+              "shadow-lg border-2 border-background",
+              "flex items-center justify-center"
+            )}
+            title={`${currentBadge} Badge`}
+          >
+            <Award className="h-4 w-4 text-white" />
+          </div>
+        )}
         
         <button
           onClick={() => fileInputRef.current?.click()}

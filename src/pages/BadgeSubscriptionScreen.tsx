@@ -16,6 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import Confetti from 'react-confetti';
+import { motion } from 'framer-motion';
 import { useDisplayName } from "@/hooks/useDisplayName";
 import { BadgeHero } from "@/components/badges/BadgeHero";
 import { TierTimeline } from "@/components/badges/TierTimeline";
@@ -41,6 +43,7 @@ const BadgeSubscriptionScreen = () => {
     isUpgrade: boolean;
     upgradeCost: number;
   } | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const badgeOrder = ['SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'VIP'];
 
@@ -116,9 +119,13 @@ const BadgeSubscriptionScreen = () => {
 
       if (error) throw error;
 
+      // Show celebration
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 5000);
+
       toast({
-        title: "Success!",
-        description: `${selectedBadge.isUpgrade ? 'Upgraded to' : 'Purchased'} ${selectedBadge.name} badge. Your referrer earned 10% commission.`
+        title: "🎉 Success!",
+        description: `${selectedBadge.isUpgrade ? 'Upgraded to' : 'Purchased'} ${selectedBadge.name} badge! Your referrer earned 10% commission.`
       });
 
       // Refresh data
@@ -280,6 +287,37 @@ const BadgeSubscriptionScreen = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Celebration Confetti */}
+      {showCelebration && (
+        <Confetti
+          width={window.innerWidth}
+          height={window.innerHeight}
+          recycle={false}
+          numberOfPieces={500}
+        />
+      )}
+
+      {/* Success Animation */}
+      {showCelebration && (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+        >
+          <motion.div
+            animate={{
+              scale: [1, 1.2, 1],
+              rotate: [0, 10, -10, 0],
+            }}
+            transition={{ duration: 0.5, repeat: 2 }}
+            className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white rounded-full p-12 shadow-2xl"
+          >
+            <div className="text-8xl">🎉</div>
+          </motion.div>
+        </motion.div>
+      )}
+
       {/* Header */}
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="flex items-center gap-4 px-6 py-4 max-w-7xl mx-auto">

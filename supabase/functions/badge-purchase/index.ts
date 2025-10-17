@@ -1,14 +1,14 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface BadgePurchaseRequest {
+interface PurchaseRequest {
   user_id: string;
   badge_name: string;
-  previous_badge?: string | null;
+  previous_badge?: string;
   bsk_amount: number;
   is_upgrade: boolean;
 }
@@ -19,153 +19,165 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const requestData: BadgePurchaseRequest = await req.json();
-    const { user_id, badge_name, previous_badge, bsk_amount, is_upgrade } = requestData;
+    const { user_id, badge_name, previous_badge, bsk_amount, is_upgrade }: PurchaseRequest = await req.json();
 
-    console.log('Processing badge purchase:', requestData);
+    console.log('Badge purchase request:', { user_id, badge_name, previous_badge, bsk_amount, is_upgrade });
 
-    // Get team referral settings to confirm 10% commission
-    const { data: settings } = await supabase
-      .from('team_referral_settings')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    const commissionPercent = settings?.direct_commission_percent || 10;
-    const payoutDestination = settings?.payout_destination || 'WITHDRAWABLE';
-
-    // Check user's BSK balance
-    const { data: balanceData, error: balanceError } = await supabase
+    // 1. Verify user has sufficient BSK balance
+    const { data: balance, error: balanceError } = await supabaseClient
       .from('user_bsk_balances')
       .select('withdrawable_balance, holding_balance')
       .eq('user_id', user_id)
       .single();
 
-    if (balanceError || !balanceData) {
-      throw new Error('User balance not found');
+    if (balanceError) {
+      console.error('Balance fetch error:', balanceError);
+      throw new Error('Failed to fetch balance');
     }
 
-    const totalBalance = Number(balanceData.withdrawable_balance) + Number(balanceData.holding_balance);
+    const totalBalance = Number(balance.withdrawable_balance) + Number(balance.holding_balance);
+    
     if (totalBalance < bsk_amount) {
-      throw new Error(`Insufficient balance. Required: ${bsk_amount}, Available: ${totalBalance}`);
+      return new Response(
+        JSON.stringify({ error: 'Insufficient BSK balance' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Deduct BSK from user balance (prioritize withdrawable)
-    let withdrawableDeduction = Math.min(Number(balanceData.withdrawable_balance), bsk_amount);
-    let holdingDeduction = bsk_amount - withdrawableDeduction;
+    // 2. Deduct BSK from user's balance (prioritize withdrawable first)
+    let remainingDeduction = bsk_amount;
+    let withdrawableDeduction = 0;
+    let holdingDeduction = 0;
 
-    const { error: deductError } = await supabase
+    if (Number(balance.withdrawable_balance) >= remainingDeduction) {
+      withdrawableDeduction = remainingDeduction;
+    } else {
+      withdrawableDeduction = Number(balance.withdrawable_balance);
+      holdingDeduction = remainingDeduction - withdrawableDeduction;
+    }
+
+    const { error: updateBalanceError } = await supabaseClient
       .from('user_bsk_balances')
       .update({
-        withdrawable_balance: Number(balanceData.withdrawable_balance) - withdrawableDeduction,
-        holding_balance: Number(balanceData.holding_balance) - holdingDeduction,
+        withdrawable_balance: Number(balance.withdrawable_balance) - withdrawableDeduction,
+        holding_balance: Number(balance.holding_balance) - holdingDeduction,
       })
       .eq('user_id', user_id);
 
-    if (deductError) throw deductError;
-
-    // Update or create badge holding record
-    const { data: existingHolding } = await supabase
-      .from('user_badge_holdings')
-      .select('*')
-      .eq('user_id', user_id)
-      .maybeSingle();
-
-    if (existingHolding) {
-      await supabase
-        .from('user_badge_holdings')
-        .update({
-          current_badge: badge_name,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user_id);
-    } else {
-      await supabase
-        .from('user_badge_holdings')
-        .insert({
-          user_id,
-          current_badge: badge_name,
-        });
+    if (updateBalanceError) {
+      console.error('Balance update error:', updateBalanceError);
+      throw new Error('Failed to update balance');
     }
 
-    // Get referrer
-    const { data: referralData } = await supabase
-      .from('referral_relationships')
-      .select('referrer_id')
-      .eq('referee_id', user_id)
+    // 3. Create or update badge holding
+    const { error: badgeError } = await supabaseClient
+      .from('user_badge_holdings')
+      .upsert({
+        user_id,
+        current_badge: badge_name,
+        previous_badge,
+        bsk_paid: bsk_amount,
+        purchased_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
+      });
+
+    if (badgeError) {
+      console.error('Badge holding error:', badgeError);
+      // Rollback balance
+      await supabaseClient
+        .from('user_bsk_balances')
+        .update({
+          withdrawable_balance: Number(balance.withdrawable_balance),
+          holding_balance: Number(balance.holding_balance),
+        })
+        .eq('user_id', user_id);
+      throw new Error('Failed to update badge holding');
+    }
+
+    // 4. Get referrer and credit 10% commission
+    const { data: referralData } = await supabaseClient
+      .from('referral_links_new')
+      .select('sponsor_id')
+      .eq('user_id', user_id)
       .single();
 
-    let commissionPaid = 0;
-    if (referralData?.referrer_id) {
-      const referrerId = referralData.referrer_id;
-      commissionPaid = bsk_amount * (commissionPercent / 100);
+    if (referralData?.sponsor_id) {
+      const commission = bsk_amount * 0.1;
 
-      // Credit referrer's balance
-      const balanceColumn = payoutDestination === 'WITHDRAWABLE' ? 'withdrawable_balance' : 'holding_balance';
-      const totalColumn = payoutDestination === 'WITHDRAWABLE' ? 'total_earned_withdrawable' : 'total_earned_holding';
-
-      const { data: referrerBalance } = await supabase
+      // Get current referrer balance
+      const { data: referrerBalance } = await supabaseClient
         .from('user_bsk_balances')
-        .select('*')
-        .eq('user_id', referrerId)
+        .select('withdrawable_balance, total_earned_withdrawable')
+        .eq('user_id', referralData.sponsor_id)
         .single();
 
       if (referrerBalance) {
-        await supabase
+        await supabaseClient
           .from('user_bsk_balances')
           .update({
-            [balanceColumn]: Number(referrerBalance[balanceColumn]) + commissionPaid,
-            [totalColumn]: Number(referrerBalance[totalColumn]) + commissionPaid,
+            withdrawable_balance: Number(referrerBalance.withdrawable_balance) + commission,
+            total_earned_withdrawable: Number(referrerBalance.total_earned_withdrawable) + commission,
           })
-          .eq('user_id', referrerId);
+          .eq('user_id', referralData.sponsor_id);
       } else {
-        await supabase
+        await supabaseClient
           .from('user_bsk_balances')
           .insert({
-            user_id: referrerId,
-            [balanceColumn]: commissionPaid,
-            [totalColumn]: commissionPaid,
+            user_id: referralData.sponsor_id,
+            withdrawable_balance: commission,
+            total_earned_withdrawable: commission,
           });
       }
 
-      // Log referral ledger entry
-      await supabase.from('referral_ledger').insert({
-        user_id: referrerId,
-        source_user_id: user_id,
-        ledger_type: 'direct_badge_bonus',
-        trigger_type: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
-        inr_amount_snapshot: 0,
-        bsk_rate_snapshot: 1,
-        bsk_amount: commissionPaid,
-        status: 'settled',
-        tx_refs: { badge_name, bsk_paid: bsk_amount },
-        notes: `${commissionPercent}% commission on ${badge_name} ${is_upgrade ? 'upgrade' : 'purchase'}`,
-      });
+      // Log commission in bonus ledger
+      await supabaseClient
+        .from('bonus_ledger')
+        .insert({
+          user_id: referralData.sponsor_id,
+          type: 'badge_referral_commission',
+          amount_bsk: commission,
+          meta_json: {
+            referee_id: user_id,
+            badge_name,
+            is_upgrade,
+            badge_cost: bsk_amount,
+          },
+        });
 
-      console.log(`Paid ${commissionPaid} BSK commission to referrer ${referrerId}`);
+      console.log('Credited referrer commission:', { referrer: referralData.sponsor_id, commission });
     }
 
+    // 5. Create audit log
+    await supabaseClient
+      .from('bonus_ledger')
+      .insert({
+        user_id,
+        type: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
+        amount_bsk: -bsk_amount,
+        meta_json: {
+          badge_name,
+          previous_badge,
+          is_upgrade,
+        },
+      });
+
+    console.log('Badge purchase completed successfully');
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        badge_name,
-        bsk_spent: bsk_amount,
-        commission_paid: commissionPaid,
-        referrer_id: referralData?.referrer_id,
-      }),
+      JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('Badge purchase error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: error.message || 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
