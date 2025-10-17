@@ -29,10 +29,12 @@ export default function KYCSubmission() {
     }
   }, [submission]);
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = async (field: string, value: any) => {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
-    saveDraft(updatedData);
+    
+    // Save draft - this will auto-update progress
+    await saveDraft(updatedData);
     
     // Clear error for this field
     if (errors[field]) {
