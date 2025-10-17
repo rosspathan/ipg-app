@@ -237,12 +237,13 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
       // Check if mnemonic was returned (new wallet generation)
       if (data.mnemonic) {
-        toast({
-          title: "✓ Email Verified",
-          description: importedWallet 
-            ? "Wallet linked successfully!" 
-            : "IMPORTANT: Save your recovery phrase!",
-        });
+      toast({
+        title: "✓ Email Verified",
+        description: importedWallet 
+          ? "Wallet linked successfully!" 
+          : "IMPORTANT: Save your recovery phrase!",
+        variant: "default",
+      });
         
         // Clean up temp storage
         sessionStorage.removeItem('ipg_temp_evm_address');
@@ -261,6 +262,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         toast({
           title: "✓ Email Verified",
           description: "Your account is ready!",
+          variant: "default",
         });
         
         // Clean up temp storage
@@ -294,9 +296,12 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
     }
   };
 
+  const [isResending, setIsResending] = useState(false);
+
   const handleResendCode = async (force: boolean = false) => {
-    if (!canResend && !force) return;
+    if ((!canResend && !force) || isResending) return;
     
+    setIsResending(true);
     setResendCountdown(60);
     setCanResend(false);
     
@@ -327,6 +332,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       toast({
         title: "Code Resent",
         description: "A new 6-digit code has been sent to your email",
+        variant: "default",
       });
     } catch (error: any) {
       toast({
@@ -335,6 +341,8 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         variant: "destructive"
       });
       setCanResend(true);
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -420,7 +428,8 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       
       toast({
         title: "✓ Referral Code Applied",
-        description: "You'll be linked to your sponsor after verification"
+        description: "You'll be linked to your sponsor after verification",
+        variant: "default",
       });
     } catch (error: any) {
       console.error('Error validating referral:', error);
@@ -437,11 +446,6 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 relative overflow-hidden" style={{ height: '100dvh' }}>
-      {/* Dev ribbon */}
-      <div data-testid="dev-ribbon" className="fixed top-1 right-1 z-50 text-[10px] px-2 py-1 rounded bg-indigo-600/80 text-white">
-        OTP EMAIL v1
-      </div>
-      
       {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
@@ -561,55 +565,6 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
               </motion.div>
             )}
 
-            {/* Referral Code Input (Web & Mobile) */}
-            <motion.div
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.57 }}
-            >
-              <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 backdrop-blur-sm border-amber-500/30">
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Gift className="w-4 h-4 text-amber-400" />
-                    <span className="text-amber-400 text-sm font-medium">Have a Referral Code?</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      type="text"
-                      value={referralCode}
-                      onChange={(e) => {
-                        const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                        setReferralCode(val);
-                        if (referralValidated) setReferralValidated(false);
-                      }}
-                      placeholder="Enter code (optional)"
-                      className="bg-black/30 border-amber-500/30 text-white placeholder:text-white/40 font-mono"
-                      maxLength={12}
-                      disabled={referralValidated}
-                    />
-                    <Button
-                      onClick={handleValidateReferral}
-                      disabled={!referralCode.trim() || isValidatingReferral || referralValidated}
-                      size="sm"
-                      className={referralValidated ? "bg-green-500 hover:bg-green-600" : "bg-amber-500 hover:bg-amber-600"}
-                    >
-                      {isValidatingReferral ? (
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                      ) : referralValidated ? (
-                        <CheckCircle className="w-4 h-4" />
-                      ) : (
-                        "Apply"
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-white/60 text-xs">
-                    {referralValidated 
-                      ? "✓ Code applied! You'll be linked after verification" 
-                      : "Optional: Enter your referrer's code to get linked"}
-                  </p>
-                </div>
-              </Card>
-            </motion.div>
 
             {/* Code input card */}
             <motion.div
@@ -692,10 +647,11 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                           data-testid="email-otp-resend"
                           variant="ghost"
                           onClick={() => handleResendCode()}
-                          className="w-full border-white/30 text-white hover:bg-white/20"
+                          disabled={isResending}
+                          className="w-full border-white/30 text-white hover:bg-white/20 disabled:opacity-50"
                         >
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Resend Verification Code
+                          <RefreshCw className={`w-4 h-4 mr-2 ${isResending ? 'animate-spin' : ''}`} />
+                          {isResending ? 'Sending...' : 'Resend Verification Code'}
                         </Button>
                         <p className="text-white/50 text-xs">Didn't receive it? Send a new code</p>
                       </div>

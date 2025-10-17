@@ -9,7 +9,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   return (
     <BrandSplash 
       onComplete={onComplete}
-      duration={1500}
+      duration={2400}
       canSkip={true}
     />
   );

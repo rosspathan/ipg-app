@@ -148,6 +148,10 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
     }
   };
 
+  const handleSkip = () => {
+    onComplete();
+  };
+
   const current = screens[currentScreen];
 
   return (
@@ -156,7 +160,16 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
         <OnboardingHeader 
           showBack
           onBack={previousScreen}
-          rightAction={<div className="w-10" />}
+          rightAction={
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSkip}
+              className="text-white/80 hover:text-white hover:bg-white/10"
+            >
+              Skip
+            </Button>
+          }
         />
         
         <ProgressIndicator 
