@@ -189,6 +189,7 @@ const InsuranceScreen = () => {
         description: "Please log in to purchase insurance plans",
         variant: "destructive",
       });
+      navigate('/login');
       return;
     }
     navigate(`/app/insurance/purchase/${planType}`);

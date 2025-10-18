@@ -134,6 +134,9 @@ import AdvertisingMiningScreen from "./pages/AdvertisingMiningScreen";
 import BSKPromotionScreen from "./pages/BSKPromotionScreen";
 import { AdminAdsScreen } from "./pages/AdminAdsScreen";
 import InsuranceScreen from "./components/InsuranceScreen";
+import AccidentInsurancePurchase from './pages/insurance/AccidentInsurancePurchase';
+import TradingInsurancePurchase from './pages/insurance/TradingInsurancePurchase';
+import LifeInsurancePurchase from './pages/insurance/LifeInsurancePurchase';
 import BSKLoansScreen from "./pages/BSKLoansScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import HistoryScreen from "./pages/HistoryScreen";
@@ -383,6 +386,12 @@ function AppContent() {
                 <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="programs/badge-subscription" element={<BadgeSubscriptionScreen />} />
                 <Route path="badge-subscription" element={<BadgeSubscriptionScreen />} />
+                
+                {/* Insurance Routes - Phase 7 */}
+                <Route path="insurance" element={<InsuranceScreen />} />
+                <Route path="insurance/purchase/accident" element={<AccidentInsurancePurchase />} />
+                <Route path="insurance/purchase/trading" element={<TradingInsurancePurchase />} />
+                <Route path="insurance/purchase/life" element={<LifeInsurancePurchase />} />
                 
                 <Route path="design-review" element={<DesignReview />} />
                 {/* Unknown Astra sub-route */}
