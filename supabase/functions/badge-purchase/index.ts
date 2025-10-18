@@ -100,57 +100,41 @@ Deno.serve(async (req) => {
       throw new Error('Failed to update badge holding');
     }
 
-    // 4. Get referrer and credit 10% commission
-    const { data: referralData } = await supabaseClient
-      .from('referral_links_new')
-      .select('sponsor_id')
-      .eq('user_id', user_id)
-      .single();
-
-    if (referralData?.sponsor_id) {
-      const commission = bsk_amount * 0.1;
-
-      // Get current referrer balance
-      const { data: referrerBalance } = await supabaseClient
-        .from('user_bsk_balances')
-        .select('withdrawable_balance, total_earned_withdrawable')
-        .eq('user_id', referralData.sponsor_id)
-        .single();
-
-      if (referrerBalance) {
-        await supabaseClient
-          .from('user_bsk_balances')
-          .update({
-            withdrawable_balance: Number(referrerBalance.withdrawable_balance) + commission,
-            total_earned_withdrawable: Number(referrerBalance.total_earned_withdrawable) + commission,
-          })
-          .eq('user_id', referralData.sponsor_id);
-      } else {
-        await supabaseClient
-          .from('user_bsk_balances')
-          .insert({
-            user_id: referralData.sponsor_id,
-            withdrawable_balance: commission,
-            total_earned_withdrawable: commission,
-          });
-      }
-
-      // Log commission in bonus ledger
-      await supabaseClient
-        .from('bonus_ledger')
-        .insert({
-          user_id: referralData.sponsor_id,
-          type: 'badge_referral_commission',
-          amount_bsk: commission,
-          meta_json: {
-            referee_id: user_id,
-            badge_name,
-            is_upgrade,
-            badge_cost: bsk_amount,
+    // 4. Trigger commission processor with proper eligibility checks
+    try {
+      const commissionResponse = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/functions/v1/badge-commission-processor`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
           },
-        });
+          body: JSON.stringify({
+            userId: user_id,
+            toBadge: badge_name,
+            fromBadge: previous_badge || 'NONE',
+            paidAmountBSK: bsk_amount,
+            paymentRef: `purchase_${user_id}_${Date.now()}`,
+            paymentMethod: 'BSK',
+          }),
+        }
+      );
 
-      console.log('Credited referrer commission:', { referrer: referralData.sponsor_id, commission });
+      const commissionResult = await commissionResponse.json();
+      
+      if (commissionResult.success) {
+        console.log('Commission processed:', {
+          eligible: commissionResult.eligibilityMet,
+          commission: commissionResult.commissionBSK,
+          capped: commissionResult.capped
+        });
+      } else {
+        console.warn('Commission processing failed:', commissionResult.error);
+      }
+    } catch (commissionError) {
+      console.error('Commission processor error (non-critical):', commissionError);
+      // Don't fail the purchase if commission fails
     }
 
     // 5. Create audit log

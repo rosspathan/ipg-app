@@ -113,7 +113,7 @@ serve(async (req) => {
 
     // 5. Get referral link (sponsor)
     const { data: referralLink } = await supabaseClient
-      .from('referral_links')
+      .from('referral_links_new')
       .select('sponsor_id')
       .eq('user_id', userId)
       .single()
