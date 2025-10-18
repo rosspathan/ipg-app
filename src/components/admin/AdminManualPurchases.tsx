@@ -21,6 +21,9 @@ interface PurchaseRequest {
   user_id: string;
   email: string;
   purchase_amount: number;
+  withdrawable_amount: number;
+  holding_bonus_amount: number;
+  total_received: number;
   bscscan_link: string;
   transaction_hash: string;
   screenshot_url: string | null;
@@ -107,12 +110,16 @@ export default function AdminManualPurchases() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      const withdrawableAmount = selectedRecord.withdrawable_amount || selectedRecord.purchase_amount;
+      const holdingAmount = selectedRecord.holding_bonus_amount || (selectedRecord.purchase_amount * 0.5);
+      const totalAmount = selectedRecord.total_received || (selectedRecord.purchase_amount * 1.5);
+
       // Update request status
       const { error } = await supabase
         .from("bsk_manual_purchase_requests")
         .update({
           status: "approved",
-          bsk_amount: parseFloat(reviewData.bsk_amount),
+          bsk_amount: totalAmount,
           admin_notes: reviewData.admin_notes,
           approved_by: user.id,
           approved_at: new Date().toISOString(),
@@ -121,23 +128,31 @@ export default function AdminManualPurchases() {
 
       if (error) throw error;
 
-      // Credit BSK to user's withdrawable balance
+      // Get current balance
+      const { data: currentBalance } = await supabase
+        .from("user_bsk_balances")
+        .select("*")
+        .eq("user_id", selectedRecord.user_id)
+        .maybeSingle();
+
+      // Credit both withdrawable and holding balances
       const { error: balanceError } = await supabase
         .from("user_bsk_balances")
         .upsert({
           user_id: selectedRecord.user_id,
-          withdrawable_balance: parseFloat(reviewData.bsk_amount),
-          total_earned_withdrawable: parseFloat(reviewData.bsk_amount),
+          withdrawable_balance: (currentBalance?.withdrawable_balance || 0) + withdrawableAmount,
+          holding_balance: (currentBalance?.holding_balance || 0) + holdingAmount,
+          total_earned_withdrawable: (currentBalance?.total_earned_withdrawable || 0) + withdrawableAmount,
+          total_earned_holding: (currentBalance?.total_earned_holding || 0) + holdingAmount,
         }, {
           onConflict: "user_id",
-          ignoreDuplicates: false,
         });
 
       if (balanceError) throw balanceError;
 
       toast({
         title: "Approved",
-        description: `${reviewData.bsk_amount} BSK credited to user`,
+        description: `${totalAmount.toLocaleString()} BSK credited (${withdrawableAmount.toLocaleString()} withdrawable + ${holdingAmount.toLocaleString()} holding)`,
       });
 
       setReviewDialog(false);
@@ -401,40 +416,70 @@ export default function AdminManualPurchases() {
           </DialogHeader>
           {selectedRecord && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg">
-                <div>
-                  <Label className="text-muted-foreground">Email</Label>
-                  <p className="font-semibold">{selectedRecord.email}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Purchase Amount</Label>
-                  <p className="font-semibold">{selectedRecord.purchase_amount.toLocaleString()} BSK</p>
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-muted-foreground">Transaction Hash</Label>
-                  <p className="font-mono text-sm">{selectedRecord.transaction_hash}</p>
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-muted-foreground">BSCScan Link</Label>
-                  <a
-                    href={selectedRecord.bscscan_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline flex items-center gap-1"
-                  >
-                    View Transaction <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-                {selectedRecord.screenshot_url && (
-                  <div className="col-span-2">
-                    <Label className="text-muted-foreground">Screenshot Proof</Label>
-                    <img
-                      src={selectedRecord.screenshot_url}
-                      alt="Payment proof"
-                      className="mt-2 max-w-full rounded-lg border"
-                    />
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg">
+                  <div>
+                    <Label className="text-muted-foreground">Email</Label>
+                    <p className="font-semibold">{selectedRecord.email}</p>
                   </div>
-                )}
+                  <div>
+                    <Label className="text-muted-foreground">Purchase Amount</Label>
+                    <p className="font-semibold">{selectedRecord.purchase_amount.toLocaleString()} BSK</p>
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground">Transaction Hash</Label>
+                    <p className="font-mono text-sm">{selectedRecord.transaction_hash}</p>
+                  </div>
+                </div>
+
+                {/* Bonus Breakdown */}
+                <div className="p-4 bg-success/5 border border-success/20 rounded-lg space-y-2">
+                  <p className="text-sm font-semibold text-success mb-2">🎁 Bonus Breakdown (+50% Holding)</p>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Withdrawable BSK:</span>
+                      <span className="font-mono font-semibold">
+                        {(selectedRecord.withdrawable_amount || selectedRecord.purchase_amount).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-success">
+                      <span>Holding Bonus (+50%):</span>
+                      <span className="font-mono font-semibold">
+                        +{(selectedRecord.holding_bonus_amount || selectedRecord.purchase_amount * 0.5).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between font-bold pt-2 border-t border-success/20">
+                      <span>Total User Receives:</span>
+                      <span className="font-mono text-lg text-success">
+                        {(selectedRecord.total_received || selectedRecord.purchase_amount * 1.5).toLocaleString()} BSK
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground">BSCScan Link</Label>
+                    <a
+                      href={selectedRecord.bscscan_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1"
+                    >
+                      View Transaction <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                  {selectedRecord.screenshot_url && (
+                    <div className="col-span-2">
+                      <Label className="text-muted-foreground">Screenshot Proof</Label>
+                      <img
+                        src={selectedRecord.screenshot_url}
+                        alt="Payment proof"
+                        className="mt-2 max-w-full rounded-lg border"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">

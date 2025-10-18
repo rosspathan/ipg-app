@@ -2025,14 +2025,17 @@ export type Database = {
           bsk_amount: number | null
           created_at: string
           email: string
+          holding_bonus_amount: number | null
           id: string
           purchase_amount: number
           rejected_reason: string | null
           screenshot_url: string | null
           status: string
+          total_received: number | null
           transaction_hash: string | null
           updated_at: string
           user_id: string
+          withdrawable_amount: number | null
         }
         Insert: {
           admin_bep20_address: string
@@ -2043,14 +2046,17 @@ export type Database = {
           bsk_amount?: number | null
           created_at?: string
           email: string
+          holding_bonus_amount?: number | null
           id?: string
           purchase_amount: number
           rejected_reason?: string | null
           screenshot_url?: string | null
           status?: string
+          total_received?: number | null
           transaction_hash?: string | null
           updated_at?: string
           user_id: string
+          withdrawable_amount?: number | null
         }
         Update: {
           admin_bep20_address?: string
@@ -2061,14 +2067,17 @@ export type Database = {
           bsk_amount?: number | null
           created_at?: string
           email?: string
+          holding_bonus_amount?: number | null
           id?: string
           purchase_amount?: number
           rejected_reason?: string | null
           screenshot_url?: string | null
           status?: string
+          total_received?: number | null
           transaction_hash?: string | null
           updated_at?: string
           user_id?: string
+          withdrawable_amount?: number | null
         }
         Relationships: []
       }

@@ -9,11 +9,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { Upload, Copy, ExternalLink, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// Badge purchase limits by tier
+const BADGE_LIMITS = {
+  'None': 1000,
+  'SILVER': 5000,
+  'GOLD': 10000,
+  'PLATINUM': 50000,
+  'DIAMOND': 100000,
+  'VIP': Infinity,
+};
+
 export function ManualBSKPurchaseForm() {
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [userBadge, setUserBadge] = useState<string>('None');
+  const [badgeLoading, setBadgeLoading] = useState(true);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -37,9 +49,79 @@ export function ManualBSKPurchaseForm() {
     return amount + calculateFee();
   };
 
+  const calculateBonus = () => {
+    if (!formData.purchase_amount) return { withdrawable: 0, holding: 0, total: 0 };
+    const amount = parseFloat(formData.purchase_amount);
+    return {
+      withdrawable: amount,
+      holding: amount * 0.5,
+      total: amount * 1.5,
+    };
+  };
+
+  const getBadgeLimit = () => {
+    return BADGE_LIMITS[userBadge as keyof typeof BADGE_LIMITS] || BADGE_LIMITS.None;
+  };
+
+  const isPurchaseExceedingLimit = () => {
+    if (!formData.purchase_amount) return false;
+    const amount = parseFloat(formData.purchase_amount);
+    return amount > getBadgeLimit();
+  };
+
+  const getNextBadgeForAmount = (amount: number) => {
+    const badges = Object.entries(BADGE_LIMITS).sort((a, b) => a[1] - b[1]);
+    for (const [badge, limit] of badges) {
+      if (amount <= limit) return badge;
+    }
+    return 'VIP';
+  };
+
   useEffect(() => {
     loadSettings();
+    loadUserBadge();
   }, []);
+
+  const loadUserBadge = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setBadgeLoading(false);
+        return;
+      }
+
+      // Try user_badge_holdings first (purchased badges)
+      const { data: holdingData } = await supabase
+        .from('user_badge_holdings')
+        .select('current_badge')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (holdingData?.current_badge) {
+        setUserBadge(holdingData.current_badge);
+        setBadgeLoading(false);
+        return;
+      }
+
+      // Fall back to user_badge_status (qualification-based badges)
+      const { data: statusData } = await supabase
+        .from('user_badge_status')
+        .select('current_badge')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (statusData?.current_badge) {
+        setUserBadge(statusData.current_badge);
+      } else {
+        setUserBadge('None');
+      }
+    } catch (error) {
+      console.error('Error loading badge:', error);
+      setUserBadge('None');
+    } finally {
+      setBadgeLoading(false);
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -106,6 +188,8 @@ export function ManualBSKPurchaseForm() {
       // Upload screenshot
       const screenshotUrl = await uploadScreenshot(user.id);
 
+      const bonus = calculateBonus();
+
       // Create purchase request
       const { error } = await supabase
         .from("bsk_manual_purchase_requests")
@@ -113,6 +197,9 @@ export function ManualBSKPurchaseForm() {
           user_id: user.id,
           email: formData.email,
           purchase_amount: parseFloat(formData.purchase_amount),
+          withdrawable_amount: bonus.withdrawable,
+          holding_bonus_amount: bonus.holding,
+          total_received: bonus.total,
           bscscan_link: formData.bscscan_link,
           transaction_hash: formData.transaction_hash,
           screenshot_url: screenshotUrl,
@@ -154,7 +241,7 @@ export function ManualBSKPurchaseForm() {
     });
   };
 
-  if (loading) {
+  if (loading || badgeLoading) {
     return <div className="text-center p-8">Loading...</div>;
   }
 
@@ -168,6 +255,10 @@ export function ManualBSKPurchaseForm() {
     );
   }
 
+  const bonus = calculateBonus();
+  const badgeLimit = getBadgeLimit();
+  const exceedingLimit = isPurchaseExceedingLimit();
+
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
@@ -177,6 +268,24 @@ export function ManualBSKPurchaseForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Badge Status */}
+        <Alert className="border-primary/20 bg-primary/5">
+          <AlertDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold mb-1">Your Badge: {userBadge}</p>
+                <p className="text-sm text-muted-foreground">
+                  Purchase Limit: {badgeLimit === Infinity ? 'Unlimited' : `${badgeLimit.toLocaleString()} BSK`}
+                </p>
+              </div>
+              {userBadge !== 'VIP' && (
+                <Button size="sm" variant="outline" onClick={() => window.location.href = '/app/programs/badges'}>
+                  Upgrade Badge
+                </Button>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
         {/* Step 1: Payment Address */}
         <div className="space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
           <div className="flex items-center gap-2">
@@ -242,30 +351,60 @@ export function ManualBSKPurchaseForm() {
                 placeholder="10000"
                 required
               />
-              {formData.purchase_amount && (
-                <div className="p-3 bg-muted/50 rounded-md space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Purchase Amount:</span>
-                    <span className="font-mono">{parseFloat(formData.purchase_amount).toLocaleString()} BSK</span>
+              {exceedingLimit && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    ⚠️ Your {userBadge} badge allows purchases up to {badgeLimit.toLocaleString()} BSK.
+                    <br />
+                    Need {getNextBadgeForAmount(parseFloat(formData.purchase_amount))} badge to purchase this amount.
+                  </AlertDescription>
+                </Alert>
+              )}
+              {formData.purchase_amount && !exceedingLimit && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-muted/50 rounded-md space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Purchase Amount:</span>
+                      <span className="font-mono">{parseFloat(formData.purchase_amount).toLocaleString()} BSK</span>
+                    </div>
+                    {(settings.fee_percent > 0 || settings.fee_fixed > 0) && (
+                      <>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Fee:</span>
+                          <span className="font-mono">
+                            {calculateFee().toFixed(2)} BSK
+                            {settings.fee_percent > 0 && ` (${settings.fee_percent}%`}
+                            {settings.fee_percent > 0 && settings.fee_fixed > 0 && " + "}
+                            {settings.fee_fixed > 0 && `${settings.fee_fixed} BSK`}
+                            {(settings.fee_percent > 0 || settings.fee_fixed > 0) && ")"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-semibold pt-1 border-t">
+                          <span>Total to Send:</span>
+                          <span className="font-mono text-primary">{calculateTotal().toFixed(2)} BSK</span>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  {(settings.fee_percent > 0 || settings.fee_fixed > 0) && (
-                    <>
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Fee:</span>
-                        <span className="font-mono">
-                          {calculateFee().toFixed(2)} BSK
-                          {settings.fee_percent > 0 && ` (${settings.fee_percent}%`}
-                          {settings.fee_percent > 0 && settings.fee_fixed > 0 && " + "}
-                          {settings.fee_fixed > 0 && `${settings.fee_fixed} BSK`}
-                          {(settings.fee_percent > 0 || settings.fee_fixed > 0) && ")"}
-                        </span>
+
+                  {/* +50% Bonus Breakdown */}
+                  <div className="p-4 bg-success/5 border border-success/20 rounded-lg space-y-2">
+                    <p className="text-sm font-semibold text-success mb-2">🎁 Special Bonus: +50% Holding BSK</p>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>Withdrawable BSK:</span>
+                        <span className="font-mono font-semibold">{bonus.withdrawable.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between font-semibold pt-1 border-t">
-                        <span>Total to Send:</span>
-                        <span className="font-mono text-primary">{calculateTotal().toFixed(2)} BSK</span>
+                      <div className="flex justify-between text-success">
+                        <span>Holding Bonus (+50%):</span>
+                        <span className="font-mono font-semibold">+{bonus.holding.toLocaleString()}</span>
                       </div>
-                    </>
-                  )}
+                      <div className="flex justify-between font-bold pt-2 border-t border-success/20">
+                        <span>Total You Receive:</span>
+                        <span className="font-mono text-lg text-success">{bonus.total.toLocaleString()} BSK</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -323,8 +462,8 @@ export function ManualBSKPurchaseForm() {
               </p>
             </div>
 
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? "Submitting..." : "Submit Purchase Request"}
+            <Button type="submit" disabled={submitting || exceedingLimit} className="w-full">
+              {submitting ? "Submitting..." : exceedingLimit ? "Amount Exceeds Badge Limit" : "Submit Purchase Request"}
             </Button>
           </form>
         </div>
