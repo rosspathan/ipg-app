@@ -14,6 +14,8 @@ interface DocumentUploaderProps {
   error?: string;
   accept?: string;
   isSelfie?: boolean;
+  onCameraStart?: () => void;
+  onCameraEnd?: () => void;
 }
 
 export function DocumentUploader({
@@ -25,13 +27,16 @@ export function DocumentUploader({
   required,
   error,
   accept = 'image/*',
-  isSelfie = false
+  isSelfie = false,
+  onCameraStart,
+  onCameraEnd
 }: DocumentUploaderProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(value || null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    onCameraEnd?.(); // End critical operation when file is selected or cancelled
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -62,6 +67,16 @@ export function DocumentUploader({
     setPreview(null);
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (galleryInputRef.current) galleryInputRef.current.value = '';
+  };
+
+  const handleCameraClick = () => {
+    onCameraStart?.(); // Start critical operation before opening camera
+    cameraInputRef.current?.click();
+  };
+
+  const handleGalleryClick = () => {
+    onCameraStart?.(); // Start critical operation before opening gallery
+    galleryInputRef.current?.click();
   };
 
   const captureAttribute = isSelfie ? 'user' : 'environment';
@@ -152,7 +167,7 @@ export function DocumentUploader({
               "w-full h-20 text-base border-2",
               error && "border-danger"
             )}
-            onClick={() => cameraInputRef.current?.click()}
+            onClick={handleCameraClick}
             disabled={uploading}
           >
             <Camera className="h-6 w-6 mr-3" />
@@ -172,7 +187,7 @@ export function DocumentUploader({
               "w-full h-20 text-base border-2",
               error && "border-danger"
             )}
-            onClick={() => galleryInputRef.current?.click()}
+            onClick={handleGalleryClick}
             disabled={uploading}
           >
             <ImagePlus className="h-6 w-6 mr-3" />

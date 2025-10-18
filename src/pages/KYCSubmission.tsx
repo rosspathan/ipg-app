@@ -14,10 +14,24 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { validateKYCSubmission } from '@/lib/kyc-validation-new';
 import { Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function KYCSubmission() {
   const navigate = useNavigate();
-  const { submission, loading, uploading, savingDraft, progress, uploadProgress, lastSaved, saveDraft, uploadDocument, submitForReview } = useKYCSubmission();
+  const { 
+    submission, 
+    loading, 
+    uploading, 
+    savingDraft, 
+    progress, 
+    uploadProgress, 
+    lastSaved, 
+    saveDraft, 
+    uploadDocument, 
+    submitForReview,
+    handleCameraStart,
+    handleCameraEnd
+  } = useKYCSubmission();
   const [formData, setFormData] = useState<any>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmAccuracy, setConfirmAccuracy] = useState(false);
@@ -56,26 +70,48 @@ export default function KYCSubmission() {
   };
 
   const handleSubmit = async () => {
+    console.log('🚀 Starting KYC submission...');
+    console.log('Form data:', formData);
+    console.log('Progress:', progress);
+    console.log('Confirm accuracy:', confirmAccuracy);
+    
     const validation = validateKYCSubmission(formData);
     
     if (!validation.success) {
+      console.error('❌ Validation failed:', validation.errors);
       setErrors(validation.errors);
+      toast.error('Please fix all errors before submitting');
       return;
     }
 
     if (!confirmAccuracy) {
+      console.error('❌ Accuracy not confirmed');
       setErrors({ _confirm: 'Please confirm that all information is accurate' });
+      toast.error('Please confirm that all information is accurate');
       return;
     }
 
     setSubmitting(true);
     try {
+      console.log('✅ Validation passed, submitting...');
       await submitForReview(formData);
+      console.log('✅ KYC submitted successfully');
+      toast.success('KYC submitted successfully!');
+      navigate('/app/profile');
     } catch (error) {
-      console.error('Submit error:', error);
+      console.error('❌ Submit error:', error);
+      toast.error('Failed to submit KYC. Please try again.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const getSubmitButtonText = () => {
+    if (submitting) return 'Submitting...';
+    if (uploading) return 'Uploading document...';
+    if (progress < 100) return `Complete all fields (${progress}%)`;
+    if (!confirmAccuracy) return 'Confirm accuracy to submit';
+    return 'Submit for Review';
   };
 
   if (loading) {
@@ -108,6 +144,20 @@ export default function KYCSubmission() {
       </div>
 
       <div className="container max-w-4xl mx-auto px-4 py-8 space-y-6">
+        {/* Validation Errors Summary */}
+        {Object.keys(errors).length > 0 && !isDisabled && (
+          <Card className="p-6 bg-danger/5 border-danger/20">
+            <h3 className="font-semibold text-danger mb-2">Please fix the following errors:</h3>
+            <ul className="list-disc list-inside space-y-1 text-sm text-danger">
+              {Object.entries(errors).map(([field, error]) => (
+                <li key={field}>
+                  <span className="font-medium">{field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span> {error}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
         {/* Progress Bar */}
         <Card className="p-6">
           <div className="space-y-2">
@@ -350,6 +400,8 @@ export default function KYCSubmission() {
                 required
                 error={errors.id_front_url}
                 isSelfie={false}
+                onCameraStart={handleCameraStart}
+                onCameraEnd={handleCameraEnd}
               />
               <DocumentUploader
                 label="ID Back Side"
@@ -360,6 +412,8 @@ export default function KYCSubmission() {
                 required
                 error={errors.id_back_url}
                 isSelfie={false}
+                onCameraStart={handleCameraStart}
+                onCameraEnd={handleCameraEnd}
               />
               <DocumentUploader
                 label="Selfie with ID"
@@ -371,6 +425,8 @@ export default function KYCSubmission() {
                 error={errors.selfie_url}
                 isSelfie={true}
                 accept="image/*"
+                onCameraStart={handleCameraStart}
+                onCameraEnd={handleCameraEnd}
               />
             </div>
           </div>
@@ -398,15 +454,23 @@ export default function KYCSubmission() {
                 className="w-full"
                 size="lg"
               >
-                {submitting ? (
+                {submitting || uploading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
+                    {getSubmitButtonText()}
                   </>
                 ) : (
-                  'Submit for Review'
+                  getSubmitButtonText()
                 )}
               </Button>
+              
+              {(progress < 100 || !confirmAccuracy) && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {progress < 100 
+                    ? `Complete all required fields to enable submission (${progress}% done)` 
+                    : 'Please confirm accuracy to submit'}
+                </p>
+              )}
             </div>
           </Card>
         )}

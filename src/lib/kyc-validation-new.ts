@@ -35,9 +35,9 @@ export const kycSubmissionSchema = z.object({
     errorMap: () => ({ message: "Please select a valid ID type" })
   }),
   id_number: z.string().min(5, "ID number is required"),
-  id_front_url: z.string().url("ID front photo is required"),
-  id_back_url: z.string().url("ID back photo is required"),
-  selfie_url: z.string().url("Selfie photo is required"),
+  id_front_url: z.string().url("ID front photo is required").or(z.literal("")),
+  id_back_url: z.string().url("ID back photo is required").or(z.literal("")),
+  selfie_url: z.string().url("Selfie photo is required").or(z.literal("")),
 });
 
 export type KYCSubmissionData = z.infer<typeof kycSubmissionSchema>;

@@ -243,6 +243,16 @@ export const useKYCSubmission = () => {
     }
   };
 
+  const handleCameraStart = () => {
+    startCriticalOperation();
+    console.log('📸 Camera/Gallery access started - auto-lock disabled');
+  };
+
+  const handleCameraEnd = () => {
+    endCriticalOperation();
+    console.log('📸 Camera/Gallery access ended - auto-lock re-enabled');
+  };
+
   return {
     submission,
     loading,
@@ -254,6 +264,8 @@ export const useKYCSubmission = () => {
     saveDraft,
     uploadDocument,
     submitForReview,
+    handleCameraStart,
+    handleCameraEnd,
     refetch: fetchSubmission
   };
 };
