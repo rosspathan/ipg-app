@@ -672,7 +672,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.75 }}
             >
-              <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
                 <div className="p-4 space-y-3">
                   <div className="text-center">
                     {canResend ? (
@@ -687,7 +687,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                           <RefreshCw className={`w-4 h-4 mr-2 ${isResending ? 'animate-spin' : ''}`} />
                           {isResending ? 'Sending...' : 'Resend Verification Code'}
                         </Button>
-                        <p className="text-white/50 text-xs">Didn't receive it? Send a new code</p>
+                        <p className="text-white/70 text-xs font-medium">Didn't receive it? Send a new code</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -720,10 +720,10 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                             </div>
                           </div>
                         </div>
-                        <p className="text-white/60 text-sm">
+                        <p className="text-white/80 text-sm font-medium">
                           Code expires in {Math.floor(resendCountdown / 60)}:{String(resendCountdown % 60).padStart(2, '0')}
                         </p>
-                        <p className="text-white/40 text-xs">
+                        <p className="text-white/60 text-xs">
                           New code available in {resendCountdown}s
                         </p>
                       </div>
@@ -733,11 +733,11 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                   {/* Help section */}
                   <div className="pt-3 border-t border-white/10">
                     <details className="group">
-                      <summary className="flex items-center justify-center gap-2 text-white/60 text-sm cursor-pointer hover:text-white/80 transition-colors">
+                      <summary className="flex items-center justify-center gap-2 text-white/80 text-sm cursor-pointer hover:text-white transition-colors font-medium">
                         <AlertCircle className="w-4 h-4" />
                         <span>Didn't receive the code?</span>
                       </summary>
-                      <div className="mt-3 space-y-2 text-xs text-white/50">
+                      <div className="mt-3 space-y-2 text-sm text-white/90 font-medium">
                         <p>• Check your spam/junk folder</p>
                         <p>• Make sure {maskedEmail} is correct</p>
                         <p>• Wait {resendCountdown}s to request a new code</p>

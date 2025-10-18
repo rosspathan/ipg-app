@@ -346,13 +346,13 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <Card className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm border-yellow-500/30">
+            <Card className="bg-gradient-to-r from-yellow-900/95 to-orange-900/95 backdrop-blur-sm border-yellow-500/60">
               <div className="p-4">
-                <h4 className="text-yellow-200 font-semibold text-sm mb-2 flex items-center">
-                  <span className="mr-2">🛡️</span>
-                  Security Tips
+                <h4 className="text-yellow-100 font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="text-2xl">🛡️</span>
+                  <span>Security Tips</span>
                 </h4>
-                <ul className="text-yellow-200/80 text-xs space-y-1">
+                <ul className="text-yellow-50 text-sm space-y-2 font-medium">
                   <li>• Make sure you're in a private, secure location</li>
                   <li>• Double-check each word for spelling errors</li>
                   <li>• Words should be separated by single spaces</li>

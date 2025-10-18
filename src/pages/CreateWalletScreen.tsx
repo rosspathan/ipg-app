@@ -138,9 +138,9 @@ const CreateWalletScreen = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <OnboardingCard variant="gradient" className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30">
-              <p className="text-red-200 text-sm leading-relaxed">
-                ⚠️ Never share this phrase with anyone. Anyone with your recovery phrase can access your funds.
+            <OnboardingCard variant="gradient" className="bg-gradient-to-r from-orange-900/95 to-red-900/95 border-orange-500/60">
+              <p className="text-orange-50 text-sm leading-relaxed font-medium">
+                ⚠️ <span className="text-white font-semibold">Never share this phrase with anyone.</span> Anyone with your recovery phrase can access your funds.
               </p>
             </OnboardingCard>
           </motion.div>

@@ -277,7 +277,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
               <Button
                 onClick={handleCreatePin}
                 disabled={pin.length !== 6}
-                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 font-semibold py-4 rounded-2xl text-white"
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-40 disabled:cursor-not-allowed font-semibold py-4 rounded-2xl text-white shadow-lg"
                 size="lg"
               >
                 Continue
@@ -286,7 +286,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
               <Button
                 onClick={handleConfirmPin}
                 disabled={confirmPin.length !== 6 || isHashing}
-                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 font-semibold py-4 rounded-2xl text-white"
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-40 disabled:cursor-not-allowed font-semibold py-4 rounded-2xl text-white shadow-lg"
                 size="lg"
               >
                 {isHashing ? (
@@ -311,12 +311,12 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.5 }}
             >
-              <OnboardingCard variant="gradient" className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-500/30">
-                <h4 className="text-yellow-200 font-semibold text-sm mb-2 flex items-center">
-                  <span className="mr-2">💡</span>
-                  Security Tips
+              <OnboardingCard variant="gradient" className="bg-gradient-to-r from-yellow-900/95 to-orange-900/95 border-yellow-500/60">
+                <h4 className="text-yellow-100 font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="text-2xl">💡</span>
+                  <span>Security Tips</span>
                 </h4>
-                <ul className="text-yellow-200/80 text-xs space-y-1">
+                <ul className="text-yellow-50 text-sm space-y-2 font-medium">
                   <li>• Avoid simple patterns like 123456 or 111111</li>
                   <li>• Don't use your birthday or other personal dates</li>
                   <li>• Choose a PIN you can remember but others can't guess</li>
