@@ -165,6 +165,7 @@ import AdminFunding from "./pages/AdminFunding";
 import { AdminSubscriptions } from "./components/AdminSubscriptions";
 import AdminReferralProgram from "./pages/AdminReferralProgram";
 import AdminTeamReferralsScreen from "./pages/AdminTeamReferralsScreen";
+import Admin50LevelReferrals from "./pages/Admin50LevelReferrals";
 import { AdminStaking } from "./components/AdminStaking";
 import AdminNewLuckyDraw from "./components/AdminNewLuckyDraw";
 import AdminInsurance from "./components/AdminInsurance";
@@ -225,6 +226,7 @@ const ReferralsPageAstra = React.lazy(() => import("./pages/astra/ReferralsPage"
 const AdMiningPageNew = React.lazy(() => import("./pages/programs/AdMiningPageNew"));
 const LuckyDrawPageNew = React.lazy(() => import("./pages/programs/LuckyDrawPageNew"));
 const TeamReferralsPageNew = React.lazy(() => import("./pages/programs/TeamReferralsPageNew"));
+const TeamReferralsDashboard = React.lazy(() => import("./pages/TeamReferralsDashboard"));
 const StakingPageNewV2 = React.lazy(() => import("./pages/programs/StakingPageNew"));
 const TradingPageNew = React.lazy(() => import("./pages/programs/TradingPageNew"));
 const InsurancePageNewV2 = React.lazy(() => import("./pages/programs/InsurancePageNew"));
@@ -358,7 +360,7 @@ function AppContent() {
                 <Route path="programs/advertising" element={<React.Suspense fallback={<div>Loading...</div>}><AdMiningPageNew /></React.Suspense>} />
                 <Route path="programs/lucky-draw" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawPage /></React.Suspense>} />
                 <Route path="programs/spin" element={<React.Suspense fallback={<div>Loading...</div>}><ISmartSpinScreen /></React.Suspense>} />
-                <Route path="programs/team-referrals" element={<React.Suspense fallback={<div>Loading...</div>}><TeamReferralsPageNew /></React.Suspense>} />
+                <Route path="programs/team-referrals" element={<React.Suspense fallback={<div>Loading...</div>}><TeamReferralsDashboard /></React.Suspense>} />
                 <Route path="programs/staking" element={<React.Suspense fallback={<div>Loading...</div>}><StakingPage /></React.Suspense>} />
                 <Route path="programs/trading" element={<React.Suspense fallback={<div>Loading...</div>}><TradingPageNew /></React.Suspense>} />
                 <Route path="programs/insurance" element={<React.Suspense fallback={<div>Loading...</div>}><InsurancePage /></React.Suspense>} />
@@ -442,6 +444,7 @@ function AppContent() {
                 <Route path="purchase-bonus" element={<AdminPurchaseBonusScreen />} />
                 <Route path="referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />
+                <Route path="50-level-referrals" element={<Admin50LevelReferrals />} />
                 <Route path="funding" element={<AdminFunding />} />
                 <Route path="funding/inr" element={<AdminINRFundingScreen />} />
                 <Route path="currency" element={<CurrencyControlCenter />} />
