@@ -1567,6 +1567,63 @@ export type Database = {
           },
         ]
       }
+      bsk_loan_auto_debit_log: {
+        Row: {
+          amount_bsk: number
+          batch_id: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          installment_id: string | null
+          loan_id: string | null
+          processed_at: string | null
+          scheduled_date: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_bsk: number
+          batch_id: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          installment_id?: string | null
+          loan_id?: string | null
+          processed_at?: string | null
+          scheduled_date: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          amount_bsk?: number
+          batch_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          installment_id?: string | null
+          loan_id?: string | null
+          processed_at?: string | null
+          scheduled_date?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_loan_auto_debit_log_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loan_installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bsk_loan_auto_debit_log_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bsk_loan_configs: {
         Row: {
           created_at: string
@@ -1611,6 +1668,8 @@ export type Database = {
       }
       bsk_loan_installments: {
         Row: {
+          auto_debit_attempted_at: string | null
+          auto_debit_failed_reason: string | null
           created_at: string
           due_date: string
           emi_bsk: number | null
@@ -1624,11 +1683,14 @@ export type Database = {
           paid_bsk: number
           payment_rate_snapshot: number | null
           principal_bsk: number
+          retry_count: number | null
           status: string
           total_due_bsk: number
           updated_at: string
         }
         Insert: {
+          auto_debit_attempted_at?: string | null
+          auto_debit_failed_reason?: string | null
           created_at?: string
           due_date: string
           emi_bsk?: number | null
@@ -1642,11 +1704,14 @@ export type Database = {
           paid_bsk?: number
           payment_rate_snapshot?: number | null
           principal_bsk?: number
+          retry_count?: number | null
           status?: string
           total_due_bsk: number
           updated_at?: string
         }
         Update: {
+          auto_debit_attempted_at?: string | null
+          auto_debit_failed_reason?: string | null
           created_at?: string
           due_date?: string
           emi_bsk?: number | null
@@ -1660,6 +1725,7 @@ export type Database = {
           paid_bsk?: number
           payment_rate_snapshot?: number | null
           principal_bsk?: number
+          retry_count?: number | null
           status?: string
           total_due_bsk?: number
           updated_at?: string
