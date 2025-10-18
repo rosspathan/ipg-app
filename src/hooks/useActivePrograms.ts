@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import * as LucideIcons from "lucide-react";
 
@@ -21,6 +22,8 @@ export interface ActiveProgram {
  * Falls back to default programs if database is not configured
  */
 export function useActivePrograms() {
+  const queryClient = useQueryClient();
+  
   const { data: programs, isLoading, error } = useQuery({
     queryKey: ['active-programs'],
     queryFn: async () => {
@@ -88,6 +91,33 @@ export function useActivePrograms() {
     staleTime: 5 * 60 * 1000,
     retry: 1
   });
+
+  // Set up real-time subscription for instant updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('program-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'program_modules' },
+        () => {
+          console.log('Program modules changed, invalidating queries');
+          queryClient.invalidateQueries({ queryKey: ['active-programs'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'program_configs' },
+        () => {
+          console.log('Program configs changed, invalidating queries');
+          queryClient.invalidateQueries({ queryKey: ['active-programs'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Default fallback programs if database is empty or error
   const defaultPrograms: ActiveProgram[] = [
