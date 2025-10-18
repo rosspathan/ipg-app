@@ -22,6 +22,7 @@ import {
   BarChart3,
   Settings,
   ChevronRight,
+  Award,
 } from "lucide-react";
 
 const items = [
@@ -33,6 +34,7 @@ const items = [
   { title: "Subscriptions", url: "/admin/subscriptions", icon: BadgePercent },
   { title: "Referrals", url: "/admin/referrals", icon: Share2 },
   { title: "Staking", url: "/admin/staking", icon: Layers },
+  { title: "Badge Qualification", url: "/admin/badge-qualification", icon: Award },
   { title: "Spin Wheel", url: "/admin/lucky", icon: Pointer },
   { title: "Lucky Draw", url: "/admin/lucky/draw", icon: Gift },
   { title: "Insurance", url: "/admin/insurance", icon: ShieldCheck },

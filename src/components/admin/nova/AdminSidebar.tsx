@@ -12,6 +12,7 @@ import {
   Package,
   FileText,
   ChevronRight,
+  Award,
 } from "lucide-react";
 import {
   Sidebar,
@@ -75,6 +76,11 @@ const navItems: NavItem[] = [
     title: "Staking",
     url: "/admin/staking",
     icon: Layers,
+  },
+  {
+    title: "Badge Qualification",
+    url: "/admin/badge-qualification",
+    icon: Award,
   },
   {
     title: "Subscriptions",

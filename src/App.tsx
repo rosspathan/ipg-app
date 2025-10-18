@@ -34,6 +34,7 @@ import AdminTradingOrders from "./pages/admin/AdminTradingOrders";
 import AdminTradingEngine from "./pages/admin/AdminTradingEngine";
 import AdminSubscriptionsNova from "./pages/admin/AdminSubscriptionsNova";
 import AdminStakingNova from "./pages/admin/AdminStakingNova";
+import BadgeQualificationAdmin from "./pages/admin/BadgeQualificationAdmin";
 import AdminSpinNova from "./pages/admin/AdminSpinNova";
 import AdminReportsNova from "./pages/admin/AdminReportsNova";
 import AdminSettingsNova from "./pages/admin/AdminSettingsNova";
@@ -438,6 +439,7 @@ function AppContent() {
                 {/* Gamification & Programs */}
                 <Route path="spin" element={<AdminSpinNova />} />
                 <Route path="staking" element={<AdminStakingNova />} />
+                <Route path="badge-qualification" element={<BadgeQualificationAdmin />} />
                 <Route path="subscriptions" element={<AdminSubscriptionsNova />} />
                 <Route path="insurance" element={<AdminInsurance />} />
                 <Route path="lucky-draw" element={<AdminNewLuckyDraw />} />
