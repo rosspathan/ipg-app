@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { useISmartSpin } from '@/hooks/useISmartSpin'
 import { useProgramConfig } from '@/hooks/useProgramConfig'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { SpinWheelBasic } from '@/components/spin/SpinWheelBasic'
+import { SpinWheel3D } from '@/components/spin/SpinWheel3D'
 import { BetCardPro } from '@/components/spin/BetCardPro'
 import { ProvablyFairPanel } from '@/components/spin/ProvablyFairPanel'
 import { HistorySheet } from '@/components/spin/HistorySheet'
@@ -137,10 +137,11 @@ export default function ISmartSpinScreen() {
 
         {/* Spin Wheel */}
         <div className="flex flex-col items-center justify-center py-6">
-          <SpinWheelBasic
+          <SpinWheel3D
             segments={segments}
             isSpinning={spinMachine.isSpinning}
             winningSegmentIndex={winningSegmentIndex}
+            spinId={spinMachine.spinId}
             onSpinComplete={handleSpinComplete}
           />
         </div>
