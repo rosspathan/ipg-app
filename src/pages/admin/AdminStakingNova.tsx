@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Coins, TrendingUp, Users, DollarSign, Plus, Edit, Check, X, Eye, Copy } from "lucide-react";
+import { StakingRewardsManager } from "@/components/admin/staking/StakingRewardsManager";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -394,8 +395,9 @@ export default function AdminStakingNova() {
       </CardLane>
 
       <Tabs defaultValue="pools" className="px-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="pools">Staking Pools</TabsTrigger>
+          <TabsTrigger value="rewards">Rewards Distribution</TabsTrigger>
           <TabsTrigger value="submissions">
             User Submissions
             {submissions.filter(s => s.status === 'pending').length > 0 && (
@@ -467,6 +469,10 @@ export default function AdminStakingNova() {
             onRowClick={(row) => setSelectedRecord(row)}
             selectable
           />
+        </TabsContent>
+
+        <TabsContent value="rewards" className="space-y-4 mt-4">
+          <StakingRewardsManager />
         </TabsContent>
 
         <TabsContent value="submissions" className="space-y-4 mt-4">

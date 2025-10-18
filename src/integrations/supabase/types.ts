@@ -7328,6 +7328,134 @@ export type Database = {
           },
         ]
       }
+      staking_reward_distributions: {
+        Row: {
+          admin_id: string
+          completed_at: string | null
+          created_at: string
+          distribution_type: string
+          error_message: string | null
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          pool_id: string | null
+          reward_ids: string[]
+          status: string
+          total_bsk_distributed: number
+          total_users: number
+        }
+        Insert: {
+          admin_id: string
+          completed_at?: string | null
+          created_at?: string
+          distribution_type?: string
+          error_message?: string | null
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          pool_id?: string | null
+          reward_ids?: string[]
+          status?: string
+          total_bsk_distributed?: number
+          total_users?: number
+        }
+        Update: {
+          admin_id?: string
+          completed_at?: string | null
+          created_at?: string
+          distribution_type?: string
+          error_message?: string | null
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          pool_id?: string | null
+          reward_ids?: string[]
+          status?: string
+          total_bsk_distributed?: number
+          total_users?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staking_reward_distributions_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "staking_pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staking_rewards: {
+        Row: {
+          apy_used: number
+          created_at: string
+          distributed_at: string | null
+          distributed_by: string | null
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          pool_id: string
+          reward_amount: number
+          stake_amount: number
+          status: string
+          submission_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          apy_used: number
+          created_at?: string
+          distributed_at?: string | null
+          distributed_by?: string | null
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          pool_id: string
+          reward_amount?: number
+          stake_amount: number
+          status?: string
+          submission_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          apy_used?: number
+          created_at?: string
+          distributed_at?: string | null
+          distributed_by?: string | null
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          pool_id?: string
+          reward_amount?: number
+          stake_amount?: number
+          status?: string
+          submission_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staking_rewards_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "staking_pools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staking_rewards_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "user_staking_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           billing_period: string
