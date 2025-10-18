@@ -100,44 +100,71 @@ Deno.serve(async (req) => {
       throw new Error('Failed to update badge holding');
     }
 
-    // 4. Trigger commission processor with proper eligibility checks
+    // 4. Process NEW 50-level referral commissions
     try {
-      const commissionResponse = await fetch(
-        `${Deno.env.get('SUPABASE_URL')}/functions/v1/badge-commission-processor`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-          },
-          body: JSON.stringify({
-            userId: user_id,
-            toBadge: badge_name,
-            fromBadge: previous_badge || 'NONE',
-            paidAmountBSK: bsk_amount,
-            paymentRef: `purchase_${user_id}_${Date.now()}`,
-            paymentMethod: 'BSK',
-          }),
+      // Call the new badge sale commission processor
+      const commissionResponse = await supabaseClient.functions.invoke('process-badge-sale-commissions', {
+        body: {
+          payer_id: user_id,
+          badge_name,
+          delta_amount: bsk_amount,
+          is_upgrade,
+          previous_badge
         }
-      );
+      });
 
-      const commissionResult = await commissionResponse.json();
-      
-      if (commissionResult.success) {
-        console.log('Commission processed:', {
-          eligible: commissionResult.eligibilityMet,
-          commission: commissionResult.commissionBSK,
-          capped: commissionResult.capped
-        });
+      if (commissionResponse.error) {
+        console.error('Commission processing error:', commissionResponse.error);
       } else {
-        console.warn('Commission processing failed:', commissionResult.error);
+        console.log('Badge sale commission processed:', commissionResponse.data);
       }
     } catch (commissionError) {
       console.error('Commission processor error (non-critical):', commissionError);
       // Don't fail the purchase if commission fails
     }
 
-    // 5. Create audit log
+    // 5. If VIP badge, handle milestone tracker and check milestones
+    if (badge_name === 'VIP') {
+      try {
+        // Create or update VIP milestone tracker
+        const { error: trackerError } = await supabaseClient
+          .from('vip_milestone_tracker')
+          .upsert({
+            user_id,
+            vip_badge_acquired_at: new Date().toISOString(),
+            direct_vip_count_after_vip: 0
+          }, {
+            onConflict: 'user_id',
+            ignoreDuplicates: true
+          });
+
+        if (trackerError) {
+          console.error('VIP tracker creation error:', trackerError);
+        }
+
+        // Get user's sponsor to check their milestones
+        const { data: sponsor } = await supabaseClient
+          .from('referral_tree')
+          .select('ancestor_id')
+          .eq('user_id', user_id)
+          .eq('level', 1)
+          .maybeSingle();
+
+        if (sponsor) {
+          // Trigger milestone check for sponsor
+          await supabaseClient.functions.invoke('check-vip-milestones', {
+            body: {
+              referrer_id: sponsor.ancestor_id,
+              new_vip_referee_id: user_id
+            }
+          });
+        }
+      } catch (vipError) {
+        console.error('VIP milestone processing error (non-critical):', vipError);
+      }
+    }
+
+    // 6. Create audit log
     await supabaseClient
       .from('bonus_ledger')
       .insert({

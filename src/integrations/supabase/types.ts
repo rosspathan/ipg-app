@@ -6101,6 +6101,80 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_commissions: {
+        Row: {
+          bsk_amount: number
+          created_at: string | null
+          destination: string
+          earner_badge_at_event: string
+          earner_id: string
+          event_id: string
+          event_type: string
+          id: string
+          level: number
+          payer_id: string
+          settled_at: string | null
+          status: string
+        }
+        Insert: {
+          bsk_amount: number
+          created_at?: string | null
+          destination: string
+          earner_badge_at_event: string
+          earner_id: string
+          event_id: string
+          event_type: string
+          id?: string
+          level: number
+          payer_id: string
+          settled_at?: string | null
+          status?: string
+        }
+        Update: {
+          bsk_amount?: number
+          created_at?: string | null
+          destination?: string
+          earner_badge_at_event?: string
+          earner_id?: string
+          event_id?: string
+          event_type?: string
+          id?: string
+          level?: number
+          payer_id?: string
+          settled_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_commissions_earner_id_fkey"
+            columns: ["earner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_commissions_earner_id_fkey"
+            columns: ["earner_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
+          {
+            foreignKeyName: "referral_commissions_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_commissions_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
+        ]
+      }
       referral_configs: {
         Row: {
           bonus_currency: string | null
@@ -6292,6 +6366,30 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_level_rewards: {
+        Row: {
+          balance_type: string
+          bsk_amount: number
+          is_active: boolean | null
+          level: number
+          updated_at: string | null
+        }
+        Insert: {
+          balance_type: string
+          bsk_amount?: number
+          is_active?: boolean | null
+          level: number
+          updated_at?: string | null
+        }
+        Update: {
+          balance_type?: string
+          bsk_amount?: number
+          is_active?: boolean | null
+          level?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       referral_links: {
         Row: {
           created_at: string | null
@@ -6429,6 +6527,62 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bonus_assets"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_tree: {
+        Row: {
+          ancestor_id: string
+          created_at: string | null
+          id: string
+          level: number
+          path: string[]
+          user_id: string
+        }
+        Insert: {
+          ancestor_id: string
+          created_at?: string | null
+          id?: string
+          level: number
+          path: string[]
+          user_id: string
+        }
+        Update: {
+          ancestor_id?: string
+          created_at?: string | null
+          id?: string
+          level?: number
+          path?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_tree_ancestor_id_fkey"
+            columns: ["ancestor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_tree_ancestor_id_fkey"
+            columns: ["ancestor_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
+          {
+            foreignKeyName: "referral_tree_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_tree_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
           },
         ]
       }
@@ -7892,6 +8046,7 @@ export type Database = {
           price_bsk: number
           price_inr: number | null
           purchased_at: string
+          unlock_levels: number
           updated_at: string | null
           user_id: string
         }
@@ -7905,6 +8060,7 @@ export type Database = {
           price_bsk: number
           price_inr?: number | null
           purchased_at?: string
+          unlock_levels?: number
           updated_at?: string | null
           user_id: string
         }
@@ -7918,6 +8074,7 @@ export type Database = {
           price_bsk?: number
           price_inr?: number | null
           purchased_at?: string
+          unlock_levels?: number
           updated_at?: string | null
           user_id?: string
         }
@@ -8841,6 +8998,72 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vip_milestones"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      vip_milestone_tracker: {
+        Row: {
+          direct_vip_count_after_vip: number | null
+          milestone_10_claimed: boolean | null
+          milestone_10_claimed_at: string | null
+          milestone_100_claimed: boolean | null
+          milestone_100_claimed_at: string | null
+          milestone_250_claimed: boolean | null
+          milestone_250_claimed_at: string | null
+          milestone_50_claimed: boolean | null
+          milestone_50_claimed_at: string | null
+          milestone_500_claimed: boolean | null
+          milestone_500_claimed_at: string | null
+          updated_at: string | null
+          user_id: string
+          vip_badge_acquired_at: string
+        }
+        Insert: {
+          direct_vip_count_after_vip?: number | null
+          milestone_10_claimed?: boolean | null
+          milestone_10_claimed_at?: string | null
+          milestone_100_claimed?: boolean | null
+          milestone_100_claimed_at?: string | null
+          milestone_250_claimed?: boolean | null
+          milestone_250_claimed_at?: string | null
+          milestone_50_claimed?: boolean | null
+          milestone_50_claimed_at?: string | null
+          milestone_500_claimed?: boolean | null
+          milestone_500_claimed_at?: string | null
+          updated_at?: string | null
+          user_id: string
+          vip_badge_acquired_at: string
+        }
+        Update: {
+          direct_vip_count_after_vip?: number | null
+          milestone_10_claimed?: boolean | null
+          milestone_10_claimed_at?: string | null
+          milestone_100_claimed?: boolean | null
+          milestone_100_claimed_at?: string | null
+          milestone_250_claimed?: boolean | null
+          milestone_250_claimed_at?: string | null
+          milestone_50_claimed?: boolean | null
+          milestone_50_claimed_at?: string | null
+          milestone_500_claimed?: boolean | null
+          milestone_500_claimed_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+          vip_badge_acquired_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_milestone_tracker_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "vip_milestone_tracker_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
           },
         ]
       }
