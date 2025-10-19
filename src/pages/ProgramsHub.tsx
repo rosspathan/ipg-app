@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useNavigate } from "react-router-dom"
 import { ProgramsLaneUltra } from "@/components/programs-pro/ProgramsLaneUltra"
+import { ProgramTileUltra } from "@/components/programs-pro/ProgramTileUltra"
 import { useProgramPresentation } from "@/hooks/useProgramPresentation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
@@ -110,9 +111,15 @@ export default function ProgramsHub() {
               {trendingPrograms.slice(0, 4).map((program) => {
                 const tile = mapProgramToTile(program)
                 return (
-                  <div key={tile.id} className="w-full">
-                    {/* Would render ProgramTileUltra here */}
-                  </div>
+                  <ProgramTileUltra
+                    key={tile.id}
+                    icon={tile.icon}
+                    title={tile.title}
+                    subtitle={tile.subtitle}
+                    badge={tile.badge}
+                    onPress={tile.onPress}
+                    onKebabPress={tile.onKebabPress}
+                  />
                 )
               })}
             </div>
@@ -130,9 +137,15 @@ export default function ProgramsHub() {
               {seasonalPrograms.slice(0, 4).map((program) => {
                 const tile = mapProgramToTile(program)
                 return (
-                  <div key={tile.id} className="w-full">
-                    {/* Would render ProgramTileUltra here */}
-                  </div>
+                  <ProgramTileUltra
+                    key={tile.id}
+                    icon={tile.icon}
+                    title={tile.title}
+                    subtitle={tile.subtitle}
+                    badge={tile.badge}
+                    onPress={tile.onPress}
+                    onKebabPress={tile.onKebabPress}
+                  />
                 )
               })}
             </div>
@@ -156,9 +169,15 @@ export default function ProgramsHub() {
                 {filteredPrograms.map((program) => {
                   const tile = mapProgramToTile(program)
                   return (
-                    <div key={tile.id} className="w-full">
-                      {/* Would render ProgramTileUltra here */}
-                    </div>
+                    <ProgramTileUltra
+                      key={tile.id}
+                      icon={tile.icon}
+                      title={tile.title}
+                      subtitle={tile.subtitle}
+                      badge={tile.badge}
+                      onPress={tile.onPress}
+                      onKebabPress={tile.onKebabPress}
+                    />
                   )
                 })}
               </div>
