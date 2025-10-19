@@ -27,6 +27,7 @@ import {
   PiggyBank,
   Gift,
   Target,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -162,7 +163,8 @@ const navItems: NavItem[] = [
     icon: Activity,
     children: [
       { title: "System Health", url: "/admin/system-health", icon: Activity },
-      { title: "Database", url: "/admin/database-reset", icon: Database },
+      { title: "Database Reset", url: "/admin/database-reset", icon: Database },
+      { title: "Database Cleanup", url: "/admin/database-cleanup", icon: Trash2 },
       { title: "Currencies", url: "/admin/currency-control", icon: DollarSign },
       { title: "Transactions", url: "/admin/transaction-control", icon: TrendingUp },
       { title: "Assets", url: "/admin/assets", icon: Coins },

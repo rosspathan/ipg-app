@@ -164,6 +164,7 @@ const PurchasePage = React.lazy(() => import("./pages/programs/PurchasePage"));
 import AdminLoginScreen from "./pages/AdminLoginScreen";
 const AdminDashboard = React.lazy(() => import("./pages/AdminDashboard"));
 const AdminDatabaseReset = React.lazy(() => import("./pages/AdminDatabaseReset"));
+const AdminDatabaseCleanup = React.lazy(() => import("./pages/admin/AdminDatabaseCleanup"));
 import AdminUsers from "./pages/AdminUsers";
 import AdminAssets from "./pages/AdminAssets";
 import AdminMarkets from "./pages/AdminMarkets";
@@ -493,6 +494,7 @@ function AppContent() {
                 <Route path="analytics" element={<FinancialAnalytics />} />
                 
                 <Route path="database-reset" element={<React.Suspense fallback={<div>Loading...</div>}><AdminDatabaseReset /></React.Suspense>} />
+                <Route path="database-cleanup" element={<React.Suspense fallback={<div>Loading...</div>}><AdminDatabaseCleanup /></React.Suspense>} />
                 <Route path="mobile-linking" element={<React.Suspense fallback={<div>Loading...</div>}><AdminMobileLinking /></React.Suspense>} />
               </Route>
 

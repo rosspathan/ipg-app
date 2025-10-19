@@ -132,7 +132,22 @@ const handler = async (req: Request): Promise<Response> => {
         // Delete lucky draw tickets
         await supabaseAdmin.from('lucky_draw_tickets').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-        results.operations.push('✅ Transaction history cleared');
+        // Delete user program participations
+        await supabaseAdmin.from('user_program_participations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        // Delete BSK vesting releases
+        await supabaseAdmin.from('bsk_vesting_releases').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        // Delete withdrawals
+        await supabaseAdmin.from('withdrawals').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        // Delete deposits
+        await supabaseAdmin.from('deposits').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        // Delete fiat deposits
+        await supabaseAdmin.from('fiat_deposits').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        results.operations.push('✅ Transaction history cleared (trades, orders, withdrawals, deposits, program data)');
       } catch (error: any) {
         results.errors.push(`❌ Transaction reset error: ${error.message}`);
       }
