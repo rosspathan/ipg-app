@@ -35,7 +35,12 @@ const BSKLoanCard = ({ className, variant = "compact", style }: BSKLoanCardProps
   const { toast } = useToast();
   const [activeLoan, setActiveLoan] = useState<ActiveLoan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [nextEmi, setNextEmi] = useState<{ amount_bsk: number; due_date: string } | null>(null);
+  const [nextEmi, setNextEmi] = useState<{ 
+    amount_bsk: number; 
+    due_date: string;
+    auto_debit_attempted_at?: string;
+    retry_count?: number;
+  } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -78,7 +83,9 @@ const BSKLoanCard = ({ className, variant = "compact", style }: BSKLoanCardProps
         if (nextInstallment) {
           setNextEmi({
             amount_bsk: nextInstallment.total_due_bsk,
-            due_date: nextInstallment.due_date
+            due_date: nextInstallment.due_date,
+            auto_debit_attempted_at: nextInstallment.auto_debit_attempted_at,
+            retry_count: nextInstallment.retry_count
           });
         }
       }
@@ -222,7 +229,7 @@ const BSKLoanCard = ({ className, variant = "compact", style }: BSKLoanCardProps
           </div>
           
           {nextEmi && (
-            <div className="pt-2 border-t border-white/10">
+            <div className="pt-2 border-t border-white/10 space-y-2">
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-xs text-muted-foreground">Next EMI</p>
@@ -237,6 +244,15 @@ const BSKLoanCard = ({ className, variant = "compact", style }: BSKLoanCardProps
                   </p>
                 </div>
               </div>
+              {nextEmi.auto_debit_attempted_at && (
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Auto-debit scheduled for next Monday
+                  {nextEmi.retry_count && nextEmi.retry_count > 0 && (
+                    <span className="text-warning"> • Retry #{nextEmi.retry_count}</span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </CardContent>

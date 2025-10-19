@@ -72,6 +72,25 @@ export default function LoansPage() {
     ? Number(balance.holding_balance) * 0.5
     : 0;
 
+  // Fetch installments for active loan
+  const { data: installments } = useQuery({
+    queryKey: ["loan-installments", activeLoan?.id],
+    queryFn: async () => {
+      if (!activeLoan?.id) return [];
+
+      const { data, error } = await supabase
+        .from("bsk_loan_installments")
+        .select("*")
+        .eq("loan_id", activeLoan.id)
+        .order("installment_number");
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!activeLoan?.id,
+  });
+
+
   const handleApplyLoan = async () => {
     if (!user || !loanAmount) return;
 
@@ -202,15 +221,86 @@ export default function LoansPage() {
                 />
               </div>
 
+              <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">Next Auto-Debit</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Weekly payments are automatically processed every Monday
+                </p>
+              </div>
+
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="w-4 h-4" />
                 <span>
-                  Due:{" "}
+                  Final Due:{" "}
                   {activeLoan.due_date
                     ? new Date(activeLoan.due_date).toLocaleDateString()
                     : "N/A"}
                 </span>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Payment History */}
+        {installments && installments.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Payment Schedule</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {installments.map((inst: any) => (
+                <div
+                  key={inst.id}
+                  className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center",
+                        inst.status === "paid"
+                          ? "bg-success/20"
+                          : inst.status === "overdue"
+                          ? "bg-destructive/20"
+                          : "bg-primary/20"
+                      )}
+                    >
+                      {inst.status === "paid" ? (
+                        <CheckCircle2 className="w-5 h-5 text-success" />
+                      ) : inst.status === "overdue" ? (
+                        <AlertCircle className="w-5 h-5 text-destructive" />
+                      ) : (
+                        <DollarSign className="w-5 h-5 text-primary" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">
+                        Week {inst.installment_number} • {inst.total_due_bsk} BSK
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Due: {new Date(inst.due_date).toLocaleDateString()}
+                        {inst.auto_debit_attempted_at && (
+                          <span className="ml-2 text-primary">• Auto-debit attempted</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      inst.status === "paid"
+                        ? "bg-success/10 text-success border-success/20"
+                        : inst.status === "overdue"
+                        ? "bg-destructive/10 text-destructive border-destructive/20"
+                        : "bg-muted/10 text-muted-foreground"
+                    )}
+                  >
+                    {inst.status}
+                  </Badge>
+                </div>
+              ))}
             </CardContent>
           </Card>
         )}
