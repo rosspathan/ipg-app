@@ -104,6 +104,7 @@ const navItems: NavItem[] = [
     url: "/admin/programs",
     icon: FolderKanban,
     children: [
+      { title: "Economics Dashboard", url: "/admin/programs/economics", icon: DollarSign },
       { title: "All Programs", url: "/admin/programs", icon: FolderKanban },
       { title: "Control Center", url: "/admin/programs/control-center", icon: Target },
       { title: "Program Editor", url: "/admin/programs/editor/new", icon: FileText },
