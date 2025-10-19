@@ -439,6 +439,8 @@ function AppContent() {
                 {/* Programs */}
                 <Route path="programs" element={<AdminProgramsClean />} />
                 <Route path="programs/economics" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramEconomicsDashboard /></React.Suspense>} />
+                <Route path="programs/economics/analytics" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramEconomicsAnalytics /></React.Suspense>} />
+                <Route path="program-economics-analytics" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramEconomicsAnalytics /></React.Suspense>} />
                 <Route path="programs/control-center" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramControlCenter /></React.Suspense>} />
                 <Route path="programs/templates" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramTemplates /></React.Suspense>} />
                 <Route path="programs/analytics" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramAnalytics /></React.Suspense>} />

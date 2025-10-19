@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Edit, MoreVertical, Pause, Play, Copy, Trash2 } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -25,9 +26,10 @@ interface ProgramTableProps {
   programs: ProgramWithConfig[];
   isLoading: boolean;
   onRefetch: () => void;
+  onViewAnalytics?: (program: ProgramWithConfig) => void;
 }
 
-export function ProgramTable({ programs, isLoading, onRefetch }: ProgramTableProps) {
+export function ProgramTable({ programs, isLoading, onRefetch, onViewAnalytics }: ProgramTableProps) {
   const [selectedProgram, setSelectedProgram] = useState<ProgramWithConfig | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -143,6 +145,16 @@ export function ProgramTable({ programs, isLoading, onRefetch }: ProgramTablePro
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {onViewAnalytics && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onViewAnalytics(program)}
+                        >
+                          <BarChart3 className="w-4 h-4 mr-1" />
+                          Analytics
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"

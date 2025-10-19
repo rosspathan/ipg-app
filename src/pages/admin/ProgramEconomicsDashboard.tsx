@@ -1,13 +1,23 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { BarChart3, Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProgramTable } from "@/components/admin/program-economics/ProgramTable";
 import { QuickStatsBar } from "@/components/admin/program-economics/QuickStatsBar";
+import { ProgramAnalytics } from "@/components/admin/program-economics/ProgramAnalytics";
 import { useProgramEconomics } from "@/hooks/useProgramEconomics";
+import type { ProgramWithConfig } from "@/hooks/useProgramEconomics";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function ProgramEconomicsDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProgram, setSelectedProgram] = useState<ProgramWithConfig | null>(null);
   const { programs, isLoading, refetch } = useProgramEconomics();
 
   const filteredPrograms = programs.filter((program) =>
@@ -26,10 +36,18 @@ export default function ProgramEconomicsDashboard() {
               Manage all BSK-controlled programs from one dashboard
             </p>
           </div>
-          <Button size="lg">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Program
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/admin/program-economics-analytics">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Analytics
+              </Link>
+            </Button>
+            <Button size="lg">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Program
+            </Button>
+          </div>
         </div>
 
         {/* Quick Stats */}
@@ -50,7 +68,20 @@ export default function ProgramEconomicsDashboard() {
           programs={filteredPrograms}
           isLoading={isLoading}
           onRefetch={refetch}
+          onViewAnalytics={(program) => setSelectedProgram(program)}
         />
+
+        {/* Analytics Modal */}
+        <Dialog open={!!selectedProgram} onOpenChange={() => setSelectedProgram(null)}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Program Analytics</DialogTitle>
+            </DialogHeader>
+            {selectedProgram && (
+              <ProgramAnalytics program={selectedProgram} />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
