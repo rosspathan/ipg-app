@@ -1671,12 +1671,14 @@ export type Database = {
           auto_debit_attempted_at: string | null
           auto_debit_failed_reason: string | null
           created_at: string
+          days_overdue: number | null
           due_date: string
           emi_bsk: number | null
           emi_inr: number | null
           id: string
           installment_number: number
           interest_bsk: number
+          late_fee_applied_at: string | null
           late_fee_bsk: number
           loan_id: string
           paid_at: string | null
@@ -1692,12 +1694,14 @@ export type Database = {
           auto_debit_attempted_at?: string | null
           auto_debit_failed_reason?: string | null
           created_at?: string
+          days_overdue?: number | null
           due_date: string
           emi_bsk?: number | null
           emi_inr?: number | null
           id?: string
           installment_number: number
           interest_bsk?: number
+          late_fee_applied_at?: string | null
           late_fee_bsk?: number
           loan_id: string
           paid_at?: string | null
@@ -1713,12 +1717,14 @@ export type Database = {
           auto_debit_attempted_at?: string | null
           auto_debit_failed_reason?: string | null
           created_at?: string
+          days_overdue?: number | null
           due_date?: string
           emi_bsk?: number | null
           emi_inr?: number | null
           id?: string
           installment_number?: number
           interest_bsk?: number
+          late_fee_applied_at?: string | null
           late_fee_bsk?: number
           loan_id?: string
           paid_at?: string | null
@@ -1733,6 +1739,90 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "bsk_loan_installments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_loan_late_fee_config: {
+        Row: {
+          compound_daily: boolean | null
+          created_at: string | null
+          grace_period_days: number | null
+          id: string
+          is_active: boolean | null
+          late_fee_percent: number | null
+          max_late_fee_bsk: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          compound_daily?: boolean | null
+          created_at?: string | null
+          grace_period_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          late_fee_percent?: number | null
+          max_late_fee_bsk?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          compound_daily?: boolean | null
+          created_at?: string | null
+          grace_period_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          late_fee_percent?: number | null
+          max_late_fee_bsk?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      bsk_loan_late_fee_log: {
+        Row: {
+          applied_at: string | null
+          calculation_date: string
+          days_overdue: number
+          id: string
+          installment_id: string
+          late_fee_bsk: number
+          loan_id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          calculation_date: string
+          days_overdue: number
+          id?: string
+          installment_id: string
+          late_fee_bsk: number
+          loan_id: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          calculation_date?: string
+          days_overdue?: number
+          id?: string
+          installment_id?: string
+          late_fee_bsk?: number
+          loan_id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_loan_late_fee_log_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loan_installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bsk_loan_late_fee_log_loan_id_fkey"
             columns: ["loan_id"]
             isOneToOne: false
             referencedRelation: "bsk_loans"
@@ -1812,6 +1902,99 @@ export type Database = {
           },
         ]
       }
+      bsk_loan_notification_log: {
+        Row: {
+          channel: string
+          error_message: string | null
+          id: string
+          installment_id: string | null
+          loan_id: string | null
+          metadata: Json | null
+          notification_type: string
+          sent_at: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          error_message?: string | null
+          id?: string
+          installment_id?: string | null
+          loan_id?: string | null
+          metadata?: Json | null
+          notification_type: string
+          sent_at?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          error_message?: string | null
+          id?: string
+          installment_id?: string | null
+          loan_id?: string | null
+          metadata?: Json | null
+          notification_type?: string
+          sent_at?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_loan_notification_log_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loan_installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bsk_loan_notification_log_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_loan_notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_enabled: boolean | null
+          id: string
+          remind_1_day_before: boolean | null
+          remind_3_days_before: boolean | null
+          remind_on_due_date: boolean | null
+          remind_overdue: boolean | null
+          sms_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          remind_1_day_before?: boolean | null
+          remind_3_days_before?: boolean | null
+          remind_on_due_date?: boolean | null
+          remind_overdue?: boolean | null
+          sms_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          remind_1_day_before?: boolean | null
+          remind_3_days_before?: boolean | null
+          remind_on_due_date?: boolean | null
+          remind_overdue?: boolean | null
+          sms_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bsk_loan_payments: {
         Row: {
           created_at: string
@@ -1858,6 +2041,53 @@ export type Database = {
             columns: ["loan_id"]
             isOneToOne: false
             referencedRelation: "bsk_loan_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsk_loan_prepayments: {
+        Row: {
+          created_at: string | null
+          discount_applied_bsk: number | null
+          id: string
+          installments_cleared: number
+          loan_id: string
+          notes: string | null
+          outstanding_before_bsk: number
+          prepayment_amount_bsk: number
+          processed_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          discount_applied_bsk?: number | null
+          id?: string
+          installments_cleared: number
+          loan_id: string
+          notes?: string | null
+          outstanding_before_bsk: number
+          prepayment_amount_bsk: number
+          processed_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          discount_applied_bsk?: number | null
+          id?: string
+          installments_cleared?: number
+          loan_id?: string
+          notes?: string | null
+          outstanding_before_bsk?: number
+          prepayment_amount_bsk?: number
+          processed_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_loan_prepayments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_loans"
             referencedColumns: ["id"]
           },
         ]
@@ -1984,6 +2214,8 @@ export type Database = {
           outstanding_bsk: number
           paid_bsk: number
           policy_snapshot: Json
+          prepaid_at: string | null
+          prepayment_discount_bsk: number | null
           principal_bsk: number
           region: string
           schedule_denomination: string
@@ -2019,6 +2251,8 @@ export type Database = {
           outstanding_bsk: number
           paid_bsk?: number
           policy_snapshot?: Json
+          prepaid_at?: string | null
+          prepayment_discount_bsk?: number | null
           principal_bsk: number
           region?: string
           schedule_denomination?: string
@@ -2054,6 +2288,8 @@ export type Database = {
           outstanding_bsk?: number
           paid_bsk?: number
           policy_snapshot?: Json
+          prepaid_at?: string | null
+          prepayment_discount_bsk?: number | null
           principal_bsk?: number
           region?: string
           schedule_denomination?: string

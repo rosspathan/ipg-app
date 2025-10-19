@@ -10,6 +10,7 @@ import {
   AlertCircle,
   CheckCircle2,
   DollarSign,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
+import { PrepaymentDialog } from "@/components/loans/PrepaymentDialog";
+import { NotificationPreferences } from "@/components/loans/NotificationPreferences";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +28,7 @@ export default function LoansPage() {
   const { user } = useAuthUser();
   const queryClient = useQueryClient();
   const [applyDialog, setApplyDialog] = useState(false);
+  const [prepayDialog, setPrepayDialog] = useState(false);
   const [loanAmount, setLoanAmount] = useState("");
 
   // Fetch active loans
@@ -305,8 +309,16 @@ export default function LoansPage() {
           </Card>
         )}
 
-        {/* Apply Button */}
-        {!activeLoan && (
+        {/* Action Buttons */}
+        {activeLoan ? (
+          <Button
+            onClick={() => setPrepayDialog(true)}
+            className="w-full gap-2 bg-gradient-to-r from-warning to-warning/80 h-12 text-lg"
+          >
+            <CreditCard className="w-5 h-5" />
+            Prepay Loan
+          </Button>
+        ) : (
           <Button
             onClick={() => setApplyDialog(true)}
             className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 h-12 text-lg"
@@ -316,6 +328,9 @@ export default function LoansPage() {
             Apply for Loan
           </Button>
         )}
+
+        {/* Notification Preferences */}
+        <NotificationPreferences />
 
         {/* Loan History */}
         {loans && loans.length > 0 && (
@@ -418,6 +433,19 @@ export default function LoansPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Prepayment Dialog */}
+      {activeLoan && (
+        <PrepaymentDialog
+          open={prepayDialog}
+          onOpenChange={setPrepayDialog}
+          loan={activeLoan}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["bsk-loans"] });
+            queryClient.invalidateQueries({ queryKey: ["loan-installments"] });
+          }}
+        />
+      )}
     </div>
   );
 }
