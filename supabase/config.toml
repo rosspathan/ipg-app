@@ -109,6 +109,9 @@ verify_jwt = true
 [functions.purchase-draw-tickets]
 verify_jwt = true
 
+[functions.execute-lucky-draw]
+verify_jwt = true
+
 [functions.process-withdrawal]
 verify_jwt = true
 

@@ -32,45 +32,62 @@ export const useLuckyDrawPools = () => {
 
     const fetchPools = async () => {
       try {
-        // Use program_configs to get draw configurations
-        const { data: configs } = await supabase
-          .from('program_configs')
-          .select('id, config_json, status')
-          .eq('status', 'published')
-          .eq('is_current', true);
+        // Fetch active draw templates
+        const { data: templates, error: templatesError } = await supabase
+          .from('draw_templates')
+          .select('*')
+          .eq('is_active', true)
+          .order('ticket_price_bsk', { ascending: true });
 
-        if (configs) {
-          const drawPools = configs
-            .filter(c => c.config_json && (c.config_json as any).pool_size)
-            .map(c => {
-              const cfg = c.config_json as any;
-              return {
-                id: c.id,
-                title: `₹${cfg.ticket_price_bsk || 100} Pool`,
-                subtitle: `${cfg.pool_size || 100} tickets`,
-                ticket_price_bsk: cfg.ticket_price_bsk || 100,
-                pool_size: cfg.pool_size || 100,
-                current_participants: cfg.current_participants || 0,
-                prizes: cfg.prizes || { first_place: 5000, second_place: 2000, third_place: 1000 },
-                status: 'active' as const,
-                fee_percent: cfg.fee_percent || 10
-              };
-            });
+        if (templatesError) throw templatesError;
+
+        if (templates) {
+          const drawPools = templates.map(t => ({
+            id: t.id,
+            title: t.title || `₹${t.ticket_price_bsk} Pool`,
+            subtitle: t.description || `${t.pool_size} tickets`,
+            ticket_price_bsk: t.ticket_price_bsk,
+            pool_size: t.pool_size,
+            current_participants: 0, // Will be calculated from tickets
+            prizes: t.prizes as any,
+            status: 'active' as const,
+            fee_percent: t.fee_percent
+          }));
           
           setPools(drawPools);
+
+          // Count tickets per pool
+          if (drawPools.length > 0) {
+            const { data: allTickets } = await (supabase as any)
+              .from('lucky_draw_tickets')
+              .select('config_id')
+              .in('config_id', drawPools.map(p => p.id));
+
+            if (allTickets) {
+              const participantCounts: Record<string, number> = {};
+              allTickets.forEach((t: any) => {
+                participantCounts[t.config_id] = (participantCounts[t.config_id] || 0) + 1;
+              });
+
+              // Update pools with participant counts
+              setPools(prev => prev.map(p => ({
+                ...p,
+                current_participants: participantCounts[p.id] || 0
+              })));
+            }
+          }
         }
 
-        // Fetch user tickets from user_program_participations
-        const { data: participations } = await supabase
-          .from('user_program_participations')
-          .select('module_id, input_data')
-          .eq('user_id', user.id)
-          .eq('participation_type', 'lucky_draw');
+        // Fetch user's ticket counts per draw
+        const { data: userTicketsData } = await (supabase as any)
+          .from('lucky_draw_tickets')
+          .select('config_id')
+          .eq('user_id', user.id);
 
-        if (participations) {
+        if (userTicketsData) {
           const ticketCounts: Record<string, number> = {};
-          participations.forEach(p => {
-            ticketCounts[p.module_id] = (ticketCounts[p.module_id] || 0) + 1;
+          userTicketsData.forEach((t: any) => {
+            ticketCounts[t.config_id] = (ticketCounts[t.config_id] || 0) + 1;
           });
           setUserTickets(ticketCounts);
         }
@@ -84,15 +101,14 @@ export const useLuckyDrawPools = () => {
     fetchPools();
   }, [user]);
 
-  const purchaseTickets = async (configId: string, ticketCount: number) => {
+  const purchaseTickets = async (drawId: string, ticketCount: number) => {
     if (!user) throw new Error('Not authenticated');
 
     // Call edge function to handle purchase
     const { data, error } = await supabase.functions.invoke('purchase-draw-tickets', {
       body: { 
-        config_id: configId, 
-        ticket_count: ticketCount,
-        user_id: user.id
+        drawId,
+        ticketCount
       }
     });
 
