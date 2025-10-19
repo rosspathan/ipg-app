@@ -1,19 +1,42 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
 
 interface ScrollingAnnouncementProps {
-  text?: string
   className?: string
 }
 
 /**
  * ScrollingAnnouncement - Horizontally scrolling text banner
  * Admin-controlled announcement that moves from right to left
+ * Fetches active announcements from database
  */
-export function ScrollingAnnouncement({ 
-  text = "🎉 Welcome to IPG I-SMART! Earn rewards daily through our premium programs. Trade crypto, stake tokens, and win big prizes! 🎉",
-  className 
-}: ScrollingAnnouncementProps) {
+export function ScrollingAnnouncement({ className }: ScrollingAnnouncementProps) {
+  const { data: announcement } = useQuery({
+    queryKey: ['scrolling-announcement'],
+    queryFn: async () => {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('content')
+        .eq('status', 'active')
+        .lte('start_date', now)
+        .or(`end_date.is.null,end_date.gte.${now}`)
+        .order('display_order', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching announcement:', error);
+        return null;
+      }
+      return data;
+    },
+    staleTime: 60000, // Cache for 1 minute
+  });
+
+  const displayText = announcement?.content || "🎉 Welcome to IPG I-SMART! Earn rewards daily through our premium programs. Trade crypto, stake tokens, and win big prizes! 🎉";
   return (
     <div 
       className={cn(
@@ -36,11 +59,11 @@ export function ScrollingAnnouncement({
           }}
         >
           <span className="text-sm font-[Inter] font-semibold text-foreground/90 px-4">
-            {text}
+            {displayText}
           </span>
           {/* Duplicate for seamless loop */}
           <span className="text-sm font-[Inter] font-semibold text-foreground/90 px-4">
-            {text}
+            {displayText}
           </span>
         </div>
       </div>

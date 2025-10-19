@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useWeb3 } from '@/contexts/Web3Context';
 
 interface BSKBalance {
   withdrawable_balance: number;
@@ -20,6 +21,7 @@ interface BSKBalanceStats {
 }
 
 export const useUserBSKBalance = () => {
+  const { wallet } = useWeb3();
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState<BSKBalanceStats>({
     withdrawable: 0,
@@ -49,7 +51,32 @@ export const useUserBSKBalance = () => {
   }, []);
 
   const fetchBalance = async () => {
-    if (!user?.id) {
+    let effectiveUserId = user?.id;
+
+    // If no Supabase user but we have a Web3 wallet, try to find user by wallet address
+    if (!effectiveUserId && wallet?.address) {
+      console.log('[BSK Balance] No Supabase session - attempting Web3 wallet lookup:', wallet.address);
+      
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('wallet_address', wallet.address)
+          .maybeSingle();
+        
+        if (profile?.user_id) {
+          effectiveUserId = profile.user_id;
+          console.log('[BSK Balance] Found user via wallet address:', effectiveUserId);
+        } else {
+          console.log('[BSK Balance] No profile found for wallet:', wallet.address);
+        }
+      } catch (lookupError) {
+        console.error('[BSK Balance] Error looking up user by wallet:', lookupError);
+      }
+    }
+
+    if (!effectiveUserId) {
+      console.log('[BSK Balance] No user ID available (neither Supabase auth nor wallet lookup)');
       setLoading(false);
       return;
     }
@@ -62,7 +89,7 @@ export const useUserBSKBalance = () => {
       const { data: balanceData, error: balanceError } = await supabase
         .from('user_bsk_balances')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUserId)
         .maybeSingle();
 
       if (balanceError && balanceError.code !== 'PGRST116') {
@@ -74,7 +101,7 @@ export const useUserBSKBalance = () => {
         const { data: newBalance, error: createError } = await supabase
           .from('user_bsk_balances')
           .insert({
-            user_id: user.id,
+            user_id: effectiveUserId,
             withdrawable_balance: 0,
             holding_balance: 0,
             total_earned_withdrawable: 0,
@@ -108,7 +135,7 @@ export const useUserBSKBalance = () => {
         const { data: recentLedger } = await supabase
           .from('insurance_bsk_ledger')
           .select('bsk_amount, created_at, type')
-          .eq('user_id', user.id)
+          .eq('user_id', effectiveUserId)
           .in('type', ['insurance_claim', 'ad_subscription', 'referral_commission'])
           .gte('created_at', weekStart.toISOString());
 
@@ -149,7 +176,10 @@ export const useUserBSKBalance = () => {
     fetchBalance();
 
     // Set up realtime subscription for balance updates
-    if (user?.id) {
+    // Use user.id if available, otherwise try wallet address lookup
+    const subscriptionKey = user?.id || wallet?.address;
+    
+    if (subscriptionKey) {
       const channel = supabase
         .channel('bsk-balance-changes')
         .on(
@@ -158,7 +188,6 @@ export const useUserBSKBalance = () => {
             event: '*',
             schema: 'public',
             table: 'user_bsk_balances',
-            filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
             console.log('BSK balance updated:', payload);
@@ -171,7 +200,7 @@ export const useUserBSKBalance = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [user?.id]);
+  }, [user?.id, wallet?.address]);
 
   const refresh = () => {
     fetchBalance();
