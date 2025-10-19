@@ -422,7 +422,7 @@ function AppContent() {
                 <Route path="dashboard" element={<AdminDashboardClean />} />
                 
                 {/* Users Management */}
-                <Route path="users" element={<AdminUsersClean />} />
+                <Route path="users" element={<React.Suspense fallback={<div>Loading...</div>}><AdminUsersManagementNova /></React.Suspense>} />
                 
                 {/* Markets Management */}
                 <Route path="markets" element={<AdminMarketsNova />} />
