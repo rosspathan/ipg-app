@@ -282,11 +282,21 @@ export default function LoansPage() {
                     <div>
                       <p className="font-medium text-foreground">
                         Week {inst.installment_number} • {inst.total_due_bsk} BSK
+                        {inst.late_fee_bsk > 0 && (
+                          <span className="text-destructive ml-2">
+                            +{inst.late_fee_bsk.toFixed(2)} late fee
+                          </span>
+                        )}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Due: {new Date(inst.due_date).toLocaleDateString()}
                         {inst.auto_debit_attempted_at && (
                           <span className="ml-2 text-primary">• Auto-debit attempted</span>
+                        )}
+                        {inst.days_overdue > 0 && (
+                          <span className="ml-2 text-destructive">
+                            • {inst.days_overdue} days overdue
+                          </span>
                         )}
                       </p>
                     </div>
