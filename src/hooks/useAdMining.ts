@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { useWeb3 } from '@/contexts/Web3Context';
 
 export interface AdMiningSettings {
   id: string;
@@ -58,6 +59,7 @@ export interface DailyAdViews {
 
 export const useAdMining = () => {
   const { user } = useAuthUser();
+  const { wallet } = useWeb3();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<AdMiningSettings | null>(null);
@@ -68,7 +70,7 @@ export const useAdMining = () => {
 
   useEffect(() => {
     loadData();
-  }, [user]);
+  }, [user, wallet?.address]);
 
   const loadData = async () => {
     try {
@@ -76,7 +78,7 @@ export const useAdMining = () => {
       await Promise.all([
         loadSettings(),
         loadTiers(),
-        user ? loadUserData() : Promise.resolve()
+        user ? loadUserData() : wallet?.address ? loadBSKByWallet(wallet.address) : Promise.resolve()
       ]);
     } catch (error) {
       console.error('Error loading ad mining data:', error);
@@ -89,6 +91,50 @@ export const useAdMining = () => {
       setLoading(false);
     }
   };
+
+  // Fallback: Load BSK balance by wallet when no session
+  const loadBSKByWallet = async (walletAddress: string) => {
+    try {
+      console.log('[useAdMining] Loading BSK via wallet fallback:', walletAddress);
+      const { data, error } = await supabase.functions.invoke('bsk-balance-by-wallet', {
+        body: { wallet: walletAddress }
+      });
+
+      if (error) {
+        console.error('[useAdMining] Edge Function error:', error);
+        return;
+      }
+
+      if (data?.linked) {
+        console.log('[useAdMining] ✓ BSK loaded via wallet:', data);
+        setBskBalances({
+          withdrawable_balance: data.withdrawable_balance,
+          holding_balance: data.holding_balance,
+          lifetime_withdrawable_earned: data.lifetime_withdrawable_earned,
+          lifetime_holding_earned: data.lifetime_holding_earned
+        });
+      } else {
+        console.log('[useAdMining] Wallet not linked to user account');
+      }
+    } catch (err) {
+      console.error('[useAdMining] Failed to load BSK by wallet:', err);
+    }
+  };
+
+  // Poll BSK balance when using wallet fallback
+  useEffect(() => {
+    if (!user?.id && wallet?.address) {
+      // Start polling every 30 seconds
+      const interval = setInterval(() => {
+        loadBSKByWallet(wallet.address);
+      }, 30000);
+
+      // Initial load
+      loadBSKByWallet(wallet.address);
+
+      return () => clearInterval(interval);
+    }
+  }, [user?.id, wallet?.address]);
 
   const loadSettings = async () => {
     const { data, error } = await supabase
@@ -117,7 +163,13 @@ export const useAdMining = () => {
   };
 
   const loadUserData = async () => {
-    if (!user?.id) return;
+    // If no user session but wallet is connected, use wallet fallback
+    if (!user?.id) {
+      if (wallet?.address) {
+        await loadBSKByWallet(wallet.address);
+      }
+      return;
+    }
 
     // Load user subscriptions
     const { data: subscriptions, error: subError } = await supabase

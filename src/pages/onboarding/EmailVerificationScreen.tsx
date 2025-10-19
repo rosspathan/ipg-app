@@ -177,6 +177,27 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       
       console.info('[VERIFY] ✓ Email verified, wallet linked to user:', data.userId);
       
+      // Update profiles table with wallet address for BSK balance lookup
+      if (data.walletAddress) {
+        try {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              email: email,
+              wallet_address: data.walletAddress.toLowerCase()
+            })
+            .eq('user_id', data.userId);
+          
+          if (updateError) {
+            console.warn('[VERIFY] Could not update profile:', updateError);
+          } else {
+            console.log('[VERIFY] ✓ Profile updated with wallet address');
+          }
+        } catch (profileError) {
+          console.warn('[VERIFY] Could not update profile with wallet:', profileError);
+        }
+      }
+      
       // Clean up imported wallet data
       if (importedWallet) {
         if (Capacitor.isNativePlatform()) {

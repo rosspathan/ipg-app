@@ -31,10 +31,27 @@ export default function LockScreen() {
   const restoreSession = async () => {
     try {
       // Try to refresh existing session
-      const { error } = await supabase.auth.refreshSession();
+      const { data, error } = await supabase.auth.refreshSession();
       
-      if (error) {
-        console.log('[Session] Could not restore session:', error.message);
+      if (error || !data.session) {
+        console.log('[Session] Could not restore session, checking wallet fallback');
+        
+        // If session restore failed but wallet is connected, trigger BSK load via wallet
+        const storedWallet = localStorage.getItem('cryptoflow_wallet');
+        if (storedWallet) {
+          try {
+            const wallet = JSON.parse(storedWallet);
+            if (wallet?.address) {
+              console.log('[Session] Triggering BSK load via wallet fallback');
+              // Dispatch event to trigger BSK reload in useAdMining
+              window.dispatchEvent(new CustomEvent('wallet:bsk:reload', { 
+                detail: { address: wallet.address } 
+              }));
+            }
+          } catch (e) {
+            console.warn('[Session] Could not parse wallet for fallback');
+          }
+        }
       } else {
         console.log('[Session] ✅ Session restored successfully');
       }
