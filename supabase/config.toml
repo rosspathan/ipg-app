@@ -123,3 +123,9 @@ verify_jwt = false
 
 [functions.monitor-deposit]
 verify_jwt = false
+
+[functions.create-bsk-loan]
+verify_jwt = true
+
+[functions.process-bsk-loan-payment]
+verify_jwt = true
