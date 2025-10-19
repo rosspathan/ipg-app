@@ -14,6 +14,7 @@ import { getPinCredentials, unlockApp, hasBiometricEnrolled, getBiometricCredId 
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import ipgLogo from '@/assets/ipg-logo.jpg';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function LockScreen() {
   const navigate = useNavigate();
@@ -25,6 +26,22 @@ export default function LockScreen() {
   const [error, setError] = useState('');
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [biometricAvailable] = useState(hasBiometricEnrolled());
+
+  // Restore Supabase session after successful unlock
+  const restoreSession = async () => {
+    try {
+      // Try to refresh existing session
+      const { error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.log('[Session] Could not restore session:', error.message);
+      } else {
+        console.log('[Session] ✅ Session restored successfully');
+      }
+    } catch (err) {
+      console.log('[Session] Session restore failed, will work in anonymous mode');
+    }
+  };
 
   // Auto-try biometrics on mount
   useEffect(() => {
@@ -63,6 +80,7 @@ export default function LockScreen() {
 
       if (assertion) {
         unlockApp();
+        await restoreSession();
         const returnPath = localStorage.getItem('ipg_return_path') || '/app/home';
         localStorage.removeItem('ipg_return_path');
         navigate(returnPath, { replace: true });
@@ -100,6 +118,7 @@ export default function LockScreen() {
       if (isValid) {
         setFailedAttempts(0);
         unlockApp();
+        await restoreSession();
         const returnPath = localStorage.getItem('ipg_return_path') || '/app/home';
         localStorage.removeItem('ipg_return_path');
         navigate(returnPath, { replace: true });

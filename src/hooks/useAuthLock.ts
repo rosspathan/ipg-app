@@ -228,6 +228,18 @@ export const useAuthLock = () => {
           lockedUntil: null
         });
 
+        // Restore Supabase session after successful PIN unlock
+        try {
+          const { error } = await supabase.auth.refreshSession();
+          if (error) {
+            console.log('[Session] Could not restore session:', error.message);
+          } else {
+            console.log('[Session] ✅ Session restored successfully');
+          }
+        } catch (err) {
+          console.log('[Session] Session restore failed, will work in anonymous mode');
+        }
+
         // Log successful unlock if user is logged in
         if (user) {
           await supabase.from('login_audit').insert({
@@ -357,6 +369,16 @@ export const useAuthLock = () => {
             lockedUntil: null
           });
 
+          // Restore Supabase session after biometric unlock
+          try {
+            const { error } = await supabase.auth.refreshSession();
+            if (!error) {
+              console.log('[Session] ✅ Session restored after biometric unlock');
+            }
+          } catch (err) {
+            console.log('[Session] Session restore failed');
+          }
+
           // Log successful biometric unlock
           if (user) {
             await supabase.from('login_audit').insert({
@@ -385,6 +407,16 @@ export const useAuthLock = () => {
         failedAttempts: 0,
         lockedUntil: null
       });
+
+      // Restore Supabase session (web biometric)
+      try {
+        const { error } = await supabase.auth.refreshSession();
+        if (!error) {
+          console.log('[Session] ✅ Session restored after biometric unlock');
+        }
+      } catch (err) {
+        console.log('[Session] Session restore failed');
+      }
 
       // Log successful biometric unlock
       if (user) {
