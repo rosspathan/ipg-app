@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Minus } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,7 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleBalanceAdjustment = async () => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -78,6 +80,11 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
           resource_id: userId,
           new_values: { amount: adjustmentAmount, reason },
         });
+
+        // Invalidate cache to refresh UI
+        queryClient.invalidateQueries({ 
+          queryKey: ["user-bsk-balance", userId] 
+        });
       } else {
         // Adjust INR balance
         const { data: currentBalance } = await supabase
@@ -104,6 +111,11 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
           resource_type: "user_inr_balances",
           resource_id: userId,
           new_values: { amount: adjustmentAmount, reason },
+        });
+
+        // Invalidate cache to refresh UI
+        queryClient.invalidateQueries({ 
+          queryKey: ["user-inr-balance", userId] 
         });
       }
 
