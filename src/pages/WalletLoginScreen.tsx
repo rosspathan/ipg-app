@@ -63,20 +63,20 @@ const WalletLoginScreen = () => {
       if (error) throw error;
       if (!data.success) throw new Error(data.error || "Login failed");
 
+      // Verify the OTP token to establish proper Supabase session
+      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+        type: 'magiclink',
+        token_hash: data.accessToken
+      });
+
+      if (verifyError) {
+        throw verifyError;
+      }
+
       toast({
         title: "Login Successful! ✅",
         description: `Welcome back, ${data.email}`,
       });
-
-      // Sign in with the access token
-      const { error: signInError } = await supabase.auth.setSession({
-        access_token: data.accessToken,
-        refresh_token: data.accessToken, // Use same for now
-      });
-
-      if (signInError) {
-        console.warn("Session creation warning:", signInError);
-      }
 
       // Navigate to app
       setTimeout(() => {
