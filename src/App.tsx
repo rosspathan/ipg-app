@@ -51,6 +51,7 @@ const AdminProgramAnalytics = React.lazy(() => import("./pages/admin/AdminProgra
 const ProgramControlCenter = React.lazy(() => import("./pages/admin/ProgramControlCenter"));
 const ProgramTemplates = React.lazy(() => import("./pages/admin/ProgramTemplates"));
 const ProgramEconomicsDashboard = React.lazy(() => import("./pages/admin/ProgramEconomicsDashboard"));
+const ProgramEconomicsAnalytics = React.lazy(() => import("./pages/admin/ProgramEconomicsAnalytics"));
 const ProgramsHub = React.lazy(() => import("./pages/ProgramsHub"));
 const ProgramDetail = React.lazy(() => import("./pages/ProgramDetail"));
 const ProgramParticipate = React.lazy(() => import("./pages/ProgramParticipate"));
