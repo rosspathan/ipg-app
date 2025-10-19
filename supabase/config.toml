@@ -42,6 +42,9 @@ verify_jwt = false
 [functions.wallet-login]
 verify_jwt = false
 
+[functions.send-admin-action-notification]
+verify_jwt = true
+
 # Temporarily disabled functions with TypeScript errors
 # [functions.provably-fair-commit]
 # verify_jwt = true

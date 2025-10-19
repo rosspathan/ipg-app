@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useTheme } from "next-themes";
+import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -136,6 +137,8 @@ export function SettingsPage() {
             </div>
           </div>
         </Card>
+
+        <NotificationPreferences />
       </div>
     </div>
   );

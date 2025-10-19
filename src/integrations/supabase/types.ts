@@ -8976,6 +8976,42 @@ export type Database = {
           },
         ]
       }
+      user_notification_preferences: {
+        Row: {
+          created_at: string
+          email_on_deposit_confirmation: boolean
+          email_on_insurance_claim: boolean
+          email_on_kyc_decision: boolean
+          email_on_loan_decision: boolean
+          email_on_withdrawal_decision: boolean
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_on_deposit_confirmation?: boolean
+          email_on_insurance_claim?: boolean
+          email_on_kyc_decision?: boolean
+          email_on_loan_decision?: boolean
+          email_on_withdrawal_decision?: boolean
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_on_deposit_confirmation?: boolean
+          email_on_insurance_claim?: boolean
+          email_on_kyc_decision?: boolean
+          email_on_loan_decision?: boolean
+          email_on_withdrawal_decision?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           biometric_enabled: boolean | null

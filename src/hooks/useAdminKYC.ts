@@ -78,6 +78,9 @@ export function useAdminKYC() {
 
   const approveSubmission = async (submissionId: string, adminNotes?: string) => {
     try {
+      const submission = submissions.find(s => s.id === submissionId);
+      const userId = submission?.user_id;
+
       const { error: updateError } = await supabase
         .from('kyc_profiles_new')
         .update({
@@ -98,6 +101,23 @@ export function useAdminKYC() {
         notes: adminNotes,
       });
 
+      // Send email notification
+      if (userId) {
+        try {
+          await supabase.functions.invoke('send-admin-action-notification', {
+            body: {
+              userId,
+              actionType: 'kyc_approved',
+              details: {
+                status: 'Approved',
+              },
+            },
+          });
+        } catch (emailError) {
+          console.error('Error sending notification email:', emailError);
+        }
+      }
+
       toast({
         title: 'Success',
         description: 'KYC submission approved',
@@ -116,6 +136,9 @@ export function useAdminKYC() {
 
   const rejectSubmission = async (submissionId: string, reason: string) => {
     try {
+      const submission = submissions.find(s => s.id === submissionId);
+      const userId = submission?.user_id;
+
       const { error: updateError } = await supabase
         .from('kyc_profiles_new')
         .update({
@@ -135,6 +158,24 @@ export function useAdminKYC() {
         performed_by: (await supabase.auth.getUser()).data.user?.id,
         notes: reason,
       });
+
+      // Send email notification
+      if (userId) {
+        try {
+          await supabase.functions.invoke('send-admin-action-notification', {
+            body: {
+              userId,
+              actionType: 'kyc_rejected',
+              details: {
+                status: 'Rejected',
+                reason: reason,
+              },
+            },
+          });
+        } catch (emailError) {
+          console.error('Error sending notification email:', emailError);
+        }
+      }
 
       toast({
         title: 'Submission Rejected',
