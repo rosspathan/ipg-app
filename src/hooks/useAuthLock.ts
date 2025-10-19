@@ -228,17 +228,32 @@ export const useAuthLock = () => {
           lockedUntil: null
         });
 
-        // Restore Supabase session after successful PIN unlock
-        try {
-          const { error } = await supabase.auth.refreshSession();
-          if (error) {
-            console.log('[Session] Could not restore session:', error.message);
-          } else {
-            console.log('[Session] ✅ Session restored successfully');
+          // Restore Supabase session after successful PIN unlock
+          try {
+            console.log('[Session] Attempting refresh...');
+            let { data, error } = await supabase.auth.refreshSession();
+            
+            // Retry once if failed
+            if (error || !data.session) {
+              console.log('[Session] Retry after 500ms...');
+              await new Promise(resolve => setTimeout(resolve, 500));
+              const retry = await supabase.auth.refreshSession();
+              data = retry.data;
+              error = retry.error;
+            }
+            
+            if (error || !data.session) {
+              console.log('[Session] ❌ Failed:', error?.message || 'No session');
+            } else {
+              console.log('[Session] ✅ Restored, user_id:', data.session.user.id);
+              // Emit event for components to refresh data
+              window.dispatchEvent(new CustomEvent('auth:session:restored', { 
+                detail: { userId: data.session.user.id } 
+              }));
+            }
+          } catch (err) {
+            console.log('[Session] ❌ Exception:', err);
           }
-        } catch (err) {
-          console.log('[Session] Session restore failed, will work in anonymous mode');
-        }
 
         // Log successful unlock if user is logged in
         if (user) {
@@ -371,12 +386,28 @@ export const useAuthLock = () => {
 
           // Restore Supabase session after biometric unlock
           try {
-            const { error } = await supabase.auth.refreshSession();
-            if (!error) {
-              console.log('[Session] ✅ Session restored after biometric unlock');
+            console.log('[Session] Attempting refresh...');
+            let { data, error } = await supabase.auth.refreshSession();
+            
+            // Retry once if failed
+            if (error || !data.session) {
+              console.log('[Session] Retry after 500ms...');
+              await new Promise(resolve => setTimeout(resolve, 500));
+              const retry = await supabase.auth.refreshSession();
+              data = retry.data;
+              error = retry.error;
+            }
+            
+            if (error || !data.session) {
+              console.log('[Session] ❌ Failed:', error?.message || 'No session');
+            } else {
+              console.log('[Session] ✅ Restored, user_id:', data.session.user.id);
+              window.dispatchEvent(new CustomEvent('auth:session:restored', { 
+                detail: { userId: data.session.user.id } 
+              }));
             }
           } catch (err) {
-            console.log('[Session] Session restore failed');
+            console.log('[Session] ❌ Exception:', err);
           }
 
           // Log successful biometric unlock
@@ -410,12 +441,28 @@ export const useAuthLock = () => {
 
       // Restore Supabase session (web biometric)
       try {
-        const { error } = await supabase.auth.refreshSession();
-        if (!error) {
-          console.log('[Session] ✅ Session restored after biometric unlock');
+        console.log('[Session] Attempting refresh...');
+        let { data, error } = await supabase.auth.refreshSession();
+        
+        // Retry once if failed
+        if (error || !data.session) {
+          console.log('[Session] Retry after 500ms...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const retry = await supabase.auth.refreshSession();
+          data = retry.data;
+          error = retry.error;
+        }
+        
+        if (error || !data.session) {
+          console.log('[Session] ❌ Failed:', error?.message || 'No session');
+        } else {
+          console.log('[Session] ✅ Restored, user_id:', data.session.user.id);
+          window.dispatchEvent(new CustomEvent('auth:session:restored', { 
+            detail: { userId: data.session.user.id } 
+          }));
         }
       } catch (err) {
-        console.log('[Session] Session restore failed');
+        console.log('[Session] ❌ Exception:', err);
       }
 
       // Log successful biometric unlock

@@ -41,26 +41,47 @@ export const useBSKLedgers = () => {
   const [holdingHistory, setHoldingHistory] = useState<BSKLedgerEntry[]>([]);
 
   useEffect(() => {
-    // If no authenticated user, provide safe defaults and stop loading so UI can render
+    // If no authenticated user, wait for session restoration before showing zeros
     if (!user?.id) {
-      setBalances({
-        user_id: 'anonymous',
-        withdrawable_balance: 0,
-        holding_balance: 0,
-        lifetime_withdrawable_earned: 0,
-        lifetime_holding_earned: 0,
-        lifetime_withdrawn: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as any);
-      setWithdrawableHistory([]);
-      setHoldingHistory([]);
-      setLoading(false);
-      return;
+      setLoading(true);
+      
+      // Wait 3 seconds for session restoration before showing zeros
+      const timeout = setTimeout(() => {
+        if (!user?.id) {
+          console.log('[BSK] No session after 3s, showing zeros');
+          setBalances({
+            user_id: 'anonymous',
+            withdrawable_balance: 0,
+            holding_balance: 0,
+            lifetime_withdrawable_earned: 0,
+            lifetime_holding_earned: 0,
+            lifetime_withdrawn: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as any);
+          setWithdrawableHistory([]);
+          setHoldingHistory([]);
+          setLoading(false);
+        }
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
     }
 
+    console.log('[BSK] User session detected, loading data for:', user.id);
     loadData();
   }, [user?.id]);
+
+  // Listen for session restoration events
+  useEffect(() => {
+    const handleSessionRestored = (event: any) => {
+      console.log('[BSK] Session restored event received, refreshing data');
+      loadData();
+    };
+
+    window.addEventListener('auth:session:restored', handleSessionRestored);
+    return () => window.removeEventListener('auth:session:restored', handleSessionRestored);
+  }, []);
 
   const loadData = async () => {
     if (!user?.id) return;
@@ -82,6 +103,8 @@ export const useBSKLedgers = () => {
 
   const loadBalances = async () => {
     if (!user?.id) return;
+
+    console.log('[BSK] Fetching balance for user:', user.id);
 
     const { data, error } = await supabase
       .from('user_bsk_balances')
@@ -139,7 +162,7 @@ export const useBSKLedgers = () => {
         updated_at: (newBalance as any)?.updated_at || new Date().toISOString()
       } as any);
     } else {
-      setBalances({
+      const balanceData = {
         user_id: (data as any)?.user_id || user.id,
         withdrawable_balance: Number((data as any)?.withdrawable_balance || 0),
         holding_balance: Number((data as any)?.holding_balance || 0),
@@ -148,7 +171,10 @@ export const useBSKLedgers = () => {
         lifetime_withdrawn: Number((data as any)?.lifetime_withdrawn ?? 0),
         created_at: (data as any)?.created_at || new Date().toISOString(),
         updated_at: (data as any)?.updated_at || new Date().toISOString()
-      } as any);
+      } as any;
+      
+      console.log('[BSK] ✅ Loaded:', balanceData.withdrawable_balance, 'withdrawable,', balanceData.holding_balance, 'holding');
+      setBalances(balanceData);
     }
   };
 
@@ -213,6 +239,7 @@ export const useBSKLedgers = () => {
     loadBalances,
     loadWithdrawableHistory,
     loadHoldingHistory,
-    getCurrentBSKRate
+    getCurrentBSKRate,
+    refresh: loadData  // Expose refresh function
   };
 };

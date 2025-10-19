@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { useBSKLedgers } from "@/hooks/useBSKLedgers"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,7 +14,18 @@ import { format } from "date-fns"
  * Phase 2C: BSK Programs Integration
  */
 export function BSKBalanceViewer() {
-  const { loading, balances, withdrawableHistory, holdingHistory } = useBSKLedgers()
+  const { loading, balances, withdrawableHistory, holdingHistory, refresh } = useBSKLedgers()
+
+  // Listen for session restoration events
+  useEffect(() => {
+    const handleSessionRestored = () => {
+      console.log('[BSKBalanceViewer] Session restored, refreshing balance');
+      refresh();
+    };
+
+    window.addEventListener('auth:session:restored', handleSessionRestored);
+    return () => window.removeEventListener('auth:session:restored', handleSessionRestored);
+  }, [refresh]);
 
   if (loading) {
     return (
