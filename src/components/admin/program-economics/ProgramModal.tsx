@@ -9,6 +9,10 @@ import type { ProgramWithConfig } from "@/hooks/useProgramEconomics";
 import { LuckyDrawForm } from "./forms/LuckyDrawForm";
 import { SpinWheelForm } from "./forms/SpinWheelForm";
 import { AdMiningForm } from "./forms/AdMiningForm";
+import { InsuranceForm } from "./forms/InsuranceForm";
+import { BSKLoanForm } from "./forms/BSKLoanForm";
+import { StakingForm } from "./forms/StakingForm";
+import { BSKPromotionsForm } from "./forms/BSKPromotionsForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
@@ -103,7 +107,39 @@ export function ProgramModal({ program, isOpen, onClose, onRefetch }: ProgramMod
             />
           )}
 
-          {!["lucky-draw", "spin-wheel", "ad-mining"].includes(program.key) && (
+          {program.key === "insurance" && (
+            <InsuranceForm
+              initialData={program.currentConfig?.config_json as any || {}}
+              onSubmit={handleSave}
+              isSubmitting={isSubmitting}
+            />
+          )}
+
+          {program.key === "bsk-loan" && (
+            <BSKLoanForm
+              initialData={program.currentConfig?.config_json as any || {}}
+              onSubmit={handleSave}
+              isSubmitting={isSubmitting}
+            />
+          )}
+
+          {program.key === "staking" && (
+            <StakingForm
+              initialData={program.currentConfig?.config_json as any || {}}
+              onSubmit={handleSave}
+              isSubmitting={isSubmitting}
+            />
+          )}
+
+          {program.key === "bsk-promotions" && (
+            <BSKPromotionsForm
+              initialData={program.currentConfig?.config_json as any || {}}
+              onSubmit={handleSave}
+              isSubmitting={isSubmitting}
+            />
+          )}
+
+          {!["lucky-draw", "spin-wheel", "ad-mining", "insurance", "bsk-loan", "staking", "bsk-promotions"].includes(program.key) && (
             <div className="py-6">
               <p className="text-muted-foreground">
                 Editor for this program type is not yet available
