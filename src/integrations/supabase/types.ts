@@ -3338,8 +3338,10 @@ export type Database = {
       devices: {
         Row: {
           created_at: string | null
+          device_fingerprint: string | null
           device_name: string | null
           id: string
+          is_verified: boolean | null
           last_ip: string | null
           last_seen: string | null
           trusted: boolean | null
@@ -3347,8 +3349,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          device_fingerprint?: string | null
           device_name?: string | null
           id?: string
+          is_verified?: boolean | null
           last_ip?: string | null
           last_seen?: string | null
           trusted?: boolean | null
@@ -3356,8 +3360,10 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          device_fingerprint?: string | null
           device_name?: string | null
           id?: string
+          is_verified?: boolean | null
           last_ip?: string | null
           last_seen?: string | null
           trusted?: boolean | null
@@ -6998,6 +7004,39 @@ export type Database = {
         }
         Relationships: []
       }
+      regional_restrictions: {
+        Row: {
+          blocked_features: Json | null
+          country_code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_blocked: boolean
+          restriction_reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          blocked_features?: Json | null
+          country_code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_blocked?: boolean
+          restriction_reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          blocked_features?: Json | null
+          country_code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_blocked?: boolean
+          restriction_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       report_snapshots: {
         Row: {
           date_range_end: string
@@ -8177,6 +8216,42 @@ export type Database = {
         }
         Relationships: []
       }
+      terms_versions: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          id: string
+          is_current: boolean
+          title: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          effective_from: string
+          id?: string
+          is_current?: boolean
+          title: string
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          id?: string
+          is_current?: boolean
+          title?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       tiers: {
         Row: {
           color: string | null
@@ -8709,6 +8784,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_compliance_acceptances: {
+        Row: {
+          accepted_at: string
+          compliance_type: string
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          user_agent: string | null
+          user_id: string
+          version: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          compliance_type: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id: string
+          version?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          compliance_type?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string
+          version?: string | null
+        }
+        Relationships: []
       }
       user_daily_ad_views: {
         Row: {
@@ -9956,6 +10064,14 @@ export type Database = {
           public_key: string
           wallet_address: string
         }[]
+      }
+      has_accepted_compliance: {
+        Args: {
+          p_compliance_type: string
+          p_user_id: string
+          p_version?: string
+        }
+        Returns: boolean
       }
       has_role: {
         Args: {

@@ -9,6 +9,7 @@ import { useUserBalance } from "@/hooks/useUserBalance";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ComplianceGate } from "@/components/compliance/ComplianceGate";
 
 export function TradingPairPage() {
   const params = useParams<{ symbol: string }>();
@@ -80,7 +81,12 @@ export function TradingPairPage() {
   const priceChangeColor = pair.change24h >= 0 ? "text-success" : "text-destructive";
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <ComplianceGate
+      requireAgeVerification
+      requireTermsAcceptance
+      requireRiskDisclosure
+    >
+      <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
         <div className="flex items-center justify-between mb-2">
@@ -180,5 +186,6 @@ export function TradingPairPage() {
         </div>
       </div>
     </div>
+    </ComplianceGate>
   );
 }

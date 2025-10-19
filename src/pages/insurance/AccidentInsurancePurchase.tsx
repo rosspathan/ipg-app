@@ -10,6 +10,7 @@ import { Shield, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { ComplianceGate } from '@/components/compliance/ComplianceGate';
 
 interface BeneficiaryInfo {
   name: string;
@@ -173,6 +174,7 @@ export default function AccidentInsurancePurchase() {
   const waitingPeriod = planConfig.plan_settings?.waiting_period_days || 7;
 
   return (
+    <ComplianceGate requireAgeVerification requireTermsAcceptance>
     <div className="min-h-screen bg-background p-4 pb-20">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
@@ -316,5 +318,6 @@ export default function AccidentInsurancePurchase() {
         </Card>
       </div>
     </div>
+    </ComplianceGate>
   );
 }

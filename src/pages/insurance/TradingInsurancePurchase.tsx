@@ -8,6 +8,7 @@ import { TrendingDown, AlertCircle, CheckCircle, ArrowLeft, Info } from 'lucide-
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { ComplianceGate } from '@/components/compliance/ComplianceGate';
 
 export default function TradingInsurancePurchase() {
   const navigate = useNavigate();
@@ -151,6 +152,7 @@ export default function TradingInsurancePurchase() {
   const minLossInr = planConfig.plan_settings?.min_loss_threshold_inr || 1000;
 
   return (
+    <ComplianceGate requireAgeVerification requireTermsAcceptance>
     <div className="min-h-screen bg-background p-4 pb-20">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
@@ -266,5 +268,6 @@ export default function TradingInsurancePurchase() {
         </Card>
       </div>
     </div>
+    </ComplianceGate>
   );
 }

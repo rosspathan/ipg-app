@@ -11,6 +11,7 @@ import { Heart, AlertCircle, CheckCircle, ArrowLeft, Info, AlertTriangle } from 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { ComplianceGate } from '@/components/compliance/ComplianceGate';
 
 interface BeneficiaryInfo {
   name: string;
@@ -216,6 +217,7 @@ export default function LifeInsurancePurchase() {
   const isAgeEligible = ageConfirmed && userAge >= minAge && userAge <= maxAge;
 
   return (
+    <ComplianceGate requireAgeVerification requireTermsAcceptance>
     <div className="min-h-screen bg-background p-4 pb-20">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
@@ -457,5 +459,6 @@ export default function LifeInsurancePurchase() {
         </Card>
       </div>
     </div>
+    </ComplianceGate>
   );
 }
