@@ -137,6 +137,17 @@ export function useISmartSpin() {
   const performSpin = async (betBsk: number): Promise<SpinResult | null> => {
     if (!config || isSpinning) return null
 
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to spin and settle results",
+        variant: "destructive"
+      })
+      return null
+    }
+
     try {
       setIsSpinning(true)
 
@@ -210,9 +221,9 @@ export function useISmartSpin() {
 
   // Calculate costs for a bet
   const calculateCosts = (betBsk: number) => {
-    if (!config || !userLimits) return null
+    if (!config) return null
 
-    const isFree = userLimits.free_spins_remaining > 0
+    const isFree = userLimits ? userLimits.free_spins_remaining > 0 : false
     const feeBsk = isFree ? 0 : config.post_free_spin_fee_bsk
     const totalCost = betBsk + feeBsk
 
