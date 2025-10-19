@@ -1,11 +1,10 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { NavigationStateManager } from "@/components/navigation/NavigationGuards";
 import { BrandLogoBlink } from "@/components/admin/nova/BrandLogoBlink";
 import { Bell, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AdminSidebar } from "@/components/admin/unified/AdminSidebar";
 import { ViewAsUserButton } from "@/components/admin/clean/ViewAsUserButton";
+import { DockAdmin } from "@/components/admin/nova/DockAdmin";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -42,24 +41,19 @@ const AdminLayoutClean = () => {
 
   return (
     <NavigationStateManager>
-      <SidebarProvider defaultOpen={true}>
-        <div className="flex h-screen w-full bg-[hsl(220_13%_4%)] overflow-hidden">
-          {/* Collapsible Sidebar */}
-          <AdminSidebar />
-
-          <div className="flex flex-col h-screen flex-1 overflow-hidden">
-            {/* Clean Header */}
-            <header
-              className="sticky top-0 z-40 bg-[hsl(220_13%_7%)] border-b border-[hsl(220_13%_14%/0.4)]"
-              style={{
-                paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
-              }}
-            >
-              <div className="flex items-center justify-between h-14 px-4 gap-3 w-full">
-                {/* Left: Sidebar trigger + Breadcrumbs */}
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <SidebarTrigger className="shrink-0 text-[hsl(220_9%_65%)] hover:text-[hsl(0_0%_98%)]" />
-                  <div className="h-6 w-px bg-[hsl(220_13%_14%/0.4)]" />
+      <div className="flex flex-col min-h-screen w-full bg-[hsl(220_13%_4%)]">
+        {/* Clean Header */}
+        <header
+          className="sticky top-0 z-40 bg-[hsl(220_13%_7%)] border-b border-[hsl(220_13%_14%/0.4)]"
+          style={{
+            paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
+          }}
+        >
+          <div className="flex items-center justify-between h-14 px-4 gap-3 w-full">
+            {/* Left: Logo + Breadcrumbs */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <BrandLogoBlink className="shrink-0" />
+              <div className="h-6 w-px bg-[hsl(220_13%_14%/0.4)]" />
                   <Breadcrumb>
                     <BreadcrumbList>
                       {breadcrumbs.map((crumb, index) => (
@@ -109,15 +103,16 @@ const AdminLayoutClean = () => {
               </div>
             </header>
 
-            {/* Page Content */}
-            <main className="flex-1 w-full px-6 py-6 overflow-y-auto">
-              <div className="max-w-screen-2xl mx-auto">
-                <Outlet />
-              </div>
-            </main>
+        {/* Page Content */}
+        <main className="flex-1 w-full px-6 py-6 pb-24 overflow-y-auto">
+          <div className="max-w-screen-2xl mx-auto">
+            <Outlet />
           </div>
-        </div>
-      </SidebarProvider>
+        </main>
+
+        {/* Bottom Navigation */}
+        <DockAdmin />
+      </div>
     </NavigationStateManager>
   );
 };
