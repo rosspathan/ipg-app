@@ -13,6 +13,7 @@ import { InsuranceForm } from "./forms/InsuranceForm";
 import { BSKLoanForm } from "./forms/BSKLoanForm";
 import { StakingForm } from "./forms/StakingForm";
 import { BSKPromotionsForm } from "./forms/BSKPromotionsForm";
+import { TeamReferralsForm } from "./forms/TeamReferralsForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
@@ -139,7 +140,15 @@ export function ProgramModal({ program, isOpen, onClose, onRefetch }: ProgramMod
             />
           )}
 
-          {!["lucky-draw", "spin-wheel", "ad-mining", "insurance", "bsk-loan", "staking", "bsk-promotions"].includes(program.key) && (
+          {program.key === "referrals_team" && (
+            <TeamReferralsForm
+              initialData={program.currentConfig?.config_json as any || {}}
+              onSubmit={handleSave}
+              isSubmitting={isSubmitting}
+            />
+          )}
+
+          {!["lucky-draw", "spin-wheel", "ad-mining", "insurance", "bsk-loan", "staking", "bsk-promotions", "referrals_team"].includes(program.key) && (
             <div className="py-6">
               <p className="text-muted-foreground">
                 Editor for this program type is not yet available
