@@ -15,12 +15,14 @@ interface UseAdminUsersFilters {
   search?: string;
   status?: string;
   kycStatus?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
   page?: number;
   limit?: number;
 }
 
 export function useAdminUsers(filters: UseAdminUsersFilters = {}) {
-  const { search, status, kycStatus, page = 1, limit = 50 } = filters;
+  const { search, status, kycStatus, dateFrom, dateTo, page = 1, limit = 50 } = filters;
 
   return useQuery({
     queryKey: ['admin-users', filters],
@@ -51,6 +53,15 @@ export function useAdminUsers(filters: UseAdminUsersFilters = {}) {
       // Apply KYC status filter
       if (kycStatus) {
         query = query.eq('kyc_status', kycStatus);
+      }
+
+      // Apply date filters
+      if (dateFrom) {
+        query = query.gte('created_at', dateFrom.toISOString());
+      }
+
+      if (dateTo) {
+        query = query.lte('created_at', dateTo.toISOString());
       }
       
       // Apply pagination

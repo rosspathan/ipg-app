@@ -18,18 +18,38 @@ export function ExportOptions({ reportData, reportType }: ExportOptionsProps) {
 
   const exportToPDF = () => {
     toast({
-      title: "Export Started",
-      description: "Generating PDF report...",
+      title: "Coming Soon",
+      description: "PDF export will be available in a future update",
     });
-    // TODO: Implement PDF export
   };
 
   const exportToExcel = () => {
-    toast({
-      title: "Export Started",
-      description: "Generating Excel file...",
-    });
-    // TODO: Implement Excel export
+    if (!reportData) {
+      toast({
+        variant: "destructive",
+        title: "No Data",
+        description: "No report data available to export",
+      });
+      return;
+    }
+
+    try {
+      import('@/utils/export').then(({ exportToExcel, flattenForExport }) => {
+        const data = Array.isArray(reportData) ? reportData : [reportData];
+        const flatData = flattenForExport(data);
+        exportToExcel(flatData, reportType);
+        toast({
+          title: "Export Complete",
+          description: "Excel file downloaded successfully",
+        });
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: "Failed to export to Excel",
+      });
+    }
   };
 
   const exportToCSV = () => {
@@ -42,19 +62,23 @@ export function ExportOptions({ reportData, reportType }: ExportOptionsProps) {
       return;
     }
 
-    const csvContent = JSON.stringify(reportData, null, 2);
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${reportType}-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: "Export Complete",
-      description: "CSV file downloaded successfully",
-    });
+    try {
+      import('@/utils/export').then(({ exportToCSV, flattenForExport }) => {
+        const data = Array.isArray(reportData) ? reportData : [reportData];
+        const flatData = flattenForExport(data);
+        exportToCSV(flatData, reportType);
+        toast({
+          title: "Export Complete",
+          description: "CSV file downloaded successfully",
+        });
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: "Failed to export to CSV",
+      });
+    }
   };
 
   return (
