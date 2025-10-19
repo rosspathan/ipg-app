@@ -1,47 +1,88 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { NavigationStateManager } from "@/components/navigation/NavigationGuards";
 import { BrandLogoBlink } from "@/components/admin/nova/BrandLogoBlink";
 import { Bell, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AdminDockClean } from "@/components/admin/clean/AdminDockClean";
+import { AdminSidebar } from "@/components/admin/unified/AdminSidebar";
 import { ViewAsUserButton } from "@/components/admin/clean/ViewAsUserButton";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+} from "@/components/ui/breadcrumb";
 
-// Page title mapping
-const pageTitles: Record<string, string> = {
-  "/admin": "Overview",
-  "/admin/users": "User Management",
-  "/admin/programs": "Programs",
-  "/admin/programs/control-center": "Program Control",
-  "/admin/settings": "Settings",
+// Helper to generate breadcrumbs from path
+const getBreadcrumbs = (pathname: string) => {
+  const segments = pathname.split("/").filter(Boolean);
+  const breadcrumbs: { label: string; path: string }[] = [];
+
+  let currentPath = "";
+  segments.forEach((segment, index) => {
+    currentPath += `/${segment}`;
+    const label = segment
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+    breadcrumbs.push({
+      label: index === 0 ? "Admin" : label,
+      path: currentPath,
+    });
+  });
+
+  return breadcrumbs;
 };
 
 const AdminLayoutClean = () => {
   const location = useLocation();
-  const currentTitle = pageTitles[location.pathname] || "Admin Console";
+  const breadcrumbs = getBreadcrumbs(location.pathname);
 
   return (
     <NavigationStateManager>
-      <SidebarProvider defaultOpen={false}>
+      <SidebarProvider defaultOpen={true}>
         <div className="flex h-screen w-full bg-[hsl(220_13%_4%)] overflow-hidden">
-          <div className="flex flex-col h-screen w-full overflow-hidden">
+          {/* Collapsible Sidebar */}
+          <AdminSidebar />
+
+          <div className="flex flex-col h-screen flex-1 overflow-hidden">
             {/* Clean Header */}
-            <header 
+            <header
               className="sticky top-0 z-40 bg-[hsl(220_13%_7%)] border-b border-[hsl(220_13%_14%/0.4)]"
               style={{
-                paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)'
+                paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)",
               }}
             >
-              <div className="flex items-center justify-between h-14 px-4 gap-3 w-full max-w-screen-xl mx-auto">
-                {/* Left: Logo */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="shrink-0">
-                    <BrandLogoBlink />
-                  </div>
+              <div className="flex items-center justify-between h-14 px-4 gap-3 w-full">
+                {/* Left: Sidebar trigger + Breadcrumbs */}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <SidebarTrigger className="shrink-0 text-[hsl(220_9%_65%)] hover:text-[hsl(0_0%_98%)]" />
                   <div className="h-6 w-px bg-[hsl(220_13%_14%/0.4)]" />
-                  <h1 className="text-lg font-bold text-[hsl(0_0%_98%)] truncate">
-                    {currentTitle}
-                  </h1>
+                  <Breadcrumb>
+                    <BreadcrumbList>
+                      {breadcrumbs.map((crumb, index) => (
+                        <BreadcrumbItem key={crumb.path}>
+                          {index < breadcrumbs.length - 1 ? (
+                            <>
+                              <BreadcrumbLink
+                                href={crumb.path}
+                                className="text-[hsl(220_9%_65%)] hover:text-[hsl(0_0%_98%)]"
+                              >
+                                {crumb.label}
+                              </BreadcrumbLink>
+                              <BreadcrumbSeparator className="text-[hsl(220_13%_14%)]" />
+                            </>
+                          ) : (
+                            <BreadcrumbPage className="text-[hsl(0_0%_98%)] font-semibold">
+                              {crumb.label}
+                            </BreadcrumbPage>
+                          )}
+                        </BreadcrumbItem>
+                      ))}
+                    </BreadcrumbList>
+                  </Breadcrumb>
                 </div>
 
                 {/* Right: Actions */}
@@ -69,17 +110,11 @@ const AdminLayoutClean = () => {
             </header>
 
             {/* Page Content */}
-            <main 
-              className="flex-1 w-full px-4 py-6 max-w-screen-xl mx-auto overflow-y-auto"
-              style={{
-                paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))',
-              }}
-            >
-              <Outlet />
+            <main className="flex-1 w-full px-6 py-6 overflow-y-auto">
+              <div className="max-w-screen-2xl mx-auto">
+                <Outlet />
+              </div>
             </main>
-
-            {/* Clean Bottom Dock */}
-            <AdminDockClean />
           </div>
         </div>
       </SidebarProvider>
