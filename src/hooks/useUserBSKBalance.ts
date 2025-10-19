@@ -53,6 +53,10 @@ export const useUserBSKBalance = () => {
   const fetchBalance = async () => {
     let effectiveUserId = user?.id;
 
+    // Get stored email from onboarding
+    const storedEmail = sessionStorage.getItem('verificationEmail') || 
+                       JSON.parse(localStorage.getItem('ipg_onboarding_state') || '{}').email;
+
     // If no Supabase user but we have a Web3 wallet, try to find user by wallet address
     if (!effectiveUserId && wallet?.address) {
       console.log('[BSK Balance] No Supabase session - attempting Web3 wallet lookup:', wallet.address);
@@ -103,8 +107,48 @@ export const useUserBSKBalance = () => {
       }
     }
 
+    // If still no user ID, try email fallback
+    if (!effectiveUserId && storedEmail) {
+      console.log('[BSK Balance] No session/wallet link - trying email fallback:', storedEmail);
+      
+      try {
+        const { data: emailData, error: emailError } = await supabase.functions.invoke(
+          'bsk-balance-by-identifier',
+          { body: { email: storedEmail } }
+        );
+        
+        if (emailError) {
+          console.error('[BSK Balance] Email fallback error:', emailError);
+        } else if (emailData?.linked) {
+          console.log('[BSK Balance] ✅ Email fallback - balance loaded via', emailData.source);
+          setBalance({
+            withdrawable: Number(emailData.withdrawable_balance || 0),
+            holding: Number(emailData.holding_balance || 0),
+            total: Number(emailData.withdrawable_balance || 0) + Number(emailData.holding_balance || 0),
+            earnedWithdrawable: Number(emailData.lifetime_withdrawable_earned || 0),
+            earnedHolding: Number(emailData.lifetime_holding_earned || 0),
+            todayEarned: Number(emailData.today_earned || 0),
+            weekEarned: Number(emailData.week_earned || 0),
+          });
+          setLoading(false);
+          return;
+        }
+      } catch (emailFallbackError) {
+        console.error('[BSK Balance] Email fallback failed:', emailFallbackError);
+      }
+    }
+
     if (!effectiveUserId) {
-      console.log('[BSK Balance] No user ID available - waiting for session or wallet link');
+      console.log('[BSK Balance] No user ID, wallet, or email available - waiting for session');
+      setBalance({
+        withdrawable: 0,
+        holding: 0,
+        total: 0,
+        earnedWithdrawable: 0,
+        earnedHolding: 0,
+        todayEarned: 0,
+        weekEarned: 0,
+      });
       setLoading(false);
       return;
     }
@@ -196,12 +240,15 @@ export const useUserBSKBalance = () => {
     };
     window.addEventListener('auth:session:restored', handleSessionRestored);
 
-    // Set up wallet-only polling (when no session but wallet available)
+    // Set up polling for non-session scenarios (wallet-only or email-only)
     let pollInterval: NodeJS.Timeout | null = null;
-    if (!user?.id && wallet?.address) {
-      console.log('[BSK Balance] Starting wallet-only polling (every 30s)');
+    const storedEmail = sessionStorage.getItem('verificationEmail') || 
+                       JSON.parse(localStorage.getItem('ipg_onboarding_state') || '{}').email;
+    
+    if (!user?.id && (wallet?.address || storedEmail)) {
+      console.log('[BSK Balance] Starting polling for non-session mode (every 30s)');
       pollInterval = setInterval(() => {
-        console.log('[BSK Balance] Polling with wallet address...');
+        console.log('[BSK Balance] Polling for balance update...');
         fetchBalance();
       }, 30000); // Poll every 30 seconds
     }
@@ -232,7 +279,7 @@ export const useUserBSKBalance = () => {
     return () => {
       window.removeEventListener('auth:session:restored', handleSessionRestored);
       if (pollInterval) {
-        console.log('[BSK Balance] Cleaning up wallet-only polling');
+        console.log('[BSK Balance] Cleaning up non-session polling');
         clearInterval(pollInterval);
       }
       if (channel) {

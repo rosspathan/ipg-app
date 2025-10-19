@@ -1,5 +1,8 @@
 project_id = "ocblgldglqhlrmtnynmu"
 
+[functions.bsk-balance-by-identifier]
+verify_jwt = false
+
 [functions.admin-reset-database]
 verify_jwt = true
 
