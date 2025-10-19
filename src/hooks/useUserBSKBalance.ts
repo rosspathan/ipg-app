@@ -58,17 +58,45 @@ export const useUserBSKBalance = () => {
       console.log('[BSK Balance] No Supabase session - attempting Web3 wallet lookup:', wallet.address);
       
       try {
+        // Normalize wallet address to lowercase for consistent matching
+        const normalizedAddress = wallet.address.toLowerCase();
         const { data: profile } = await supabase
           .from('profiles')
           .select('user_id')
-          .eq('wallet_address', wallet.address)
+          .eq('wallet_address', normalizedAddress)
           .maybeSingle();
         
         if (profile?.user_id) {
           effectiveUserId = profile.user_id;
           console.log('[BSK Balance] Found user via wallet address:', effectiveUserId);
         } else {
-          console.log('[BSK Balance] No profile found for wallet:', wallet.address);
+          console.log('[BSK Balance] No profile found for wallet, trying edge function fallback...');
+          
+          // Fallback: Use edge function to get balance by wallet
+          try {
+            const { data: edgeData, error: edgeError } = await supabase.functions.invoke('bsk-balance-by-wallet', {
+              body: { wallet: wallet.address }
+            });
+
+            if (edgeError) {
+              console.error('[BSK Balance] Edge function error:', edgeError);
+            } else if (edgeData?.linked) {
+              console.log('[BSK Balance] ✅ Using edge fallback - balance loaded:', edgeData);
+              setBalance({
+                withdrawable: Number(edgeData.withdrawable_balance || 0),
+                holding: Number(edgeData.holding_balance || 0),
+                total: Number(edgeData.withdrawable_balance || 0) + Number(edgeData.holding_balance || 0),
+                earnedWithdrawable: Number(edgeData.total_earned_withdrawable || 0),
+                earnedHolding: Number(edgeData.total_earned_holding || 0),
+                todayEarned: Number(edgeData.today_earned || 0),
+                weekEarned: Number(edgeData.week_earned || 0),
+              });
+              setLoading(false);
+              return;
+            }
+          } catch (fallbackError) {
+            console.error('[BSK Balance] Fallback edge function failed:', fallbackError);
+          }
         }
       } catch (lookupError) {
         console.error('[BSK Balance] Error looking up user by wallet:', lookupError);
@@ -76,7 +104,7 @@ export const useUserBSKBalance = () => {
     }
 
     if (!effectiveUserId) {
-      console.log('[BSK Balance] No user ID available (neither Supabase auth nor wallet lookup)');
+      console.log('[BSK Balance] No user ID available - waiting for session or wallet link');
       setLoading(false);
       return;
     }
@@ -84,6 +112,7 @@ export const useUserBSKBalance = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('[BSK Balance] Session detected - fetching from user_bsk_balances for user:', effectiveUserId);
 
       // Fetch BSK balance
       const { data: balanceData, error: balanceError } = await supabase
@@ -97,23 +126,7 @@ export const useUserBSKBalance = () => {
       }
 
       if (!balanceData) {
-        // Create initial balance record
-        const { data: newBalance, error: createError } = await supabase
-          .from('user_bsk_balances')
-          .insert({
-            user_id: effectiveUserId,
-            withdrawable_balance: 0,
-            holding_balance: 0,
-            total_earned_withdrawable: 0,
-            total_earned_holding: 0,
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating BSK balance:', createError);
-        }
-
+        console.log('[BSK Balance] No balance record found - setting to zero (skip insert without session)');
         setBalance({
           withdrawable: 0,
           holding: 0,
@@ -154,6 +167,7 @@ export const useUserBSKBalance = () => {
           });
         }
 
+        console.log('[BSK Balance] ✅ Loaded from DB:', { withdrawable, holding });
         setBalance({
           withdrawable,
           holding,
@@ -175,12 +189,30 @@ export const useUserBSKBalance = () => {
   useEffect(() => {
     fetchBalance();
 
+    // Listen for session restoration event
+    const handleSessionRestored = () => {
+      console.log('[BSK Balance] Session restored event received - refetching balance');
+      fetchBalance();
+    };
+    window.addEventListener('auth:session:restored', handleSessionRestored);
+
+    // Set up wallet-only polling (when no session but wallet available)
+    let pollInterval: NodeJS.Timeout | null = null;
+    if (!user?.id && wallet?.address) {
+      console.log('[BSK Balance] Starting wallet-only polling (every 30s)');
+      pollInterval = setInterval(() => {
+        console.log('[BSK Balance] Polling with wallet address...');
+        fetchBalance();
+      }, 30000); // Poll every 30 seconds
+    }
+
     // Set up realtime subscription for balance updates
     // Use user.id if available, otherwise try wallet address lookup
     const subscriptionKey = user?.id || wallet?.address;
     
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     if (subscriptionKey) {
-      const channel = supabase
+      channel = supabase
         .channel('bsk-balance-changes')
         .on(
           'postgres_changes',
@@ -195,11 +227,18 @@ export const useUserBSKBalance = () => {
           }
         )
         .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
+
+    return () => {
+      window.removeEventListener('auth:session:restored', handleSessionRestored);
+      if (pollInterval) {
+        console.log('[BSK Balance] Cleaning up wallet-only polling');
+        clearInterval(pollInterval);
+      }
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [user?.id, wallet?.address]);
 
   const refresh = () => {
