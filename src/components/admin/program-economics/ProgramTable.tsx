@@ -196,6 +196,7 @@ export function ProgramTable({ programs, isLoading, onRefetch }: ProgramTablePro
           program={selectedProgram}
           isOpen={isModalOpen}
           onClose={handleModalClose}
+          onRefetch={onRefetch}
         />
       )}
     </>
