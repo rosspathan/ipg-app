@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { useUserBSKBalance } from './useUserBSKBalance'
 
 interface SpinConfig {
   id: string
@@ -51,6 +52,7 @@ export function useISmartSpin() {
   const [isSpinning, setIsSpinning] = useState(false)
   const [lastResult, setLastResult] = useState<SpinResult | null>(null)
   const { toast } = useToast()
+  const { balance } = useUserBSKBalance()
 
   // Load spin configuration and user data
   const loadSpinData = async () => {
@@ -122,23 +124,6 @@ export function useISmartSpin() {
         }
 
         setUserLimits(limitsData || null)
-
-        // Get BSK balance
-        const { data: balanceData, error: balanceError } = await supabase
-          .from('user_bsk_balances')
-          .select('withdrawable_balance')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-        if (balanceData) {
-          setBskBalance(Number(balanceData.withdrawable_balance || 0))
-        } else if (!balanceError) {
-          // Create initial balance record
-          await supabase
-            .from('user_bsk_balances')
-            .insert({ user_id: user.id })
-          setBskBalance(0)
-        }
       }
 
     } catch (error) {
@@ -243,6 +228,11 @@ export function useISmartSpin() {
   useEffect(() => {
     loadSpinData()
   }, [])
+
+  // Update BSK balance from useUserBSKBalance hook
+  useEffect(() => {
+    setBskBalance(balance.withdrawable)
+  }, [balance.withdrawable])
 
   return {
     config,
