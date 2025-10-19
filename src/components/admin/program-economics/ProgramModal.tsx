@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import type { ProgramWithConfig } from "@/hooks/useProgramEconomics";
 import { LuckyDrawForm } from "./forms/LuckyDrawForm";
+import { SpinWheelForm } from "./forms/SpinWheelForm";
+import { AdMiningForm } from "./forms/AdMiningForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
@@ -86,15 +88,19 @@ export function ProgramModal({ program, isOpen, onClose, onRefetch }: ProgramMod
           )}
 
           {program.key === "spin-wheel" && (
-            <div className="py-6 text-center text-muted-foreground">
-              <p>Spin Wheel form will be implemented in Day 3</p>
-            </div>
+            <SpinWheelForm
+              initialData={program.currentConfig?.config_json as any || {}}
+              onSubmit={handleSave}
+              isSubmitting={isSubmitting}
+            />
           )}
 
           {program.key === "ad-mining" && (
-            <div className="py-6 text-center text-muted-foreground">
-              <p>Ad Mining form will be implemented in Day 3</p>
-            </div>
+            <AdMiningForm
+              initialData={program.currentConfig?.config_json as any || {}}
+              onSubmit={handleSave}
+              isSubmitting={isSubmitting}
+            />
           )}
 
           {!["lucky-draw", "spin-wheel", "ad-mining"].includes(program.key) && (
