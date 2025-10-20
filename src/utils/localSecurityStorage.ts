@@ -1,4 +1,4 @@
-
+import { hashPin, verifyPin, generateSalt } from '@/utils/pinCrypto';
 
 interface LocalSecurityData {
   pin_hash: string;
@@ -17,10 +17,9 @@ export const saveLocalSecurityData = async (data: {
   anti_phishing_code: string;
 }): Promise<void> => {
   try {
-    // Hash PIN client-side (dynamic import to avoid bundling node 'crypto')
-    const bcrypt = await import('bcryptjs');
-    const salt = await bcrypt.genSalt(12);
-    const pin_hash = await bcrypt.hash(data.pin, salt);
+    // Hash PIN using PBKDF2-SHA256
+    const salt = generateSalt();
+    const pin_hash = await hashPin(data.pin, salt);
 
     const securityData: LocalSecurityData = {
       pin_hash,
@@ -71,8 +70,7 @@ export const verifyLocalPin = async (pin: string): Promise<boolean> => {
   if (!localData) return false;
 
   try {
-    const bcrypt = await import('bcryptjs');
-    return await bcrypt.compare(pin, localData.pin_hash);
+    return await verifyPin(pin, localData.pin_salt, localData.pin_hash);
   } catch (error) {
     console.error('Failed to verify local PIN:', error);
     return false;

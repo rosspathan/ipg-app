@@ -5,6 +5,7 @@ import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
 import { Capacitor } from '@capacitor/core';
 import { BiometricAuth, BiometryType } from '@aparajita/capacitor-biometric-auth';
+import { hashPin as cryptoHashPin, verifyPin as cryptoVerifyPin, generateSalt } from '@/utils/pinCrypto';
 
 
 interface LockState {
@@ -123,18 +124,16 @@ export const useAuthLock = () => {
     }
   }, [user, lockState]);
 
-  // Hash PIN with salt
+  // Hash PIN with salt using PBKDF2
   const hashPin = useCallback(async (pin: string): Promise<{ hash: string; salt: string }> => {
-    const bcrypt = await import('bcryptjs');
-    const salt = await bcrypt.genSalt(12);
-    const hash = await bcrypt.hash(pin, salt);
+    const salt = generateSalt();
+    const hash = await cryptoHashPin(pin, salt);
     return { hash, salt };
   }, []);
 
-  // Verify PIN
-  const verifyPin = useCallback(async (pin: string, storedHash: string): Promise<boolean> => {
-    const bcrypt = await import('bcryptjs');
-    return await bcrypt.compare(pin, storedHash);
+  // Verify PIN using PBKDF2
+  const verifyPin = useCallback(async (pin: string, salt: string, storedHash: string): Promise<boolean> => {
+    return await cryptoVerifyPin(pin, salt, storedHash);
   }, []);
 
   // Set PIN (for initial setup or change)
@@ -208,16 +207,38 @@ export const useAuthLock = () => {
     try {
       let isValid = false;
 
-      // First try database verification
+      // First try database verification with PBKDF2
       if (user) {
         const { data: security } = await supabase
           .from('security')
-          .select('pin_hash')
+          .select('pin_hash, pin_salt')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (security?.pin_hash) {
-          isValid = await verifyPin(pin, security.pin_hash);
+        if (security?.pin_hash && security?.pin_salt) {
+          isValid = await verifyPin(pin, security.pin_salt, security.pin_hash);
+          
+          // Migration fallback: If PBKDF2 fails, try bcryptjs for old users
+          if (!isValid) {
+            try {
+              const bcrypt = await import('bcryptjs');
+              const isBcryptValid = await bcrypt.compare(pin, security.pin_hash);
+              
+              if (isBcryptValid) {
+                // Re-hash with PBKDF2 and update database
+                const { hash, salt } = await hashPin(pin);
+                await supabase
+                  .from('security')
+                  .update({ pin_hash: hash, pin_salt: salt })
+                  .eq('user_id', user.id);
+                
+                isValid = true;
+                console.log('✅ Migrated PIN from bcrypt to PBKDF2');
+              }
+            } catch (err) {
+              console.error('Migration fallback failed:', err);
+            }
+          }
         }
       }
 
