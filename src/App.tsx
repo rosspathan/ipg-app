@@ -115,6 +115,10 @@ import OnboardingFlow from "./pages/OnboardingFlow";
 import OnboardingIndexScreen from "./pages/OnboardingIndexScreen";
 import WalletSelectionScreen from "./pages/WalletSelectionScreen";
 import RecoveryVerifyScreen from "./pages/RecoveryVerifyScreen";
+import LandingScreen from "./pages/LandingScreen";
+import SignupScreen from "./pages/auth/SignupScreen";
+import LoginScreen from "./pages/auth/LoginScreen";
+import RecoverWalletScreen from "./pages/auth/RecoverWalletScreen";
 
 // User App Pages
 import AppHomeScreen from "./pages/AppHomeScreen";
@@ -289,42 +293,38 @@ function AppContent() {
       <RouterWrapper>
         <Routes>
           {/* Landing & Splash */}
-          <Route path="/" element={<AppInitializer><Navigate to="/onboarding" replace /></AppInitializer>} />
+          <Route path="/" element={<AppInitializer><LandingScreen /></AppInitializer>} />
           <Route path="/splash" element={<SplashScreen />} />
           <Route path="/download" element={<DownloadPage />} />
           <Route path="/deeplink/r/:code" element={<DeepLinkResolver />} />
-          <Route path="/welcome" element={<WelcomeScreen />} />
-          <Route path="/welcome-1" element={<WelcomeScreen1 />} />
-          <Route path="/welcome-2" element={<WelcomeScreen2 />} />
-          <Route path="/welcome-3" element={<WelcomeScreen3 />} />
 
-          {/* Onboarding Flow */}
-              <Route path="/onboarding" element={<OnboardingFlow />} />
-              <Route path="/recovery/verify" element={<RecoveryVerifyScreen />} />
-              <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
+          {/* Auth Routes - New Clean Flow */}
+          <Route path="/auth/signup" element={<SignupScreen />} />
+          <Route path="/auth/login" element={<LoginScreen />} />
+          <Route path="/auth/recover" element={<RecoverWalletScreen />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth/lock" element={<AppLockScreen />} />
+          
+          {/* Legacy redirects */}
+          <Route path="/lock" element={<Navigate to="/auth/lock" replace />} />
+          <Route path="/lock/setup-pin" element={<Navigate to="/onboarding/security" replace />} />
+          <Route path="/welcome" element={<Navigate to="/" replace />} />
+          <Route path="/welcome-1" element={<Navigate to="/" replace />} />
+          <Route path="/welcome-2" element={<Navigate to="/" replace />} />
+          <Route path="/welcome-3" element={<Navigate to="/" replace />} />
 
-              {/* Legacy Onboarding Redirects */}
-              <Route path="/create-wallet" element={<Navigate to="/onboarding/create-wallet" replace />} />
-              <Route path="/import-wallet" element={<Navigate to="/onboarding/import-wallet" replace />} />
+          {/* Onboarding Flow - Post-authentication */}
+          <Route path="/onboarding" element={<Navigate to="/" replace />} />
+          <Route path="/onboarding/wallet" element={<OnboardingFlow />} />
+          <Route path="/onboarding/security" element={<OnboardingFlow />} />
+          <Route path="/recovery/verify" element={<RecoveryVerifyScreen />} />
+          <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
 
-          {/* Auth Routes */}
-          <Route path="/auth" element={<AuthLayout />}>
-            <Route index element={<AuthOnboardingEntry />} />
-            <Route path="login" element={<AuthOnboardingEntry />} />
-            <Route path="register" element={<AuthOnboardingEntry />} />
-            <Route path="check-email" element={<AuthOnboardingEntry />} />
-            <Route path="verify-code" element={<AuthOnboardingEntry />} />
-          </Route>
-
-              {/* Auth callback still needed for edge cases */}
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              
-              {/* App lock screen */}
-              <Route path="/auth/lock" element={<AppLockScreen />} />
-              
-              {/* Redirect old /lock route to /auth/lock */}
-              <Route path="/lock" element={<Navigate to="/auth/lock" replace />} />
-              <Route path="/lock/setup-pin" element={<Navigate to="/onboarding/security" replace />} />
+          {/* Legacy Auth Routes - Redirect to new flow */}
+          <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/auth/register" element={<Navigate to="/auth/signup" replace />} />
+          <Route path="/auth/check-email" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/auth/verify-code" element={<Navigate to="/auth/login" replace />} />
 
               {/* Legacy User App removed */}
               <Route path="/app-legacy/*" element={<RemovedPage home="/app/home" removed="Legacy user routes have been removed." />} />

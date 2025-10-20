@@ -1,207 +1,86 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useAuthUser } from '@/hooks/useAuthUser';
-import { extractUsernameFromEmail } from '@/lib/user/username';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import SplashScreen from './onboarding/SplashScreen';
-import WelcomeScreens from './onboarding/WelcomeScreens';
-import AuthScreen from './onboarding/AuthScreen';
-import EmailVerificationOTP from './onboarding/EmailVerificationOTP';
 import WalletChoiceScreen from './onboarding/WalletChoiceScreen';
 import CreateWalletScreen from './onboarding/CreateWalletScreen';
 import ImportWalletScreen from './onboarding/ImportWalletScreen';
-import VerifyWalletAndEmailScreen from './onboarding/VerifyWalletAndEmailScreen';
-import EmailInputScreen from './onboarding/EmailInputScreen';
-import EmailVerificationScreen from './onboarding/EmailVerificationScreen';
 import PinSetupScreen from './onboarding/PinSetupScreen';
 import BiometricSetupScreen from './onboarding/BiometricSetupScreen';
 import SuccessCelebrationScreen from './onboarding/SuccessCelebrationScreen';
 
+/**
+ * OnboardingFlow - Post-authentication wallet and security setup
+ * 
+ * New Flow (after user signs up/logs in):
+ * 1. /onboarding/wallet -> Wallet creation/import
+ * 2. /onboarding/security -> PIN + biometric setup
+ * 3. Complete -> /app/home
+ */
 const OnboardingFlow: React.FC = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuthUser();
+  const { user } = useAuthUser();
   const {
     state,
     setStep,
     setWalletInfo,
-    setEmail,
-    setUserId,
-    setReferralCode,
-    markEmailVerified,
     setPinHash,
     markBiometricSetup,
-    completeOnboarding,
-    resetOnboarding
+    completeOnboarding
   } = useOnboarding();
-  
-  const [showExistingSessionModal, setShowExistingSessionModal] = useState(false);
 
-  // Check for existing session on mount
+  // Determine initial step based on URL path
   useEffect(() => {
-    if (user?.id) {
-      setShowExistingSessionModal(true);
+    const path = window.location.pathname;
+    
+    if (!user) {
+      // No user session - redirect to landing
+      navigate('/');
+      return;
     }
-  }, [user?.id]);
 
-  const handleSplashComplete = () => setStep('welcome');
-  const handleWelcomeComplete = () => setStep('auth-signup'); // NEW: Auth first
-  const handleWalletChoice = (choice: 'create' | 'import' | 'connect') => {
-    if (choice === 'connect') {
-      setStep('wallet-connect');
+    if (path === '/onboarding/wallet') {
+      setStep('wallet-choice');
+    } else if (path === '/onboarding/security') {
+      setStep('pin-setup');
     } else {
-      setStep(choice + '-wallet' as any);
+      // Default to wallet choice
+      setStep('wallet-choice');
     }
+  }, [user, navigate, setStep]);
+
+  const handleWalletChoice = (choice: 'create' | 'import') => {
+    setStep(choice + '-wallet' as any);
   };
+
   const handleWalletCreated = (wallet: any) => {
     setWalletInfo(wallet);
-    // Skip email steps - already authenticated
     setStep('pin-setup');
   };
   
   const handleWalletImported = (wallet: any) => {
-    // LOCAL-ONLY IMPORT: Store wallet and continue to verification
     setWalletInfo(wallet);
-    // Wallet will be connected to Web3 after successful onboarding
-    
-    // Save wallet to onboarding state
-    try {
-      localStorage.setItem('ipg_onboarding_state', JSON.stringify({
-        ...state,
-        walletInfo: wallet
-      }));
-    } catch (e) {
-      console.error('[ONBOARDING] Failed to save wallet:', e);
-    }
-    
-    // Skip email steps - already authenticated
     setStep('pin-setup');
   };
-  const handleEmailSubmitted = (email: string) => {
-    setEmail(email);
-    setStep('email-verification'); // DEPRECATED: Old flow
-  };
-  
-  // handleResendCode removed - EmailVerificationScreen handles resends internally
-  
-  const handleEmailVerified = async () => {
-    markEmailVerified();
-    
-    // Store referral if code was entered
-    if (state.referralCode && state.sponsorId) {
-      const { storePendingReferral } = await import('@/utils/referralCapture');
-      storePendingReferral(state.referralCode, state.sponsorId);
-    }
-    
-    setStep('pin-setup');
-  };
+
   const handlePinSetup = (pinHash: string) => {
     setPinHash(pinHash);
     setStep('biometric-setup');
   };
+
   const handleBiometricSetup = (success: boolean) => {
     markBiometricSetup(success);
     setStep('success');
   };
 
-  const handleContinueAsCurrentUser = () => {
-    setShowExistingSessionModal(false);
-    navigate('/app/home');
-  };
-
-  const handleSignOutAndCreateNew = async () => {
-    await signOut();
-    setShowExistingSessionModal(false);
-    resetOnboarding();
-  };
-
-  // Show existing session modal if user is logged in
-  if (showExistingSessionModal && user) {
-    return (
-      <AlertDialog open={showExistingSessionModal} onOpenChange={setShowExistingSessionModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>You're Already Logged In</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                You're currently logged in as <span className="font-semibold">{user.email}</span>.
-              </p>
-              <p className="text-muted-foreground">
-                Would you like to continue with this account or sign out to create a new one?
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-col gap-2">
-            <Button 
-              onClick={handleContinueAsCurrentUser}
-              variant="default"
-              className="w-full"
-            >
-              Continue as {user.email}
-            </Button>
-            <Button 
-              onClick={handleSignOutAndCreateNew}
-              variant="outline"
-              className="w-full"
-            >
-              Sign Out & Create New Account
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    );
-  }
-
+  // Render based on current step
   switch (state.step) {
-    case 'splash':
-      return <SplashScreen onComplete={handleSplashComplete} />;
-    
-    case 'welcome':
-      return <WelcomeScreens onComplete={handleWelcomeComplete} onBack={() => setStep('splash')} />;
-    
-    case 'auth-signup':
-      return (
-        <AuthScreen
-          onAuthComplete={(email, userId) => {
-            setEmail(email);
-            if (userId) {
-              setUserId(userId);
-              setStep('wallet-choice'); // Skip OTP if signed in
-            } else {
-              setStep('email-verification-otp'); // Go to OTP if signed up
-            }
-          }}
-          onBack={() => setStep('welcome')}
-        />
-      );
-
-    case 'email-verification-otp':
-      return (
-        <EmailVerificationOTP
-          email={state.email || ''}
-          onVerified={(userId) => {
-            setUserId(userId);
-            markEmailVerified();
-            setStep('wallet-choice');
-          }}
-          onBack={() => setStep('auth-signup')}
-        />
-      );
-    
     case 'wallet-choice':
       return (
         <WalletChoiceScreen
           onCreateWallet={() => setStep('create-wallet')}
           onImportWallet={() => setStep('import-wallet')}
-          onBack={() => setStep('welcome')}
+          onBack={() => navigate('/')}
         />
       );
     
@@ -221,41 +100,11 @@ const OnboardingFlow: React.FC = () => {
         />
       );
     
-    case 'verify-wallet-email':
-      return (
-        <VerifyWalletAndEmailScreen
-          walletAddress={state.walletInfo?.address || ''}
-          onVerified={handleEmailSubmitted}
-          onBack={() => setStep('import-wallet')}
-        />
-      );
-    
-    case 'email-input':
-      return (
-        <EmailInputScreen
-          walletAddress={state.walletInfo?.address}
-          onEmailSubmitted={handleEmailSubmitted}
-          onBack={() => setStep('create-wallet')}
-        />
-      );
-    
-    // 'referral-code' step removed - now integrated in EmailVerificationScreen
-
-    case 'email-verification':
-      return (
-        <EmailVerificationScreen
-          email={state.email || ''}
-          walletAddress={state.walletInfo?.address}
-          onVerified={handleEmailVerified}
-          onBack={() => setStep('email-input')}
-        />
-      );
-    
     case 'pin-setup':
       return (
         <PinSetupScreen
           onPinSetup={handlePinSetup}
-          onBack={() => setStep('email-verification')}
+          onBack={() => setStep('create-wallet')}
         />
       );
     
@@ -277,7 +126,13 @@ const OnboardingFlow: React.FC = () => {
       );
     
     default:
-      return <SplashScreen onComplete={handleSplashComplete} />;
+      return (
+        <WalletChoiceScreen
+          onCreateWallet={() => setStep('create-wallet')}
+          onImportWallet={() => setStep('import-wallet')}
+          onBack={() => navigate('/')}
+        />
+      );
   }
 };
 

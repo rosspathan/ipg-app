@@ -21,78 +21,67 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        console.log('[AppInitializer] Checking app state...');
-        
-        // Add small delay to ensure storage is ready in native apps
-        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('[AppInitializer] Starting initialization...');
         
         // Check for active session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('[AppInitializer] Session check:', session ? 'Active' : 'None');
         
-        if (sessionError) {
-          console.error('[AppInitializer] Session error:', sessionError);
+        if (!session) {
+          console.log('[AppInitializer] No session - Stay on current page (landing/auth)');
+          // Don't redirect, let user stay on landing/auth pages
+          return;
         }
-        
-        console.log('[AppInitializer] Session check result:', session ? 'Session found' : 'No session');
-        
-        if (session?.user) {
-          console.log('[AppInitializer] User session found:', session.user.id);
-          
-          // Check if user has a wallet
-          const { data: wallets, error } = await supabase
-            .from('user_wallets')
-            .select('id')
-            .eq('user_id', session.user.id)
-            .limit(1);
-          
-          if (error) {
-            console.error('[AppInitializer] Error checking wallets:', error);
-            // Continue to onboarding on error
-            navigate('/onboarding', { replace: true });
-            return;
-          }
-          
-          const hasWallet = wallets && wallets.length > 0;
-          console.log('[AppInitializer] User has wallet:', hasWallet);
-          
-          if (hasWallet) {
-            // User has wallet - check if security is set up
-            const hasSecurity = hasLocalSecurity();
-            console.log('[AppInitializer] Security set up:', hasSecurity);
-            
-            if (hasSecurity) {
-              // Check if this is a returning user (has unlock history)
-              const lockState = localStorage.getItem('cryptoflow_lock_state');
-              const hasUnlockHistory = lockState && JSON.parse(lockState).lastUnlockAt;
-              
-              if (hasUnlockHistory) {
-                // Returning user from previous session -> lock screen
-                console.log('[AppInitializer] Returning user, redirecting to lock screen');
-                navigate('/auth/lock', { replace: true });
-              } else {
-                // Fresh session after onboarding -> go to home
-                console.log('[AppInitializer] Fresh session, redirecting to home');
-                navigate('/app/home', { replace: true });
-              }
-            } else {
-              // Has wallet but no security -> complete security setup
-              console.log('[AppInitializer] Redirecting to security setup');
-              navigate('/onboarding/security', { replace: true });
-            }
-          } else {
-            // User session exists but no wallet -> go to onboarding
-            console.log('[AppInitializer] No wallet found, redirecting to onboarding');
-            navigate('/onboarding', { replace: true });
-          }
-        } else {
-          // No session - new user
-          console.log('[AppInitializer] No session found, redirecting to onboarding');
-          navigate('/onboarding', { replace: true });
+
+        const userId = session.user.id;
+        console.log('[AppInitializer] User ID:', userId);
+
+        // Check if user has a wallet
+        const { data: walletData, error: walletError } = await supabase
+          .from('user_wallets')
+          .select('wallet_address')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (walletError) {
+          console.error('[AppInitializer] Wallet check error:', walletError);
         }
+
+        console.log('[AppInitializer] Wallet exists:', !!walletData);
+
+        if (!walletData) {
+          console.log('[AppInitializer] No wallet - redirect to wallet creation');
+          navigate('/onboarding/wallet', { replace: true });
+          return;
+        }
+
+        // Check if user has security setup (PIN or biometrics)
+        const hasSecurity = hasLocalSecurity();
+        console.log('[AppInitializer] Local security setup:', hasSecurity);
+
+        if (!hasSecurity) {
+          console.log('[AppInitializer] No security - redirect to security setup');
+          navigate('/onboarding/security', { replace: true });
+          return;
+        }
+
+        // Check if this is a fresh session (no unlock history)
+        const lockState = localStorage.getItem('cryptoflow_lock_state');
+        const hasUnlockHistory = lockState && JSON.parse(lockState).lastUnlockAt;
+        
+        if (!hasUnlockHistory) {
+          console.log('[AppInitializer] Fresh session after onboarding - go to home');
+          navigate('/app/home', { replace: true });
+          return;
+        }
+
+        // Returning user with security - require unlock
+        console.log('[AppInitializer] Returning user - redirect to lock screen');
+        navigate('/auth/lock', { replace: true });
+        
       } catch (error) {
         console.error('[AppInitializer] Initialization error:', error);
-        // On error, default to onboarding
-        navigate('/onboarding', { replace: true });
+        // On error, don't redirect - let user stay on current page
       } finally {
         setIsChecking(false);
       }
