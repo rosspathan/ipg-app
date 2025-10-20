@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import { useWeb3 } from '@/contexts/Web3Context';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { extractUsernameFromEmail } from '@/lib/user/username';
 import {
@@ -42,7 +41,6 @@ const OnboardingFlow: React.FC = () => {
     resetOnboarding
   } = useOnboarding();
   
-  const { setWalletFromOnboarding } = useWeb3();
   const [showExistingSessionModal, setShowExistingSessionModal] = useState(false);
 
   // Check for existing session on mount
@@ -63,14 +61,14 @@ const OnboardingFlow: React.FC = () => {
   };
   const handleWalletCreated = (wallet: any) => {
     setWalletInfo(wallet);
-    setWalletFromOnboarding(wallet);
+    // Wallet will be connected to Web3 after successful onboarding
     setStep('email-input');
   };
   
   const handleWalletImported = (wallet: any) => {
     // LOCAL-ONLY IMPORT: Store wallet and continue to verification
     setWalletInfo(wallet);
-    setWalletFromOnboarding(wallet);
+    // Wallet will be connected to Web3 after successful onboarding
     
     // Save wallet to onboarding state
     try {
