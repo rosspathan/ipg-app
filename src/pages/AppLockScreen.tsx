@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Shield, Eye, EyeOff, Fingerprint, AlertCircle, Loader2 } from "lucide-react";
+import { Shield, Fingerprint, AlertCircle, Loader2, Eye, EyeOff, Delete } from "lucide-react";
 import { useAuthLock } from "@/hooks/useAuthLock";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { hasLocalSecurity } from "@/utils/localSecurityStorage";
 import { supabase } from "@/integrations/supabase/client";
+import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
+import { OnboardingCard } from "@/components/onboarding/OnboardingCard";
+import { motion } from "framer-motion";
 
 const AppLockScreen = () => {
   const navigate = useNavigate();
@@ -148,186 +149,237 @@ const AppLockScreen = () => {
   const remainingTime = lockState.lockedUntil ? Math.max(0, Math.ceil((lockState.lockedUntil - Date.now()) / 1000)) : 0;
   const isLocked = remainingTime > 0;
 
+  // PIN Display Component
+  const PinDisplay = () => (
+    <div className="flex justify-center gap-3 mb-8">
+      {[...Array(6)].map((_, i) => (
+        <div
+          key={i}
+          className="w-12 h-12 rounded-xl border-2 border-white/30 bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all duration-200"
+        >
+          <div className={`w-3 h-3 rounded-full transition-all duration-200 ${
+            i < pin.length ? 'bg-white scale-100' : 'bg-white/30 scale-0'
+          }`} />
+        </div>
+      ))}
+    </div>
+  );
+
+  // Number Pad Component
+  const NumberPad = () => (
+    <div className="grid grid-cols-3 gap-3 mb-6">
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+        <Button
+          key={num}
+          type="button"
+          variant="ghost"
+          className="h-16 text-2xl font-semibold text-white hover:bg-white/20 hover:text-white rounded-2xl transition-all"
+          onClick={() => handleNumberPress(num.toString())}
+          disabled={isLocked || loading || biometricLoading}
+        >
+          {num}
+        </Button>
+      ))}
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-16 hover:bg-white/20 rounded-2xl transition-all"
+        onClick={() => setShowPin(!showPin)}
+        disabled={isLocked}
+      >
+        {showPin ? <EyeOff className="w-6 h-6 text-white" /> : <Eye className="w-6 h-6 text-white" />}
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-16 text-2xl font-semibold text-white hover:bg-white/20 hover:text-white rounded-2xl transition-all"
+        onClick={() => handleNumberPress('0')}
+        disabled={isLocked || loading || biometricLoading}
+      >
+        0
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-16 hover:bg-white/20 rounded-2xl transition-all"
+        onClick={handleDelete}
+        disabled={isLocked || loading || biometricLoading}
+      >
+        <Delete className="w-6 h-6 text-white" />
+      </Button>
+    </div>
+  );
+
+  const handleNumberPress = (num: string) => {
+    if (pin.length < 6) {
+      const newPin = pin + num;
+      setPin(newPin);
+      if (error) setError("");
+    }
+  };
+
+  const handleDelete = () => {
+    setPin(pin.slice(0, -1));
+    if (error) setError("");
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-6">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <Shield className="h-16 w-16 text-primary" />
-              <div className="absolute -top-2 -right-2 bg-background rounded-full p-1">
-                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+    <OnboardingLayout gradientVariant="secondary" showAnimatedBackground={true}>
+      <div className="flex-1 flex items-center justify-center py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          <OnboardingCard variant="glass" className="p-8">
+            {/* Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Shield className="w-10 h-10 text-white" />
               </div>
             </div>
-          </div>
-          <CardTitle className="text-2xl">App Locked</CardTitle>
-          <CardDescription>
-            {isLocked 
-              ? `Please wait ${remainingTime} seconds before trying again`
-              : "Enter your PIN to unlock the app"
-            }
-          </CardDescription>
-          
-          {/* Anti-Phishing Code Display */}
-          {antiPhishingCode && (
-            <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-              <div className="flex items-center gap-2 justify-center">
-                <Shield className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Your Security Code:</span>
-                <span className="text-sm font-mono font-bold text-primary">{antiPhishingCode}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Verify this code matches official communications
-              </p>
-            </div>
-          )}
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
 
-          {lockState.failedAttempts > 0 && (
-            <Alert className="border-yellow-200 bg-yellow-50">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800">
-                {lockState.failedAttempts} failed attempt{lockState.failedAttempts > 1 ? 's' : ''}. 
-                {5 - lockState.failedAttempts} attempts remaining.
-              </AlertDescription>
-            </Alert>
-          )}
+            {/* Title & Description */}
+            <h2 className="text-2xl font-bold text-white mb-3 text-center">
+              App Locked
+            </h2>
+            <p className="text-white/80 text-base text-center mb-6">
+              {isLocked 
+                ? `Please wait ${remainingTime} seconds before trying again`
+                : "Enter your PIN to unlock the app"
+              }
+            </p>
 
-          {!biometricLoading && (
-            <form onSubmit={handlePinSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <div className="relative">
-                  <Input
-                    type={showPin ? "text" : "password"}
-                    inputMode="numeric"
-                    autoComplete="current-password"
-                    pattern="[0-9]*"
-                    value={pin}
-                    onChange={(e) => handlePinChange(e.target.value)}
-                    placeholder="••••••"
-                    className="pr-10 text-center text-2xl tracking-[0.5em] font-mono"
-                    disabled={isLocked || loading}
-                    autoFocus
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                    onClick={() => setShowPin(!showPin)}
-                    disabled={isLocked}
-                  >
-                    {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </Button>
+            {/* Anti-Phishing Code Display */}
+            {antiPhishingCode && (
+              <OnboardingCard variant="info" className="mb-6 p-4">
+                <div className="flex items-center gap-2 justify-center mb-1">
+                  <Shield className="h-4 w-4 text-blue-400" />
+                  <span className="text-sm font-medium text-white">Your Security Code:</span>
+                  <span className="text-sm font-mono font-bold text-blue-400">{antiPhishingCode}</span>
                 </div>
-              </div>
-
-              <Button 
-                type="submit"
-                className="w-full"
-                size="lg"
-                disabled={pin.length !== 6 || isLocked || loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Unlocking...
-                  </>
-                ) : (
-                  "Unlock"
-                )}
-              </Button>
-            </form>
-          )}
-
-          {/* Show biometric loading state when authenticating */}
-          {biometricLoading && (
-            <div className="flex flex-col items-center justify-center py-8 space-y-4">
-              <Fingerprint className="h-16 w-16 text-primary animate-pulse" />
-              <div className="text-center space-y-2">
-                <p className="font-medium">Biometric Authentication</p>
-                <p className="text-sm text-muted-foreground">
-                  Please verify your identity
+                <p className="text-xs text-white/70 text-center">
+                  Verify this code matches official communications
                 </p>
-              </div>
-            </div>
-          )}
+              </OnboardingCard>
+            )}
 
-          {/* Biometric Authentication */}
-          {lockState.biometricEnabled && biometricAvailable && (
-            <div className="space-y-3">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+            {/* Error Alert */}
+            {error && (
+              <Alert variant="destructive" className="mb-6 bg-red-900/70 border-red-500/50 backdrop-blur-md">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-white">{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Failed Attempts Warning */}
+            {lockState.failedAttempts > 0 && (
+              <Alert className="mb-6 bg-orange-900/70 border-orange-500/50 backdrop-blur-md">
+                <AlertCircle className="h-4 w-4 text-orange-400" />
+                <AlertDescription className="text-white">
+                  {lockState.failedAttempts} failed attempt{lockState.failedAttempts > 1 ? 's' : ''}. 
+                  {' '}{5 - lockState.failedAttempts} attempts remaining.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* PIN Input or Biometric Loading */}
+            {!biometricLoading ? (
+              <>
+                <PinDisplay />
+                <NumberPad />
+
+                {/* Unlock Button */}
+                <Button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePinSubmit(e);
+                  }}
+                  disabled={pin.length !== 6 || isLocked || loading}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-6 rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Unlocking...
+                    </>
+                  ) : (
+                    "Unlock"
+                  )}
+                </Button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <Fingerprint className="h-16 w-16 text-white animate-pulse" />
+                <div className="text-center space-y-2">
+                  <p className="font-medium text-white">Biometric Authentication</p>
+                  <p className="text-sm text-white/70">
+                    Please verify your identity
+                  </p>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or</span>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                size="lg"
-                onClick={handleBiometricUnlock}
-                disabled={isLocked || biometricLoading}
-              >
-                {biometricLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Authenticating...
-                  </>
-                ) : (
-                  <>
-                    <Fingerprint className="h-4 w-4 mr-2" />
-                    Use Biometrics
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-
-          <div className="pt-4 border-t space-y-3">
-            {user && (
-              <div className="text-center text-sm text-muted-foreground">
-                Signed in as {user.email}
               </div>
             )}
 
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-1"
-                onClick={() => navigate('/recovery/verify')}
-              >
-                Forgot PIN?
-              </Button>
-              
-              {user && (
+            {/* Biometric Authentication */}
+            {lockState.biometricEnabled && biometricAvailable && !biometricLoading && (
+              <div className="space-y-3 mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-white/20" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-black/40 px-2 text-white/70">Or</span>
+                  </div>
+                </div>
+
                 <Button
-                  variant="ghost" 
-                  size="sm"
-                  className="flex-1"
-                  onClick={handleSignOut}
+                  type="button"
+                  variant="outline"
+                  className="w-full bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white py-6 rounded-2xl"
+                  onClick={handleBiometricUnlock}
+                  disabled={isLocked}
                 >
-                  Sign Out
+                  <Fingerprint className="h-5 w-5 mr-2" />
+                  Use Biometrics
                 </Button>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="pt-6 mt-6 border-t border-white/20 space-y-3">
+              {user && (
+                <div className="text-center text-sm text-white/70">
+                  Signed in as {user.email}
+                </div>
               )}
+
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1 text-white/80 hover:text-white hover:bg-black/30"
+                  onClick={() => navigate('/recovery/verify')}
+                >
+                  Forgot PIN?
+                </Button>
+                
+                {user && (
+                  <Button
+                    variant="ghost" 
+                    size="sm"
+                    className="flex-1 text-white/80 hover:text-white hover:bg-black/30"
+                    onClick={handleSignOut}
+                  >
+                    Sign Out
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </OnboardingCard>
+        </motion.div>
+      </div>
+    </OnboardingLayout>
   );
 };
 
