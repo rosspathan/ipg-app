@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Copy, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
-import { Buffer } from 'buffer';
 import * as bip39 from "bip39";
 import { ethers } from 'ethers';
 import { motion } from 'framer-motion';
@@ -11,9 +10,6 @@ import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
 import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
 import { OnboardingCard } from '@/components/onboarding/OnboardingCard';
-
-// Make Buffer available globally for bip39
-(window as any).Buffer = Buffer;
 
 interface CreateWalletScreenProps {
   onWalletCreated: (wallet: { address: string; mnemonic: string; privateKey: string }) => void;
