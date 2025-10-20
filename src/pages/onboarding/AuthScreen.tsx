@@ -86,27 +86,31 @@ export default function AuthScreen({ onAuthComplete, onBack }: AuthScreenProps) 
 
     setIsLoading(true);
     try {
-      // Use OTP flow for email verification
-      const { error: signUpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          data: {
-            password // Store password for future signInWithPassword
-          }
+      // Generate 6-digit verification code
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Store credentials temporarily for later user creation (after OTP verification)
+      sessionStorage.setItem('verificationEmail', email);
+      sessionStorage.setItem('verificationPassword', password);
+      sessionStorage.setItem('verificationCode', verificationCode);
+      
+      // Send custom branded email with verification code
+      const { error: emailError } = await supabase.functions.invoke('send-verification-email', {
+        body: {
+          email: email.trim(),
+          verificationCode: verificationCode,
+          userName: email.split('@')[0],
+          isOnboarding: true
         }
       });
 
-      if (signUpError) {
-        setError(signUpError.message || "Failed to create account");
+      if (emailError) {
+        console.error('[ONBOARDING AUTH] Email send failed:', emailError);
+        setError('Failed to send verification email. Please try again.');
         return;
       }
 
-      // Store email temporarily for OTP verification
-      sessionStorage.setItem('verificationEmail', email);
-      sessionStorage.setItem('verificationPassword', password);
-      
-      console.log('[ONBOARDING AUTH] OTP sent successfully');
+      console.log('[ONBOARDING AUTH] Verification email sent successfully');
       onAuthComplete(email, ''); // userId will be set after OTP verification
     } catch (err) {
       setError("An unexpected error occurred");

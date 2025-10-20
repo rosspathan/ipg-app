@@ -31,10 +31,28 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
 
     setIsVerifying(true);
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: code,
-        type: 'email'
+      // Verify against locally stored code
+      const storedCode = sessionStorage.getItem('verificationCode');
+      const storedEmail = sessionStorage.getItem('verificationEmail');
+      const storedPassword = sessionStorage.getItem('verificationPassword');
+
+      if (!storedCode || !storedEmail || !storedPassword) {
+        throw new Error('Verification session expired. Please sign up again.');
+      }
+
+      if (code !== storedCode) {
+        throw new Error('Invalid verification code');
+      }
+
+      console.log('[ONBOARDING OTP] Code verified, creating Supabase user...');
+
+      // NOW create the Supabase user after successful OTP verification
+      const { data, error } = await supabase.auth.signUp({
+        email: storedEmail,
+        password: storedPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
       });
 
       if (error) {
@@ -42,17 +60,12 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
       }
 
       if (data.user) {
-        console.log('[ONBOARDING OTP] Email verified successfully:', data.user.id);
+        console.log('[ONBOARDING OTP] User created successfully:', data.user.id);
         
-        // Auto-login with stored password if available
-        const storedPassword = sessionStorage.getItem('verificationPassword');
-        if (storedPassword) {
-          await supabase.auth.signInWithPassword({
-            email,
-            password: storedPassword
-          });
-          sessionStorage.removeItem('verificationPassword');
-        }
+        // Clear temporary verification data
+        sessionStorage.removeItem('verificationCode');
+        sessionStorage.removeItem('verificationEmail');
+        sessionStorage.removeItem('verificationPassword');
 
         toast.success("Email verified! ✓");
         onVerified(data.user.id);
@@ -81,10 +94,19 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
 
     setIsResending(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false
+      // Generate new verification code
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Update stored code
+      sessionStorage.setItem('verificationCode', verificationCode);
+      
+      // Resend custom branded email
+      const { error } = await supabase.functions.invoke('send-verification-email', {
+        body: {
+          email: email.trim(),
+          verificationCode: verificationCode,
+          userName: email.split('@')[0],
+          isOnboarding: true
         }
       });
 
@@ -103,6 +125,7 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
         });
       }, 1000);
     } catch (error: any) {
+      console.error('[ONBOARDING OTP] Resend failed:', error);
       toast.error(error.message || "Failed to resend code");
     } finally {
       setIsResending(false);
