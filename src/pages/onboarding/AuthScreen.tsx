@@ -9,6 +9,7 @@ import { Loader2, Mail, Lock, Shield, ArrowRight, ChevronLeft } from "lucide-rea
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { toast } from "sonner";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -94,8 +95,11 @@ export default function AuthScreen({ onAuthComplete, onBack }: AuthScreenProps) 
       sessionStorage.setItem('verificationPassword', password);
       sessionStorage.setItem('verificationCode', verificationCode);
       
+      console.log('🚀 [AUTH] Sending verification email to:', email);
+      console.log('📧 [AUTH] Generated code:', verificationCode);
+      
       // Send custom branded email with verification code
-      const { error: emailError } = await supabase.functions.invoke('send-verification-email', {
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-verification-email', {
         body: {
           email: email.trim(),
           verificationCode: verificationCode,
@@ -104,13 +108,17 @@ export default function AuthScreen({ onAuthComplete, onBack }: AuthScreenProps) 
         }
       });
 
+      console.log('✅ [AUTH] Edge function response:', { data: emailData, error: emailError });
+
       if (emailError) {
-        console.error('[ONBOARDING AUTH] Email send failed:', emailError);
+        console.error('❌ [AUTH] Email send failed:', emailError);
         setError('Failed to send verification email. Please try again.');
+        toast.error('Failed to send verification email');
         return;
       }
 
-      console.log('[ONBOARDING AUTH] Verification email sent successfully');
+      console.log('✅ [AUTH] Verification email sent successfully');
+      toast.success('Verification email sent! Check your inbox');
       onAuthComplete(email, ''); // userId will be set after OTP verification
     } catch (err) {
       setError("An unexpected error occurred");

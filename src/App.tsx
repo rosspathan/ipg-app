@@ -102,9 +102,6 @@ import WelcomeScreen from "./pages/WelcomeScreen";
 import WelcomeScreen1 from "./pages/WelcomeScreen1";
 import WelcomeScreen2 from "./pages/WelcomeScreen2";
 import WelcomeScreen3 from "./pages/WelcomeScreen3";
-import AuthUnified from "./pages/AuthUnified";
-import AuthCheckEmail from "./pages/auth/AuthCheckEmail";
-import AuthVerifyCode from "./pages/auth/AuthVerifyCode";
 import AuthCallback from "./pages/AuthCallback";
 import AppLockScreen from "./pages/AppLockScreen";
 import LockScreen from "./pages/lock/LockScreen";
@@ -314,26 +311,18 @@ function AppContent() {
               <Route path="/create-wallet" element={<Navigate to="/onboarding/create-wallet" replace />} />
               <Route path="/import-wallet" element={<Navigate to="/onboarding/import-wallet" replace />} />
 
-              {/* User Authentication - Redirect to wallet onboarding (no traditional login for users) */}
+          {/* Auth Routes - All redirect to onboarding */}
               <Route path="/auth" element={<Navigate to="/onboarding" replace />} />
               <Route path="/auth/login" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/auth/wallet-login" element={<WalletLoginScreen />} />
-              <Route path="/auth/register" element={
-                <AuthProviderUser>
-                  <AuthUnified />
-                </AuthProviderUser>
-              } />
-              <Route path="/auth/check-email" element={
-                <AuthProviderUser>
-                  <AuthCheckEmail />
-                </AuthProviderUser>
-              } />
-              <Route path="/auth/verify-code" element={
-                <AuthProviderUser>
-                  <AuthVerifyCode />
-                </AuthProviderUser>
-              } />
+              <Route path="/auth/register" element={<Navigate to="/onboarding" replace />} />
+              <Route path="/auth/check-email" element={<Navigate to="/onboarding" replace />} />
+              <Route path="/auth/verify-code" element={<Navigate to="/onboarding" replace />} />
+              <Route path="/auth/wallet-login" element={<Navigate to="/onboarding" replace />} />
+
+              {/* Auth callback still needed for edge cases */}
               <Route path="/auth/callback" element={<AuthCallback />} />
+              
+              {/* App lock screen */}
               <Route path="/auth/lock" element={<AppLockScreen />} />
               
               {/* Redirect old /lock route to /auth/lock */}

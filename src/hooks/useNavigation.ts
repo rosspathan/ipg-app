@@ -157,7 +157,7 @@ export const useNavigation = (): NavigationHelpers => {
         replaceWithOptions(ROUTES.ADMIN_DASHBOARD);
         break;
       case 'AUTH':
-        replaceWithOptions(ROUTES.AUTH_LOGIN);
+        replaceWithOptions(ROUTES.ONBOARDING);
         break;
       default:
         replaceWithOptions(ROUTES.HOME);

@@ -69,19 +69,26 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    // Use OTP flow for email verification
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        data: {
-          password // Store password for future signInWithPassword
-        }
+    // Generate 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Store credentials temporarily for later user creation (after OTP verification)
+    sessionStorage.setItem('verificationEmail', email);
+    sessionStorage.setItem('verificationPassword', password);
+    sessionStorage.setItem('verificationCode', verificationCode);
+    
+    // Send custom branded email with verification code
+    const { error } = await supabase.functions.invoke('send-verification-email', {
+      body: {
+        email: email.trim(),
+        verificationCode: verificationCode,
+        userName: email.split('@')[0],
+        isOnboarding: true
       }
     });
     
     if (!error) {
-      console.log('✅ OTP sent to:', email);
+      console.log('✅ Verification email sent to:', email);
     }
     
     return { error };

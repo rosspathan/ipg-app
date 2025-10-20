@@ -3,13 +3,6 @@ export const ROUTES = {
   // Public routes
   HOME: '/',
   
-  // Auth stack
-  AUTH: '/auth',
-  AUTH_LOGIN: '/auth/login',
-  AUTH_REGISTER: '/auth/register',
-  AUTH_VERIFY: '/auth/verify',
-  AUTH_RESET: '/auth/reset',
-  
   // Onboarding
   ONBOARDING: '/onboarding',
   WELCOME: '/welcome',
@@ -221,11 +214,6 @@ export const ADMIN_STACK_ROUTES = [
 ] as const;
 
 export const AUTH_STACK_ROUTES = [
-  ROUTES.AUTH,
-  ROUTES.AUTH_LOGIN,
-  ROUTES.AUTH_REGISTER,
-  ROUTES.AUTH_VERIFY,
-  ROUTES.AUTH_RESET,
   ROUTES.ONBOARDING,
   ROUTES.WELCOME,
   ROUTES.SECURITY_SETUP,

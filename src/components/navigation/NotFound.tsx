@@ -37,7 +37,7 @@ export const NotFound: React.FC = () => {
       case 'ADMIN':
         return { route: ROUTES.ADMIN_DASHBOARD, label: 'Admin Dashboard' };
       case 'AUTH':
-        return { route: ROUTES.AUTH_LOGIN, label: 'Login' };
+        return { route: ROUTES.ONBOARDING, label: 'Sign In' };
       default:
         return { route: ROUTES.HOME, label: 'Home' };
     }

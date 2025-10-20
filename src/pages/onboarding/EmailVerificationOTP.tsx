@@ -100,8 +100,11 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
       // Update stored code
       sessionStorage.setItem('verificationCode', verificationCode);
       
+      console.log('🔄 [OTP] Resending verification code to:', email);
+      console.log('📧 [OTP] New code:', verificationCode);
+      
       // Resend custom branded email
-      const { error } = await supabase.functions.invoke('send-verification-email', {
+      const { data, error } = await supabase.functions.invoke('send-verification-email', {
         body: {
           email: email.trim(),
           verificationCode: verificationCode,
@@ -109,6 +112,8 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
           isOnboarding: true
         }
       });
+
+      console.log('✅ [OTP] Resend edge function response:', { data, error });
 
       if (error) throw error;
 
