@@ -165,7 +165,7 @@ const WelcomeScreens: React.FC<WelcomeScreensProps> = ({ onComplete, onBack }) =
               variant="ghost"
               size="sm"
               onClick={handleSkip}
-              className="text-white/80 hover:text-white hover:bg-white/10"
+              className="text-white/80 hover:text-white hover:bg-black/40"
             >
               Skip
             </Button>

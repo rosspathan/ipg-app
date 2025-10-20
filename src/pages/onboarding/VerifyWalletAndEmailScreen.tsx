@@ -148,7 +148,7 @@ const VerifyWalletAndEmailScreen: React.FC<VerifyWalletAndEmailScreenProps> = ({
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-black/50"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
@@ -215,7 +215,7 @@ const VerifyWalletAndEmailScreen: React.FC<VerifyWalletAndEmailScreenProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={handleCopyAddress}
-                      className="text-white/70 hover:text-white hover:bg-white/10"
+                      className="text-white/70 hover:text-white hover:bg-black/40"
                     >
                       <Copy className="w-4 h-4" />
                     </Button>

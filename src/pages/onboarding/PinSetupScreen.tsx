@@ -154,7 +154,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
           variant="outline"
           size="lg"
           onClick={() => onNumber(num.toString())}
-          className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 text-xl font-semibold touch-manipulation rounded-xl"
+          className="h-14 sm:h-16 min-w-[44px] min-h-[44px] bg-black/50 backdrop-blur-md border-2 border-white/40 text-white hover:bg-black/60 hover:border-white/50 text-xl font-semibold touch-manipulation rounded-xl active:scale-95 shadow-lg"
         >
           {num}
         </Button>
@@ -164,7 +164,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         variant="outline"
         size="lg"
         onClick={() => setShowPin(!showPin)}
-        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 touch-manipulation rounded-xl"
+        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] bg-black/50 backdrop-blur-md border-2 border-white/40 text-white hover:bg-black/60 hover:border-white/50 touch-manipulation rounded-xl active:scale-95 shadow-lg"
       >
         {showPin ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
       </Button>
@@ -173,7 +173,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         variant="outline"
         size="lg"
         onClick={() => onNumber('0')}
-        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 text-xl font-semibold touch-manipulation rounded-xl"
+        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] bg-black/50 backdrop-blur-md border-2 border-white/40 text-white hover:bg-black/60 hover:border-white/50 text-xl font-semibold touch-manipulation rounded-xl active:scale-95 shadow-lg"
       >
         0
       </Button>
@@ -182,7 +182,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         variant="outline"
         size="lg"
         onClick={onDelete}
-        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] border-white/30 text-white hover:bg-white/20 touch-manipulation rounded-xl"
+        className="h-14 sm:h-16 min-w-[44px] min-h-[44px] bg-black/50 backdrop-blur-md border-2 border-white/40 text-white hover:bg-black/60 hover:border-white/50 touch-manipulation rounded-xl active:scale-95 shadow-lg"
       >
         ⌫
       </Button>

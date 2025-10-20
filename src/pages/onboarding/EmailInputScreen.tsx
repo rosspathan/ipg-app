@@ -141,7 +141,7 @@ const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-black/50"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>

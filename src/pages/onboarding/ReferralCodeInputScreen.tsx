@@ -47,7 +47,7 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
               variant="ghost"
               size="sm"
               onClick={onSkip}
-              className="text-white/70 hover:bg-white/20 hover:text-white"
+              className="text-white/70 hover:bg-black/50 hover:text-white"
             >
               Skip
             </Button>

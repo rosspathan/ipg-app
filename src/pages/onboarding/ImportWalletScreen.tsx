@@ -187,7 +187,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-black/50"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
@@ -252,7 +252,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={handlePasteFromClipboard}
-                      className="text-white/60 hover:bg-white/10 h-8 px-2"
+                      className="text-white/60 hover:bg-black/40 h-8 px-2"
                       title="Paste from clipboard"
                     >
                       <Clipboard className="w-4 h-4" />
@@ -261,7 +261,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowMnemonic(!showMnemonic)}
-                      className="text-white/60 hover:bg-white/10 h-8 px-2"
+                      className="text-white/60 hover:bg-black/40 h-8 px-2"
                     >
                       {showMnemonic ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
@@ -377,7 +377,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => suggestMnemonic(sample)}
-                  className="border-white/20 text-white/70 hover:bg-white/10 text-xs p-2 h-auto"
+                  className="border-white/20 text-white/70 hover:bg-black/40 text-xs p-2 h-auto"
                 >
                   Sample {index + 1}: {sample.split(' ').slice(0, 3).join(' ')}...
                 </Button>

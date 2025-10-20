@@ -508,7 +508,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-black/50"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
@@ -726,7 +726,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
                           variant="ghost"
                           onClick={() => handleResendCode()}
                           disabled={isResending}
-                          className="w-full border-white/30 text-white hover:bg-white/20 disabled:opacity-50"
+                          className="w-full border-white/30 text-white hover:bg-black/50 disabled:opacity-50"
                         >
                           <RefreshCw className={`w-4 h-4 mr-2 ${isResending ? 'animate-spin' : ''}`} />
                           {isResending ? 'Sending...' : 'Resend Verification Code'}

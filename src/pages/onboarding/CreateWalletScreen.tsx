@@ -149,7 +149,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-black/50"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
@@ -163,7 +163,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
             size="sm"
             onClick={generateWallet}
             disabled={isGenerating}
-            className="text-white hover:bg-white/20"
+            className="text-white hover:bg-black/50"
           >
             <RefreshCw className={`w-5 h-5 ${isGenerating ? 'animate-spin' : ''}`} />
           </Button>
@@ -187,7 +187,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                     onClick={() => setWordCount(12)}
                     className={wordCount === 12 
                       ? "bg-blue-500 hover:bg-blue-600" 
-                      : "border-white/30 text-white hover:bg-white/20"
+                      : "border-white/30 text-white hover:bg-black/50"
                     }
                   >
                     12 Words
@@ -198,7 +198,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                     onClick={() => setWordCount(24)}
                     className={wordCount === 24 
                       ? "bg-blue-500 hover:bg-blue-600" 
-                      : "border-white/30 text-white hover:bg-white/20"
+                      : "border-white/30 text-white hover:bg-black/50"
                     }
                   >
                     24 Words (More Secure)
@@ -238,7 +238,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => handleCopy(wallet.address, 'Address')}
-                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/40"
+                  className="border-white/30 text-white hover:bg-black/40 hover:border-white/40"
                   aria-label="Copy wallet address"
                   data-testid="copy-wallet-address"
                 >
@@ -317,7 +317,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowPrivateKey(!showPrivateKey)}
-                    className="text-white/60 hover:bg-white/10"
+                    className="text-white/60 hover:bg-black/40"
                   >
                     {showPrivateKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </Button>
