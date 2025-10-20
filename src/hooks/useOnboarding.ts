@@ -5,6 +5,7 @@ import { WalletInfo } from '@/utils/wallet';
 import { SecuritySetup, getSecuritySetup, storeSecuritySetup } from '@/utils/security';
 import { refreshSessionIfNeeded, withSessionRefresh } from '@/utils/sessionRefresh';
 import { toast } from 'sonner';
+import { useWeb3 } from '@/contexts/Web3Context';
 
 export type OnboardingStep = 
   | 'splash'
@@ -47,6 +48,7 @@ const ONBOARDING_STORAGE_KEY = 'ipg_onboarding_state';
 
 export function useOnboarding() {
   const navigate = useNavigate();
+  const { setWalletFromOnboarding } = useWeb3();
   
   const [state, setState] = useState<OnboardingState>(() => {
     // Load from localStorage if available
@@ -232,6 +234,12 @@ export function useOnboarding() {
       });
 
       console.info('[ONBOARDING] Profile updated successfully');
+
+      // Connect wallet to Web3Context
+      if (state.walletInfo) {
+        console.info('[ONBOARDING] Connecting wallet to Web3Context...');
+        setWalletFromOnboarding(state.walletInfo);
+      }
 
       // Clear onboarding state
       localStorage.removeItem(ONBOARDING_STORAGE_KEY);
