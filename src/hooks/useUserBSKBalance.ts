@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useWeb3 } from '@/contexts/Web3Context';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface BSKBalance {
   withdrawable_balance: number;
@@ -22,6 +24,7 @@ interface BSKBalanceStats {
 
 export const useUserBSKBalance = () => {
   const { wallet } = useWeb3();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState<BSKBalanceStats>({
     withdrawable: 0,
@@ -160,7 +163,32 @@ export const useUserBSKBalance = () => {
             table: 'user_bsk_balances',
           },
           (payload) => {
-            console.log('BSK balance updated:', payload);
+            console.log('[BSK Balance] 🔔 Live update received:', payload);
+            
+            // Show toast notification for balance updates
+            if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+              const newRecord = payload.new as any;
+              const oldRecord = payload.old as any;
+              
+              if (oldRecord && newRecord) {
+                const oldTotal = Number(oldRecord.withdrawable_balance || 0) + Number(oldRecord.holding_balance || 0);
+                const newTotal = Number(newRecord.withdrawable_balance || 0) + Number(newRecord.holding_balance || 0);
+                const diff = newTotal - oldTotal;
+                
+                if (diff !== 0) {
+                  toast.info(
+                    `Balance ${diff > 0 ? 'increased' : 'decreased'} by ${Math.abs(diff).toFixed(2)} BSK`,
+                    {
+                      description: `New total: ${newTotal.toFixed(2)} BSK`,
+                      duration: 4000,
+                    }
+                  );
+                }
+              }
+            }
+            
+            // Invalidate queries and refetch
+            queryClient.invalidateQueries({ queryKey: ['bsk-balance'] });
             fetchBalance();
           }
         )

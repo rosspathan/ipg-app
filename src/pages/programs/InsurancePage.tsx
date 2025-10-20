@@ -3,6 +3,7 @@ import { ProgramAccessGate } from "@/components/programs/ProgramAccessGate"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Shield, Check } from "lucide-react"
+import { useInsuranceSubscription } from "@/hooks/useInsuranceSubscription"
 
 export default function InsurancePage() {
   return (
@@ -13,8 +14,11 @@ export default function InsurancePage() {
 }
 
 function InsuranceContent() {
+  const { subscribe, subscribing } = useInsuranceSubscription();
+  
   const plans = [
     {
+      id: 'basic',
       name: "Basic Protection",
       price: 50,
       coverage: "50%",
@@ -27,6 +31,7 @@ function InsuranceContent() {
       ]
     },
     {
+      id: 'premium',
       name: "Premium Protection",
       price: 200,
       coverage: "75%",
@@ -40,6 +45,7 @@ function InsuranceContent() {
       ]
     },
     {
+      id: 'elite',
       name: "Elite Protection",
       price: 500,
       coverage: "90%",
@@ -93,7 +99,12 @@ function InsuranceContent() {
                 <p className="text-2xl font-bold">{plan.price} BSK</p>
                 <p className="text-xs text-muted-foreground">per month</p>
               </div>
-              <Button>Subscribe</Button>
+              <Button 
+                onClick={() => subscribe(plan)}
+                disabled={subscribing}
+              >
+                {subscribing ? 'Processing...' : 'Subscribe'}
+              </Button>
             </div>
           </Card>
         ))}
