@@ -49,8 +49,8 @@ export function AppTopBar({ className }: AppTopBarProps) {
   return (
     <header 
       className={cn(
-        "flex items-center justify-between p-4 bg-background/95 backdrop-blur-2xl border-b border-border/60",
-        "sticky top-0 z-50 shadow-lg shadow-primary/5",
+        "mobile-sticky flex items-center justify-between p-4 bg-background/95 backdrop-blur-2xl border-b border-border/60",
+        "top-0 z-50 shadow-lg shadow-primary/5",
         "transition-all duration-300 ease-in-out",
         className
       )}

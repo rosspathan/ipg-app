@@ -515,6 +515,29 @@ All colors MUST be HSL.
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  /* Mobile container utilities for consistent 430px layout */
+  .mobile-container {
+    max-width: 430px;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+  }
+  
+  .mobile-fixed {
+    position: fixed;
+    max-width: 430px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+  }
+  
+  .mobile-sticky {
+    position: sticky;
+    max-width: 430px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
   /* Grid system animations */
   @keyframes scroll {
     0% { transform: translateX(0); }

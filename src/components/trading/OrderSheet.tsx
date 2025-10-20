@@ -123,7 +123,7 @@ export function OrderSheet({
 
       <div 
         data-testid="order-sheet"
-        className="fixed left-1/2 -translate-x-1/2 bottom-20 w-full max-w-[430px] z-40 transition-transform duration-320 pb-[env(safe-area-inset-bottom)] animate-fade-in"
+        className="mobile-fixed bottom-20 z-40 transition-transform duration-320 pb-[env(safe-area-inset-bottom)] animate-fade-in"
       >
         <Card className="rounded-t-3xl border-t border-x border-border/30 bg-card/98 backdrop-blur-xl shadow-2xl pointer-events-auto">
         {/* Drag Handle */}

@@ -167,7 +167,7 @@ export function DockAdmin({ className }: DockAdminProps) {
       <nav
         data-testid="admin-dock"
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-50",
+          "mobile-fixed bottom-0 z-50",
           "bg-[hsl(230_28%_13%/0.98)] backdrop-blur-xl",
           "border-t border-[hsl(225_24%_22%/0.16)]",
           "shadow-[0_-4px_24px_-8px_hsl(245_35%_7%/0.6)]",

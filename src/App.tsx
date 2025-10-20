@@ -15,6 +15,22 @@ import { AppInitializer } from "@/components/AppInitializer";
 import { AppStateManager } from "@/components/AppStateManager";
 import PrefixRedirect from "@/components/routing/PrefixRedirect";
 import { ThemeProvider } from "next-themes";
+import { Loader2 } from "lucide-react";
+
+// Loading fallback component for Suspense
+function LoadingFallback() {
+  return (
+    <div 
+      className="h-screen w-full flex items-center justify-center bg-background"
+      style={{ height: '100dvh' }}
+    >
+      <div className="text-center space-y-4">
+        <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto" />
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  );
+}
 
 // Layouts
 import AdminLayout from "@/layouts/AdminLayout";
@@ -361,28 +377,28 @@ function AppContent() {
               <Route path="profile/security" element={<SecurityPage />} />
               <Route path="profile/notify" element={<NotificationsPage />} />
               <Route path="profile/settings" element={<SettingsPage />} />
-              <Route path="profile/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPageAstra /></React.Suspense>} />
+              <Route path="profile/referrals" element={<React.Suspense fallback={<LoadingFallback />}><ReferralsPageAstra /></React.Suspense>} />
               <Route path="support" element={<SupportPage />} />
-              <Route path="wallet" element={<React.Suspense fallback={<div>Loading...</div>}><WalletScreen /></React.Suspense>} />
+              <Route path="wallet" element={<React.Suspense fallback={<LoadingFallback />}><WalletScreen /></React.Suspense>} />
                 
                 {/* Programs - All with BSK Balance Checks */}
-                <Route path="programs/ad-mining" element={<React.Suspense fallback={<div>Loading...</div>}><AdMiningPageNew /></React.Suspense>} />
-                <Route path="programs/advertising" element={<React.Suspense fallback={<div>Loading...</div>}><AdMiningPageNew /></React.Suspense>} />
-                <Route path="programs/lucky-draw" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawPage /></React.Suspense>} />
-                <Route path="programs/lucky-draw/tickets" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawTicketsPage /></React.Suspense>} />
-                <Route path="programs/spin" element={<React.Suspense fallback={<div>Loading...</div>}><ISmartSpinScreen /></React.Suspense>} />
-                <Route path="programs/team-referrals" element={<React.Suspense fallback={<div>Loading...</div>}><TeamReferralsDashboard /></React.Suspense>} />
-                <Route path="programs/staking" element={<React.Suspense fallback={<div>Loading...</div>}><StakingPage /></React.Suspense>} />
-                <Route path="programs/trading" element={<React.Suspense fallback={<div>Loading...</div>}><TradingPageNew /></React.Suspense>} />
-                <Route path="programs/insurance" element={<React.Suspense fallback={<div>Loading...</div>}><InsurancePage /></React.Suspense>} />
-                <Route path="programs/bsk-loans" element={<React.Suspense fallback={<div>Loading...</div>}><BSKLoansPage /></React.Suspense>} />
-                <Route path="programs/bsk-promotions" element={<React.Suspense fallback={<div>Loading...</div>}><BSKPromotionsPage /></React.Suspense>} />
+                <Route path="programs/ad-mining" element={<React.Suspense fallback={<LoadingFallback />}><AdMiningPageNew /></React.Suspense>} />
+                <Route path="programs/advertising" element={<React.Suspense fallback={<LoadingFallback />}><AdMiningPageNew /></React.Suspense>} />
+                <Route path="programs/lucky-draw" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawPage /></React.Suspense>} />
+                <Route path="programs/lucky-draw/tickets" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawTicketsPage /></React.Suspense>} />
+                <Route path="programs/spin" element={<React.Suspense fallback={<LoadingFallback />}><ISmartSpinScreen /></React.Suspense>} />
+                <Route path="programs/team-referrals" element={<React.Suspense fallback={<LoadingFallback />}><TeamReferralsDashboard /></React.Suspense>} />
+                <Route path="programs/staking" element={<React.Suspense fallback={<LoadingFallback />}><StakingPage /></React.Suspense>} />
+                <Route path="programs/trading" element={<React.Suspense fallback={<LoadingFallback />}><TradingPageNew /></React.Suspense>} />
+                <Route path="programs/insurance" element={<React.Suspense fallback={<LoadingFallback />}><InsurancePage /></React.Suspense>} />
+                <Route path="programs/bsk-loans" element={<React.Suspense fallback={<LoadingFallback />}><BSKLoansPage /></React.Suspense>} />
+                <Route path="programs/bsk-promotions" element={<React.Suspense fallback={<LoadingFallback />}><BSKPromotionsPage /></React.Suspense>} />
                 
                 {/* Legacy program routes */}
-                <Route path="programs/ads" element={<React.Suspense fallback={<div>Loading...</div>}><AdvertisingPage /></React.Suspense>} />
-                <Route path="programs/referrals" element={<React.Suspense fallback={<div>Loading...</div>}><ReferralsPageNew /></React.Suspense>} />
-                <Route path="programs/loans" element={<React.Suspense fallback={<div>Loading...</div>}><LoansPageNew /></React.Suspense>} />
-                <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<div>Loading...</div>}><PurchasePage /></React.Suspense>} />
+                <Route path="programs/ads" element={<React.Suspense fallback={<LoadingFallback />}><AdvertisingPage /></React.Suspense>} />
+                <Route path="programs/referrals" element={<React.Suspense fallback={<LoadingFallback />}><ReferralsPageNew /></React.Suspense>} />
+                <Route path="programs/loans" element={<React.Suspense fallback={<LoadingFallback />}><LoansPageNew /></React.Suspense>} />
+                <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<LoadingFallback />}><PurchasePage /></React.Suspense>} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/staking/:poolId/submit" element={<StakingSubmissionScreen />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
@@ -424,12 +440,12 @@ function AppContent() {
                 <Route path="dashboard" element={<AdminDashboardClean />} />
                 
                 {/* Users Management */}
-                <Route path="users" element={<React.Suspense fallback={<div>Loading...</div>}><AdminUsersManagementNova /></React.Suspense>} />
+                <Route path="users" element={<React.Suspense fallback={<LoadingFallback />}><AdminUsersManagementNova /></React.Suspense>} />
                 
                 {/* Markets Management */}
                 <Route path="markets" element={<AdminMarketsNova />} />
-                <Route path="trading-orders" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTradingOrders /></React.Suspense>} />
-                <Route path="trading-engine" element={<React.Suspense fallback={<div>Loading...</div>}><AdminTradingEngine /></React.Suspense>} />
+                <Route path="trading-orders" element={<React.Suspense fallback={<LoadingFallback />}><AdminTradingOrders /></React.Suspense>} />
+                <Route path="trading-engine" element={<React.Suspense fallback={<LoadingFallback />}><AdminTradingEngine /></React.Suspense>} />
                 
                 {/* BSK Management */}
                 <Route path="bsk" element={<AdminBSKManagementNova />} />
@@ -438,22 +454,22 @@ function AppContent() {
                 <Route path="crypto-conversions" element={<AdminCryptoConversionsScreen />} />
                 <Route path="bsk-withdrawals" element={<AdminBSKWithdrawalsScreen />} />
                 <Route path="crypto-withdrawals" element={<AdminCryptoWithdrawalsScreen />} />
-                <Route path="announcements" element={<React.Suspense fallback={<div>Loading...</div>}><AdminAnnouncementsManager /></React.Suspense>} />
+                <Route path="announcements" element={<React.Suspense fallback={<LoadingFallback />}><AdminAnnouncementsManager /></React.Suspense>} />
                 
                 {/* Programs */}
                 <Route path="programs" element={<AdminProgramsClean />} />
-                <Route path="programs/economics" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramEconomicsDashboard /></React.Suspense>} />
-                <Route path="programs/economics/analytics" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramEconomicsAnalytics /></React.Suspense>} />
-                <Route path="program-economics-analytics" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramEconomicsAnalytics /></React.Suspense>} />
-                <Route path="programs/control-center" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramControlCenter /></React.Suspense>} />
-                <Route path="programs/templates" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramTemplates /></React.Suspense>} />
-                <Route path="programs/analytics" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramAnalytics /></React.Suspense>} />
-                <Route path="programs/editor/new" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
-                <Route path="programs/editor/:id" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramEditorClean /></React.Suspense>} />
-                <Route path="programs/control" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramsControl /></React.Suspense>} />
-                <Route path="programs/control/ad-mining/:moduleId?" element={<React.Suspense fallback={<div>Loading...</div>}><AdMiningControlPanel /></React.Suspense>} />
-                <Route path="programs/control/lucky-draw/:moduleId?" element={<React.Suspense fallback={<div>Loading...</div>}><LuckyDrawControlPanel /></React.Suspense>} />
-                <Route path="programs/control/spin-wheel/:moduleId?" element={<React.Suspense fallback={<div>Loading...</div>}><SpinWheelControlPanel /></React.Suspense>} />
+                <Route path="programs/economics" element={<React.Suspense fallback={<LoadingFallback />}><ProgramEconomicsDashboard /></React.Suspense>} />
+                <Route path="programs/economics/analytics" element={<React.Suspense fallback={<LoadingFallback />}><ProgramEconomicsAnalytics /></React.Suspense>} />
+                <Route path="program-economics-analytics" element={<React.Suspense fallback={<LoadingFallback />}><ProgramEconomicsAnalytics /></React.Suspense>} />
+                <Route path="programs/control-center" element={<React.Suspense fallback={<LoadingFallback />}><ProgramControlCenter /></React.Suspense>} />
+                <Route path="programs/templates" element={<React.Suspense fallback={<LoadingFallback />}><ProgramTemplates /></React.Suspense>} />
+                <Route path="programs/analytics" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramAnalytics /></React.Suspense>} />
+                <Route path="programs/editor/new" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramEditorClean /></React.Suspense>} />
+                <Route path="programs/editor/:id" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramEditorClean /></React.Suspense>} />
+                <Route path="programs/control" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramsControl /></React.Suspense>} />
+                <Route path="programs/control/ad-mining/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><AdMiningControlPanel /></React.Suspense>} />
+                <Route path="programs/control/lucky-draw/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawControlPanel /></React.Suspense>} />
+                <Route path="programs/control/spin-wheel/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><SpinWheelControlPanel /></React.Suspense>} />
                 
                 {/* Gamification & Programs */}
                 <Route path="spin" element={<AdminSpinNova />} />
@@ -463,7 +479,7 @@ function AppContent() {
                 <Route path="insurance" element={<AdminInsurance />} />
                 <Route path="lucky-draw" element={<AdminNewLuckyDraw />} />
                 <Route path="purchase-bonus" element={<AdminPurchaseBonusScreen />} />
-                <Route path="audit-logs" element={<React.Suspense fallback={<div>Loading...</div>}><AuditLogsPage /></React.Suspense>} />
+                <Route path="audit-logs" element={<React.Suspense fallback={<LoadingFallback />}><AuditLogsPage /></React.Suspense>} />
                 <Route path="referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="50-level-referrals" element={<Admin50LevelReferrals />} />
@@ -475,20 +491,20 @@ function AppContent() {
                 
                 {/* Reports & Settings */}
                 <Route path="ads" element={<AdminAdsScreen />} />
-                <Route path="carousel" element={<React.Suspense fallback={<div>Loading...</div>}><AdminCarouselManager /></React.Suspense>} />
-                <Route path="programs/config" element={<React.Suspense fallback={<div>Loading...</div>}><AdminProgramConfigEditor /></React.Suspense>} />
+                <Route path="carousel" element={<React.Suspense fallback={<LoadingFallback />}><AdminCarouselManager /></React.Suspense>} />
+                <Route path="programs/config" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramConfigEditor /></React.Suspense>} />
                 <Route path="settings" element={<AdminSettingsClean />} />
-                <Route path="system/health" element={<React.Suspense fallback={<div>Loading...</div>}><AdminSystemHealth /></React.Suspense>} />
-                <Route path="kyc" element={<React.Suspense fallback={<div>Loading...</div>}><KYCReviewNew /></React.Suspense>} />
+                <Route path="system/health" element={<React.Suspense fallback={<LoadingFallback />}><AdminSystemHealth /></React.Suspense>} />
+                <Route path="kyc" element={<React.Suspense fallback={<LoadingFallback />}><KYCReviewNew /></React.Suspense>} />
                 <Route path="kyc-review" element={<AdminKYCReview />} />
-                <Route path="kyc/settings" element={<React.Suspense fallback={<div>Loading...</div>}><AdminKYCSettings /></React.Suspense>} />
+                <Route path="kyc/settings" element={<React.Suspense fallback={<LoadingFallback />}><AdminKYCSettings /></React.Suspense>} />
                 
                 {/* Phase 5: Role & Badge Management */}
-                <Route path="roles" element={<React.Suspense fallback={<div>Loading...</div>}><AdminRoleManagement /></React.Suspense>} />
-                <Route path="badges" element={<React.Suspense fallback={<div>Loading...</div>}><AdminBadgeSystem /></React.Suspense>} />
+                <Route path="roles" element={<React.Suspense fallback={<LoadingFallback />}><AdminRoleManagement /></React.Suspense>} />
+                <Route path="badges" element={<React.Suspense fallback={<LoadingFallback />}><AdminBadgeSystem /></React.Suspense>} />
                 
                 {/* Phase 6: BSK Management */}
-                <Route path="bsk" element={<React.Suspense fallback={<div>Loading...</div>}><AdminBSKManagement /></React.Suspense>} />
+                <Route path="bsk" element={<React.Suspense fallback={<LoadingFallback />}><AdminBSKManagement /></React.Suspense>} />
                 
                 {/* Financial Management Routes - Phase 2-4 */}
                 <Route path="transactions" element={<TransactionControlCenter />} />
@@ -496,9 +512,9 @@ function AppContent() {
                 <Route path="reports" element={<FinancialReports />} />
                 <Route path="analytics" element={<FinancialAnalytics />} />
                 
-                <Route path="database-reset" element={<React.Suspense fallback={<div>Loading...</div>}><AdminDatabaseReset /></React.Suspense>} />
-                <Route path="database-cleanup" element={<React.Suspense fallback={<div>Loading...</div>}><AdminDatabaseCleanup /></React.Suspense>} />
-                <Route path="mobile-linking" element={<React.Suspense fallback={<div>Loading...</div>}><AdminMobileLinking /></React.Suspense>} />
+                <Route path="database-reset" element={<React.Suspense fallback={<LoadingFallback />}><AdminDatabaseReset /></React.Suspense>} />
+                <Route path="database-cleanup" element={<React.Suspense fallback={<LoadingFallback />}><AdminDatabaseCleanup /></React.Suspense>} />
+                <Route path="mobile-linking" element={<React.Suspense fallback={<LoadingFallback />}><AdminMobileLinking /></React.Suspense>} />
               </Route>
 
               {/* Legacy Admin Console removed */}
@@ -532,9 +548,9 @@ function AppContent() {
               <Route path="/lucky-draw" element={<Navigate to="/app/programs/lucky" replace />} />
               
               {/* Public Program Hub Routes */}
-              <Route path="/programs-hub" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramsHub /></React.Suspense>} />
-              <Route path="/programs-hub/:key" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramDetail /></React.Suspense>} />
-              <Route path="/programs-hub/:key/participate" element={<React.Suspense fallback={<div>Loading...</div>}><ProgramParticipate /></React.Suspense>} />
+              <Route path="/programs-hub" element={<React.Suspense fallback={<LoadingFallback />}><ProgramsHub /></React.Suspense>} />
+              <Route path="/programs-hub/:key" element={<React.Suspense fallback={<LoadingFallback />}><ProgramDetail /></React.Suspense>} />
+              <Route path="/programs-hub/:key/participate" element={<React.Suspense fallback={<LoadingFallback />}><ProgramParticipate /></React.Suspense>} />
 
               {/* Redirect legacy /programs/* to /app/programs/* */}
               <Route path="/programs/*" element={<PrefixRedirect prefix="/app" />} />
