@@ -52,16 +52,23 @@ export async function detectAndResolveSessionConflict(walletAddress: string) {
         walletAddress
       });
 
-      // Sign out the wrong session
-      await supabase.auth.signOut();
-      console.log('[SESSION_CONFLICT] ✓ Signed out conflicting session - using Web3 wallet only');
+      // DO NOT sign out automatically - emit event for user to choose
+      window.dispatchEvent(new CustomEvent('auth:session_conflict', {
+        detail: {
+          sessionUserId: session.user.id,
+          sessionEmail: session.user.email,
+          walletOwnerUserId: walletProfile.user_id,
+          walletAddress
+        }
+      }));
       
       return { 
         conflict: true, 
-        resolved: true,
+        resolved: false,
         details: {
-          removedSession: session.user.email,
-          correctUserId: walletProfile.user_id
+          sessionEmail: session.user.email,
+          sessionUserId: session.user.id,
+          walletOwnerUserId: walletProfile.user_id
         }
       };
     }

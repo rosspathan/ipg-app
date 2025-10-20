@@ -319,8 +319,9 @@ function AppContent() {
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/lock" element={<AppLockScreen />} />
               
-              {/* Lock Flow - Returning users only */}
-              <Route path="/lock" element={<LockScreen />} />
+              {/* Redirect old /lock route to /auth/lock */}
+              <Route path="/lock" element={<Navigate to="/auth/lock" replace />} />
+              <Route path="/lock/setup-pin" element={<Navigate to="/onboarding/security" replace />} />
 
               {/* Legacy User App removed */}
               <Route path="/app-legacy/*" element={<RemovedPage home="/app/home" removed="Legacy user routes have been removed." />} />

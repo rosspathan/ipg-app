@@ -1,7 +1,18 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useWeb3 } from '@/contexts/Web3Context';
+import { useAuthUser } from '@/hooks/useAuthUser';
 import { extractUsernameFromEmail } from '@/lib/user/username';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import SplashScreen from './onboarding/SplashScreen';
 import WelcomeScreens from './onboarding/WelcomeScreens';
 import WalletChoiceScreen from './onboarding/WalletChoiceScreen';
@@ -16,6 +27,8 @@ import BiometricSetupScreen from './onboarding/BiometricSetupScreen';
 import SuccessCelebrationScreen from './onboarding/SuccessCelebrationScreen';
 
 const OnboardingFlow: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuthUser();
   const {
     state,
     setStep,
@@ -30,6 +43,14 @@ const OnboardingFlow: React.FC = () => {
   } = useOnboarding();
   
   const { setWalletFromOnboarding } = useWeb3();
+  const [showExistingSessionModal, setShowExistingSessionModal] = useState(false);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    if (user?.id) {
+      setShowExistingSessionModal(true);
+    }
+  }, [user?.id]);
 
   const handleSplashComplete = () => setStep('welcome');
   const handleWelcomeComplete = () => setStep('wallet-choice');
@@ -94,6 +115,54 @@ const OnboardingFlow: React.FC = () => {
   const handleSuccessComplete = () => {
     completeOnboarding();
   };
+
+  const handleContinueAsCurrentUser = () => {
+    setShowExistingSessionModal(false);
+    navigate('/app/home');
+  };
+
+  const handleSignOutAndCreateNew = async () => {
+    await signOut();
+    setShowExistingSessionModal(false);
+    resetOnboarding();
+  };
+
+  // Show existing session modal if user is logged in
+  if (showExistingSessionModal && user) {
+    return (
+      <AlertDialog open={showExistingSessionModal} onOpenChange={setShowExistingSessionModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>You're Already Logged In</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                You're currently logged in as <span className="font-semibold">{user.email}</span>.
+              </p>
+              <p className="text-muted-foreground">
+                Would you like to continue with this account or sign out to create a new one?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-col gap-2">
+            <Button 
+              onClick={handleContinueAsCurrentUser}
+              variant="default"
+              className="w-full"
+            >
+              Continue as {user.email}
+            </Button>
+            <Button 
+              onClick={handleSignOutAndCreateNew}
+              variant="outline"
+              className="w-full"
+            >
+              Sign Out & Create New Account
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
 
   switch (state.step) {
     case 'splash':

@@ -1,11 +1,12 @@
 /* ═══════════════════════════════════════════════════════════
-   APP LOCK GUARD - Module B
+   APP LOCK GUARD - Unified with useAuthLock
    Route guard + visibility change handler for /app/* routes
    ═══════════════════════════════════════════════════════════ */
 
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getLockState, lockApp, shouldLock, updateLastActivity, hasPinConfigured } from '@/utils/lockState';
+import { useAuthLock } from '@/hooks/useAuthLock';
+import { useAuthUser } from '@/hooks/useAuthUser';
 
 interface AppLockGuardProps {
   children: React.ReactNode;
@@ -14,45 +15,45 @@ interface AppLockGuardProps {
 export function AppLockGuard({ children }: AppLockGuardProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthUser();
+  const { isUnlockRequired, lockState } = useAuthLock();
 
   useEffect(() => {
-    // Don't guard lock screens themselves
-    if (location.pathname.startsWith('/lock')) {
+    // Don't guard auth/lock screens
+    if (location.pathname.startsWith('/auth/lock') || location.pathname.startsWith('/onboarding')) {
       return;
     }
 
-    // Check if PIN is configured
-    if (!hasPinConfigured()) {
-      navigate('/lock/setup-pin', { replace: true });
+    // Only apply lock guard if user is authenticated
+    if (!user) {
       return;
     }
 
-    // Check lock status
-    if (shouldLock()) {
-      lockApp();
-      navigate('/lock', { replace: true });
-      return;
+    // Check if unlock is required
+    if (isUnlockRequired()) {
+      console.log('🔒 Lock required, redirecting to /auth/lock');
+      navigate('/auth/lock', { 
+        state: { from: location.pathname },
+        replace: true 
+      });
     }
-
-    // Update activity on navigation
-    updateLastActivity();
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate, user, isUnlockRequired]);
 
   useEffect(() => {
+    if (!user) return;
+
     console.log('✅ SAFE_AREA_APPLIED (AppLockGuard)');
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // App hidden - lock it
-        lockApp();
-        console.log('🔒 App hidden, locked');
+        console.log('🔒 App hidden, will check lock on return');
       } else {
         // App visible - check if should be locked
-        if (shouldLock()) {
-          lockApp();
-          navigate('/lock', { replace: true });
-        } else {
-          updateLastActivity();
+        if (isUnlockRequired()) {
+          navigate('/auth/lock', { 
+            state: { from: location.pathname },
+            replace: true 
+          });
         }
       }
     };
@@ -60,26 +61,10 @@ export function AppLockGuard({ children }: AppLockGuardProps) {
     // Listen for visibility changes
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Listen for activity events to update last active
-    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-    const handleActivity = () => {
-      const { state } = getLockState();
-      if (state === 'unlocked') {
-        updateLastActivity();
-      }
-    };
-
-    activityEvents.forEach(event => {
-      document.addEventListener(event, handleActivity, { passive: true });
-    });
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      activityEvents.forEach(event => {
-        document.removeEventListener(event, handleActivity);
-      });
     };
-  }, [navigate]);
+  }, [navigate, location.pathname, user, isUnlockRequired]);
 
   return <>{children}</>;
 }

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { WalletInfo } from '@/utils/wallet';
 import { detectAndResolveSessionConflict } from '@/utils/sessionConflictDetector';
+import { SessionConflictModal } from '@/components/SessionConflictModal';
 
 // Extend Window interface for MetaMask
 declare global {
@@ -60,6 +61,13 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [network, setNetwork] = useState<typeof BSC_NETWORK>(BSC_NETWORK);
   const [provider, setProvider] = useState<ethers.JsonRpcProvider | null>(null);
+  
+  // Session conflict modal state
+  const [conflictModalOpen, setConflictModalOpen] = useState(false);
+  const [conflictDetails, setConflictDetails] = useState<{
+    sessionEmail: string;
+    walletAddress: string;
+  } | null>(null);
 
   useEffect(() => {
     // Initialize provider
@@ -136,14 +144,27 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[WEB3] Checking session conflict for wallet:', wallet.address);
       detectAndResolveSessionConflict(wallet.address)
         .then(result => {
-          if (result.conflict && result.resolved) {
-            console.log('[WEB3] ✓ Session conflict resolved, reloading profile...');
-            // Trigger profile reload by dispatching custom event
-            window.dispatchEvent(new CustomEvent('profile:updated'));
+          if (result.conflict) {
+            // Don't auto-resolve, let user choose
+            console.log('[WEB3] ⚠️ Session conflict detected, waiting for user action');
           }
         });
     }
   }, [wallet?.address]);
+
+  // Listen for session conflict events
+  useEffect(() => {
+    const handleConflict = (event: CustomEvent) => {
+      const { sessionEmail, walletAddress } = event.detail;
+      setConflictDetails({ sessionEmail, walletAddress });
+      setConflictModalOpen(true);
+    };
+
+    window.addEventListener('auth:session_conflict' as any, handleConflict);
+    return () => {
+      window.removeEventListener('auth:session_conflict' as any, handleConflict);
+    };
+  }, []);
 
   useEffect(() => {
     // Listen for account changes in MetaMask
@@ -490,6 +511,14 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <Web3Context.Provider value={value}>
       {children}
+      {conflictDetails && (
+        <SessionConflictModal
+          open={conflictModalOpen}
+          onOpenChange={setConflictModalOpen}
+          sessionEmail={conflictDetails.sessionEmail}
+          walletAddress={conflictDetails.walletAddress}
+        />
+      )}
     </Web3Context.Provider>
   );
 };

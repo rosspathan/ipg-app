@@ -86,49 +86,36 @@ export function useDisplayName() {
       'user?.id': user?.id
     });
 
-    // Priority 0: Web3 wallet-linked profile (Web3-first auth)
-    // If a wallet is connected and we have a profile with a matching wallet address,
-    // use that profile's username regardless of Supabase session state
-    if (isConnected && wallet?.address && userApp?.wallet_address === wallet.address && userApp?.username) {
-      console.log('[DISPLAY_NAME] ✓ Using wallet-linked username:', userApp.username);
-      return userApp.username;
+    // If user is authenticated, NEVER use storageEmail
+    if (user?.id) {
+      // Priority 1: Authenticated profile username
+      if (userApp?.username && userApp?.user_id === user.id) {
+        console.log('[DISPLAY_NAME] ✓ Using authenticated profile username:', userApp.username);
+        return userApp.username;
+      }
+      
+      // Priority 2: Profile full_name (if set and not default)
+      if (userApp?.full_name && userApp.full_name !== 'User') {
+        console.log('[DISPLAY_NAME] Using authenticated profile full_name:', userApp.full_name);
+        return userApp.full_name;
+      }
+      
+      // Priority 3: Fallback with user ID
+      const fallback = `user${user.id.slice(0, 6)}`;
+      console.log('[DISPLAY_NAME] Using user ID fallback:', fallback);
+      return fallback;
     }
 
-    // Priority 1: Profile username matching auth session (backward compatibility)
-    if (userApp?.username && user?.id && userApp?.user_id === user.id) {
-      console.log('[DISPLAY_NAME] Using authenticated profile username:', userApp.username);
-      return userApp.username;
-    }
-    
-    // Priority 1.5: Profile username exists (even if session mismatch - during transition)
-    if (userApp?.username) {
-      console.log('[DISPLAY_NAME] Using profile username (no session check):', userApp.username);
-      return userApp.username;
-    }
-
-    // Priority 2: Profile full_name (if set and not default)
-    if (userApp?.full_name && userApp.full_name !== 'User') {
-      console.log('[DISPLAY_NAME] Using userApp.full_name:', userApp.full_name);
-      return userApp.full_name;
-    }
-
-    // Priority 3: Cached email during onboarding (ONLY if user is not authenticated yet)
-    if (storageEmail && !user?.id) {
+    // If NOT authenticated, can use storageEmail from onboarding
+    if (storageEmail) {
       const name = extractUsernameFromEmail(storageEmail, undefined);
       console.log('[DISPLAY_NAME] Using storageEmail (onboarding):', name);
       return name;
     }
     
-    // Priority 4: Fallback with user ID (never show email for authenticated users)
-    if (user?.id) {
-      const fallback = `user${user.id.slice(0, 6)}`;
-      console.log('[DISPLAY_NAME] Using user ID fallback:', fallback);
-      return fallback;
-    }
-    
     console.log('[DISPLAY_NAME] Using default: User');
     return "User";
-  }, [userApp?.username, userApp?.full_name, userApp?.wallet_address, userApp?.user_id, user?.id, wallet?.address, isConnected, storageEmail]);
+  }, [userApp?.username, userApp?.full_name, userApp?.user_id, user?.id, storageEmail]);
 
   useEffect(() => {
     try {
