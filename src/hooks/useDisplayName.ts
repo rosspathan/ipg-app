@@ -1,7 +1,6 @@
 import { useMemo, useEffect, useState } from "react";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useProfile } from "@/hooks/useProfile";
-import { useWeb3 } from "@/contexts/Web3Context";
 import { extractUsernameFromEmail } from "@/lib/user/username";
 
 /**
@@ -20,7 +19,6 @@ import { extractUsernameFromEmail } from "@/lib/user/username";
 export function useDisplayName() {
   const { user } = useAuthUser();
   const { userApp } = useProfile();
-  const { wallet, isConnected } = useWeb3();
 
   const [storageEmail, setStorageEmail] = useState<string | null>(() => {
     try {
@@ -77,11 +75,8 @@ export function useDisplayName() {
 
   const displayName = useMemo(() => {
     console.log('[DISPLAY_NAME] Computing display name:', {
-      walletAddress: wallet?.address,
-      isConnected,
       storageEmail,
       'userApp?.username': userApp?.username,
-      'userApp?.wallet_address': userApp?.wallet_address,
       'user?.email': user?.email,
       'user?.id': user?.id
     });
