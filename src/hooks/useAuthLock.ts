@@ -591,36 +591,57 @@ export const useAuthLock = () => {
     navigate('/auth/lock');
   }, [saveLockState, navigate]);
 
-  // Check if unlock is required (session-based)
+  // Check if unlock is required (lock-state first, session refresh non-blocking)
   const isUnlockRequired = useCallback(async (forSensitiveAction = false): Promise<boolean> => {
-    // 1. FIRST: Check if Supabase session exists
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    // If no session or error, REQUIRE unlock
-    if (error || !session) {
-      console.log('🔒 Lock required: No active session');
+    const now = Date.now();
+
+    // Hard lock window
+    if (lockState.lockedUntil && now < lockState.lockedUntil) {
+      console.log('🔒 Lock needed: hard-lock until', new Date(lockState.lockedUntil).toISOString());
       return true;
     }
-    
-    // 2. Session exists - check if it's still valid by comparing with expiration
-    if (session.expires_at) {
-      const expiresAt = new Date(session.expires_at).getTime();
-      if (Date.now() >= expiresAt) {
-        console.log('🔒 Lock required: Session expired');
-        return true;
-      }
+
+    // Not unlocked
+    if (!lockState.isUnlocked) {
+      console.log('🔒 Lock needed: not-unlocked');
+      return true;
     }
-    
-    // 3. For sensitive actions, require recent unlock
-    if (forSensitiveAction && lockState.requireOnActions) {
-      if (!lockState.lastUnlockAt || Date.now() - lockState.lastUnlockAt > 60 * 1000) {
-        console.log('🔒 Lock required: Sensitive action needs recent unlock');
-        return true;
-      }
+
+    const last = lockState.lastUnlockAt ?? 0;
+    const idleMs = Math.max(0, (lockState.sessionLockMinutes ?? 5) * 60_000);
+
+    // Sensitive action freshness: require recent unlock (60s)
+    if (forSensitiveAction && lockState.requireOnActions && now - last > 60_000) {
+      console.log('🔒 Lock needed: sensitive-action stale (>60s)');
+      return true;
     }
-    
-    // Session is active - no lock required
-    console.log('✅ Session active, no lock required');
+
+    // Idle timeout
+    if (idleMs > 0 && now - last > idleMs) {
+      console.log('🔒 Lock needed: idle-timeout', { idleMs, since: now - last });
+      return true;
+    }
+
+    // Non-blocking: keep session fresh, but don't force lock solely on token
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('[Session] No session; will try refresh in background');
+        await supabase.auth.refreshSession();
+      } else if (session.expires_at) {
+        const expMs = typeof session.expires_at === 'number'
+          ? session.expires_at * 1000
+          : Date.parse(String(session.expires_at));
+        if (expMs && now >= expMs) {
+          console.log('[Session] Expired; refreshing in background');
+          await supabase.auth.refreshSession();
+        }
+      }
+    } catch (e) {
+      console.log('[Session] Refresh attempt failed (non-blocking):', e);
+    }
+
+    console.log('✅ Lock OK: unlocked and within idle window');
     return false;
   }, [lockState]);
 

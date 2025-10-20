@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthLock } from '@/hooks/useAuthLock';
@@ -144,6 +144,8 @@ export const LockGuard: React.FC<LockGuardProps> = ({ children }) => {
   const { user, loading } = useAuth();
   const { lockState, isUnlockRequired } = useAuthLock();
   const location = useLocation();
+  const [needsLock, setNeedsLock] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   // Skip lock screen for auth routes
   const isAuthRoute = location.pathname.startsWith('/auth') || 
@@ -151,11 +153,47 @@ export const LockGuard: React.FC<LockGuardProps> = ({ children }) => {
                      location.pathname === '/' ||
                      location.pathname.startsWith('/welcome');
 
+  useEffect(() => {
+    if (isAuthRoute) {
+      setNeedsLock(false);
+      setChecking(false);
+      return;
+    }
+
+    if (loading) {
+      setChecking(true);
+      return;
+    }
+
+    if (!user) {
+      setNeedsLock(false);
+      setChecking(false);
+      return;
+    }
+
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const required = await isUnlockRequired();
+        if (!cancelled) {
+          setNeedsLock(!lockState.isUnlocked || required);
+        }
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    };
+
+    setChecking(true);
+    check();
+
+    return () => { cancelled = true; };
+  }, [user, loading, location.pathname, lockState.isUnlocked, isUnlockRequired, isAuthRoute]);
+
   if (isAuthRoute) {
     return <>{children}</>;
   }
 
-  if (loading) {
+  if (loading || checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -166,11 +204,8 @@ export const LockGuard: React.FC<LockGuardProps> = ({ children }) => {
     );
   }
 
-  // CRITICAL: If user is authenticated and has security set up, require unlock
-  if (user && (hasLocalSecurity() || lockState.biometricEnabled)) {
-    if (!lockState.isUnlocked || isUnlockRequired()) {
-      return <Navigate to="/auth/lock" state={{ from: location }} replace />;
-    }
+  if (needsLock) {
+    return <Navigate to="/auth/lock" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
