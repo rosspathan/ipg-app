@@ -138,11 +138,12 @@ export const VerificationGuard: React.FC<VerificationGuardProps> = ({
 // Lock Guard - CRITICAL: Enforces PIN/biometric on every app open
 interface LockGuardProps {
   children: React.ReactNode;
+  redirectTo?: string;
 }
 
-export const LockGuard: React.FC<LockGuardProps> = ({ children }) => {
+export const LockGuard: React.FC<LockGuardProps> = ({ children, redirectTo = '/auth/lock' }) => {
   const { user, loading } = useAuth();
-  const { lockState, isUnlockRequired } = useAuthLock();
+  const { isUnlockRequired, hydrated } = useAuthLock();
   const location = useLocation();
   const [needsLock, setNeedsLock] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -160,7 +161,7 @@ export const LockGuard: React.FC<LockGuardProps> = ({ children }) => {
       return;
     }
 
-    if (loading) {
+    if (loading || !hydrated) {
       setChecking(true);
       return;
     }
@@ -174,9 +175,13 @@ export const LockGuard: React.FC<LockGuardProps> = ({ children }) => {
     let cancelled = false;
     const check = async () => {
       try {
-        const required = await isUnlockRequired();
-        if (!cancelled) {
-          setNeedsLock(!lockState.isUnlocked || required);
+        if (hasLocalSecurity()) {
+          const required = await isUnlockRequired();
+          if (!cancelled) {
+            setNeedsLock(required);
+          }
+        } else {
+          if (!cancelled) setNeedsLock(false);
         }
       } finally {
         if (!cancelled) setChecking(false);
@@ -187,7 +192,7 @@ export const LockGuard: React.FC<LockGuardProps> = ({ children }) => {
     check();
 
     return () => { cancelled = true; };
-  }, [user, loading, location.pathname, lockState.isUnlocked, isUnlockRequired, isAuthRoute]);
+  }, [user, loading, hydrated, location.pathname, isUnlockRequired, isAuthRoute]);
 
   if (isAuthRoute) {
     return <>{children}</>;
@@ -205,7 +210,7 @@ export const LockGuard: React.FC<LockGuardProps> = ({ children }) => {
   }
 
   if (needsLock) {
-    return <Navigate to="/auth/lock" state={{ from: location }} replace />;
+    return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

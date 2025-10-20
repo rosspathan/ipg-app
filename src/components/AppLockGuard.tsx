@@ -16,7 +16,7 @@ export function AppLockGuard({ children }: AppLockGuardProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthUser();
-  const { isUnlockRequired, lockState, updateActivity } = useAuthLock();
+  const { isUnlockRequired, lockState, updateActivity, hydrated } = useAuthLock();
 
   useEffect(() => {
     // Don't guard auth/lock screens or recovery
@@ -24,8 +24,8 @@ export function AppLockGuard({ children }: AppLockGuardProps) {
       return;
     }
 
-    // Only apply lock guard if user is authenticated
-    if (!user) {
+    // Only apply lock guard if user is authenticated and state is hydrated
+    if (!user || !hydrated) {
       return;
     }
 
@@ -49,7 +49,7 @@ export function AppLockGuard({ children }: AppLockGuardProps) {
     };
 
     checkLock();
-  }, [location.pathname, navigate, user, isUnlockRequired]);
+  }, [location.pathname, navigate, user, hydrated, isUnlockRequired]);
 
   // Update activity on route changes to keep idle timer accurate
   useEffect(() => {

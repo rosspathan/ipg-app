@@ -33,7 +33,7 @@ export const AppStateManager = () => {
           return;
         }
 
-        const needsUnlock = isUnlockRequired(false);
+        const needsUnlock = await isUnlockRequired(false);
         if (needsUnlock) {
           console.log('App opened - lock required, redirecting to lock screen');
           // Store the intended destination before locking
@@ -80,7 +80,7 @@ export const AppStateManager = () => {
             return;
           }
 
-          const needsUnlock = isUnlockRequired(false);
+          const needsUnlock = await isUnlockRequired(false);
           if (needsUnlock) {
             console.log('Redirecting to lock screen');
             // Store the intended destination before locking

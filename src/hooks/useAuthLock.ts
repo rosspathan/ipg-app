@@ -25,35 +25,44 @@ const MAX_ATTEMPTS = 5;
 const COOLDOWN_DURATION = 30 * 1000; // 30 seconds
 const SECURITY_FAILURE_THRESHOLD = 10;
 
+const defaultLockState: LockState = {
+  isUnlocked: false,
+  lastUnlockAt: null,
+  failedAttempts: 0,
+  lockedUntil: null,
+  biometricEnabled: false,
+  requireOnActions: true,
+  sessionLockMinutes: 5,
+  criticalOperationInProgress: false
+};
+
 export const useAuthLock = () => {
   const { user } = useAuthUser();
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const [lockState, setLockState] = useState<LockState>({
-    isUnlocked: false,
-    lastUnlockAt: null,
-    failedAttempts: 0,
-    lockedUntil: null,
-    biometricEnabled: false,
-    requireOnActions: true,
-    sessionLockMinutes: 5,
-    criticalOperationInProgress: false
+  // Synchronous hydration from localStorage on first render
+  const [lockState, setLockState] = useState<LockState>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        console.log('🔐 Hydrated from localStorage:', { isUnlocked: parsed.isUnlocked, lastUnlockAt: parsed.lastUnlockAt });
+        return { ...defaultLockState, ...parsed };
+      }
+    } catch (error) {
+      console.error('Failed to parse lock state on init:', error);
+    }
+    return defaultLockState;
   });
+
+  const [hydrated, setHydrated] = useState(false);
 
   // Load lock state from localStorage and sync with database
   const loadLockState = useCallback(async () => {
-    if (!user) return;
-
-    // Load from localStorage first for quick access
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setLockState(prev => ({ ...prev, ...parsed }));
-      } catch (error) {
-        console.error('Failed to parse lock state:', error);
-      }
+    if (!user) {
+      setHydrated(true);
+      return;
     }
 
     // Sync with database
@@ -84,8 +93,10 @@ export const useAuthLock = () => {
           return updated;
         });
       }
+      setHydrated(true);
     } catch (error) {
       console.error('Failed to load lock state from database:', error);
+      setHydrated(true);
     }
   }, [user]);
 
@@ -595,23 +606,35 @@ export const useAuthLock = () => {
   const isUnlockRequired = useCallback(async (forSensitiveAction = false): Promise<boolean> => {
     const now = Date.now();
 
+    // Read persisted state to handle cross-instance timing
+    let effective = lockState;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const persisted = JSON.parse(stored);
+        effective = { ...lockState, ...persisted };
+      }
+    } catch (e) {
+      console.error('Failed to read persisted lock state:', e);
+    }
+
     // Hard lock window
-    if (lockState.lockedUntil && now < lockState.lockedUntil) {
-      console.log('🔒 Lock needed: hard-lock until', new Date(lockState.lockedUntil).toISOString());
+    if (effective.lockedUntil && now < effective.lockedUntil) {
+      console.log('🔒 Lock needed: hard-lock until', new Date(effective.lockedUntil).toISOString());
       return true;
     }
 
     // Not unlocked
-    if (!lockState.isUnlocked) {
-      console.log('🔒 Lock needed: not-unlocked');
+    if (!effective.isUnlocked) {
+      console.log('🔒 Lock needed: not-unlocked (persisted:', effective.isUnlocked, ')');
       return true;
     }
 
-    const last = lockState.lastUnlockAt ?? 0;
-    const idleMs = Math.max(0, (lockState.sessionLockMinutes ?? 5) * 60_000);
+    const last = effective.lastUnlockAt ?? 0;
+    const idleMs = Math.max(0, (effective.sessionLockMinutes ?? 5) * 60_000);
 
     // Sensitive action freshness: require recent unlock (60s)
-    if (forSensitiveAction && lockState.requireOnActions && now - last > 60_000) {
+    if (forSensitiveAction && effective.requireOnActions && now - last > 60_000) {
       console.log('🔒 Lock needed: sensitive-action stale (>60s)');
       return true;
     }
@@ -689,6 +712,7 @@ export const useAuthLock = () => {
 
   return {
     lockState,
+    hydrated,
     setPin,
     unlockWithPin,
     unlockWithBiometrics,

@@ -13,7 +13,7 @@ export const useSensitiveAction = () => {
     // Check if any security is configured (database or local)
     const hasAnySecurity = hasLocalSecurity();
     
-    if (!hasAnySecurity || !isUnlockRequired(true)) {
+    if (!hasAnySecurity || !(await isUnlockRequired(true))) {
       // No unlock required, execute immediately
       action();
       return;
