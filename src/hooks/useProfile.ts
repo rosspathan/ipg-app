@@ -49,8 +49,8 @@ export const useProfile = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchUserApp = useCallback(async () => {
-    // Web3-first: Prioritize wallet address over Supabase session
-    if (!user && !wallet?.address) {
+    // Auth-first: Use user.id as single source of truth
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -58,43 +58,22 @@ export const useProfile = () => {
     try {
       setLoading(true);
       
-      // Priority 1: Query by wallet address (Web3-first)
-      if (wallet?.address) {
-        console.log('[PROFILE] Fetching profile by wallet address:', wallet.address);
-        const { data: walletProfile, error: walletError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('wallet_address', wallet.address)
-          .maybeSingle();
+      console.log('[PROFILE] Fetching profile by user_id:', user.id);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-        if (!walletError && walletProfile) {
-          console.log('[PROFILE] ✓ Found profile by wallet address:', walletProfile.username);
-          setUserApp(walletProfile);
-          setLoading(false);
-          return;
-        }
-        
-        console.log('[PROFILE] No profile found for wallet, trying user_id fallback');
-      }
+      if (error) throw error;
 
-      // Priority 2: Fallback to user_id (backward compatibility)
-      if (user?.id) {
-        console.log('[PROFILE] Fetching profile by user_id:', user.id);
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        if (data) {
-          console.log('[PROFILE] ✓ Found profile by user_id:', data.username);
-          setUserApp(data);
-        } else {
-          // Create initial user app record with username and required referral_code
-          console.log('[PROFILE] Creating new profile for user:', user.id);
-          const username = extractUsernameFromEmail(user.email, user.id);
+      if (data) {
+        console.log('[PROFILE] ✓ Found profile by user_id:', data.username);
+        setUserApp(data);
+      } else {
+        // Create initial user app record with username and required referral_code
+        console.log('[PROFILE] Creating new profile for user:', user.id);
+        const username = extractUsernameFromEmail(user.email, user.id);
         const { data: newUserApp, error: createError } = await supabase
           .from('profiles')
           .insert([{
@@ -107,9 +86,8 @@ export const useProfile = () => {
           .select()
           .single();
 
-          if (createError) throw createError;
-          setUserApp(newUserApp);
-        }
+        if (createError) throw createError;
+        setUserApp(newUserApp);
       }
     } catch (error) {
       console.error('[PROFILE] Error fetching profile:', error);
@@ -121,7 +99,7 @@ export const useProfile = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, user?.email, wallet?.address, toast]);
+  }, [user?.id, user?.email, toast]);
 
   const updateUserApp = async (updates: Partial<UserApp>) => {
     if (!user) return;

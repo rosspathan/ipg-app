@@ -51,95 +51,9 @@ export const useUserBSKBalance = () => {
   }, []);
 
   const fetchBalance = async () => {
-    let effectiveUserId = user?.id;
-
-    // Get stored email from onboarding
-    const storedEmail = sessionStorage.getItem('verificationEmail') || 
-                       JSON.parse(localStorage.getItem('ipg_onboarding_state') || '{}').email;
-
-    // If no Supabase user but we have a Web3 wallet, try to find user by wallet address
-    if (!effectiveUserId && wallet?.address) {
-      console.log('[BSK Balance] No Supabase session - attempting Web3 wallet lookup:', wallet.address);
-      
-      try {
-        // Normalize wallet address to lowercase for consistent matching
-        const normalizedAddress = wallet.address.toLowerCase();
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('wallet_address', normalizedAddress)
-          .maybeSingle();
-        
-        if (profile?.user_id) {
-          effectiveUserId = profile.user_id;
-          console.log('[BSK Balance] Found user via wallet address:', effectiveUserId);
-        } else {
-          console.log('[BSK Balance] No profile found for wallet, trying edge function fallback...');
-          
-          // Fallback: Use edge function to get balance by wallet
-          try {
-            const { data: edgeData, error: edgeError } = await supabase.functions.invoke('bsk-balance-by-wallet', {
-              body: { wallet: wallet.address }
-            });
-
-            if (edgeError) {
-              console.error('[BSK Balance] Edge function error:', edgeError);
-            } else if (edgeData?.linked) {
-              console.log('[BSK Balance] ✅ Using edge fallback - balance loaded:', edgeData);
-              setBalance({
-                withdrawable: Number(edgeData.withdrawable_balance || 0),
-                holding: Number(edgeData.holding_balance || 0),
-                total: Number(edgeData.withdrawable_balance || 0) + Number(edgeData.holding_balance || 0),
-                earnedWithdrawable: Number(edgeData.total_earned_withdrawable || 0),
-                earnedHolding: Number(edgeData.total_earned_holding || 0),
-                todayEarned: Number(edgeData.today_earned || 0),
-                weekEarned: Number(edgeData.week_earned || 0),
-              });
-              setLoading(false);
-              return;
-            }
-          } catch (fallbackError) {
-            console.error('[BSK Balance] Fallback edge function failed:', fallbackError);
-          }
-        }
-      } catch (lookupError) {
-        console.error('[BSK Balance] Error looking up user by wallet:', lookupError);
-      }
-    }
-
-    // If still no user ID, try email fallback
-    if (!effectiveUserId && storedEmail) {
-      console.log('[BSK Balance] No session/wallet link - trying email fallback:', storedEmail);
-      
-      try {
-        const { data: emailData, error: emailError } = await supabase.functions.invoke(
-          'bsk-balance-by-identifier',
-          { body: { email: storedEmail } }
-        );
-        
-        if (emailError) {
-          console.error('[BSK Balance] Email fallback error:', emailError);
-        } else if (emailData?.linked) {
-          console.log('[BSK Balance] ✅ Email fallback - balance loaded via', emailData.source);
-          setBalance({
-            withdrawable: Number(emailData.withdrawable_balance || 0),
-            holding: Number(emailData.holding_balance || 0),
-            total: Number(emailData.withdrawable_balance || 0) + Number(emailData.holding_balance || 0),
-            earnedWithdrawable: Number(emailData.lifetime_withdrawable_earned || 0),
-            earnedHolding: Number(emailData.lifetime_holding_earned || 0),
-            todayEarned: Number(emailData.today_earned || 0),
-            weekEarned: Number(emailData.week_earned || 0),
-          });
-          setLoading(false);
-          return;
-        }
-      } catch (emailFallbackError) {
-        console.error('[BSK Balance] Email fallback failed:', emailFallbackError);
-      }
-    }
-
-    if (!effectiveUserId) {
-      console.log('[BSK Balance] No user ID, wallet, or email available - waiting for session');
+    // Auth-first: Use user.id as single source of truth
+    if (!user?.id) {
+      console.log('[BSK Balance] No authenticated user - balance unavailable');
       setBalance({
         withdrawable: 0,
         holding: 0,
@@ -156,13 +70,13 @@ export const useUserBSKBalance = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('[BSK Balance] Session detected - fetching from user_bsk_balances for user:', effectiveUserId);
+      console.log('[BSK Balance] Fetching from user_bsk_balances for user:', user.id);
 
       // Fetch BSK balance
       const { data: balanceData, error: balanceError } = await supabase
         .from('user_bsk_balances')
         .select('*')
-        .eq('user_id', effectiveUserId)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (balanceError && balanceError.code !== 'PGRST116') {
@@ -192,7 +106,7 @@ export const useUserBSKBalance = () => {
         const { data: recentLedger } = await supabase
           .from('insurance_bsk_ledger')
           .select('bsk_amount, created_at, type')
-          .eq('user_id', effectiveUserId)
+          .eq('user_id', user.id)
           .in('type', ['insurance_claim', 'ad_subscription', 'referral_commission'])
           .gte('created_at', weekStart.toISOString());
 
@@ -233,32 +147,9 @@ export const useUserBSKBalance = () => {
   useEffect(() => {
     fetchBalance();
 
-    // Listen for session restoration event
-    const handleSessionRestored = () => {
-      console.log('[BSK Balance] Session restored event received - refetching balance');
-      fetchBalance();
-    };
-    window.addEventListener('auth:session:restored', handleSessionRestored);
-
-    // Set up polling for non-session scenarios (wallet-only or email-only)
-    let pollInterval: NodeJS.Timeout | null = null;
-    const storedEmail = sessionStorage.getItem('verificationEmail') || 
-                       JSON.parse(localStorage.getItem('ipg_onboarding_state') || '{}').email;
-    
-    if (!user?.id && (wallet?.address || storedEmail)) {
-      console.log('[BSK Balance] Starting polling for non-session mode (every 30s)');
-      pollInterval = setInterval(() => {
-        console.log('[BSK Balance] Polling for balance update...');
-        fetchBalance();
-      }, 30000); // Poll every 30 seconds
-    }
-
     // Set up realtime subscription for balance updates
-    // Use user.id if available, otherwise try wallet address lookup
-    const subscriptionKey = user?.id || wallet?.address;
-    
     let channel: ReturnType<typeof supabase.channel> | null = null;
-    if (subscriptionKey) {
+    if (user?.id) {
       channel = supabase
         .channel('bsk-balance-changes')
         .on(
@@ -277,16 +168,11 @@ export const useUserBSKBalance = () => {
     }
 
     return () => {
-      window.removeEventListener('auth:session:restored', handleSessionRestored);
-      if (pollInterval) {
-        console.log('[BSK Balance] Cleaning up non-session polling');
-        clearInterval(pollInterval);
-      }
       if (channel) {
         supabase.removeChannel(channel);
       }
     };
-  }, [user?.id, wallet?.address]);
+  }, [user?.id]);
 
   const refresh = () => {
     fetchBalance();

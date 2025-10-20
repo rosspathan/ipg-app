@@ -75,24 +75,29 @@ export function useDisplayName() {
 
   const displayName = useMemo(() => {
     console.log('[DISPLAY_NAME] Computing display name:', {
-      storageEmail,
-      'userApp?.username': userApp?.username,
       'user?.email': user?.email,
-      'user?.id': user?.id
+      'user?.id': user?.id,
+      'userApp?.username': userApp?.username
     });
 
-    // If user is authenticated, NEVER use storageEmail
+    // Auth-first: Always use user data when authenticated
     if (user?.id) {
-      // Priority 1: Authenticated profile username
-      if (userApp?.username && userApp?.user_id === user.id) {
-        console.log('[DISPLAY_NAME] ✓ Using authenticated profile username:', userApp.username);
+      // Priority 1: Profile display_name or username
+      if (userApp?.display_name) {
+        console.log('[DISPLAY_NAME] ✓ Using profile display_name:', userApp.display_name);
+        return userApp.display_name;
+      }
+      
+      if (userApp?.username) {
+        console.log('[DISPLAY_NAME] ✓ Using profile username:', userApp.username);
         return userApp.username;
       }
       
-      // Priority 2: Profile full_name (if set and not default)
-      if (userApp?.full_name && userApp.full_name !== 'User') {
-        console.log('[DISPLAY_NAME] Using authenticated profile full_name:', userApp.full_name);
-        return userApp.full_name;
+      // Priority 2: Extract from user email
+      if (user.email) {
+        const name = extractUsernameFromEmail(user.email, user.id);
+        console.log('[DISPLAY_NAME] Using email-derived username:', name);
+        return name;
       }
       
       // Priority 3: Fallback with user ID
@@ -101,7 +106,7 @@ export function useDisplayName() {
       return fallback;
     }
 
-    // If NOT authenticated, can use storageEmail from onboarding
+    // Only during onboarding (before auth complete)
     if (storageEmail) {
       const name = extractUsernameFromEmail(storageEmail, undefined);
       console.log('[DISPLAY_NAME] Using storageEmail (onboarding):', name);
@@ -110,7 +115,7 @@ export function useDisplayName() {
     
     console.log('[DISPLAY_NAME] Using default: User');
     return "User";
-  }, [userApp?.username, userApp?.full_name, userApp?.user_id, user?.id, storageEmail]);
+  }, [user?.id, user?.email, userApp?.display_name, userApp?.username, storageEmail]);
 
   useEffect(() => {
     try {

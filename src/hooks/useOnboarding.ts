@@ -12,6 +12,8 @@ export type OnboardingStep =
   | 'features'
   | 'security-intro'
   | 'support-intro'
+  | 'auth-signup'             // NEW: Sign up/login screen
+  | 'email-verification-otp'  // NEW: OTP verification
   | 'wallet-choice'
   | 'create-wallet'
   | 'import-wallet'
@@ -27,6 +29,7 @@ export type OnboardingStep =
 
 export interface OnboardingState {
   step: OnboardingStep;
+  userId?: string;                // NEW: Store Supabase user ID after auth
   walletInfo?: WalletInfo;
   email?: string;
   verificationCode?: string;
@@ -100,6 +103,10 @@ export function useOnboarding() {
 
   const setEmail = (email: string) => {
     updateState({ email });
+  };
+
+  const setUserId = (userId: string) => {
+    updateState({ userId });
   };
 
   const setVerificationCode = (verificationCode: string) => {
@@ -181,34 +188,18 @@ export function useOnboarding() {
         throw new Error('Missing required onboarding data');
       }
 
-      // CRITICAL: Refresh session before completing onboarding
-      console.info('[ONBOARDING] Refreshing session before completion...');
-      const sessionValid = await refreshSessionIfNeeded();
+      // Session is already established - just verify it exists
+      console.info('[ONBOARDING] Verifying session...');
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!sessionValid) {
-        console.error('[ONBOARDING] Session refresh failed!');
-        toast.error('Your session has expired. Please sign in again.');
-        
-        // Preserve onboarding state for recovery
-        localStorage.setItem('onboarding_recovery', JSON.stringify({
-          ...state,
-          recoveryTimestamp: Date.now()
-        }));
-        
-        // Redirect to auth with recovery intent
+      if (!session?.user) {
+        console.error('[ONBOARDING] No active session found!');
+        toast.error('Session lost. Please sign in again.');
         navigate('/auth?recover=true');
         return;
       }
 
-      // Get refreshed session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        console.error('[ONBOARDING] No active session after refresh!');
-        throw new Error('Session not found. Please sign in again.');
-      }
-
-      console.info('[ONBOARDING] Session verified and refreshed:', session.user.id);
+      console.info('[ONBOARDING] Session verified:', session.user.id);
 
       // Save security data locally first
       const { saveLocalSecurityData } = await import('@/utils/localSecurityStorage');
@@ -288,6 +279,7 @@ export function useOnboarding() {
     setStep,
     setWalletInfo,
     setEmail,
+    setUserId,                   // NEW
     setVerificationCode,
     setReferralCode,
     markEmailVerified,

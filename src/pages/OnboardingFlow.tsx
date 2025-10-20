@@ -14,12 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import SplashScreen from './onboarding/SplashScreen';
 import WelcomeScreens from './onboarding/WelcomeScreens';
+import AuthScreen from './onboarding/AuthScreen';
+import EmailVerificationOTP from './onboarding/EmailVerificationOTP';
 import WalletChoiceScreen from './onboarding/WalletChoiceScreen';
 import CreateWalletScreen from './onboarding/CreateWalletScreen';
 import ImportWalletScreen from './onboarding/ImportWalletScreen';
 import VerifyWalletAndEmailScreen from './onboarding/VerifyWalletAndEmailScreen';
 import EmailInputScreen from './onboarding/EmailInputScreen';
-// ReferralCodeInputScreen removed - now integrated in EmailVerificationScreen
 import EmailVerificationScreen from './onboarding/EmailVerificationScreen';
 import PinSetupScreen from './onboarding/PinSetupScreen';
 import BiometricSetupScreen from './onboarding/BiometricSetupScreen';
@@ -33,6 +34,7 @@ const OnboardingFlow: React.FC = () => {
     setStep,
     setWalletInfo,
     setEmail,
+    setUserId,
     setReferralCode,
     markEmailVerified,
     setPinHash,
@@ -51,7 +53,7 @@ const OnboardingFlow: React.FC = () => {
   }, [user?.id]);
 
   const handleSplashComplete = () => setStep('welcome');
-  const handleWelcomeComplete = () => setStep('wallet-choice');
+  const handleWelcomeComplete = () => setStep('auth-signup'); // NEW: Auth first
   const handleWalletChoice = (choice: 'create' | 'import' | 'connect') => {
     if (choice === 'connect') {
       setStep('wallet-connect');
@@ -61,8 +63,8 @@ const OnboardingFlow: React.FC = () => {
   };
   const handleWalletCreated = (wallet: any) => {
     setWalletInfo(wallet);
-    // Wallet will be connected to Web3 after successful onboarding
-    setStep('email-input');
+    // Skip email steps - already authenticated
+    setStep('pin-setup');
   };
   
   const handleWalletImported = (wallet: any) => {
@@ -80,12 +82,12 @@ const OnboardingFlow: React.FC = () => {
       console.error('[ONBOARDING] Failed to save wallet:', e);
     }
     
-    // Navigate to combined wallet verification + email input screen
-    setStep('verify-wallet-email');
+    // Skip email steps - already authenticated
+    setStep('pin-setup');
   };
   const handleEmailSubmitted = (email: string) => {
     setEmail(email);
-    setStep('email-verification'); // Skip referral-code step
+    setStep('email-verification'); // DEPRECATED: Old flow
   };
   
   // handleResendCode removed - EmailVerificationScreen handles resends internally
@@ -168,6 +170,35 @@ const OnboardingFlow: React.FC = () => {
     
     case 'welcome':
       return <WelcomeScreens onComplete={handleWelcomeComplete} onBack={() => setStep('splash')} />;
+    
+    case 'auth-signup':
+      return (
+        <AuthScreen
+          onAuthComplete={(email, userId) => {
+            setEmail(email);
+            if (userId) {
+              setUserId(userId);
+              setStep('wallet-choice'); // Skip OTP if signed in
+            } else {
+              setStep('email-verification-otp'); // Go to OTP if signed up
+            }
+          }}
+          onBack={() => setStep('welcome')}
+        />
+      );
+
+    case 'email-verification-otp':
+      return (
+        <EmailVerificationOTP
+          email={state.email || ''}
+          onVerified={(userId) => {
+            setUserId(userId);
+            markEmailVerified();
+            setStep('wallet-choice');
+          }}
+          onBack={() => setStep('auth-signup')}
+        />
+      );
     
     case 'wallet-choice':
       return (
