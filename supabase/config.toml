@@ -89,3 +89,6 @@ verify_jwt = true
 
 [functions.bsk-balance-by-wallet]
 verify_jwt = false
+
+[functions.process-internal-transfer]
+verify_jwt = true

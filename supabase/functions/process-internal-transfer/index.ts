@@ -1,0 +1,175 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
+
+    const { asset_symbol, recipient_identifier, amount } = await req.json();
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      throw new Error('Unauthorized');
+    }
+
+    console.log(`Transfer request: ${user.id} -> ${recipient_identifier}, ${amount} ${asset_symbol}`);
+
+    // Find recipient by username, email, phone, or referral code
+    const { data: recipientProfile, error: recipientError } = await supabaseClient
+      .from('profiles')
+      .select('user_id, username, email')
+      .or(`username.eq.${recipient_identifier},email.eq.${recipient_identifier},phone.eq.${recipient_identifier},referral_code.eq.${recipient_identifier}`)
+      .single();
+
+    if (recipientError || !recipientProfile) {
+      return new Response(
+        JSON.stringify({ error: 'Recipient not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (recipientProfile.user_id === user.id) {
+      return new Response(
+        JSON.stringify({ error: 'Cannot transfer to yourself' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get asset details
+    const { data: asset, error: assetError } = await supabaseClient
+      .from('assets')
+      .select('id, symbol, decimals')
+      .eq('symbol', asset_symbol)
+      .single();
+
+    if (assetError || !asset) {
+      return new Response(
+        JSON.stringify({ error: 'Asset not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate amount
+    const transferAmount = parseFloat(amount);
+    if (isNaN(transferAmount) || transferAmount <= 0) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid amount' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check sender balance
+    const { data: senderBalance, error: balanceError } = await supabaseClient
+      .from('wallet_balances')
+      .select('available, locked')
+      .eq('user_id', user.id)
+      .eq('asset_id', asset.id)
+      .single();
+
+    if (balanceError || !senderBalance || senderBalance.available < transferAmount) {
+      return new Response(
+        JSON.stringify({ error: 'Insufficient balance' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Calculate fee (0.1% or minimum 0.0001 in asset)
+    const feePercent = 0.001; // 0.1%
+    const minFee = 0.0001;
+    const fee = Math.max(transferAmount * feePercent, minFee);
+    const netAmount = transferAmount - fee;
+
+    if (netAmount <= 0) {
+      return new Response(
+        JSON.stringify({ error: 'Amount too small after fees' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Deduct from sender
+    const { error: deductError } = await supabaseClient
+      .from('wallet_balances')
+      .update({ available: senderBalance.available - transferAmount })
+      .eq('user_id', user.id)
+      .eq('asset_id', asset.id);
+
+    if (deductError) {
+      console.error('Failed to deduct from sender:', deductError);
+      throw new Error('Transfer failed');
+    }
+
+    // Credit recipient (upsert in case they don't have this asset yet)
+    const { data: recipientBalance } = await supabaseClient
+      .from('wallet_balances')
+      .select('available')
+      .eq('user_id', recipientProfile.user_id)
+      .eq('asset_id', asset.id)
+      .single();
+
+    const newRecipientBalance = (recipientBalance?.available || 0) + netAmount;
+
+    const { error: creditError } = await supabaseClient
+      .from('wallet_balances')
+      .upsert({
+        user_id: recipientProfile.user_id,
+        asset_id: asset.id,
+        available: newRecipientBalance,
+        locked: 0
+      }, {
+        onConflict: 'user_id,asset_id'
+      });
+
+    if (creditError) {
+      console.error('Failed to credit recipient:', creditError);
+      // Rollback sender deduction
+      await supabaseClient
+        .from('wallet_balances')
+        .update({ available: senderBalance.available })
+        .eq('user_id', user.id)
+        .eq('asset_id', asset.id);
+      throw new Error('Transfer failed');
+    }
+
+    // Create transaction record (if you have a transactions table)
+    const transactionId = `TXN${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    
+    console.log(`Transfer completed: ${transactionId}, ${amount} ${asset_symbol} from ${user.id} to ${recipientProfile.user_id}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        transaction_id: transactionId,
+        amount: transferAmount,
+        fee: fee,
+        net_amount: netAmount,
+        recipient: recipientProfile.username || recipientProfile.email
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Transfer error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
