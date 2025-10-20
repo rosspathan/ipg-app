@@ -145,7 +145,7 @@ const AppLockScreen = () => {
     }
   };
 
-  const remainingTime = lockState.lockedUntil ? Math.ceil((lockState.lockedUntil - Date.now()) / 1000) : 0;
+  const remainingTime = lockState.lockedUntil ? Math.max(0, Math.ceil((lockState.lockedUntil - Date.now()) / 1000)) : 0;
   const isLocked = remainingTime > 0;
 
   return (

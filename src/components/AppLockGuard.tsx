@@ -19,8 +19,8 @@ export function AppLockGuard({ children }: AppLockGuardProps) {
   const { isUnlockRequired, lockState } = useAuthLock();
 
   useEffect(() => {
-    // Don't guard auth/lock screens
-    if (location.pathname.startsWith('/auth/lock') || location.pathname.startsWith('/onboarding')) {
+    // Don't guard auth/lock screens or recovery
+    if (location.pathname.startsWith('/auth/lock') || location.pathname.startsWith('/onboarding') || location.pathname === '/recovery/verify') {
       return;
     }
 

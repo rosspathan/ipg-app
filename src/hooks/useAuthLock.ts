@@ -70,6 +70,12 @@ export const useAuthLock = () => {
           sessionLockMinutes: settingsResult.data?.session_lock_minutes || 5
         };
 
+        // Clear expired lock states
+        if (newState.lockedUntil && newState.lockedUntil <= Date.now()) {
+          newState.lockedUntil = null;
+          newState.failedAttempts = 0;
+        }
+
         setLockState(prev => {
           const updated = { ...prev, ...newState };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -188,8 +194,9 @@ export const useAuthLock = () => {
 
   // Unlock with PIN (supports both database and local verification)
   const unlockWithPin = useCallback(async (pin: string): Promise<boolean> => {
-    if (!user || lockState.lockedUntil && Date.now() < lockState.lockedUntil) {
-      const remainingTime = Math.ceil((lockState.lockedUntil! - Date.now()) / 1000);
+    // Only block if still within lockout period (don't require user session for local PIN verification)
+    if (lockState.lockedUntil && Date.now() < lockState.lockedUntil) {
+      const remainingTime = Math.max(0, Math.ceil((lockState.lockedUntil - Date.now()) / 1000));
       toast({
         title: "Account Locked",
         description: `Please wait ${remainingTime} seconds before trying again`,
