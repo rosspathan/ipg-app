@@ -9873,6 +9873,16 @@ export type Database = {
       }
     }
     Functions: {
+      admin_adjust_user_balance: {
+        Args: {
+          p_amount: number
+          p_balance_type: string
+          p_operation: string
+          p_reason: string
+          p_target_user_id: string
+        }
+        Returns: Json
+      }
       admin_mint_bsk: {
         Args: {
           p_admin_id: string

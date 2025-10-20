@@ -52,78 +52,20 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
     try {
       const adjustmentAmount = operation === "add" ? parseFloat(amount) : -parseFloat(amount);
 
-      if (balanceType === "bsk") {
-        // Adjust BSK balance
-        const { data: currentBalance } = await supabase
-          .from("user_bsk_balances")
-          .select("withdrawable_balance")
-          .eq("user_id", userId)
-          .single();
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('admin_adjust_user_balance', {
+        p_target_user_id: userId,
+        p_balance_type: balanceType,
+        p_operation: operation,
+        p_amount: parseFloat(amount),
+        p_reason: reason,
+      });
 
-        const newBalance = (currentBalance?.withdrawable_balance || 0) + adjustmentAmount;
+      if (rpcError) throw rpcError;
 
-        const { error } = await supabase
-          .from("user_bsk_balances")
-          .upsert(
-            {
-              user_id: userId,
-              withdrawable_balance: newBalance,
-              total_earned_withdrawable: newBalance >= 0 ? newBalance : 0,
-            },
-            { onConflict: 'user_id' }
-          );
-
-        if (error) throw error;
-
-        // Log audit
-        await supabase.from("audit_logs").insert({
-          user_id: userId,
-          action: "balance_adjustment",
-          resource_type: "user_bsk_balances",
-          resource_id: userId,
-          new_values: { amount: adjustmentAmount, reason },
-        });
-
-        // Invalidate cache to refresh UI
-        queryClient.invalidateQueries({ 
-          queryKey: ["user-bsk-balance", userId] 
-        });
-      } else {
-        // Adjust INR balance
-        const { data: currentBalance } = await supabase
-          .from("user_inr_balances")
-          .select("balance")
-          .eq("user_id", userId)
-          .single();
-
-        const newBalance = (currentBalance?.balance || 0) + adjustmentAmount;
-
-        const { error } = await supabase
-          .from("user_inr_balances")
-          .upsert(
-            {
-              user_id: userId,
-              balance: newBalance,
-            },
-            { onConflict: 'user_id' }
-          );
-
-        if (error) throw error;
-
-        // Log audit
-        await supabase.from("audit_logs").insert({
-          user_id: userId,
-          action: "balance_adjustment",
-          resource_type: "user_inr_balances",
-          resource_id: userId,
-          new_values: { amount: adjustmentAmount, reason },
-        });
-
-        // Invalidate cache to refresh UI
-        queryClient.invalidateQueries({ 
-          queryKey: ["user-inr-balance", userId] 
-        });
-      }
+      // Invalidate cache to refresh UI
+      queryClient.invalidateQueries({ 
+        queryKey: [balanceType === 'bsk' ? 'user-bsk-balance' : 'user-inr-balance', userId]
+      });
 
       toast({
         title: "Balance Adjusted",
