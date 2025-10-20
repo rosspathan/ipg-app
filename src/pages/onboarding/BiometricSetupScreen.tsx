@@ -6,6 +6,7 @@ import { ChevronLeft, Fingerprint, CheckCircle, AlertCircle } from 'lucide-react
 import { isBiometricAvailable, setupBiometric, authenticateWithBiometric } from '@/utils/security';
 import { storeBiometricCredId, setOnboarded } from '@/utils/lockState';
 import { useToast } from '@/hooks/use-toast';
+import { OnboardingInfoBox } from '@/components/onboarding/OnboardingInfoBox';
 
 interface BiometricSetupScreenProps {
   onBiometricSetup: (success: boolean) => void;
@@ -201,32 +202,30 @@ const BiometricSetupScreen: React.FC<BiometricSetupScreenProps> = ({
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <Card className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border-green-500/30">
-                  <div className="p-4">
-                    <h4 className="text-green-200 font-semibold text-sm mb-3 flex items-center">
-                      <span className="mr-2">✨</span>
-                      Benefits of Biometric Security
-                    </h4>
-                    <ul className="text-green-200/80 text-xs space-y-2">
-                      <li className="flex items-center">
-                        <span className="w-4 h-4 bg-green-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
-                        Faster and more convenient access
-                      </li>
-                      <li className="flex items-center">
-                        <span className="w-4 h-4 bg-green-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
-                        Enhanced security with unique biometrics
-                      </li>
-                      <li className="flex items-center">
-                        <span className="w-4 h-4 bg-green-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
-                        Your biometric data stays on device
-                      </li>
-                      <li className="flex items-center">
-                        <span className="w-4 h-4 bg-green-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
-                        Works alongside your PIN protection
-                      </li>
-                    </ul>
-                  </div>
-                </Card>
+                <OnboardingInfoBox 
+                  variant="success" 
+                  title="Benefits of Biometric Security" 
+                  icon={<span>✨</span>}
+                >
+                  <ul className="space-y-2">
+                    <li className="flex items-center">
+                      <span className="w-4 h-4 bg-green-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
+                      Faster and more convenient access
+                    </li>
+                    <li className="flex items-center">
+                      <span className="w-4 h-4 bg-green-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
+                      Enhanced security with unique biometrics
+                    </li>
+                    <li className="flex items-center">
+                      <span className="w-4 h-4 bg-green-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
+                      Your biometric data stays on device
+                    </li>
+                    <li className="flex items-center">
+                      <span className="w-4 h-4 bg-green-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
+                      Works alongside your PIN protection
+                    </li>
+                  </ul>
+                </OnboardingInfoBox>
               </motion.div>
 
               {/* Setup card */}
@@ -345,18 +344,16 @@ const BiometricSetupScreen: React.FC<BiometricSetupScreenProps> = ({
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <Card className="bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm border-orange-500/30">
-                  <div className="p-6 text-center">
-                    <AlertCircle className="w-12 h-12 text-orange-400 mx-auto mb-4" />
-                    <h3 className="text-orange-200 font-semibold mb-2">
-                      Biometric Not Supported
-                    </h3>
-                    <p className="text-orange-200/80 text-sm">
-                      Your device doesn't support biometric authentication, or it's not enabled in your browser settings. 
-                      Don't worry - your PIN protection is still very secure!
-                    </p>
-                  </div>
-                </Card>
+                <OnboardingInfoBox 
+                  variant="warning" 
+                  title="Biometric Not Supported"
+                  icon={<AlertCircle className="w-5 h-5" />}
+                >
+                  <p>
+                    Your device doesn't support biometric authentication, or it's not enabled in your browser settings. 
+                    Don't worry - your PIN protection is still very secure!
+                  </p>
+                </OnboardingInfoBox>
               </motion.div>
 
               {/* Continue button */}
