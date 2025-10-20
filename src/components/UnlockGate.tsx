@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { supabase } from '@/integrations/supabase/client';
 import { hasLocalSecurity } from '@/utils/localSecurityStorage';
+import { hasPinConfigured as hasLegacyPin } from '@/utils/lockState';
 
 interface UnlockGateProps {
   children: React.ReactNode;
@@ -40,9 +41,9 @@ export const UnlockGate = ({ children }: UnlockGateProps) => {
           hasPinConfigured = security?.pin_set === true;
         }
 
-        // Also check local security
+        // Also check local security and legacy ipg_* storage
         if (!hasPinConfigured) {
-          hasPinConfigured = hasLocalSecurity();
+          hasPinConfigured = hasLocalSecurity() || hasLegacyPin();
         }
 
         // If no PIN is configured, redirect to security setup

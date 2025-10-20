@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Capacitor } from '@capacitor/core';
 import { BiometricAuth, BiometryType } from '@aparajita/capacitor-biometric-auth';
 import { hashPin as cryptoHashPin, verifyPin as cryptoVerifyPin, generateSalt } from '@/utils/pinCrypto';
+import { getPinCredentials, storePinCredentials } from '@/utils/lockState';
 
 
 interface LockState {
@@ -242,7 +243,52 @@ export const useAuthLock = () => {
         }
       }
 
-      // If no database PIN or failed, try local verification
+      // If database verification failed, try legacy local credentials (ipg_pin_*)
+      if (!isValid) {
+        try {
+          const creds = getPinCredentials();
+          if (creds?.hash) {
+            // Try PBKDF2 first if salt looks like non-bcrypt
+            if (creds.salt && !creds.salt.startsWith('$2')) {
+              const ok = await verifyPin(pin, creds.salt, creds.hash);
+              if (ok) {
+                isValid = true;
+                console.log('✅ Legacy local PIN verified (PBKDF2)');
+                // Migrate to DB if logged in
+                if (user) {
+                  await supabase.from('security')
+                    .upsert({ user_id: user.id, pin_hash: creds.hash, pin_salt: creds.salt, pin_set: true }, { onConflict: 'user_id' });
+                }
+              }
+            }
+            // If not validated yet, try bcrypt legacy
+            if (!isValid && (creds.hash.startsWith('$2') || !creds.salt || creds.salt.startsWith('$2'))) {
+              try {
+                const bcrypt = await import('bcryptjs');
+                const okB = await bcrypt.compare(pin, creds.hash);
+                if (okB) {
+                  const { hash, salt } = await hashPin(pin);
+                  // Update local legacy store to PBKDF2
+                  storePinCredentials(hash, salt);
+                  // Upsert to DB if logged in
+                  if (user) {
+                    await supabase.from('security')
+                      .upsert({ user_id: user.id, pin_hash: hash, pin_salt: salt, pin_set: true }, { onConflict: 'user_id' });
+                  }
+                  isValid = true;
+                  console.log('✅ Migrated legacy ipg_* PIN → PBKDF2');
+                }
+              } catch (e) {
+                console.error('Legacy bcrypt compare failed:', e);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Legacy local PIN check failed:', e);
+        }
+      }
+
+      // If still invalid, try localSecurityStorage
       if (!isValid) {
         const { verifyLocalPin } = await import('@/utils/localSecurityStorage');
         isValid = await verifyLocalPin(pin);
