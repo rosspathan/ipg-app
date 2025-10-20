@@ -177,6 +177,29 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       
       console.info('[VERIFY] ✓ Email verified, wallet linked to user:', data.userId);
       
+      // Establish Supabase session if tokens were returned
+      if (data.session?.access_token && data.session?.refresh_token) {
+        try {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token
+          });
+          
+          if (sessionError) {
+            console.warn('[VERIFY] Could not establish session:', sessionError);
+            toast({
+              title: 'Session Warning',
+              description: 'You may need to sign in again for BSK features',
+              variant: 'default'
+            });
+          } else {
+            console.log('[VERIFY] ✓ Supabase session established - BSK features ready');
+          }
+        } catch (sessionErr) {
+          console.warn('[VERIFY] Session establishment error:', sessionErr);
+        }
+      }
+      
       // Update profiles table with wallet address for BSK balance lookup
       if (data.walletAddress) {
         try {

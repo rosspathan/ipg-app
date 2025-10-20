@@ -140,45 +140,11 @@ export function useISmartSpin() {
     // Check authentication
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      // Try to get email from onboarding storage
-      const emailFromStorage = 
-        localStorage.getItem('verified_email') ||
-        (() => {
-          try {
-            return JSON.parse(localStorage.getItem('ipg_onboarding_state') || '{}').email
-          } catch {
-            return null
-          }
-        })()
-
-      if (emailFromStorage) {
-        // Trigger magic link sign-in
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email: emailFromStorage,
-          options: {
-            emailRedirectTo: `${window.location.origin}/app/programs/spin`
-          }
-        })
-
-        if (!otpError) {
-          toast({
-            title: "Check your email",
-            description: "We sent you a secure sign-in link. Open it to continue and spin.",
-          })
-        } else {
-          toast({
-            title: "Sign in failed",
-            description: "Please try again or contact support",
-            variant: "destructive"
-          })
-        }
-      } else {
-        toast({
-          title: "Sign in required",
-          description: "Please complete onboarding and add an email to sign in, then try again.",
-          variant: "destructive"
-        })
-      }
+      toast({
+        title: "Please sign in",
+        description: "You need to be signed in to spin",
+        variant: "destructive"
+      })
       return null
     }
 

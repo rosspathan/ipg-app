@@ -147,6 +147,16 @@ serve(async (req) => {
       userId = existingUser.id;
       console.log('[complete-onboarding] User exists:', userId);
       
+      // Generate session tokens for existing user
+      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: email
+      });
+      
+      if (sessionError) {
+        console.warn('[complete-onboarding] Session generation warning:', sessionError);
+      }
+      
       // Check if THIS specific wallet already exists for this user
       const { data: existingWallet } = await supabaseAdmin
         .from('user_wallets')
@@ -209,6 +219,16 @@ serve(async (req) => {
 
       userId = data.user.id;
       console.log('Created new user:', userId);
+      
+      // Generate session tokens for new user
+      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: email
+      });
+      
+      if (sessionError) {
+        console.warn('[complete-onboarding] Session generation warning:', sessionError);
+      }
     }
 
     // If no wallet yet, use imported or generate one
@@ -352,7 +372,7 @@ serve(async (req) => {
       version: FUNCTION_VERSION
     });
 
-    // Return success with MNEMONIC (only shown once!) - NO session tokens
+    // Return success with MNEMONIC and session tokens
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -361,6 +381,7 @@ serve(async (req) => {
         referralCode,
         walletAddress: walletData.address,
         mnemonic: mnemonic, // CRITICAL: User must save this!
+        session: sessionData?.properties, // Session tokens for BSK features
         warning: "Save your mnemonic phrase! This is the ONLY time it will be shown.",
       }),
       { 

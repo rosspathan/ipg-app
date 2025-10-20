@@ -8,12 +8,11 @@ import { SpinWheel3D } from '@/components/spin/SpinWheel3D'
 import { BetCardPro } from '@/components/spin/BetCardPro'
 import { ProvablyFairPanel } from '@/components/spin/ProvablyFairPanel'
 import { HistorySheet } from '@/components/spin/HistorySheet'
-import { History, LogIn } from 'lucide-react'
+import { History } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { useSpinMachine } from '@/hooks/useSpinMachine'
 import { useAuthUser } from '@/hooks/useAuthUser'
-import { supabase } from '@/integrations/supabase/client'
 
 export default function ISmartSpinScreen() {
   const navigate = useNavigate()
@@ -23,7 +22,6 @@ export default function ISmartSpinScreen() {
   const [winningSegmentIndex, setWinningSegmentIndex] = useState<number>()
   const [showHistory, setShowHistory] = useState(false)
   const [spinHistory, setSpinHistory] = useState<any[]>([])
-  const [signingIn, setSigningIn] = useState(false)
 
   // Fetch program configuration
   const { data: programConfig } = useProgramConfig("spin");
@@ -94,54 +92,6 @@ export default function ISmartSpinScreen() {
     spinMachine.send({ type: 'SPIN_ANIM_DONE' })
   }
 
-  const handleSignIn = async () => {
-    setSigningIn(true)
-    try {
-      const emailFromStorage = 
-        localStorage.getItem('verified_email') ||
-        (() => {
-          try {
-            return JSON.parse(localStorage.getItem('ipg_onboarding_state') || '{}').email
-          } catch {
-            return null
-          }
-        })()
-
-      if (emailFromStorage) {
-        const { error } = await supabase.auth.signInWithOtp({
-          email: emailFromStorage,
-          options: {
-            emailRedirectTo: `${window.location.origin}/app/programs/spin`
-          }
-        })
-
-        if (!error) {
-          toast({
-            title: "Check your email",
-            description: "We sent you a secure sign-in link. Open it to continue and spin.",
-          })
-        } else {
-          throw error
-        }
-      } else {
-        toast({
-          title: "Email not found",
-          description: "Please complete onboarding first",
-          variant: "destructive"
-        })
-      }
-    } catch (error) {
-      console.error('Sign in error:', error)
-      toast({
-        title: "Sign in failed",
-        description: "Please try again",
-        variant: "destructive"
-      })
-    } finally {
-      setSigningIn(false)
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
@@ -178,24 +128,6 @@ export default function ISmartSpinScreen() {
       className="min-h-screen pb-48"
     >
       <div className="max-w-md mx-auto px-4 space-y-6 pt-4">
-        {/* Sign In Banner */}
-        {!user && (
-          <div className="bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 rounded-xl p-4 text-center space-y-3">
-            <p className="text-sm font-medium text-foreground">
-              🎯 Sign in to spin and win BSK rewards!
-            </p>
-            <Button
-              onClick={handleSignIn}
-              disabled={signingIn}
-              size="sm"
-              className="w-full"
-            >
-              <LogIn className="w-4 h-4 mr-2" />
-              {signingIn ? 'Sending link...' : 'Sign In to Spin'}
-            </Button>
-          </div>
-        )}
-
         {/* Free Spins Banner */}
         {user && userLimits && userLimits.free_spins_remaining > 0 && (
           <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl p-4 text-center">
