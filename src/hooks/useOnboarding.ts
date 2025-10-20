@@ -244,6 +244,23 @@ export function useOnboarding() {
       // Clear onboarding state
       localStorage.removeItem(ONBOARDING_STORAGE_KEY);
       localStorage.removeItem('onboarding_recovery');
+      
+      // Reset in-memory state
+      setState({
+        step: 'splash',
+        email: undefined,
+        userId: undefined,
+        verificationCode: undefined,
+        walletInfo: undefined,
+        pinHash: undefined,
+        biometricSetup: false,
+        referralCode: undefined,
+        sponsorId: undefined,
+        hasCompletedWallet: false,
+        hasVerifiedEmail: false,
+        hasSetupPin: false,
+        hasSetupBiometric: false
+      });
 
       toast.success('Welcome! Your account is ready.');
 

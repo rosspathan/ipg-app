@@ -48,6 +48,7 @@ const AdMiningControlPanel = React.lazy(() => import("./pages/admin/program-cont
 const LuckyDrawControlPanel = React.lazy(() => import("./pages/admin/program-controls/LuckyDrawControlPanel"));
 const SpinWheelControlPanel = React.lazy(() => import("./pages/admin/program-controls/SpinWheelControlPanel"));
 const AdminProgramAnalytics = React.lazy(() => import("./pages/admin/AdminProgramAnalytics"));
+const AuditLogsPage = React.lazy(() => import("./pages/admin/AuditLogs"));
 const ProgramControlCenter = React.lazy(() => import("./pages/admin/ProgramControlCenter"));
 const ProgramTemplates = React.lazy(() => import("./pages/admin/ProgramTemplates"));
 const ProgramEconomicsDashboard = React.lazy(() => import("./pages/admin/ProgramEconomicsDashboard"));
@@ -462,6 +463,7 @@ function AppContent() {
                 <Route path="insurance" element={<AdminInsurance />} />
                 <Route path="lucky-draw" element={<AdminNewLuckyDraw />} />
                 <Route path="purchase-bonus" element={<AdminPurchaseBonusScreen />} />
+                <Route path="audit-logs" element={<React.Suspense fallback={<div>Loading...</div>}><AuditLogsPage /></React.Suspense>} />
                 <Route path="referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="50-level-referrals" element={<Admin50LevelReferrals />} />
