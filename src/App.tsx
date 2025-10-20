@@ -36,6 +36,8 @@ function LoadingFallback() {
 import AdminLayout from "@/layouts/AdminLayout";
 import AdminLayoutClean from "@/layouts/AdminLayoutClean";
 import { AdminShellAdaptive } from "@/components/admin/nova/AdminShellAdaptive";
+import { AuthLayout } from "@/layouts/AuthLayout";
+import AuthOnboardingEntry from "@/pages/auth/AuthOnboardingEntry";
 
 // Clean Admin Pages
 import AdminDashboardClean from "./pages/admin/AdminDashboardClean";
@@ -305,13 +307,14 @@ function AppContent() {
               <Route path="/create-wallet" element={<Navigate to="/onboarding/create-wallet" replace />} />
               <Route path="/import-wallet" element={<Navigate to="/onboarding/import-wallet" replace />} />
 
-          {/* Auth Routes - All redirect to onboarding */}
-              <Route path="/auth" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/auth/login" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/auth/register" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/auth/check-email" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/auth/verify-code" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/auth/wallet-login" element={<Navigate to="/onboarding" replace />} />
+          {/* Auth Routes */}
+          <Route path="/auth" element={<AuthLayout />}>
+            <Route index element={<AuthOnboardingEntry />} />
+            <Route path="login" element={<AuthOnboardingEntry />} />
+            <Route path="register" element={<AuthOnboardingEntry />} />
+            <Route path="check-email" element={<AuthOnboardingEntry />} />
+            <Route path="verify-code" element={<AuthOnboardingEntry />} />
+          </Route>
 
               {/* Auth callback still needed for edge cases */}
               <Route path="/auth/callback" element={<AuthCallback />} />
@@ -509,8 +512,6 @@ function AppContent() {
               <Route path="/debug/funding" element={<DebugFunding />} />
               <Route path="/debug/admin-test" element={<AdminCredentialsTest />} />
 
-              {/* Legacy auth route redirect */}
-              <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
 
               {/* Legacy user path redirects for deep links */}
               <Route path="/wallet-home" element={<Navigate to="/app/wallet" replace />} />
