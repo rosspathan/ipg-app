@@ -64,11 +64,14 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
 
         const { error } = await supabase
           .from("user_bsk_balances")
-          .upsert({
-            user_id: userId,
-            withdrawable_balance: newBalance,
-            total_earned_withdrawable: newBalance >= 0 ? newBalance : 0,
-          });
+          .upsert(
+            {
+              user_id: userId,
+              withdrawable_balance: newBalance,
+              total_earned_withdrawable: newBalance >= 0 ? newBalance : 0,
+            },
+            { onConflict: 'user_id' }
+          );
 
         if (error) throw error;
 
@@ -97,10 +100,13 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
 
         const { error } = await supabase
           .from("user_inr_balances")
-          .upsert({
-            user_id: userId,
-            balance: newBalance,
-          });
+          .upsert(
+            {
+              user_id: userId,
+              balance: newBalance,
+            },
+            { onConflict: 'user_id' }
+          );
 
         if (error) throw error;
 
@@ -126,11 +132,11 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
 
       setAmount("");
       setReason("");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Balance adjustment error:", error);
       toast({
         title: "Operation Failed",
-        description: "Could not adjust balance",
+        description: error.message || "Could not adjust balance",
         variant: "destructive",
       });
     } finally {
