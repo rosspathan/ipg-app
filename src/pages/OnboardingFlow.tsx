@@ -111,10 +111,6 @@ const OnboardingFlow: React.FC = () => {
     markBiometricSetup(success);
     setStep('success');
   };
-  
-  const handleSuccessComplete = () => {
-    completeOnboarding();
-  };
 
   const handleContinueAsCurrentUser = () => {
     setShowExistingSessionModal(false);
@@ -276,6 +272,7 @@ const OnboardingFlow: React.FC = () => {
       return (
         <SuccessCelebrationScreen 
           hasBiometric={state.biometricSetup || false}
+          onComplete={completeOnboarding}
         />
       );
     

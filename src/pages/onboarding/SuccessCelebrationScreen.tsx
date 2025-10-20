@@ -1,29 +1,47 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Shield, Fingerprint, Wallet } from 'lucide-react';
+import { CheckCircle, Shield, Fingerprint, Wallet, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Confetti from 'react-confetti';
 import { useWindowSize } from '@/hooks/useWindowSize';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 
 interface SuccessCelebrationScreenProps {
   hasBiometric: boolean;
+  onComplete: () => Promise<void>;
 }
 
-const SuccessCelebrationScreen: React.FC<SuccessCelebrationScreenProps> = ({ hasBiometric }) => {
+const SuccessCelebrationScreen: React.FC<SuccessCelebrationScreenProps> = ({ hasBiometric, onComplete }) => {
   const navigate = useNavigate();
   const { width, height } = useWindowSize();
+  const [isCompleting, setIsCompleting] = useState(false);
 
   useEffect(() => {
-    // Auto-advance to home after 3 seconds, or tap to continue immediately
+    // Auto-advance after 3 seconds
     const timer = setTimeout(() => {
-      navigate('/app/home', { replace: true });
+      handleContinue();
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, []);
 
-  const handleContinue = () => {
-    navigate('/app/home', { replace: true });
+  const handleContinue = async () => {
+    if (isCompleting) return;
+    
+    try {
+      setIsCompleting(true);
+      await onComplete();
+      // Navigation happens inside completeOnboarding()
+    } catch (error) {
+      console.error('Failed to complete onboarding:', error);
+      toast({
+        title: "Setup Failed",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+      setIsCompleting(false);
+    }
   };
 
   return (
@@ -130,24 +148,42 @@ const SuccessCelebrationScreen: React.FC<SuccessCelebrationScreenProps> = ({ has
           )}
         </motion.div>
 
-        {/* Continue hint */}
+        {/* Continue button */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 0.6 }}
-          className="text-center"
+          className="text-center space-y-4"
         >
-          <p className="text-white/50 text-sm">
-            Tap anywhere to continue
-          </p>
-          <motion.div
-            className="mt-3 text-white/30"
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity }}
+          <Button 
+            onClick={handleContinue}
+            disabled={isCompleting}
+            className="min-w-[200px] bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold"
+            size="lg"
           >
-            →
-          </motion.div>
+            {isCompleting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Setting up...
+              </>
+            ) : (
+              'Continue to App'
+            )}
+          </Button>
+          <p className="text-white/50 text-sm">
+            {isCompleting ? 'Please wait...' : 'or tap anywhere to continue'}
+          </p>
         </motion.div>
+      
+        {/* Loading overlay */}
+        {isCompleting && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="text-center space-y-4">
+              <Loader2 className="h-12 w-12 animate-spin text-white mx-auto" />
+              <p className="text-white text-lg font-semibold">Completing setup...</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
