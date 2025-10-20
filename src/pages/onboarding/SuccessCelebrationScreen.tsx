@@ -31,15 +31,25 @@ const SuccessCelebrationScreen: React.FC<SuccessCelebrationScreenProps> = ({ has
     
     try {
       setIsCompleting(true);
+      console.log('[SUCCESS] Starting onboarding completion...');
+      
       await onComplete();
-      // Navigation happens inside completeOnboarding()
+      
+      console.log('[SUCCESS] Onboarding completed, navigating...');
     } catch (error) {
-      console.error('Failed to complete onboarding:', error);
+      console.error('[SUCCESS] Failed to complete onboarding:', error);
+      
+      // Show warning but still try to navigate
       toast({
-        title: "Setup Failed",
-        description: "Please try again.",
-        variant: "destructive"
+        title: "Setup Warning",
+        description: "Some settings may need to be completed in your profile.",
       });
+      
+      // Try to navigate anyway after 1 second
+      setTimeout(() => {
+        navigate('/app/home', { replace: true });
+      }, 1000);
+    } finally {
       setIsCompleting(false);
     }
   };

@@ -512,26 +512,36 @@ export const useAuthLock = () => {
     navigate('/auth/lock');
   }, [saveLockState, navigate]);
 
-  // Check if unlock is required
-  const isUnlockRequired = useCallback((forSensitiveAction = false): boolean => {
-    if (!lockState.isUnlocked) return true;
+  // Check if unlock is required (session-based)
+  const isUnlockRequired = useCallback(async (forSensitiveAction = false): Promise<boolean> => {
+    // 1. FIRST: Check if Supabase session exists
+    const { data: { session }, error } = await supabase.auth.getSession();
     
-    if (forSensitiveAction) {
-      if (!lockState.requireOnActions) return false;
-      // Require unlock if last unlock was more than 60 seconds ago
-      if (lockState.lastUnlockAt && Date.now() - lockState.lastUnlockAt > 60 * 1000) {
+    // If no session or error, REQUIRE unlock
+    if (error || !session) {
+      console.log('🔒 Lock required: No active session');
+      return true;
+    }
+    
+    // 2. Session exists - check if it's still valid by comparing with expiration
+    if (session.expires_at) {
+      const expiresAt = new Date(session.expires_at).getTime();
+      if (Date.now() >= expiresAt) {
+        console.log('🔒 Lock required: Session expired');
         return true;
-      }
-    } else {
-      // Check session timeout
-      if (lockState.lastUnlockAt && lockState.sessionLockMinutes > 0) {
-        const timeoutMs = lockState.sessionLockMinutes * 60 * 1000;
-        if (Date.now() - lockState.lastUnlockAt > timeoutMs) {
-          return true;
-        }
       }
     }
     
+    // 3. For sensitive actions, require recent unlock
+    if (forSensitiveAction && lockState.requireOnActions) {
+      if (!lockState.lastUnlockAt || Date.now() - lockState.lastUnlockAt > 60 * 1000) {
+        console.log('🔒 Lock required: Sensitive action needs recent unlock');
+        return true;
+      }
+    }
+    
+    // Session is active - no lock required
+    console.log('✅ Session active, no lock required');
     return false;
   }, [lockState]);
 
@@ -556,14 +566,14 @@ export const useAuthLock = () => {
   useEffect(() => {
     if (!user || !lockState.isUnlocked) return;
 
-    const checkAutoLock = () => {
+    const checkAutoLock = async () => {
       // Skip auto-lock if critical operation in progress
       if (lockState.criticalOperationInProgress) {
         console.log('⏸️  Auto-lock skipped - critical operation in progress');
         return;
       }
 
-      if (isUnlockRequired()) {
+      if (await isUnlockRequired()) {
         lock();
       }
     };
@@ -590,4 +600,21 @@ export const useAuthLock = () => {
     endCriticalOperation,
     updateActivity
   };
+};
+
+// Helper for onboarding: unlock without requiring PIN
+export const unlockAfterOnboarding = async () => {
+  const lockState = {
+    isUnlocked: true,
+    lastUnlockAt: Date.now(),
+    failedAttempts: 0,
+    lockedUntil: null,
+    biometricEnabled: false,
+    requireOnActions: true,
+    sessionLockMinutes: 5,
+    criticalOperationInProgress: false
+  };
+  
+  localStorage.setItem('cryptoflow_lock_state', JSON.stringify(lockState));
+  console.log('✅ Unlocked after onboarding completion');
 };

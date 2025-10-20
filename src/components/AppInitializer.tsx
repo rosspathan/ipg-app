@@ -61,9 +61,19 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
             console.log('[AppInitializer] Security set up:', hasSecurity);
             
             if (hasSecurity) {
-              // Returning user with wallet and security -> show lock screen
-              console.log('[AppInitializer] Redirecting to lock screen');
-              navigate('/auth/lock', { replace: true });
+              // Check if this is a returning user (has unlock history)
+              const lockState = localStorage.getItem('cryptoflow_lock_state');
+              const hasUnlockHistory = lockState && JSON.parse(lockState).lastUnlockAt;
+              
+              if (hasUnlockHistory) {
+                // Returning user from previous session -> lock screen
+                console.log('[AppInitializer] Returning user, redirecting to lock screen');
+                navigate('/auth/lock', { replace: true });
+              } else {
+                // Fresh session after onboarding -> go to home
+                console.log('[AppInitializer] Fresh session, redirecting to home');
+                navigate('/app/home', { replace: true });
+              }
             } else {
               // Has wallet but no security -> complete security setup
               console.log('[AppInitializer] Redirecting to security setup');

@@ -29,14 +29,24 @@ export function AppLockGuard({ children }: AppLockGuardProps) {
       return;
     }
 
-    // Check if unlock is required
-    if (isUnlockRequired()) {
-      console.log('🔒 Lock required, redirecting to /auth/lock');
-      navigate('/auth/lock', { 
-        state: { from: location.pathname },
-        replace: true 
-      });
-    }
+    // Check if lock is required (async)
+    const checkLock = async () => {
+      try {
+        const lockRequired = await isUnlockRequired();
+        
+        if (lockRequired) {
+          console.log('🔒 Session expired, redirecting to lock screen');
+          navigate('/auth/lock', { 
+            state: { from: location.pathname },
+            replace: true 
+          });
+        }
+      } catch (error) {
+        console.error('Failed to check lock state:', error);
+      }
+    };
+
+    checkLock();
   }, [location.pathname, navigate, user, isUnlockRequired]);
 
   useEffect(() => {
@@ -44,12 +54,13 @@ export function AppLockGuard({ children }: AppLockGuardProps) {
 
     console.log('✅ SAFE_AREA_APPLIED (AppLockGuard)');
 
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.hidden) {
         console.log('🔒 App hidden, will check lock on return');
       } else {
-        // App visible - check if should be locked
-        if (isUnlockRequired()) {
+        // App visible - check session
+        const lockRequired = await isUnlockRequired();
+        if (lockRequired) {
           navigate('/auth/lock', { 
             state: { from: location.pathname },
             replace: true 

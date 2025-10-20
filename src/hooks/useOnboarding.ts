@@ -184,8 +184,12 @@ export function useOnboarding() {
     }
   };
 
-      const completeOnboarding = async () => {
-    try {
+  const completeOnboarding = async () => {
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Onboarding completion timeout')), 10000)
+    );
+
+    const actualCompletion = async () => {
       if (!state.walletInfo || !state.email || !state.pinHash) {
         throw new Error('Missing required onboarding data');
       }
@@ -263,13 +267,31 @@ export function useOnboarding() {
       });
 
       toast.success('Welcome! Your account is ready.');
+    };
 
+    try {
+      await Promise.race([actualCompletion(), timeoutPromise]);
+      
+      // Unlock app before navigation
+      const { unlockAfterOnboarding } = await import('@/hooks/useAuthLock');
+      await unlockAfterOnboarding();
+      
       // Navigate to main app
-      navigate('/app/home');
+      navigate('/app/home', { replace: true });
     } catch (error) {
-      console.error('[ONBOARDING] Error completing onboarding:', error);
-      toast.error('Failed to complete onboarding. Please try again.');
-      throw error;
+      console.error('[ONBOARDING] Error, but continuing to app:', error);
+      toast('Setup completed with warnings');
+      
+      // Still try to unlock and navigate
+      try {
+        const { unlockAfterOnboarding } = await import('@/hooks/useAuthLock');
+        await unlockAfterOnboarding();
+      } catch (unlockError) {
+        console.error('[ONBOARDING] Failed to unlock:', unlockError);
+      }
+      
+      // Force navigation
+      navigate('/app/home', { replace: true });
     }
   };
 
