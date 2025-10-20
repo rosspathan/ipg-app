@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { Copy, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
-import { useWeb3 } from "@/contexts/Web3Context";
 import { Buffer } from 'buffer';
 import * as bip39 from "bip39";
+import { ethers } from 'ethers';
 import { motion } from 'framer-motion';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
@@ -16,10 +15,13 @@ import { OnboardingCard } from '@/components/onboarding/OnboardingCard';
 // Make Buffer available globally for bip39
 (window as any).Buffer = Buffer;
 
-const CreateWalletScreen = () => {
-  const navigate = useNavigate();
+interface CreateWalletScreenProps {
+  onWalletCreated: (wallet: { address: string; mnemonic: string; privateKey: string }) => void;
+  onBack: () => void;
+}
+
+const CreateWalletScreen = ({ onWalletCreated, onBack }: CreateWalletScreenProps) => {
   const { toast } = useToast();
-  const { createWallet } = useWeb3();
   const [seedPhrase, setSeedPhrase] = useState<string[]>([]);
 
   useEffect(() => {
@@ -64,8 +66,18 @@ const CreateWalletScreen = () => {
 
   const handleConfirmPhrase = async () => {
     try {
-      await createWallet(seedPhrase.join(" "));
-      navigate("/onboarding/security");
+      // Derive wallet from mnemonic
+      const mnemonic = seedPhrase.join(" ");
+      const wallet = ethers.Wallet.fromPhrase(mnemonic);
+      
+      const walletData = {
+        address: wallet.address,
+        mnemonic: mnemonic,
+        privateKey: wallet.privateKey
+      };
+      
+      // Pass to parent instead of navigating
+      onWalletCreated(walletData);
     } catch (error) {
       toast({
         title: "Error",
@@ -77,111 +89,102 @@ const CreateWalletScreen = () => {
 
   return (
     <OnboardingLayout gradientVariant="primary" className="px-0">
-      <div className="flex flex-col h-full px-6">
+      <div className="flex flex-col h-full px-6 bg-black/30 backdrop-blur-sm rounded-t-3xl">
         <OnboardingHeader 
           title="Create Wallet"
           showBack
-          onBack={() => navigate(-1)}
+          onBack={onBack}
         />
         
         <ProgressIndicator 
           currentStep={3}
-          totalSteps={8}
+          totalSteps={6}
           stepName="Backup Phrase"
           className="mt-4"
         />
 
-        <div className="flex-1 pb-4 overflow-y-auto space-y-6 mt-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex-1 pb-4 overflow-y-auto space-y-6 mt-6"
+        >
           {/* Title */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
               <FileText className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">
               Backup Your Recovery Phrase
             </h2>
-            <p className="text-white/80 text-base max-w-md mx-auto">
+            <p className="text-white/90 text-base max-w-md mx-auto">
               Write down these 12 words in order and store them safely
             </p>
-          </motion.div>
+          </div>
 
           {/* Seed Phrase Display */}
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <OnboardingCard variant="glass">
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                  {seedPhrase.map((word, index) => (
-                    <div key={index} className="flex items-center space-x-2 p-2 sm:p-3 bg-white/10 rounded-lg border border-white/20">
-                      <span className="text-xs text-white/60 font-medium w-5 sm:w-6 flex-shrink-0">
-                        {index + 1}.
-                      </span>
-                      <span className="font-medium text-white text-xs sm:text-sm truncate">{word}</span>
-                    </div>
-                  ))}
+          <OnboardingCard variant="glass" className="bg-white/20 backdrop-blur-md border-white/30">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {seedPhrase.map((word, index) => (
+                <div key={index} className="flex items-center space-x-3 p-4 bg-white/20 rounded-xl border border-white/40 backdrop-blur-sm">
+                  <span className="text-sm text-white/90 font-semibold w-8 flex-shrink-0">
+                    {index + 1}.
+                  </span>
+                  <span className="font-semibold text-white text-base">{word}</span>
                 </div>
-              </div>
-            </OnboardingCard>
-          </motion.div>
+              ))}
+            </div>
+          </OnboardingCard>
 
           {/* Warning Message */}
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+          <OnboardingCard 
+            variant="gradient" 
+            className="bg-gradient-to-r from-orange-500/30 to-red-500/30 backdrop-blur-md border-2 border-orange-400/80"
           >
-            <OnboardingCard variant="gradient" className="bg-gradient-to-r from-orange-900/95 to-red-900/95 border-orange-500/60">
-              <p className="text-orange-50 text-sm leading-relaxed font-medium">
-                ⚠️ <span className="text-white font-semibold">Never share this phrase with anyone.</span> Anyone with your recovery phrase can access your funds.
+            <div className="flex items-start gap-3">
+              <span className="text-2xl flex-shrink-0">⚠️</span>
+              <p className="text-white text-sm leading-relaxed font-semibold">
+                <span className="block mb-1 text-base">Never share this phrase!</span>
+                Anyone with your recovery phrase can access your funds.
               </p>
-            </OnboardingCard>
-          </motion.div>
+            </div>
+          </OnboardingCard>
 
           {/* Action Buttons */}
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="space-y-3"
-          >
+          <div className="space-y-4">
+            {/* Primary action */}
             <Button 
-              variant="outline" 
-              size="lg" 
-              onClick={handleCopy}
-              className="w-full border-white/30 text-white hover:bg-white/10 rounded-xl"
-            >
-              <Copy className="w-4 h-4 mr-2" />
-              Copy Phrase
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="lg" 
-              onClick={handleDownload}
-              className="w-full border-white/30 text-white hover:bg-white/10 rounded-xl"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download
-            </Button>
-            
-            <Button 
-              variant="default" 
               size="lg" 
               onClick={handleConfirmPhrase}
-              className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-xl"
+              className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold text-base rounded-xl shadow-lg shadow-blue-500/20 min-h-[56px]"
             >
-              I've Saved My Phrase
+              I've Saved My Phrase – Continue
             </Button>
-          </motion.div>
-        </div>
+
+            {/* Secondary actions */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                onClick={handleCopy}
+                className="border-2 border-white/40 text-white hover:bg-white/20 rounded-xl font-semibold backdrop-blur-sm"
+              >
+                <Copy className="w-5 h-5 mr-2" />
+                Copy
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="lg" 
+                onClick={handleDownload}
+                className="border-2 border-white/40 text-white hover:bg-white/20 rounded-xl font-semibold backdrop-blur-sm"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Save
+              </Button>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </OnboardingLayout>
   );

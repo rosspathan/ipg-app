@@ -112,9 +112,6 @@ import WalletLoginScreen from "./pages/WalletLoginScreen";
 import OnboardingFlow from "./pages/OnboardingFlow";
 import OnboardingIndexScreen from "./pages/OnboardingIndexScreen";
 import WalletSelectionScreen from "./pages/WalletSelectionScreen";
-import CreateWalletScreen from "./pages/CreateWalletScreen";
-import ImportWalletScreen from "./pages/ImportWalletScreen";
-import SecuritySetupScreen from "./pages/SecuritySetupScreen";
 import RecoveryVerifyScreen from "./pages/RecoveryVerifyScreen";
 
 // User App Pages
@@ -301,9 +298,6 @@ function AppContent() {
 
           {/* Onboarding Flow */}
               <Route path="/onboarding" element={<OnboardingFlow />} />
-              <Route path="/onboarding/create-wallet" element={<CreateWalletScreen />} />
-              <Route path="/onboarding/import-wallet" element={<ImportWalletScreen />} />
-              <Route path="/onboarding/security" element={<SecuritySetupScreen />} />
               <Route path="/recovery/verify" element={<RecoveryVerifyScreen />} />
               <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
 

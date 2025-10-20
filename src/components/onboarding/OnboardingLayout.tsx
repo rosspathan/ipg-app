@@ -33,10 +33,10 @@ export function OnboardingLayout({
       {showAnimatedBackground && (
         <>
           <motion.div
-            className="absolute top-0 right-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"
+            className="absolute top-0 right-0 w-72 h-72 bg-purple-500/20 rounded-full blur-2xl"
             animate={{
               scale: [1, 1.2, 1],
-              opacity: [0.3, 0.5, 0.3],
+              opacity: [0.1, 0.2, 0.1],
             }}
             transition={{
               duration: 8,
@@ -45,10 +45,10 @@ export function OnboardingLayout({
             }}
           />
           <motion.div
-            className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"
+            className="absolute bottom-0 left-0 w-72 h-72 bg-blue-500/20 rounded-full blur-2xl"
             animate={{
               scale: [1.2, 1, 1.2],
-              opacity: [0.5, 0.3, 0.5],
+              opacity: [0.2, 0.1, 0.2],
             }}
             transition={{
               duration: 8,
@@ -59,9 +59,12 @@ export function OnboardingLayout({
         </>
       )}
 
+      {/* Dark overlay for content readability */}
+      <div className="absolute inset-0 bg-black/20 z-[5]" />
+
       {/* Content */}
       <div
-        className={cn("relative z-10 h-full flex flex-col px-6", className)}
+        className={cn("relative z-20 h-full flex flex-col px-6", className)}
         style={{
           paddingTop: 'max(env(safe-area-inset-top), 16px)',
           paddingBottom: 'max(env(safe-area-inset-bottom), 16px)'
