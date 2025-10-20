@@ -12,9 +12,11 @@ import { cn } from "@/lib/utils"
 import { useNavigation } from "@/hooks/useNavigation"
 import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
 import { useTradingPairs, useTradingUIDefaults } from "@/hooks/useTradingPairs"
+import { useOrientation } from "@/hooks/useOrientation"
 
 export function TradingPageRebuilt() {
   const { navigate } = useNavigation()
+  const isLandscape = useOrientation()
   const [selectedTab, setSelectedTab] = useState<"recent" | "favorites" | "all">("recent")
   const [searchTerm, setSearchTerm] = useState("")
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
@@ -92,19 +94,19 @@ export function TradingPageRebuilt() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", isLandscape && "landscape-mode")}>
         {/* KPI Row */}
         <div className="px-4 pt-4">
           <KPIChipRow data={kpiData} />
         </div>
 
-        {/* Compact Chart */}
+        {/* Compact Chart - Taller in landscape */}
         <div className="px-4">
           <ChartCard 
             title={selectedPair.symbol}
             data={[]}
             timeframe="1D"
-            className="h-48"
+            className={cn(isLandscape ? "h-64" : "h-48", "trading-chart-container")}
             data-testid="chart-card"
           />
         </div>

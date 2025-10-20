@@ -12,6 +12,7 @@ import { useKYCAutosave } from '@/hooks/useKYCAutosave';
 import { withSessionRefresh } from '@/utils/sessionRefresh';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 
 interface KYCFormData {
   first_name: string;
@@ -37,6 +38,7 @@ export function EnhancedKYCForm({ minAge = 18 }: EnhancedKYCFormProps) {
     id_back: null as File | null,
     selfie: null as File | null
   });
+  const keyboardHeight = useKeyboardVisible();
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<KYCFormData>();
   
@@ -403,7 +405,8 @@ export function EnhancedKYCForm({ minAge = 18 }: EnhancedKYCFormProps) {
                 <Button
                   type="submit"
                   disabled={submitting || uploading}
-                  className="w-full h-12 sticky-cta"
+                  className="w-full h-12"
+                  style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 16}px` : '0' }}
                 >
                   {(submitting || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Submit for Verification

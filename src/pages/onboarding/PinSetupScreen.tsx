@@ -9,6 +9,7 @@ import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
 import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
 import { OnboardingCard } from '@/components/onboarding/OnboardingCard';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
 
 interface PinSetupScreenProps {
   onPinSetup: (pinHash: string) => void;
@@ -27,6 +28,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
   const [showPin, setShowPin] = useState(false);
   const [isHashing, setIsHashing] = useState(false);
   const { toast } = useToast();
+  const keyboardHeight = useKeyboardVisible();
 
   const handlePinChange = (value: string, isConfirm: boolean = false) => {
     const cleanValue = value.replace(/\D/g, '').slice(0, 6);
@@ -272,6 +274,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
+            style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 16}px` : '0' }}
           >
             {step === 'create' ? (
               <Button

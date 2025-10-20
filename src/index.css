@@ -538,6 +538,52 @@ All colors MUST be HSL.
     width: 100%;
   }
 
+  /* Landscape Mode Support */
+  @media (orientation: landscape) and (max-height: 500px) {
+    /* Reduce top bar height in landscape */
+    .app-top-bar,
+    .mobile-sticky header {
+      height: 48px;
+      min-height: 48px;
+      padding-top: max(env(safe-area-inset-top), 8px);
+      padding-bottom: 8px;
+    }
+
+    /* Move bottom nav to side rail in landscape */
+    .bottom-nav-bar {
+      flex-direction: column;
+      left: 0;
+      right: auto;
+      width: 64px;
+      height: 100vh;
+      bottom: 0;
+      padding-left: env(safe-area-inset-left);
+      padding-right: 8px;
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    /* Adjust main content padding for side nav */
+    body.landscape-mode main {
+      padding-left: 64px;
+    }
+
+    /* Reduce padding for charts and cards */
+    .trading-chart-container,
+    .chart-card {
+      padding: 8px;
+    }
+
+    /* Optimize spacing */
+    .space-y-4 {
+      gap: 12px;
+    }
+
+    .space-y-6 {
+      gap: 16px;
+    }
+  }
+
   /* Grid system animations */
   @keyframes scroll {
     0% { transform: translateX(0); }
