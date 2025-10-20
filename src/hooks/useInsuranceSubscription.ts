@@ -52,6 +52,26 @@ export function useInsuranceSubscription() {
         return;
       }
 
+      // Check for existing active subscription to this tier
+      const { data: existingSub } = await supabase
+        .from('user_insurance_subscriptions')
+        .select('*, insurance_subscription_tiers(tier_name)')
+        .eq('user_id', user.id)
+        .eq('tier_id', tier.id)
+        .eq('is_active', true)
+        .gte('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (existingSub) {
+        const expiresAt = new Date(existingSub.expires_at);
+        const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        
+        toast.error('Already subscribed', {
+          description: `Your ${plan.name} subscription is active for ${daysLeft} more days`,
+        });
+        return;
+      }
+
       // Create subscription record
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + 1);
