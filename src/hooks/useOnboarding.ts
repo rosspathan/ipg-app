@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { WalletInfo } from '@/utils/wallet';
 import { SecuritySetup, getSecuritySetup, storeSecuritySetup } from '@/utils/security';
+import { refreshSessionIfNeeded, withSessionRefresh } from '@/utils/sessionRefresh';
+import { toast } from 'sonner';
 
 export type OnboardingStep = 
   | 'splash'
@@ -179,16 +181,34 @@ export function useOnboarding() {
         throw new Error('Missing required onboarding data');
       }
 
-      // Verify session exists before completing onboarding
-      console.info('[ONBOARDING] Verifying session before completion...');
+      // CRITICAL: Refresh session before completing onboarding
+      console.info('[ONBOARDING] Refreshing session before completion...');
+      const sessionValid = await refreshSessionIfNeeded();
+      
+      if (!sessionValid) {
+        console.error('[ONBOARDING] Session refresh failed!');
+        toast.error('Your session has expired. Please sign in again.');
+        
+        // Preserve onboarding state for recovery
+        localStorage.setItem('onboarding_recovery', JSON.stringify({
+          ...state,
+          recoveryTimestamp: Date.now()
+        }));
+        
+        // Redirect to auth with recovery intent
+        navigate('/auth?recover=true');
+        return;
+      }
+
+      // Get refreshed session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
-        console.error('[ONBOARDING] No active session found!');
+        console.error('[ONBOARDING] No active session after refresh!');
         throw new Error('Session not found. Please sign in again.');
       }
 
-      console.info('[ONBOARDING] Session verified:', session.user.id);
+      console.info('[ONBOARDING] Session verified and refreshed:', session.user.id);
 
       // Save security data locally first
       const { saveLocalSecurityData } = await import('@/utils/localSecurityStorage');
@@ -207,22 +227,32 @@ export function useOnboarding() {
       };
       storeSecuritySetup(securitySetup);
 
-      // Mark onboarding as complete in database
-      await supabase
-        .from('profiles')
-        .update({ 
-          onboarding_completed_at: new Date().toISOString(),
-          setup_complete: true
-        })
-        .eq('user_id', session.user.id);
+      // Mark onboarding as complete in database with session refresh wrapper
+      await withSessionRefresh(async () => {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ 
+            onboarding_completed_at: new Date().toISOString(),
+            setup_complete: true
+          })
+          .eq('user_id', session.user.id);
+        
+        if (error) throw error;
+      });
+
+      console.info('[ONBOARDING] Profile updated successfully');
 
       // Clear onboarding state
       localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      localStorage.removeItem('onboarding_recovery');
+
+      toast.success('Welcome! Your account is ready.');
 
       // Navigate to main app
       navigate('/app/home');
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error('[ONBOARDING] Error completing onboarding:', error);
+      toast.error('Failed to complete onboarding. Please try again.');
       throw error;
     }
   };
