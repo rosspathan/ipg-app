@@ -238,7 +238,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => handleCopy(wallet.address, 'Address')}
-                  className="border-white/30 text-white hover:bg-white/20"
+                  className="border-white/30 text-white hover:bg-white/10 hover:border-white/40"
                   aria-label="Copy wallet address"
                   data-testid="copy-wallet-address"
                 >
@@ -264,7 +264,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={() => handleCopy(wallet.mnemonic, 'Recovery phrase')}
-                      className="border-orange-400/50 text-orange-300 hover:bg-orange-500/20"
+                      className="border-orange-400/50 text-orange-300 hover:bg-orange-500/10 hover:border-orange-400/70"
                       aria-label="Copy recovery phrase"
                       data-testid="copy-recovery-phrase"
                     >
@@ -274,7 +274,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={downloadBackup}
-                      className="border-orange-400/50 text-orange-300 hover:bg-orange-500/20"
+                      className="border-orange-400/50 text-orange-300 hover:bg-orange-500/10 hover:border-orange-400/70"
                     >
                       <Download className="w-4 h-4" />
                     </Button>
@@ -374,7 +374,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
               className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 font-semibold py-4 rounded-2xl"
               size="lg"
             >
-              Continue to Email Verification
+              Continue
             </Button>
           </motion.div>
         </div>
