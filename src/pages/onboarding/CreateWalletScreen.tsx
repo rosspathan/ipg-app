@@ -177,7 +177,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <Card className="bg-black/40 backdrop-blur-md border-white/30">
               <div className="p-4">
                 <h3 className="text-white font-semibold mb-3">Recovery Phrase Length</h3>
                 <div className="flex space-x-2">
@@ -214,7 +214,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <Card className="bg-black/40 backdrop-blur-md border-white/30">
               <div className="p-6 text-center">
                 <h3 className="text-white font-semibold mb-4">Your Wallet Address</h3>
                 
@@ -255,7 +255,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className="bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-sm border-orange-500/30">
+            <Card className="bg-gradient-to-r from-orange-900/70 to-red-900/70 backdrop-blur-md border-orange-500/50">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-white font-semibold">🔐 Recovery Phrase</h3>
@@ -309,7 +309,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+            <Card className="bg-black/40 backdrop-blur-md border-white/20">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-white/80 text-sm font-medium">Private Key (Advanced)</h4>
@@ -340,7 +340,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <Card className="bg-black/40 backdrop-blur-md border-white/30">
               <div className="p-4">
                 <label className="flex items-start space-x-3 cursor-pointer">
                   <input
