@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 interface OnboardingCardProps {
   children: ReactNode;
-  variant?: 'glass' | 'glass-dark' | 'gradient';
+  variant?: 'glass' | 'glass-dark' | 'gradient' | 'success' | 'info' | 'warning';
   hover?: boolean;
   className?: string;
 }
@@ -12,9 +12,12 @@ interface OnboardingCardProps {
 export const OnboardingCard = forwardRef<HTMLDivElement, OnboardingCardProps>(
   ({ children, variant = 'glass', hover = false, className }, ref) => {
     const variants = {
-      glass: 'bg-white/10 backdrop-blur-sm border border-white/20',
-      'glass-dark': 'bg-white/5 backdrop-blur-sm border border-white/10',
-      gradient: 'bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm border border-white/20'
+      glass: 'bg-black/40 backdrop-blur-md border border-white/30',
+      'glass-dark': 'bg-black/50 backdrop-blur-md border border-white/20',
+      gradient: 'bg-gradient-to-r from-black/40 to-black/50 backdrop-blur-md border border-white/30',
+      success: 'bg-green-900/70 backdrop-blur-md border border-green-500/50',
+      info: 'bg-blue-900/70 backdrop-blur-md border border-blue-500/50',
+      warning: 'bg-orange-900/70 backdrop-blur-md border border-orange-500/50'
     };
 
     const Component = hover ? motion.div : 'div';

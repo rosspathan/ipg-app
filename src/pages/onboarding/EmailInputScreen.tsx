@@ -200,7 +200,7 @@ const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
               >
-                <Card className="bg-green-500/10 backdrop-blur-sm border-green-500/30">
+                <Card className="bg-green-900/60 backdrop-blur-md border-green-500/40">
                   <div className="p-4 space-y-2">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -220,7 +220,7 @@ const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.5 }}
             >
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <Card className="bg-black/40 backdrop-blur-md border-white/30">
                 <div className="p-6 space-y-4">
                   <div>
                     <label className="text-white/90 text-sm font-medium block mb-2">
@@ -268,13 +268,13 @@ const EmailInputScreen: React.FC<EmailInputScreenProps> = ({
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.6 }}
             >
-              <Card className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border-green-500/30">
+              <Card className="bg-gradient-to-r from-green-900/70 to-emerald-900/70 backdrop-blur-md border-green-500/50">
                 <div className="p-4">
-                  <h4 className="text-green-200 font-semibold text-sm mb-3 flex items-center">
+                  <h4 className="text-green-100 font-semibold text-sm mb-3 flex items-center">
                     <span className="mr-2">✨</span>
                     Why verify your email?
                   </h4>
-                  <ul className="text-green-200/80 text-xs space-y-2">
+                  <ul className="text-green-50 text-xs space-y-2">
                     <li className="flex items-center">
                       <span className="w-4 h-4 bg-green-500/30 rounded-full flex items-center justify-center mr-2 text-[10px]">✓</span>
                       Secure account recovery

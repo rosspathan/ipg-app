@@ -204,7 +204,7 @@ const VerifyWalletAndEmailScreen: React.FC<VerifyWalletAndEmailScreenProps> = ({
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.5 }}
             >
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <Card className="bg-black/40 backdrop-blur-md border-white/30">
                 <div className="p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -243,7 +243,7 @@ const VerifyWalletAndEmailScreen: React.FC<VerifyWalletAndEmailScreenProps> = ({
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.6 }}
             >
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <Card className="bg-black/40 backdrop-blur-md border-white/30">
                 <div className="p-6 space-y-4">
                   <div className="flex items-center gap-2">
                     <Mail className="w-5 h-5 text-white/70" />

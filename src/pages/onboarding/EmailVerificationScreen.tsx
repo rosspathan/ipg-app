@@ -598,7 +598,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.6 }}
             >
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <Card className="bg-black/40 backdrop-blur-md border-white/30">
                 <div className="p-6 space-y-6">
                   <div className="text-center">
                     <label className="text-white/90 text-sm font-medium block mb-4">
@@ -716,7 +716,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.75 }}
             >
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <Card className="bg-black/40 backdrop-blur-md border-white/30">
                 <div className="p-4 space-y-3">
                   <div className="text-center">
                     {canResend ? (

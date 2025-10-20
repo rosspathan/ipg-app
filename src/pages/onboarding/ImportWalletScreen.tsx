@@ -226,7 +226,7 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <Card className="bg-black/40 backdrop-blur-md border-white/30">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">

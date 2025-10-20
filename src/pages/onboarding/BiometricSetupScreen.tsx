@@ -235,7 +235,7 @@ const BiometricSetupScreen: React.FC<BiometricSetupScreenProps> = ({
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <Card className="bg-black/40 backdrop-blur-md border-white/30">
                   <div className="p-6">
                     {!isSetupComplete ? (
                       <div className="text-center space-y-4">

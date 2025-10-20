@@ -124,7 +124,7 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
             className={`w-12 h-12 border-2 rounded-xl flex items-center justify-center transition-all duration-300 ${
               index < value.length 
                 ? 'border-blue-400 bg-blue-500/20 scale-110' 
-                : 'border-white/30 bg-white/10'
+                : 'border-white/30 bg-black/30'
             }`}
           >
             <span className="text-white text-xl font-bold">
