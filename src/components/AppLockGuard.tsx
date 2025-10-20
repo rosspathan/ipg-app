@@ -36,6 +36,8 @@ export function AppLockGuard({ children }: AppLockGuardProps) {
         
         if (lockRequired) {
           console.log('🔒 Session expired, redirecting to lock screen');
+          // Save return path for post-unlock navigation
+          localStorage.setItem('ipg_return_path', location.pathname);
           navigate('/auth/lock', { 
             state: { from: location.pathname },
             replace: true 
@@ -61,6 +63,8 @@ export function AppLockGuard({ children }: AppLockGuardProps) {
         // App visible - check session
         const lockRequired = await isUnlockRequired();
         if (lockRequired) {
+          // Save return path for post-unlock navigation
+          localStorage.setItem('ipg_return_path', location.pathname);
           navigate('/auth/lock', { 
             state: { from: location.pathname },
             replace: true 

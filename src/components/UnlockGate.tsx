@@ -54,8 +54,16 @@ export const UnlockGate = ({ children }: UnlockGateProps) => {
           return;
         }
 
-        // Check if we need to show lock screen
-        const isUnlocked = localStorage.getItem('cryptoflow_unlocked') === 'true';
+        // Check if we need to show lock screen using unified lock state
+        const isUnlocked = (() => {
+          try {
+            const raw = localStorage.getItem('cryptoflow_lock_state');
+            return raw ? JSON.parse(raw).isUnlocked === true : false;
+          } catch {
+            return false;
+          }
+        })();
+        
         if (!isUnlocked) {
           navigate('/auth/lock', { 
             state: { from: location.pathname },

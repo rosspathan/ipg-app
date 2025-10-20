@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { saveLocalSecurityData } from "@/utils/localSecurityStorage";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthLock } from "@/hooks/useAuthLock";
 
 
 type Phase = 'idle' | 'valid' | 'submitting' | 'done' | 'error';
@@ -18,6 +19,7 @@ const SecuritySetupScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { session, userId, status } = useAuthSession();
+  const { setPin: authSetPin } = useAuthLock();
   
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
@@ -62,26 +64,25 @@ const SecuritySetupScreen = () => {
     setPhase('submitting');
     
     try {
-      // Hash the PIN client-side
-      const bcrypt = await import('bcryptjs');
-      const salt = await bcrypt.genSalt(12);
-      const hash = await bcrypt.hash(pin, salt);
-      
       // Check if user has session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user?.id) {
-        // DB path - save to security table
+        // DB path - use useAuthLock to set PIN with PBKDF2
+        const pinSetSuccess = await authSetPin(pin);
+        if (!pinSetSuccess) {
+          setPhase('error');
+          return;
+        }
+
+        // Update other security settings
         const { error: securityError } = await supabase
           .from('security')
-          .upsert({
-            user_id: session.user.id,
-            pin_hash: hash,
-            pin_salt: salt,
-            pin_set: true,
+          .update({
             biometric_enabled: biometricEnabled && biometricAvailable,
             anti_phishing_code: antiPhishingCode.trim() || null,
-          }, { onConflict: 'user_id' });
+          })
+          .eq('user_id', session.user.id);
 
         if (securityError) throw securityError;
 

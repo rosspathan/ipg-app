@@ -256,6 +256,10 @@ export const useAuthLock = () => {
           lockedUntil: null
         });
 
+        // Set compatibility flag for UnlockGate
+        localStorage.setItem('cryptoflow_unlocked', 'true');
+        console.log('✅ PIN_UNLOCK_OK');
+
           // Restore Supabase session after successful PIN unlock
           try {
             console.log('[Session] Attempting refresh...');
@@ -412,6 +416,10 @@ export const useAuthLock = () => {
             lockedUntil: null
           });
 
+          // Set compatibility flag for UnlockGate
+          localStorage.setItem('cryptoflow_unlocked', 'true');
+          console.log('✅ BIO_UNLOCK_OK (native)');
+
           // Restore Supabase session after biometric unlock
           try {
             console.log('[Session] Attempting refresh...');
@@ -466,6 +474,10 @@ export const useAuthLock = () => {
         failedAttempts: 0,
         lockedUntil: null
       });
+
+      // Set compatibility flag for UnlockGate
+      localStorage.setItem('cryptoflow_unlocked', 'true');
+      console.log('✅ BIO_UNLOCK_OK (web)');
 
       // Restore Supabase session (web biometric)
       try {
