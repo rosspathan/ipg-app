@@ -95,3 +95,15 @@ verify_jwt = false
 
 [functions.process-internal-transfer]
 verify_jwt = true
+
+[functions.send-password-reset-email]
+verify_jwt = false
+
+[functions.verify-reset-code]
+verify_jwt = false
+
+[functions.complete-password-reset]
+verify_jwt = false
+
+[functions.admin-password-reset]
+verify_jwt = true
