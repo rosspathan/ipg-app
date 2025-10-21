@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ipgLogo from '@/assets/ipg-logo.jpg';
 
@@ -14,15 +14,22 @@ const BrandSplash: React.FC<BrandSplashProps> = ({
   duration = 1500,
   canSkip = true 
 }) => {
-  const [isVisible, setIsVisible] = useState(true);
   const [canSkipNow, setCanSkipNow] = useState(false);
   const [animationPhase, setAnimationPhase] = useState<'glow' | 'ring' | 'text' | 'spark' | 'complete'>('glow');
+  const didComplete = useRef(false);
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Completion guard - ensures onComplete only fires once
+  const complete = () => {
+    if (didComplete.current) return;
+    didComplete.current = true;
+    onComplete();
+  };
 
   useEffect(() => {
     if (prefersReducedMotion) {
       const timer = setTimeout(() => {
-        onComplete();
+        complete();
       }, 800);
       return () => clearTimeout(timer);
     }
@@ -45,13 +52,13 @@ const BrandSplash: React.FC<BrandSplashProps> = ({
 
     // Single reliable timer for completion
     const completeTimer = setTimeout(() => {
-      onComplete();
+      complete();
     }, duration);
 
     // Failsafe: Force completion after max duration
     const failsafeTimer = setTimeout(() => {
       console.warn('[BrandSplash] Failsafe timeout triggered');
-      onComplete();
+      complete();
     }, duration + 1000);
 
     return () => {
@@ -64,7 +71,7 @@ const BrandSplash: React.FC<BrandSplashProps> = ({
 
   const handleSkip = () => {
     if (canSkip && canSkipNow) {
-      onComplete();
+      complete();
     }
   };
 
@@ -118,8 +125,6 @@ const BrandSplash: React.FC<BrandSplashProps> = ({
       }
     }
   };
-
-  if (!isVisible) return null;
 
   return (
     <AnimatePresence>

@@ -7,7 +7,29 @@ import BrandSplash from '@/components/brand/BrandSplash';
 
 const LandingScreen: React.FC = () => {
   const navigate = useNavigate();
-  const [showSplash, setShowSplash] = React.useState(true);
+  
+  // Developer bypass: Check URL for nosplash parameter or dev mode
+  const [showSplash, setShowSplash] = React.useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('nosplash') === '1') return false;
+    
+    // In development, skip splash unless ?splash=1
+    if (import.meta.env.DEV && params.get('splash') !== '1') return false;
+    
+    return true;
+  });
+
+  // Ultimate failsafe: Force landing page after 3 seconds NO MATTER WHAT
+  React.useEffect(() => {
+    if (!showSplash) return;
+    
+    const emergencyTimer = setTimeout(() => {
+      console.warn('[LandingScreen] Emergency failsafe triggered - forcing landing page');
+      setShowSplash(false);
+    }, 3000);
+    
+    return () => clearTimeout(emergencyTimer);
+  }, [showSplash]);
 
   if (showSplash) {
     return (

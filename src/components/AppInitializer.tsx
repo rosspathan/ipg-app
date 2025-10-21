@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { hasLocalSecurity } from '@/utils/localSecurityStorage';
 import { Loader2 } from 'lucide-react';
@@ -16,9 +16,26 @@ import { Loader2 } from 'lucide-react';
  */
 export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
 
+  // Helper to prevent navigation loops
+  const navigateSafely = (path: string) => {
+    if (location.pathname !== path) {
+      navigate(path, { replace: true });
+    }
+  };
+
   useEffect(() => {
+    // Only run initialization checks for protected /app/* routes
+    const isProtectedRoute = location.pathname.startsWith('/app');
+    
+    if (!isProtectedRoute) {
+      console.log('[AppInitializer] Not a protected route, skipping checks');
+      setIsChecking(false);
+      return;
+    }
+
     const initializeApp = async () => {
       try {
         console.log('[AppInitializer] Starting initialization...');
@@ -51,7 +68,7 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
 
         if (!walletData) {
           console.log('[AppInitializer] No wallet - redirect to wallet creation');
-          navigate('/onboarding/wallet', { replace: true });
+          navigateSafely('/onboarding/wallet');
           return;
         }
 
@@ -61,7 +78,7 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
 
         if (!hasSecurity) {
           console.log('[AppInitializer] No security - redirect to security setup');
-          navigate('/onboarding/security', { replace: true });
+          navigateSafely('/onboarding/security');
           return;
         }
 
@@ -71,13 +88,13 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
         
         if (!hasUnlockHistory) {
           console.log('[AppInitializer] Fresh session after onboarding - go to home');
-          navigate('/app/home', { replace: true });
+          navigateSafely('/app/home');
           return;
         }
 
         // Returning user with security - require unlock
         console.log('[AppInitializer] Returning user - redirect to lock screen');
-        navigate('/auth/lock', { replace: true });
+        navigateSafely('/auth/lock');
         
       } catch (error) {
         console.error('[AppInitializer] Initialization error:', error);
@@ -88,7 +105,7 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
     };
 
     initializeApp();
-  }, [navigate]);
+  }, [location.pathname]);
 
   // Show loading screen while checking
   if (isChecking) {
