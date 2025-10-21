@@ -82,13 +82,8 @@ const SignupScreen: React.FC = () => {
       if (error) throw error;
 
       if (data.user) {
-        toast({
-          title: "Account Created!",
-          description: "Let's get you started",
-        });
-        
-        // Navigate to referral code entry first
-        navigate('/onboarding/referral');
+        // Navigate to celebration screen
+        navigate('/onboarding/account-created');
       }
     } catch (error: any) {
       console.error('Signup error:', error);

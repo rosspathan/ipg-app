@@ -119,6 +119,7 @@ import LandingScreen from "./pages/LandingScreen";
 import SignupScreen from "./pages/auth/SignupScreen";
 import LoginScreen from "./pages/auth/LoginScreen";
 import RecoverWalletScreen from "./pages/auth/RecoverWalletScreen";
+import AccountCreatedCelebration from "./pages/onboarding/AccountCreatedCelebration";
 
 // User App Pages
 import AppHomeScreen from "./pages/AppHomeScreen";
@@ -319,6 +320,11 @@ function AppContent() {
 
           {/* Onboarding Flow - Post-authentication */}
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
+          <Route path="/onboarding/account-created" element={
+            <AuthProviderUser>
+              <AccountCreatedCelebration />
+            </AuthProviderUser>
+          } />
           <Route path="/onboarding/referral" element={
             <AuthProviderUser>
               <OnboardingFlow />
