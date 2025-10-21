@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,8 @@ export function BSKTransferForm() {
   const [verifiedRecipient, setVerifiedRecipient] = useState<{ id: string; email: string; full_name?: string } | null>(null);
   const [transferSuccess, setTransferSuccess] = useState<string | null>(null);
 
-  // Get user's BSK balance
-  const { data: userBalance } = useQuery({
+  // Get user's BSK balance with proper error handling
+  const { data: userBalance, isLoading: balanceLoading, error: balanceError, refetch: refetchBalance } = useQuery({
     queryKey: ["user-bsk-balance"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -32,10 +32,57 @@ export function BSKTransferForm() {
         .eq("user_id", user.id)
         .maybeSingle();
 
+      // If no record exists, create one with 0 balance
+      if (!data && !error) {
+        const { data: newBalance, error: createError } = await supabase
+          .from("user_bsk_balances")
+          .insert({
+            user_id: user.id,
+            withdrawable_balance: 0,
+            holding_balance: 0,
+            total_earned_withdrawable: 0,
+            total_earned_holding: 0,
+          })
+          .select("withdrawable_balance")
+          .single();
+        
+        if (createError) throw createError;
+        return newBalance?.withdrawable_balance || 0;
+      }
+
       if (error) throw error;
       return data?.withdrawable_balance || 0;
     },
+    retry: 2,
+    retryDelay: 1000,
   });
+
+  // Real-time balance updates
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user?.id) return;
+
+      const channel = supabase
+        .channel(`bsk-balance-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'user_bsk_balances',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            refetchBalance();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    });
+  }, [refetchBalance]);
 
   const verifyRecipientMutation = useMutation({
     mutationFn: async (email: string) => {
@@ -78,12 +125,28 @@ export function BSKTransferForm() {
       if (!verifiedRecipient) throw new Error("Please verify recipient first");
 
       const amountBSK = parseFloat(amount);
+      
+      // Comprehensive validation
       if (isNaN(amountBSK) || amountBSK <= 0) {
-        throw new Error("Invalid amount");
+        throw new Error("Please enter a valid amount");
       }
 
-      if (!userBalance || amountBSK > userBalance) {
-        throw new Error("Insufficient balance");
+      if (amountBSK < 0.01) {
+        throw new Error("Minimum transfer amount is 0.01 BSK");
+      }
+
+      const availableBalance = userBalance || 0;
+      
+      if (availableBalance === 0) {
+        throw new Error("You have 0 BSK available. Please earn BSK first to transfer.");
+      }
+
+      if (amountBSK > availableBalance) {
+        throw new Error(`Insufficient balance. You have ${availableBalance.toLocaleString()} BSK available`);
+      }
+
+      if (amountBSK > 1000000) {
+        throw new Error("Maximum transfer amount is 1,000,000 BSK per transaction");
       }
 
       // Use atomic edge function for secure transfer
@@ -101,6 +164,7 @@ export function BSKTransferForm() {
     },
     onSuccess: (transactionRef) => {
       queryClient.invalidateQueries({ queryKey: ["user-bsk-balance"] });
+      refetchBalance();
       setTransferSuccess(transactionRef);
       toast({
         title: "Transfer successful",
@@ -121,6 +185,18 @@ export function BSKTransferForm() {
       toast({ title: "Email required", description: "Please enter recipient email", variant: "destructive" });
       return;
     }
+    
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(recipientEmail)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     verifyRecipientMutation.mutate(recipientEmail);
   };
 
@@ -186,9 +262,26 @@ export function BSKTransferForm() {
           <CardDescription>BSK Withdrawable Balance</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold text-success">
-            {userBalance?.toLocaleString() || "0.00"} BSK
-          </div>
+          {balanceLoading ? (
+            <div className="animate-pulse">
+              <div className="h-10 bg-muted rounded w-40"></div>
+            </div>
+          ) : balanceError ? (
+            <div className="space-y-2">
+              <p className="text-destructive text-sm">Error loading balance</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refetchBalance()}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <div className="text-3xl font-bold text-success">
+              {userBalance?.toLocaleString() || "0.00"} BSK
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -260,7 +353,12 @@ export function BSKTransferForm() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setAmount(userBalance?.toString() || "0")}
+                  onClick={() => {
+                    if (userBalance && userBalance > 0) {
+                      setAmount(userBalance.toString());
+                    }
+                  }}
+                  disabled={!userBalance || userBalance === 0 || balanceLoading}
                 >
                   Max
                 </Button>
@@ -287,10 +385,25 @@ export function BSKTransferForm() {
               </AlertDescription>
             </Alert>
 
+            {userBalance === 0 && !balanceLoading && (
+              <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+                <AlertDescription className="text-amber-600 dark:text-amber-400">
+                  ⚠️ You have 0 BSK available. Please earn BSK through programs before transferring.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <Button
               className="w-full"
               onClick={handleTransfer}
-              disabled={!amount || parseFloat(amount) <= 0 || transferMutation.isPending}
+              disabled={
+                !amount || 
+                parseFloat(amount) <= 0 || 
+                parseFloat(amount) > (userBalance || 0) ||
+                transferMutation.isPending ||
+                balanceLoading ||
+                userBalance === 0
+              }
             >
               {transferMutation.isPending ? (
                 <>
