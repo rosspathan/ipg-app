@@ -36,22 +36,26 @@ const ForgotPasswordScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+      const { data, error } = await supabase.functions.invoke('send-password-reset-email', {
+        body: { email: email.trim() },
       });
 
       if (error) throw error;
 
-      setEmailSent(true);
-      toast({
-        title: "Email Sent!",
-        description: "Check your email for the password reset link.",
-      });
+      if (data?.success) {
+        setEmailSent(true);
+        toast({
+          title: "Code Sent!",
+          description: "Check your email for the verification code.",
+        });
+      } else {
+        throw new Error(data?.error || 'Failed to send reset code');
+      }
     } catch (error: any) {
       console.error('Password reset error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send reset email. Please try again.",
+        description: error.message || "Failed to send reset code. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -100,22 +104,22 @@ const ForgotPasswordScreen: React.FC = () => {
             <div className="text-center space-y-4">
               <h2 className="text-3xl font-bold text-white">Check Your Email</h2>
               <p className="text-white/70 text-lg">
-                We've sent a password reset link to:
+                We've sent a 6-digit verification code to:
               </p>
               <p className="text-white font-semibold text-xl">{email}</p>
               <p className="text-white/60 text-sm mt-4">
-                Click the link in the email to reset your password. 
-                The link will expire in 1 hour.
+                Enter the code to reset your password. 
+                The code will expire in 15 minutes.
               </p>
             </div>
 
             <div className="w-full space-y-4 mt-8">
               <Button
-                onClick={() => navigate('/auth/login')}
+                onClick={() => navigate('/auth/verify-reset-code', { state: { email } })}
                 className="w-full bg-white text-primary hover:bg-white/90 font-semibold py-6 rounded-2xl text-lg"
                 size="lg"
               >
-                Back to Sign In
+                Enter Verification Code
               </Button>
 
               <Button
@@ -171,7 +175,7 @@ const ForgotPasswordScreen: React.FC = () => {
           <div className="text-center space-y-2 mb-4">
             <h2 className="text-3xl font-bold text-white">Reset Your Password</h2>
             <p className="text-white/70">
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we'll send you a verification code to reset your password.
             </p>
           </div>
 
@@ -201,10 +205,10 @@ const ForgotPasswordScreen: React.FC = () => {
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Sending Email...
+                Sending Code...
               </>
             ) : (
-              'Send Reset Link'
+              'Send Verification Code'
             )}
           </Button>
 

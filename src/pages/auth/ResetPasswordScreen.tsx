@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 
 const passwordSchema = z.object({
@@ -19,6 +19,7 @@ const passwordSchema = z.object({
 
 const ResetPasswordScreen: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,26 +27,28 @@ const ResetPasswordScreen: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
 
   useEffect(() => {
-    // Check if user has a valid session from the reset link
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setHasSession(!!session);
-      
-      if (!session) {
-        toast({
-          title: "Invalid or Expired Link",
-          description: "Please request a new password reset link.",
-          variant: "destructive"
-        });
-        setTimeout(() => navigate('/auth/forgot-password'), 2000);
-      }
-    };
+    // Get email and code from location state
+    const emailFromState = location.state?.email;
+    const codeFromState = location.state?.code;
+    const verifiedFromState = location.state?.verified;
 
-    checkSession();
-  }, [navigate, toast]);
+    if (!emailFromState || !codeFromState || !verifiedFromState) {
+      toast({
+        title: "Invalid Access",
+        description: "Please verify your code first.",
+        variant: "destructive"
+      });
+      navigate('/auth/forgot-password');
+      return;
+    }
+
+    setEmail(emailFromState);
+    setCode(codeFromState);
+  }, [location, navigate, toast]);
 
   const passwordStrength = (pass: string) => {
     let strength = 0;
@@ -85,20 +88,28 @@ const ResetPasswordScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
+      const { data, error } = await supabase.functions.invoke('complete-password-reset', {
+        body: {
+          email,
+          code,
+          newPassword: password,
+        },
       });
 
       if (error) throw error;
 
-      setSuccess(true);
-      toast({
-        title: "Password Reset Successful!",
-        description: "Your password has been updated. Redirecting to login...",
-      });
+      if (data?.success) {
+        setSuccess(true);
+        toast({
+          title: "Password Reset Successful!",
+          description: "Your password has been updated. Redirecting to login...",
+        });
 
-      // Redirect to login after 3 seconds
-      setTimeout(() => navigate('/auth/login'), 3000);
+        // Redirect to login after 3 seconds
+        setTimeout(() => navigate('/auth/login'), 3000);
+      } else {
+        throw new Error(data?.error || 'Failed to reset password');
+      }
     } catch (error: any) {
       console.error('Password reset error:', error);
       toast({
@@ -116,17 +127,6 @@ const ResetPasswordScreen: React.FC = () => {
       handleResetPassword();
     }
   };
-
-  if (!hasSession) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-background flex items-center justify-center px-6">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-white animate-spin mx-auto mb-4" />
-          <p className="text-white">Verifying reset link...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (success) {
     return (
@@ -165,6 +165,19 @@ const ResetPasswordScreen: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-background flex flex-col">
       <div className="flex-1 flex flex-col px-6 py-8">
+        {/* Header */}
+        <div className="flex items-center mb-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/auth/verify-reset-code', { state: { email } })}
+            className="text-white hover:bg-white/10"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="text-2xl font-bold text-white ml-4">Reset Password</h1>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -173,7 +186,7 @@ const ResetPasswordScreen: React.FC = () => {
         >
           {/* Header */}
           <div className="text-center space-y-2 mb-4">
-            <h1 className="text-3xl font-bold text-white">Create New Password</h1>
+            <h2 className="text-3xl font-bold text-white">Create New Password</h2>
             <p className="text-white/70">
               Enter a strong password to secure your account
             </p>

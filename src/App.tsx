@@ -122,6 +122,7 @@ import WalletUnlockedScreen from "./pages/auth/WalletUnlockedScreen";
 import RecoverWalletScreen from "./pages/auth/RecoverWalletScreen";
 import ForgotPasswordScreen from "./pages/auth/ForgotPasswordScreen";
 import ResetPasswordScreen from "./pages/auth/ResetPasswordScreen";
+import VerifyResetCodeScreen from "./pages/auth/VerifyResetCodeScreen";
 import AccountCreatedCelebration from "./pages/onboarding/AccountCreatedCelebration";
 
 // User App Pages
@@ -304,6 +305,7 @@ function AppContent() {
           <Route path="/auth/signup" element={<SignupScreen />} />
           <Route path="/auth/login" element={<LoginScreen />} />
           <Route path="/auth/forgot-password" element={<ForgotPasswordScreen />} />
+          <Route path="/auth/verify-reset-code" element={<VerifyResetCodeScreen />} />
           <Route path="/auth/reset-password" element={<ResetPasswordScreen />} />
           <Route path="/auth/recover" element={<RecoverWalletScreen />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
