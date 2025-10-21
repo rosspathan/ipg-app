@@ -47,7 +47,12 @@ serve(async (req) => {
     }
 
     // Calculate required balance
-    const order_value = type === 'market' ? quantity : quantity * price!;
+    // For market orders, we need current market price (simplified: use a high estimate)
+    // In production, this should fetch the best ask/bid from order book
+    const estimated_market_price = type === 'market' 
+      ? (side === 'buy' ? price || 999999999 : price || 0.00000001) 
+      : price!;
+    const order_value = quantity * estimated_market_price;
     const required_asset = side === 'buy' ? quote_symbol : base_symbol;
     const required_amount = side === 'buy' ? order_value : quantity;
 

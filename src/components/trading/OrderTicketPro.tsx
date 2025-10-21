@@ -117,10 +117,12 @@ export function OrderTicketPro({
       if (isNaN(limitPrice) || limitPrice <= 0) return false;
     }
 
-    const total = calculateTotal();
+    const finalCost = calculateFinalCost();
     if (side === "buy") {
-      return total <= availableBalance.quote;
+      // Check if user has enough to cover total + fee
+      return finalCost <= availableBalance.quote;
     } else {
+      // Check if user has enough base asset to sell
       return amt <= availableBalance.base;
     }
   };
