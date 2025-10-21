@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
 import { copyToClipboard } from "@/utils/clipboard"
 import { useNavigation } from "@/hooks/useNavigation"
-import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import QRCode from "qrcode"
@@ -284,12 +283,6 @@ export function WalletPageRebuilt() {
           <BalanceCluster />
         </div>
       </div>
-
-      {/* Bottom Navigation */}
-      <DockNav
-        onNavigate={navigate}
-        onCenterPress={() => setShowQuickSwitch(true)}
-      />
 
       {/* Quick Switch */}
       <QuickSwitch

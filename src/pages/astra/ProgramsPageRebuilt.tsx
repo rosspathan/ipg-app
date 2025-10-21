@@ -2,7 +2,6 @@ import * as React from "react"
 import { useState } from "react"
 import { Gift, Star, Zap, Users, TrendingUp, Shield, Coins, Target } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
-import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { ProgramGrid } from "@/components/astra/grid/ProgramGrid"
 import { ProgramTile } from "@/components/astra/grid/ProgramTile"
@@ -133,12 +132,6 @@ export function ProgramsPageRebuilt() {
           ))}
         </ProgramGrid>
       </div>
-
-      {/* Bottom Navigation */}
-      <DockNav
-        onNavigate={navigate}
-        onCenterPress={() => setShowQuickSwitch(true)}
-      />
 
       {/* Quick Switch */}
       <QuickSwitch

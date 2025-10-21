@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { DockNav } from "@/components/navigation/DockNav";
 import { ChartCardPro } from "@/components/trading/ChartCardPro";
 
 // Mock data for order book
@@ -590,9 +589,6 @@ export default function TradingScreenRebuilt() {
           </div>
         </div>
       </div>
-
-      {/* Bottom Navigation */}
-      <DockNav onNavigate={(path) => navigate(path)} />
 
       {/* Pair Selector */}
       <PairSelectorSheet

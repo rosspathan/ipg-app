@@ -16,7 +16,6 @@ import {
   ChevronRight, Crown, LogOut, Zap, Camera, Loader2, CheckCircle2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { AccountTab } from "@/components/profile/AccountTab"
 import SecurityTab from "@/components/profile/SecurityTab"
@@ -261,12 +260,6 @@ export function ProfilePageRebuilt() {
         </Button>
       </div>
       </div>
-
-      {/* Bottom Navigation */}
-      <DockNav
-        onNavigate={navigate}
-        onCenterPress={() => setShowQuickSwitch(true)}
-      />
 
       {/* Quick Switch */}
       <QuickSwitch

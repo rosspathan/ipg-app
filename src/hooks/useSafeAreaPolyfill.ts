@@ -21,6 +21,15 @@ export function useSafeAreaPolyfill() {
       document.documentElement.style.setProperty('--vvb', `${bottom}px`);
       document.documentElement.style.setProperty('--vvl', `${left}px`);
       document.documentElement.style.setProperty('--vvr', `${right}px`);
+
+      // Android-specific fallback: if both env() and visualViewport return 0,
+      // set a minimum bottom offset to clear system bars
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      if (isAndroid && bottom === 0) {
+        document.documentElement.style.setProperty('--android-b', '24px');
+      } else {
+        document.documentElement.style.setProperty('--android-b', '0px');
+      }
     };
 
     // Initial update
@@ -28,7 +37,8 @@ export function useSafeAreaPolyfill() {
     console.info('SAFE_AREA_POLYFILLED', {
       bottom: getComputedStyle(document.documentElement).getPropertyValue('--vvb'),
       left: getComputedStyle(document.documentElement).getPropertyValue('--vvl'),
-      right: getComputedStyle(document.documentElement).getPropertyValue('--vvr')
+      right: getComputedStyle(document.documentElement).getPropertyValue('--vvr'),
+      androidFallback: getComputedStyle(document.documentElement).getPropertyValue('--android-b')
     });
 
     // Listen for viewport changes

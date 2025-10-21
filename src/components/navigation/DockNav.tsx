@@ -67,11 +67,11 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
     <nav
       ref={navRef}
       className={cn(
-        "fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto z-50",
+        "fixed left-0 right-0 max-w-[430px] mx-auto z-50",
         className
       )}
       style={{
-        paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
+        bottom: 'var(--bso)'
       }}
       data-testid="dock-nav"
       id="qa-bottom-dock"
@@ -108,7 +108,15 @@ export function DockNav({ onNavigate, onCenterPress, className }: DockNavProps) 
             </svg>
           </div>
 
-          <div className="flex items-center justify-around px-1 pt-2 pb-1.5 relative">
+          <div 
+            className="flex items-center justify-around relative"
+            style={{
+              paddingLeft: 'var(--bsl)',
+              paddingRight: 'var(--bsr)',
+              paddingTop: '8px',
+              paddingBottom: '6px'
+            }}
+          >
             {navItems.map((item, index) => {
               if (item.id === "center") {
                 return (

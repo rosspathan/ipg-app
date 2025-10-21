@@ -52,16 +52,16 @@ export function BottomNavBar() {
     <nav 
       className="mobile-fixed z-50 bg-card border-t border-border"
       style={{
-        bottom: 'max(env(safe-area-inset-bottom), var(--vvb, 0px), 12px)',
+        bottom: 'var(--bso)',
         height: 'var(--dock-h)'
       }}
     >
       <div 
         className="h-full flex items-center justify-around"
         style={{
-          paddingLeft: 'max(env(safe-area-inset-left), 8px)',
-          paddingRight: 'max(env(safe-area-inset-right), 8px)',
-          paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
+          paddingLeft: 'var(--bsl)',
+          paddingRight: 'var(--bsr)',
+          paddingBottom: '8px',
           paddingTop: '8px'
         }}
       >

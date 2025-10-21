@@ -93,6 +93,12 @@ All colors MUST be HSL.
     --safe-area-top: env(safe-area-inset-top);
     --safe-area-bottom: env(safe-area-inset-bottom);
 
+    /* Safe area offsets - centralized tokens combining env(), polyfill, and Android fallback */
+    --android-b: 0px; /* Set by useSafeAreaPolyfill for Android devices */
+    --bso: max(env(safe-area-inset-bottom, 0px), var(--vvb, 0px), var(--android-b, 0px), 12px);
+    --bsl: max(env(safe-area-inset-left, 0px), var(--vvl, 0px), 8px);
+    --bsr: max(env(safe-area-inset-right, 0px), var(--vvr, 0px), 8px);
+
     /* Nova Admin DS Typography */
     --font-heading: 'Space Grotesk', system-ui, sans-serif;
     --font-body: 'Inter', system-ui, sans-serif;

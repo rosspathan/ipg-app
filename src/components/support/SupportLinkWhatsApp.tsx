@@ -72,9 +72,13 @@ export const SupportLinkWhatsApp: FC<SupportLinkWhatsAppProps> = ({
   const waLink = `https://wa.me/${finalPhone.replace(/\D/g, '')}?text=${encodeURIComponent(finalText)}`;
 
   const computedClass = cn(
-    variant === 'fab' ? 'fixed right-4 bottom-[calc(var(--dock-h)+max(env(safe-area-inset-bottom),var(--vvb,0px),12px)+16px)] z-40' : undefined,
+    variant === 'fab' ? 'fixed right-4 z-40' : undefined,
     className
   );
+
+  const fabStyle = variant === 'fab' ? {
+    bottom: 'calc(var(--dock-h) + var(--bso) + 16px)'
+  } : undefined;
 
   const buttonEl = (
     <IconButton
@@ -85,6 +89,7 @@ export const SupportLinkWhatsApp: FC<SupportLinkWhatsAppProps> = ({
       rel="noopener noreferrer"
       aria-label="Support on WhatsApp"
       className={computedClass}
+      style={fabStyle}
       onClick={handleClick}
     >
       <IconWhatsApp className={variant === 'inline' ? 'w-6 h-6' : 'w-7 h-7'} />
