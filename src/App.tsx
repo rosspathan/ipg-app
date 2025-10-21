@@ -344,6 +344,16 @@ function AppContent() {
               <OnboardingFlow />
             </AuthProviderUser>
           } />
+          <Route path="/onboarding/biometric" element={
+            <AuthProviderUser>
+              <OnboardingFlow />
+            </AuthProviderUser>
+          } />
+          <Route path="/onboarding/success" element={
+            <AuthProviderUser>
+              <OnboardingFlow />
+            </AuthProviderUser>
+          } />
           <Route path="/recovery/verify" element={<RecoveryVerifyScreen />} />
           <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
 

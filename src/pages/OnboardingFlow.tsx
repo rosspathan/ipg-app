@@ -57,6 +57,10 @@ const OnboardingFlow: React.FC = () => {
       targetStep = 'create-wallet';
     } else if (path === '/onboarding/wallet/import') {
       targetStep = 'import-wallet';
+    } else if (path.includes('/onboarding/biometric')) {
+      targetStep = 'biometric-setup';
+    } else if (path.includes('/onboarding/success')) {
+      targetStep = 'success';
     } else if (path.includes('/onboarding/security')) {
       targetStep = 'pin-setup';
     } else {
@@ -96,11 +100,13 @@ const OnboardingFlow: React.FC = () => {
   const handlePinSetup = (pinHash: string) => {
     setPinHash(pinHash);
     setStep('biometric-setup');
+    navigate('/onboarding/biometric');
   };
 
   const handleBiometricSetup = (success: boolean) => {
     markBiometricSetup(success);
     setStep('success');
+    navigate('/onboarding/success');
   };
 
   // Show message if user arrives without proper auth
