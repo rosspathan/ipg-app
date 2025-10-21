@@ -32,7 +32,7 @@ const defaultLockState: LockState = {
   lockedUntil: null,
   biometricEnabled: false,
   requireOnActions: true,
-  sessionLockMinutes: 5,
+  sessionLockMinutes: 30, // Extended from 5 to 30 minutes for better UX
   criticalOperationInProgress: false
 };
 
@@ -728,6 +728,9 @@ export const useAuthLock = () => {
 
 // Helper for onboarding: unlock without requiring PIN
 export const unlockAfterOnboarding = async () => {
+  // Set fresh setup flag to skip lock screen on first access
+  localStorage.setItem('ipg_fresh_setup', 'true');
+  
   const lockState = {
     isUnlocked: true,
     lastUnlockAt: Date.now(),
@@ -735,10 +738,10 @@ export const unlockAfterOnboarding = async () => {
     lockedUntil: null,
     biometricEnabled: false,
     requireOnActions: true,
-    sessionLockMinutes: 5,
+    sessionLockMinutes: 30, // Extended timeout for better UX
     criticalOperationInProgress: false
   };
   
   localStorage.setItem('cryptoflow_lock_state', JSON.stringify(lockState));
-  console.log('✅ Unlocked after onboarding completion');
+  console.log('✅ Unlocked after onboarding completion - fresh setup mode enabled');
 };

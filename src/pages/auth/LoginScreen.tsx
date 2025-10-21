@@ -59,18 +59,25 @@ const LoginScreen: React.FC = () => {
           // First time user or no security setup yet
           navigate('/onboarding/security');
         } else {
-          // Has security, check if already unlocked
+          // Has security, check if session is still valid
           const lockStateRaw = localStorage.getItem('cryptoflow_lock_state');
           let isUnlocked = false;
           try {
-            isUnlocked = lockStateRaw ? JSON.parse(lockStateRaw).isUnlocked === true : false;
+            if (lockStateRaw) {
+              const parsed = JSON.parse(lockStateRaw);
+              const sessionTimeout = (parsed.sessionLockMinutes || 30) * 60 * 1000;
+              const timeSinceUnlock = Date.now() - (parsed.lastUnlockAt || 0);
+              isUnlocked = parsed.isUnlocked === true && timeSinceUnlock < sessionTimeout;
+            }
           } catch {
             isUnlocked = false;
           }
           
           if (isUnlocked) {
+            // Session still valid - go directly to home
             navigate('/app/home');
           } else {
+            // Session expired - require unlock
             navigate('/auth/lock');
           }
         }

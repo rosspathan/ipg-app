@@ -60,6 +60,10 @@ const SecuritySetupFlow = ({ isOpen, onComplete, onSkip, mandatory = false }: Se
     try {
       const success = await setPin(pin);
       if (success) {
+        // Set fresh setup flag to skip lock screen on first access
+        localStorage.setItem('ipg_fresh_setup', 'true');
+        
+        // Set extended unlock state for smooth onboarding
         localStorage.setItem('cryptoflow_lock_state', JSON.stringify({
           isUnlocked: true,
           lastUnlockAt: Date.now(),
@@ -67,7 +71,7 @@ const SecuritySetupFlow = ({ isOpen, onComplete, onSkip, mandatory = false }: Se
           lockedUntil: null,
           biometricEnabled: biometricEnabled && biometricAvailable,
           requireOnActions: true,
-          sessionLockMinutes: 5
+          sessionLockMinutes: 30 // Extended timeout for better UX
         }));
 
         toast({

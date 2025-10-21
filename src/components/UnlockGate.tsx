@@ -55,11 +55,25 @@ export const UnlockGate = ({ children }: UnlockGateProps) => {
           return;
         }
 
+        // Check if this is a fresh setup (skip lock requirement)
+        const isFreshSetup = localStorage.getItem('ipg_fresh_setup') === 'true';
+        if (isFreshSetup) {
+          console.log('[UnlockGate] Fresh setup detected - allowing access');
+          return;
+        }
+
         // Check if we need to show lock screen using unified lock state
         const isUnlocked = (() => {
           try {
             const raw = localStorage.getItem('cryptoflow_lock_state');
-            return raw ? JSON.parse(raw).isUnlocked === true : false;
+            if (!raw) return false;
+            const parsed = JSON.parse(raw);
+            
+            // Check session timeout
+            const sessionTimeout = (parsed.sessionLockMinutes || 30) * 60 * 1000;
+            const timeSinceUnlock = Date.now() - (parsed.lastUnlockAt || 0);
+            
+            return parsed.isUnlocked === true && timeSinceUnlock < sessionTimeout;
           } catch {
             return false;
           }

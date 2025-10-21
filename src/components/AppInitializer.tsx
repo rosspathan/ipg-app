@@ -82,18 +82,38 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        // Check if this is a fresh session (no unlock history)
-        const lockState = localStorage.getItem('cryptoflow_lock_state');
-        const hasUnlockHistory = lockState && JSON.parse(lockState).lastUnlockAt;
+        // Check if this is a fresh setup (just completed security onboarding)
+        const isFreshSetup = localStorage.getItem('ipg_fresh_setup') === 'true';
         
-        if (!hasUnlockHistory) {
-          console.log('[AppInitializer] Fresh session after onboarding - go to home');
+        if (isFreshSetup) {
+          console.log('[AppInitializer] Fresh setup - skip lock screen, go to home');
+          localStorage.removeItem('ipg_fresh_setup'); // Clear flag after first use
           navigateSafely('/app/home');
           return;
         }
 
-        // Returning user with security - require unlock
-        console.log('[AppInitializer] Returning user - redirect to lock screen');
+        // Check if session is still unlocked
+        const lockState = localStorage.getItem('cryptoflow_lock_state');
+        let isUnlocked = false;
+        try {
+          if (lockState) {
+            const parsed = JSON.parse(lockState);
+            const sessionTimeout = (parsed.sessionLockMinutes || 30) * 60 * 1000;
+            const timeSinceUnlock = Date.now() - (parsed.lastUnlockAt || 0);
+            isUnlocked = parsed.isUnlocked && timeSinceUnlock < sessionTimeout;
+          }
+        } catch (e) {
+          console.error('[AppInitializer] Error parsing lock state:', e);
+        }
+        
+        if (isUnlocked) {
+          console.log('[AppInitializer] Session still unlocked - go to home');
+          navigateSafely('/app/home');
+          return;
+        }
+
+        // Session expired - require unlock
+        console.log('[AppInitializer] Session expired - redirect to lock screen');
         navigateSafely('/auth/lock');
         
       } catch (error) {

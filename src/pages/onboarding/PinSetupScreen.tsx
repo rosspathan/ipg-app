@@ -79,7 +79,20 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
       const hash = await hashPin(pin, salt);
       
       storePinCredentials(hash, salt);
-      setLockState('unlocked');
+      
+      // Set fresh setup flag to skip lock screen on first access
+      localStorage.setItem('ipg_fresh_setup', 'true');
+      
+      // Set extended unlock state for smooth onboarding
+      localStorage.setItem('cryptoflow_lock_state', JSON.stringify({
+        isUnlocked: true,
+        lastUnlockAt: Date.now(),
+        failedAttempts: 0,
+        lockedUntil: null,
+        biometricEnabled: false,
+        requireOnActions: true,
+        sessionLockMinutes: 30 // Extended timeout for better UX
+      }));
       
       toast({
         title: "PIN Created Successfully!",
