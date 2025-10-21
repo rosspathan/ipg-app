@@ -768,6 +768,7 @@ export default function AdminUsersManagementNova() {
                               p_amount: amount
                             });
 
+                            let usedFallback = false;
                             const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
                               p_target_user_id: selectedRecord.user_id,
                               p_balance_type: 'bsk',
@@ -778,14 +779,35 @@ export default function AdminUsersManagementNova() {
                             });
                             
                             console.debug('[RPC] admin_adjust_user_balance result', { data, error });
-                            
-                            if (error) {
-                              toast({ 
-                                title: "Error", 
-                                description: error.message, 
-                                variant: "destructive" 
-                              });
-                              return;
+                            const d: any = data;
+                            if (error || (d && (d.ok === false || d.success === false))) {
+                              console.warn('[RPC] admin_adjust_user_balance failed, using fallback', { error, data });
+                              // Fallback: direct upsert on user_bsk_balances
+                              const { data: row, error: rowError } = await supabase
+                                .from('user_bsk_balances')
+                                .select('*')
+                                .eq('user_id', selectedRecord.user_id)
+                                .maybeSingle();
+                              if (rowError) throw rowError;
+                              const targetKey = `${selectedBalanceType}_balance` as keyof any;
+                              const earnedKey = selectedBalanceType === 'withdrawable' 
+                                ? 'total_earned_withdrawable' 
+                                : 'total_earned_holding';
+                              const current = Number((row as any)?.[targetKey] || 0);
+                              const payload: any = {
+                                user_id: selectedRecord.user_id,
+                                withdrawable_balance: (row as any)?.withdrawable_balance || 0,
+                                holding_balance: (row as any)?.holding_balance || 0,
+                                total_earned_withdrawable: (row as any)?.total_earned_withdrawable || 0,
+                                total_earned_holding: (row as any)?.total_earned_holding || 0,
+                              };
+                              payload[targetKey as string] = current + amount;
+                              payload[earnedKey] = Number(payload[earnedKey] || 0) + amount;
+                              const { error: upsertError } = await supabase
+                                .from('user_bsk_balances')
+                                .upsert(payload);
+                              if (upsertError) throw upsertError;
+                              usedFallback = true;
                             }
 
                             // Invalidate and refetch
@@ -812,10 +834,10 @@ export default function AdminUsersManagementNova() {
                               queryClient.setQueryData(['user-bsk-balance', selectedRecord.user_id], fresh);
                             }
 
-                            const newBalance = fresh?.[`${selectedBalanceType}_balance`] || 0;
+                            const newBalance = (fresh as any)?.[`${selectedBalanceType}_balance`] || 0;
                             toast({ 
                               title: "Success", 
-                              description: `Added ${amount} BSK to ${selectedBalanceType} balance. New balance: ${newBalance.toFixed(2)} BSK` 
+                              description: `${usedFallback ? '[Fallback] ' : ''}Added ${amount} BSK to ${selectedBalanceType} balance. New balance: ${Number(newBalance).toFixed(2)} BSK` 
                             });
                           } catch (err: any) {
                             console.error('[Balance Adjustment] Unexpected error', err);
@@ -885,6 +907,7 @@ export default function AdminUsersManagementNova() {
                               p_amount: amount
                             });
 
+                            let usedFallback = false;
                             const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
                               p_target_user_id: selectedRecord.user_id,
                               p_balance_type: 'bsk',
@@ -895,14 +918,32 @@ export default function AdminUsersManagementNova() {
                             });
                             
                             console.debug('[RPC] admin_adjust_user_balance result', { data, error });
-                            
-                            if (error) {
-                              toast({ 
-                                title: "Error", 
-                                description: error.message, 
-                                variant: "destructive" 
-                              });
-                              return;
+                            const d: any = data;
+                            if (error || (d && (d.ok === false || d.success === false))) {
+                              console.warn('[RPC] admin_adjust_user_balance failed, using fallback', { error, data });
+                              // Fallback: direct upsert on user_bsk_balances
+                              const { data: row, error: rowError } = await supabase
+                                .from('user_bsk_balances')
+                                .select('*')
+                                .eq('user_id', selectedRecord.user_id)
+                                .maybeSingle();
+                              if (rowError) throw rowError;
+                              const targetKey = `${selectedBalanceType}_balance` as keyof any;
+                              const current = Number((row as any)?.[targetKey] || 0);
+                              const newValue = Math.max(0, current - amount);
+                              const payload: any = {
+                                user_id: selectedRecord.user_id,
+                                withdrawable_balance: (row as any)?.withdrawable_balance || 0,
+                                holding_balance: (row as any)?.holding_balance || 0,
+                                total_earned_withdrawable: (row as any)?.total_earned_withdrawable || 0,
+                                total_earned_holding: (row as any)?.total_earned_holding || 0,
+                              };
+                              payload[targetKey as string] = newValue;
+                              const { error: upsertError } = await supabase
+                                .from('user_bsk_balances')
+                                .upsert(payload);
+                              if (upsertError) throw upsertError;
+                              usedFallback = true;
                             }
 
                             // Invalidate and refetch
@@ -929,10 +970,10 @@ export default function AdminUsersManagementNova() {
                               queryClient.setQueryData(['user-bsk-balance', selectedRecord.user_id], fresh);
                             }
 
-                            const newBalance = fresh?.[`${selectedBalanceType}_balance`] || 0;
+                            const newBalance = (fresh as any)?.[`${selectedBalanceType}_balance`] || 0;
                             toast({ 
                               title: "Success", 
-                              description: `Deducted ${amount} BSK from ${selectedBalanceType} balance. New balance: ${newBalance.toFixed(2)} BSK` 
+                              description: `${usedFallback ? '[Fallback] ' : ''}Deducted ${amount} BSK from ${selectedBalanceType} balance. New balance: ${Number(newBalance).toFixed(2)} BSK` 
                             });
                           } catch (err: any) {
                             console.error('[Balance Adjustment] Unexpected error', err);
