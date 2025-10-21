@@ -303,7 +303,11 @@ function AppContent() {
           <Route path="/auth/login" element={<LoginScreen />} />
           <Route path="/auth/recover" element={<RecoverWalletScreen />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/auth/lock" element={<AppLockScreen />} />
+          <Route path="/auth/lock" element={
+            <AuthProviderUser>
+              <AppLockScreen />
+            </AuthProviderUser>
+          } />
           
           {/* Legacy redirects */}
           <Route path="/lock" element={<Navigate to="/auth/lock" replace />} />
@@ -315,8 +319,16 @@ function AppContent() {
 
           {/* Onboarding Flow - Post-authentication */}
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
-          <Route path="/onboarding/wallet" element={<OnboardingFlow />} />
-          <Route path="/onboarding/security" element={<OnboardingFlow />} />
+          <Route path="/onboarding/wallet" element={
+            <AuthProviderUser>
+              <OnboardingFlow />
+            </AuthProviderUser>
+          } />
+          <Route path="/onboarding/security" element={
+            <AuthProviderUser>
+              <OnboardingFlow />
+            </AuthProviderUser>
+          } />
           <Route path="/recovery/verify" element={<RecoveryVerifyScreen />} />
           <Route path="/wallet-selection" element={<WalletSelectionScreen />} />
 

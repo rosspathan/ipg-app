@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Fingerprint, AlertCircle, Loader2, Eye, EyeOff, Delete } from "lucide-react";
 import { useAuthLock } from "@/hooks/useAuthLock";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { hasLocalSecurity } from "@/utils/localSecurityStorage";
 import { supabase } from "@/integrations/supabase/client";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
@@ -13,7 +13,7 @@ import { motion } from "framer-motion";
 
 const AppLockScreen = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useAuthUser();
   const { lockState, unlockWithPin, unlockWithBiometrics, checkBiometricAvailability } = useAuthLock();
   
   const [pin, setPin] = useState("");
