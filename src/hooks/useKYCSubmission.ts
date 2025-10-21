@@ -101,10 +101,16 @@ export const useKYCSubmission = () => {
 
       try {
         setSavingDraft(true);
-        const updateData: any = {
+        
+        // Merge with existing submission data
+        const mergedData = {
+          ...submission,
+          ...data,
           user_id: user.id,
-          ...data
         };
+        
+        const updateData: any = { ...mergedData };
+        
         // Only set status to draft if not already submitted/approved/rejected
         if (!data.status || data.status === 'draft') {
           updateData.status = 'draft';
@@ -118,13 +124,18 @@ export const useKYCSubmission = () => {
 
         if (error) throw error;
 
-        setProgress(calculateProgress(data));
+        // Update local state with merged data
+        setSubmission(mergedData as KYCSubmission);
+        
+        // Calculate progress from complete merged data
+        const newProgress = calculateProgress(mergedData);
+        setProgress(newProgress);
         setLastSaved(new Date());
+        
+        console.log('✅ Draft saved, progress:', newProgress, '%');
         
         // Clear last saved indicator after 3 seconds
         setTimeout(() => setLastSaved(null), 3000);
-        
-        console.log('KYC draft saved instantly');
       } catch (error) {
         console.error('Error saving draft:', error);
         toast.error('Failed to save changes');
@@ -132,7 +143,7 @@ export const useKYCSubmission = () => {
         setSavingDraft(false);
       }
     },
-    [user, calculateProgress]
+    [user, submission, calculateProgress]
   );
 
   const uploadDocument = async (file: File, docType: 'id_front' | 'id_back' | 'selfie'): Promise<string> => {

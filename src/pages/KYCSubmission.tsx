@@ -47,6 +47,9 @@ export default function KYCSubmission() {
     const updatedData = { ...formData, [field]: value };
     setFormData(updatedData);
     
+    console.log('📝 Field changed:', field, '=', value);
+    console.log('📊 Current form data:', updatedData);
+    
     // Save draft - this will auto-update progress
     await saveDraft(updatedData);
     
@@ -62,10 +65,15 @@ export default function KYCSubmission() {
 
   const handleFileUpload = async (field: string, file: File) => {
     try {
+      console.log('📤 Starting upload for:', field);
       const url = await uploadDocument(file, field as any);
-      handleInputChange(field, url);
+      console.log('✅ Upload complete, URL:', url);
+      
+      // This will trigger saveDraft and update progress
+      await handleInputChange(field, url);
     } catch (error) {
       console.error('Upload error:', error);
+      toast.error('Failed to upload document');
     }
   };
 
