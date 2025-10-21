@@ -74,6 +74,7 @@ export default function ISmartSpinScreen() {
       return
     }
 
+    // Clear previous winning segment BEFORE starting new spin
     setWinningSegmentIndex(undefined)
     spinMachine.send({ type: 'SPIN_CLICK' })
 
@@ -160,28 +161,6 @@ export default function ISmartSpinScreen() {
           </p>
         </div>
 
-        {/* Last Result - Only show after spin completes */}
-        {lastResult && spinMachine.isIdle && (
-          <div className="px-4 py-4 rounded-xl border text-center animate-scale-in" style={{
-            background: lastResult.multiplier > 0 
-              ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)'
-              : 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%)',
-            borderColor: lastResult.multiplier > 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'
-          }}>
-            <p className="text-xs text-muted-foreground mb-2">Last Result</p>
-            <p className={`text-3xl font-bold ${
-              lastResult.multiplier > 0 ? 'text-green-500' : 'text-red-500'
-            }`}>
-              {lastResult.multiplier > 0 
-                ? `🎉 +${Number(lastResult.net_payout_bsk ?? 0).toFixed(2)} BSK`
-                : '💔 LOSE'
-              }
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {lastResult.segment?.label || 'LOSE'} • {lastResult.multiplier}x
-            </p>
-          </div>
-        )}
 
         {/* Recent Spins History */}
         <div className="space-y-2">
@@ -205,36 +184,53 @@ export default function ISmartSpinScreen() {
             </div>
           ) : (
             <div className="space-y-2">
-              {spinHistory.slice(0, 5).map((spin, index) => (
-                <div
-                  key={spin.server_seed || index}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card/40 border border-border/20 hover:bg-card/60 transition-colors"
-                >
+              {spinHistory.slice(0, 5).map((spin, index) => {
+                const isNewest = index === 0;
+                const isWin = (spin.multiplier || 0) > 0;
+                
+                return (
                   <div
-                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                      spin.multiplier > 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
-                    }`}
+                    key={spin.server_seed || index}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all ${
+                      isNewest 
+                        ? 'ring-2 ring-primary/50 animate-scale-in shadow-lg' 
+                        : ''
+                    } ${
+                      isWin ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'
+                    } hover:shadow-md`}
                   >
-                    {spin.multiplier}x
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-foreground">
-                      {spin.segment?.label || 'LOSE'}
+                    <div
+                      className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${
+                        isWin ? 'bg-green-500/30 text-green-500' : 'bg-red-500/30 text-red-500'
+                      } ${isNewest ? 'shadow-md' : ''}`}
+                    >
+                      {spin.multiplier}x
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      Result: {Number(spin.payout_bsk ?? 0).toFixed(0)} BSK
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                        {spin.segment?.label || 'LOSE'}
+                        {isNewest && <span className="text-xs">✨</span>}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {new Date(spin.created_at).toLocaleTimeString()}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className={`text-xs font-semibold ${
-                    (spin.net_change_bsk ?? 0) > 0 ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    {(spin.net_change_bsk ?? 0) > 0 ? '+' : ''}
-                    {Number(spin.net_change_bsk ?? 0).toFixed(0)}
+                    <div className="text-right">
+                      <div className={`text-sm font-bold ${
+                        (spin.net_change_bsk ?? 0) > 0 ? 'text-green-500' : 'text-red-500'
+                      }`}>
+                        {(spin.net_change_bsk ?? 0) > 0 ? '+' : ''}
+                        {Number(spin.net_change_bsk ?? 0).toFixed(0)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        Bet: {Number(spin.bet_bsk ?? 0).toFixed(0)}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

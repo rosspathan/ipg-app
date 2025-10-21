@@ -30,11 +30,11 @@ export function SpinWheel3D({
   const animationRef = useRef<number>()
 
   useEffect(() => {
-    // Start animation whenever a target index is available AND segments are loaded
-    if (winningSegmentIndex !== undefined && segments.length > 0) {
+    // Start animation only when spinning state is active with a valid target
+    if (winningSegmentIndex !== undefined && segments.length > 0 && isSpinning) {
       startSpinAnimation(winningSegmentIndex)
     }
-  }, [winningSegmentIndex, segments, spinId])
+  }, [winningSegmentIndex, segments, spinId, isSpinning])
 
   const startSpinAnimation = (targetIndex: number) => {
     // Guard: ensure segments are loaded and index is valid
