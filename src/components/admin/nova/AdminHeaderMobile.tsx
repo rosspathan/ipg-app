@@ -1,5 +1,6 @@
-import { Menu, Bell, Search } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { BrandLogoBlink } from "./BrandLogoBlink";
 import {
   Sheet,
@@ -80,10 +81,7 @@ export function AdminHeaderMobile({
               <Search className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-9 w-9 relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
-          </Button>
+          <NotificationBell size="sm" />
         </div>
       </div>
     </header>

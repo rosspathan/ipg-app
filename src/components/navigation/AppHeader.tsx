@@ -1,11 +1,12 @@
 import * as React from "react"
-import { Bell, User, TrendingUp } from "lucide-react"
+import { User, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { StatChip } from "@/components/ui/stat-chip"
 import { BalanceDisplay } from "@/components/ui/balance-display"
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useNavigation } from "@/hooks/useNavigation"
 import { useProfile } from "@/hooks/useProfile"
@@ -77,21 +78,7 @@ export function AppHeader({
           />
         )}
         
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-9 w-9 p-0 relative"
-          onClick={() => navigate("/app/notifications")}
-        >
-          <Bell className="h-4 w-4" />
-          {notificationCount > 0 && (
-            <div className="absolute -top-1 -right-1 h-4 w-4 bg-danger rounded-full flex items-center justify-center">
-              <span className="text-[10px] font-bold text-danger-foreground">
-                {notificationCount > 9 ? "9+" : notificationCount}
-              </span>
-            </div>
-          )}
-        </Button>
+        <NotificationBell size="sm" />
 
         <Button
           variant="ghost"

@@ -1,7 +1,8 @@
 import * as React from "react"
-import { ChevronLeft, Bell, MessageCircle } from "lucide-react"
+import { ChevronLeft, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { HeaderLogoFlipper } from "@/components/brand/HeaderLogoFlipper"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { useNavigation } from "@/hooks/useNavigation"
 
 export function ProgramsHeaderPro() {
@@ -37,14 +38,7 @@ export function ProgramsHeaderPro() {
         </div>
         
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9"
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4" />
-          </Button>
+          <NotificationBell size="sm" />
           
           <Button
             variant="ghost"

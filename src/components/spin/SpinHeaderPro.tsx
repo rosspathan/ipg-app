@@ -1,8 +1,9 @@
 import React from 'react'
-import { ArrowLeft, Bell, MessageCircle } from 'lucide-react'
+import { ArrowLeft, MessageCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { HeaderLogoFlipper } from '@/components/brand/HeaderLogoFlipper'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 export function SpinHeaderPro() {
   const navigate = useNavigate()
@@ -34,14 +35,7 @@ export function SpinHeaderPro() {
         </div>
 
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 w-9 p-0"
-            aria-label="Notifications"
-          >
-            <Bell className="w-4 h-4" />
-          </Button>
+          <NotificationBell size="sm" />
           <Button
             variant="ghost"
             size="sm"

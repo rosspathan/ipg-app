@@ -8,6 +8,7 @@ import React from "react";
 import { AuthProviderUser } from "@/hooks/useAuthUser";
 import { AuthProviderAdmin } from "@/hooks/useAuthAdmin";
 import { Web3Provider } from "@/contexts/Web3Context";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { UnlockGate } from "@/components/UnlockGate";
 import { useSecuritySync } from "@/hooks/useSecuritySync";
 import { RouterWrapper } from "@/components/RouterWrapper";
@@ -272,13 +273,15 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <Web3Provider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
-          </TooltipProvider>
+          <NotificationProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </TooltipProvider>
+          </NotificationProvider>
         </Web3Provider>
       </ThemeProvider>
     </QueryClientProvider>

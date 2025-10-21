@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, Menu, Settings, Bell, User } from 'lucide-react';
+import { ChevronLeft, Menu, Settings, User } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/config/routes';
@@ -108,20 +109,7 @@ export const NavigationHeader: React.FC<NavigationHeaderProps> = ({
           )}
 
           {/* Notifications */}
-          {showNotifications && (
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate(ROUTES.APP_NOTIFICATIONS)}
-              className="relative hover:bg-muted/50"
-            >
-              <Bell className="w-5 h-5" />
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 w-2 h-2 p-0 text-xs"
-              />
-            </Button>
-          )}
+          {showNotifications && <NotificationBell size="md" />}
 
           {/* Profile */}
           {showProfile && (

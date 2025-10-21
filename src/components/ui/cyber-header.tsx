@@ -1,8 +1,9 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { KpiChip } from "./kpi-chip";
-import { ArrowLeft, Settings, Bell } from "lucide-react";
+import { ArrowLeft, Settings } from "lucide-react";
 import { Button } from "./button";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface CyberHeaderProps {
   title: string;
@@ -79,9 +80,7 @@ const CyberHeader: React.FC<CyberHeaderProps> = ({
         
         {actions || (
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm" className="p-2">
-              <Bell className="w-5 h-5" />
-            </Button>
+            <NotificationBell size="md" />
             <Button variant="ghost" size="sm" className="p-2">
               <Settings className="w-5 h-5" />
             </Button>
