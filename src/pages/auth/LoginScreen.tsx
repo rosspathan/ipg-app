@@ -23,6 +23,32 @@ const LoginScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Redirect if already signed in
+  React.useEffect(() => {
+    const checkSessionAndRedirect = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const hasSecurity = hasAnySecurity();
+        if (!hasSecurity) {
+          navigate('/onboarding/security', { replace: true });
+          return;
+        }
+        const lockStateRaw = localStorage.getItem('cryptoflow_lock_state');
+        let isUnlocked = false;
+        try {
+          isUnlocked = lockStateRaw ? JSON.parse(lockStateRaw).isUnlocked === true : false;
+        } catch {
+          isUnlocked = false;
+        }
+        navigate(isUnlocked ? '/app/home' : '/auth/lock', { replace: true });
+      } catch (e) {
+        console.warn('Auto-redirect after session check skipped:', e);
+      }
+    };
+    checkSessionAndRedirect();
+  }, [navigate]);
+
   const handleLogin = async () => {
     // Validate input
     const validation = loginSchema.safeParse({ email, password });
@@ -60,8 +86,13 @@ const LoginScreen: React.FC = () => {
           navigate('/onboarding/security');
         } else {
           // Has security, check if already unlocked
-          const lockState = localStorage.getItem('cryptoflow_lock_state');
-          const isUnlocked = lockState ? JSON.parse(lockState).isUnlocked : false;
+          const lockStateRaw = localStorage.getItem('cryptoflow_lock_state');
+          let isUnlocked = false;
+          try {
+            isUnlocked = lockStateRaw ? JSON.parse(lockStateRaw).isUnlocked === true : false;
+          } catch {
+            isUnlocked = false;
+          }
           
           if (isUnlocked) {
             navigate('/app/home');

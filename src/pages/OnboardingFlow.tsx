@@ -19,7 +19,7 @@ import SuccessCelebrationScreen from './onboarding/SuccessCelebrationScreen';
  */
 const OnboardingFlow: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuthUser();
+  const { user, loading } = useAuthUser();
   const {
     state,
     setStep,
@@ -32,10 +32,13 @@ const OnboardingFlow: React.FC = () => {
   // Determine initial step based on URL path
   useEffect(() => {
     const path = window.location.pathname;
-    
+
+    // Wait for auth to be ready before deciding
+    if (loading) return;
+
     if (!user) {
-      // No user session - redirect to landing
-      navigate('/');
+      // No user session - redirect to login
+      navigate('/auth/login', { replace: true });
       return;
     }
 
@@ -47,7 +50,7 @@ const OnboardingFlow: React.FC = () => {
       // Default to wallet choice
       setStep('wallet-choice');
     }
-  }, [user, navigate, setStep]);
+  }, [user, loading, navigate, setStep]);
 
   const handleWalletChoice = (choice: 'create' | 'import') => {
     setStep(choice + '-wallet' as any);
