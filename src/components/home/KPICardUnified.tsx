@@ -65,7 +65,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
       <button
         onClick={onCardPress}
         className={cn(
-          "relative w-full px-4 py-4 pr-16 rounded-2xl overflow-hidden",
+          "relative w-full p-5 pr-14 rounded-2xl overflow-hidden",
           "glass-card",
           "bg-gradient-to-br from-card/95 via-card/85 to-card/95",
           "backdrop-blur-xl border-2 border-primary/20",
@@ -82,75 +82,78 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
       >
         {/* Gradient overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-        {/* Compact mobile-first layout */}
-        <div className="relative flex items-center justify-between gap-3 max-w-[calc(100%-3rem)] overflow-hidden">
+        
+        {/* Clean 2-column vertical layout */}
+        <div className="relative flex flex-col gap-4 max-w-[calc(100%-3rem)]">
           
-          {/* Left: Portfolio Section */}
-          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          {/* Row 1: Portfolio Section */}
+          <div className="flex items-center gap-3 w-full">
             <div className={cn(
-              "h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0",
+              "h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0",
               "bg-gradient-to-br from-success/25 to-success/5"
             )}>
-              <Wallet className="h-4 w-4 text-success" />
+              <Wallet className="h-5 w-5 text-success" />
             </div>
             
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-[8px] font-semibold text-muted-foreground/70 uppercase tracking-wide leading-none">
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+              <span className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wide">
                 Portfolio
               </span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-heading font-bold text-lg text-foreground tabular-nums leading-none">
+              <div className="flex flex-col gap-0.5">
+                <span className="font-heading font-bold text-xl text-foreground tabular-nums">
                   {showBalance ? (portfolioData?.value || "₹0") : "••••••"}
                 </span>
                 {portfolioData?.subValue && (
-                  <span className="text-[10px] font-bold text-success tabular-nums leading-none">
-                    {showBalance ? portfolioData.subValue : "••••"}
+                  <span className="text-sm font-semibold text-success/80 tabular-nums">
+                    {showBalance ? portfolioData.subValue : "••••••"}
                   </span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Center: Vertical Divider */}
-          <div className="h-12 w-px bg-gradient-to-b from-transparent via-border/60 to-transparent flex-shrink-0" />
-
-          {/* Right: 24H Change + Badge Section */}
-          <div className="flex flex-col gap-1.5 flex-shrink-0 pr-2">
-            {/* 24H Change */}
-            <div className="flex items-center gap-1.5">
-              <TrendingUp className={cn(
-                "h-3 w-3 flex-shrink-0",
-                changeData?.trend === "up" ? "text-success" : "text-danger"
-              )} />
-              <div className="flex flex-col gap-0">
-                <span className="text-[7px] font-semibold text-muted-foreground/70 uppercase tracking-wide leading-none">
-                  24H Change
+          {/* Row 2: 24H Change (Left) + Badge (Right) */}
+          <div className="flex items-center justify-between gap-3 w-full">
+            {/* Left: 24H Change */}
+            <div className="flex items-center gap-2.5">
+              <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-primary/20 to-primary/5">
+                <TrendingUp className={cn(
+                  "h-4 w-4",
+                  changeData?.trend === "up" ? "text-success" : "text-danger"
+                )} />
+              </div>
+              
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wide">
+                  Today
                 </span>
-                <div className="flex items-baseline gap-1">
-                  <span className={cn(
-                    "font-heading font-bold text-sm tabular-nums leading-none",
-                    changeData?.trend === "up" ? "text-success" : "text-danger"
-                  )}>
-                    {showBalance ? (changeData?.value || "+0%") : "••••"}
-                  </span>
-                  {changeData?.subValue && (
-                    <span className="text-[9px] font-medium text-muted-foreground/80 tabular-nums leading-none">
-                      {showBalance ? changeData.subValue : "••••"}
-                    </span>
-                  )}
-                </div>
+                <span className={cn(
+                  "font-heading font-bold text-base tabular-nums",
+                  changeData?.trend === "up" ? "text-success" : "text-danger"
+                )}>
+                  {showBalance ? (
+                    <>
+                      {changeData?.value || "+0%"}
+                      {changeData?.subValue && (
+                        <span className="text-sm ml-1">
+                          ({changeData.subValue})
+                        </span>
+                      )}
+                    </>
+                  ) : "••••"}
+                </span>
               </div>
             </div>
 
-            {/* User Badge */}
+            {/* Right: Badge */}
             <div className={cn(
-              "flex items-center gap-1 px-2 py-0.5 rounded-full self-start",
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-full",
               "bg-gradient-to-r from-warning/20 to-warning/10",
               "border border-warning/40",
               "transition-all duration-300 group-hover:border-warning/60"
             )}>
-              <Award className="h-2.5 w-2.5 text-warning flex-shrink-0" />
-              <span className="text-[9px] font-heading font-bold text-warning leading-none whitespace-nowrap">
+              <Award className="h-3 w-3 text-warning" />
+              <span className="text-xs font-heading font-bold text-warning whitespace-nowrap">
                 {badgeLoading ? "..." : userBadge}
               </span>
             </div>
@@ -166,7 +169,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
           setShowBalance(!showBalance)
         }}
         className={cn(
-          "absolute top-1/2 -translate-y-1/2 right-3 z-10",
+          "absolute top-4 right-4 z-10",
           "p-1.5",
           "transition-opacity duration-200",
           "hover:opacity-70",
@@ -176,9 +179,9 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
         title={showBalance ? "Hide portfolio" : "Show portfolio"}
       >
         {showBalance ? (
-          <EyeOff className="h-4 w-4 text-muted-foreground/50 hover:text-muted-foreground" />
+          <EyeOff className="h-5 w-5 text-muted-foreground/50 hover:text-muted-foreground" />
         ) : (
-          <Eye className="h-4 w-4 text-muted-foreground/50 hover:text-muted-foreground" />
+          <Eye className="h-5 w-5 text-muted-foreground/50 hover:text-muted-foreground" />
         )}
       </button>
     </div>
