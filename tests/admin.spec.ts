@@ -181,4 +181,73 @@ test.describe('Admin Controls', () => {
     // Should redirect to login
     await expect(page).toHaveURL(/login|admin-login/, { timeout: 10000 });
   });
+
+  test('should perform consecutive BSK balance adjustments', async ({ page }) => {
+    await page.goto('/admin/users-nova');
+
+    // Select a user
+    const userCards = page.locator('[data-testid="user-card"], .user-record-card');
+    if (await userCards.count() > 0) {
+      await userCards.first().click();
+      await page.waitForTimeout(1000);
+
+      // Navigate to BSK tab
+      const bskTab = page.locator('button:has-text("BSK"), [role="tab"]:has-text("BSK")');
+      if (await bskTab.count() > 0) {
+        await bskTab.first().click();
+        await page.waitForTimeout(500);
+
+        // Test withdrawable balance adjustments
+        const withdrawableBtn = page.locator('button:has-text("Withdrawable")');
+        if (await withdrawableBtn.count() > 0) {
+          await withdrawableBtn.click();
+        }
+
+        const amountInput = page.locator('input[type="number"][placeholder*="Amount" i]');
+        const addButton = page.locator('button:has-text("Add")').filter({ has: page.locator('svg') });
+
+        // Add 10000 BSK
+        await amountInput.fill('10000');
+        await addButton.click();
+        await page.waitForTimeout(1500);
+
+        // Add 3000 BSK
+        await amountInput.fill('3000');
+        await addButton.click();
+        await page.waitForTimeout(1500);
+
+        // Deduct 2000 BSK
+        await amountInput.fill('2000');
+        const subtractButton = page.locator('button:has-text("Subtract")').filter({ has: page.locator('svg') });
+        await subtractButton.click();
+        await page.waitForTimeout(1500);
+
+        // Switch to holding balance
+        const holdingBtn = page.locator('button:has-text("Holding")');
+        if (await holdingBtn.count() > 0) {
+          await holdingBtn.click();
+          await page.waitForTimeout(500);
+
+          // Add 1000 BSK
+          await amountInput.fill('1000');
+          await addButton.click();
+          await page.waitForTimeout(1500);
+
+          // Add 2000 BSK
+          await amountInput.fill('2000');
+          await addButton.click();
+          await page.waitForTimeout(1500);
+
+          // Deduct 500 BSK
+          await amountInput.fill('500');
+          await subtractButton.click();
+          await page.waitForTimeout(1500);
+        }
+
+        // Verify no errors appeared
+        const errorToasts = page.locator('[role="alert"]:has-text("Error"), .toast:has-text("Error")');
+        expect(await errorToasts.count()).toBe(0);
+      }
+    }
+  });
 });

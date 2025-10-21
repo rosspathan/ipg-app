@@ -719,65 +719,43 @@ export default function AdminUsersManagementNova() {
                           if (!balanceAmount || !selectedRecord) return;
                           const amount = parseFloat(balanceAmount);
                           
-                          // For withdrawable balance, use the RPC function
-                          if (selectedBalanceType === 'withdrawable') {
-                            const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
-                              p_target_user_id: selectedRecord.user_id,
-                              p_balance_type: 'bsk',
-                              p_operation: 'add',
-                              p_amount: amount,
-                              p_reason: 'Admin adjustment via user management'
+                          console.debug('[RPC] admin_adjust_user_balance payload', {
+                            p_target_user_id: selectedRecord.user_id,
+                            p_balance_type: 'bsk',
+                            p_subtype: selectedBalanceType,
+                            p_operation: 'add',
+                            p_amount: amount
+                          });
+
+                          const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
+                            p_target_user_id: selectedRecord.user_id,
+                            p_balance_type: 'bsk',
+                            p_subtype: selectedBalanceType,
+                            p_operation: 'add',
+                            p_amount: amount,
+                            p_reason: 'Admin adjustment via user management'
+                          });
+                          
+                          console.debug('[RPC] admin_adjust_user_balance result', { data, error });
+                          
+                          if (error) {
+                            toast({ 
+                              title: "Error", 
+                              description: error.message, 
+                              variant: "destructive" 
                             });
-                            
-                            if (error) {
-                              toast({ 
-                                title: "Error", 
-                                description: error.message, 
-                                variant: "destructive" 
-                              });
-                            } else {
-                              toast({ 
-                                title: "Success", 
-                                description: `Added ${amount} BSK to withdrawable balance` 
-                              });
-                              queryClient.invalidateQueries({ 
-                                queryKey: ['user-bsk-balance', selectedRecord.user_id] 
-                              });
-                              setBalanceAmount("");
-                            }
                           } else {
-                            // For holding balance, fetch current value first to avoid race condition
-                            const { data: currentBalance } = await supabase
-                              .from('user_bsk_balances')
-                              .select('holding_balance')
-                              .eq('user_id', selectedRecord.user_id)
-                              .single();
-                            
-                            const currentHolding = currentBalance?.holding_balance || 0;
-                            
-                            const { error } = await supabase
-                              .from('user_bsk_balances')
-                              .upsert({
-                                user_id: selectedRecord.user_id,
-                                holding_balance: currentHolding + amount
-                              });
-                            
-                            if (error) {
-                              toast({ 
-                                title: "Error", 
-                                description: error.message, 
-                                variant: "destructive" 
-                              });
-                            } else {
-                              toast({ 
-                                title: "Success", 
-                                description: `Added ${amount} BSK to holding balance` 
-                              });
-                              queryClient.invalidateQueries({ 
-                                queryKey: ['user-bsk-balance', selectedRecord.user_id] 
-                              });
-                              setBalanceAmount("");
-                            }
+                            toast({ 
+                              title: "Success", 
+                              description: `Added ${amount} BSK to ${selectedBalanceType} balance` 
+                            });
+                            queryClient.invalidateQueries({ 
+                              queryKey: ['user-bsk-balance', selectedRecord.user_id] 
+                            });
+                            queryClient.refetchQueries({ 
+                              queryKey: ['user-bsk-balance', selectedRecord.user_id] 
+                            });
+                            setBalanceAmount("");
                           }
                         }}
                         className="flex-1"
@@ -792,74 +770,43 @@ export default function AdminUsersManagementNova() {
                           if (!balanceAmount || !selectedRecord) return;
                           const amount = parseFloat(balanceAmount);
                           
-                          // For withdrawable balance, use the RPC function
-                          if (selectedBalanceType === 'withdrawable') {
-                            const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
-                              p_target_user_id: selectedRecord.user_id,
-                              p_balance_type: 'bsk',
-                              p_operation: 'deduct',
-                              p_amount: amount,
-                              p_reason: 'Admin adjustment via user management'
+                          console.debug('[RPC] admin_adjust_user_balance payload', {
+                            p_target_user_id: selectedRecord.user_id,
+                            p_balance_type: 'bsk',
+                            p_subtype: selectedBalanceType,
+                            p_operation: 'deduct',
+                            p_amount: amount
+                          });
+
+                          const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
+                            p_target_user_id: selectedRecord.user_id,
+                            p_balance_type: 'bsk',
+                            p_subtype: selectedBalanceType,
+                            p_operation: 'deduct',
+                            p_amount: amount,
+                            p_reason: 'Admin adjustment via user management'
+                          });
+                          
+                          console.debug('[RPC] admin_adjust_user_balance result', { data, error });
+                          
+                          if (error) {
+                            toast({ 
+                              title: "Error", 
+                              description: error.message, 
+                              variant: "destructive" 
                             });
-                            
-                            if (error) {
-                              toast({ 
-                                title: "Error", 
-                                description: error.message, 
-                                variant: "destructive" 
-                              });
-                            } else {
-                              toast({ 
-                                title: "Success", 
-                                description: `Deducted ${amount} BSK from withdrawable balance` 
-                              });
-                              queryClient.invalidateQueries({ 
-                                queryKey: ['user-bsk-balance', selectedRecord.user_id] 
-                              });
-                              setBalanceAmount("");
-                            }
                           } else {
-                            // For holding balance, fetch current value first
-                            const { data: currentBalance } = await supabase
-                              .from('user_bsk_balances')
-                              .select('holding_balance')
-                              .eq('user_id', selectedRecord.user_id)
-                              .single();
-                            
-                            const currentHolding = currentBalance?.holding_balance || 0;
-                            
-                            if (currentHolding - amount < 0) {
-                              toast({ 
-                                title: "Error", 
-                                description: "Insufficient holding balance", 
-                                variant: "destructive" 
-                              });
-                              return;
-                            }
-                            
-                            const { error } = await supabase
-                              .from('user_bsk_balances')
-                              .upsert({
-                                user_id: selectedRecord.user_id,
-                                holding_balance: currentHolding - amount
-                              });
-                            
-                            if (error) {
-                              toast({ 
-                                title: "Error", 
-                                description: error.message, 
-                                variant: "destructive" 
-                              });
-                            } else {
-                              toast({ 
-                                title: "Success", 
-                                description: `Deducted ${amount} BSK from holding balance` 
-                              });
-                              queryClient.invalidateQueries({ 
-                                queryKey: ['user-bsk-balance', selectedRecord.user_id] 
-                              });
-                              setBalanceAmount("");
-                            }
+                            toast({ 
+                              title: "Success", 
+                              description: `Deducted ${amount} BSK from ${selectedBalanceType} balance` 
+                            });
+                            queryClient.invalidateQueries({ 
+                              queryKey: ['user-bsk-balance', selectedRecord.user_id] 
+                            });
+                            queryClient.refetchQueries({ 
+                              queryKey: ['user-bsk-balance', selectedRecord.user_id] 
+                            });
+                            setBalanceAmount("");
                           }
                         }}
                         className="flex-1"

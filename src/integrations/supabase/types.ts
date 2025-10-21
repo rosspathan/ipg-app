@@ -9879,6 +9879,7 @@ export type Database = {
           p_balance_type: string
           p_operation: string
           p_reason: string
+          p_subtype?: string
           p_target_user_id: string
         }
         Returns: Json

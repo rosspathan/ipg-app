@@ -50,20 +50,33 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
 
     setLoading(true);
     try {
-      const adjustmentAmount = operation === "add" ? parseFloat(amount) : -parseFloat(amount);
+      console.debug('[RPC] admin_adjust_user_balance payload', {
+        p_target_user_id: userId,
+        p_balance_type: balanceType,
+        p_subtype: balanceType === 'bsk' ? 'withdrawable' : undefined,
+        p_operation: operation,
+        p_amount: parseFloat(amount),
+        p_reason: reason
+      });
 
       const { data: rpcResult, error: rpcError } = await supabase.rpc('admin_adjust_user_balance', {
         p_target_user_id: userId,
         p_balance_type: balanceType,
+        p_subtype: balanceType === 'bsk' ? 'withdrawable' : undefined,
         p_operation: operation,
         p_amount: parseFloat(amount),
         p_reason: reason,
       });
 
+      console.debug('[RPC] admin_adjust_user_balance result', { data: rpcResult, error: rpcError });
+
       if (rpcError) throw rpcError;
 
-      // Invalidate cache to refresh UI
+      // Invalidate and refetch cache to refresh UI
       queryClient.invalidateQueries({ 
+        queryKey: [balanceType === 'bsk' ? 'user-bsk-balance' : 'user-inr-balance', userId]
+      });
+      queryClient.refetchQueries({ 
         queryKey: [balanceType === 'bsk' ? 'user-bsk-balance' : 'user-inr-balance', userId]
       });
 
