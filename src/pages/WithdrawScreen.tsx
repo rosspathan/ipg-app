@@ -29,27 +29,31 @@ const WithdrawScreen = () => {
     error?: string;
   }>({ isValid: false });
 
-  // Fetch real user balances
-  const { data: balances, isLoading, error } = useUserBalance();
+  // Fetch real user balances - showAllAssets to display all withdrawal-enabled assets
+  const { data: balances, isLoading, error } = useUserBalance(undefined, true);
   
   // Get dynamic withdrawal fees
   const { fees: withdrawalFees, loading: feesLoading } = useWithdrawalFees(selectedAsset, selectedNetwork);
 
-  // Filter assets and add network info - show all assets even with zero balance
-  const assets = (balances || []).map(asset => ({
-    symbol: asset.symbol,
-    name: asset.name,
-    balance: asset.available.toString(), // Use available balance
-    available: asset.available,
-    locked: asset.locked,
-    logo_url: asset.logo_url,
-    // Default networks based on asset type
-    networks: asset.symbol === 'BTC' ? ['Bitcoin'] :
-              asset.symbol === 'ETH' ? ['Ethereum', 'BEP20'] :
-              asset.symbol === 'USDT' ? ['Ethereum', 'BEP20', 'Tron'] :
-              asset.symbol === 'USDC' ? ['Ethereum', 'BEP20'] :
-              ['BEP20'] // default to BEP20
-  }));
+  // Filter assets and use actual network from database
+  const assets = (balances || [])
+    .filter(asset => 
+      asset.symbol !== 'BSK' && 
+      asset.symbol !== 'INR' &&
+      asset.network !== 'fiat' &&
+      asset.network !== 'FIAT'
+    )
+    .map(asset => ({
+      symbol: asset.symbol,
+      name: asset.name,
+      balance: asset.available.toString(),
+      available: asset.available,
+      locked: asset.locked,
+      logo_url: asset.logo_url,
+      withdraw_fee: asset.withdraw_fee,
+      // Use actual network from database, fallback to array for compatibility
+      networks: asset.network ? [asset.network] : ['BEP20'],
+    }));
 
   // Set initial selected asset when balances load
   useEffect(() => {
@@ -99,6 +103,15 @@ const WithdrawScreen = () => {
 
     const amountNum = parseFloat(amount);
     const availableBalance = currentAsset?.available || 0;
+    
+    if (availableBalance === 0) {
+      toast({
+        title: "No Balance",
+        description: `You have 0 ${selectedAsset}. Please deposit first.`,
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (amountNum > availableBalance) {
       toast({
@@ -266,14 +279,17 @@ const WithdrawScreen = () => {
               </Card>
             )}
 
-            {/* Show assets even if zero balance */}
+            {/* Empty state */}
             {!isLoading && !error && assets.length === 0 && (
-              <Card className="bg-gradient-card shadow-card border-0">
-                <CardContent className="p-8 text-center">
-                  <p className="text-muted-foreground mb-2">No assets configured</p>
-                  <p className="text-sm text-muted-foreground">Please contact support to add crypto assets.</p>
-                </CardContent>
-              </Card>
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <Shield className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No Withdrawal Assets Available</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  No crypto assets are currently enabled for withdrawal. Please contact support to enable crypto withdrawals.
+                </p>
+              </div>
             )}
 
             {/* Withdrawal Form - Only show if assets available */}
