@@ -59,8 +59,18 @@ export const useBanking = () => {
     if (!user) return;
 
     try {
+      // Check if banking details exist and are verified/locked
+      if (bankingDetails && (bankingDetails.verified || (bankingDetails as any).is_locked)) {
+        toast({
+          title: "Cannot Modify",
+          description: "Your banking details are verified and cannot be changed. Contact support if you need to update them.",
+          variant: "destructive",
+        });
+        throw new Error('Banking details are locked');
+      }
+
       if (bankingDetails) {
-        // Update existing record
+        // This will now be blocked by database trigger if verified/locked
         const { data, error } = await supabase
           .from('banking_inr')
           .update(updates)
@@ -68,33 +78,47 @@ export const useBanking = () => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          // Check if it's the immutability error
+          if (error.message.includes('locked') || error.message.includes('verified')) {
+            throw new Error('Banking details cannot be modified once verified');
+          }
+          throw error;
+        }
         setBankingDetails(data);
       } else {
-        // Create new record
+        // Create new record - auto-lock after creation
         const { data, error } = await supabase
           .from('banking_inr')
           .insert([{
             user_id: user.id,
             ...updates,
-            verified: false
+            verified: false,
+            is_locked: true // Lock immediately after creation
           }])
           .select()
           .single();
 
         if (error) throw error;
         setBankingDetails(data);
+        
+        toast({
+          title: "Banking Details Saved",
+          description: "Your banking details have been saved and locked. They cannot be modified. Please verify them carefully.",
+        });
       }
 
-      toast({
-        title: "Success",
-        description: "Banking details saved successfully",
-      });
-    } catch (error) {
+      if (bankingDetails) {
+        toast({
+          title: "Success",
+          description: "Banking details saved successfully",
+        });
+      }
+    } catch (error: any) {
       console.error('Error updating banking details:', error);
       toast({
         title: "Error",
-        description: "Failed to update banking details",
+        description: error.message || "Failed to update banking details",
         variant: "destructive",
       });
       throw error;

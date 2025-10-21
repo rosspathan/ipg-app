@@ -33,6 +33,49 @@ serve(async (req) => {
       throw new Error('Invalid amount');
     }
 
+    // Validate address format
+    const trimmedAddress = to_address.trim();
+    
+    // EVM networks (BEP20, Ethereum)
+    if (network === 'BEP20' || network === 'Ethereum') {
+      if (!trimmedAddress.startsWith('0x') || trimmedAddress.length !== 42) {
+        throw new Error('Invalid EVM address format');
+      }
+      if (!/^0x[a-fA-F0-9]{40}$/.test(trimmedAddress)) {
+        throw new Error('Invalid EVM address characters');
+      }
+    }
+    // Bitcoin
+    else if (network === 'Bitcoin') {
+      if (!/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(trimmedAddress)) {
+        throw new Error('Invalid Bitcoin address format');
+      }
+    }
+    // Tron
+    else if (network === 'Tron') {
+      if (!trimmedAddress.startsWith('T') || trimmedAddress.length !== 34) {
+        throw new Error('Invalid Tron address format');
+      }
+    }
+
+    // Check daily withdrawal limit (5 per day)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const { count: todayWithdrawals, error: countError } = await supabase
+      .from('withdrawals')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', today.toISOString());
+
+    if (countError) {
+      console.error('[process-withdrawal] Error checking withdrawal limit:', countError);
+    }
+
+    if (todayWithdrawals && todayWithdrawals >= 5) {
+      throw new Error('Daily withdrawal limit reached (5 withdrawals per day)');
+    }
+
     // Get asset details
     const { data: asset, error: assetError } = await supabase
       .from('assets')

@@ -4,13 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Shield, ScanLine, Loader2 } from "lucide-react";
+import { ArrowLeft, Shield, ScanLine, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import INRWithdrawScreen from "./INRWithdrawScreen";
 import { QRScanner } from "@/components/scanner/QRScanner";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { supabase } from "@/integrations/supabase/client";
+import { validateCryptoAddress } from "@/lib/validation/cryptoAddressValidator";
+import { useWithdrawalFees } from "@/hooks/useWithdrawalFees";
 
 const WithdrawScreen = () => {
   const navigate = useNavigate();
@@ -21,9 +23,17 @@ const WithdrawScreen = () => {
   const [amount, setAmount] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [addressValidation, setAddressValidation] = useState<{
+    isValid: boolean;
+    error?: string;
+  }>({ isValid: false });
 
   // Fetch real user balances
   const { data: balances, isLoading, error } = useUserBalance();
+  
+  // Get dynamic withdrawal fees
+  const { fees: withdrawalFees, loading: feesLoading } = useWithdrawalFees(selectedAsset, selectedNetwork);
 
   // Filter assets and add network info - show all assets even with zero balance
   const assets = (balances || []).map(asset => ({
@@ -49,14 +59,24 @@ const WithdrawScreen = () => {
     }
   }, [assets, selectedAsset]);
 
-  const feeInfo = {
-    networkFee: "0.0005 BTC",
-    platformFee: "0.0001 BTC",
-    totalFee: "0.0006 BTC"
-  };
+  // Validate address whenever it changes
+  useEffect(() => {
+    if (!address || !selectedNetwork) {
+      setAddressValidation({ isValid: false });
+      return;
+    }
+
+    const validation = validateCryptoAddress(address, selectedNetwork);
+    setAddressValidation({
+      isValid: validation.isValid,
+      error: validation.error
+    });
+  }, [address, selectedNetwork]);
 
   const currentAsset = assets.find(a => a.symbol === selectedAsset);
-  const netAmount = amount ? (parseFloat(amount) - 0.0006).toFixed(8) : "0";
+  const netAmount = amount && withdrawalFees 
+    ? (parseFloat(amount) - withdrawalFees.totalFee).toFixed(8) 
+    : "0";
 
   const handleWithdraw = () => {
     if (!address || !amount) {
@@ -67,10 +87,33 @@ const WithdrawScreen = () => {
       });
       return;
     }
+
+    if (!addressValidation.isValid) {
+      toast({
+        title: "Invalid Address",
+        description: addressValidation.error || "Please enter a valid wallet address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const amountNum = parseFloat(amount);
+    const availableBalance = currentAsset?.available || 0;
+    
+    if (amountNum > availableBalance) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You only have ${availableBalance} ${selectedAsset} available`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setShowConfirmation(true);
   };
 
   const confirmWithdraw = async () => {
+    setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('process-withdrawal', {
         body: {
@@ -96,6 +139,8 @@ const WithdrawScreen = () => {
         variant: "destructive"
       });
       setShowConfirmation(false);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -129,7 +174,7 @@ const WithdrawScreen = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Fee</span>
-                <span className="font-medium">{feeInfo.totalFee}</span>
+                <span className="font-medium">{withdrawalFees?.totalFee.toFixed(8)} {selectedAsset}</span>
               </div>
               <div className="flex justify-between border-t pt-3">
                 <span className="font-semibold">Net Amount</span>
@@ -139,14 +184,27 @@ const WithdrawScreen = () => {
           </Card>
 
           <div className="space-y-3">
-            <Button onClick={confirmWithdraw} className="w-full" size="lg">
-              Confirm with PIN/Biometric
+            <Button 
+              onClick={confirmWithdraw} 
+              className="w-full" 
+              size="lg"
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Confirm with PIN/Biometric'
+              )}
             </Button>
             <Button 
               variant="outline" 
               onClick={() => setShowConfirmation(false)} 
               className="w-full" 
               size="lg"
+              disabled={isProcessing}
             >
               Cancel
             </Button>
@@ -281,7 +339,13 @@ const WithdrawScreen = () => {
                   placeholder="Enter recipient address"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="font-mono flex-1"
+                  className={`font-mono flex-1 ${
+                    address && !addressValidation.isValid 
+                      ? 'border-destructive focus-visible:ring-destructive' 
+                      : address && addressValidation.isValid 
+                      ? 'border-green-500 focus-visible:ring-green-500'
+                      : ''
+                  }`}
                 />
                 <Button
                   type="button"
@@ -294,6 +358,18 @@ const WithdrawScreen = () => {
                   <ScanLine className="h-5 w-5" />
                 </Button>
               </div>
+              {address && addressValidation.error && (
+                <div className="flex items-center gap-1 text-sm text-destructive mt-1">
+                  <XCircle className="w-3 h-3" />
+                  {addressValidation.error}
+                </div>
+              )}
+              {address && addressValidation.isValid && (
+                <div className="flex items-center gap-1 text-sm text-green-600 mt-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Valid {selectedNetwork} address
+                </div>
+              )}
             </div>
             
             <div>
@@ -328,26 +404,47 @@ const WithdrawScreen = () => {
             <CardTitle className="text-lg">Fee Breakdown</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Network Fee</span>
-              <span className="font-medium">{feeInfo.networkFee}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Platform Fee</span>
-              <span className="font-medium">{feeInfo.platformFee}</span>
-            </div>
-            <div className="flex justify-between border-t pt-3">
-              <span className="font-semibold">Total Fee</span>
-              <span className="font-semibold">{feeInfo.totalFee}</span>
-            </div>
-            <div className="flex justify-between border-t pt-3">
-              <span className="font-semibold text-primary">Net Amount</span>
-              <span className="font-semibold text-primary">{netAmount} {selectedAsset}</span>
-            </div>
+            {feesLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Calculating fees...</span>
+              </div>
+            ) : withdrawalFees ? (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Network Fee</span>
+                  <span className="font-medium">{withdrawalFees.networkFee} {selectedAsset}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Platform Fee</span>
+                  <span className="font-medium">{withdrawalFees.platformFee} {selectedAsset}</span>
+                </div>
+                <div className="flex justify-between border-t pt-3">
+                  <span className="font-semibold">Total Fee</span>
+                  <span className="font-semibold">{withdrawalFees.totalFee.toFixed(8)} {selectedAsset}</span>
+                </div>
+                <div className="flex justify-between border-t pt-3">
+                  <span className="font-semibold text-primary">Net Amount</span>
+                  <span className="font-semibold text-primary">
+                    {amount && (parseFloat(amount) - withdrawalFees.totalFee).toFixed(8)} {selectedAsset}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  ⏱️ Estimated Time: {withdrawalFees.estimatedTime}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Select asset and network to see fees</p>
+            )}
           </CardContent>
         </Card>
 
-        <Button onClick={handleWithdraw} className="w-full" size="lg">
+        <Button 
+          onClick={handleWithdraw} 
+          className="w-full" 
+          size="lg"
+          disabled={!addressValidation.isValid || !amount || parseFloat(amount) <= 0}
+        >
           Withdraw
         </Button>
               </>

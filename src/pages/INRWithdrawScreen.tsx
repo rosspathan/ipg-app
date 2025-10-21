@@ -302,6 +302,20 @@ const INRWithdrawScreen = () => {
               <CardTitle>Beneficiary Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Warning banner if banking details are locked */}
+              {((selectedMethod === 'BANK' && bankingDetails.account_number) || 
+                (selectedMethod === 'UPI' && bankingDetails.upi_id)) && (
+                <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+                  <Lock className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800 dark:text-amber-200">
+                    <strong>⚠️ Banking details are permanently locked</strong>
+                    <br />
+                    These details cannot be modified for security. Please verify before submitting withdrawals.
+                    Contact support if you need changes.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {((selectedMethod === 'BANK' && bankingDetails.account_number) || 
                 (selectedMethod === 'UPI' && bankingDetails.upi_id)) && (
                 <div className="space-y-3">
@@ -332,13 +346,28 @@ const INRWithdrawScreen = () => {
               )}
 
               <div className="space-y-3">
-                <Label className="flex items-center space-x-2">
+                <Label className={`flex items-center space-x-2 ${
+                  ((selectedMethod === 'BANK' && bankingDetails.account_number) || 
+                   (selectedMethod === 'UPI' && bankingDetails.upi_id)) 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : ''
+                }`}>
                   <input
                     type="radio"
                     checked={!useExisting}
                     onChange={() => setUseExisting(false)}
+                    disabled={(selectedMethod === 'BANK' && bankingDetails.account_number !== undefined) || 
+                             (selectedMethod === 'UPI' && bankingDetails.upi_id !== undefined)}
                   />
-                  <span>Enter new details</span>
+                  <span className={
+                    ((selectedMethod === 'BANK' && bankingDetails.account_number) || 
+                     (selectedMethod === 'UPI' && bankingDetails.upi_id))
+                      ? 'line-through' 
+                      : ''
+                  }>
+                    Enter new details {((selectedMethod === 'BANK' && bankingDetails.account_number) || 
+                     (selectedMethod === 'UPI' && bankingDetails.upi_id)) && ' (Not allowed - details locked)'}
+                  </span>
                 </Label>
                 
                 {!useExisting && (

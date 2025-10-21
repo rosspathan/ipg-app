@@ -970,6 +970,8 @@ export type Database = {
           created_at: string | null
           id: string
           ifsc: string | null
+          is_locked: boolean | null
+          updated_at: string | null
           upi_id: string | null
           user_id: string
           verified: boolean | null
@@ -981,6 +983,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           ifsc?: string | null
+          is_locked?: boolean | null
+          updated_at?: string | null
           upi_id?: string | null
           user_id: string
           verified?: boolean | null
@@ -992,6 +996,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           ifsc?: string | null
+          is_locked?: boolean | null
+          updated_at?: string | null
           upi_id?: string | null
           user_id?: string
           verified?: boolean | null
@@ -10292,6 +10298,10 @@ export type Database = {
       unlock_balance_for_order: {
         Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
         Returns: boolean
+      }
+      unlock_banking_details: {
+        Args: { p_reason: string; p_user_id: string }
+        Returns: undefined
       }
       update_user_referral_state: {
         Args: { p_user_id: string }
