@@ -1,4 +1,5 @@
 import { ExchangeAdapter, OrderRequest, OrderResponse, BalanceUpdate, ExchangeConfig } from "./ExchangeAdapter";
+import { supabase } from "@/integrations/supabase/client";
 
 // Placeholder for external exchange integration
 // This would be configured by admin with API credentials
@@ -20,14 +21,36 @@ export class ExternalAdapter extends ExchangeAdapter {
 
     console.log("[ExternalAdapter] Placing order via external API:", order);
 
-    // TODO: Implement actual external API call
-    // This would:
-    // 1. Sign the request with API secret
-    // 2. Make HTTP POST to external endpoint
-    // 3. Handle idempotency with clientOrderId
-    // 4. Parse response and return OrderResponse
+    try {
+      // Call our edge function which handles Binance API integration securely
+      const { data, error } = await supabase.functions.invoke('place-order', {
+        body: {
+          pair: order.pair,
+          side: order.side,
+          type: order.type,
+          amount: order.amount,
+          price: order.price,
+          clientOrderId: order.clientOrderId
+        }
+      });
 
-    throw new Error("External adapter implementation pending. Currently only SIM mode is supported.");
+      if (error) throw error;
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Order placement failed');
+      }
+
+      return {
+        orderId: data.orderId,
+        status: data.status || 'pending',
+        filledAmount: data.executedQty || 0,
+        averagePrice: data.averagePrice || order.price || 0,
+        fee: data.fee || 0,
+        timestamp: Date.now()
+      };
+    } catch (error: any) {
+      console.error("[ExternalAdapter] Order placement error:", error);
+      throw new Error(`Order placement failed: ${error.message}`);
+    }
   }
 
   async cancelOrder(orderId: string): Promise<boolean> {
@@ -37,8 +60,17 @@ export class ExternalAdapter extends ExchangeAdapter {
 
     console.log("[ExternalAdapter] Cancelling order:", orderId);
 
-    // TODO: Implement actual API call
-    throw new Error("External adapter implementation pending");
+    try {
+      const { data, error } = await supabase.functions.invoke('cancel-order', {
+        body: { orderId }
+      });
+
+      if (error) throw error;
+      return data?.success || false;
+    } catch (error: any) {
+      console.error("[ExternalAdapter] Order cancellation error:", error);
+      return false;
+    }
   }
 
   async getBalance(asset: string): Promise<BalanceUpdate> {
@@ -46,8 +78,29 @@ export class ExternalAdapter extends ExchangeAdapter {
       throw new Error("External adapter not configured");
     }
 
-    // TODO: Implement actual API call
-    throw new Error("External adapter implementation pending");
+    try {
+      // Query from our database which is updated by deposit/withdrawal flows
+      const { data, error } = await supabase
+        .from('wallet_balances')
+        .select(`
+          available,
+          locked,
+          assets!inner(symbol)
+        `)
+        .eq('assets.symbol', asset)
+        .single();
+
+      if (error) throw error;
+
+      return {
+        asset,
+        available: Number(data?.available || 0),
+        locked: Number(data?.locked || 0)
+      };
+    } catch (error: any) {
+      console.error("[ExternalAdapter] Balance fetch error:", error);
+      return { asset, available: 0, locked: 0 };
+    }
   }
 
   subscribeToUserStream(userId: string, callback: (update: any) => void): void {
@@ -56,8 +109,39 @@ export class ExternalAdapter extends ExchangeAdapter {
       return;
     }
 
-    // TODO: Implement WebSocket connection to user stream
-    console.log("[ExternalAdapter] Subscribing to user stream:", userId);
+    try {
+      // Connect to our trading WebSocket edge function
+      const wsUrl = `wss://ocblgldglqhlrmtnynmu.supabase.co/functions/v1/trading-websocket`;
+      this.ws = new WebSocket(wsUrl);
+
+      this.ws.onopen = () => {
+        console.log("[ExternalAdapter] User stream connected");
+        this.ws?.send(JSON.stringify({
+          type: 'subscribe',
+          channel: 'user',
+          userId
+        }));
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          callback(data);
+        } catch (error) {
+          console.error("[ExternalAdapter] Parse error:", error);
+        }
+      };
+
+      this.ws.onerror = (error) => {
+        console.error("[ExternalAdapter] WebSocket error:", error);
+      };
+
+      this.ws.onclose = () => {
+        console.log("[ExternalAdapter] User stream disconnected");
+      };
+    } catch (error: any) {
+      console.error("[ExternalAdapter] Subscription error:", error);
+    }
   }
 
   unsubscribe(): void {

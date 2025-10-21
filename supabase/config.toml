@@ -39,6 +39,9 @@ verify_jwt = true
 [functions.fetch-crypto-prices]
 verify_jwt = false
 
+[functions.realtime-prices]
+verify_jwt = false
+
 [functions.complete-onboarding]
 verify_jwt = false
 
