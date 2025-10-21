@@ -130,7 +130,7 @@ export function BskCardCompact({
           "font-heading font-bold text-2xl tabular-nums animate-count-up",
           isWithdrawable ? "text-success" : "text-primary"
         )}>
-          {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`}{" "}
+          {isPrivate ? "••••••" : balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
           <span className={cn(
             "text-base font-semibold",
             isWithdrawable ? "text-success/70" : "text-primary/70"

@@ -53,10 +53,7 @@ export function ScrollingAnnouncement({ className }: ScrollingAnnouncementProps)
       {/* Scrolling text container */}
       <div className="absolute inset-0 flex items-center">
         <div 
-          className="flex items-center whitespace-nowrap animate-scroll"
-          style={{
-            animation: 'scroll-left 30s linear infinite'
-          }}
+          className="flex items-center whitespace-nowrap scrolling-announcement-text"
         >
           <span className="text-sm font-[Inter] font-semibold text-foreground/90 px-4">
             {displayText}
@@ -71,17 +68,6 @@ export function ScrollingAnnouncement({ className }: ScrollingAnnouncementProps)
       {/* Gradient fade edges */}
       <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background/80 to-transparent pointer-events-none z-10" />
       <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background/80 to-transparent pointer-events-none z-10" />
-
-      <style>{`
-        @keyframes scroll-left {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-      `}</style>
     </div>
   )
 }

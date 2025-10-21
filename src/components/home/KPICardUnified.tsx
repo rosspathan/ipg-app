@@ -65,7 +65,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
       <button
         onClick={onCardPress}
         className={cn(
-          "relative w-full px-4 py-4 pr-12 rounded-2xl overflow-hidden",
+          "relative w-full px-4 py-4 pr-16 rounded-2xl overflow-hidden",
           "glass-card",
           "bg-gradient-to-br from-card/95 via-card/85 to-card/95",
           "backdrop-blur-xl border-2 border-primary/20",
@@ -83,7 +83,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
         {/* Gradient overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
         {/* Compact mobile-first layout */}
-        <div className="relative flex items-center justify-between gap-3">
+        <div className="relative flex items-center justify-between gap-3 max-w-[calc(100%-3rem)] overflow-hidden">
           
           {/* Left: Portfolio Section */}
           <div className="flex items-center gap-2.5 flex-1 min-w-0">

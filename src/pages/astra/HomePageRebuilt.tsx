@@ -117,7 +117,7 @@ export function HomePageRebuilt() {
   return (
     <div className="min-h-screen" data-testid="page-home" data-version="usr-wallet-link-v3">
       {/* Main Content with Padding */}
-      <div className="space-y-6 p-4 pb-24">
+      <div className="space-y-6">
         {/* Add Funds CTA */}
         <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
 

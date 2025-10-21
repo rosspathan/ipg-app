@@ -54,9 +54,32 @@ img, svg, canvas, video {
 }
 
 /* ============================================
-   BASIC CLEAN MODE - Disable animations/effects
+   ANIMATION SYSTEM - Controlled animations
+   ============================================ */
+
+/* Scrolling announcement animation */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.scrolling-announcement-text {
+  animation: scroll-left 30s linear infinite !important;
+}
+
+/* ============================================
+   BASIC CLEAN MODE - Disable non-critical animations
    ============================================ */
 *, *::before, *::after {
   animation: none !important;
   transition: none !important;
+}
+
+/* Allow critical UI animations */
+.scrolling-announcement-text {
+  animation: scroll-left 30s linear infinite !important;
 }
