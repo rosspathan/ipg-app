@@ -81,7 +81,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send branded email via Resend
     const emailResponse = await resend.emails.send({
-      from: "IPG Exchange <noreply@yourdomain.com>", // Update with your domain
+      from: "IPG Exchange <noreply@i-smartapp.com>",
       to: [email],
       subject: "Reset Your Password - Verification Code",
       html: `
