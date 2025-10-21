@@ -805,7 +805,7 @@ export default function AdminUsersManagementNova() {
                               payload[earnedKey] = Number(payload[earnedKey] || 0) + amount;
                               const { error: upsertError } = await supabase
                                 .from('user_bsk_balances')
-                                .upsert(payload);
+                                .upsert(payload, { onConflict: 'user_id' });
                               if (upsertError) throw upsertError;
                               usedFallback = true;
                             }
@@ -941,7 +941,7 @@ export default function AdminUsersManagementNova() {
                               payload[targetKey as string] = newValue;
                               const { error: upsertError } = await supabase
                                 .from('user_bsk_balances')
-                                .upsert(payload);
+                                .upsert(payload, { onConflict: 'user_id' });
                               if (upsertError) throw upsertError;
                               usedFallback = true;
                             }
