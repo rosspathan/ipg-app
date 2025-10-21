@@ -1454,6 +1454,7 @@ export type Database = {
           release_schedule_id: string | null
           tx_subtype: string | null
           tx_type: string
+          type: string | null
           user_id: string
         }
         Insert: {
@@ -1473,6 +1474,7 @@ export type Database = {
           release_schedule_id?: string | null
           tx_subtype?: string | null
           tx_type: string
+          type?: string | null
           user_id: string
         }
         Update: {
@@ -1492,6 +1494,7 @@ export type Database = {
           release_schedule_id?: string | null
           tx_subtype?: string | null
           tx_type?: string
+          type?: string | null
           user_id?: string
         }
         Relationships: []
@@ -2796,6 +2799,7 @@ export type Database = {
           reference_id: string | null
           tx_subtype: string | null
           tx_type: string
+          type: string | null
           user_id: string
         }
         Insert: {
@@ -2813,6 +2817,7 @@ export type Database = {
           reference_id?: string | null
           tx_subtype?: string | null
           tx_type: string
+          type?: string | null
           user_id: string
         }
         Update: {
@@ -2830,6 +2835,7 @@ export type Database = {
           reference_id?: string | null
           tx_subtype?: string | null
           tx_type?: string
+          type?: string | null
           user_id?: string
         }
         Relationships: []

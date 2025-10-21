@@ -772,10 +772,10 @@ export default function AdminUsersManagementNova() {
                             const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
                               p_target_user_id: selectedRecord.user_id,
                               p_balance_type: 'bsk',
-                              p_subtype: selectedBalanceType,
                               p_operation: 'add',
                               p_amount: amount,
-                              p_reason: 'Admin adjustment via user management'
+                              p_reason: 'Admin adjustment via user management',
+                              p_subtype: selectedBalanceType
                             });
                             
                             console.debug('[RPC] admin_adjust_user_balance result', { data, error });
@@ -911,10 +911,10 @@ export default function AdminUsersManagementNova() {
                             const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
                               p_target_user_id: selectedRecord.user_id,
                               p_balance_type: 'bsk',
-                              p_subtype: selectedBalanceType,
                               p_operation: 'deduct',
                               p_amount: amount,
-                              p_reason: 'Admin adjustment via user management'
+                              p_reason: 'Admin adjustment via user management',
+                              p_subtype: selectedBalanceType
                             });
                             
                             console.debug('[RPC] admin_adjust_user_balance result', { data, error });
