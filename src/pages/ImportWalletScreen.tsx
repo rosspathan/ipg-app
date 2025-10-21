@@ -6,7 +6,9 @@ import { useNavigate } from "react-router-dom";
 import { Download, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWeb3 } from "@/contexts/Web3Context";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import * as bip39 from "bip39";
+import { ethers } from "ethers";
 import { motion } from 'framer-motion';
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
@@ -17,6 +19,7 @@ const ImportWalletScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { importWallet } = useWeb3();
+  const { setWalletInfo } = useOnboarding();
   const [seedPhrase, setSeedPhrase] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -49,6 +52,18 @@ const ImportWalletScreen = () => {
 
       // Import the wallet using Web3 context
       await importWallet(cleanPhrase);
+      
+      // Derive wallet info for onboarding state
+      const ethersWallet = ethers.Wallet.fromPhrase(cleanPhrase);
+      const walletInfo = {
+        address: ethersWallet.address,
+        privateKey: ethersWallet.privateKey,
+        mnemonic: cleanPhrase,
+        qrCode: '' // Will be generated if needed
+      };
+      
+      // Update onboarding state with wallet info
+      setWalletInfo(walletInfo);
       
       toast({
         title: "Success!",

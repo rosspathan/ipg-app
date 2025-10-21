@@ -40,23 +40,9 @@ export function WalletPage() {
         if (user?.id) {
           let addr = await getStoredEvmAddress(user.id);
           
-          // If no wallet found, create one automatically
+          // If no wallet found, user needs to complete onboarding
           if (!addr) {
-            console.warn('[WALLET_PAGE] No wallet found for user, creating on-demand...');
-            try {
-              addr = await ensureWalletAddressOnboarded();
-              toast({
-                title: "Wallet Created",
-                description: "Your wallet has been set up successfully",
-              });
-            } catch (error) {
-              console.error('[WALLET_PAGE] Failed to create wallet:', error);
-              toast({
-                title: "Wallet Setup Required",
-                description: "Please complete wallet setup to continue",
-                variant: "destructive",
-              });
-            }
+            console.warn('[WALLET_PAGE] No wallet found for user');
           }
           
           if (addr) {
@@ -249,33 +235,22 @@ export function WalletPage() {
             {!walletAddress && (
               <div className="pt-3 space-y-3">
                 <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                  <p className="text-sm text-warning-foreground">
-                    Your wallet needs to be set up. This is a one-time process that will create your secure cryptocurrency wallet.
+                  <p className="text-sm text-warning-foreground font-medium mb-2">
+                    Wallet Setup Required
+                  </p>
+                  <p className="text-xs text-warning-foreground/80">
+                    You need to create or import a wallet to use this feature. This is a one-time setup that creates your secure cryptocurrency wallet.
                   </p>
                 </div>
                 <Button
-                  onClick={async () => {
-                    try {
-                      const addr = await ensureWalletAddressOnboarded();
-                      setWalletAddress(addr);
-                      toast({ 
-                        title: 'Wallet Created', 
-                        description: 'Your EVM address is ready. Please save your recovery phrase from the settings.',
-                        duration: 6000 
-                      });
-                    } catch (e) {
-                      console.error('Wallet creation error:', e);
-                      toast({ 
-                        title: 'Setup Required', 
-                        description: 'Please contact support if you continue to experience issues.', 
-                        variant: 'destructive' 
-                      });
-                    }
+                  onClick={() => {
+                    localStorage.setItem('ipg_return_path', '/app/wallet');
+                    navigate('/onboarding/wallet');
                   }}
                   className="w-full"
                   size="lg"
                 >
-                  Complete Wallet Setup
+                  Set Up Wallet Now
                 </Button>
               </div>
             )}

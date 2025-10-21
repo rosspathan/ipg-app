@@ -12,6 +12,39 @@ export const AppStateManager = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Check if user has completed wallet setup
+  useEffect(() => {
+    const checkOnboardingCompletion = async () => {
+      if (!user) return;
+      
+      const isAuthRoute = location.pathname.startsWith('/auth');
+      const isOnboardingRoute = location.pathname.startsWith('/onboarding');
+      const isLandingRoute = location.pathname === '/';
+      
+      // Don't check on auth, onboarding, or landing routes
+      if (isAuthRoute || isOnboardingRoute || isLandingRoute) return;
+      
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('setup_complete, wallet_address')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        // If setup is not complete or no wallet address, redirect to onboarding
+        if (!profile?.setup_complete || !profile?.wallet_address) {
+          console.log('[APP_STATE] Wallet setup incomplete, redirecting to onboarding');
+          localStorage.setItem('ipg_return_path', location.pathname);
+          navigate('/onboarding/wallet', { replace: true });
+        }
+      } catch (error) {
+        console.error('[APP_STATE] Error checking onboarding status:', error);
+      }
+    };
+
+    checkOnboardingCompletion();
+  }, [user, location.pathname, navigate]);
+
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 

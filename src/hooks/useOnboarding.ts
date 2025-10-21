@@ -237,12 +237,26 @@ export function useOnboarding() {
 
       // Mark onboarding as complete in database with session refresh wrapper
       await withSessionRefresh(async () => {
+        const updateData: any = { 
+          onboarding_completed_at: new Date().toISOString(),
+          setup_complete: true
+        };
+        
+        // Save wallet address if available
+        if (state.walletInfo?.address) {
+          updateData.wallet_address = state.walletInfo.address;
+          updateData.wallet_addresses = {
+            evm: {
+              mainnet: state.walletInfo.address,
+              bsc: state.walletInfo.address
+            }
+          };
+          console.info('[ONBOARDING] Saving wallet address:', state.walletInfo.address);
+        }
+        
         const { error } = await supabase
           .from('profiles')
-          .update({ 
-            onboarding_completed_at: new Date().toISOString(),
-            setup_complete: true
-          })
+          .update(updateData)
           .eq('user_id', session.user.id);
         
         if (error) throw error;
@@ -250,8 +264,19 @@ export function useOnboarding() {
 
       console.info('[ONBOARDING] Profile updated successfully');
 
-      // Connect wallet to Web3Context
+      // Store wallet in localStorage for immediate access
       if (state.walletInfo) {
+        console.info('[ONBOARDING] Storing wallet in localStorage...');
+        const walletData = {
+          address: state.walletInfo.address,
+          privateKey: state.walletInfo.privateKey,
+          seedPhrase: state.walletInfo.mnemonic,
+          network: 'mainnet',
+          balance: '0'
+        };
+        localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
+        
+        // Connect wallet to Web3Context
         console.info('[ONBOARDING] Connecting wallet to Web3Context...');
         setWalletFromOnboarding(state.walletInfo);
       }
@@ -287,8 +312,10 @@ export function useOnboarding() {
       const { unlockAfterOnboarding } = await import('@/hooks/useAuthLock');
       await unlockAfterOnboarding();
       
-      // Navigate to main app
-      navigate('/app/home', { replace: true });
+      // Navigate to return path or main app
+      const returnPath = localStorage.getItem('ipg_return_path');
+      localStorage.removeItem('ipg_return_path');
+      navigate(returnPath || '/app/home', { replace: true });
     } catch (error) {
       console.error('[ONBOARDING] Error, but continuing to app:', error);
       toast('Setup completed with warnings');
@@ -301,8 +328,10 @@ export function useOnboarding() {
         console.error('[ONBOARDING] Failed to unlock:', unlockError);
       }
       
-      // Force navigation
-      navigate('/app/home', { replace: true });
+      // Force navigation to return path or home
+      const returnPath = localStorage.getItem('ipg_return_path');
+      localStorage.removeItem('ipg_return_path');
+      navigate(returnPath || '/app/home', { replace: true });
     }
   };
 
