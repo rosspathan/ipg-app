@@ -47,17 +47,27 @@ const OnboardingFlow: React.FC = () => {
       return;
     }
 
+    // Map path to step, then only update when different to avoid loops
+    let targetStep: typeof state.step | null = null;
     if (path.includes('/onboarding/referral')) {
-      setStep('referral-code');
-    } else if (path.includes('/onboarding/wallet')) {
-      setStep('wallet-choice');
+      targetStep = 'referral-code';
+    } else if (path === '/onboarding/wallet') {
+      targetStep = 'wallet-choice';
+    } else if (path === '/onboarding/wallet/create') {
+      targetStep = 'create-wallet';
+    } else if (path === '/onboarding/wallet/import') {
+      targetStep = 'import-wallet';
     } else if (path.includes('/onboarding/security')) {
-      setStep('pin-setup');
+      targetStep = 'pin-setup';
     } else {
       // Default to referral code entry
-      setStep('referral-code');
+      targetStep = 'referral-code';
     }
-  }, [user, loading, navigate, setStep]);
+
+    if (targetStep && state.step !== targetStep) {
+      setStep(targetStep as any);
+    }
+  }, [user, loading, navigate, setStep, state.step]);
 
   const handleReferralSubmitted = (code: string, sponsorId: string) => {
     storePendingReferral(code, sponsorId);
@@ -135,9 +145,9 @@ const OnboardingFlow: React.FC = () => {
     case 'wallet-choice':
       return (
         <WalletChoiceScreen
-          onCreateWallet={() => setStep('create-wallet')}
-          onImportWallet={() => setStep('import-wallet')}
-          onBack={() => navigate('/')}
+          onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
+          onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
+          onBack={() => { setStep('referral-code'); navigate('/onboarding/referral'); }}
         />
       );
     
@@ -145,7 +155,7 @@ const OnboardingFlow: React.FC = () => {
       return (
         <CreateWalletScreen
           onWalletCreated={handleWalletCreated}
-          onBack={() => setStep('wallet-choice')}
+          onBack={() => { setStep('wallet-choice'); navigate('/onboarding/wallet'); }}
         />
       );
     
@@ -153,7 +163,7 @@ const OnboardingFlow: React.FC = () => {
       return (
         <ImportWalletScreen
           onWalletImported={handleWalletImported}
-          onBack={() => setStep('wallet-choice')}
+          onBack={() => { setStep('wallet-choice'); navigate('/onboarding/wallet'); }}
         />
       );
     
@@ -161,7 +171,7 @@ const OnboardingFlow: React.FC = () => {
       return (
         <PinSetupScreen
           onPinSetup={handlePinSetup}
-          onBack={() => setStep('create-wallet')}
+          onBack={() => { setStep('wallet-choice'); navigate('/onboarding/wallet'); }}
         />
       );
     
@@ -185,9 +195,9 @@ const OnboardingFlow: React.FC = () => {
     default:
       return (
         <WalletChoiceScreen
-          onCreateWallet={() => setStep('create-wallet')}
-          onImportWallet={() => setStep('import-wallet')}
-          onBack={() => navigate('/')}
+          onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
+          onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
+          onBack={() => { setStep('referral-code'); navigate('/onboarding/referral'); }}
         />
       );
   }

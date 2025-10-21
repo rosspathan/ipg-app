@@ -329,6 +329,16 @@ function AppContent() {
               <OnboardingFlow />
             </AuthProviderUser>
           } />
+          <Route path="/onboarding/wallet/create" element={
+            <AuthProviderUser>
+              <OnboardingFlow />
+            </AuthProviderUser>
+          } />
+          <Route path="/onboarding/wallet/import" element={
+            <AuthProviderUser>
+              <OnboardingFlow />
+            </AuthProviderUser>
+          } />
           <Route path="/onboarding/security" element={
             <AuthProviderUser>
               <OnboardingFlow />
