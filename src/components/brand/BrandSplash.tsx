@@ -21,10 +21,8 @@ const BrandSplash: React.FC<BrandSplashProps> = ({
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      // Reduced motion: quick fade-in
       const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(onComplete, 200);
+        onComplete();
       }, 800);
       return () => clearTimeout(timer);
     }
@@ -45,23 +43,28 @@ const BrandSplash: React.FC<BrandSplashProps> = ({
     // Allow skipping after 0.8s
     const skipTimer = setTimeout(() => setCanSkipNow(true), 800);
 
-    // Complete animation
+    // Single reliable timer for completion
     const completeTimer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onComplete, 320);
+      onComplete();
     }, duration);
+
+    // Failsafe: Force completion after max duration
+    const failsafeTimer = setTimeout(() => {
+      console.warn('[BrandSplash] Failsafe timeout triggered');
+      onComplete();
+    }, duration + 1000);
 
     return () => {
       timers.forEach(clearTimeout);
       clearTimeout(skipTimer);
       clearTimeout(completeTimer);
+      clearTimeout(failsafeTimer);
     };
   }, [onComplete, duration, prefersReducedMotion]);
 
   const handleSkip = () => {
     if (canSkip && canSkipNow) {
-      setIsVisible(false);
-      setTimeout(onComplete, 200);
+      onComplete();
     }
   };
 

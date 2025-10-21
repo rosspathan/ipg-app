@@ -10,7 +10,16 @@ const LandingScreen: React.FC = () => {
   const [showSplash, setShowSplash] = React.useState(true);
 
   if (showSplash) {
-    return <BrandSplash onComplete={() => setShowSplash(false)} duration={2400} canSkip={true} />;
+    return (
+      <BrandSplash 
+        onComplete={() => {
+          console.log('[LandingScreen] Splash completed, showing content');
+          setShowSplash(false);
+        }} 
+        duration={1800}
+        canSkip={true} 
+      />
+    );
   }
 
   const features = [

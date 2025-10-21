@@ -293,7 +293,7 @@ function AppContent() {
       <RouterWrapper>
         <Routes>
           {/* Landing & Splash */}
-          <Route path="/" element={<AppInitializer><LandingScreen /></AppInitializer>} />
+          <Route path="/" element={<LandingScreen />} />
           <Route path="/splash" element={<SplashScreen />} />
           <Route path="/download" element={<DownloadPage />} />
           <Route path="/deeplink/r/:code" element={<DeepLinkResolver />} />
