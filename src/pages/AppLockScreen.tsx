@@ -66,9 +66,9 @@ const AppLockScreen = () => {
       return;
     }
 
-    // If no local security and no user session, redirect to security setup
-    if (!hasLocalSecurity() && !user) {
-      navigate('/security-setup', { replace: true });
+    // If no local security, redirect to security setup
+    if (!hasLocalSecurity()) {
+      navigate('/onboarding/security', { replace: true });
       return;
     }
   }, [lockState.isUnlocked, user, navigate]);

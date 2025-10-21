@@ -52,12 +52,21 @@ const LoginScreen: React.FC = () => {
         });
 
         // Check if user has security setup
-        const hasLocalSecurity = localStorage.getItem('user_pin') || localStorage.getItem('biometric_enabled');
+        const hasSecurity = localStorage.getItem('user_pin') || localStorage.getItem('biometric_enabled');
         
-        if (hasLocalSecurity) {
-          navigate('/auth/lock');
+        if (!hasSecurity) {
+          // First time user or no security setup yet
+          navigate('/onboarding/security');
         } else {
-          navigate('/app/home');
+          // Has security, check if already unlocked
+          const lockState = localStorage.getItem('cryptoflow_lock_state');
+          const isUnlocked = lockState && JSON.parse(lockState).isUnlocked;
+          
+          if (isUnlocked) {
+            navigate('/app/home');
+          } else {
+            navigate('/auth/lock');
+          }
         }
       }
     } catch (error: any) {
