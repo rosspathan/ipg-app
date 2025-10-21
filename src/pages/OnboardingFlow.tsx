@@ -5,9 +5,13 @@ import { useAuthUser } from '@/hooks/useAuthUser';
 import WalletChoiceScreen from './onboarding/WalletChoiceScreen';
 import CreateWalletScreen from './onboarding/CreateWalletScreen';
 import ImportWalletScreen from './onboarding/ImportWalletScreen';
+import ReferralCodeInputScreen from './onboarding/ReferralCodeInputScreen';
 import PinSetupScreen from './onboarding/PinSetupScreen';
 import BiometricSetupScreen from './onboarding/BiometricSetupScreen';
 import SuccessCelebrationScreen from './onboarding/SuccessCelebrationScreen';
+import { storePendingReferral } from '@/utils/referralCapture';
+import { Button } from '@/components/ui/button';
+import { AlertCircle } from 'lucide-react';
 
 /**
  * OnboardingFlow - Post-authentication wallet and security setup
@@ -24,6 +28,7 @@ const OnboardingFlow: React.FC = () => {
     state,
     setStep,
     setWalletInfo,
+    setReferralCode,
     setPinHash,
     markBiometricSetup,
     completeOnboarding
@@ -37,20 +42,32 @@ const OnboardingFlow: React.FC = () => {
     if (loading) return;
 
     if (!user) {
-      // No user session - redirect to login
-      navigate('/auth/login', { replace: true });
+      // No user session - redirect to signup
+      navigate('/auth/signup', { replace: true });
       return;
     }
 
-    if (path === '/onboarding/wallet') {
+    if (path.includes('/onboarding/referral')) {
+      setStep('referral-code');
+    } else if (path.includes('/onboarding/wallet')) {
       setStep('wallet-choice');
-    } else if (path === '/onboarding/security') {
+    } else if (path.includes('/onboarding/security')) {
       setStep('pin-setup');
     } else {
-      // Default to wallet choice
-      setStep('wallet-choice');
+      // Default to referral code entry
+      setStep('referral-code');
     }
   }, [user, loading, navigate, setStep]);
+
+  const handleReferralSubmitted = (code: string, sponsorId: string) => {
+    storePendingReferral(code, sponsorId);
+    setReferralCode(code, sponsorId);
+    navigate('/onboarding/wallet');
+  };
+
+  const handleReferralSkipped = () => {
+    navigate('/onboarding/wallet');
+  };
 
   const handleWalletChoice = (choice: 'create' | 'import') => {
     setStep(choice + '-wallet' as any);
@@ -58,12 +75,12 @@ const OnboardingFlow: React.FC = () => {
 
   const handleWalletCreated = (wallet: any) => {
     setWalletInfo(wallet);
-    setStep('pin-setup');
+    navigate('/onboarding/security');
   };
   
   const handleWalletImported = (wallet: any) => {
     setWalletInfo(wallet);
-    setStep('pin-setup');
+    navigate('/onboarding/security');
   };
 
   const handlePinSetup = (pinHash: string) => {
@@ -76,8 +93,45 @@ const OnboardingFlow: React.FC = () => {
     setStep('success');
   };
 
+  // Show message if user arrives without proper auth
+  if (!user && !loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-background flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center space-y-4">
+          <AlertCircle className="w-16 h-16 text-yellow-400 mx-auto" />
+          <h2 className="text-2xl font-bold text-white">Account Required</h2>
+          <p className="text-white/80">
+            You need to create an account before setting up your wallet and security.
+          </p>
+          <Button
+            onClick={() => navigate('/auth/signup')}
+            className="w-full bg-white text-primary hover:bg-white/90 font-semibold"
+          >
+            Create Account
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/auth/login')}
+            className="w-full text-white hover:bg-white/10"
+          >
+            Already have an account? Sign In
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // Render based on current step
   switch (state.step) {
+    case 'referral-code':
+      return (
+        <ReferralCodeInputScreen
+          onCodeSubmitted={handleReferralSubmitted}
+          onSkip={handleReferralSkipped}
+          onBack={() => navigate('/auth/signup')}
+        />
+      );
+    
     case 'wallet-choice':
       return (
         <WalletChoiceScreen

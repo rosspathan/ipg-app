@@ -84,11 +84,11 @@ const SignupScreen: React.FC = () => {
       if (data.user) {
         toast({
           title: "Account Created!",
-          description: "Let's set up your wallet",
+          description: "Let's get you started",
         });
         
-        // Navigate to onboarding flow (wallet creation)
-        navigate('/onboarding/wallet');
+        // Navigate to referral code entry first
+        navigate('/onboarding/referral');
       }
     } catch (error: any) {
       console.error('Signup error:', error);

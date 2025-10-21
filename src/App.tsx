@@ -319,6 +319,11 @@ function AppContent() {
 
           {/* Onboarding Flow - Post-authentication */}
           <Route path="/onboarding" element={<Navigate to="/" replace />} />
+          <Route path="/onboarding/referral" element={
+            <AuthProviderUser>
+              <OnboardingFlow />
+            </AuthProviderUser>
+          } />
           <Route path="/onboarding/wallet" element={
             <AuthProviderUser>
               <OnboardingFlow />

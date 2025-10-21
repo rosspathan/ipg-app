@@ -224,6 +224,17 @@ export function useOnboarding() {
       };
       storeSecuritySetup(securitySetup);
 
+      // Capture referral if exists
+      if (state.referralCode && state.sponsorId) {
+        try {
+          const { captureReferralAfterEmailVerify } = await import('@/utils/referralCapture');
+          await captureReferralAfterEmailVerify(session.user.id);
+        } catch (error) {
+          console.error('[ONBOARDING] Failed to capture referral:', error);
+          // Don't block onboarding completion for referral errors
+        }
+      }
+
       // Mark onboarding as complete in database with session refresh wrapper
       await withSessionRefresh(async () => {
         const { error } = await supabase
