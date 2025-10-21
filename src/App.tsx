@@ -304,6 +304,11 @@ function AppContent() {
           {/* Auth Routes - New Clean Flow */}
           <Route path="/auth/signup" element={<SignupScreen />} />
           <Route path="/auth/login" element={<LoginScreen />} />
+          <Route path="/auth/import-wallet" element={
+            <AuthProviderUser>
+              {React.createElement(React.lazy(() => import('./pages/auth/ImportWalletAuth')))}
+            </AuthProviderUser>
+          } />
           <Route path="/auth/forgot-password" element={<ForgotPasswordScreen />} />
           <Route path="/auth/verify-reset-code" element={<VerifyResetCodeScreen />} />
           <Route path="/auth/reset-password" element={<ResetPasswordScreen />} />

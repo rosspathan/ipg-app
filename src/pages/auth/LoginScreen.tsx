@@ -52,6 +52,28 @@ const LoginScreen: React.FC = () => {
           description: "Signing you in...",
         });
 
+        // Check for wallet existence first
+        const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('wallet_address')
+          .eq('user_id', data.user.id)
+          .single();
+        
+        const hasWalletInDB = !!profile?.wallet_address;
+        
+        // If no wallet anywhere, must import
+        if (!hasLocalWallet && !hasWalletInDB) {
+          navigate('/auth/import-wallet');
+          return;
+        }
+        
+        // If wallet in DB but not local, need to import
+        if (!hasLocalWallet && hasWalletInDB) {
+          navigate('/auth/import-wallet');
+          return;
+        }
+
         // Check if user has security setup (modern or legacy)
         const hasSecurity = hasAnySecurity();
         

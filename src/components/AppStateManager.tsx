@@ -31,8 +31,21 @@ export const AppStateManager = () => {
           .eq('user_id', user.id)
           .maybeSingle();
         
-        // If setup is not complete or no wallet address, redirect to onboarding
-        if (!profile?.setup_complete || !profile?.wallet_address) {
+        // Check if user has wallet in database
+        if (!profile?.wallet_address) {
+          const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
+          
+          // If no wallet anywhere, redirect existing users to auth import
+          if (!hasLocalWallet) {
+            console.log('[APP_STATE] No wallet found, redirecting to import');
+            localStorage.setItem('ipg_return_path', location.pathname);
+            navigate('/auth/import-wallet', { replace: true });
+            return;
+          }
+        }
+        
+        // If setup is not complete, redirect to onboarding
+        if (!profile?.setup_complete) {
           console.log('[APP_STATE] Wallet setup incomplete, redirecting to onboarding');
           localStorage.setItem('ipg_return_path', location.pathname);
           navigate('/onboarding/wallet', { replace: true });
