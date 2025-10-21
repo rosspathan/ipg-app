@@ -29,12 +29,13 @@ export function SpinWheel3D({
   const { settings } = useMotionSettings()
   const animationRef = useRef<number>()
 
+  // Only trigger animation when all conditions are met
+  // Remove spinId from deps to avoid double-trigger
   useEffect(() => {
-    // Start animation only when spinning state is active with a valid target
     if (winningSegmentIndex !== undefined && segments.length > 0 && isSpinning) {
       startSpinAnimation(winningSegmentIndex)
     }
-  }, [winningSegmentIndex, segments, spinId, isSpinning])
+  }, [winningSegmentIndex, segments, isSpinning])
 
   const startSpinAnimation = (targetIndex: number) => {
     // Guard: ensure segments are loaded and index is valid
@@ -254,8 +255,8 @@ export function SpinWheel3D({
       ctx.stroke()
       ctx.restore()
 
-      // Winning glow
-      if (winningSegmentIndex === index && !isSpinning) {
+      // Winning glow - only show after spin completes (isSpinning=false) AND we have a valid spinId
+      if (winningSegmentIndex === index && !isSpinning && spinId !== undefined) {
         ctx.save()
         ctx.beginPath()
         ctx.moveTo(centerX, centerY)

@@ -81,8 +81,10 @@ export default function ISmartSpinScreen() {
     const result = await performSpin(betAmount)
     if (result) {
       const segmentIndex = segments.findIndex(s => s.id === result.segment.id)
-      setWinningSegmentIndex(segmentIndex)
+      // CRITICAL: Send machine event FIRST so isSpinning=true, THEN set winning index
+      // This prevents result from flashing before wheel spins
       spinMachine.send({ type: 'COMMIT_OK', outcomeIndex: segmentIndex })
+      setWinningSegmentIndex(segmentIndex)
     } else {
       spinMachine.send({ type: 'ERROR' })
     }
