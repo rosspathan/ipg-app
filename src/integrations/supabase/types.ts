@@ -10240,6 +10240,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      process_overdue_loan_payments: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       publish_program_config: {
         Args: { p_config_id: string; p_operator_id: string }
         Returns: Json
@@ -10259,6 +10263,10 @@ export type Database = {
       reset_monthly_claim_counts: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      select_draw_winners: {
+        Args: { p_draw_id: string }
+        Returns: Json
       }
       settle_pending_referrer_rewards: {
         Args: Record<PropertyKey, never>

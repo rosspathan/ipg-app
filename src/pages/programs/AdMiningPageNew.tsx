@@ -62,51 +62,34 @@ function AdMiningContent() {
     },
   });
 
-  // Watch ad mutation
+  // Watch ad mutation - uses secure edge function
   const watchAdMutation = useMutation({
     mutationFn: async (adId: string) => {
       const ad = ads?.find((a) => a.id === adId);
       if (!ad) throw new Error("Ad not found");
 
-      // Create ad click record
-      const { data: click, error: clickError } = await supabase
-        .from("ad_clicks")
-        .insert({
-          user_id: user!.id,
-          ad_id: adId,
-          started_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (clickError) throw clickError;
-
-      // Simulate watching the ad (in real app, this would track actual viewing)
+      // Simulate watching the ad (track viewing time)
+      const startTime = Date.now();
       await new Promise((resolve) => setTimeout(resolve, ad.required_view_time_seconds * 1000));
+      const viewingTimeSeconds = Math.floor((Date.now() - startTime) / 1000);
 
-      // Mark as completed and rewarded
-      const { error: updateError } = await supabase
-        .from("ad_clicks")
-        .update({
-          completed_at: new Date().toISOString(),
-          rewarded: true,
-          reward_bsk: ad.reward_bsk,
-        })
-        .eq("id", click.id);
+      // Call secure edge function to process ad click
+      const { data, error } = await supabase.functions.invoke("process-ad-click", {
+        body: {
+          adId,
+          viewingTimeSeconds,
+        },
+      });
 
-      if (updateError) throw updateError;
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Failed to process ad click");
 
-      // Credit BSK to user (simplified - should be in edge function)
-      const { error: balanceError } = await supabase
-        .from("user_bsk_balances")
-        .upsert({
-          user_id: user!.id,
-          withdrawable_balance: ad.reward_bsk,
-        });
-
-      if (balanceError) throw balanceError;
-
-      return { adId, reward: ad.reward_bsk };
+      return { 
+        adId, 
+        reward: data.reward_bsk,
+        balanceType: data.balance_type,
+        viewsRemaining: data.views_remaining
+      };
     },
     onSuccess: (data) => {
       toast.success(`Earned ${data.reward} BSK!`, {
