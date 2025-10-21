@@ -35,6 +35,7 @@ export default function AdminUsersManagementNova() {
   const [balanceAsset, setBalanceAsset] = useState("BSK");
   const [balanceType, setBalanceType] = useState<'add' | 'subtract'>('add');
   const [selectedBalanceType, setSelectedBalanceType] = useState<'withdrawable' | 'holding'>('withdrawable');
+  const [isAdjusting, setIsAdjusting] = useState(false);
   const [kycNotes, setKycNotes] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const { toast } = useToast();
@@ -661,7 +662,11 @@ export default function AdminUsersManagementNova() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-medium">BSK Balances</h3>
-                    <Button size="sm" variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['user-bsk-balance'] })}>
+                    <Button size="sm" variant="outline" onClick={() => {
+                      if (selectedRecord?.user_id) {
+                        queryClient.invalidateQueries({ queryKey: ['user-bsk-balance', selectedRecord.user_id] });
+                      }
+                    }}>
                       <RefreshCw className="w-4 h-4" />
                     </Button>
                   </div>
@@ -710,108 +715,244 @@ export default function AdminUsersManagementNova() {
                       placeholder="Amount"
                       value={balanceAmount}
                       onChange={(e) => setBalanceAmount(e.target.value)}
+                      disabled={isAdjusting}
                     />
+                    {(!balanceAmount || parseFloat(balanceAmount) <= 0) && (
+                      <p className="text-xs text-muted-foreground">Enter a positive amount to enable buttons</p>
+                    )}
                     <div className="flex gap-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={async () => {
-                          if (!balanceAmount || !selectedRecord) return;
-                          const amount = parseFloat(balanceAmount);
-                          
-                          console.debug('[RPC] admin_adjust_user_balance payload', {
-                            p_target_user_id: selectedRecord.user_id,
-                            p_balance_type: 'bsk',
-                            p_subtype: selectedBalanceType,
-                            p_operation: 'add',
-                            p_amount: amount
+                          console.debug('[Balance Adjustment] Add button clicked', { 
+                            balanceAmount, 
+                            selectedBalanceType, 
+                            userId: selectedRecord?.user_id 
                           });
 
-                          const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
-                            p_target_user_id: selectedRecord.user_id,
-                            p_balance_type: 'bsk',
-                            p_subtype: selectedBalanceType,
-                            p_operation: 'add',
-                            p_amount: amount,
-                            p_reason: 'Admin adjustment via user management'
-                          });
-                          
-                          console.debug('[RPC] admin_adjust_user_balance result', { data, error });
-                          
-                          if (error) {
+                          if (!selectedRecord) {
+                            console.debug('[Balance Adjustment] No user selected');
+                            return;
+                          }
+
+                          if (!balanceAmount) {
+                            console.debug('[Balance Adjustment] Amount is empty');
                             toast({ 
-                              title: "Error", 
-                              description: error.message, 
+                              title: "Invalid Amount", 
+                              description: "Please enter an amount", 
                               variant: "destructive" 
                             });
-                          } else {
+                            return;
+                          }
+
+                          const amount = parseFloat(balanceAmount);
+                          if (isNaN(amount) || amount <= 0) {
+                            console.debug('[Balance Adjustment] Invalid amount', { amount });
+                            toast({ 
+                              title: "Invalid Amount", 
+                              description: "Amount must be greater than 0", 
+                              variant: "destructive" 
+                            });
+                            return;
+                          }
+
+                          setIsAdjusting(true);
+
+                          try {
+                            console.debug('[RPC] admin_adjust_user_balance payload', {
+                              p_target_user_id: selectedRecord.user_id,
+                              p_balance_type: 'bsk',
+                              p_subtype: selectedBalanceType,
+                              p_operation: 'add',
+                              p_amount: amount
+                            });
+
+                            const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
+                              p_target_user_id: selectedRecord.user_id,
+                              p_balance_type: 'bsk',
+                              p_subtype: selectedBalanceType,
+                              p_operation: 'add',
+                              p_amount: amount,
+                              p_reason: 'Admin adjustment via user management'
+                            });
+                            
+                            console.debug('[RPC] admin_adjust_user_balance result', { data, error });
+                            
+                            if (error) {
+                              toast({ 
+                                title: "Error", 
+                                description: error.message, 
+                                variant: "destructive" 
+                              });
+                              return;
+                            }
+
+                            // Invalidate and refetch
+                            await queryClient.invalidateQueries({ 
+                              queryKey: ['user-bsk-balance', selectedRecord.user_id] 
+                            });
+                            await queryClient.refetchQueries({ 
+                              queryKey: ['user-bsk-balance', selectedRecord.user_id],
+                              type: 'active'
+                            });
+
+                            // Fetch fresh data and set cache explicitly
+                            console.debug('[Balance Adjustment] Fetching fresh balance data');
+                            const { data: fresh, error: fetchError } = await supabase
+                              .from('user_bsk_balances')
+                              .select('*')
+                              .eq('user_id', selectedRecord.user_id)
+                              .maybeSingle();
+
+                            if (fetchError) {
+                              console.error('[Balance Adjustment] Fresh fetch error', fetchError);
+                            } else {
+                              console.debug('[Balance Adjustment] Fresh balance', fresh);
+                              queryClient.setQueryData(['user-bsk-balance', selectedRecord.user_id], fresh);
+                            }
+
+                            const newBalance = fresh?.[`${selectedBalanceType}_balance`] || 0;
                             toast({ 
                               title: "Success", 
-                              description: `Added ${amount} BSK to ${selectedBalanceType} balance` 
+                              description: `Added ${amount} BSK to ${selectedBalanceType} balance. New balance: ${newBalance.toFixed(2)} BSK` 
                             });
-                            queryClient.invalidateQueries({ 
-                              queryKey: ['user-bsk-balance', selectedRecord.user_id] 
+                          } catch (err: any) {
+                            console.error('[Balance Adjustment] Unexpected error', err);
+                            toast({ 
+                              title: "Error", 
+                              description: err.message || "Failed to adjust balance", 
+                              variant: "destructive" 
                             });
-                            queryClient.refetchQueries({ 
-                              queryKey: ['user-bsk-balance', selectedRecord.user_id] 
-                            });
-                            setBalanceAmount("");
+                          } finally {
+                            setIsAdjusting(false);
                           }
                         }}
                         className="flex-1"
+                        disabled={isAdjusting || !balanceAmount || parseFloat(balanceAmount) <= 0}
                       >
-                        <Plus className="w-4 h-4 mr-1" />
+                        {isAdjusting ? (
+                          <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                        ) : (
+                          <Plus className="w-4 h-4 mr-1" />
+                        )}
                         Add
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={async () => {
-                          if (!balanceAmount || !selectedRecord) return;
-                          const amount = parseFloat(balanceAmount);
-                          
-                          console.debug('[RPC] admin_adjust_user_balance payload', {
-                            p_target_user_id: selectedRecord.user_id,
-                            p_balance_type: 'bsk',
-                            p_subtype: selectedBalanceType,
-                            p_operation: 'deduct',
-                            p_amount: amount
+                          console.debug('[Balance Adjustment] Subtract button clicked', { 
+                            balanceAmount, 
+                            selectedBalanceType, 
+                            userId: selectedRecord?.user_id 
                           });
 
-                          const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
-                            p_target_user_id: selectedRecord.user_id,
-                            p_balance_type: 'bsk',
-                            p_subtype: selectedBalanceType,
-                            p_operation: 'deduct',
-                            p_amount: amount,
-                            p_reason: 'Admin adjustment via user management'
-                          });
-                          
-                          console.debug('[RPC] admin_adjust_user_balance result', { data, error });
-                          
-                          if (error) {
+                          if (!selectedRecord) {
+                            console.debug('[Balance Adjustment] No user selected');
+                            return;
+                          }
+
+                          if (!balanceAmount) {
+                            console.debug('[Balance Adjustment] Amount is empty');
                             toast({ 
-                              title: "Error", 
-                              description: error.message, 
+                              title: "Invalid Amount", 
+                              description: "Please enter an amount", 
                               variant: "destructive" 
                             });
-                          } else {
+                            return;
+                          }
+
+                          const amount = parseFloat(balanceAmount);
+                          if (isNaN(amount) || amount <= 0) {
+                            console.debug('[Balance Adjustment] Invalid amount', { amount });
+                            toast({ 
+                              title: "Invalid Amount", 
+                              description: "Amount must be greater than 0", 
+                              variant: "destructive" 
+                            });
+                            return;
+                          }
+
+                          setIsAdjusting(true);
+
+                          try {
+                            console.debug('[RPC] admin_adjust_user_balance payload', {
+                              p_target_user_id: selectedRecord.user_id,
+                              p_balance_type: 'bsk',
+                              p_subtype: selectedBalanceType,
+                              p_operation: 'deduct',
+                              p_amount: amount
+                            });
+
+                            const { data, error } = await supabase.rpc('admin_adjust_user_balance', {
+                              p_target_user_id: selectedRecord.user_id,
+                              p_balance_type: 'bsk',
+                              p_subtype: selectedBalanceType,
+                              p_operation: 'deduct',
+                              p_amount: amount,
+                              p_reason: 'Admin adjustment via user management'
+                            });
+                            
+                            console.debug('[RPC] admin_adjust_user_balance result', { data, error });
+                            
+                            if (error) {
+                              toast({ 
+                                title: "Error", 
+                                description: error.message, 
+                                variant: "destructive" 
+                              });
+                              return;
+                            }
+
+                            // Invalidate and refetch
+                            await queryClient.invalidateQueries({ 
+                              queryKey: ['user-bsk-balance', selectedRecord.user_id] 
+                            });
+                            await queryClient.refetchQueries({ 
+                              queryKey: ['user-bsk-balance', selectedRecord.user_id],
+                              type: 'active'
+                            });
+
+                            // Fetch fresh data and set cache explicitly
+                            console.debug('[Balance Adjustment] Fetching fresh balance data');
+                            const { data: fresh, error: fetchError } = await supabase
+                              .from('user_bsk_balances')
+                              .select('*')
+                              .eq('user_id', selectedRecord.user_id)
+                              .maybeSingle();
+
+                            if (fetchError) {
+                              console.error('[Balance Adjustment] Fresh fetch error', fetchError);
+                            } else {
+                              console.debug('[Balance Adjustment] Fresh balance', fresh);
+                              queryClient.setQueryData(['user-bsk-balance', selectedRecord.user_id], fresh);
+                            }
+
+                            const newBalance = fresh?.[`${selectedBalanceType}_balance`] || 0;
                             toast({ 
                               title: "Success", 
-                              description: `Deducted ${amount} BSK from ${selectedBalanceType} balance` 
+                              description: `Deducted ${amount} BSK from ${selectedBalanceType} balance. New balance: ${newBalance.toFixed(2)} BSK` 
                             });
-                            queryClient.invalidateQueries({ 
-                              queryKey: ['user-bsk-balance', selectedRecord.user_id] 
+                          } catch (err: any) {
+                            console.error('[Balance Adjustment] Unexpected error', err);
+                            toast({ 
+                              title: "Error", 
+                              description: err.message || "Failed to adjust balance", 
+                              variant: "destructive" 
                             });
-                            queryClient.refetchQueries({ 
-                              queryKey: ['user-bsk-balance', selectedRecord.user_id] 
-                            });
-                            setBalanceAmount("");
+                          } finally {
+                            setIsAdjusting(false);
                           }
                         }}
                         className="flex-1"
+                        disabled={isAdjusting || !balanceAmount || parseFloat(balanceAmount) <= 0}
                       >
-                        <Minus className="w-4 h-4 mr-1" />
+                        {isAdjusting ? (
+                          <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                        ) : (
+                          <Minus className="w-4 h-4 mr-1" />
+                        )}
                         Subtract
                       </Button>
                     </div>
