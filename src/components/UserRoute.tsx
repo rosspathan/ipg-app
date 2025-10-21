@@ -34,7 +34,7 @@ const UserRoute = ({ children }: UserRouteProps) => {
   const hasAccess = !!session;
 
   if (!hasAccess) {
-    return <Navigate to="/onboarding" state={{ from: location }} replace />;
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import { hasAnySecurity } from '@/utils/localSecurityStorage';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -51,8 +52,8 @@ const LoginScreen: React.FC = () => {
           description: "Signing you in...",
         });
 
-        // Check if user has security setup
-        const hasSecurity = localStorage.getItem('user_pin') || localStorage.getItem('biometric_enabled');
+        // Check if user has security setup (modern or legacy)
+        const hasSecurity = hasAnySecurity();
         
         if (!hasSecurity) {
           // First time user or no security setup yet
@@ -60,7 +61,7 @@ const LoginScreen: React.FC = () => {
         } else {
           // Has security, check if already unlocked
           const lockState = localStorage.getItem('cryptoflow_lock_state');
-          const isUnlocked = lockState && JSON.parse(lockState).isUnlocked;
+          const isUnlocked = lockState ? JSON.parse(lockState).isUnlocked : false;
           
           if (isUnlocked) {
             navigate('/app/home');

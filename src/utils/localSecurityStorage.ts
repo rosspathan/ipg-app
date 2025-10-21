@@ -52,6 +52,17 @@ export const hasLocalSecurity = (): boolean => {
   return getLocalSecurityData() !== null;
 };
 
+export const hasAnySecurity = (): boolean => {
+  // Check modern unified storage first
+  if (hasLocalSecurity()) return true;
+  
+  // Fallback to legacy keys for backward compatibility
+  const legacyPin = localStorage.getItem('user_pin');
+  const legacyBiometric = localStorage.getItem('biometric_enabled');
+  
+  return !!(legacyPin || legacyBiometric);
+};
+
 export const isPendingSync = (): boolean => {
   return localStorage.getItem(PENDING_SYNC_KEY) === 'true';
 };
