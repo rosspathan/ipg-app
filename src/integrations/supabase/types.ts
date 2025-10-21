@@ -5207,22 +5207,22 @@ export type Database = {
       }
       kyc_submissions: {
         Row: {
-          address_line1: string
+          address_line1: string | null
           address_line2: string | null
           admin_notes: string | null
-          city: string
-          country: string
+          city: string | null
+          country: string | null
           created_at: string
-          date_of_birth: string
-          full_name: string
+          date_of_birth: string | null
+          full_name: string | null
           id: string
           id_back_url: string | null
           id_front_url: string | null
-          id_number: string
-          id_type: string
-          nationality: string
-          phone: string
-          postal_code: string
+          id_number: string | null
+          id_type: string | null
+          nationality: string | null
+          phone: string | null
+          postal_code: string | null
           rejection_reason: string | null
           reviewed_at: string | null
           reviewer_id: string | null
@@ -5234,22 +5234,22 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          address_line1: string
+          address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
-          city: string
-          country: string
+          city?: string | null
+          country?: string | null
           created_at?: string
-          date_of_birth: string
-          full_name: string
+          date_of_birth?: string | null
+          full_name?: string | null
           id?: string
           id_back_url?: string | null
           id_front_url?: string | null
-          id_number: string
-          id_type: string
-          nationality: string
-          phone: string
-          postal_code: string
+          id_number?: string | null
+          id_type?: string | null
+          nationality?: string | null
+          phone?: string | null
+          postal_code?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
@@ -5261,22 +5261,22 @@ export type Database = {
           user_id: string
         }
         Update: {
-          address_line1?: string
+          address_line1?: string | null
           address_line2?: string | null
           admin_notes?: string | null
-          city?: string
-          country?: string
+          city?: string | null
+          country?: string | null
           created_at?: string
-          date_of_birth?: string
-          full_name?: string
+          date_of_birth?: string | null
+          full_name?: string | null
           id?: string
           id_back_url?: string | null
           id_front_url?: string | null
-          id_number?: string
-          id_type?: string
-          nationality?: string
-          phone?: string
-          postal_code?: string
+          id_number?: string | null
+          id_type?: string | null
+          nationality?: string | null
+          phone?: string | null
+          postal_code?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
