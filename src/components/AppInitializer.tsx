@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { hasLocalSecurity } from '@/utils/localSecurityStorage';
+import { validateSessionOwnership, autoResolveIfSafe } from '@/utils/sessionOwnershipValidator';
+import { setCurrentUserId } from '@/utils/lockState';
+import { setSecurityUserId } from '@/utils/localSecurityStorage';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -46,12 +49,34 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
         
         if (!session) {
           console.log('[AppInitializer] No session - Stay on current page (landing/auth)');
-          // Don't redirect, let user stay on landing/auth pages
+          // Clear user IDs from storage systems
+          setCurrentUserId(null);
+          setSecurityUserId(null);
           return;
         }
 
         const userId = session.user.id;
         console.log('[AppInitializer] User ID:', userId);
+        
+        // Set user ID in storage systems
+        setCurrentUserId(userId);
+        setSecurityUserId(userId);
+        
+        // CRITICAL: Validate session ownership
+        const validation = await validateSessionOwnership(session);
+        
+        if (validation.conflict) {
+          console.error('[AppInitializer] ⚠️ Session ownership conflict detected!', validation.details);
+          
+          // Auto-resolve by clearing mismatched security data
+          const resolved = await autoResolveIfSafe(session);
+          
+          if (resolved) {
+            console.log('[AppInitializer] Conflict resolved - redirecting to security setup');
+            navigateSafely('/onboarding/security');
+            return;
+          }
+        }
 
         // Check if user has a wallet
         const { data: walletData, error: walletError } = await supabase
@@ -93,7 +118,14 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
         }
 
         // Check if session is still unlocked
-        const lockState = localStorage.getItem('cryptoflow_lock_state');
+        const lockStateKey = `cryptoflow_lock_state_${userId}`;
+        let lockState = localStorage.getItem(lockStateKey);
+        
+        // Fallback to non-scoped key for backward compatibility
+        if (!lockState) {
+          lockState = localStorage.getItem('cryptoflow_lock_state');
+        }
+        
         let isUnlocked = false;
         try {
           if (lockState) {

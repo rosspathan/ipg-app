@@ -1,6 +1,8 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { clearUserScopedData } from '@/utils/lockState';
+import { clearUserSecurityData } from '@/utils/localSecurityStorage';
 
 interface UserAuthContextType {
   user: User | null;
@@ -168,13 +170,26 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    // Clear user-specific localStorage items
+    // Clear user-scoped security data
+    if (user?.id) {
+      clearUserScopedData(user.id);
+      clearUserSecurityData(user.id);
+    }
+    
+    // Clear legacy user-specific localStorage items
     localStorage.removeItem("cryptoflow_pin");
     localStorage.removeItem("cryptoflow_biometric");
     localStorage.removeItem("cryptoflow_antiphishing");
     localStorage.removeItem("cryptoflow_setup_complete");
     localStorage.removeItem("pending_referral");
-    localStorage.removeItem("ipg_return_path"); // Clear return path on logout
+    localStorage.removeItem("ipg_return_path");
+    localStorage.removeItem("ipg_fresh_setup");
+    
+    // Clear non-user-scoped lock state
+    localStorage.removeItem("cryptoflow_lock_state");
+    localStorage.removeItem("cryptoflow_unlocked");
+    
+    console.log('[Auth] Cleared all user data for sign out');
     
     await supabase.auth.signOut();
   };

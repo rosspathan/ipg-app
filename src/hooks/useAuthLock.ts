@@ -20,7 +20,7 @@ interface LockState {
   criticalOperationInProgress: boolean;
 }
 
-const STORAGE_KEY = 'cryptoflow_lock_state';
+const STORAGE_KEY = (userId: string) => `cryptoflow_lock_state_${userId}`;
 const MAX_ATTEMPTS = 5;
 const COOLDOWN_DURATION = 30 * 1000; // 30 seconds
 const SECURITY_FAILURE_THRESHOLD = 10;
@@ -44,7 +44,8 @@ export const useAuthLock = () => {
   // Synchronous hydration from localStorage on first render
   const [lockState, setLockState] = useState<LockState>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      // Use non-scoped key for initial load (will be migrated on user login)
+      const stored = localStorage.getItem('cryptoflow_lock_state');
       if (stored) {
         const parsed = JSON.parse(stored);
         console.log('🔐 Hydrated from localStorage:', { isUnlocked: parsed.isUnlocked, lastUnlockAt: parsed.lastUnlockAt });
@@ -89,7 +90,9 @@ export const useAuthLock = () => {
 
         setLockState(prev => {
           const updated = { ...prev, ...newState };
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          if (user?.id) {
+            localStorage.setItem(STORAGE_KEY(user.id), JSON.stringify(updated));
+          }
           return updated;
         });
       }
@@ -106,7 +109,7 @@ export const useAuthLock = () => {
 
     const newState = { ...lockState, ...updates };
     setLockState(newState);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+    localStorage.setItem(STORAGE_KEY(user.id), JSON.stringify(newState));
 
     // Save to database
     try {
@@ -609,7 +612,8 @@ export const useAuthLock = () => {
     // Read persisted state to handle cross-instance timing
     let effective = lockState;
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const storageKey = user?.id ? STORAGE_KEY(user.id) : 'cryptoflow_lock_state';
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         const persisted = JSON.parse(stored);
         effective = { ...lockState, ...persisted };
