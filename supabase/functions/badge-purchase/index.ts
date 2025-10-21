@@ -135,12 +135,19 @@ Deno.serve(async (req) => {
       if (badgeThreshold && Number(badgeThreshold.bonus_bsk_holding || 0) > 0) {
         const bonusAmount = Number(badgeThreshold.bonus_bsk_holding);
         
+        // Get current balance
+        const { data: currentBalance } = await supabaseClient
+          .from('user_bsk_balances')
+          .select('holding_balance, total_earned_holding')
+          .eq('user_id', user_id)
+          .single();
+        
         // Credit bonus to holding balance
         await supabaseClient
           .from('user_bsk_balances')
           .update({
-            holding_balance: supabaseClient.rpc('increment', { x: bonusAmount }),
-            total_earned_holding: supabaseClient.rpc('increment', { x: bonusAmount }),
+            holding_balance: Number(currentBalance?.holding_balance || 0) + bonusAmount,
+            total_earned_holding: Number(currentBalance?.total_earned_holding || 0) + bonusAmount,
           })
           .eq('user_id', user_id);
 
