@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
         user_id,
         current_badge: badge_name,
         previous_badge,
-        bsk_paid: bsk_amount,
+        price_bsk: bsk_amount,
         purchased_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id'
