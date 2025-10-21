@@ -38,7 +38,27 @@ export function WalletPage() {
       try {
         // If authenticated, prefer stored profile address
         if (user?.id) {
-          const addr = await getStoredEvmAddress(user.id);
+          let addr = await getStoredEvmAddress(user.id);
+          
+          // If no wallet found, create one automatically
+          if (!addr) {
+            console.warn('[WALLET_PAGE] No wallet found for user, creating on-demand...');
+            try {
+              addr = await ensureWalletAddressOnboarded();
+              toast({
+                title: "Wallet Created",
+                description: "Your wallet has been set up successfully",
+              });
+            } catch (error) {
+              console.error('[WALLET_PAGE] Failed to create wallet:', error);
+              toast({
+                title: "Wallet Setup Required",
+                description: "Please complete wallet setup to continue",
+                variant: "destructive",
+              });
+            }
+          }
+          
           if (addr) {
             setWalletAddress(addr);
             console.info('USR_WALLET_LINK_V3', { user: user.id, address: addr.slice(0, 8) + '...' });
@@ -227,19 +247,35 @@ export function WalletPage() {
                 </Button>
               </div>
             {!walletAddress && (
-              <div className="pt-3">
+              <div className="pt-3 space-y-3">
+                <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                  <p className="text-sm text-warning-foreground">
+                    Your wallet needs to be set up. This is a one-time process that will create your secure cryptocurrency wallet.
+                  </p>
+                </div>
                 <Button
                   onClick={async () => {
                     try {
                       const addr = await ensureWalletAddressOnboarded();
                       setWalletAddress(addr);
-                      toast({ title: 'Wallet Created', description: 'Your EVM address is ready' });
+                      toast({ 
+                        title: 'Wallet Created', 
+                        description: 'Your EVM address is ready. Please save your recovery phrase from the settings.',
+                        duration: 6000 
+                      });
                     } catch (e) {
-                      toast({ title: 'Wallet setup required', description: 'Please complete wallet onboarding', variant: 'destructive' });
+                      console.error('Wallet creation error:', e);
+                      toast({ 
+                        title: 'Setup Required', 
+                        description: 'Please contact support if you continue to experience issues.', 
+                        variant: 'destructive' 
+                      });
                     }
                   }}
+                  className="w-full"
+                  size="lg"
                 >
-                  Create Wallet
+                  Complete Wallet Setup
                 </Button>
               </div>
             )}

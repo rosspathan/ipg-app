@@ -66,6 +66,24 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
       console.warn('[EVM] profiles fetch error, will try local fallbacks:', error);
     }
 
+    // Fallback: Check user_wallets table if profiles didn't have the address
+    try {
+      const { data: walletData, error: walletError } = await supabase
+        .from('user_wallets')
+        .select('wallet_address')
+        .eq('user_id', userId)
+        .order('last_used_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (walletData?.wallet_address && isAddress(walletData.wallet_address)) {
+        console.info('[EVM] Found wallet in user_wallets table');
+        return walletData.wallet_address;
+      }
+    } catch (walletErr) {
+      console.warn('[EVM] user_wallets fallback failed:', walletErr);
+    }
+
     // Local fallbacks (created/imported wallet or cached MetaMask)
     try {
       const localWallet = localStorage.getItem('cryptoflow_wallet');
@@ -190,6 +208,7 @@ export async function storeEvmAddress(userId: string, address: string): Promise<
     .from('profiles')
     .update({ 
       wallet_addresses: walletAddresses,
+      wallet_address: address, // Also update legacy column
       updated_at: new Date().toISOString()
     })
     .eq('user_id', userId);
