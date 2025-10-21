@@ -128,27 +128,19 @@ export default function AdminManualPurchases() {
 
       if (error) throw error;
 
-      // Get current balance
-      const { data: currentBalance } = await supabase
-        .from("user_bsk_balances")
-        .select("*")
-        .eq("user_id", selectedRecord.user_id)
-        .maybeSingle();
+      // Credit both withdrawable and holding balances atomically (race-condition safe)
+      const { data: balanceResult, error: balanceError } = await supabase.rpc(
+        'admin_credit_manual_purchase',
+        {
+          p_user_id: selectedRecord.user_id,
+          p_withdrawable_amount: withdrawableAmount,
+          p_holding_amount: holdingAmount,
+        }
+      );
 
-      // Credit both withdrawable and holding balances
-      const { error: balanceError } = await supabase
-        .from("user_bsk_balances")
-        .upsert({
-          user_id: selectedRecord.user_id,
-          withdrawable_balance: (currentBalance?.withdrawable_balance || 0) + withdrawableAmount,
-          holding_balance: (currentBalance?.holding_balance || 0) + holdingAmount,
-          total_earned_withdrawable: (currentBalance?.total_earned_withdrawable || 0) + withdrawableAmount,
-          total_earned_holding: (currentBalance?.total_earned_holding || 0) + holdingAmount,
-        }, {
-          onConflict: "user_id",
-        });
-
-      if (balanceError) throw balanceError;
+      if (balanceError || !(balanceResult as any)?.success) {
+        throw new Error((balanceResult as any)?.error || balanceError?.message || 'Failed to credit balance');
+      }
 
       toast({
         title: "Approved",

@@ -65,18 +65,6 @@ serve(async (req) => {
       }
     }
 
-    // Check user's withdrawable BSK balance
-    const { data: balance, error: balanceError } = await supabase
-      .from('user_bsk_balances')
-      .select('withdrawable_balance')
-      .eq('user_id', user.id)
-      .single();
-
-    if (balanceError || !balance) throw new Error('Balance not found');
-    if (balance.withdrawable_balance < amountNum) {
-      throw new Error('Insufficient withdrawable BSK balance');
-    }
-
     // Validate type-specific fields
     if (withdrawal_type === 'bank') {
       if (!bank_name || !account_number || !ifsc_code || !account_holder_name) {
@@ -90,15 +78,20 @@ serve(async (req) => {
       throw new Error('Invalid withdrawal type');
     }
 
-    // Deduct from withdrawable balance (lock it)
-    const { error: deductError } = await supabase
-      .from('user_bsk_balances')
-      .update({ 
-        withdrawable_balance: balance.withdrawable_balance - amountNum 
-      })
-      .eq('user_id', user.id);
+    // Deduct from withdrawable balance atomically (race-condition safe)
+    const { data: lockResult, error: lockError } = await supabase.rpc(
+      'lock_bsk_for_withdrawal',
+      {
+        p_user_id: user.id,
+        p_amount: amountNum
+      }
+    );
 
-    if (deductError) throw new Error('Failed to lock balance: ' + deductError.message);
+    if (lockError || !(lockResult as any)?.success) {
+      throw new Error((lockResult as any)?.error || lockError?.message || 'Failed to lock balance');
+    }
+
+    const balanceAfter = (lockResult as any)?.balance_after || 0;
 
     // Create withdrawal request
     const requestData: any = {
@@ -126,13 +119,12 @@ serve(async (req) => {
       .single();
 
     if (withdrawalError) {
-      // Rollback balance
-      await supabase
-        .from('user_bsk_balances')
-        .update({ 
-          withdrawable_balance: balance.withdrawable_balance 
-        })
-        .eq('user_id', user.id);
+      // Rollback balance by adding back the amount
+      await supabase.rpc('admin_credit_manual_purchase', {
+        p_user_id: user.id,
+        p_withdrawable_amount: amountNum,
+        p_holding_amount: 0
+      });
       throw withdrawalError;
     }
 

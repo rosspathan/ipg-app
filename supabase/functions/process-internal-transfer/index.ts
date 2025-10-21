@@ -104,48 +104,24 @@ serve(async (req) => {
       );
     }
 
-    // Deduct from sender
-    const { error: deductError } = await supabaseClient
-      .from('wallet_balances')
-      .update({ available: senderBalance.available - transferAmount })
-      .eq('user_id', user.id)
-      .eq('asset_id', asset.id);
+    // Execute atomic transfer (sender deduction + recipient credit in single transaction)
+    const { data: transferResult, error: transferError } = await supabaseClient.rpc(
+      'execute_internal_crypto_transfer',
+      {
+        p_sender_id: user.id,
+        p_recipient_id: recipientProfile.user_id,
+        p_asset_id: asset.id,
+        p_amount: transferAmount,
+        p_fee: fee
+      }
+    );
 
-    if (deductError) {
-      console.error('Failed to deduct from sender:', deductError);
-      throw new Error('Transfer failed');
-    }
-
-    // Credit recipient (upsert in case they don't have this asset yet)
-    const { data: recipientBalance } = await supabaseClient
-      .from('wallet_balances')
-      .select('available')
-      .eq('user_id', recipientProfile.user_id)
-      .eq('asset_id', asset.id)
-      .single();
-
-    const newRecipientBalance = (recipientBalance?.available || 0) + netAmount;
-
-    const { error: creditError } = await supabaseClient
-      .from('wallet_balances')
-      .upsert({
-        user_id: recipientProfile.user_id,
-        asset_id: asset.id,
-        available: newRecipientBalance,
-        locked: 0
-      }, {
-        onConflict: 'user_id,asset_id'
-      });
-
-    if (creditError) {
-      console.error('Failed to credit recipient:', creditError);
-      // Rollback sender deduction
-      await supabaseClient
-        .from('wallet_balances')
-        .update({ available: senderBalance.available })
-        .eq('user_id', user.id)
-        .eq('asset_id', asset.id);
-      throw new Error('Transfer failed');
+    if (transferError || !(transferResult as any)?.success) {
+      console.error('Transfer failed:', transferError || (transferResult as any)?.error);
+      return new Response(
+        JSON.stringify({ error: (transferResult as any)?.error || transferError?.message || 'Transfer failed' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Create transaction record (if you have a transactions table)

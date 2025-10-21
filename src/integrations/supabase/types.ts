@@ -9883,6 +9883,14 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_credit_manual_purchase: {
+        Args: {
+          p_holding_amount: number
+          p_user_id: string
+          p_withdrawable_amount: number
+        }
+        Returns: Json
+      }
       admin_mint_bsk: {
         Args: {
           p_admin_id: string
@@ -10000,6 +10008,16 @@ export type Database = {
       }
       execute_bsk_transfer: {
         Args: { p_amount: number; p_recipient_id: string; p_sender_id: string }
+        Returns: Json
+      }
+      execute_internal_crypto_transfer: {
+        Args: {
+          p_amount: number
+          p_asset_id: string
+          p_fee: number
+          p_recipient_id: string
+          p_sender_id: string
+        }
         Returns: Json
       }
       generate_referral_code: {
@@ -10137,6 +10155,10 @@ export type Database = {
       lock_balance_for_order: {
         Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
         Returns: boolean
+      }
+      lock_bsk_for_withdrawal: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: Json
       }
       log_admin_action: {
         Args: {
