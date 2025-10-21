@@ -50,44 +50,48 @@ export function BottomNavBar() {
 
   return (
     <nav 
-      className="mobile-fixed bottom-0 z-50"
+      className="mobile-fixed bottom-0 z-50 bg-card border-t border-border"
       style={{
-        paddingLeft: 'max(env(safe-area-inset-left), 0px)',
-        paddingRight: 'max(env(safe-area-inset-right), 0px)',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 0px)'
+        height: 'calc(var(--dock-h) + env(safe-area-inset-bottom))'
       }}
     >
-      <div className="h-[var(--dock-h)] bg-card border-t border-border">
-        <div className="flex items-center justify-around h-full px-2">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const active = isActive(item.route)
-            
-            return (
-              <button
-                key={item.id}
-                onClick={(e) => {
-                  console.log('[NAV] Button clicked:', {
-                    id: item.id,
-                    route: item.route,
-                    target: e.target,
-                    timestamp: Date.now()
-                  });
-                  navigate(item.route);
-                }}
-                className={cn(
-                  "flex flex-col items-center justify-center px-2 py-1 rounded-md min-w-[56px]",
-                  active ? "text-accent" : "text-muted-foreground"
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="text-[11px] font-medium mt-0.5">
-                  {item.label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
+      <div 
+        className="h-full flex items-center justify-around"
+        style={{
+          paddingLeft: 'max(env(safe-area-inset-left), 8px)',
+          paddingRight: 'max(env(safe-area-inset-right), 8px)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
+          paddingTop: '8px'
+        }}
+      >
+        {navItems.map((item) => {
+          const Icon = item.icon
+          const active = isActive(item.route)
+          
+          return (
+            <button
+              key={item.id}
+              onClick={(e) => {
+                console.log('[NAV] Button clicked:', {
+                  id: item.id,
+                  route: item.route,
+                  target: e.target,
+                  timestamp: Date.now()
+                });
+                navigate(item.route);
+              }}
+              className={cn(
+                "flex flex-col items-center justify-center px-2 py-1 rounded-md min-w-[56px]",
+                active ? "text-accent" : "text-muted-foreground"
+              )}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-[11px] font-medium mt-0.5">
+                {item.label}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </nav>
   )
