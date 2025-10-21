@@ -152,6 +152,21 @@ export default function KYCSubmission() {
       </div>
 
       <div className="container max-w-4xl mx-auto px-4 py-8 space-y-6">
+        {/* BSK Reward Banner */}
+        {submission?.status !== 'approved' && (
+          <Card className="p-6 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
+            <div className="flex items-center gap-4">
+              <div className="text-4xl">🎁</div>
+              <div>
+                <h3 className="font-semibold text-lg">Complete KYC & Earn 5 BSK Tokens!</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Get 5 BSK tokens added to your holding balance once your identity is verified. Complete all steps to get started!
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Validation Errors Summary */}
         {Object.keys(errors).length > 0 && !isDisabled && (
           <Card className="p-6 bg-danger/5 border-danger/20">
@@ -198,11 +213,19 @@ export default function KYCSubmission() {
               <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
               <div>
                 <h3 className="font-semibold text-green-700 dark:text-green-400">
-                  Verification Complete
+                  🎉 Verification Complete - 5 BSK Earned!
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your identity has been verified successfully!
+                  Your identity has been verified successfully! 5 BSK tokens have been added to your holding balance.
                 </p>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="mt-2 p-0 h-auto"
+                  onClick={() => navigate('/app/profile')}
+                >
+                  View BSK Wallet →
+                </Button>
               </div>
             </div>
           </Card>

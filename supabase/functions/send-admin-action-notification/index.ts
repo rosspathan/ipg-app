@@ -151,9 +151,9 @@ function generateEmailContent(actionType: string, details: any): { subject: stri
 
   switch (actionType) {
     case "kyc_approved":
-      subject = "KYC Verification Approved ✓";
+      subject = "KYC Verification Approved ✓ - 5 BSK Earned!";
       title = "Your KYC Verification has been Approved!";
-      message = "Congratulations! Your identity verification has been successfully approved. You now have full access to all platform features.";
+      message = "Congratulations! Your identity verification has been successfully approved. You now have full access to all platform features. <br><br><strong>🎁 Reward: 5 BSK tokens have been added to your holding balance!</strong>";
       statusClass = "success";
       break;
     case "kyc_rejected":

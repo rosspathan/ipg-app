@@ -64,7 +64,7 @@ export const useKYCSubmission = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('kyc_submissions')
+        .from('kyc_profiles_new')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
@@ -72,8 +72,33 @@ export const useKYCSubmission = () => {
       if (error) throw error;
 
       if (data) {
-        setSubmission(data as any);
-        setProgress(calculateProgress(data as any));
+        // Transform data_json to flat structure for form
+        const dataJson = data.data_json as any || {};
+        const flatData = {
+          id: data.id,
+          user_id: data.user_id,
+          full_name: dataJson.personal_details?.full_name || '',
+          date_of_birth: dataJson.personal_details?.date_of_birth || '',
+          nationality: dataJson.personal_details?.nationality || '',
+          phone: dataJson.personal_details?.phone || '',
+          address_line1: dataJson.address_details?.address_line1 || '',
+          address_line2: dataJson.address_details?.address_line2 || '',
+          city: dataJson.address_details?.city || '',
+          state: dataJson.address_details?.state || '',
+          postal_code: dataJson.address_details?.postal_code || '',
+          country: dataJson.address_details?.country || '',
+          id_type: dataJson.id_document?.id_type || '',
+          id_number: dataJson.id_document?.id_number || '',
+          id_front_url: dataJson.documents?.id_front || '',
+          id_back_url: dataJson.documents?.id_back || '',
+          selfie_url: dataJson.documents?.selfie || '',
+          status: data.status,
+          rejection_reason: data.rejection_reason || '',
+          submitted_at: data.submitted_at,
+          reviewed_at: data.reviewed_at
+        };
+        setSubmission(flatData as KYCSubmission);
+        setProgress(calculateProgress(flatData as any));
       } else {
         // Initialize empty submission
         const emptySubmission: Partial<KYCSubmission> = {
@@ -109,15 +134,41 @@ export const useKYCSubmission = () => {
           user_id: user.id,
         };
         
-        const updateData: any = { ...mergedData };
+        // Transform flat data to nested JSON structure
+        const dataJson = {
+          personal_details: {
+            full_name: mergedData.full_name,
+            date_of_birth: mergedData.date_of_birth,
+            nationality: mergedData.nationality,
+            phone: mergedData.phone,
+          },
+          address_details: {
+            address_line1: mergedData.address_line1,
+            address_line2: mergedData.address_line2,
+            city: mergedData.city,
+            state: mergedData.state,
+            postal_code: mergedData.postal_code,
+            country: mergedData.country,
+          },
+          id_document: {
+            id_type: mergedData.id_type,
+            id_number: mergedData.id_number,
+          },
+          documents: {
+            id_front: mergedData.id_front_url,
+            id_back: mergedData.id_back_url,
+            selfie: mergedData.selfie_url,
+          }
+        };
         
-        // Only set status to draft if not already submitted/approved/rejected
-        if (!data.status || data.status === 'draft') {
-          updateData.status = 'draft';
-        }
+        const updateData: any = {
+          user_id: user.id,
+          data_json: dataJson,
+          status: (data.status && data.status !== 'draft') ? data.status : 'pending'
+        };
         
         const { error } = await supabase
-          .from('kyc_submissions')
+          .from('kyc_profiles_new')
           .upsert(updateData, {
             onConflict: 'user_id'
           });
@@ -202,29 +253,42 @@ export const useKYCSubmission = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
+      // Transform flat data to nested JSON structure
+      const dataJson = {
+        personal_details: {
+          full_name: data.full_name,
+          date_of_birth: data.date_of_birth,
+          nationality: data.nationality,
+          phone: data.phone,
+        },
+        address_details: {
+          address_line1: data.address_line1,
+          address_line2: data.address_line2,
+          city: data.city,
+          state: data.state,
+          postal_code: data.postal_code,
+          country: data.country,
+        },
+        id_document: {
+          id_type: data.id_type,
+          id_number: data.id_number,
+        },
+        documents: {
+          id_front: data.id_front_url,
+          id_back: data.id_back_url,
+          selfie: data.selfie_url,
+        }
+      };
+
       const submitData: any = {
         user_id: user.id,
-        full_name: data.full_name,
-        date_of_birth: data.date_of_birth,
-        nationality: data.nationality,
-        phone: data.phone,
-        address_line1: data.address_line1,
-        address_line2: data.address_line2 || null,
-        city: data.city,
-        state: data.state || null,
-        postal_code: data.postal_code,
-        country: data.country,
-        id_type: data.id_type,
-        id_number: data.id_number,
-        id_front_url: data.id_front_url,
-        id_back_url: data.id_back_url,
-        selfie_url: data.selfie_url,
-        status: 'submitted',
+        data_json: dataJson,
+        status: 'pending',
         submitted_at: new Date().toISOString()
       };
 
       const { data: result, error } = await supabase
-        .from('kyc_submissions')
+        .from('kyc_profiles_new')
         .upsert(submitData, {
           onConflict: 'user_id'
         })
@@ -233,19 +297,7 @@ export const useKYCSubmission = () => {
 
       if (error) throw error;
 
-      // Log audit entry
-      if (result) {
-        await supabase
-          .from('kyc_audit_log')
-          .insert({
-            submission_id: result.id,
-            action: 'submitted',
-            performed_by: user.id,
-            new_status: 'submitted'
-          });
-      }
-
-      toast.success('KYC submitted successfully! Our team will review your documents.');
+      toast.success('KYC submitted successfully! You\'ll receive 5 BSK tokens after approval.');
       await fetchSubmission();
     } catch (error) {
       console.error('Error submitting KYC:', error);

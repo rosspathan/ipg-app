@@ -193,6 +193,22 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
         </CardContent>
       </Card>
 
+      {/* BSK Reward Info */}
+      {submission.status === 'pending' && (
+        <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              🎁 BSK Reward Preview
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Approving this KYC will automatically credit <span className="font-semibold text-primary">5 BSK</span> to the user's holding balance as a welcome reward.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Admin Notes */}
       <Card>
         <CardHeader>
@@ -218,7 +234,7 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
             size="lg"
           >
             <CheckCircle className="mr-2 h-5 w-5" />
-            Approve
+            Approve & Award 5 BSK
           </Button>
           <Button
             onClick={() => setRejectModalOpen(true)}
