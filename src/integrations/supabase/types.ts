@@ -10287,7 +10287,7 @@ export type Database = {
       }
       validate_referral_code: {
         Args: { code: string }
-        Returns: string
+        Returns: boolean
       }
     }
     Enums: {
