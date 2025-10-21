@@ -10277,6 +10277,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      system_update_bonus_balance: {
+        Args: { p_asset_id: string; p_balance_delta: number; p_user_id: string }
+        Returns: boolean
+      }
       unlock_balance_for_order: {
         Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
         Returns: boolean
