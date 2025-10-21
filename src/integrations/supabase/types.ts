@@ -9998,6 +9998,10 @@ export type Database = {
         Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
         Returns: boolean
       }
+      execute_bsk_transfer: {
+        Args: { p_amount: number; p_recipient_id: string; p_sender_id: string }
+        Returns: Json
+      }
       generate_referral_code: {
         Args: { code_length?: number }
         Returns: string

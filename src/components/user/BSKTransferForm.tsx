@@ -76,9 +76,6 @@ export function BSKTransferForm() {
   const transferMutation = useMutation({
     mutationFn: async () => {
       if (!verifiedRecipient) throw new Error("Please verify recipient first");
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
 
       const amountBSK = parseFloat(amount);
       if (isNaN(amountBSK) || amountBSK <= 0) {
@@ -89,74 +86,18 @@ export function BSKTransferForm() {
         throw new Error("Insufficient balance");
       }
 
-      // Get sender balance
-      const { data: senderBalance, error: senderError } = await supabase
-        .from("user_bsk_balances")
-        .select("withdrawable_balance")
-        .eq("user_id", user.id)
-        .single();
-
-      if (senderError) throw senderError;
-
-      // Get recipient balance
-      const { data: recipientBalance, error: recipientError } = await supabase
-        .from("user_bsk_balances")
-        .select("withdrawable_balance, total_earned_withdrawable")
-        .eq("user_id", verifiedRecipient.id)
-        .maybeSingle();
-
-      if (recipientError) throw recipientError;
-
-      const senderBefore = senderBalance.withdrawable_balance;
-      const recipientBefore = recipientBalance?.withdrawable_balance || 0;
-
-      // Deduct from sender
-      const { error: deductError } = await supabase
-        .from("user_bsk_balances")
-        .update({ 
-          withdrawable_balance: senderBefore - amountBSK 
-        })
-        .eq("user_id", user.id);
-
-      if (deductError) throw deductError;
-
-      // Add to recipient
-      const { error: addError } = await supabase
-        .from("user_bsk_balances")
-        .upsert({
-          user_id: verifiedRecipient.id,
-          withdrawable_balance: recipientBefore + amountBSK,
-          total_earned_withdrawable: (recipientBalance?.total_earned_withdrawable || 0) + amountBSK,
-        });
-
-      if (addError) {
-        // Rollback sender deduction
-        await supabase
-          .from("user_bsk_balances")
-          .update({ withdrawable_balance: senderBefore })
-          .eq("user_id", user.id);
-        throw addError;
-      }
-
-      // Record transfer
-      const { data: transfer, error: transferError } = await supabase
-        .from("bsk_transfers")
-        .insert({
-          sender_id: user.id,
+      // Use atomic edge function for secure transfer
+      const { data, error } = await supabase.functions.invoke('process-bsk-transfer', {
+        body: {
           recipient_id: verifiedRecipient.id,
-          amount_bsk: amountBSK,
-          sender_balance_before: senderBefore,
-          sender_balance_after: senderBefore - amountBSK,
-          recipient_balance_before: recipientBefore,
-          recipient_balance_after: recipientBefore + amountBSK,
-          status: "completed",
-        })
-        .select("transaction_ref")
-        .single();
+          amount: amountBSK,
+        }
+      });
 
-      if (transferError) throw transferError;
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Transfer failed');
 
-      return transfer.transaction_ref;
+      return data.transaction_ref;
     },
     onSuccess: (transactionRef) => {
       queryClient.invalidateQueries({ queryKey: ["user-bsk-balance"] });
