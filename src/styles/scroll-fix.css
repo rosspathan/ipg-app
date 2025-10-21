@@ -39,7 +39,7 @@ body {
 }
 
 .app-main.with-dock {
-  padding-bottom: calc(var(--dock-h) + 20px + var(--safe-b));
+  padding-bottom: calc(var(--dock-h) + 20px + max(var(--safe-b), var(--vvb, 0px), 12px));
 }
 
 /* Kill accidental horizontal overflow from 100vw elements */

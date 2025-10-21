@@ -5,10 +5,12 @@ import { AppTopBar } from "@/components/astra/AppTopBar"
 import { BottomNavBar } from "@/components/navigation/BottomNavBar"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { useAuthUser } from "@/hooks/useAuthUser"
+import { useSafeAreaPolyfill } from "@/hooks/useSafeAreaPolyfill"
 import { Button } from "@/components/ui/button"
 import { X, AlertCircle } from "lucide-react"
 
 export function AstraLayout() {
+  useSafeAreaPolyfill()
   const { user, signOut } = useAuthUser()
   const navigate = useNavigate()
   const [showMismatchBanner, setShowMismatchBanner] = useState(false)

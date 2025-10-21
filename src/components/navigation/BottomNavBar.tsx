@@ -50,9 +50,10 @@ export function BottomNavBar() {
 
   return (
     <nav 
-      className="mobile-fixed bottom-0 z-50 bg-card border-t border-border"
+      className="mobile-fixed z-50 bg-card border-t border-border"
       style={{
-        height: 'calc(var(--dock-h) + env(safe-area-inset-bottom))'
+        bottom: 'max(env(safe-area-inset-bottom), var(--vvb, 0px), 12px)',
+        height: 'var(--dock-h)'
       }}
     >
       <div 

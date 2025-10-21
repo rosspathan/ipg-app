@@ -72,7 +72,7 @@ export const SupportLinkWhatsApp: FC<SupportLinkWhatsAppProps> = ({
   const waLink = `https://wa.me/${finalPhone.replace(/\D/g, '')}?text=${encodeURIComponent(finalText)}`;
 
   const computedClass = cn(
-    variant === 'fab' ? 'fixed right-4 bottom-[calc(var(--dock-h)+16px)] z-40' : undefined,
+    variant === 'fab' ? 'fixed right-4 bottom-[calc(var(--dock-h)+max(env(safe-area-inset-bottom),var(--vvb,0px),12px)+16px)] z-40' : undefined,
     className
   );
 
