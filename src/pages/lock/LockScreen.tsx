@@ -98,9 +98,8 @@ export default function LockScreen() {
       if (assertion) {
         unlockApp();
         await restoreSession();
-        const returnPath = localStorage.getItem('ipg_return_path') || '/app/home';
-        localStorage.removeItem('ipg_return_path');
-        navigate(returnPath, { replace: true });
+        // Show wallet address before continuing
+        navigate('/auth/wallet-unlocked', { replace: true });
       }
     } catch (err: any) {
       console.error('Biometric auth failed:', err);
@@ -136,9 +135,8 @@ export default function LockScreen() {
         setFailedAttempts(0);
         unlockApp();
         await restoreSession();
-        const returnPath = localStorage.getItem('ipg_return_path') || '/app/home';
-        localStorage.removeItem('ipg_return_path');
-        navigate(returnPath, { replace: true });
+        // Show wallet address before continuing
+        navigate('/auth/wallet-unlocked', { replace: true });
       } else {
         const newAttempts = failedAttempts + 1;
         setFailedAttempts(newAttempts);

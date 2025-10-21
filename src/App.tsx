@@ -118,6 +118,7 @@ import RecoveryVerifyScreen from "./pages/RecoveryVerifyScreen";
 import LandingScreen from "./pages/LandingScreen";
 import SignupScreen from "./pages/auth/SignupScreen";
 import LoginScreen from "./pages/auth/LoginScreen";
+import WalletUnlockedScreen from "./pages/auth/WalletUnlockedScreen";
 import RecoverWalletScreen from "./pages/auth/RecoverWalletScreen";
 import AccountCreatedCelebration from "./pages/onboarding/AccountCreatedCelebration";
 
@@ -307,6 +308,11 @@ function AppContent() {
           <Route path="/auth/lock" element={
             <AuthProviderUser>
               <AppLockScreen />
+            </AuthProviderUser>
+          } />
+          <Route path="/auth/wallet-unlocked" element={
+            <AuthProviderUser>
+              <WalletUnlockedScreen />
             </AuthProviderUser>
           } />
           
