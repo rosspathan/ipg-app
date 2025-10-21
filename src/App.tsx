@@ -120,6 +120,8 @@ import SignupScreen from "./pages/auth/SignupScreen";
 import LoginScreen from "./pages/auth/LoginScreen";
 import WalletUnlockedScreen from "./pages/auth/WalletUnlockedScreen";
 import RecoverWalletScreen from "./pages/auth/RecoverWalletScreen";
+import ForgotPasswordScreen from "./pages/auth/ForgotPasswordScreen";
+import ResetPasswordScreen from "./pages/auth/ResetPasswordScreen";
 import AccountCreatedCelebration from "./pages/onboarding/AccountCreatedCelebration";
 
 // User App Pages
@@ -210,8 +212,6 @@ import FinancialReports from "./pages/admin/FinancialReports";
 import FinancialAnalytics from "./pages/admin/FinancialAnalytics";
 
 // Utility Pages
-import ResetPasswordScreen from "./pages/ResetPasswordScreen";
-import DebugCatalogScreen from "./pages/DebugCatalogScreen";
 import { SupportScreen } from "@/pages/SupportScreen";
 import { SupportTicketScreen } from "@/pages/SupportTicketScreen";
 import { AdminSupportScreen } from "@/pages/AdminSupportScreen";
@@ -303,6 +303,8 @@ function AppContent() {
           {/* Auth Routes - New Clean Flow */}
           <Route path="/auth/signup" element={<SignupScreen />} />
           <Route path="/auth/login" element={<LoginScreen />} />
+          <Route path="/auth/forgot-password" element={<ForgotPasswordScreen />} />
+          <Route path="/auth/reset-password" element={<ResetPasswordScreen />} />
           <Route path="/auth/recover" element={<RecoverWalletScreen />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/auth/lock" element={
@@ -557,7 +559,6 @@ function AppContent() {
 
               {/* Utility Routes */}
               <Route path="/reset-password" element={<ResetPasswordScreen />} />
-              <Route path="/debug/catalog" element={<DebugCatalogScreen />} />
               <Route path="/debug/funding" element={<DebugFunding />} />
               <Route path="/debug/admin-test" element={<AdminCredentialsTest />} />
 

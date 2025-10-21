@@ -123,7 +123,48 @@ Deno.serve(async (req) => {
       // Don't fail the purchase if commission fails
     }
 
-    // 5. If VIP badge, handle milestone tracker and check milestones
+    // 5. Credit bonus holding balance for badge purchase
+    try {
+      // Get badge threshold to check bonus_bsk_holding
+      const { data: badgeThreshold } = await supabaseClient
+        .from('badge_thresholds')
+        .select('bonus_bsk_holding')
+        .eq('badge_name', badge_name.toUpperCase())
+        .single();
+
+      if (badgeThreshold && Number(badgeThreshold.bonus_bsk_holding || 0) > 0) {
+        const bonusAmount = Number(badgeThreshold.bonus_bsk_holding);
+        
+        // Credit bonus to holding balance
+        await supabaseClient
+          .from('user_bsk_balances')
+          .update({
+            holding_balance: supabaseClient.rpc('increment', { x: bonusAmount }),
+            total_earned_holding: supabaseClient.rpc('increment', { x: bonusAmount }),
+          })
+          .eq('user_id', user_id);
+
+        // Create ledger entry
+        await supabaseClient
+          .from('bonus_ledger')
+          .insert({
+            user_id,
+            type: 'badge_bonus',
+            amount_bsk: bonusAmount,
+            meta_json: {
+              badge_name,
+              bonus_type: 'holding_balance',
+              source: 'badge_purchase'
+            },
+          });
+
+        console.log(`Credited ${bonusAmount} BSK bonus to holding balance for ${badge_name} badge`);
+      }
+    } catch (bonusError) {
+      console.error('Badge bonus crediting error (non-critical):', bonusError);
+    }
+
+    // 6. If VIP badge, handle milestone tracker and check milestones
     if (badge_name === 'VIP') {
       try {
         // Create or update VIP milestone tracker
@@ -164,7 +205,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 6. Create audit log
+    // 7. Create audit log
     await supabaseClient
       .from('bonus_ledger')
       .insert({

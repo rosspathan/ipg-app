@@ -70,7 +70,9 @@ const BadgeSubscriptionScreen = () => {
           .single();
         
         if (balanceData) {
-          setBskBalance(Number(balanceData.withdrawable_balance) + Number(balanceData.holding_balance));
+          // Only use withdrawable balance for badge purchases
+          // Holding balance is locked and cannot be used for purchases
+          setBskBalance(Number(balanceData.withdrawable_balance));
         }
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -148,7 +150,8 @@ const BadgeSubscriptionScreen = () => {
         .single();
       
       if (balanceData) {
-        setBskBalance(Number(balanceData.withdrawable_balance) + Number(balanceData.holding_balance));
+        // Only withdrawable balance can be used for purchases
+        setBskBalance(Number(balanceData.withdrawable_balance));
       } else {
         setBskBalance(prev => prev - costToPay);
       }
