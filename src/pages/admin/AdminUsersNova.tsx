@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useState } from "react";
-import { Eye, Ban, Mail, Download, Edit } from "lucide-react";
+import { Eye, Ban, Mail, Download, Edit, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { DataGridAdaptive } from "@/components/admin/nova/DataGridAdaptive";
 import { RecordCard } from "@/components/admin/nova/RecordCard";
 import { FilterChips, type FilterGroup } from "@/components/admin/nova/FilterChips";
@@ -8,6 +9,7 @@ import { FilterSheet } from "@/components/admin/nova/FilterSheet";
 import { DetailSheet } from "@/components/admin/nova/DetailSheet";
 import { FormKit, type FormField } from "@/components/admin/nova/FormKit";
 import { AuditTrailViewer } from "@/components/admin/nova/AuditTrailViewer";
+import { ForceDeleteDialog } from "@/components/admin/users/ForceDeleteDialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -95,6 +97,9 @@ export default function AdminUsersNova() {
   const [searchValue, setSearchValue] = useState("");
   const [activeFilters, setActiveFilters] = useState<Record<string, any[]>>({});
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
 
   // Form state for DetailSheet
   const [formData, setFormData] = useState<Partial<User>>({});
@@ -154,6 +159,27 @@ export default function AdminUsersNova() {
   const handleSave = () => {
     toast.success("User updated successfully");
     setSelectedUser(null);
+  };
+
+  const handleDeleteClick = async (user: User) => {
+    // Check if user is admin
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+    
+    setIsUserAdmin(!!data);
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteSuccess = () => {
+    toast.success("User deleted successfully");
+    // In real implementation, refetch users data
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
   };
 
   const formFields: FormField[] = [
@@ -275,6 +301,7 @@ export default function AdminUsersNova() {
               { label: "View", icon: Eye, onClick: () => handleUserClick(user) },
               { label: "Edit", icon: Edit, onClick: () => handleUserClick(user) },
               { label: "Ban", icon: Ban, onClick: () => toast.error("User banned"), variant: "destructive" },
+              { label: "Delete", icon: Trash2, onClick: () => handleDeleteClick(user), variant: "destructive" },
             ]}
             onClick={() => handleUserClick(user)}
             selected={selected}
@@ -337,6 +364,18 @@ export default function AdminUsersNova() {
           },
         }}
       />
+
+      {/* Force Delete Dialog */}
+      {userToDelete && (
+        <ForceDeleteDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          userId={userToDelete.id}
+          userEmail={userToDelete.email}
+          isAdmin={isUserAdmin}
+          onSuccess={handleDeleteSuccess}
+        />
+      )}
     </div>
   );
 }
