@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { captureReferralAfterEmailVerify } from '@/utils/referralCapture';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SuccessCelebrationScreenProps {
   hasBiometric: boolean;
@@ -40,6 +41,19 @@ const SuccessCelebrationScreen: React.FC<SuccessCelebrationScreenProps> = ({ has
       if (user?.id) {
         console.log('🔒 Locking referral for user:', user.id);
         await captureReferralAfterEmailVerify(user.id);
+        
+        // CRITICAL: Build referral tree immediately after locking
+        console.log('🌳 Building referral tree for user:', user.id);
+        const { data: treeData, error: treeError } = await supabase.functions.invoke('build-referral-tree', {
+          body: { user_id: user.id }
+        });
+
+        if (treeError) {
+          console.error('❌ Failed to build referral tree:', treeError);
+          // Don't fail onboarding if tree build fails, but log it
+        } else {
+          console.log('✅ Referral tree built successfully:', treeData);
+        }
       }
       
       await onComplete();
