@@ -17,6 +17,7 @@ import { copyToClipboard } from "@/utils/clipboard";
 import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress";
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
 import { useDisplayName } from "@/hooks/useDisplayName";
+import { supabase } from "@/integrations/supabase/client";
 
 const DepositScreen = () => {
   const navigate = useNavigate();
@@ -96,7 +97,6 @@ const DepositScreen = () => {
       console.info('USR_WALLET_PATCH_OK', { username: displayName, email: maskedEmail, evm: maskedAddr });
     }
   }, [user?.email, walletAddress, displayName]);
-
 
   const depositInfo = {
     address: walletAddress || "No wallet found",

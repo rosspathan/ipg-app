@@ -22,16 +22,59 @@ export const useDepositTracking = () => {
 
     setLoading(true);
     try {
-      // Get asset ID from symbol
-      const { data: asset, error: assetError } = await supabase
+      // Normalize tx hash and de-duplicate existing records
+      const normalizedHash = params.tx_hash.trim().toLowerCase();
+
+      // Check for existing deposit with same tx_hash for this user
+      const { data: existingDeposit, error: existingError } = await supabase
+        .from('deposits')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('tx_hash', normalizedHash)
+        .single();
+
+      if (existingDeposit) {
+        // Resume monitoring existing record
+        try {
+          await supabase.functions.invoke('monitor-deposit', {
+            body: { deposit_id: existingDeposit.id }
+          });
+        } catch (fnError) {
+          console.warn('Monitor deposit function not available:', fnError);
+        }
+
+        toast({
+          title: "Already Tracked",
+          description: `We found your deposit. Monitoring confirmations now...`,
+        });
+        return existingDeposit as any;
+      }
+
+      // Get asset ID from symbol (prefer network match)
+      let assetId: string | null = null;
+      let { data: asset, error: assetError } = await supabase
         .from('assets')
         .select('id')
         .eq('symbol', params.asset_symbol)
         .eq('is_active', true)
+        .eq('network', params.network)
         .single();
 
       if (assetError || !asset) {
-        throw new Error(`Asset ${params.asset_symbol} not found or inactive`);
+        // Fallback without network filter
+        const { data: assetFallback, error: fallbackError } = await supabase
+          .from('assets')
+          .select('id')
+          .eq('symbol', params.asset_symbol)
+          .eq('is_active', true)
+          .single();
+
+        if (fallbackError || !assetFallback) {
+          throw new Error(`Asset ${params.asset_symbol} not found or inactive`);
+        }
+        assetId = assetFallback.id;
+      } else {
+        assetId = asset.id;
       }
 
       // Create deposit record
@@ -39,9 +82,9 @@ export const useDepositTracking = () => {
         .from('deposits')
         .insert({
           user_id: user.id,
-          asset_id: asset.id,
+          asset_id: assetId!,
           amount: params.amount,
-          tx_hash: params.tx_hash,
+          tx_hash: normalizedHash,
           network: params.network,
           status: 'pending',
           confirmations: 0,
