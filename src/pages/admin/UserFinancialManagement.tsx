@@ -4,6 +4,8 @@ import { UserBalanceOverview } from "@/components/admin/users/UserBalanceOvervie
 import { UserTransactionHistory } from "@/components/admin/users/UserTransactionHistory";
 import { UserFinancialOperations } from "@/components/admin/users/UserFinancialOperations";
 import { ForceDeleteDialog } from "@/components/admin/users/ForceDeleteDialog";
+import { UserBalanceHistory } from "@/components/admin/UserBalanceHistory";
+import { FixBadgeBonus } from "@/components/admin/FixBadgeBonus";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -85,12 +87,18 @@ export default function UserFinancialManagement() {
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">Balance Overview</TabsTrigger>
+              <TabsTrigger value="bsk-history">BSK History</TabsTrigger>
               <TabsTrigger value="transactions">Transaction History</TabsTrigger>
               <TabsTrigger value="operations">Financial Operations</TabsTrigger>
+              <TabsTrigger value="fix-bonus">Fix Badge Bonus</TabsTrigger>
             </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
             <UserBalanceOverview userId={selectedUserId} />
+          </TabsContent>
+
+          <TabsContent value="bsk-history" className="space-y-4">
+            <UserBalanceHistory userId={selectedUserId} />
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-4">
@@ -99,6 +107,10 @@ export default function UserFinancialManagement() {
 
           <TabsContent value="operations" className="space-y-4">
             <UserFinancialOperations userId={selectedUserId} />
+          </TabsContent>
+
+          <TabsContent value="fix-bonus" className="space-y-4">
+            <FixBadgeBonus />
           </TabsContent>
         </Tabs>
 

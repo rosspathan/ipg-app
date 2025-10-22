@@ -13,6 +13,22 @@ interface PurchaseRequest {
   is_upgrade: boolean;
 }
 
+/**
+ * Normalizes badge names to handle variations like "i-Smart VIP", "I-SMART VIP", "VIP"
+ * Returns canonical badge name for consistent processing
+ */
+function normalizeBadgeName(badge: string): string {
+  const badgeUpper = badge.toUpperCase().trim();
+  
+  // Handle VIP variations - all map to "VIP"
+  if (badgeUpper.includes('VIP') || badgeUpper.includes('SMART')) {
+    return 'VIP';
+  }
+  
+  // Return original for other badges (Silver, Gold, Platinum, Diamond)
+  return badge;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -25,8 +41,18 @@ Deno.serve(async (req) => {
     );
 
     const { user_id, badge_name, previous_badge, bsk_amount, is_upgrade }: PurchaseRequest = await req.json();
+    
+    // Normalize badge name for consistent processing
+    const normalizedBadge = normalizeBadgeName(badge_name);
 
-    console.log('Badge purchase request:', { user_id, badge_name, previous_badge, bsk_amount, is_upgrade });
+    console.log('Badge purchase request:', { 
+      user_id, 
+      original_badge: badge_name, 
+      normalized_badge: normalizedBadge,
+      previous_badge, 
+      bsk_amount, 
+      is_upgrade 
+    });
 
     // 1. Verify user has sufficient BSK balance
     const { data: balance, error: balanceError } = await supabaseClient
@@ -127,19 +153,48 @@ Deno.serve(async (req) => {
     let bonusCredited = false;
     let bonusAmount = 0;
     try {
-      // Get badge threshold to check bonus_bsk_holding (case-insensitive)
-      const { data: badgeThreshold, error: thresholdError } = await supabaseClient
+      // Get badge threshold - try multiple badge name variations
+      let badgeThreshold = null;
+      let thresholdError = null;
+      
+      // Try exact match with original name first
+      const exactMatch = await supabaseClient
         .from('badge_thresholds')
         .select('bonus_bsk_holding, badge_name')
         .ilike('badge_name', badge_name)
+        .eq('is_active', true)
         .maybeSingle();
+      
+      if (exactMatch.data) {
+        badgeThreshold = exactMatch.data;
+      } else {
+        // Try with normalized name
+        const normalizedMatch = await supabaseClient
+          .from('badge_thresholds')
+          .select('bonus_bsk_holding, badge_name')
+          .ilike('badge_name', `%${normalizedBadge}%`)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        badgeThreshold = normalizedMatch.data;
+        thresholdError = normalizedMatch.error;
+      }
+      
+      // VIP fallback: If no threshold found but it's a VIP badge, default to 10,000 bonus
+      if (!badgeThreshold && normalizedBadge === 'VIP') {
+        console.log('⚠️ No threshold found for VIP badge, using default 10,000 BSK bonus');
+        bonusAmount = 10000;
+      } else if (badgeThreshold && Number(badgeThreshold.bonus_bsk_holding || 0) > 0) {
+        bonusAmount = Number(badgeThreshold.bonus_bsk_holding);
+      }
 
       if (thresholdError) {
         console.error('Error fetching badge threshold:', thresholdError);
       }
 
-      if (badgeThreshold && Number(badgeThreshold.bonus_bsk_holding || 0) > 0) {
-        bonusAmount = Number(badgeThreshold.bonus_bsk_holding);
+      // Credit bonus if amount is set
+      if (bonusAmount > 0) {
+        console.log(`💰 Crediting ${bonusAmount} BSK bonus for ${badge_name} (normalized: ${normalizedBadge})`);
         
         // Get current balance
         const { data: currentBalance } = await supabaseClient
@@ -189,7 +244,7 @@ Deno.serve(async (req) => {
     }
 
     // 6. If VIP badge, handle milestone tracker and check milestones
-    if (badge_name === 'VIP') {
+    if (normalizedBadge === 'VIP') {
       try {
         // Create or update VIP milestone tracker
         const { error: trackerError } = await supabaseClient

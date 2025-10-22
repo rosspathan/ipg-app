@@ -137,3 +137,6 @@ verify_jwt = false
 
 [functions.discover-deposits]
 verify_jwt = true
+
+[functions.fix-badge-bonus]
+verify_jwt = false
