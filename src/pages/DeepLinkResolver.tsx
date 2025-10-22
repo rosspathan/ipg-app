@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { storePendingReferral } from "@/utils/referralCapture";
 
 /**
  * Custom scheme deep link resolver
@@ -17,36 +19,57 @@ export function DeepLinkResolver() {
         return;
       }
 
-      // Fetch settings to get custom scheme and fallback
-      const response = await fetch(
-        'https://ocblgldglqhlrmtnynmu.supabase.co/rest/v1/mobile_linking_settings?select=*&order=created_at.desc&limit=1',
-        {
-          headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jYmxnbGRnbHFobHJtdG55bm11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3MjYwNTYsImV4cCI6MjA3MTMwMjA1Nn0.aW57QcWFW0aInebAK1m1RsvSkvtayUWPT7uv40OpQ8A'
-          }
+      try {
+        // Validate referral code first
+        const { data: sponsorProfile } = await supabase
+          .from('profiles')
+          .select('user_id, referral_code')
+          .eq('referral_code', code.toUpperCase())
+          .maybeSingle();
+
+        if (sponsorProfile) {
+          console.log('✅ Valid referral code, storing for web users:', code);
+          // Store referral for web users who don't have the app
+          storePendingReferral(code.toUpperCase(), sponsorProfile.user_id);
         }
-      );
-      const data = await response.json();
-      const settings = data[0];
 
-      if (!settings) {
-        window.location.href = '/onboarding';
-        return;
-      }
+        // Fetch linking settings
+        const { data: settings } = await supabase
+          .from('mobile_linking_settings')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      // Try custom scheme
-      const schemeUrl = `${settings.custom_scheme}://r/${code}`;
-      const webUrl = `${settings.host}${settings.ref_base_path}/${code}`;
-      
-      setFallbackUrl(settings.play_store_fallback_url || webUrl);
+        if (!settings) {
+          console.error('No mobile linking settings found');
+          // Fallback to signup with referral code
+          setFallbackUrl(`/auth/signup?ref=${code}`);
+          setShowFallback(true);
+          return;
+        }
 
-      // Attempt to open via custom scheme
-      window.location.href = schemeUrl;
+        // Try custom scheme
+        const schemeUrl = `${settings.custom_scheme}://referral/${code}`;
+        const webFallbackUrl = `/auth/signup?ref=${code}`;
+        
+        console.log('🔗 Attempting deep link:', schemeUrl);
+        console.log('🌐 Fallback URL:', webFallbackUrl);
+        
+        setFallbackUrl(webFallbackUrl);
 
-      // If still on page after 1.5s, show fallback
-      setTimeout(() => {
+        // Attempt to open via custom scheme
+        window.location.href = schemeUrl;
+
+        // If still on page after 1.5s, show fallback (web signup with ref code)
+        setTimeout(() => {
+          setShowFallback(true);
+        }, 1500);
+      } catch (error) {
+        console.error('Error resolving deep link:', error);
+        setFallbackUrl(`/auth/signup?ref=${code}`);
         setShowFallback(true);
-      }, 1500);
+      }
     };
 
     attemptDeepLink();

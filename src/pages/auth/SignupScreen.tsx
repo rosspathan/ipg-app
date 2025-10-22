@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, EyeOff, ArrowLeft, Loader2, Check, X } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Loader2, Check, X, Gift } from 'lucide-react';
 import { z } from 'zod';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -21,6 +22,8 @@ const signupSchema = z.object({
 
 const SignupScreen: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +32,25 @@ const SignupScreen: React.FC = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+
+  // Capture referral code from multiple sources
+  useEffect(() => {
+    // Priority: URL param > sessionStorage > location state
+    const urlRef = searchParams.get('ref');
+    const sessionRef = sessionStorage.getItem('ismart_ref_code');
+    const stateRef = (location.state as any)?.referralCode;
+
+    const capturedCode = urlRef || sessionRef || stateRef;
+    
+    if (capturedCode) {
+      const upperCode = capturedCode.toUpperCase();
+      console.log('📨 Referral code captured in signup:', upperCode);
+      setReferralCode(upperCode);
+      // Store in localStorage for persistence through signup flow
+      localStorage.setItem('ismart_signup_ref', upperCode);
+    }
+  }, [searchParams, location.state]);
 
   const passwordStrength = (pwd: string) => {
     let strength = 0;
@@ -82,8 +104,10 @@ const SignupScreen: React.FC = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Navigate to celebration screen
-        navigate('/onboarding/account-created');
+        // Navigate to celebration screen, pass referral code if captured
+        navigate('/onboarding/account-created', { 
+          state: { referralCode: referralCode || localStorage.getItem('ismart_signup_ref') }
+        });
       }
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -119,6 +143,16 @@ const SignupScreen: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="flex-1 space-y-6 max-w-md mx-auto w-full"
         >
+          {/* Referral Code Banner */}
+          {referralCode && (
+            <Alert className="bg-success/20 border-success/50">
+              <Gift className="w-4 h-4 text-success" />
+              <AlertDescription className="text-white">
+                Referral code <strong>{referralCode}</strong> will be applied to your account
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-white">Email Address</Label>

@@ -1,15 +1,19 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Confetti from 'react-confetti';
 import { CheckCircle2, Sparkles, Shield, Rocket } from 'lucide-react';
 
 export default function AccountCreatedCelebration() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [windowSize, setWindowSize] = React.useState({
     width: window.innerWidth,
     height: window.innerHeight,
   });
+
+  // Extract referral code from location state or localStorage
+  const referralCode = (location.state as any)?.referralCode || localStorage.getItem('ismart_signup_ref');
 
   useEffect(() => {
     const handleResize = () => {
@@ -26,15 +30,15 @@ export default function AccountCreatedCelebration() {
   // Auto-advance after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate('/onboarding/referral');
+      navigate('/onboarding/referral', { state: { referralCode } });
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, [navigate, referralCode]);
 
   // Allow tap to continue immediately
   const handleContinue = () => {
-    navigate('/onboarding/referral');
+    navigate('/onboarding/referral', { state: { referralCode } });
   };
 
   return (

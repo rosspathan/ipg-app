@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { App as CapApp, URLOpenListenerEvent } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { supabase } from '@/integrations/supabase/client';
+import { storePendingReferral } from '@/utils/referralCapture';
 
 /**
  * Hook to handle deep linking in the mobile app
@@ -43,7 +45,7 @@ export function useDeepLinking() {
     };
   }, [navigate]);
 
-  const handleDeepLink = (url: string) => {
+  const handleDeepLink = async (url: string) => {
     console.log('🔗 Deep link opened:', url);
 
     try {
@@ -54,7 +56,8 @@ export function useDeepLinking() {
         const code = urlObj.pathname.split('/r/')[1];
         if (code) {
           console.log('📨 Referral code from deep link:', code);
-          navigate(`/r/${code}`);
+          await validateAndStoreReferral(code);
+          navigate(`/auth/signup?ref=${code}`);
           return;
         }
       }
@@ -64,7 +67,8 @@ export function useDeepLinking() {
         const code = urlObj.pathname.replace('/', '');
         if (code) {
           console.log('📨 Referral code from custom scheme:', code);
-          navigate(`/r/${code}`);
+          await validateAndStoreReferral(code);
+          navigate(`/auth/signup?ref=${code}`);
           return;
         }
       }
@@ -80,6 +84,30 @@ export function useDeepLinking() {
       console.warn('Unhandled deep link:', url);
     } catch (error) {
       console.error('Error parsing deep link:', error);
+    }
+  };
+
+  const validateAndStoreReferral = async (code: string) => {
+    try {
+      const upperCode = code.toUpperCase();
+      
+      // Validate code exists in database
+      const { data: sponsorProfile } = await supabase
+        .from('profiles')
+        .select('user_id, referral_code')
+        .eq('referral_code', upperCode)
+        .maybeSingle();
+
+      if (sponsorProfile) {
+        console.log('✅ Valid referral code, storing:', upperCode);
+        storePendingReferral(upperCode, sponsorProfile.user_id);
+        // Also store in sessionStorage for immediate use
+        sessionStorage.setItem('ismart_ref_code', upperCode);
+      } else {
+        console.warn('⚠️ Invalid referral code:', upperCode);
+      }
+    } catch (error) {
+      console.error('Error validating referral code:', error);
     }
   };
 

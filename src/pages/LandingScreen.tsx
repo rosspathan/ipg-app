@@ -1,12 +1,22 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Shield, Zap, Users, TrendingUp } from 'lucide-react';
 import BrandSplash from '@/components/brand/BrandSplash';
 
 const LandingScreen: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Capture referral code from URL parameter ?ref=CODE
+  React.useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      console.log('📨 Referral code captured from URL:', refCode);
+      sessionStorage.setItem('ismart_ref_code', refCode.toUpperCase());
+    }
+  }, [searchParams]);
   
   // Developer bypass: Check URL for nosplash parameter or dev mode
   const [showSplash, setShowSplash] = React.useState(() => {

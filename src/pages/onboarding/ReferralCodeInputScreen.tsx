@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
@@ -8,6 +9,7 @@ import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
 import { OnboardingHeader } from '@/components/onboarding/OnboardingHeader';
 import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
 import { OnboardingCard } from '@/components/onboarding/OnboardingCard';
+import { useToast } from '@/hooks/use-toast';
 
 interface ReferralCodeInputScreenProps {
   onCodeSubmitted: (code: string, sponsorId: string) => void;
@@ -20,8 +22,46 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
   onSkip,
   onBack
 }) => {
+  const location = useLocation();
+  const { toast } = useToast();
   const [code, setCode] = useState('');
+  const [autoValidated, setAutoValidated] = useState(false);
   const validation = useReferralCodeValidation(code);
+
+  // Auto-populate referral code if captured from previous screens
+  useEffect(() => {
+    // Check multiple sources for pre-captured referral code
+    const stateRef = (location.state as any)?.referralCode;
+    const localRef = localStorage.getItem('ismart_signup_ref');
+    const sessionRef = sessionStorage.getItem('ismart_ref_code');
+    
+    const capturedCode = stateRef || localRef || sessionRef;
+    
+    if (capturedCode && !code && !autoValidated) {
+      const upperCode = capturedCode.toUpperCase();
+      console.log('📨 Auto-populating referral code:', upperCode);
+      setCode(upperCode);
+      setAutoValidated(true);
+      
+      toast({
+        title: "Referral Code Applied",
+        description: `Code ${upperCode} from your referral link`,
+        duration: 3000,
+      });
+    }
+  }, [location.state, code, autoValidated, toast]);
+
+  // Auto-advance if code is valid and was auto-populated
+  useEffect(() => {
+    if (autoValidated && validation.isValid && validation.sponsorId && !validation.loading) {
+      const timer = setTimeout(() => {
+        console.log('✅ Auto-advancing with valid referral code');
+        onCodeSubmitted(code.trim().toUpperCase(), validation.sponsorId);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [autoValidated, validation.isValid, validation.sponsorId, validation.loading, code, onCodeSubmitted]);
 
   const handleContinue = () => {
     if (validation.isValid && validation.sponsorId) {

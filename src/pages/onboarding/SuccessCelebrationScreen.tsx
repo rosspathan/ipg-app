@@ -6,6 +6,8 @@ import Confetti from 'react-confetti';
 import { useWindowSize } from '@/hooks/useWindowSize';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { useAuthUser } from '@/hooks/useAuthUser';
+import { captureReferralAfterEmailVerify } from '@/utils/referralCapture';
 
 interface SuccessCelebrationScreenProps {
   hasBiometric: boolean;
@@ -15,6 +17,7 @@ interface SuccessCelebrationScreenProps {
 const SuccessCelebrationScreen: React.FC<SuccessCelebrationScreenProps> = ({ hasBiometric, onComplete }) => {
   const navigate = useNavigate();
   const { width, height } = useWindowSize();
+  const { user } = useAuthUser();
   const [isCompleting, setIsCompleting] = useState(false);
 
   useEffect(() => {
@@ -33,7 +36,17 @@ const SuccessCelebrationScreen: React.FC<SuccessCelebrationScreenProps> = ({ has
       setIsCompleting(true);
       console.log('[SUCCESS] Starting onboarding completion...');
       
+      // CRITICAL: Lock referral to database before completing onboarding
+      if (user?.id) {
+        console.log('🔒 Locking referral for user:', user.id);
+        await captureReferralAfterEmailVerify(user.id);
+      }
+      
       await onComplete();
+      
+      // Clean up referral code storage
+      localStorage.removeItem('ismart_signup_ref');
+      sessionStorage.removeItem('ismart_ref_code');
       
       console.log('[SUCCESS] Onboarding completed, navigating...');
     } catch (error) {
