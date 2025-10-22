@@ -21,7 +21,7 @@ export default function AdminDatabaseReset() {
   const [results, setResults] = useState<any>(null);
 
   const handleReset = async () => {
-    if (confirmText !== "RESET_ALL_BALANCES") {
+    if (confirmText !== "RESET_DATABASE_CONFIRM") {
       toast({
         title: "Invalid Confirmation",
         description: "Please type the confirmation text exactly as shown",
@@ -41,7 +41,7 @@ export default function AdminDatabaseReset() {
 
       const response = await supabase.functions.invoke('admin-reset-database', {
         body: {
-          confirmation: confirmText,
+          confirmToken: confirmText,
           resetBalances: options.resetBalances,
           resetTransactions: options.resetTransactions,
           resetUsers: options.resetUsers,
@@ -159,13 +159,13 @@ export default function AdminDatabaseReset() {
 
           <div className="space-y-2">
             <Label htmlFor="confirm-text">
-              Type: <code className="font-mono bg-muted px-2 py-1 rounded">RESET_ALL_BALANCES</code>
+              Type: <code className="font-mono bg-muted px-2 py-1 rounded">RESET_DATABASE_CONFIRM</code>
             </Label>
             <Input
               id="confirm-text"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="RESET_ALL_BALANCES"
+              placeholder="RESET_DATABASE_CONFIRM"
               className="font-mono"
             />
           </div>
@@ -175,7 +175,7 @@ export default function AdminDatabaseReset() {
             size="lg"
             className="w-full"
             onClick={handleReset}
-            disabled={loading || confirmText !== "RESET_ALL_BALANCES"}
+            disabled={loading || confirmText !== "RESET_DATABASE_CONFIRM"}
           >
             {loading ? (
               <>

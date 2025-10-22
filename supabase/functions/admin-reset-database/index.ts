@@ -153,31 +153,49 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // 3. Delete users (excluding admin)
+    // 3. Delete users and all related data (excluding admin)
     if (resetUsers) {
-      console.log('Deleting non-admin users...');
+      console.log('Deleting non-admin users and all related data...');
       try {
-        // Get all users except admins
+        // Get all users except admins and current user
         const { data: adminUsers } = await supabaseAdmin
           .from('user_roles')
           .select('user_id')
           .eq('role', 'admin');
 
-        const adminIds = adminUsers?.map(a => a.user_id) || [];
+        const adminIds = adminUsers?.map(a => a.user_id) || [user.id]; // Include current user as protected
         
         // Get all users from auth
         const { data: allUsers } = await supabaseAdmin.auth.admin.listUsers();
         
         let deletedCount = 0;
-        for (const authUser of allUsers?.users || []) {
-          // Skip admin users
-          if (!adminIds.includes(authUser.id)) {
+        const usersToDelete = allUsers?.users.filter(u => !adminIds.includes(u.id)) || [];
+
+        // Delete all related data for non-admin users first
+        for (const authUser of usersToDelete) {
+          try {
+            // Delete from all user-related tables
+            await supabaseAdmin.from('user_roles').delete().eq('user_id', authUser.id);
+            await supabaseAdmin.from('referral_links_new').delete().eq('user_id', authUser.id);
+            await supabaseAdmin.from('referral_tree').delete().eq('user_id', authUser.id);
+            await supabaseAdmin.from('referral_tree').delete().eq('referred_by', authUser.id);
+            await supabaseAdmin.from('kyc_profiles_new').delete().eq('user_id', authUser.id);
+            await supabaseAdmin.from('kyc_submissions_simple').delete().eq('user_id', authUser.id);
+            await supabaseAdmin.from('user_bsk_holdings').delete().eq('user_id', authUser.id);
+            await supabaseAdmin.from('badge_holdings').delete().eq('user_id', authUser.id);
+            await supabaseAdmin.from('referral_ledger').delete().eq('user_id', authUser.id);
+            await supabaseAdmin.from('bonus_ledger').delete().eq('user_id', authUser.id);
+            
+            // Finally delete the auth user (profiles will cascade)
             await supabaseAdmin.auth.admin.deleteUser(authUser.id);
             deletedCount++;
+          } catch (err: any) {
+            console.error(`Failed to delete user ${authUser.id}:`, err.message);
+            results.errors.push(`⚠ Failed to delete user ${authUser.email}: ${err.message}`);
           }
         }
 
-        results.operations.push(`✅ Deleted ${deletedCount} non-admin users`);
+        results.operations.push(`✅ Deleted ${deletedCount} non-admin users and all their data`);
       } catch (error: any) {
         results.errors.push(`❌ User deletion error: ${error.message}`);
       }
