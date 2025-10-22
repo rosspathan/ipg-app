@@ -109,7 +109,7 @@ serve(async (req) => {
     if (!deposit_id) {
       const { data: pendingDeposits, error: queryError } = await supabaseClient
         .from('deposits')
-        .select('*, assets(symbol, decimals, contract_address), profiles(wallet_address, wallet_addresses)')
+        .select('*, assets(symbol, decimals, contract_address)')
         .eq('status', 'pending')
         .limit(50)
 
@@ -121,7 +121,17 @@ serve(async (req) => {
       for (const deposit of pendingDeposits || []) {
         try {
           const asset = deposit.assets
-          const profile = deposit.profiles
+          // Fetch profile for this user to get wallet addresses
+          const { data: profile, error: profileErr } = await supabaseClient
+            .from('profiles')
+            .select('wallet_address, wallet_addresses')
+            .eq('user_id', deposit.user_id)
+            .single()
+          if (profileErr) {
+            console.log(`[monitor-deposit] Skipping deposit ${deposit.id}: failed to load profile`)
+            results.push({ id: deposit.id, status: 'skipped', reason: 'profile_load_failed' })
+            continue
+          }
 
           // Compute EVM address from profile
           const evmAddress = profile?.wallet_addresses?.['bsc-mainnet'] ||
@@ -231,14 +241,20 @@ serve(async (req) => {
     // Single deposit mode
     const { data: deposit, error: depositError } = await supabaseClient
       .from('deposits')
-      .select('*, assets(symbol, decimals, contract_address), profiles(wallet_address, wallet_addresses)')
+      .select('*, assets(symbol, decimals, contract_address)')
       .eq('id', deposit_id)
       .single()
 
     if (depositError) throw depositError
 
     const asset = deposit.assets
-    const profile = deposit.profiles
+    // Load profile for wallet addresses
+    const { data: profile, error: profileErr } = await supabaseClient
+      .from('profiles')
+      .select('wallet_address, wallet_addresses')
+      .eq('user_id', deposit.user_id)
+      .single()
+    if (profileErr) throw profileErr
 
     // Compute EVM address from profile
     const evmAddress = profile?.wallet_addresses?.['bsc-mainnet'] ||
