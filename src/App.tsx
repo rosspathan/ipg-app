@@ -93,7 +93,6 @@ const AdminKYCSettings = React.lazy(() => import("./pages/AdminKYCSettings"));
 const AdminRoleManagement = React.lazy(() => import("./pages/admin/AdminRoleManagement"));
 const AdminBadgeSystem = React.lazy(() => import("./pages/admin/AdminBadgeSystem"));
 const AdminBSKManagement = React.lazy(() => import("./pages/admin/AdminBSKManagement"));
-const WalletScreen = React.lazy(() => import("./pages/WalletScreen"));
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -426,7 +425,7 @@ function AppContent() {
               <Route path="profile/settings" element={<SettingsPage />} />
               <Route path="profile/referrals" element={<React.Suspense fallback={<LoadingFallback />}><ReferralsPageAstra /></React.Suspense>} />
               <Route path="support" element={<SupportPage />} />
-              <Route path="wallet" element={<React.Suspense fallback={<LoadingFallback />}><WalletScreen /></React.Suspense>} />
+              <Route path="wallet" element={<WalletPage />} />
                 
                 {/* Programs - All with BSK Balance Checks */}
                 <Route path="programs/ad-mining" element={<React.Suspense fallback={<LoadingFallback />}><AdMiningPageNew /></React.Suspense>} />

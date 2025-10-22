@@ -7,7 +7,8 @@ import { toast } from "@/hooks/use-toast"
 import { QRCodeSVG } from "qrcode.react"
 import { copyToClipboard } from "@/utils/clipboard"
 import { AppShellGlass } from "@/components/astra/AppShellGlass"
-import { BalanceCluster } from "@/components/astra/BalanceCluster"
+import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
+import { useWalletBalances } from "@/hooks/useWalletBalances"
 import { QuickActionsRibbon } from "@/components/astra/grid/QuickActionsRibbon"
 import { useNavigation } from "@/hooks/useNavigation"
 import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
@@ -25,6 +26,9 @@ export function WalletPage() {
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [showAddress, setShowAddress] = useState(true)
   const [showQrDialog, setShowQrDialog] = useState(false)
+  
+  // Fetch real portfolio data
+  const { portfolio, loading: portfolioLoading } = useWalletBalances()
 
   useUsernameBackfill(); // Backfill username if missing
 
@@ -259,6 +263,37 @@ export function WalletPage() {
 
         {/* Quick Actions Ribbon */}
         <QuickActionsRibbon actions={quickActions} />
+
+        {/* Portfolio Summary */}
+        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6">
+          <h2 className="text-sm font-semibold text-muted-foreground mb-4">Portfolio Summary</h2>
+          {portfolioLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Total Value</p>
+                <p className="text-lg font-bold text-foreground">
+                  ${(portfolio?.total_usd || 0).toFixed(2)}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Available</p>
+                <p className="text-lg font-bold text-green-600">
+                  ${(portfolio?.available_usd || 0).toFixed(2)}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Locked</p>
+                <p className="text-lg font-bold text-orange-600">
+                  ${(portfolio?.locked_usd || 0).toFixed(2)}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
 
       {/* Balance Cluster with Crypto Assets Grid */}
       <BalanceCluster />
