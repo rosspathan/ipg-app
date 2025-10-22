@@ -130,7 +130,7 @@ export default function KYCSubmission() {
     );
   }
 
-  const isDisabled = submission?.status === 'submitted' || submission?.status === 'approved';
+  const isDisabled = submission?.status === 'submitted' || submission?.status === 'pending' || submission?.status === 'approved';
 
   return (
     <div className="min-h-screen bg-background">
@@ -142,7 +142,7 @@ export default function KYCSubmission() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
-            {submission?.status && <KYCStatusBadge status={submission.status} />}
+            {submission?.status && <KYCStatusBadge status={(submission.status === 'pending' ? 'submitted' : submission.status) as any} />}
           </div>
           <h1 className="text-2xl font-bold mt-4">KYC Verification</h1>
           <p className="text-sm text-muted-foreground mt-1">

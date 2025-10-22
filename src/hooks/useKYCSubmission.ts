@@ -22,7 +22,7 @@ export interface KYCSubmission {
   id_front_url?: string;
   id_back_url?: string;
   selfie_url?: string;
-  status: 'draft' | 'submitted' | 'approved' | 'rejected';
+  status: 'draft' | 'pending' | 'submitted' | 'approved' | 'rejected';
   rejection_reason?: string;
   admin_notes?: string;
   submitted_at?: string;
@@ -129,7 +129,7 @@ export const useKYCSubmission = () => {
         
         // Merge with existing submission data
         const mergedData = {
-          ...submission,
+          ...(submission || {}),
           ...data,
           user_id: user.id,
         };
@@ -165,7 +165,7 @@ export const useKYCSubmission = () => {
           user_id: user.id,
           level: 'L1',
           data_json: dataJson,
-          status: (data.status && data.status !== 'draft') ? data.status : 'pending'
+          status: data.status ?? submission?.status ?? 'draft'
         };
         
         const { error } = await supabase
