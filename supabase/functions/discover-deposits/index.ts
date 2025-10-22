@@ -12,6 +12,20 @@ interface DiscoverRequest {
   lookbackHours?: number;
 }
 
+// Network aliases to handle different naming conventions
+const NETWORK_ALIASES: Record<string, string[]> = {
+  'bsc': ['BEP20', 'bsc', 'bep20', 'bsc-mainnet', 'BSC'],
+  'ethereum': ['ERC20', 'eth', 'ethereum', 'ETH'],
+};
+
+// Asset fallbacks for common tokens
+const ASSET_FALLBACKS: Record<string, { contract: string; decimals: number }> = {
+  'USDT:bsc': {
+    contract: '0x55d398326f99059fF775485246999027B3197955',
+    decimals: 18,
+  },
+};
+
 interface BscScanTokenTransfer {
   hash: string;
   from: string;
@@ -67,21 +81,54 @@ serve(async (req: Request) => {
 
     console.log(`[discover-deposits] EVM address: ${evmAddress.slice(0, 6)}...`);
 
-    // Fetch asset details
-    const { data: asset, error: assetError } = await supabaseClient
-      .from('assets')
-      .select('id, contract_address, decimals')
-      .eq('symbol', symbol)
-      .eq('network', network)
-      .eq('is_active', true)
-      .single();
-
-    if (assetError || !asset) {
-      throw new Error(`Asset ${symbol} on ${network} not found or inactive`);
+    // Fetch asset details with network aliases
+    const aliases = NETWORK_ALIASES[network.toLowerCase()] || [network];
+    let asset: { id: string; contract_address: string; decimals: number } | null = null;
+    
+    // Try finding asset with any of the network aliases
+    for (const alias of aliases) {
+      const { data, error } = await supabaseClient
+        .from('assets')
+        .select('id, contract_address, decimals')
+        .ilike('symbol', symbol)
+        .ilike('network', alias)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (data?.contract_address) {
+        asset = data;
+        console.log(`[discover-deposits] Found asset via alias: ${alias}`);
+        break;
+      }
     }
 
-    if (!asset.contract_address) {
-      throw new Error(`No contract address configured for ${symbol}`);
+    // Fallback to hardcoded values if no asset found
+    if (!asset?.contract_address) {
+      const fallbackKey = `${symbol.toUpperCase()}:${network.toLowerCase()}`;
+      const fallback = ASSET_FALLBACKS[fallbackKey];
+      
+      if (fallback) {
+        console.log(`[discover-deposits] Using fallback for ${fallbackKey}`);
+        // Create a minimal asset object with fallback values
+        // We still need the asset ID from DB for deposits table
+        const { data: dbAsset } = await supabaseClient
+          .from('assets')
+          .select('id, decimals')
+          .ilike('symbol', symbol)
+          .maybeSingle();
+        
+        asset = {
+          id: dbAsset?.id || '',
+          contract_address: fallback.contract,
+          decimals: fallback.decimals,
+        };
+      } else {
+        throw new Error(`Asset ${symbol} on ${network} not found and no fallback available`);
+      }
+    }
+
+    if (!asset.id) {
+      throw new Error(`Asset ${symbol} has no ID in database`);
     }
 
     console.log(`[discover-deposits] Asset: ${symbol}, Contract: ${asset.contract_address}`);

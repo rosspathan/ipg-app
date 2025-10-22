@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
-import { Copy, ExternalLink, QrCode, Eye, EyeOff } from "lucide-react"
+import { Copy, ExternalLink, QrCode, Eye, EyeOff, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
@@ -181,6 +181,15 @@ export function WalletPage() {
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-muted-foreground">Your EVM Address (BEP20/ERC20)</p>
                 <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate('/app/wallet/onchain')}
+                    className="h-7 px-2 text-xs"
+                  >
+                    <Wallet className="h-3.5 w-3.5 mr-1" />
+                    On-chain
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
