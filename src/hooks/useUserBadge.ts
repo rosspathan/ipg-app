@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { normalizeBadgeName } from '@/lib/badgeUtils';
 
 export const useUserBadge = () => {
   const { user } = useAuthUser();
@@ -24,7 +25,7 @@ export const useUserBadge = () => {
         .maybeSingle();
 
       if (holdingData?.current_badge) {
-        setBadge(holdingData.current_badge);
+        setBadge(normalizeBadgeName(holdingData.current_badge));
         return;
       }
 
@@ -36,7 +37,7 @@ export const useUserBadge = () => {
         .maybeSingle();
 
       if (statusData?.current_badge) {
-        setBadge(statusData.current_badge);
+        setBadge(normalizeBadgeName(statusData.current_badge));
         return;
       }
 

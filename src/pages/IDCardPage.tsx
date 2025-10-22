@@ -10,6 +10,7 @@ import { BadgeTier } from "@/components/badge-id/BadgeIdThemeRegistry";
 import { useDisplayName } from "@/hooks/useDisplayName";
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeBadgeName } from "@/lib/badgeUtils";
 
 export function IDCardPage() {
   const navigate = useNavigate();
@@ -52,11 +53,9 @@ export function IDCardPage() {
           .maybeSingle();
         
         if (data?.current_badge) {
-          // Validate badge is a valid tier, fallback to Silver if not
-          const validTiers: BadgeTier[] = ['Silver', 'Gold', 'Platinum', 'Diamond', 'VIP'];
-          const badge = validTiers.includes(data.current_badge as BadgeTier) 
-            ? (data.current_badge as BadgeTier) 
-            : 'Silver';
+          // Normalize badge name (handles "i-Smart VIP" -> "VIP")
+          const normalizedBadge = normalizeBadgeName(data.current_badge);
+          const badge = normalizedBadge !== 'None' ? normalizedBadge : 'Silver';
           
           setCurrentTier(badge);
           setPurchasedBadges([badge]);

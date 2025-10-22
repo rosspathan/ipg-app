@@ -6,6 +6,7 @@ import { useUserBadge } from "@/hooks/useUserBadge"
 import { useDisplayName } from "@/hooks/useDisplayName"
 import { useAvatar } from "@/hooks/useAvatar"
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
+import { normalizeBadgeName } from "@/lib/badgeUtils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -109,12 +110,12 @@ export function ProfilePageRebuilt() {
         "relative overflow-hidden p-6",
         "bg-gradient-to-br from-card/80 via-card/60 to-card/80",
         "backdrop-blur-2xl border-2 transition-all duration-500",
-        badge === "VIP" || badge === "I-SMART VIP" 
+        badge === "VIP"
           ? "border-primary/40 shadow-[0_0_40px_rgba(124,77,255,0.15)]" 
           : "border-border/40"
       )}>
         {/* Animated background for premium users */}
-        {(badge === "VIP" || badge === "I-SMART VIP") && (
+        {badge === "VIP" && (
           <div className="absolute inset-0 opacity-30 bg-gradient-to-br from-primary/20 via-transparent to-primary/20 animate-gradient" />
         )}
         
@@ -152,7 +153,7 @@ export function ProfilePageRebuilt() {
                 {displayName}
               </h2>
               {/* Verified badge for premium users */}
-              {(badge === "VIP" || badge === "I-SMART VIP") && (
+              {badge === "VIP" && (
                 <CheckCircle2 className="h-5 w-5 text-primary" />
               )}
             </div>
@@ -164,14 +165,14 @@ export function ProfilePageRebuilt() {
               <div className={cn(
                 "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold",
                 "bg-gradient-to-r border backdrop-blur-sm",
-                badge === "I-SMART VIP" && "from-cyan-500/20 to-purple-500/20 border-cyan-400/40 text-cyan-400",
-                badge === "VIP" && "from-purple-500/20 to-fuchsia-500/20 border-purple-400/40 text-purple-400",
+                badge === "VIP" && "from-cyan-500/20 to-purple-500/20 border-cyan-400/40 text-cyan-400",
                 badge === "Gold" && "from-yellow-500/20 to-amber-500/20 border-yellow-400/40 text-yellow-400",
                 badge === "Silver" && "from-slate-400/20 to-slate-300/20 border-slate-400/40 text-slate-300",
-                badge === "Bronze" && "from-amber-700/20 to-amber-600/20 border-amber-600/40 text-amber-500"
+                badge === "Platinum" && "from-cyan-400/20 to-blue-400/20 border-cyan-400/40 text-cyan-300",
+                badge === "Diamond" && "from-blue-400/20 to-indigo-400/20 border-blue-400/40 text-blue-300"
               )}>
                 <Crown className="h-3.5 w-3.5" />
-                <span>{badge}</span>
+                <span>{badge === "VIP" ? "i-SMART VIP" : badge}</span>
               </div>
             )}
           </div>

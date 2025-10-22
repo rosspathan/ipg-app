@@ -40,7 +40,7 @@ const BADGE_COLORS: Record<string, { from: string; to: string; glow: string; tex
   },
   VIP: {
     from: 'from-purple-500/30',
-    to: 'to-pink-500/20',
+    to: 'to-cyan-500/20',
     glow: 'shadow-[0_0_40px_rgba(168,85,247,0.5)]',
     text: 'text-purple-100'
   },
@@ -128,7 +128,7 @@ export const MiniIdCardPreview: FC<MiniIdCardPreviewProps> = ({
                     "bg-white/20 backdrop-blur-sm border border-white/30",
                     badgeStyle.text
                   )}>
-                    {badge}
+                    {badge === 'VIP' ? 'i-SMART VIP' : badge}
                   </span>
                 )}
               </div>
