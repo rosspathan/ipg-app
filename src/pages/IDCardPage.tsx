@@ -9,6 +9,7 @@ import { BadgeIdCardSheet } from "@/components/badge-id/BadgeIdCardSheet";
 import { BadgeTier } from "@/components/badge-id/BadgeIdThemeRegistry";
 import { useDisplayName } from "@/hooks/useDisplayName";
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
+import { useUserBSKBalance } from "@/hooks/useUserBSKBalance";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeBadgeName } from "@/lib/badgeUtils";
 
@@ -18,6 +19,7 @@ export function IDCardPage() {
   const { userApp } = useProfile();
   const { uploadAvatar, getAvatarUrl, uploading } = useAvatar();
   const { referralCode } = useReferrals();
+  const { balance } = useUserBSKBalance();
 
   useUsernameBackfill(); // Backfill username if missing
 
@@ -38,11 +40,15 @@ export function IDCardPage() {
   const userId = user?.id || (userApp as any)?.user_id || `guest-${Math.random().toString(36).slice(2, 8)}`;
   
   // Fetch user's purchased badge
-  const [currentTier, setCurrentTier] = React.useState<BadgeTier>('Silver');
-  const [purchasedBadges, setPurchasedBadges] = React.useState<BadgeTier[]>(['Silver']);
+  const [currentTier, setCurrentTier] = React.useState<BadgeTier | null>(null);
+  const [purchasedBadges, setPurchasedBadges] = React.useState<BadgeTier[]>([]);
   
   React.useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setCurrentTier('Silver');
+      setPurchasedBadges(['Silver']);
+      return;
+    }
     
     const loadUserBadge = async () => {
       try {
@@ -55,13 +61,23 @@ export function IDCardPage() {
         if (data?.current_badge) {
           // Normalize badge name (handles "i-Smart VIP" -> "VIP")
           const normalizedBadge = normalizeBadgeName(data.current_badge);
-          const badge = normalizedBadge !== 'None' ? normalizedBadge : 'Silver';
+          console.log('[IDCard] Badge normalized:', data.current_badge, '->', normalizedBadge);
           
-          setCurrentTier(badge);
-          setPurchasedBadges([badge]);
+          if (normalizedBadge !== 'None') {
+            setCurrentTier(normalizedBadge);
+            setPurchasedBadges([normalizedBadge]);
+          } else {
+            setCurrentTier('Silver');
+            setPurchasedBadges(['Silver']);
+          }
+        } else {
+          setCurrentTier('Silver');
+          setPurchasedBadges(['Silver']);
         }
       } catch (error) {
         console.error('Error loading badge:', error);
+        setCurrentTier('Silver');
+        setPurchasedBadges(['Silver']);
       }
     };
     
@@ -116,11 +132,15 @@ export function IDCardPage() {
 
           <BadgeIdCardSheet
             user={userData}
-            currentTier={currentTier}
+            currentTier={currentTier || 'Silver'}
             purchasedBadges={purchasedBadges}
             qrCode={qrCode}
             onAvatarUpload={isAuthed ? uploadAvatar : async () => {}}
             uploadingAvatar={isAuthed ? uploading : false}
+            balances={{
+              withdrawable: balance?.withdrawable || 0,
+              holding: balance?.holding || 0,
+            }}
           />
         </div>
       </div>

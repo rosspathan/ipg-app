@@ -26,6 +26,10 @@ interface BadgeIdCardSheetProps {
   qrCode: string;
   onAvatarUpload: (file: File) => Promise<void>;
   uploadingAvatar?: boolean;
+  balances?: {
+    withdrawable: number;
+    holding: number;
+  };
 }
 
 export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
@@ -34,7 +38,8 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
   purchasedBadges,
   qrCode,
   onAvatarUpload,
-  uploadingAvatar = false
+  uploadingAvatar = false,
+  balances,
 }) => {
   const { toast } = useToast();
   const [selectedTier, setSelectedTier] = useState<BadgeTier>(currentTier);
@@ -257,6 +262,7 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
                     theme={theme}
                     reducedMotion={reducedMotion}
                     signatureUrl={signatureUrl}
+                    balances={balances}
                   />
                 ) : (
                   <BadgeIdCardBack

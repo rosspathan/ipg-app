@@ -20,10 +20,14 @@ interface BadgeIdCardProps {
   reducedMotion?: boolean;
   signatureUrl?: string;
   className?: string;
+  balances?: {
+    withdrawable: number;
+    holding: number;
+  };
 }
 
 export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
-  ({ user, tier, qrCode, theme, reducedMotion = false, signatureUrl, className = '' }, ref) => {
+  ({ user, tier, qrCode, theme, reducedMotion = false, signatureUrl, className = '', balances }, ref) => {
     const formatUID = (id: string) => {
       return `...${id.slice(-4).toLowerCase()}`;
     };
@@ -34,6 +38,10 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
 
     const getSerialNumber = () => {
       return `ISM-${user.id.slice(0, 8).toUpperCase()}`;
+    };
+
+    const formatBalance = (amount: number) => {
+      return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     return (
@@ -278,6 +286,10 @@ export const BadgeIdCard = forwardRef<HTMLDivElement, BadgeIdCardProps>(
               { label: 'Member Since', value: formatDate(user.joinDate), mono: true },
               { label: 'Card No.', value: getSerialNumber(), mono: true },
               { label: 'Level', value: tier },
+              ...(balances ? [
+                { label: 'Withdrawable', value: `${formatBalance(balances.withdrawable)} BSK`, mono: true },
+                { label: 'Holding', value: `${formatBalance(balances.holding)} BSK`, mono: true },
+              ] : []),
             ].map((item, idx) => (
               <div 
                 key={idx}
