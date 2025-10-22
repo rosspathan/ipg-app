@@ -42,7 +42,7 @@ export function useWalletBalances() {
       const { data: balanceData, error: balanceError } = await supabase
         .from('wallet_balances')
         .select(`
-          balance,
+          total,
           available,
           locked,
           asset_id,
@@ -54,12 +54,12 @@ export function useWalletBalances() {
           )
         `)
         .eq('user_id', user.id)
-        .gt('balance', 0); // Only show non-zero balances
+        .gt('total', 0); // Only show non-zero balances
 
       if (balanceError) throw balanceError;
 
       // Get crypto prices from edge function
-      const { data: priceData, error: priceError } = await supabase.functions.invoke('get-crypto-prices', {
+      const { data: priceData, error: priceError } = await supabase.functions.invoke('fetch-crypto-prices', {
         body: { 
           symbols: balanceData?.map((b: any) => b.assets.symbol) || [] 
         }
@@ -73,13 +73,14 @@ export function useWalletBalances() {
       const enrichedBalances: AssetBalance[] = (balanceData || []).map((item: any) => {
         const asset = item.assets;
         const priceUsd = priceData?.prices?.[asset.symbol] || asset.initial_price || 0;
-        const usdValue = item.balance * priceUsd;
+        const totalBalance = (item.total ?? 0) || ((item.available || 0) + (item.locked || 0));
+        const usdValue = totalBalance * priceUsd;
 
         return {
           asset_id: item.asset_id,
           symbol: asset.symbol,
           name: asset.name,
-          balance: item.balance,
+          balance: totalBalance,
           available: item.available,
           locked: item.locked,
           usd_value: usdValue,
