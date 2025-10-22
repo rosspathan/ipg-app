@@ -380,6 +380,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         // Final counts
         let remainingProfiles = 0;
+        let remainingAuthUsers = 0;
         try {
           const { count } = await supabaseAdmin
             .from('profiles')
@@ -389,8 +390,28 @@ const handler = async (req: Request): Promise<Response> => {
           // ignore
         }
 
+        // Count remaining non-admin auth users
+        try {
+          let authUserCount = 0;
+          let authPage = 1;
+          while (true) {
+            const list = await supabaseAdmin.auth.admin.listUsers({ page: authPage, perPage: 1000 });
+            const users = (list as any).users || [];
+            if (!users || users.length === 0) break;
+            authUserCount += users.filter((u: any) => !adminIds.includes(u.id)).length;
+            authPage++;
+            if (users.length < 1000) break;
+          }
+          remainingAuthUsers = authUserCount;
+        } catch (_e) {
+          // ignore
+        }
+
         results.operations.push(`✅ Deleted auth users: ${deletedAuthUsersFromProfiles} from profiles, ${deletedAuthUsersOrphans} orphans`);
         results.operations.push(`✅ Deleted ${deletedProfiles} profiles (${orphanProfilesDeleted} orphan profiles)`);
+        if (remainingAuthUsers > 0) {
+          results.operations.push(`⚠️ ${remainingAuthUsers} non-admin auth users still remain. Run reset again to complete cleanup.`);
+        }
         results.summary = {
           processedCandidateUserIds: totalCandidateUserIds,
           deletedProfiles,
@@ -398,6 +419,7 @@ const handler = async (req: Request): Promise<Response> => {
           deletedAuthUsersFromProfiles,
           deletedAuthUsersOrphans,
           remainingProfiles,
+          remainingAuthUsers,
           tookMs: elapsed(),
         };
         console.log('✅ User deletion summary:', results.summary);

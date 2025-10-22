@@ -62,6 +62,28 @@ export const useAuthSession = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (mounted && initialCheckDone) {
+          // Handle sign out or invalid session
+          if (event === 'SIGNED_OUT' || !session) {
+            console.log('[useAuthSession] User signed out or session invalid');
+            setCurrentUserId(null);
+            setSecurityUserId(null);
+            
+            // Clear any stale local data
+            try {
+              await supabase.auth.signOut();
+            } catch (e) {
+              console.warn('[useAuthSession] Error during cleanup signOut:', e);
+            }
+            
+            setState({
+              session: null,
+              user: null,
+              userId: null,
+              status: 'ready'
+            });
+            return;
+          }
+
           // Update user ID in storage systems
           const userId = session?.user?.id ?? null;
           setCurrentUserId(userId);

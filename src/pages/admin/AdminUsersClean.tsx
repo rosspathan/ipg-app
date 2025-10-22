@@ -1,4 +1,4 @@
-import { Users, UserPlus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, UserPlus, Search, ChevronLeft, ChevronRight, MoreVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CleanCard } from "@/components/admin/clean/CleanCard";
 import { Button } from "@/components/ui/button";
@@ -6,16 +6,51 @@ import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/admin/clean/StatusBadge";
 import { LoadingState, EmptyState } from "@/components/admin/clean";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
+import { ForceDeleteDialog } from "@/components/admin/users/ForceDeleteDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminUsersClean() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{
+    id: string;
+    email: string;
+    isAdmin: boolean;
+  } | null>(null);
   
-  const { data, isLoading, error } = useAdminUsers({
+  const { data, isLoading, error, refetch } = useAdminUsers({
     search: searchQuery,
     page: currentPage,
     limit: 20
   });
+
+  const checkIfUserIsAdmin = async (userId: string): Promise<boolean> => {
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+    
+    return !!roleData;
+  };
+
+  const handleDeleteClick = async (userId: string, userEmail: string) => {
+    const isAdmin = await checkIfUserIsAdmin(userId);
+    setSelectedUser({ id: userId, email: userEmail, isAdmin });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteSuccess = () => {
+    refetch();
+  };
 
   const getKycStatusVariant = (status: string | null) => {
     switch (status) {
@@ -157,6 +192,26 @@ export default function AdminUsersClean() {
                     >
                       View
                     </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDeleteClick(user.user_id, user.email)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Force Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               ))}
@@ -192,6 +247,18 @@ export default function AdminUsersClean() {
             </div>
           )}
         </>
+      )}
+
+      {/* Force Delete Dialog */}
+      {selectedUser && (
+        <ForceDeleteDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          userId={selectedUser.id}
+          userEmail={selectedUser.email}
+          isAdmin={selectedUser.isAdmin}
+          onSuccess={handleDeleteSuccess}
+        />
       )}
     </div>
   );
