@@ -161,62 +161,137 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // 3. Delete users and all related data (excluding admin)
+    // 3. Delete users and all related data (excluding admin) - Profile-driven approach
     if (resetUsers) {
-      console.log('Deleting non-admin users and all related data...');
+      console.log('Deleting non-admin users and all related data (profile-driven)...');
       try {
-        // Get all users except admins and current user
+        // Get all admin user_ids to protect them
         const { data: adminUsers } = await supabaseAdmin
           .from('user_roles')
           .select('user_id')
           .eq('role', 'admin');
 
-        const adminIds = adminUsers?.map(a => a.user_id) || [user.id]; // Include current user as protected
-        
-        // Get all users from auth
-        const { data: allUsers } = await supabaseAdmin.auth.admin.listUsers();
-        
-        let deletedCount = 0;
-        const usersToDelete = allUsers?.users.filter(u => !adminIds.includes(u.id)) || [];
+        const adminIds = [...new Set([...(adminUsers?.map(a => a.user_id) || []), user.id])];
+        console.log(`🛡️ Protected admin IDs: ${adminIds.length}`);
 
-        // Delete all related data for non-admin users first
-        for (const authUser of usersToDelete) {
-          try {
-            // Delete profile explicitly FIRST (no cascade from auth.users)
-            await supabaseAdmin.from('profiles').delete().eq('user_id', authUser.id);
-            
-            // Delete from all user-related tables
-            await supabaseAdmin.from('user_roles').delete().eq('user_id', authUser.id);
-            await supabaseAdmin.from('referral_links_new').delete().eq('user_id', authUser.id);
-            await supabaseAdmin.from('referral_tree').delete().eq('user_id', authUser.id);
-            await supabaseAdmin.from('referral_tree').delete().eq('referred_by', authUser.id);
-            await supabaseAdmin.from('kyc_profiles_new').delete().eq('user_id', authUser.id);
-            await supabaseAdmin.from('kyc_submissions_simple').delete().eq('user_id', authUser.id);
-            await supabaseAdmin.from('user_bsk_holdings').delete().eq('user_id', authUser.id);
-            await supabaseAdmin.from('badge_holdings').delete().eq('user_id', authUser.id);
-            await supabaseAdmin.from('referral_ledger').delete().eq('user_id', authUser.id);
-            await supabaseAdmin.from('bonus_ledger').delete().eq('user_id', authUser.id);
-            
-            // Finally delete the auth user (profiles will cascade)
-            await supabaseAdmin.auth.admin.deleteUser(authUser.id);
-            deletedCount++;
-          } catch (err: any) {
-            console.error(`Failed to delete user ${authUser.id}:`, err.message);
-            const isCritical = err.message.toLowerCase().includes('permission') || 
-                              err.message.toLowerCase().includes('network') ||
-                              err.message.toLowerCase().includes('timeout');
-            const prefix = isCritical ? '❌ CRITICAL:' : '⚠️ Warning:';
-            results.errors.push(`${prefix} Failed to delete user ${authUser.email}: ${err.message}`);
+        let totalCandidateUserIds = 0;
+        let deletedAuthUsers = 0;
+        let deletedProfiles = 0;
+        let orphanProfilesDeleted = 0;
+        let page = 0;
+        const pageSize = 500;
+
+        // Step 1: Delete profiles with user_id NOT IN adminIds (paginated)
+        while (true) {
+          const { data: profilesPage, error: fetchError } = await supabaseAdmin
+            .from('profiles')
+            .select('user_id')
+            .not('user_id', 'in', `(${adminIds.join(',')})`)
+            .not('user_id', 'is', null)
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+
+          if (fetchError) {
+            throw new Error(`Failed to fetch profiles page ${page}: ${fetchError.message}`);
+          }
+
+          if (!profilesPage || profilesPage.length === 0) break;
+
+          totalCandidateUserIds += profilesPage.length;
+          console.log(`📄 Page ${page}: Processing ${profilesPage.length} profiles...`);
+
+          for (const profile of profilesPage) {
+            const userId = profile.user_id;
+            try {
+              // Delete from all user-related tables
+              await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
+              await supabaseAdmin.from('referral_links_new').delete().eq('user_id', userId);
+              await supabaseAdmin.from('referral_tree').delete().eq('user_id', userId);
+              await supabaseAdmin.from('referral_tree').delete().eq('referred_by', userId);
+              await supabaseAdmin.from('kyc_profiles_new').delete().eq('user_id', userId);
+              await supabaseAdmin.from('kyc_submissions_simple').delete().eq('user_id', userId);
+              await supabaseAdmin.from('user_bsk_holdings').delete().eq('user_id', userId);
+              await supabaseAdmin.from('badge_holdings').delete().eq('user_id', userId);
+              await supabaseAdmin.from('referral_ledger').delete().eq('user_id', userId);
+              await supabaseAdmin.from('bonus_ledger').delete().eq('user_id', userId);
+              await supabaseAdmin.from('user_bsk_balances').delete().eq('user_id', userId);
+              await supabaseAdmin.from('wallet_balances').delete().eq('user_id', userId);
+
+              // Delete profile
+              const { error: profileDelError } = await supabaseAdmin
+                .from('profiles')
+                .delete()
+                .eq('user_id', userId);
+              
+              if (profileDelError) {
+                console.warn(`⚠️ Profile deletion warning for ${userId}: ${profileDelError.message}`);
+              } else {
+                deletedProfiles++;
+              }
+
+              // Try to delete auth user (ignore 404/not found)
+              try {
+                await supabaseAdmin.auth.admin.deleteUser(userId);
+                deletedAuthUsers++;
+              } catch (authErr: any) {
+                if (authErr.message?.includes('not found') || authErr.status === 404) {
+                  console.log(`ℹ️ Auth user ${userId} not found (orphan profile)`);
+                } else {
+                  throw authErr; // Re-throw if it's a different error
+                }
+              }
+            } catch (err: any) {
+              const isCritical = err.message.toLowerCase().includes('permission') || 
+                                err.message.toLowerCase().includes('network') ||
+                                err.message.toLowerCase().includes('timeout');
+              const prefix = isCritical ? '❌ CRITICAL:' : '⚠️ Warning:';
+              results.errors.push(`${prefix} Failed to delete user ${userId}: ${err.message}`);
+              console.error(`${prefix} User deletion failed for ${userId}:`, err.message);
+            }
+          }
+
+          page++;
+        }
+
+        console.log(`📊 Processed ${totalCandidateUserIds} candidate user_ids across ${page} pages`);
+
+        // Step 2: Delete orphan profiles (user_id is null)
+        const { error: orphanError, count: orphanCount } = await supabaseAdmin
+          .from('profiles')
+          .delete({ count: 'exact' })
+          .is('user_id', null);
+
+        if (orphanError) {
+          console.warn(`⚠️ Orphan profile deletion warning: ${orphanError.message}`);
+        } else {
+          orphanProfilesDeleted = orphanCount || 0;
+          console.log(`🧹 Deleted ${orphanProfilesDeleted} orphan profiles (user_id is null)`);
+        }
+
+        // Step 3: Cleanup - delete any remaining profiles NOT in adminIds (bulk operation)
+        const { error: cleanupError, count: cleanupCount } = await supabaseAdmin
+          .from('profiles')
+          .delete({ count: 'exact' })
+          .not('user_id', 'in', `(${adminIds.join(',')})`);
+
+        if (cleanupError) {
+          console.warn(`⚠️ Cleanup deletion warning: ${cleanupError.message}`);
+        } else {
+          const extraCleaned = cleanupCount || 0;
+          if (extraCleaned > 0) {
+            console.log(`🧹 Cleanup removed ${extraCleaned} additional profiles`);
+            deletedProfiles += extraCleaned;
           }
         }
 
-        results.operations.push(`✅ Deleted ${deletedCount} non-admin users and all their data`);
+        results.operations.push(`✅ Deleted ${deletedAuthUsers} auth users, ${deletedProfiles} profiles, ${orphanProfilesDeleted} orphan profiles`);
+        console.log(`✅ Summary: ${deletedAuthUsers} auth users, ${deletedProfiles} profiles, ${orphanProfilesDeleted} orphans deleted`);
       } catch (error: any) {
         const isCritical = error.message.toLowerCase().includes('permission') || 
                           error.message.toLowerCase().includes('network') ||
                           error.message.toLowerCase().includes('timeout');
         const prefix = isCritical ? '❌ CRITICAL:' : '⚠️ Warning:';
         results.errors.push(`${prefix} User deletion error: ${error.message}`);
+        console.error(`${prefix} User deletion failed:`, error);
       }
     }
 
