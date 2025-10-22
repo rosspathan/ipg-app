@@ -163,6 +163,7 @@ export const useKYCSubmission = () => {
         
         const updateData: any = {
           user_id: user.id,
+          level: 'L1',
           data_json: dataJson,
           status: (data.status && data.status !== 'draft') ? data.status : 'pending'
         };
@@ -170,7 +171,7 @@ export const useKYCSubmission = () => {
         const { error } = await supabase
           .from('kyc_profiles_new')
           .upsert(updateData, {
-            onConflict: 'user_id'
+            onConflict: 'user_id,level'
           });
 
         if (error) throw error;
@@ -282,6 +283,7 @@ export const useKYCSubmission = () => {
 
       const submitData: any = {
         user_id: user.id,
+        level: 'L1',
         data_json: dataJson,
         status: 'pending',
         submitted_at: new Date().toISOString()
@@ -290,7 +292,7 @@ export const useKYCSubmission = () => {
       const { data: result, error } = await supabase
         .from('kyc_profiles_new')
         .upsert(submitData, {
-          onConflict: 'user_id'
+          onConflict: 'user_id,level'
         })
         .select()
         .single();
