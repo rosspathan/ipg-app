@@ -20,7 +20,7 @@ export type Database = {
           completed_at: string | null
           device_id: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           notes: string | null
           reward_bsk: number | null
           rewarded: boolean
@@ -33,7 +33,7 @@ export type Database = {
           completed_at?: string | null
           device_id?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           notes?: string | null
           reward_bsk?: number | null
           rewarded?: boolean
@@ -46,7 +46,7 @@ export type Database = {
           completed_at?: string | null
           device_id?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           notes?: string | null
           reward_bsk?: number | null
           rewarded?: boolean
@@ -69,7 +69,7 @@ export type Database = {
           ad_id: string
           device_id: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           placement: string | null
           seen_at: string
           user_id: string
@@ -78,7 +78,7 @@ export type Database = {
           ad_id: string
           device_id?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           placement?: string | null
           seen_at?: string
           user_id: string
@@ -87,7 +87,7 @@ export type Database = {
           ad_id?: string
           device_id?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           placement?: string | null
           seen_at?: string
           user_id?: string
@@ -586,7 +586,7 @@ export type Database = {
           action: string
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_values: Json | null
           old_values: Json | null
           resource_id: string | null
@@ -598,7 +598,7 @@ export type Database = {
           action: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           resource_id?: string | null
@@ -610,7 +610,7 @@ export type Database = {
           action?: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           resource_id?: string | null
@@ -784,7 +784,7 @@ export type Database = {
           direct_referrer_reward_id: string | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_values: Json | null
           old_values: Json | null
           reason: string | null
@@ -799,7 +799,7 @@ export type Database = {
           direct_referrer_reward_id?: string | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           reason?: string | null
@@ -814,7 +814,7 @@ export type Database = {
           direct_referrer_reward_id?: string | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           reason?: string | null
@@ -5301,6 +5301,90 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_submissions_simple: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          admin_notes: string | null
+          city: string
+          country: string
+          created_at: string
+          date_of_birth: string
+          full_name: string
+          id: string
+          id_back_url: string
+          id_front_url: string
+          id_number: string
+          id_type: string
+          nationality: string
+          phone: string
+          postal_code: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_url: string
+          state: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          admin_notes?: string | null
+          city: string
+          country: string
+          created_at?: string
+          date_of_birth: string
+          full_name: string
+          id?: string
+          id_back_url: string
+          id_front_url: string
+          id_number: string
+          id_type: string
+          nationality: string
+          phone: string
+          postal_code: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url: string
+          state?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          admin_notes?: string | null
+          city?: string
+          country?: string
+          created_at?: string
+          date_of_birth?: string
+          full_name?: string
+          id?: string
+          id_back_url?: string
+          id_front_url?: string
+          id_number?: string
+          id_type?: string
+          nationality?: string
+          phone?: string
+          postal_code?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string
+          state?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       login_audit: {
         Row: {
           agent: string | null
@@ -5336,7 +5420,7 @@ export type Database = {
           created_at: string
           event: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           location_city: string | null
           location_country: string | null
           success: boolean
@@ -5347,7 +5431,7 @@ export type Database = {
           created_at?: string
           event: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           location_city?: string | null
           location_country?: string | null
           success?: boolean
@@ -5358,7 +5442,7 @@ export type Database = {
           created_at?: string
           event?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           location_city?: string | null
           location_country?: string | null
           success?: boolean
@@ -5872,7 +5956,7 @@ export type Database = {
           diff_json: Json | null
           entity_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           module_id: string | null
           notes: string | null
           operator_id: string
@@ -5888,7 +5972,7 @@ export type Database = {
           diff_json?: Json | null
           entity_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           module_id?: string | null
           notes?: string | null
           operator_id: string
@@ -5904,7 +5988,7 @@ export type Database = {
           diff_json?: Json | null
           entity_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           module_id?: string | null
           notes?: string | null
           operator_id?: string
@@ -6211,7 +6295,7 @@ export type Database = {
           created_at: string
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_values: Json | null
           old_values: Json | null
           user_agent: string | null
@@ -6222,7 +6306,7 @@ export type Database = {
           created_at?: string
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           user_agent?: string | null
@@ -6233,7 +6317,7 @@ export type Database = {
           created_at?: string
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           user_agent?: string | null
@@ -7279,7 +7363,7 @@ export type Database = {
           device_id: string
           device_name: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           last_seen: string
           revoked_at: string | null
           user_agent: string | null
@@ -7290,7 +7374,7 @@ export type Database = {
           device_id: string
           device_name?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_seen?: string
           revoked_at?: string | null
           user_agent?: string | null
@@ -7301,7 +7385,7 @@ export type Database = {
           device_id?: string
           device_name?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_seen?: string
           revoked_at?: string | null
           user_agent?: string | null
@@ -7314,7 +7398,7 @@ export type Database = {
           created_at: string
           device_id: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           last_seen: string
           revoked_at: string | null
           session_token: string
@@ -7325,7 +7409,7 @@ export type Database = {
           created_at?: string
           device_id?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_seen?: string
           revoked_at?: string | null
           session_token: string
@@ -7336,7 +7420,7 @@ export type Database = {
           created_at?: string
           device_id?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_seen?: string
           revoked_at?: string | null
           session_token?: string
@@ -8832,7 +8916,7 @@ export type Database = {
           accepted_at: string
           compliance_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           user_agent: string | null
           user_id: string
@@ -8842,7 +8926,7 @@ export type Database = {
           accepted_at?: string
           compliance_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           user_agent?: string | null
           user_id: string
@@ -8852,7 +8936,7 @@ export type Database = {
           accepted_at?: string
           compliance_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           user_agent?: string | null
           user_id?: string
@@ -9945,10 +10029,7 @@ export type Database = {
         }
         Returns: Json
       }
-      admin_reset_all_user_balances: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      admin_reset_all_user_balances: { Args: never; Returns: Json }
       admin_update_bsk_rate: {
         Args: { p_admin_id: string; p_new_rate: number; p_notes?: string }
         Returns: Json
@@ -9961,10 +10042,7 @@ export type Database = {
         }
         Returns: number
       }
-      calculate_daily_metrics: {
-        Args: { p_date: string }
-        Returns: Json
-      }
+      calculate_daily_metrics: { Args: { p_date: string }; Returns: Json }
       calculate_provable_spin_result: {
         Args: {
           p_client_seed: string
@@ -10006,22 +10084,13 @@ export type Database = {
         }
         Returns: string
       }
-      convert_bsk_to_inr: {
-        Args: { bsk_amount: number }
-        Returns: number
-      }
-      convert_inr_to_bsk: {
-        Args: { inr_amount: number }
-        Returns: number
-      }
+      convert_bsk_to_inr: { Args: { bsk_amount: number }; Returns: number }
+      convert_inr_to_bsk: { Args: { inr_amount: number }; Returns: number }
       count_lucky_draw_tickets: {
         Args: { p_config_id: string }
         Returns: number
       }
-      create_default_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      create_default_admin: { Args: never; Returns: Json }
       create_lucky_draw_tickets: {
         Args: { p_config_id: string; p_ticket_count: number; p_user_id: string }
         Returns: Json
@@ -10084,20 +10153,14 @@ export type Database = {
         Args: { ipg_amount: number }
         Returns: string
       }
-      get_badge_tier_value: {
-        Args: { badge_name: string }
-        Returns: number
-      }
-      get_current_bsk_rate: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      get_badge_tier_value: { Args: { badge_name: string }; Returns: number }
+      get_current_bsk_rate: { Args: never; Returns: number }
       get_current_program_config: {
         Args: { p_module_key: string }
         Returns: Json
       }
       get_current_spin_seed: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           id: string
           server_seed_hash: string
@@ -10105,7 +10168,7 @@ export type Database = {
         }[]
       }
       get_inr_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           total_balance: number
           total_deposited: number
@@ -10134,7 +10197,7 @@ export type Database = {
         }[]
       }
       get_total_bsk_circulation: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           total_holding: number
           total_supply: number
@@ -10154,18 +10217,9 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_user_referral_code: {
-        Args: { p_user_id: string }
-        Returns: string
-      }
-      get_user_referral_stats: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
-      get_user_slab: {
-        Args: { p_user_id: string }
-        Returns: string
-      }
+      get_user_referral_code: { Args: { p_user_id: string }; Returns: string }
+      get_user_referral_stats: { Args: { p_user_id: string }; Returns: Json }
+      get_user_slab: { Args: { p_user_id: string }; Returns: string }
       get_user_wallets: {
         Args: { p_user_id: string }
         Returns: {
@@ -10242,14 +10296,8 @@ export type Database = {
         }
         Returns: Json
       }
-      process_daily_bsk_vesting: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      process_overdue_loan_payments: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      process_daily_bsk_vesting: { Args: never; Returns: Json }
+      process_overdue_loan_payments: { Args: never; Returns: Json }
       publish_program_config: {
         Args: { p_config_id: string; p_operator_id: string }
         Returns: Json
@@ -10266,18 +10314,9 @@ export type Database = {
         }
         Returns: string
       }
-      reset_monthly_claim_counts: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      select_draw_winners: {
-        Args: { p_draw_id: string }
-        Returns: Json
-      }
-      settle_pending_referrer_rewards: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      reset_monthly_claim_counts: { Args: never; Returns: undefined }
+      select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
+      settle_pending_referrer_rewards: { Args: never; Returns: Json }
       settle_trade: {
         Args: {
           p_base_symbol: string
@@ -10307,10 +10346,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
-      validate_referral_code: {
-        Args: { code: string }
-        Returns: boolean
-      }
+      validate_referral_code: { Args: { code: string }; Returns: boolean }
     }
     Enums: {
       announcement_type: "carousel" | "ticker"

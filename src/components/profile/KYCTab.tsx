@@ -1,5 +1,5 @@
-import KYCSubmission from '@/pages/KYCSubmission';
+import KYCSubmissionSimple from '@/pages/KYCSubmissionSimple';
 
 export const KYCTab = () => {
-  return <KYCSubmission />;
+  return <KYCSubmissionSimple />;
 };
