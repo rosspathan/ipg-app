@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Settings, Trophy, Gift, Users, TrendingUp, Save, Edit, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ReferralTreeRebuildTool } from "@/components/admin/ReferralTreeRebuildTool";
 
 interface TeamReferralSettings {
   enabled: boolean;
@@ -322,11 +323,12 @@ const AdminReferralsNova = () => {
       </div>
 
       <Tabs defaultValue="settings" className="flex-1">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="settings">Program Settings</TabsTrigger>
           <TabsTrigger value="badges">Badge Configuration</TabsTrigger>
           <TabsTrigger value="levels">Income Levels</TabsTrigger>
           <TabsTrigger value="milestones">VIP Milestones</TabsTrigger>
+          <TabsTrigger value="tools">System Tools</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="space-y-6">
@@ -757,6 +759,10 @@ const AdminReferralsNova = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="tools" className="space-y-6">
+          <ReferralTreeRebuildTool />
         </TabsContent>
       </Tabs>
     </div>

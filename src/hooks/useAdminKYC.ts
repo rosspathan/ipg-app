@@ -101,6 +101,33 @@ export function useAdminKYC() {
         notes: adminNotes,
       });
 
+      // CRITICAL: Trigger 50-level referral commission distribution for KYC reward
+      // This ensures sponsors earn commissions on the 5 BSK KYC reward
+      if (userId) {
+        try {
+          console.log('🎁 Triggering KYC referral commissions for user:', userId);
+          const { data: commissionResult, error: commissionError } = await supabase.functions.invoke(
+            'process-kyc-commissions',
+            {
+              body: {
+                user_id: userId,
+                kyc_reward_bsk: 5
+              }
+            }
+          );
+
+          if (commissionError) {
+            console.error('⚠️ KYC commission distribution failed:', commissionError);
+            // Don't fail approval if commission distribution fails
+          } else {
+            console.log('✅ KYC commissions distributed:', commissionResult);
+          }
+        } catch (commissionError) {
+          console.error('⚠️ Error triggering KYC commissions:', commissionError);
+          // Non-critical - KYC approval still succeeds
+        }
+      }
+
       // Send email notification
       if (userId) {
         try {

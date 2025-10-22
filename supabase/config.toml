@@ -116,3 +116,18 @@ verify_jwt = false
 
 [functions.admin-password-reset]
 verify_jwt = true
+
+[functions.admin-rebuild-referral-trees]
+verify_jwt = true
+
+[functions.process-kyc-commissions]
+verify_jwt = false
+
+[functions.build-referral-tree]
+verify_jwt = false
+
+[functions.badge-purchase]
+verify_jwt = true
+
+[functions.process-badge-sale-commissions]
+verify_jwt = false
