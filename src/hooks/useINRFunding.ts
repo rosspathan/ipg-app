@@ -76,34 +76,66 @@ export const useINRFunding = () => {
 
   const fetchBanks = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      console.log('[useINRFunding] Fetching bank accounts...');
+      const { data, error, count } = await supabase
         .from('fiat_bank_accounts')
-        .select('id, label, bank_name, account_name, account_number, ifsc, notes, is_default, is_active, created_at')
+        .select('id, label, bank_name, account_name, account_number, ifsc, notes, is_default, is_active, created_at', { count: 'exact' })
         .eq('is_active', true)
         .order('is_default', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('[useINRFunding] Banks query result:', { data, error, count, dataLength: data?.length });
+      
+      if (error) {
+        console.error('[useINRFunding] Banks query error:', error);
+        throw error;
+      }
+      
+      // Fallback: if no data with is_active filter, try without it to see if data exists
+      if (!data || data.length === 0) {
+        console.log('[useINRFunding] No active banks found, checking if any banks exist...');
+        const { data: allBanks, count: totalCount } = await supabase
+          .from('fiat_bank_accounts')
+          .select('*', { count: 'exact' });
+        console.log('[useINRFunding] Total banks in database:', totalCount, allBanks);
+      }
+      
       return data || [];
     } catch (error) {
-      console.error('Error fetching banks:', error);
+      console.error('[useINRFunding] Error fetching banks:', error);
       throw error;
     }
   }, []);
 
   const fetchUpis = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      console.log('[useINRFunding] Fetching UPI accounts...');
+      const { data, error, count } = await supabase
         .from('fiat_upi_accounts')
-        .select('id, label, upi_id, upi_name, notes, is_default, is_active, created_at')
+        .select('id, label, upi_id, upi_name, notes, is_default, is_active, created_at', { count: 'exact' })
         .eq('is_active', true)
         .order('is_default', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('[useINRFunding] UPIs query result:', { data, error, count, dataLength: data?.length });
+      
+      if (error) {
+        console.error('[useINRFunding] UPIs query error:', error);
+        throw error;
+      }
+      
+      // Fallback: if no data with is_active filter, try without it to see if data exists
+      if (!data || data.length === 0) {
+        console.log('[useINRFunding] No active UPIs found, checking if any UPIs exist...');
+        const { data: allUpis, count: totalCount } = await supabase
+          .from('fiat_upi_accounts')
+          .select('*', { count: 'exact' });
+        console.log('[useINRFunding] Total UPIs in database:', totalCount, allUpis);
+      }
+      
       return data || [];
     } catch (error) {
-      console.error('Error fetching UPIs:', error);
+      console.error('[useINRFunding] Error fetching UPIs:', error);
       throw error;
     }
   }, []);
@@ -134,10 +166,18 @@ export const useINRFunding = () => {
       
       if (!settings) {
         status = 'error';
+        console.log('[useINRFunding] Status: error - No settings found');
       } else if (!settings.enabled) {
         status = 'disabled';
+        console.log('[useINRFunding] Status: disabled - Settings.enabled is false');
       } else if (banks.length === 0 && upis.length === 0) {
         status = 'empty';
+        console.log('[useINRFunding] Status: empty - No active banks or UPIs');
+      } else {
+        console.log('[useINRFunding] Status: ready - Data loaded successfully', { 
+          banksCount: banks.length, 
+          upisCount: upis.length 
+        });
       }
 
       setState({

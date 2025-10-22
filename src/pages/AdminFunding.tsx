@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import AdminINRAccounts from "@/components/AdminINRAccounts";
 import AdminINRDeposits from "@/components/AdminINRDeposits";
 import AdminINRWithdrawals from "@/components/AdminINRWithdrawals";
@@ -6,13 +7,31 @@ import AdminCryptoControls from "@/components/AdminCryptoControls";
 import AdminBSKBalances from "@/components/AdminBSKBalances";
 import AdminINRSettings from "@/components/AdminINRSettings";
 import { AdminBSKRelease } from "@/components/admin/AdminBSKRelease";
+import { useNavigate } from "react-router-dom";
 
 const AdminFunding = () => {
+  const navigate = useNavigate();
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <h1 className="text-2xl md:text-3xl font-bold">Funding Operations</h1>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/debug/funding')}
+          >
+            🔍 Debug Funding
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/app/deposit/inr')}
+          >
+            👁️ User View
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="inr-settings" className="w-full">

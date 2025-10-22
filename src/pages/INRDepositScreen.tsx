@@ -157,13 +157,32 @@ const DepositForm = ({ method, settings, selectedAccount, onSubmit, loading }: D
 };
 
 const INRDepositScreen = () => {
-  const { status, settings, banks, upis, error } = useINRFunding();
+  const { status, settings, banks, upis, error, refetch } = useINRFunding();
   const [deposits, setDeposits] = useState<FiatDeposit[]>([]);
   const [selectedBankId, setSelectedBankId] = useState<string>('');
   const [selectedUpiId, setSelectedUpiId] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('new');
+  const [debugMode, setDebugMode] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        setIsAdmin(!!data);
+      }
+    };
+    checkAdmin();
+  }, []);
 
   // Auto-select default accounts when data loads
   useEffect(() => {
@@ -381,7 +400,53 @@ const INRDepositScreen = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">INR Deposits</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">INR Deposits</h1>
+        {isAdmin && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDebugMode(!debugMode)}>
+              {debugMode ? '🔍 Hide Debug' : '🔍 Show Debug'}
+            </Button>
+            <Button variant="outline" size="sm" onClick={refetch}>
+              🔄 Force Refresh
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {debugMode && isAdmin && (
+        <Card className="bg-muted/50 border-2 border-dashed">
+          <CardHeader>
+            <CardTitle className="text-sm">Debug Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-xs font-mono">
+            <div><strong>Status:</strong> {status}</div>
+            <div><strong>Settings Loaded:</strong> {settings ? 'Yes' : 'No'}</div>
+            <div><strong>Settings Enabled:</strong> {settings?.enabled ? 'Yes' : 'No'}</div>
+            <div><strong>Banks Count:</strong> {banks.length}</div>
+            <div><strong>UPIs Count:</strong> {upis.length}</div>
+            <div><strong>Error:</strong> {error || 'None'}</div>
+            <div><strong>Selected Bank ID:</strong> {selectedBankId || 'None'}</div>
+            <div><strong>Selected UPI ID:</strong> {selectedUpiId || 'None'}</div>
+            {banks.length > 0 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer font-semibold">Banks Data ({banks.length})</summary>
+                <pre className="mt-2 p-2 bg-background rounded text-[10px] overflow-auto">
+                  {JSON.stringify(banks, null, 2)}
+                </pre>
+              </details>
+            )}
+            {upis.length > 0 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer font-semibold">UPIs Data ({upis.length})</summary>
+                <pre className="mt-2 p-2 bg-background rounded text-[10px] overflow-auto">
+                  {JSON.stringify(upis, null, 2)}
+                </pre>
+              </details>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
