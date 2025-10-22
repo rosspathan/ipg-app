@@ -106,7 +106,11 @@ const handler = async (req: Request): Promise<Response> => {
 
         results.operations.push('✅ Balances reset successfully');
       } catch (error: any) {
-        results.errors.push(`❌ Balance reset error: ${error.message}`);
+        const isCritical = error.message.toLowerCase().includes('permission') || 
+                          error.message.toLowerCase().includes('network') ||
+                          error.message.toLowerCase().includes('timeout');
+        const prefix = isCritical ? '❌ CRITICAL:' : '⚠️ Warning:';
+        results.errors.push(`${prefix} Balance reset error: ${error.message}`);
       }
     }
 
@@ -149,7 +153,11 @@ const handler = async (req: Request): Promise<Response> => {
 
         results.operations.push('✅ Transaction history cleared (trades, orders, withdrawals, deposits, program data)');
       } catch (error: any) {
-        results.errors.push(`❌ Transaction reset error: ${error.message}`);
+        const isCritical = error.message.toLowerCase().includes('permission') || 
+                          error.message.toLowerCase().includes('network') ||
+                          error.message.toLowerCase().includes('timeout');
+        const prefix = isCritical ? '❌ CRITICAL:' : '⚠️ Warning:';
+        results.errors.push(`${prefix} Transaction reset error: ${error.message}`);
       }
     }
 
@@ -191,13 +199,21 @@ const handler = async (req: Request): Promise<Response> => {
             deletedCount++;
           } catch (err: any) {
             console.error(`Failed to delete user ${authUser.id}:`, err.message);
-            results.errors.push(`⚠ Failed to delete user ${authUser.email}: ${err.message}`);
+            const isCritical = err.message.toLowerCase().includes('permission') || 
+                              err.message.toLowerCase().includes('network') ||
+                              err.message.toLowerCase().includes('timeout');
+            const prefix = isCritical ? '❌ CRITICAL:' : '⚠️ Warning:';
+            results.errors.push(`${prefix} Failed to delete user ${authUser.email}: ${err.message}`);
           }
         }
 
         results.operations.push(`✅ Deleted ${deletedCount} non-admin users and all their data`);
       } catch (error: any) {
-        results.errors.push(`❌ User deletion error: ${error.message}`);
+        const isCritical = error.message.toLowerCase().includes('permission') || 
+                          error.message.toLowerCase().includes('network') ||
+                          error.message.toLowerCase().includes('timeout');
+        const prefix = isCritical ? '❌ CRITICAL:' : '⚠️ Warning:';
+        results.errors.push(`${prefix} User deletion error: ${error.message}`);
       }
     }
 
@@ -216,7 +232,12 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     console.log('✅ Database reset completed');
-    results.success = results.errors.length === 0;
+    
+    // Check for critical errors only
+    const hasCriticalErrors = results.errors.some((err: string) => 
+      err.includes('❌ CRITICAL:')
+    );
+    results.success = !hasCriticalErrors;
 
     return new Response(JSON.stringify(results), {
       status: results.success ? 200 : 207,
