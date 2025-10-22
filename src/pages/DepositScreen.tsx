@@ -34,6 +34,7 @@ const DepositScreen = () => {
   const [txHash, setTxHash] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
   const [depositRecorded, setDepositRecorded] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
 
   useUsernameBackfill(); // Backfill username if missing
 
@@ -193,12 +194,66 @@ const DepositScreen = () => {
       setTxHash("");
       setDepositAmount("");
       
+      toast({
+        title: "Deposit Tracking Started",
+        description: "We're monitoring your transaction on-chain. Balance will update after 12 confirmations.",
+      });
+      
       // Reset after 5 seconds
       setTimeout(() => {
         setDepositRecorded(false);
       }, 5000);
     } catch (error) {
       console.error('Record deposit error:', error);
+    }
+  };
+
+  const handleDiscoverDeposits = async () => {
+    if (!user) return;
+
+    setDiscovering(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('discover-deposits', {
+        body: { 
+          symbol: selectedAsset, 
+          network: selectedNetwork,
+          lookbackHours: 48 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.created > 0) {
+        toast({
+          title: "Deposits Found!",
+          description: `Found ${data.created} deposit(s). Starting confirmation monitoring...`,
+        });
+
+        // Trigger monitor-deposit for each created deposit
+        for (const dep of data.deposits || []) {
+          try {
+            await supabase.functions.invoke('monitor-deposit', {
+              body: { deposit_id: dep.deposit_id }
+            });
+          } catch (err) {
+            console.warn('Monitor trigger failed:', err);
+          }
+        }
+      } else {
+        toast({
+          title: "No New Deposits",
+          description: `No untracked ${selectedAsset} deposits found in the past 48 hours.`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Discover deposits error:', error);
+      toast({
+        title: "Discovery Failed",
+        description: error.message || "Could not search for deposits. Please try recording manually.",
+        variant: "destructive"
+      });
+    } finally {
+      setDiscovering(false);
     }
   };
 
@@ -386,8 +441,29 @@ const DepositScreen = () => {
         <Card className="bg-gradient-card shadow-card border-0">
           <CardHeader>
             <CardTitle className="text-lg">Track Your Deposit</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Enter your transaction details or let us find it automatically
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Auto-discover button */}
+            <Button 
+              onClick={handleDiscoverDeposits}
+              disabled={discovering || !walletAddress}
+              variant="outline"
+              className="w-full"
+            >
+              {discovering ? "Searching blockchain..." : "🔍 Find my deposit automatically"}
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or enter manually</span>
+              </div>
+            </div>
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">
                 Deposit Amount <span className="text-destructive">*</span>

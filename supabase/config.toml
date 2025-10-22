@@ -134,3 +134,6 @@ verify_jwt = false
 
 [functions.scheduled-deposit-monitor]
 verify_jwt = false
+
+[functions.discover-deposits]
+verify_jwt = true

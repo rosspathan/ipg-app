@@ -17,6 +17,7 @@ import { useWeb3 } from "@/contexts/Web3Context"
 import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress"
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 import { useDisplayName } from "@/hooks/useDisplayName"
+import { PendingDepositsCard } from "@/components/astra/PendingDepositsCard"
 
 export function WalletPage() {
   const { navigate } = useNavigation()
@@ -263,6 +264,9 @@ export function WalletPage() {
 
         {/* Quick Actions Ribbon */}
         <QuickActionsRibbon actions={quickActions} />
+
+        {/* Pending Deposits */}
+        <PendingDepositsCard />
 
         {/* Portfolio Summary */}
         <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6">
