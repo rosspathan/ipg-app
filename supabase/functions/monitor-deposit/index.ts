@@ -109,7 +109,7 @@ serve(async (req) => {
     if (!deposit_id) {
       const { data: pendingDeposits, error: queryError } = await supabaseClient
         .from('deposits')
-        .select('*, assets(symbol, decimals, contract_address), profiles(evm_address)')
+        .select('*, assets(symbol, decimals, contract_address), profiles(wallet_address, wallet_addresses)')
         .eq('status', 'pending')
         .limit(50)
 
@@ -123,8 +123,13 @@ serve(async (req) => {
           const asset = deposit.assets
           const profile = deposit.profiles
 
+          // Compute EVM address from profile
+          const evmAddress = profile?.wallet_addresses?.['bsc-mainnet'] ||
+                            profile?.wallet_addresses?.['evm-mainnet'] ||
+                            profile?.wallet_address;
+
           // Only verify BEP20/ERC20 tokens with contract addresses
-          if (!asset?.contract_address || !profile?.evm_address) {
+          if (!asset?.contract_address || !evmAddress) {
             console.log(`[monitor-deposit] Skipping deposit ${deposit.id}: missing contract or wallet address`)
             results.push({ id: deposit.id, status: 'skipped', reason: 'missing_data' })
             continue
@@ -133,7 +138,7 @@ serve(async (req) => {
           // Verify on-chain
           const verification = await verifyBEP20Transfer(
             deposit.tx_hash,
-            profile.evm_address,
+            evmAddress.toLowerCase(),
             deposit.amount.toString(),
             asset.contract_address,
             asset.decimals || 18
@@ -226,7 +231,7 @@ serve(async (req) => {
     // Single deposit mode
     const { data: deposit, error: depositError } = await supabaseClient
       .from('deposits')
-      .select('*, assets(symbol, decimals, contract_address), profiles(evm_address)')
+      .select('*, assets(symbol, decimals, contract_address), profiles(wallet_address, wallet_addresses)')
       .eq('id', deposit_id)
       .single()
 
@@ -235,13 +240,18 @@ serve(async (req) => {
     const asset = deposit.assets
     const profile = deposit.profiles
 
-    if (!asset?.contract_address || !profile?.evm_address) {
+    // Compute EVM address from profile
+    const evmAddress = profile?.wallet_addresses?.['bsc-mainnet'] ||
+                      profile?.wallet_addresses?.['evm-mainnet'] ||
+                      profile?.wallet_address;
+
+    if (!asset?.contract_address || !evmAddress) {
       throw new Error('Missing contract address or wallet address')
     }
 
     const verification = await verifyBEP20Transfer(
       deposit.tx_hash,
-      profile.evm_address,
+      evmAddress.toLowerCase(),
       deposit.amount.toString(),
       asset.contract_address,
       asset.decimals || 18

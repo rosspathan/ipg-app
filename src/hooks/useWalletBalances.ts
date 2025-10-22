@@ -58,15 +58,20 @@ export function useWalletBalances() {
 
       if (balanceError) throw balanceError;
 
-      // Get crypto prices from edge function
-      const { data: priceData, error: priceError } = await supabase.functions.invoke('fetch-crypto-prices', {
-        body: { 
-          symbols: balanceData?.map((b: any) => b.assets.symbol) || [] 
-        }
-      });
+      // Get crypto prices from edge function (only if we have balances)
+      let priceData: any = null;
+      if (balanceData && balanceData.length > 0) {
+        const { data, error: priceError } = await supabase.functions.invoke('fetch-crypto-prices', {
+          body: { 
+            symbols: balanceData.map((b: any) => b.assets.symbol)
+          }
+        });
 
-      if (priceError) {
-        console.warn('Failed to fetch live prices, using fallback:', priceError);
+        if (priceError) {
+          console.warn('Failed to fetch live prices, using fallback:', priceError);
+        } else {
+          priceData = data;
+        }
       }
 
       // Calculate balances with USD values
