@@ -1,6 +1,8 @@
 import * as React from "react"
-import { useState } from "react"
-import { ChevronDown, ChevronUp, Search } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ChevronDown, ChevronUp, Search, RefreshCw } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { useAuthUser } from "@/hooks/useAuthUser"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,12 +21,15 @@ interface BalanceClusterProps {
 export function BalanceCluster({ className }: BalanceClusterProps) {
   const [isCryptoExpanded, setIsCryptoExpanded] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const { toast } = useToast()
+  const { user } = useAuthUser()
 
   // Fetch real crypto balances
-  const { data: cryptoBalances, isLoading: cryptoLoading } = useUserBalance(undefined, true);
+  const { data: cryptoBalances, isLoading: cryptoLoading, refetch: refetchCrypto } = useUserBalance(undefined, true);
 
   // Fetch BSK balances
-  const { data: bskBalance } = useQuery({
+  const { data: bskBalance, refetch: refetchBsk } = useQuery({
     queryKey: ['user-bsk-balance'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -40,6 +45,55 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
       return data;
     }
   });
+
+  // Subscribe to real-time balance updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('wallet-balance-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wallet_balances',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('[BalanceCluster] Balance updated:', payload);
+          refetchCrypto();
+          toast({
+            title: "Balance Updated",
+            description: "Your crypto balance has been updated",
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, refetchCrypto, toast]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([refetchCrypto(), refetchBsk()]);
+      toast({
+        title: "Balances Refreshed",
+        description: "Your balances have been updated",
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh balances",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Filter crypto assets (exclude BSK and INR)
   const cryptoAssets = (cryptoBalances || []).filter(asset => 
@@ -73,14 +127,26 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
       <AstraCard variant="glass" className="p-4" data-testid="crypto-assets-grid">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-heading font-semibold text-sm text-accent">Crypto Assets</h3>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setIsCryptoExpanded(!isCryptoExpanded)}
-            className="h-6 w-6 p-0"
-          >
-            {isCryptoExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="h-6 w-6 p-0"
+              title="Refresh balances"
+            >
+              <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsCryptoExpanded(!isCryptoExpanded)}
+              className="h-6 w-6 p-0"
+            >
+              {isCryptoExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </Button>
+          </div>
         </div>
         
         {isCryptoExpanded && (

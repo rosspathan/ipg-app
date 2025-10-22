@@ -131,3 +131,6 @@ verify_jwt = true
 
 [functions.process-badge-sale-commissions]
 verify_jwt = false
+
+[functions.scheduled-deposit-monitor]
+verify_jwt = false
