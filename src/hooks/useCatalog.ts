@@ -255,14 +255,14 @@ export const useCatalog = (): CatalogData => {
           base_asset:assets!base_asset_id(id, symbol, logo_url, logo_file_path, decimals, is_active),
           quote_asset:assets!quote_asset_id(id, symbol, logo_url, logo_file_path, decimals, is_active)
         `).eq('is_active', true).eq('base_asset.is_active', true).eq('quote_asset.is_active', true),
-        (supabase as any).from('subscriptions_plans').select('*').eq('is_active', true).order('created_at'),
-        (supabase as any).from('referrals_config').select('*').order('updated_at', { ascending: false }).limit(1).single(),
+        (supabase as any).from('subscription_plans').select('*').eq('is_active', true).order('created_at'),
+        (supabase as any).from('referral_configs').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('staking_pools').select('*').eq('active', true).order('created_at'),
-        (supabase as any).from('lucky_draw_plans').select('*').eq('is_active', true).order('created_at'),
+        (supabase as any).from('draw_configs').select('*').eq('is_active', true).order('created_at'),
         supabase.from('insurance_plans').select('*').eq('is_active', true).order('created_at'),
         supabase.from('insurance_subscription_tiers').select('*').eq('is_active', true).order('monthly_fee'),
         (supabase as any).from('ads').select('*').eq('status', 'active').order('created_at'),
-        (supabase as any).from('fees_config').select('*').order('updated_at', { ascending: false }).limit(1).single()
+        (supabase as any).from('fee_configs').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle()
       ]);
 
       didResolve = true;
@@ -393,12 +393,12 @@ export const useCatalog = (): CatalogData => {
         setLastUpdated(prev => ({ ...prev, markets: new Date().toISOString() }));
         setTimeout(loadData, 100);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions_plans' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscription_plans' }, (payload) => {
         console.log('🔄 Subscription plans updated:', payload.eventType);
         setLastUpdated(prev => ({ ...prev, subscriptionPlans: new Date().toISOString() }));
         setTimeout(loadData, 100);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'referrals_config' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'referral_configs' }, (payload) => {
         console.log('🔄 Referrals config updated:', payload.eventType);
         setLastUpdated(prev => ({ ...prev, referralConfig: new Date().toISOString() }));
         setTimeout(loadData, 100);
@@ -408,7 +408,7 @@ export const useCatalog = (): CatalogData => {
         setLastUpdated(prev => ({ ...prev, stakingPools: new Date().toISOString() }));
         setTimeout(loadData, 100);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lucky_draw_plans' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'draw_configs' }, (payload) => {
         console.log('🔄 Lucky draw plans updated:', payload.eventType);
         setLastUpdated(prev => ({ ...prev, luckyDrawPlans: new Date().toISOString() }));
         setTimeout(loadData, 100);
@@ -423,7 +423,7 @@ export const useCatalog = (): CatalogData => {
         setLastUpdated(prev => ({ ...prev, ads: new Date().toISOString() }));
         setTimeout(loadData, 100);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'fees_config' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fee_configs' }, (payload) => {
         console.log('🔄 Fees config updated:', payload.eventType);
         setLastUpdated(prev => ({ ...prev, feesConfig: new Date().toISOString() }));
         setTimeout(loadData, 100);
