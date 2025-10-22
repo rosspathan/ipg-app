@@ -38,7 +38,7 @@ export function IDCardPage() {
   
   // Fetch user's purchased badge
   const [currentTier, setCurrentTier] = React.useState<BadgeTier>('Silver');
-  const [purchasedBadges, setPurchasedBadges] = React.useState<BadgeTier[]>([]);
+  const [purchasedBadges, setPurchasedBadges] = React.useState<BadgeTier[]>(['Silver']);
   
   React.useEffect(() => {
     if (!user?.id) return;
@@ -52,10 +52,14 @@ export function IDCardPage() {
           .maybeSingle();
         
         if (data?.current_badge) {
-          setCurrentTier(data.current_badge as BadgeTier);
-          // For now, only show the current badge
-          // In future, could track all purchased badges
-          setPurchasedBadges([data.current_badge as BadgeTier]);
+          // Validate badge is a valid tier, fallback to Silver if not
+          const validTiers: BadgeTier[] = ['Silver', 'Gold', 'Platinum', 'Diamond', 'VIP'];
+          const badge = validTiers.includes(data.current_badge as BadgeTier) 
+            ? (data.current_badge as BadgeTier) 
+            : 'Silver';
+          
+          setCurrentTier(badge);
+          setPurchasedBadges([badge]);
         }
       } catch (error) {
         console.error('Error loading badge:', error);
