@@ -7,42 +7,65 @@ import { Input } from "@/components/ui/input"
 import { AstraCard } from "../AstraCard"
 import { BSKWithdrawableCard } from "./BSKWithdrawableCard"
 import { BSKHoldingCard } from "./BSKHoldingCard"
+import { useUserBalance } from "@/hooks/useUserBalance"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
+import AssetLogo from "@/components/AssetLogo"
 
 interface BalanceClusterProps {
   className?: string
 }
 
-const mockBalances = {
-  withdrawable: 0,
-  holding: 0,
-  cryptoAssets: [
-    { symbol: "BTC", name: "Bitcoin", balance: 0, valueUSD: 0, logo: "₿" },
-    { symbol: "ETH", name: "Ethereum", balance: 0, valueUSD: 0, logo: "Ξ" },
-    { symbol: "BNB", name: "BNB", balance: 0, valueUSD: 0, logo: "🔶" }
-  ]
-}
-
-const quickActions = [
-  { id: "deposit", label: "Deposit", icon: "📥", variant: "success" as const, onPress: () => {} },
-  { id: "withdraw", label: "Withdraw", icon: "📤", variant: "warning" as const, onPress: () => {} },
-  { id: "swap", label: "Swap", icon: "🔄", variant: "default" as const, onPress: () => {} },
-  { id: "send", label: "Send", icon: "📨", variant: "default" as const, onPress: () => {} }
-]
-
 export function BalanceCluster({ className }: BalanceClusterProps) {
   const [isCryptoExpanded, setIsCryptoExpanded] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
 
-  const filteredCryptoAssets = mockBalances.cryptoAssets.filter(asset =>
-    searchTerm ? asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) : true
-  )
+  // Fetch real crypto balances
+  const { data: cryptoBalances, isLoading: cryptoLoading } = useUserBalance(undefined, true);
+
+  // Fetch BSK balances
+  const { data: bskBalance } = useQuery({
+    queryKey: ['user-bsk-balance'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('user_bsk_balances')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Filter crypto assets (exclude BSK and INR)
+  const cryptoAssets = (cryptoBalances || []).filter(asset => 
+    asset.symbol !== 'BSK' && 
+    asset.symbol !== 'INR' &&
+    asset.network !== 'fiat' &&
+    asset.network !== 'FIAT'
+  );
+
+  const filteredCryptoAssets = cryptoAssets.filter(asset =>
+    searchTerm ? 
+      asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) 
+      : true
+  );
+
+  const withdrawable = Number(bskBalance?.withdrawable_balance || 0);
+  const holding = Number(bskBalance?.holding_balance || 0);
 
   // Debug: verify which GRID BalanceCluster renders and values
   console.info('[BALANCE_CLUSTER_RENDER]', {
     variant: 'grid',
-    withdrawable: mockBalances.withdrawable,
-    holding: mockBalances.holding,
-    cryptoCount: mockBalances.cryptoAssets.length,
+    withdrawable,
+    holding,
+    cryptoCount: cryptoAssets.length,
+    cryptoBalances: cryptoAssets.map(a => ({ symbol: a.symbol, balance: a.balance }))
   });
   return (
     <div className={cn("space-y-4", className)} data-testid="balance-cluster">
@@ -75,40 +98,55 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
             </div>
 
             {/* Grid of crypto assets */}
-            <div className="grid grid-cols-1 gap-2">
-              {filteredCryptoAssets.map((asset) => (
-                <div key={asset.symbol} className="flex items-center justify-between p-3 bg-card-secondary/40 rounded-xl hover:bg-card-secondary/60 transition-colors duration-[120ms] cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-base">{asset.logo}</span>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-sm font-heading">{asset.symbol}</div>
-                      <div className="text-xs text-muted-foreground">{asset.name}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-mono text-sm tabular-nums">{asset.balance}</div>
-                    <div className="text-xs text-muted-foreground tabular-nums">${asset.valueUSD.toFixed(2)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {filteredCryptoAssets.length === 0 && (
+            {cryptoLoading ? (
               <div className="text-center py-6 text-muted-foreground text-sm">
-                No assets found
+                Loading balances...
               </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-2">
+                  {filteredCryptoAssets.map((asset) => (
+                    <div key={asset.symbol} className="flex items-center justify-between p-3 bg-card-secondary/40 rounded-xl hover:bg-card-secondary/60 transition-colors duration-[120ms] cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                          <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} size="sm" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm font-heading">{asset.symbol}</div>
+                          <div className="text-xs text-muted-foreground">{asset.name}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono text-sm tabular-nums">
+                          {Number(asset.balance).toFixed(6)} {asset.symbol}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          <span className="text-success">Available: {Number(asset.available).toFixed(6)}</span>
+                          {Number(asset.locked) > 0 && (
+                            <span className="ml-2 text-warning">Locked: {Number(asset.locked).toFixed(6)}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {filteredCryptoAssets.length === 0 && (
+                  <div className="text-center py-6 text-muted-foreground text-sm">
+                    {searchTerm ? "No assets found matching your search" : "No crypto assets yet. Deposit to get started!"}
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
       </AstraCard>
 
       {/* BSK Withdrawable - New Design */}
-      <BSKWithdrawableCard balance={mockBalances.withdrawable} />
+      <BSKWithdrawableCard balance={withdrawable} />
 
       {/* BSK Holding - New Design */}
-      <BSKHoldingCard balance={mockBalances.holding} />
+      <BSKHoldingCard balance={holding} />
     </div>
   )
 }

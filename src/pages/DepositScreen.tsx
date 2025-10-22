@@ -31,6 +31,7 @@ const DepositScreen = () => {
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [txHash, setTxHash] = useState("");
+  const [depositAmount, setDepositAmount] = useState("");
   const [depositRecorded, setDepositRecorded] = useState(false);
 
   useUsernameBackfill(); // Backfill username if missing
@@ -161,16 +162,36 @@ const DepositScreen = () => {
       return;
     }
 
+    if (!depositAmount || parseFloat(depositAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid deposit amount",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const minDeposit = currentAsset?.min_withdraw_amount || 0;
+    if (parseFloat(depositAmount) < minDeposit) {
+      toast({
+        title: "Amount Too Low",
+        description: `Minimum deposit is ${minDeposit} ${selectedAsset}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       await recordDeposit({
         asset_symbol: selectedAsset,
-        amount: 0, // In production, parse from blockchain or let user input
+        amount: parseFloat(depositAmount),
         tx_hash: txHash,
         network: selectedNetwork
       });
       
       setDepositRecorded(true);
       setTxHash("");
+      setDepositAmount("");
       
       // Reset after 5 seconds
       setTimeout(() => {
@@ -369,7 +390,24 @@ const DepositScreen = () => {
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">
-                Transaction Hash (Optional)
+                Deposit Amount <span className="text-destructive">*</span>
+              </label>
+              <Input
+                type="number"
+                step="any"
+                placeholder={`Amount in ${selectedAsset}`}
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+                disabled={depositLoading || depositRecorded}
+                className="text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Enter the exact amount you deposited (min: {depositInfo.minDeposit})
+              </p>
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">
+                Transaction Hash <span className="text-destructive">*</span>
               </label>
               <Input
                 placeholder="0x..."
@@ -384,7 +422,7 @@ const DepositScreen = () => {
             </div>
             <Button 
               onClick={handleRecordDeposit}
-              disabled={depositLoading || !txHash || depositRecorded}
+              disabled={depositLoading || !txHash || !depositAmount || depositRecorded}
               className="w-full"
             >
               {depositLoading ? "Recording..." : depositRecorded ? "Deposit Recorded ✓" : "Record Deposit"}
