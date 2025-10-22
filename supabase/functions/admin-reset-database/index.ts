@@ -186,9 +186,11 @@ const handler = async (req: Request): Promise<Response> => {
           const { data: profilesPage, error: fetchError } = await supabaseAdmin
             .from('profiles')
             .select('user_id')
-            .not('user_id', 'in', `(${adminIds.join(',')})`)
+            .filter('user_id', 'not.in', `(${adminIds.join(',')})`)
             .not('user_id', 'is', null)
             .range(page * pageSize, (page + 1) * pageSize - 1);
+          
+          console.log(`🔍 Fetched ${profilesPage?.length || 0} profiles in page ${page}`);
 
           if (fetchError) {
             throw new Error(`Failed to fetch profiles page ${page}: ${fetchError.message}`);
@@ -271,7 +273,7 @@ const handler = async (req: Request): Promise<Response> => {
         const { error: cleanupError, count: cleanupCount } = await supabaseAdmin
           .from('profiles')
           .delete({ count: 'exact' })
-          .not('user_id', 'in', `(${adminIds.join(',')})`);
+          .filter('user_id', 'not.in', `(${adminIds.join(',')})`);
 
         if (cleanupError) {
           console.warn(`⚠️ Cleanup deletion warning: ${cleanupError.message}`);
