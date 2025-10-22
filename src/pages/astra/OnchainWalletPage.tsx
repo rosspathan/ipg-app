@@ -15,6 +15,7 @@ export function OnchainWalletPage() {
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [deposits, setDeposits] = useState<any[]>([])
   const [appBalance, setAppBalance] = useState<number>(0)
+  const [assetId, setAssetId] = useState<string | null>(null)
   const [discovering, setDiscovering] = useState(false)
   const [debugOpen, setDebugOpen] = useState(false)
   const [debugInfo, setDebugInfo] = useState<any>({})
@@ -52,6 +53,7 @@ export function OnchainWalletPage() {
           .maybeSingle()
 
         if (asset) {
+          setAssetId(asset.id)
           const { data: balance } = await supabase
             .from('wallet_balances')
             .select('available, locked')
@@ -60,7 +62,7 @@ export function OnchainWalletPage() {
             .maybeSingle()
 
           if (balance) {
-            setAppBalance(balance.available + balance.locked)
+            setAppBalance((balance.available || 0) + (balance.locked || 0))
           }
         }
       } catch (error) {
@@ -70,38 +72,28 @@ export function OnchainWalletPage() {
     fetchAppBalance()
   }, [user?.id])
 
-  // Fetch recent deposits
-  const fetchDeposits = async () => {
-    if (!user?.id) return
-    try {
-      const { data } = await supabase
-        .from('deposits')
-        .select(`
-          id,
-          amount,
-          tx_hash,
-          status,
-          confirmations,
-          required_confirmations,
-          created_at,
-          assets(symbol, name)
-        `)
-        .eq('user_id', user.id)
-        .ilike('assets.symbol', 'USDT')
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      if (data) {
-        setDeposits(data)
-      }
-    } catch (error) {
-      console.error('Error fetching deposits:', error)
-    }
-  }
-
+  // Realtime: update app balance when wallet_balances changes
   useEffect(() => {
-    fetchDeposits()
-  }, [user?.id])
+    if (!user?.id || !assetId) return
+    const channel = supabase
+      .channel('wallet-balances-usdt')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'wallet_balances',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        const row: any = payload.new
+        if (row?.asset_id === assetId) {
+          setAppBalance((row.available || 0) + (row.locked || 0))
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, assetId])
 
   // Discover and credit USDT deposits
   const handleDiscoverAndCredit = async () => {
@@ -116,76 +108,53 @@ export function OnchainWalletPage() {
 
     setDiscovering(true)
     try {
-      // Step 1: Discover deposits
       const { data: discoverData, error: discoverError } = await supabase.functions.invoke('discover-deposits', {
         body: {
           symbol: 'USDT',
           network: 'bsc',
-          lookbackHours: 168 // 7 days
+          lookbackHours: 168
         }
       })
-
       if (discoverError) throw discoverError
 
       const discovered = discoverData?.deposits || []
-      
       toast({
         title: "Discovery Complete",
         description: `Found ${discoverData?.discovered || 0} transfers, created ${discovered.length} new deposits`,
       })
 
-      // Step 2: Monitor each new deposit to credit it
-      for (const deposit of discovered) {
+      // Monitor each new deposit
+      for (const dep of discovered) {
         try {
-          await supabase.functions.invoke('monitor-deposit', {
-            body: { depositId: deposit.deposit_id }
-          })
+          const id = dep.deposit_id || dep.id
+          if (id) {
+            await supabase.functions.invoke('monitor-deposit', { body: { deposit_id: id } })
+          }
         } catch (err) {
-          console.error(`Failed to monitor deposit ${deposit.deposit_id}:`, err)
+          console.error('monitor-deposit error:', err)
         }
       }
 
-      // Refresh data
-      await Promise.all([
-        fetchDeposits(),
-        refetchBalance()
-      ])
+      await Promise.all([fetchDeposits(), refetchBalance()])
 
-      // Fetch updated app balance
-      const { data: asset } = await supabase
-        .from('assets')
-        .select('id')
-        .ilike('symbol', 'USDT')
-        .or('network.ilike.%bep20%,network.ilike.%bsc%')
-        .maybeSingle()
-
-      if (asset) {
+      // Refresh app balance if we know assetId
+      if (assetId) {
         const { data: balance } = await supabase
           .from('wallet_balances')
           .select('available, locked')
           .eq('user_id', user.id)
-          .eq('asset_id', asset.id)
+          .eq('asset_id', assetId)
           .maybeSingle()
-
-        if (balance) {
-          setAppBalance(balance.available + balance.locked)
-        }
+        if (balance) setAppBalance((balance.available || 0) + (balance.locked || 0))
       }
 
       if (discovered.length > 0) {
-        toast({
-          title: "Sync Complete",
-          description: `Processed ${discovered.length} deposits. Balances updated.`,
-        })
+        toast({ title: "Sync Complete", description: `Processed ${discovered.length} deposits. Balances updated.` })
       }
     } catch (error: any) {
       console.error('Error discovering deposits:', error)
       setDebugInfo((prev: any) => ({ ...prev, lastError: error.message || String(error) }))
-      toast({
-        title: "Sync Failed",
-        description: error.message || "Failed to discover deposits",
-        variant: "destructive"
-      })
+      toast({ title: "Sync Failed", description: error.message || 'Failed to discover deposits', variant: 'destructive' })
     } finally {
       setDiscovering(false)
     }

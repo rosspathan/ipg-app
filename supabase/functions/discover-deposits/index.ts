@@ -205,7 +205,7 @@ serve(async (req: Request) => {
           network,
           status: 'pending',
           confirmations: 0,
-          required_confirmations: 12
+          required_confirmations: 2
         })
         .select()
         .single();
