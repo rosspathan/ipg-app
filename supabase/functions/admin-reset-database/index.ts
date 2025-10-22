@@ -182,6 +182,9 @@ const handler = async (req: Request): Promise<Response> => {
         // Delete all related data for non-admin users first
         for (const authUser of usersToDelete) {
           try {
+            // Delete profile explicitly FIRST (no cascade from auth.users)
+            await supabaseAdmin.from('profiles').delete().eq('id', authUser.id);
+            
             // Delete from all user-related tables
             await supabaseAdmin.from('user_roles').delete().eq('user_id', authUser.id);
             await supabaseAdmin.from('referral_links_new').delete().eq('user_id', authUser.id);
