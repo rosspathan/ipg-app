@@ -6,9 +6,16 @@ import { Link } from "react-router-dom"
 interface BacklinkBarProps {
   programName: string
   onBack?: () => void
+  parentRoute?: string
+  parentLabel?: string
 }
 
-export function BacklinkBar({ programName, onBack }: BacklinkBarProps) {
+export function BacklinkBar({ 
+  programName, 
+  onBack, 
+  parentRoute = "/app/programs",
+  parentLabel = "Programs"
+}: BacklinkBarProps) {
   return (
     <div 
       data-testid="backlink-bar"
@@ -20,19 +27,19 @@ export function BacklinkBar({ programName, onBack }: BacklinkBarProps) {
           size="icon"
           asChild
           className="h-9 w-9 -ml-2"
-          aria-label="Back to Programs"
+          aria-label={`Back to ${parentLabel}`}
         >
-          <Link to={onBack ? "#" : "/app/programs"} onClick={onBack}>
+          <Link to={onBack ? "#" : parentRoute} onClick={onBack}>
             <ChevronLeft className="h-5 w-5" />
           </Link>
         </Button>
         
         <div className="flex items-center gap-1.5 text-sm">
           <Link
-            to="/app/programs"
+            to={parentRoute}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            Programs
+            {parentLabel}
           </Link>
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-medium text-foreground">{programName}</span>

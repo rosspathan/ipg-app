@@ -124,16 +124,22 @@ Deno.serve(async (req) => {
     }
 
     // 5. Credit bonus holding balance for badge purchase
+    let bonusCredited = false;
+    let bonusAmount = 0;
     try {
-      // Get badge threshold to check bonus_bsk_holding
-      const { data: badgeThreshold } = await supabaseClient
+      // Get badge threshold to check bonus_bsk_holding (case-insensitive)
+      const { data: badgeThreshold, error: thresholdError } = await supabaseClient
         .from('badge_thresholds')
-        .select('bonus_bsk_holding')
-        .eq('badge_name', badge_name.toUpperCase())
-        .single();
+        .select('bonus_bsk_holding, badge_name')
+        .ilike('badge_name', badge_name)
+        .maybeSingle();
+
+      if (thresholdError) {
+        console.error('Error fetching badge threshold:', thresholdError);
+      }
 
       if (badgeThreshold && Number(badgeThreshold.bonus_bsk_holding || 0) > 0) {
-        const bonusAmount = Number(badgeThreshold.bonus_bsk_holding);
+        bonusAmount = Number(badgeThreshold.bonus_bsk_holding);
         
         // Get current balance
         const { data: currentBalance } = await supabaseClient
@@ -143,7 +149,7 @@ Deno.serve(async (req) => {
           .single();
         
         // Credit bonus to holding balance
-        await supabaseClient
+        const { error: bonusUpdateError } = await supabaseClient
           .from('user_bsk_balances')
           .update({
             holding_balance: Number(currentBalance?.holding_balance || 0) + bonusAmount,
@@ -151,21 +157,32 @@ Deno.serve(async (req) => {
           })
           .eq('user_id', user_id);
 
-        // Create ledger entry
-        await supabaseClient
-          .from('bonus_ledger')
-          .insert({
-            user_id,
-            type: 'badge_bonus',
-            amount_bsk: bonusAmount,
-            meta_json: {
-              badge_name,
-              bonus_type: 'holding_balance',
-              source: 'badge_purchase'
-            },
-          });
+        if (bonusUpdateError) {
+          console.error('Failed to update balance with bonus:', bonusUpdateError);
+        } else {
+          // Create ledger entry
+          const { error: ledgerError } = await supabaseClient
+            .from('bonus_ledger')
+            .insert({
+              user_id,
+              type: 'badge_bonus',
+              amount_bsk: bonusAmount,
+              meta_json: {
+                badge_name,
+                bonus_type: 'holding_balance',
+                source: 'badge_purchase'
+              },
+            });
 
-        console.log(`Credited ${bonusAmount} BSK bonus to holding balance for ${badge_name} badge`);
+          if (ledgerError) {
+            console.error('Failed to create bonus ledger entry:', ledgerError);
+          } else {
+            bonusCredited = true;
+            console.log(`✅ Credited ${bonusAmount} BSK bonus to holding balance for ${badge_name} badge`);
+          }
+        }
+      } else {
+        console.log(`No bonus configured for badge: ${badge_name}`);
       }
     } catch (bonusError) {
       console.error('Badge bonus crediting error (non-critical):', bonusError);
@@ -229,7 +246,11 @@ Deno.serve(async (req) => {
     console.log('Badge purchase completed successfully');
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true,
+        bonus_credited: bonusCredited,
+        bonus_amount: bonusAmount
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
