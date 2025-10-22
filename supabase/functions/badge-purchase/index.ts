@@ -192,28 +192,38 @@ Deno.serve(async (req) => {
         console.error('Error fetching badge threshold:', thresholdError);
       }
 
-      // Credit bonus if amount is set
+      // ALWAYS credit bonus for VIP badge purchases, even if already set
+      // This ensures VIP purchases are treated consistently
       if (bonusAmount > 0) {
         console.log(`💰 Crediting ${bonusAmount} BSK bonus for ${badge_name} (normalized: ${normalizedBadge})`);
         
-        // Get current balance
-        const { data: currentBalance } = await supabaseClient
+        // Get current balance - create if doesn't exist
+        const { data: currentBalance, error: balanceQueryError } = await supabaseClient
           .from('user_bsk_balances')
           .select('holding_balance, total_earned_holding')
           .eq('user_id', user_id)
-          .single();
+          .maybeSingle();
+
+        if (balanceQueryError) {
+          console.error('Error fetching balance for bonus:', balanceQueryError);
+          throw balanceQueryError;
+        }
         
-        // Credit bonus to holding balance
+        // Credit bonus to holding balance - upsert to handle new users
         const { error: bonusUpdateError } = await supabaseClient
           .from('user_bsk_balances')
-          .update({
+          .upsert({
+            user_id,
             holding_balance: Number(currentBalance?.holding_balance || 0) + bonusAmount,
             total_earned_holding: Number(currentBalance?.total_earned_holding || 0) + bonusAmount,
-          })
-          .eq('user_id', user_id);
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id'
+          });
 
         if (bonusUpdateError) {
-          console.error('Failed to update balance with bonus:', bonusUpdateError);
+          console.error('❌ Failed to update balance with bonus:', bonusUpdateError);
+          throw bonusUpdateError;
         } else {
           // Create ledger entry
           const { error: ledgerError } = await supabaseClient
@@ -222,25 +232,34 @@ Deno.serve(async (req) => {
               user_id,
               type: 'badge_bonus',
               amount_bsk: bonusAmount,
+              asset: 'BSK',
               meta_json: {
                 badge_name,
+                normalized_badge: normalizedBadge,
                 bonus_type: 'holding_balance',
-                source: 'badge_purchase'
+                source: 'badge_purchase',
+                timestamp: new Date().toISOString()
               },
+              usd_value: 0,
             });
 
           if (ledgerError) {
-            console.error('Failed to create bonus ledger entry:', ledgerError);
+            console.error('❌ Failed to create bonus ledger entry:', ledgerError);
+            // Don't throw - balance was already credited
           } else {
             bonusCredited = true;
-            console.log(`✅ Credited ${bonusAmount} BSK bonus to holding balance for ${badge_name} badge`);
+            console.log(`✅ Successfully credited ${bonusAmount} BSK bonus to holding balance`);
+            console.log(`   User: ${user_id}`);
+            console.log(`   Badge: ${badge_name} (${normalizedBadge})`);
           }
         }
       } else {
-        console.log(`No bonus configured for badge: ${badge_name}`);
+        console.log(`⚠️ No bonus configured for badge: ${badge_name} (${normalizedBadge})`);
       }
     } catch (bonusError) {
-      console.error('Badge bonus crediting error (non-critical):', bonusError);
+      console.error('❌ CRITICAL: Badge bonus crediting failed:', bonusError);
+      // Re-throw to make this visible in responses
+      throw new Error(`Failed to credit badge bonus: ${bonusError.message}`);
     }
 
     // 6. If VIP badge, handle milestone tracker and check milestones

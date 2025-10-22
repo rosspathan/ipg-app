@@ -1293,6 +1293,23 @@ export default function AdminUsersManagementNova() {
                           Update Badge
                         </Button>
                       </div>
+
+                      {/* Fix Badge Bonus Button */}
+                      <div className="pt-2 border-t">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="w-full"
+                          onClick={() => {
+                            window.open(`/admin/user-financial?userId=${selectedRecord.user_id}`, '_blank');
+                          }}
+                        >
+                          Fix Badge Bonus (10,000 BSK)
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          Opens User Financial Management to credit missing VIP badge bonus
+                        </p>
+                      </div>
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">No badge status found</p>
