@@ -11,12 +11,19 @@ interface OnchainBalanceResult {
   refetch: () => void
 }
 
+const FALLBACKS: Record<string, { contract: `0x${string}`; decimals: number }> = {
+  'USDT:bsc': {
+    contract: '0x55d398326f99059fF775485246999027B3197955',
+    decimals: 18,
+  },
+}
+
 export function useErc20OnchainBalance(
   symbol: string,
   network: 'bsc' = 'bsc'
 ): OnchainBalanceResult {
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
-  const [assetInfo, setAssetInfo] = useState<{ contract: string; decimals: number } | null>(null)
+  const [assetInfo, setAssetInfo] = useState<{ contract: `0x${string}`; decimals: number } | null>(null)
 
   // Fetch user's wallet address
   useEffect(() => {
@@ -50,13 +57,16 @@ export function useErc20OnchainBalance(
         .eq('symbol', symbol)
         .eq('network', network)
         .eq('is_active', true)
-        .single()
+        .maybeSingle()
 
       if (asset?.contract_address) {
         setAssetInfo({
-          contract: asset.contract_address,
+          contract: asset.contract_address as `0x${string}`,
           decimals: asset.decimals || 18
         })
+      } else {
+        const fb = FALLBACKS[`${symbol}:${network}`]
+        if (fb) setAssetInfo(fb)
       }
     }
 
@@ -77,7 +87,7 @@ export function useErc20OnchainBalance(
       })
 
       const balance = await publicClient.readContract({
-        address: assetInfo.contract as `0x${string}`,
+        address: assetInfo.contract,
         abi: erc20Abi,
         functionName: 'balanceOf',
         args: [walletAddress as `0x${string}`]
@@ -86,7 +96,7 @@ export function useErc20OnchainBalance(
       return formatUnits(balance, assetInfo.decimals)
     },
     enabled: !!walletAddress && !!assetInfo?.contract,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
     staleTime: 20000
   })
 

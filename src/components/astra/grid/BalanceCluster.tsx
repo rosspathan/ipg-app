@@ -154,14 +154,30 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
   };
 
   // Filter crypto assets (exclude BSK and INR)
-  const cryptoAssets = (cryptoBalances || []).filter(asset => 
+  const baseCryptoAssets = (cryptoBalances || []).filter(asset => 
     asset.symbol !== 'BSK' && 
     asset.symbol !== 'INR' &&
     asset.network !== 'fiat' &&
     asset.network !== 'FIAT'
   );
 
-  const filteredCryptoAssets = cryptoAssets.filter(asset =>
+  // Inject USDT placeholder if missing but on-chain balance exists
+  const usdtPresent = baseCryptoAssets.some(a => a.symbol === 'USDT')
+  const augmentedCryptoAssets = [...baseCryptoAssets]
+  const usdtOnchainAmount = parseFloat(usdtOnchain.balance || '0')
+  if (!usdtPresent && usdtOnchainAmount > 0) {
+    augmentedCryptoAssets.unshift({
+      symbol: 'USDT',
+      name: 'Tether USD',
+      balance: usdtOnchainAmount,
+      available: 0,
+      locked: 0,
+      logo_url: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
+      network: 'bsc'
+    } as any)
+  }
+
+  const filteredCryptoAssets = augmentedCryptoAssets.filter(asset =>
     searchTerm ? 
       asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) 
@@ -176,8 +192,8 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
     variant: 'grid',
     withdrawable,
     holding,
-    cryptoCount: cryptoAssets.length,
-    cryptoBalances: cryptoAssets.map(a => ({ symbol: a.symbol, balance: a.balance }))
+    cryptoCount: augmentedCryptoAssets.length,
+    cryptoBalances: augmentedCryptoAssets.map(a => ({ symbol: a.symbol, balance: a.balance }))
   });
   return (
     <div className={cn("space-y-4", className)} data-testid="balance-cluster">
