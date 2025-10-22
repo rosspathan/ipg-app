@@ -488,6 +488,7 @@ function AppContent() {
                 
                 {/* Users Management */}
                 <Route path="users" element={<React.Suspense fallback={<LoadingFallback />}><AdminUsersManagementNova /></React.Suspense>} />
+                <Route path="users-clean" element={<AdminUsersClean />} />
                 
                 {/* Markets Management */}
                 <Route path="markets" element={<AdminMarketsNova />} />
