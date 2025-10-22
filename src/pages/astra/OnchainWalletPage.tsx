@@ -95,6 +95,39 @@ export function OnchainWalletPage() {
     }
   }, [user?.id, assetId])
 
+  // Fetch recent deposits
+  const fetchDeposits = async () => {
+    if (!user?.id) return
+    try {
+      const { data } = await supabase
+        .from('deposits')
+        .select(`
+          id,
+          amount,
+          tx_hash,
+          status,
+          confirmations,
+          required_confirmations,
+          created_at,
+          assets(symbol, name)
+        `)
+        .eq('user_id', user.id)
+        .ilike('assets.symbol', 'USDT')
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (data) {
+        setDeposits(data)
+      }
+    } catch (error) {
+      console.error('Error fetching deposits:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchDeposits()
+  }, [user?.id])
+
   // Discover and credit USDT deposits
   const handleDiscoverAndCredit = async () => {
     if (!user?.id) {
