@@ -77,12 +77,12 @@ export function RewardsBreakdown({ isOpen, onClose }: RewardsBreakdownProps) {
             <TabsContent value="sources" className="mt-0 space-y-4">
               <div className="space-y-3">
                 {[
-                  { label: "Ad Mining", amount: 45000, percent: 36, color: "bg-success" },
-                  { label: "Referral Rewards", amount: 32000, percent: 26, color: "bg-primary" },
-                  { label: "Spin Wheel", amount: 18000, percent: 14, color: "bg-accent" },
-                  { label: "Lucky Draw", amount: 15000, percent: 12, color: "bg-warning" },
-                  { label: "One-time Purchase", amount: 10000, percent: 8, color: "bg-danger" },
-                  { label: "Other", amount: 5000, percent: 4, color: "bg-muted" }
+                  { label: "Ad Mining", amount: 0, percent: 0, color: "bg-success" },
+                  { label: "Referral Rewards", amount: 0, percent: 0, color: "bg-primary" },
+                  { label: "Spin Wheel", amount: 0, percent: 0, color: "bg-accent" },
+                  { label: "Lucky Draw", amount: 0, percent: 0, color: "bg-warning" },
+                  { label: "One-time Purchase", amount: 0, percent: 0, color: "bg-danger" },
+                  { label: "Other", amount: 0, percent: 0, color: "bg-muted" }
                 ].map((source, index) => (
                   <div key={index} className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -114,13 +114,13 @@ export function RewardsBreakdown({ isOpen, onClose }: RewardsBreakdownProps) {
             <TabsContent value="timeline" className="mt-0 space-y-4">
               <div className="space-y-2">
                 {[
-                  { date: "Today", amount: 150, time: "2h ago" },
-                  { date: "Yesterday", amount: 320, time: "1d ago" },
-                  { date: "2 days ago", amount: 280, time: "2d ago" },
-                  { date: "3 days ago", amount: 410, time: "3d ago" },
-                  { date: "4 days ago", amount: 195, time: "4d ago" },
-                  { date: "5 days ago", amount: 275, time: "5d ago" },
-                  { date: "6 days ago", amount: 340, time: "6d ago" }
+                  { date: "Today", amount: 0, time: "2h ago" },
+                  { date: "Yesterday", amount: 0, time: "1d ago" },
+                  { date: "2 days ago", amount: 0, time: "2d ago" },
+                  { date: "3 days ago", amount: 0, time: "3d ago" },
+                  { date: "4 days ago", amount: 0, time: "4d ago" },
+                  { date: "5 days ago", amount: 0, time: "5d ago" },
+                  { date: "6 days ago", amount: 0, time: "6d ago" }
                 ].map((day, index) => (
                   <div
                     key={index}
