@@ -340,20 +340,24 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <Card className="bg-black/40 backdrop-blur-md border-white/30">
-              <div className="p-4">
-                <label className="flex items-start space-x-3 cursor-pointer">
+            <Card className={`backdrop-blur-md border-2 transition-all duration-300 ${
+              hasConfirmedBackup 
+                ? 'bg-green-500/20 border-green-500/60' 
+                : 'bg-orange-500/20 border-orange-500/60 animate-pulse'
+            }`}>
+              <div className="p-5">
+                <label className="flex items-start space-x-3 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={hasConfirmedBackup}
                     onChange={(e) => setHasConfirmedBackup(e.target.checked)}
-                    className="mt-1 rounded border-white/30 bg-transparent text-blue-500 focus:ring-blue-500"
+                    className="mt-1 w-5 h-5 rounded border-2 border-white/50 bg-black/30 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   />
                   <div>
-                    <p className="text-white text-sm font-medium">
-                      I have safely backed up my recovery phrase
+                    <p className="text-white text-base font-bold mb-1">
+                      ✓ I have safely backed up my recovery phrase
                     </p>
-                    <p className="text-white/70 text-xs mt-1">
+                    <p className="text-white/90 text-sm leading-relaxed">
                       I understand that I need these words to recover my wallet and IPG iSmart cannot help me recover them if lost.
                     </p>
                   </div>
@@ -362,19 +366,32 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
             </Card>
           </motion.div>
 
-          {/* Continue Button */}
+          {/* Continue Button with status message */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
+            className="space-y-3"
           >
+            {!hasConfirmedBackup && (
+              <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-3 text-center">
+                <p className="text-yellow-200 text-sm font-medium">
+                  ⚠️ Please confirm you've backed up your recovery phrase to continue
+                </p>
+              </div>
+            )}
+            
             <Button
               onClick={handleContinue}
               disabled={!hasConfirmedBackup}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 font-semibold py-4 rounded-2xl"
+              className={`w-full font-bold py-6 rounded-2xl text-lg transition-all duration-300 ${
+                hasConfirmedBackup
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-lg shadow-blue-500/50'
+                  : 'bg-gray-600 cursor-not-allowed opacity-60'
+              }`}
               size="lg"
             >
-              Continue
+              {hasConfirmedBackup ? '✓ Continue to Security Setup' : 'Confirm Backup First'}
             </Button>
           </motion.div>
         </div>
