@@ -10104,6 +10104,10 @@ export type Database = {
         }
         Returns: number
       }
+      can_view_profile: {
+        Args: { profile_user_id: string; viewer_id: string }
+        Returns: boolean
+      }
       check_badge_eligibility: {
         Args: { required_badge: string; sponsor_badge: string }
         Returns: boolean
