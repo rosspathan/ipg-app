@@ -1,7 +1,7 @@
 import { BSKBalanceViewer } from "@/components/bsk/BSKBalanceViewer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, Wallet, TrendingUp, Clock, Gift } from "lucide-react"
+import { ArrowRight, Wallet, TrendingUp, Clock, Gift, History } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 /**
@@ -28,6 +28,16 @@ export function BSKWalletPage() {
 
       {/* Balance Viewer */}
       <BSKBalanceViewer />
+
+      {/* View History Button */}
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => navigate("/app/programs/bsk/history")}
+      >
+        <History className="w-4 h-4 mr-2" />
+        View Complete Transaction History
+      </Button>
 
       {/* Quick Actions */}
       <Card className="bg-card/80 backdrop-blur-xl border-border/50">

@@ -4,7 +4,7 @@ import { UserBalanceOverview } from "@/components/admin/users/UserBalanceOvervie
 import { UserTransactionHistory } from "@/components/admin/users/UserTransactionHistory";
 import { UserFinancialOperations } from "@/components/admin/users/UserFinancialOperations";
 import { ForceDeleteDialog } from "@/components/admin/users/ForceDeleteDialog";
-import { UserBalanceHistory } from "@/components/admin/UserBalanceHistory";
+import { UnifiedBSKHistory } from "@/components/bsk/UnifiedBSKHistory";
 import { FixBadgeBonus } from "@/components/admin/FixBadgeBonus";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -98,7 +98,7 @@ export default function UserFinancialManagement() {
           </TabsContent>
 
           <TabsContent value="bsk-history" className="space-y-4">
-            <UserBalanceHistory userId={selectedUserId} />
+            <UnifiedBSKHistory userId={selectedUserId} />
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-4">

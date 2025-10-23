@@ -9997,6 +9997,25 @@ export type Database = {
         }
         Relationships: []
       }
+      unified_bsk_transactions: {
+        Row: {
+          amount_bsk: number | null
+          balance_after: number | null
+          balance_before: number | null
+          balance_type: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          idempotency_key: string | null
+          metadata: Json | null
+          reference_id: string | null
+          source_table: string | null
+          transaction_subtype: string | null
+          transaction_type: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_adjust_user_balance: {
@@ -10033,6 +10052,20 @@ export type Database = {
       admin_update_bsk_rate: {
         Args: { p_admin_id: string; p_new_rate: number; p_notes?: string }
         Returns: Json
+      }
+      award_bsk_standard: {
+        Args: {
+          p_amount: number
+          p_destination: string
+          p_idempotency_key?: string
+          p_metadata?: Json
+          p_notes?: string
+          p_reference_id?: string
+          p_tx_subtype?: string
+          p_tx_type: string
+          p_user_id: string
+        }
+        Returns: string
       }
       bulk_update_program_status: {
         Args: {
@@ -10302,6 +10335,7 @@ export type Database = {
         Args: { p_config_id: string; p_operator_id: string }
         Returns: Json
       }
+      reconcile_bsk_balance: { Args: { p_user_id: string }; Returns: Json }
       record_program_participation: {
         Args: {
           p_amount_earned?: number
@@ -10362,6 +10396,21 @@ export type Database = {
         | "completed"
         | "rejected"
         | "defaulted"
+      bsk_transaction_category:
+        | "badge_bonus"
+        | "referral_commission"
+        | "staking_reward"
+        | "insurance_claim"
+        | "ad_reward"
+        | "promotion_bonus"
+        | "admin_credit"
+        | "badge_purchase"
+        | "withdrawal"
+        | "transfer_out"
+        | "admin_debit"
+        | "vesting_release"
+        | "holding_to_withdrawable"
+        | "balance_correction"
       claim_status: "PENDING" | "APPROVED" | "REJECTED"
       draw_state:
         | "draft"
@@ -10527,6 +10576,22 @@ export const Constants = {
         "completed",
         "rejected",
         "defaulted",
+      ],
+      bsk_transaction_category: [
+        "badge_bonus",
+        "referral_commission",
+        "staking_reward",
+        "insurance_claim",
+        "ad_reward",
+        "promotion_bonus",
+        "admin_credit",
+        "badge_purchase",
+        "withdrawal",
+        "transfer_out",
+        "admin_debit",
+        "vesting_release",
+        "holding_to_withdrawable",
+        "balance_correction",
       ],
       claim_status: ["PENDING", "APPROVED", "REJECTED"],
       draw_state: [

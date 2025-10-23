@@ -450,6 +450,7 @@ function AppContent() {
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/staking/:poolId/submit" element={<StakingSubmissionScreen />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
+                <Route path="programs/bsk/history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/BSKWalletHistoryPage')))}</React.Suspense>} />
                 <Route path="programs/bsk-purchase-manual" element={<ManualBSKPurchaseScreen />} />
                 <Route path="programs/crypto-conversion" element={<CryptoConversionScreen />} />
                 <Route path="programs/bsk-withdraw" element={<BSKWithdrawScreen />} />
