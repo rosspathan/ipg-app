@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { copyToClipboard } from '@/utils/clipboard';
 import { UserReferralStatsWidget } from '@/components/referrals/UserReferralStatsWidget';
 import { VIPMilestoneProgress } from '@/components/referrals/VIPMilestoneProgress';
+import { SponsorInfoCard } from '@/components/referrals/SponsorInfoCard';
+import { DirectReferralsList } from '@/components/referrals/DirectReferralsList';
 
 export default function TeamReferralsDashboard() {
   const navigate = useNavigate();
@@ -114,11 +116,17 @@ export default function TeamReferralsDashboard() {
         </CardContent>
       </Card>
 
+      {/* Sponsor Info */}
+      <SponsorInfoCard />
+
       {/* Stats and Progress */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UserReferralStatsWidget />
         <VIPMilestoneProgress />
       </div>
+
+      {/* Direct Team List */}
+      <DirectReferralsList />
 
       {/* How It Works */}
       <Card>
