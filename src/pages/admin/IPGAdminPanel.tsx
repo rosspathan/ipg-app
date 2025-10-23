@@ -56,7 +56,7 @@ export default function IPGAdminPanel() {
   });
 
   const [formData, setFormData] = useState({
-    contract_address: settings?.contract_address || '0xDbcA5db00f2ADAEc2C47bBba9fFbFE21BF75864a',
+    contract_address: settings?.contract_address || '0x05002c24c2A999253f5eEe44A85C2B6BAD7f656E',
     network: settings?.network || 'BEP20',
     decimals: settings?.decimals || 18,
     is_verified: settings?.is_verified ?? false,

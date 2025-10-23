@@ -44,7 +44,7 @@ export const APP_CONFIG = {
       symbol: "IPG",
       name: "IPG Token",
       ethAddress: "<IPG_ETH_ADDRESS>", // TODO: Replace with actual address
-      bscAddress: "<IPG_BSC_ADDRESS>"   // TODO: Replace with actual address
+      bscAddress: "0x05002c24c2A999253f5eEe44A85C2B6BAD7f656E"
     }
   },
   
