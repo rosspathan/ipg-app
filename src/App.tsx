@@ -230,6 +230,7 @@ import BSKVestingScreen from "@/pages/BSKVestingScreen";
 import { BSKWalletPage } from "@/pages/astra/BSKWalletPage";
 import { WalletPage } from "@/pages/astra/WalletPage";
 import { OnchainWalletPage } from "@/pages/astra/OnchainWalletPage";
+import CryptoWalletPage from "@/pages/astra/CryptoWalletPage";
 
 import { AstraLayout } from "@/layouts/AstraLayout";
 import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
@@ -408,6 +409,7 @@ function AppContent() {
               <Route index element={<Navigate to="/app/home" replace />} />
               <Route path="home" element={<HomePageRebuilt />} />
               <Route path="wallet" element={<WalletPage />} />
+              <Route path="wallet/crypto" element={<CryptoWalletPage />} />
               <Route path="wallet/onchain" element={<OnchainWalletPage />} />
               <Route path="wallet/deposit" element={<DepositScreen />} />
               <Route path="wallet/withdraw" element={<WithdrawScreen />} />
