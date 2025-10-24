@@ -94,7 +94,9 @@ export function VIPMilestoneProgressCard() {
           VIP Milestone Progress
         </CardTitle>
         <CardDescription>
-          Refer i-Smart VIP members to unlock massive bonuses!
+          Refer DIRECT (Level 1) i-Smart VIP members to unlock massive bonuses!
+          <br />
+          <span className="text-xs">Only L1 VIP referrals count • Currently: {vipCount} direct VIP</span>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
