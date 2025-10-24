@@ -178,7 +178,10 @@ const StakingPage = React.lazy(() => import("./pages/programs/StakingPage"));
 const InsurancePage = React.lazy(() => import("./pages/programs/InsurancePage"));
 const BSKLoansPage = React.lazy(() => import("./pages/programs/BSKLoansPage"));
 const BSKPromotionsPage = React.lazy(() => import("./pages/programs/BSKPromotionsPage"));
-const ReferralsPageNew = React.lazy(() => import("./pages/programs/ReferralsPage"));
+import ReferralsPage from "./pages/programs/ReferralsPage";
+import TeamReferralsNew from "./pages/programs/TeamReferralsNew";
+import TeamTreeView from "./pages/programs/TeamTreeView";
+import CommissionHistory from "./pages/programs/CommissionHistory";
 const LoansPageNew = React.lazy(() => import("./pages/programs/LoansPage"));
 const PurchasePage = React.lazy(() => import("./pages/programs/PurchasePage"));
 
@@ -241,7 +244,7 @@ import { IDCardPage } from "@/pages/IDCardPage";
 import { SecurityPage } from "@/pages/SecurityPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
-import { ReferralsPage } from "@/pages/ReferralsPage";
+import { ReferralsPage as ReferralsPageOld } from "@/pages/ReferralsPage";
 
 import { DownloadPage } from "@/pages/DownloadPage";
 import { DeepLinkResolver } from "@/pages/DeepLinkResolver";
@@ -444,7 +447,7 @@ function AppContent() {
                 
                 {/* Legacy program routes */}
                 <Route path="programs/ads" element={<React.Suspense fallback={<LoadingFallback />}><AdvertisingPage /></React.Suspense>} />
-                <Route path="programs/referrals" element={<React.Suspense fallback={<LoadingFallback />}><ReferralsPageNew /></React.Suspense>} />
+                <Route path="programs/referrals" element={<React.Suspense fallback={<LoadingFallback />}><ReferralsPage /></React.Suspense>} />
                 <Route path="programs/loans" element={<React.Suspense fallback={<LoadingFallback />}><LoansPageNew /></React.Suspense>} />
                 <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<LoadingFallback />}><PurchasePage /></React.Suspense>} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
