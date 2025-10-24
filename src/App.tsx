@@ -93,6 +93,7 @@ const AdminKYCSettings = React.lazy(() => import("./pages/AdminKYCSettings"));
 const AdminRoleManagement = React.lazy(() => import("./pages/admin/AdminRoleManagement"));
 const AdminBadgeSystem = React.lazy(() => import("./pages/admin/AdminBadgeSystem"));
 const AdminBSKManagement = React.lazy(() => import("./pages/admin/AdminBSKManagement"));
+import ManualReferralAssignment from "./pages/admin/ManualReferralAssignment";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -542,6 +543,7 @@ function AppContent() {
                 <Route path="referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="50-level-referrals" element={<Admin50LevelReferrals />} />
+                <Route path="manual-referral-assignment" element={<ManualReferralAssignment />} />
                 <Route path="funding" element={<AdminFunding />} />
                 <Route path="funding/inr" element={<AdminINRFundingScreen />} />
                 <Route path="currency" element={<CurrencyControlCenter />} />
