@@ -548,6 +548,7 @@ export type Database = {
       assets: {
         Row: {
           asset_type: string | null
+          auto_deposit_enabled: boolean | null
           contract_address: string | null
           created_at: string | null
           decimals: number | null
@@ -573,6 +574,7 @@ export type Database = {
         }
         Insert: {
           asset_type?: string | null
+          auto_deposit_enabled?: boolean | null
           contract_address?: string | null
           created_at?: string | null
           decimals?: number | null
@@ -598,6 +600,7 @@ export type Database = {
         }
         Update: {
           asset_type?: string | null
+          auto_deposit_enabled?: boolean | null
           contract_address?: string | null
           created_at?: string | null
           decimals?: number | null

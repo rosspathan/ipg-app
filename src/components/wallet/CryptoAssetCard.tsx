@@ -33,8 +33,8 @@ export function CryptoAssetCard({
   const { toast } = useToast()
   const [syncing, setSyncing] = useState(false)
 
-  // Fetch real on-chain balance for supported assets
-  const shouldFetchOnchain = ['USDT', 'BNB'].includes(symbol) && network === 'bsc'
+  // Fetch real on-chain balance for all BEP20 assets
+  const shouldFetchOnchain = network === 'BEP20' || network === 'bsc'
   const { balance: onchainBalance, isLoading: onchainLoading, refetch } = useErc20OnchainBalance(
     shouldFetchOnchain ? symbol : '',
     'bsc'
@@ -53,7 +53,7 @@ export function CryptoAssetCard({
     setSyncing(true)
     try {
       const { data, error } = await supabase.functions.invoke('discover-deposits', {
-        body: { symbol, network: 'bsc', lookbackHours: 168 }
+        body: { symbol, network: 'bsc', lookbackHours: 336 } // 14 days for better discovery
       })
 
       if (error) throw error
@@ -61,14 +61,14 @@ export function CryptoAssetCard({
       if (data?.created > 0) {
         toast({
           title: "Sync Complete",
-          description: `Found ${data.created} new ${symbol} deposit(s)`,
+          description: `Discovered ${data.created} new ${symbol} deposit(s) from blockchain`,
         })
         onSync()
         refetch()
       } else {
         toast({
           title: "No New Deposits",
-          description: `No new ${symbol} deposits found`,
+          description: `Scanned blockchain - no new ${symbol} deposits found in last 14 days`,
         })
       }
     } catch (error) {

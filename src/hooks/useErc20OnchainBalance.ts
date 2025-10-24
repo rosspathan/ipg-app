@@ -11,17 +11,7 @@ interface OnchainBalanceResult {
   refetch: () => void
 }
 
-const FALLBACKS: Record<string, { contract: `0x${string}`; decimals: number; isNative?: boolean }> = {
-  'USDT:bsc': {
-    contract: '0x55d398326f99059fF775485246999027B3197955',
-    decimals: 18,
-  },
-  'BNB:bsc': {
-    contract: '0x0000000000000000000000000000000000000000', // Native BNB
-    decimals: 18,
-    isNative: true,
-  },
-}
+// No fallbacks needed - all contract addresses are now in the database
 
 export function useErc20OnchainBalance(
   symbol: string,
@@ -56,20 +46,28 @@ export function useErc20OnchainBalance(
   // Fetch asset info (contract address and decimals)
   useEffect(() => {
     const fetchAssetInfo = async () => {
-      // Check fallbacks first for known assets
-      const fb = FALLBACKS[`${symbol}:${network}`]
-      if (fb) {
-        setAssetInfo(fb)
-        return
-      }
-
-      const { data: asset } = await supabase
+      // Try to find asset in database - try different network variations
+      let { data: asset } = await supabase
         .from('assets')
         .select('contract_address, decimals')
         .eq('symbol', symbol)
-        .eq('network', network)
+        .or('network.ilike.%bep20%,network.ilike.%bsc%')
+        .not('contract_address', 'is', null)
         .eq('is_active', true)
         .maybeSingle()
+
+      // If no match with BEP20/BSC filter, try just by symbol
+      if (!asset?.contract_address) {
+        const { data: fallbackAsset } = await supabase
+          .from('assets')
+          .select('contract_address, decimals')
+          .eq('symbol', symbol)
+          .not('contract_address', 'is', null)
+          .eq('is_active', true)
+          .maybeSingle()
+        
+        asset = fallbackAsset
+      }
 
       if (asset?.contract_address) {
         setAssetInfo({
