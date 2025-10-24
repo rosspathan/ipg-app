@@ -51,21 +51,47 @@ export function PendingDepositsAlert() {
   const handleSyncAll = async () => {
     setIsSyncing(true);
     try {
-      toast.info('Discovering all deposits...');
-      
-      // Sync each pending asset
+      toast.info('Scanning recent deposits (7 days)...');
+
+      let totalCreated = 0;
+
+      // First pass: 7-day lookback
       for (const deposit of pendingDeposits) {
-        await supabase.functions.invoke('discover-deposits', {
-          body: { 
+        const { data, error } = await supabase.functions.invoke('discover-deposits', {
+          body: {
             symbol: deposit.symbol,
             network: deposit.network,
-            lookbackHours: 168
-          }
+            lookbackHours: 168, // 7 days
+          },
         });
+        if (error) throw error;
+        const created = Number(data?.created ?? (Array.isArray(data?.deposits) ? data.deposits.length : 0) ?? 0);
+        totalCreated += created;
       }
 
-      toast.success('Successfully synced all deposits!');
-      await refetchBalances();
+      // If nothing found, try a deeper scan (30 days)
+      if (totalCreated === 0) {
+        toast.info('No new deposits in 7 days. Running deep scan (30 days)...');
+        for (const deposit of pendingDeposits) {
+          const { data, error } = await supabase.functions.invoke('discover-deposits', {
+            body: {
+              symbol: deposit.symbol,
+              network: deposit.network,
+              lookbackHours: 720, // 30 days
+            },
+          });
+          if (error) throw error;
+          const created = Number(data?.created ?? (Array.isArray(data?.deposits) ? data.deposits.length : 0) ?? 0);
+          totalCreated += created;
+        }
+      }
+
+      if (totalCreated > 0) {
+        toast.success(`Credited ${totalCreated} new deposit${totalCreated > 1 ? 's' : ''}`);
+        await refetchBalances();
+      } else {
+        toast.info('No new deposits found. If your on-chain balance is older or came from a non-transfer source, contact support.');
+      }
     } catch (error: any) {
       console.error('Sync error:', error);
       toast.error(`Failed to sync: ${error.message}`);
