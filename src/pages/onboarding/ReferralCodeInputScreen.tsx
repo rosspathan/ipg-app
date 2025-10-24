@@ -237,7 +237,7 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
               className="text-center"
             >
               <p className="text-white/50 text-xs">
-                Don't have a code? You can skip this step and add it later
+                Don't have a code? You can add it later in Settings (within 7 days)
               </p>
             </motion.div>
           </motion.div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   User, Shield, CreditCard, Bell, Settings, 
-  Users, ChevronRight, ChevronLeft
+  Users, ChevronRight, ChevronLeft, Gift
 } from "lucide-react";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useProfile } from "@/hooks/useProfile";
@@ -19,6 +19,7 @@ import { DockNav } from "@/components/navigation/DockNav";
 import { QuickSwitch } from "@/components/astra/QuickSwitch";
 import { MiniIdCardPreview } from "@/components/profile/MiniIdCardPreview";
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
+import { supabase } from "@/integrations/supabase/client";
 
 const profileSections = [
   {
@@ -82,6 +83,26 @@ export function ProfileHub() {
   const { badge } = useUserBadge();
   const username = useUsername();
   const [showQuickSwitch, setShowQuickSwitch] = useState(false);
+  const [canClaimReferral, setCanClaimReferral] = useState(false);
+  
+  // Check if user can claim referral code
+  useEffect(() => {
+    const checkReferralStatus = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('referral_links_new')
+        .select('sponsor_id, locked_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+        
+      if (!error && (!data?.sponsor_id || !data?.locked_at)) {
+        setCanClaimReferral(true);
+      }
+    };
+    
+    checkReferralStatus();
+  }, [user]);
   
   // Note: Profile is protected by UserRoute, no need for additional redirect check
 
@@ -164,6 +185,29 @@ export function ProfileHub() {
             badge={badge}
             userId={user.id || ''}
           />
+        )}
+
+        {/* Claim Referral Code Banner (if eligible) */}
+        {canClaimReferral && (
+          <Card 
+            className="p-4 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 backdrop-blur-xl border-amber-500/30 cursor-pointer hover:border-amber-500/50 transition-all"
+            onClick={() => navigate('/app/profile/claim-referral')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <Gift className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-foreground mb-1">
+                  Claim Your Referral Code
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Join a network • 7-day grace period
+                </p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+            </div>
+          </Card>
         )}
 
         {/* Profile Completion */}

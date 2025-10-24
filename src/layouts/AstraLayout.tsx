@@ -4,6 +4,7 @@ import { Outlet, useNavigate } from "react-router-dom"
 import { AppTopBar } from "@/components/astra/AppTopBar"
 import { BottomNavBar } from "@/components/navigation/BottomNavBar"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
+import { ReferralCodeClaimBanner } from "@/components/referrals/ReferralCodeClaimBanner"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useSafeAreaPolyfill } from "@/hooks/useSafeAreaPolyfill"
 import { Button } from "@/components/ui/button"
@@ -54,6 +55,9 @@ export function AstraLayout() {
     <div className="app-shell bg-background">
       {/* Sticky Header */}
       <AppTopBar />
+
+      {/* Referral Code Claim Banner */}
+      <ReferralCodeClaimBanner />
 
       {/* Session Mismatch Banner */}
       {showMismatchBanner && onboardingEmail && (

@@ -434,6 +434,7 @@ function AppContent() {
               <Route path="profile/notify" element={<NotificationsPage />} />
               <Route path="profile/settings" element={<SettingsPage />} />
               <Route path="profile/referrals" element={<React.Suspense fallback={<LoadingFallback />}><ReferralsPageAstra /></React.Suspense>} />
+              <Route path="profile/claim-referral" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/ClaimReferralCodePage')))}</React.Suspense>} />
               <Route path="support" element={<SupportPage />} />
               <Route path="wallet" element={<WalletPage />} />
                 

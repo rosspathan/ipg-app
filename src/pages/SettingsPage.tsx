@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Globe, Moon, Sun, Smartphone } from "lucide-react";
+import { ChevronLeft, Globe, Moon, Sun, Smartphone, Gift } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useTheme } from "next-themes";
 import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
+import { supabase } from "@/integrations/supabase/client";
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -21,6 +23,26 @@ export function SettingsPage() {
     currency: 'USD',
     timezone: 'UTC'
   });
+  
+  const [canClaimReferral, setCanClaimReferral] = useState(false);
+  
+  useEffect(() => {
+    const checkReferralStatus = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('referral_links_new')
+        .select('sponsor_id, locked_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+        
+      if (!error && (!data?.sponsor_id || !data?.locked_at)) {
+        setCanClaimReferral(true);
+      }
+    };
+    
+    checkReferralStatus();
+  }, [user]);
 
 
   const handleBack = () => navigate("/app/profile");
@@ -137,6 +159,32 @@ export function SettingsPage() {
             </div>
           </div>
         </Card>
+
+        {canClaimReferral && (
+          <Card className="p-6 bg-card/60 backdrop-blur-xl border-border/40 border-amber-500/30">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                <Gift className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-heading text-base font-bold text-foreground mb-1">
+                  Claim Referral Code
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Join a referral network by entering your sponsor's code. You have 7 days from signup.
+                </p>
+                <Button
+                  onClick={() => navigate('/app/profile/claim-referral')}
+                  className="w-full sm:w-auto"
+                  variant="outline"
+                >
+                  <Gift className="h-4 w-4 mr-2" />
+                  Claim Code
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
 
         <NotificationPreferences />
       </div>
