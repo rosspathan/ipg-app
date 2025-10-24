@@ -6735,6 +6735,7 @@ export type Database = {
       referral_commissions: {
         Row: {
           bsk_amount: number
+          commission_type: string | null
           created_at: string | null
           destination: string
           earner_badge_at_event: string
@@ -6749,6 +6750,7 @@ export type Database = {
         }
         Insert: {
           bsk_amount: number
+          commission_type?: string | null
           created_at?: string | null
           destination: string
           earner_badge_at_event: string
@@ -6763,6 +6765,7 @@ export type Database = {
         }
         Update: {
           bsk_amount?: number
+          commission_type?: string | null
           created_at?: string | null
           destination?: string
           earner_badge_at_event?: string
