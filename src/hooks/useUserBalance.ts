@@ -36,7 +36,7 @@ export const useUserBalance = (assetSymbol?: string, showAllAssets = false) => {
           (balances || []).map((b: any) => [b.asset_id, b])
         );
 
-        // Merge assets with balances (show 0 if no balance)
+        // Merge assets with balances (ALWAYS show all assets, even with 0 balance)
         return (assets || []).map((asset: any) => {
           const balance = balanceMap.get(asset.id);
           return {
@@ -48,6 +48,7 @@ export const useUserBalance = (assetSymbol?: string, showAllAssets = false) => {
             logo_url: asset.logo_url,
             network: asset.network,
             withdraw_fee: asset.withdraw_fee,
+            asset_id: asset.id,
           };
         });
       }

@@ -13,6 +13,7 @@ import { useUserBalance } from "@/hooks/useUserBalance"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { CryptoAssetCard } from "@/components/wallet/CryptoAssetCard"
+import { PendingDepositsAlert } from "@/components/wallet/PendingDepositsAlert"
 
 interface BalanceClusterProps {
   className?: string
@@ -152,6 +153,9 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
         
         {isCryptoExpanded && (
           <>
+            {/* Pending Deposits Alert */}
+            <PendingDepositsAlert />
+
             {/* Search */}
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

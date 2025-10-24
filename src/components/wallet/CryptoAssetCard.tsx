@@ -40,8 +40,8 @@ export function CryptoAssetCard({
     'bsc'
   )
 
-  const onchainAmount = parseFloat(onchainBalance || '0')
-  const needsSync = shouldFetchOnchain && onchainAmount > available + 0.000001
+  const onchainAmount = Number(onchainBalance || 0)
+  const needsSync = shouldFetchOnchain && onchainAmount > balance + 0.000001
 
   const handleWithdraw = () => {
     navigate(`/app/wallet/withdraw?asset=${symbol}`)
