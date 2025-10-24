@@ -9,6 +9,8 @@ import AdminINRSettings from "@/components/AdminINRSettings";
 import { AdminBSKRelease } from "@/components/admin/AdminBSKRelease";
 import AdminCryptoINRDeposits from "@/components/admin/AdminCryptoINRDeposits";
 import AdminDepositFeeManager from "@/components/admin/AdminDepositFeeManager";
+import { AdminTransactionDashboard } from "@/components/admin/AdminTransactionDashboard";
+import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
 import { useNavigate } from "react-router-dom";
 
 const AdminFunding = () => {
@@ -18,7 +20,8 @@ const AdminFunding = () => {
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <h1 className="text-2xl md:text-3xl font-bold">Funding Operations</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <AdminNotificationBell />
           <Button 
             variant="outline" 
             size="sm"
