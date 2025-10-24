@@ -56,7 +56,7 @@ serve(async (req: Request) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) throw new Error('Unauthorized');
 
-    const { symbol, network, lookbackHours = 48 }: DiscoverRequest = await req.json();
+    const { symbol, network, lookbackHours = 168 }: DiscoverRequest = await req.json();
 
     console.log(`[discover-deposits] User ${user.id} discovering ${symbol} on ${network}`);
 
@@ -173,7 +173,9 @@ serve(async (req: Request) => {
       parseInt(tx.timeStamp) >= lookbackTimestamp
     );
 
-    console.log(`[discover-deposits] Found ${inboundTransfers.length} inbound transfers`);
+    console.log(`[discover-deposits] Lookback: ${lookbackHours}h (since ${new Date(lookbackTimestamp * 1000).toISOString()})`);
+    console.log(`[discover-deposits] Total transfers from BscScan: ${transfers.length}`);
+    console.log(`[discover-deposits] Inbound transfers after filter: ${inboundTransfers.length}`);
 
     // Fetch existing deposits to avoid duplicates
     const txHashes = inboundTransfers.map(tx => tx.hash.toLowerCase());
@@ -221,7 +223,18 @@ serve(async (req: Request) => {
       discovered: inboundTransfers.length,
       created: created.length,
       ignored: inboundTransfers.length - created.length,
-      deposits: created
+      deposits: created,
+      lookbackHours,
+      lookbackTimestamp: new Date(lookbackTimestamp * 1000).toISOString(),
+      message: created.length > 0 
+        ? `Successfully credited ${created.length} deposit(s)` 
+        : `No new deposits found in the last ${lookbackHours} hours`,
+      debug: {
+        totalTransfers: transfers.length,
+        inboundCount: inboundTransfers.length,
+        existingCount: existingDeposits?.length || 0,
+        recentTxHashes: inboundTransfers.slice(0, 3).map(tx => tx.hash.slice(0, 10) + '...')
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200

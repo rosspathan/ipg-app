@@ -143,3 +143,6 @@ verify_jwt = false
 
 [functions.scheduled-discover-deposits]
 verify_jwt = false
+
+[functions.verify-transaction]
+verify_jwt = true
