@@ -12,8 +12,7 @@ import { BSKHoldingCard } from "./BSKHoldingCard"
 import { useUserBalance } from "@/hooks/useUserBalance"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import AssetLogo from "@/components/AssetLogo"
-import { useErc20OnchainBalance } from "@/hooks/useErc20OnchainBalance"
+import { CryptoAssetCard } from "@/components/wallet/CryptoAssetCard"
 
 interface BalanceClusterProps {
   className?: string
@@ -23,12 +22,8 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
   const [isCryptoExpanded, setIsCryptoExpanded] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [syncingAsset, setSyncingAsset] = useState<string | null>(null)
   const { toast } = useToast()
   const { user } = useAuthUser()
-
-  // Fetch USDT on-chain balance
-  const usdtOnchain = useErc20OnchainBalance('USDT', 'bsc')
 
   // Fetch real crypto balances
   const { data: cryptoBalances, isLoading: cryptoLoading, refetch: refetchCrypto } = useUserBalance(undefined, true);
@@ -84,7 +79,7 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([refetchCrypto(), refetchBsk(), usdtOnchain.refetch()]);
+      await Promise.all([refetchCrypto(), refetchBsk()]);
       toast({
         title: "Balances Refreshed",
         description: "Your balances have been updated",
@@ -100,89 +95,21 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
     }
   };
 
-  const handleSyncFromBscScan = async (symbol: string) => {
-    setSyncingAsset(symbol);
-    try {
-      // Step 1: Call discover-deposits
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) throw new Error('Not authenticated')
-
-      const discoverResponse = await supabase.functions.invoke('discover-deposits', {
-        body: { symbol, network: 'bsc', lookbackHours: 168 }
-      })
-
-      if (discoverResponse.error) throw discoverResponse.error
-
-      const discoveryData = discoverResponse.data
-      console.log('[BalanceCluster] Discovery result:', discoveryData)
-
-      // Step 2: For each discovered deposit, call monitor-deposit
-      if (discoveryData.deposits && discoveryData.deposits.length > 0) {
-        for (const deposit of discoveryData.deposits) {
-          try {
-            await supabase.functions.invoke('monitor-deposit', {
-              body: { deposit_id: deposit.id }
-            })
-          } catch (monitorError) {
-            console.error('[BalanceCluster] Monitor deposit failed:', monitorError)
-          }
-        }
-        
-        toast({
-          title: "Sync Complete",
-          description: `Found ${discoveryData.created} new ${symbol} deposit(s). Processing confirmations...`,
-        })
-      } else {
-        toast({
-          title: "No New Deposits",
-          description: `No new ${symbol} deposits found on BscScan`,
-        })
-      }
-
-      // Refresh balances
-      await refetchCrypto()
-    } catch (error) {
-      console.error('[BalanceCluster] Sync error:', error)
-      toast({
-        title: "Sync Failed",
-        description: error.message || "Failed to sync from BscScan",
-        variant: "destructive",
-      })
-    } finally {
-      setSyncingAsset(null)
-    }
-  };
 
   // Filter crypto assets (exclude BSK and INR)
-  const baseCryptoAssets = (cryptoBalances || []).filter(asset => 
-    asset.symbol !== 'BSK' && 
-    asset.symbol !== 'INR' &&
-    asset.network !== 'fiat' &&
-    asset.network !== 'FIAT'
-  );
-
-  // Inject USDT placeholder if missing but on-chain balance exists
-  const usdtPresent = baseCryptoAssets.some(a => a.symbol === 'USDT')
-  const augmentedCryptoAssets = [...baseCryptoAssets]
-  const usdtOnchainAmount = parseFloat(usdtOnchain.balance || '0')
-  if (!usdtPresent && usdtOnchainAmount > 0) {
-    augmentedCryptoAssets.unshift({
-      symbol: 'USDT',
-      name: 'Tether USD',
-      balance: usdtOnchainAmount,
-      available: 0,
-      locked: 0,
-      logo_url: 'https://assets.coingecko.com/coins/images/325/large/Tether.png',
-      network: 'bsc'
-    } as any)
-  }
-
-  const filteredCryptoAssets = augmentedCryptoAssets.filter(asset =>
-    searchTerm ? 
-      asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) 
-      : true
-  );
+  const filteredCryptoAssets = (cryptoBalances || [])
+    .filter(asset => 
+      asset.symbol !== 'BSK' && 
+      asset.symbol !== 'INR' &&
+      asset.network !== 'fiat' &&
+      asset.network !== 'FIAT'
+    )
+    .filter(asset =>
+      searchTerm ? 
+        asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) 
+        : true
+    );
 
   const withdrawable = Number(bskBalance?.withdrawable_balance || 0);
   const holding = Number(bskBalance?.holding_balance || 0);
@@ -192,8 +119,8 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
     variant: 'grid',
     withdrawable,
     holding,
-    cryptoCount: augmentedCryptoAssets.length,
-    cryptoBalances: augmentedCryptoAssets.map(a => ({ symbol: a.symbol, balance: a.balance }))
+    cryptoCount: filteredCryptoAssets.length,
+    cryptoBalances: filteredCryptoAssets.map(a => ({ symbol: a.symbol, balance: a.balance }))
   });
   return (
     <div className={cn("space-y-4", className)} data-testid="balance-cluster">
@@ -237,68 +164,27 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
               />
             </div>
 
-            {/* Grid of crypto assets */}
+            {/* Grid of crypto assets using CryptoAssetCard */}
             {cryptoLoading ? (
               <div className="text-center py-6 text-muted-foreground text-sm">
                 Loading balances...
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-2">
-                  {filteredCryptoAssets.map((asset) => {
-                    const onchainBalance = asset.symbol === 'USDT' ? parseFloat(usdtOnchain.balance) : 0
-                    const dbAvailable = Number(asset.available)
-                    const needsSync = onchainBalance > dbAvailable + 0.000001
-                    
-                    return (
-                      <div key={asset.symbol} className="flex items-center justify-between p-3 bg-card-secondary/40 rounded-xl hover:bg-card-secondary/60 transition-colors duration-[120ms]">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                            <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} size="sm" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-sm font-heading">{asset.symbol}</div>
-                            <div className="text-xs text-muted-foreground">{asset.name}</div>
-                          </div>
-                        </div>
-                        <div className="text-right space-y-1">
-                          <div className="font-mono text-sm tabular-nums">
-                            {Number(asset.balance).toFixed(6)} {asset.symbol}
-                          </div>
-                          <div className="text-xs text-muted-foreground space-y-0.5">
-                            <div>
-                              <span className="text-success">Available: {dbAvailable.toFixed(6)}</span>
-                              {Number(asset.locked) > 0 && (
-                                <span className="ml-2 text-warning">Locked: {Number(asset.locked).toFixed(6)}</span>
-                              )}
-                            </div>
-                            {asset.symbol === 'USDT' && !usdtOnchain.isLoading && (
-                              <div className="text-xs">
-                                <span className="text-muted-foreground">On-chain: {onchainBalance.toFixed(6)}</span>
-                              </div>
-                            )}
-                          </div>
-                          {needsSync && asset.symbol === 'USDT' && (
-                            <div className="flex items-center gap-2 mt-1">
-                              <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-warning/20 text-warning rounded text-xs">
-                                <AlertCircle className="h-3 w-3" />
-                                <span>Sync pending</span>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleSyncFromBscScan('USDT')}
-                                disabled={syncingAsset === 'USDT'}
-                                className="h-6 text-xs px-2"
-                              >
-                                {syncingAsset === 'USDT' ? 'Syncing...' : 'Sync now'}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
+                <div className="grid grid-cols-1 gap-3">
+                  {filteredCryptoAssets.map((asset) => (
+                    <CryptoAssetCard
+                      key={asset.symbol}
+                      symbol={asset.symbol}
+                      name={asset.name}
+                      balance={Number(asset.balance)}
+                      available={Number(asset.available)}
+                      locked={Number(asset.locked)}
+                      logoUrl={asset.logo_url}
+                      network={asset.network || 'bsc'}
+                      onSync={refetchCrypto}
+                    />
+                  ))}
                 </div>
 
                 {filteredCryptoAssets.length === 0 && (

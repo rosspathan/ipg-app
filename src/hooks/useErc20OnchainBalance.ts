@@ -11,10 +11,15 @@ interface OnchainBalanceResult {
   refetch: () => void
 }
 
-const FALLBACKS: Record<string, { contract: `0x${string}`; decimals: number }> = {
+const FALLBACKS: Record<string, { contract: `0x${string}`; decimals: number; isNative?: boolean }> = {
   'USDT:bsc': {
     contract: '0x55d398326f99059fF775485246999027B3197955',
     decimals: 18,
+  },
+  'BNB:bsc': {
+    contract: '0x0000000000000000000000000000000000000000', // Native BNB
+    decimals: 18,
+    isNative: true,
   },
 }
 
@@ -51,6 +56,13 @@ export function useErc20OnchainBalance(
   // Fetch asset info (contract address and decimals)
   useEffect(() => {
     const fetchAssetInfo = async () => {
+      // Check fallbacks first for known assets
+      const fb = FALLBACKS[`${symbol}:${network}`]
+      if (fb) {
+        setAssetInfo(fb)
+        return
+      }
+
       const { data: asset } = await supabase
         .from('assets')
         .select('contract_address, decimals')
@@ -64,20 +76,19 @@ export function useErc20OnchainBalance(
           contract: asset.contract_address as `0x${string}`,
           decimals: asset.decimals || 18
         })
-      } else {
-        const fb = FALLBACKS[`${symbol}:${network}`]
-        if (fb) setAssetInfo(fb)
       }
     }
 
-    fetchAssetInfo()
+    if (symbol && network) {
+      fetchAssetInfo()
+    }
   }, [symbol, network])
 
   // Query on-chain balance
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['onchain-balance', symbol, network, walletAddress, assetInfo?.contract],
     queryFn: async () => {
-      if (!walletAddress || !assetInfo?.contract) {
+      if (!walletAddress || !assetInfo) {
         return '0'
       }
 
@@ -85,6 +96,19 @@ export function useErc20OnchainBalance(
         chain: bsc,
         transport: http('https://bsc-dataseed.binance.org')
       })
+
+      // Handle native BNB balance
+      if ('isNative' in assetInfo && assetInfo.isNative) {
+        const balance = await publicClient.getBalance({
+          address: walletAddress as `0x${string}`
+        })
+        return formatUnits(balance, assetInfo.decimals)
+      }
+
+      // Handle ERC20 tokens
+      if (!assetInfo.contract) {
+        return '0'
+      }
 
       const balance = await publicClient.readContract({
         address: assetInfo.contract,
@@ -95,7 +119,7 @@ export function useErc20OnchainBalance(
 
       return formatUnits(balance, assetInfo.decimals)
     },
-    enabled: !!walletAddress && !!assetInfo?.contract,
+    enabled: !!walletAddress && !!assetInfo,
     refetchInterval: 30000,
     staleTime: 20000
   })

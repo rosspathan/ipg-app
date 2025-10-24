@@ -18,6 +18,8 @@ import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, form
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 import { useDisplayName } from "@/hooks/useDisplayName"
 import { PendingDepositsCard } from "@/components/astra/PendingDepositsCard"
+import { NetworkBadge } from "@/components/wallet/NetworkBadge"
+import { PortfolioSummaryCard } from "@/components/wallet/PortfolioSummaryCard"
 
 export function WalletPage() {
   const { navigate } = useNavigation()
@@ -170,11 +172,8 @@ export function WalletPage() {
           className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 transition-all duration-220"
           data-testid="address-panel"
         >
-          {/* Network Pill */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
-            <span className="text-xs font-semibold text-warning tracking-wide">BINANCE SMART CHAIN</span>
-          </div>
+          {/* Network Badge */}
+          <NetworkBadge network="BINANCE SMART CHAIN" className="mb-4" />
 
           {/* Address Display */}
           <div className="space-y-3">
@@ -277,36 +276,14 @@ export function WalletPage() {
         {/* Pending Deposits */}
         <PendingDepositsCard />
 
-        {/* Portfolio Summary */}
-        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6">
-          <h2 className="text-sm font-semibold text-muted-foreground mb-4">Portfolio Summary</h2>
-          {portfolioLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Total Value</p>
-                <p className="text-lg font-bold text-foreground">
-                  ${(portfolio?.total_usd || 0).toFixed(2)}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Available</p>
-                <p className="text-lg font-bold text-green-600">
-                  ${(portfolio?.available_usd || 0).toFixed(2)}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Locked</p>
-                <p className="text-lg font-bold text-orange-600">
-                  ${(portfolio?.locked_usd || 0).toFixed(2)}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Portfolio Summary - Enhanced */}
+        <PortfolioSummaryCard
+          totalUsd={portfolio?.total_usd || 0}
+          availableUsd={portfolio?.available_usd || 0}
+          lockedUsd={portfolio?.locked_usd || 0}
+          change24h={portfolio?.change_24h_percent || 0}
+          loading={portfolioLoading}
+        />
 
       {/* Balance Cluster with Crypto Assets Grid */}
       <BalanceCluster />

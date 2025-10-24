@@ -17,7 +17,12 @@ import { useWithdrawalFees } from "@/hooks/useWithdrawalFees";
 const WithdrawScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedAsset, setSelectedAsset] = useState("");
+  
+  // Check for pre-selected asset from URL params
+  const searchParams = new URLSearchParams(window.location.search)
+  const preSelectedAsset = searchParams.get('asset')
+  
+  const [selectedAsset, setSelectedAsset] = useState(preSelectedAsset || "");
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [address, setAddress] = useState("");
   const [amount, setAmount] = useState("");
@@ -57,11 +62,24 @@ const WithdrawScreen = () => {
 
   // Set initial selected asset when balances load
   useEffect(() => {
-    if (assets.length > 0 && !selectedAsset) {
-      setSelectedAsset(assets[0].symbol);
-      setSelectedNetwork(assets[0].networks[0]);
+    if (assets.length > 0) {
+      // If pre-selected asset exists in URL, use it
+      if (preSelectedAsset) {
+        const preSelected = assets.find(a => a.symbol === preSelectedAsset)
+        if (preSelected) {
+          setSelectedAsset(preSelected.symbol)
+          setSelectedNetwork(preSelected.networks[0])
+          return
+        }
+      }
+      
+      // Otherwise use first asset
+      if (!selectedAsset) {
+        setSelectedAsset(assets[0].symbol);
+        setSelectedNetwork(assets[0].networks[0]);
+      }
     }
-  }, [assets, selectedAsset]);
+  }, [assets, selectedAsset, preSelectedAsset]);
 
   // Validate address whenever it changes
   useEffect(() => {
