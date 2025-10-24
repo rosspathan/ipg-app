@@ -214,6 +214,8 @@ import TransactionControlCenter from "./pages/admin/TransactionControlCenter";
 import UserFinancialManagement from "./pages/admin/UserFinancialManagement";
 import FinancialReports from "./pages/admin/FinancialReports";
 import FinancialAnalytics from "./pages/admin/FinancialAnalytics";
+import AdminCommissionHistory from "./pages/admin/AdminCommissionHistory";
+import RetroactiveRewardsProcessor from "./pages/admin/RetroactiveRewardsProcessor";
 
 // Utility Pages
 import { SupportScreen } from "@/pages/SupportScreen";

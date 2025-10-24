@@ -136,6 +136,8 @@ const navItems: NavItem[] = [
       { title: "Team Referrals", url: "/admin/team-referrals", icon: Users },
       { title: "50 Level System", url: "/admin/50-level-referrals", icon: Award },
       { title: "Badge Qualification", url: "/admin/badge-qualification", icon: Award },
+      { title: "Commission History", url: "/admin/commission-history", icon: Coins },
+      { title: "Retroactive Rewards", url: "/admin/retroactive-rewards", icon: Zap },
     ],
   },
   {

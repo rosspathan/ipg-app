@@ -7395,6 +7395,50 @@ export type Database = {
           },
         ]
       }
+      retroactive_processing_log: {
+        Row: {
+          batch_id: string
+          bsk_distributed: number | null
+          commissions_created: number | null
+          error_message: string | null
+          id: string
+          processed_at: string | null
+          processing_type: string
+          purchase_id: string | null
+          status: string
+        }
+        Insert: {
+          batch_id: string
+          bsk_distributed?: number | null
+          commissions_created?: number | null
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          processing_type: string
+          purchase_id?: string | null
+          status: string
+        }
+        Update: {
+          batch_id?: string
+          bsk_distributed?: number | null
+          commissions_created?: number | null
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          processing_type?: string
+          purchase_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retroactive_processing_log_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "badge_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rng_seeds: {
         Row: {
           created_at: string
