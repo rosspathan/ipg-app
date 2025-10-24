@@ -3,6 +3,7 @@ import { ProgramPageTemplate } from "@/components/programs-pro/ProgramPageTempla
 import { LevelSelector } from "@/components/referrals/LevelSelector"
 import { MemberCard } from "@/components/referrals/MemberCard"
 import { useDownlineTree } from "@/hooks/useDownlineTree"
+import { LevelUnlockVisualizer } from "@/components/referrals/LevelUnlockVisualizer"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Users } from "lucide-react"
@@ -14,11 +15,44 @@ import {
 } from "@/components/ui/dialog"
 import { DownlineMemberProfile } from "@/components/referrals/DownlineMemberProfile"
 import type { DownlineMember } from "@/hooks/useDownlineTree"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuthUser } from "@/hooks/useAuthUser"
+import { useQuery } from "@tanstack/react-query"
 
 export default function TeamTreeView() {
+  const { user } = useAuthUser()
   const { data, isLoading } = useDownlineTree()
   const [selectedLevel, setSelectedLevel] = useState(1)
   const [selectedMember, setSelectedMember] = useState<DownlineMember | null>(null)
+
+  // Fetch user's badge and unlock levels
+  const { data: userBadgeData } = useQuery({
+    queryKey: ['user-badge-unlock', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+
+      const { data: badge } = await supabase
+        .from('user_badge_holdings')
+        .select('current_badge')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!badge) return null;
+
+      const { data: threshold } = await supabase
+        .from('badge_thresholds')
+        .select('badge_name, unlock_levels')
+        .ilike('badge_name', badge.current_badge)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      return {
+        badge_name: badge.current_badge,
+        unlock_levels: threshold?.unlock_levels || 1
+      };
+    },
+    enabled: !!user?.id
+  })
 
   if (isLoading) {
     return (
@@ -65,6 +99,9 @@ export default function TeamTreeView() {
       subtitle={`${data.totalMembers} members across ${data.deepestLevel} levels`}
     >
       <div className="space-y-6 pb-24">
+        {/* Level Unlock Visualizer */}
+        <LevelUnlockVisualizer userBadge={userBadgeData} />
+
         {/* Level Selector */}
         <LevelSelector 
           levels={levelData}

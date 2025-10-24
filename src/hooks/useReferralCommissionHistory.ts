@@ -10,6 +10,7 @@ export interface CommissionHistoryEntry {
   payer_badge: string | null;
   level: number;
   event_type: string;
+  commission_type: 'direct_commission' | 'team_income' | 'vip_milestone';
   bsk_amount: number;
   destination: 'withdrawable' | 'holding';
   created_at: string;
@@ -29,6 +30,14 @@ export interface CommissionStats {
   topLevel: number;
   thisMonthEarnings: number;
   levelSummaries: LevelSummary[];
+  directCommissionTotal: number;
+  teamIncomeTotal: number;
+  vipMilestoneTotal: number;
+  commissionsByType: {
+    direct_commission: CommissionHistoryEntry[];
+    team_income: CommissionHistoryEntry[];
+    vip_milestone: CommissionHistoryEntry[];
+  };
 }
 
 export function useReferralCommissionHistory() {
@@ -47,6 +56,7 @@ export function useReferralCommissionHistory() {
           payer_id,
           level,
           event_type,
+          commission_type,
           bsk_amount,
           destination,
           created_at,
@@ -72,6 +82,7 @@ export function useReferralCommissionHistory() {
         payer_badge: c.payer?.user_badge_holdings?.[0]?.current_badge || null,
         level: c.level,
         event_type: c.event_type,
+        commission_type: c.commission_type || 'direct_commission',
         bsk_amount: c.bsk_amount,
         destination: c.destination,
         created_at: c.created_at,
@@ -116,12 +127,27 @@ export function useReferralCommissionHistory() {
         .filter(e => new Date(e.created_at) >= thirtyDaysAgo)
         .reduce((sum, e) => sum + e.bsk_amount, 0);
 
+      // Group by commission type
+      const commissionsByType = {
+        direct_commission: entries.filter(e => e.commission_type === 'direct_commission'),
+        team_income: entries.filter(e => e.commission_type === 'team_income'),
+        vip_milestone: entries.filter(e => e.commission_type === 'vip_milestone'),
+      };
+
+      const directCommissionTotal = commissionsByType.direct_commission.reduce((sum, e) => sum + e.bsk_amount, 0);
+      const teamIncomeTotal = commissionsByType.team_income.reduce((sum, e) => sum + e.bsk_amount, 0);
+      const vipMilestoneTotal = commissionsByType.vip_milestone.reduce((sum, e) => sum + e.bsk_amount, 0);
+
       const stats: CommissionStats = {
         totalEarned,
         activeLevels,
         topLevel,
         thisMonthEarnings,
         levelSummaries,
+        directCommissionTotal,
+        teamIncomeTotal,
+        vipMilestoneTotal,
+        commissionsByType,
       };
 
       return { entries, stats };

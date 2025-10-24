@@ -9758,6 +9758,41 @@ export type Database = {
           },
         ]
       }
+      user_vip_milestone_claims: {
+        Row: {
+          bsk_rewarded: number
+          claimed_at: string | null
+          id: string
+          milestone_id: string
+          user_id: string
+          vip_count_at_claim: number
+        }
+        Insert: {
+          bsk_rewarded: number
+          claimed_at?: string | null
+          id?: string
+          milestone_id: string
+          user_id: string
+          vip_count_at_claim: number
+        }
+        Update: {
+          bsk_rewarded?: number
+          claimed_at?: string | null
+          id?: string
+          milestone_id?: string
+          user_id?: string
+          vip_count_at_claim?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_vip_milestone_claims_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "vip_milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_vip_milestones: {
         Row: {
           created_at: string

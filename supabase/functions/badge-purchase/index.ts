@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       throw new Error('Failed to update badge holding');
     }
 
-    // 4. Process NEW 50-level referral commissions
+    // 4. Process NEW 50-level referral commissions (10% direct commission)
     try {
       // Call the new badge sale commission processor
       const commissionResponse = await supabaseClient.functions.invoke('process-badge-sale-commissions', {
@@ -147,6 +147,29 @@ Deno.serve(async (req) => {
     } catch (commissionError) {
       console.error('Commission processor error (non-critical):', commissionError);
       // Don't fail the purchase if commission fails
+    }
+
+    // 4b. Process 50-level team income rewards
+    try {
+      console.log('🌳 Processing 50-level team income rewards...');
+      
+      const teamIncomeResponse = await supabaseClient.functions.invoke('process-team-income-rewards', {
+        body: {
+          payer_id: user_id,
+          event_type: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
+          event_id: crypto.randomUUID(),
+          badge_name,
+          payment_amount: bsk_amount
+        }
+      });
+
+      if (teamIncomeResponse.error) {
+        console.error('❌ Team income processing error:', teamIncomeResponse.error);
+      } else {
+        console.log('✅ Team income rewards processed:', teamIncomeResponse.data);
+      }
+    } catch (teamIncomeError) {
+      console.error('❌ Team income processor error (non-critical):', teamIncomeError);
     }
 
     // 5. Credit bonus holding balance for badge purchase
@@ -290,13 +313,21 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (sponsor) {
-          // Trigger milestone check for sponsor
-          await supabaseClient.functions.invoke('check-vip-milestones', {
+          // Trigger NEW VIP milestone processor
+          console.log('💎 Checking VIP milestone rewards for sponsor...');
+          
+          const milestoneResponse = await supabaseClient.functions.invoke('process-vip-milestone-rewards', {
             body: {
-              referrer_id: sponsor.ancestor_id,
-              new_vip_referee_id: user_id
+              sponsor_id: sponsor.ancestor_id,
+              new_vip_referral_id: user_id
             }
           });
+
+          if (milestoneResponse.error) {
+            console.error('❌ Milestone processing error:', milestoneResponse.error);
+          } else {
+            console.log('✅ VIP milestones processed:', milestoneResponse.data);
+          }
         }
       } catch (vipError) {
         console.error('VIP milestone processing error (non-critical):', vipError);
