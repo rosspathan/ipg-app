@@ -47,6 +47,14 @@ export const useCryptoToINRDeposit = () => {
       const inrUsdRate = ratesData.inr_usd_rate;
       const inrSubtotal = amount * cryptoUsdRate * inrUsdRate;
 
+      // Check minimum deposit requirement (₹100)
+      if (inrSubtotal < 100) {
+        toast.error('Deposit amount too low', {
+          description: 'Minimum deposit equivalent is ₹100'
+        });
+        return null;
+      }
+
       // Get fee config for this asset
       const { data: feeConfig, error: feeError } = await supabase
         .from('crypto_deposit_fee_configs')

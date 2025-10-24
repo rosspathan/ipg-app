@@ -36,19 +36,24 @@ const AdminFunding = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="inr-settings" className="w-full">
-        <TabsList className="w-full grid grid-cols-3 md:grid-cols-10 gap-1 h-auto">
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="w-full grid grid-cols-3 md:grid-cols-11 gap-1 h-auto">
+          <TabsTrigger value="dashboard" className="text-xs md:text-sm py-2">Dashboard</TabsTrigger>
           <TabsTrigger value="inr-settings" className="text-xs md:text-sm py-2">Settings</TabsTrigger>
           <TabsTrigger value="inr-accounts" className="text-xs md:text-sm py-2">INR Accounts</TabsTrigger>
-          <TabsTrigger value="inr-deposits" className="text-xs md:text-sm py-2">INR Deposits</TabsTrigger>
-          <TabsTrigger value="inr-withdrawals" className="text-xs md:text-sm py-2">INR Withdrawals</TabsTrigger>
-          <TabsTrigger value="crypto-inr" className="text-xs md:text-sm py-2">Crypto→INR</TabsTrigger>
+          <TabsTrigger value="inr-deposits" id="inr-deposits" className="text-xs md:text-sm py-2">INR Deposits</TabsTrigger>
+          <TabsTrigger value="inr-withdrawals" id="inr-withdrawals" className="text-xs md:text-sm py-2">INR Withdrawals</TabsTrigger>
+          <TabsTrigger value="crypto-inr" id="crypto-inr" className="text-xs md:text-sm py-2">Crypto→INR</TabsTrigger>
           <TabsTrigger value="deposit-fees" className="text-xs md:text-sm py-2">Deposit Fees</TabsTrigger>
           <TabsTrigger value="crypto" className="text-xs md:text-sm py-2">Crypto Controls</TabsTrigger>
           <TabsTrigger value="bsk-withdrawable" className="text-xs md:text-sm py-2">BSK Withdrawable</TabsTrigger>
           <TabsTrigger value="bsk-holding" className="text-xs md:text-sm py-2">BSK Holding</TabsTrigger>
           <TabsTrigger value="bsk-release" className="text-xs md:text-sm py-2">BSK Release</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard">
+          <AdminTransactionDashboard />
+        </TabsContent>
 
         <TabsContent value="inr-settings" className="mt-4">
           <AdminINRSettings />
