@@ -7,7 +7,8 @@ import { LevelUnlockVisualizer } from "@/components/referrals/LevelUnlockVisuali
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Users } from "lucide-react"
+import { Users, Network } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { DownlineMemberProfile } from "@/components/referrals/DownlineMemberProfile"
+import { ReferralTreeView } from "@/components/referrals/tree/ReferralTreeView"
 import type { DownlineMember } from "@/hooks/useDownlineTree"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuthUser } from "@/hooks/useAuthUser"
@@ -116,7 +118,7 @@ export default function TeamTreeView() {
       subtitle={`${data.totalMembers} members across ${data.deepestLevel} levels`}
     >
       <div className="space-y-6 pb-24">
-        {/* Help Button */}
+        {/* Header Actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ReferralHelpDialog />
@@ -142,6 +144,27 @@ export default function TeamTreeView() {
 
         {/* Level Unlock Visualizer */}
         <LevelUnlockVisualizer userBadge={userBadgeData} />
+
+        {/* Tabs for different views */}
+        <Tabs defaultValue="tree" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="tree" className="gap-2">
+              <Network className="h-4 w-4" />
+              Tree View
+            </TabsTrigger>
+            <TabsTrigger value="levels" className="gap-2">
+              <Users className="h-4 w-4" />
+              Level View
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tree View Tab */}
+          <TabsContent value="tree" className="space-y-6">
+            <ReferralTreeView />
+          </TabsContent>
+
+          {/* Level View Tab */}
+          <TabsContent value="levels" className="space-y-6">
 
         {/* Level Selector */}
         <LevelSelector 
@@ -198,29 +221,31 @@ export default function TeamTreeView() {
           </div>
         </div>
 
-        {/* Members Grid */}
-        {membersAtLevel.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {membersAtLevel.map((member) => (
-              <MemberCard
-                key={member.user_id}
-                displayName={member.display_name}
-                username={member.username}
-                badge={member.current_badge || undefined}
-                generatedAmount={member.total_generated}
-                isActive={member.total_generated > 0}
-                onClick={() => setSelectedMember(member)}
-              />
-            ))}
-          </div>
-        ) : (
-          <Alert>
-            <Users className="h-4 w-4" />
-            <AlertDescription>
-              No members at Level {selectedLevel} yet.
-            </AlertDescription>
-          </Alert>
-        )}
+            {/* Members Grid */}
+            {membersAtLevel.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {membersAtLevel.map((member) => (
+                  <MemberCard
+                    key={member.user_id}
+                    displayName={member.display_name}
+                    username={member.username}
+                    badge={member.current_badge || undefined}
+                    generatedAmount={member.total_generated}
+                    isActive={member.total_generated > 0}
+                    onClick={() => setSelectedMember(member)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Alert>
+                <Users className="h-4 w-4" />
+                <AlertDescription>
+                  No members at Level {selectedLevel} yet.
+                </AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Member Profile Dialog */}
