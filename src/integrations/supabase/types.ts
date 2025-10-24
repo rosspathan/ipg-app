@@ -278,6 +278,48 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_enabled: boolean | null
+          id: string
+          in_app_enabled: boolean | null
+          min_amount_threshold: number | null
+          notify_crypto_inr_deposit: boolean | null
+          notify_crypto_withdrawal: boolean | null
+          notify_inr_deposit: boolean | null
+          notify_inr_withdrawal: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          in_app_enabled?: boolean | null
+          min_amount_threshold?: number | null
+          notify_crypto_inr_deposit?: boolean | null
+          notify_crypto_withdrawal?: boolean | null
+          notify_inr_deposit?: boolean | null
+          notify_inr_withdrawal?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          in_app_enabled?: boolean | null
+          min_amount_threshold?: number | null
+          notify_crypto_inr_deposit?: boolean | null
+          notify_crypto_withdrawal?: boolean | null
+          notify_inr_deposit?: boolean | null
+          notify_inr_withdrawal?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ads: {
         Row: {
           content_category: string | null
@@ -3179,6 +3221,152 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      crypto_deposit_fee_configs: {
+        Row: {
+          active: boolean | null
+          asset_id: string | null
+          auto_approve_threshold: number | null
+          created_at: string | null
+          fee_fixed: number | null
+          fee_percent: number | null
+          fee_type: string | null
+          id: string
+          max_deposit_amount: number | null
+          min_deposit_amount: number | null
+          network: string | null
+          requires_proof: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          asset_id?: string | null
+          auto_approve_threshold?: number | null
+          created_at?: string | null
+          fee_fixed?: number | null
+          fee_percent?: number | null
+          fee_type?: string | null
+          id?: string
+          max_deposit_amount?: number | null
+          min_deposit_amount?: number | null
+          network?: string | null
+          requires_proof?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          asset_id?: string | null
+          auto_approve_threshold?: number | null
+          created_at?: string | null
+          fee_fixed?: number | null
+          fee_percent?: number | null
+          fee_type?: string | null
+          id?: string
+          max_deposit_amount?: number | null
+          min_deposit_amount?: number | null
+          network?: string | null
+          requires_proof?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_deposit_fee_configs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crypto_to_inr_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          crypto_amount: number
+          crypto_asset_id: string
+          crypto_usd_rate: number | null
+          decided_at: string | null
+          decided_by: string | null
+          deposit_fee_fixed: number | null
+          deposit_fee_percent: number | null
+          deposit_id: string | null
+          id: string
+          inr_equivalent: number
+          inr_usd_rate: number | null
+          net_inr_credit: number | null
+          network: string
+          proof_url: string | null
+          status: string
+          submitted_at: string | null
+          total_fee: number | null
+          tx_hash: string
+          user_id: string
+          user_notes: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          crypto_amount: number
+          crypto_asset_id: string
+          crypto_usd_rate?: number | null
+          decided_at?: string | null
+          decided_by?: string | null
+          deposit_fee_fixed?: number | null
+          deposit_fee_percent?: number | null
+          deposit_id?: string | null
+          id?: string
+          inr_equivalent: number
+          inr_usd_rate?: number | null
+          net_inr_credit?: number | null
+          network: string
+          proof_url?: string | null
+          status?: string
+          submitted_at?: string | null
+          total_fee?: number | null
+          tx_hash: string
+          user_id: string
+          user_notes?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          crypto_amount?: number
+          crypto_asset_id?: string
+          crypto_usd_rate?: number | null
+          decided_at?: string | null
+          decided_by?: string | null
+          deposit_fee_fixed?: number | null
+          deposit_fee_percent?: number | null
+          deposit_id?: string | null
+          id?: string
+          inr_equivalent?: number
+          inr_usd_rate?: number | null
+          net_inr_credit?: number | null
+          network?: string
+          proof_url?: string | null
+          status?: string
+          submitted_at?: string | null
+          total_fee?: number | null
+          tx_hash?: string
+          user_id?: string
+          user_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_to_inr_requests_crypto_asset_id_fkey"
+            columns: ["crypto_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crypto_to_inr_requests_deposit_id_fkey"
+            columns: ["deposit_id"]
+            isOneToOne: false
+            referencedRelation: "deposits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       daily_commission_totals: {
         Row: {

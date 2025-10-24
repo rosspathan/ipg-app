@@ -7,6 +7,8 @@ import AdminCryptoControls from "@/components/AdminCryptoControls";
 import AdminBSKBalances from "@/components/AdminBSKBalances";
 import AdminINRSettings from "@/components/AdminINRSettings";
 import { AdminBSKRelease } from "@/components/admin/AdminBSKRelease";
+import AdminCryptoINRDeposits from "@/components/admin/AdminCryptoINRDeposits";
+import AdminDepositFeeManager from "@/components/admin/AdminDepositFeeManager";
 import { useNavigate } from "react-router-dom";
 
 const AdminFunding = () => {
@@ -35,11 +37,13 @@ const AdminFunding = () => {
       </div>
 
       <Tabs defaultValue="inr-settings" className="w-full">
-        <TabsList className="w-full grid grid-cols-3 md:grid-cols-8 gap-1 h-auto">
+        <TabsList className="w-full grid grid-cols-3 md:grid-cols-10 gap-1 h-auto">
           <TabsTrigger value="inr-settings" className="text-xs md:text-sm py-2">Settings</TabsTrigger>
           <TabsTrigger value="inr-accounts" className="text-xs md:text-sm py-2">INR Accounts</TabsTrigger>
           <TabsTrigger value="inr-deposits" className="text-xs md:text-sm py-2">INR Deposits</TabsTrigger>
           <TabsTrigger value="inr-withdrawals" className="text-xs md:text-sm py-2">INR Withdrawals</TabsTrigger>
+          <TabsTrigger value="crypto-inr" className="text-xs md:text-sm py-2">Crypto→INR</TabsTrigger>
+          <TabsTrigger value="deposit-fees" className="text-xs md:text-sm py-2">Deposit Fees</TabsTrigger>
           <TabsTrigger value="crypto" className="text-xs md:text-sm py-2">Crypto Controls</TabsTrigger>
           <TabsTrigger value="bsk-withdrawable" className="text-xs md:text-sm py-2">BSK Withdrawable</TabsTrigger>
           <TabsTrigger value="bsk-holding" className="text-xs md:text-sm py-2">BSK Holding</TabsTrigger>
@@ -60,6 +64,14 @@ const AdminFunding = () => {
 
         <TabsContent value="inr-withdrawals" className="mt-4">
           <AdminINRWithdrawals />
+        </TabsContent>
+
+        <TabsContent value="crypto-inr" className="mt-4">
+          <AdminCryptoINRDeposits />
+        </TabsContent>
+
+        <TabsContent value="deposit-fees" className="mt-4">
+          <AdminDepositFeeManager />
         </TabsContent>
 
         <TabsContent value="crypto" className="mt-4">
