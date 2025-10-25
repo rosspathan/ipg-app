@@ -34,7 +34,7 @@ export function TreeNode({
 
   return (
     <div 
-      className="relative"
+      className="inline-block"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -46,7 +46,7 @@ export function TreeNode({
             variant="ghost"
             size="sm"
             onClick={handleToggle}
-            className="h-8 w-8 p-0 mt-2"
+            className="h-8 w-8 p-0 mt-2 flex-shrink-0"
           >
             {isExpanded ? (
               <ChevronDown className="h-4 w-4" />
@@ -55,10 +55,10 @@ export function TreeNode({
             )}
           </Button>
         )}
-        {!hasChildren && <div className="w-8" />}
+        {!hasChildren && <div className="w-8 flex-shrink-0" />}
 
         {/* Card */}
-        <div className="flex-1 min-w-0">
+        <div>
           <TreeNodeCard 
             node={node} 
             onClick={() => onNodeClick(node)}

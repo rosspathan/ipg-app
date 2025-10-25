@@ -41,7 +41,7 @@ export function TreeNodeCard({ node, onClick, isHighlighted }: TreeNodeCardProps
     <div
       onClick={onClick}
       className={`
-        relative p-3 rounded-lg border-2 cursor-pointer
+        relative p-3 rounded-lg border-2 cursor-pointer w-64
         transition-all duration-300 hover:scale-105 hover:shadow-lg
         ${getBorderColor()} ${getBackgroundGradient()}
         ${isHighlighted ? 'ring-2 ring-primary ring-offset-2' : ''}
