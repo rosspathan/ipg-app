@@ -5692,7 +5692,7 @@ export type Database = {
           {
             foreignKeyName: "market_prices_market_id_fkey"
             columns: ["market_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "markets"
             referencedColumns: ["id"]
           },
