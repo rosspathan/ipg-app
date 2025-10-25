@@ -95,7 +95,7 @@ export function BSKHoldingCard({
       {/* Balance */}
       <div>
         <div className="font-[Space_Grotesk] font-bold text-2xl text-primary tabular-nums">
-          {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`} <span className="text-base text-primary/70">BSK</span>
+          {isPrivate ? "••••••" : balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-base text-primary/70">BSK</span>
         </div>
         <div className="font-[Inter] text-xs text-muted-foreground tabular-nums mt-1">
           {isPrivate ? "••••••" : `≈ ₹${fiatValue.toLocaleString()}`}
@@ -116,7 +116,7 @@ export function BSKHoldingCard({
             <div className={cn("h-1 w-1 rounded-full", source.color)} />
             <span className="text-foreground">{source.label}</span>
             <span className="text-muted-foreground tabular-nums">
-              {(source.amount / 1000).toFixed(1)}K
+              {source.amount.toLocaleString('en-IN')}
             </span>
           </div>
         ))}

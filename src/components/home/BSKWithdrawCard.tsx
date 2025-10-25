@@ -95,7 +95,7 @@ export function BSKWithdrawCard({
       {/* Balance */}
       <div>
         <div className="font-[Space_Grotesk] font-bold text-2xl text-success tabular-nums">
-          {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`} <span className="text-base text-success/70">BSK</span>
+          {isPrivate ? "••••••" : balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-base text-success/70">BSK</span>
         </div>
         <div className="font-[Inter] text-xs text-muted-foreground tabular-nums mt-1">
           {isPrivate ? "••••••" : `≈ ₹${fiatValue.toLocaleString()}`}
@@ -171,7 +171,7 @@ export function BSKWithdrawCard({
               Lifetime
             </div>
             <div className="font-[Space_Grotesk] font-bold text-sm text-success tabular-nums mt-0.5">
-              {(defaultBonusStrip.lifetime / 1000).toFixed(1)}K
+              {defaultBonusStrip.lifetime.toLocaleString('en-IN')}
             </div>
           </div>
         </div>

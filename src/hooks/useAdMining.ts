@@ -67,6 +67,7 @@ export const useAdMining = () => {
   const [userSubscriptions, setUserSubscriptions] = useState<UserSubscription[]>([]);
   const [bskBalances, setBskBalances] = useState<BSKBalances | null>(null);
   const [dailyViews, setDailyViews] = useState<DailyAdViews | null>(null);
+  const [bskRate, setBskRate] = useState<number>(1.0);
 
   useEffect(() => {
     loadData();
@@ -78,6 +79,7 @@ export const useAdMining = () => {
       await Promise.all([
         loadSettings(),
         loadTiers(),
+        loadBSKRate(),
         user ? loadUserData() : wallet?.address ? loadBSKByWallet(wallet.address) : Promise.resolve()
       ]);
     } catch (error) {
@@ -331,8 +333,30 @@ export const useAdMining = () => {
     await loadUserData();
   };
 
+  const loadBSKRate = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bsk_rates')
+        .select('rate_inr_per_bsk')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error || !data) {
+        console.error('[useAdMining] Failed to fetch BSK rate:', error);
+        setBskRate(1.0); // Fallback to 1 BSK = 1 INR
+        return;
+      }
+
+      setBskRate(data.rate_inr_per_bsk);
+    } catch (error) {
+      console.error('[useAdMining] Error loading BSK rate:', error);
+      setBskRate(1.0);
+    }
+  };
+
   const getCurrentBSKRate = () => {
-    return 1.0; // Direct BSK pricing, no conversion needed
+    return bskRate; // Return cached rate
   };
 
   const canClaimFreeDaily = () => {
@@ -360,6 +384,7 @@ export const useAdMining = () => {
     userSubscriptions,
     bskBalances,
     dailyViews,
+    bskRate,
     loadData,
     purchaseSubscription,
     getCurrentBSKRate,
