@@ -45,6 +45,17 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
+    // Check profile security flags
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('account_status, withdrawal_locked, kyc_status')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError || !profile) throw new Error('Profile not found');
+    if (profile.account_status !== 'active') throw new Error('Account is not active. Please contact support.');
+    if (profile.withdrawal_locked) throw new Error('Withdrawals are locked for your account. Please contact support.');
+
     const { asset_symbol, network, to_address, amount } = await req.json();
 
     // Validate inputs
@@ -55,6 +66,11 @@ serve(async (req) => {
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum) || amountNum <= 0) {
       throw new Error('Invalid amount');
+    }
+
+    // Require KYC for large withdrawals (>$1000 equivalent)
+    if (amountNum > 1000 && profile.kyc_status !== 'approved') {
+      throw new Error('KYC verification required for withdrawals over $1,000. Please complete verification in your profile settings.');
     }
 
     // Validate address format
