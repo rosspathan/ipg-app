@@ -6,9 +6,9 @@ const corsHeaders = {
 };
 
 interface BadgeCommissionRequest {
-  payer_id: string; // User who bought the badge
+  payer_id: string;
   badge_name: string;
-  delta_amount: number; // Amount paid for THIS purchase (full price or upgrade delta)
+  delta_amount: number;
   is_upgrade: boolean;
   previous_badge?: string;
 }
@@ -26,88 +26,61 @@ Deno.serve(async (req) => {
 
     const { payer_id, badge_name, delta_amount, is_upgrade, previous_badge } = await req.json() as BadgeCommissionRequest;
 
-    console.log(`Processing badge sale commission for user ${payer_id}: ${badge_name} (delta: ${delta_amount} BSK)`);
+    console.log(`Processing multi-level badge sale commission for user ${payer_id}: ${badge_name} (delta: ${delta_amount} BSK)`);
 
-    // Calculate 10% commission on delta (not full price)
-    const commissionAmount = delta_amount * 0.10;
-
-    console.log(`Commission amount: ${commissionAmount} BSK (10% of ${delta_amount})`);
-
-    // Get direct sponsor (Level 1 only) from referral_tree
-    const { data: sponsor, error: sponsorError } = await supabase
-      .from('referral_tree')
-      .select('ancestor_id')
-      .eq('user_id', payer_id)
-      .eq('level', 1)
+    // Get team referral settings for multi-level commission rates
+    const { data: settings } = await supabase
+      .from('team_referral_settings')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
-    if (sponsorError) {
-      throw new Error(`Failed to fetch sponsor: ${sponsorError.message}`);
-    }
-
-    if (!sponsor) {
-      console.log('No direct sponsor found for user - no commission to pay');
+    if (!settings || !settings.is_active) {
+      console.log('Referral system not active, skipping commissions');
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'No sponsor found',
-          commission_paid: 0 
+          message: 'Referral system not active',
+          commissions_paid: 0 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const sponsorId = sponsor.ancestor_id;
+    // Get full referral tree for the buyer
+    const { data: referralTreeRows, error: treeError } = await supabase
+      .from('referral_tree')
+      .select('ancestor_id, level, path')
+      .eq('user_id', payer_id)
+      .order('level', { ascending: true });
 
-    // Get sponsor's current badge
-    const { data: sponsorBadge } = await supabase
-      .from('user_badge_holdings')
-      .select('current_badge')
-      .eq('user_id', sponsorId)
-      .maybeSingle();
+    if (treeError) {
+      throw new Error(`Failed to fetch referral tree: ${treeError.message}`);
+    }
 
-    const currentBadge = sponsorBadge?.current_badge || 'NONE';
+    if (!referralTreeRows || referralTreeRows.length === 0) {
+      console.log('No sponsors found for user - no commission to pay');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'No sponsors found',
+          commissions_paid: 0 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Credit sponsor's withdrawable balance
-    await supabase
-      .from('user_bsk_balances')
-      .insert({
-        user_id: sponsorId,
-        withdrawable_balance: commissionAmount,
-        total_earned_withdrawable: commissionAmount
-      })
-      .select()
-      .single()
-      .then(async ({ error: insertError }) => {
-        if (insertError) {
-          // Update existing balance
-          const { data: existingBalance } = await supabase
-            .from('user_bsk_balances')
-            .select('withdrawable_balance, total_earned_withdrawable')
-            .eq('user_id', sponsorId)
-            .single();
-
-          if (existingBalance) {
-            await supabase
-              .from('user_bsk_balances')
-              .update({
-                withdrawable_balance: Number(existingBalance.withdrawable_balance) + commissionAmount,
-                total_earned_withdrawable: Number(existingBalance.total_earned_withdrawable) + commissionAmount
-              })
-              .eq('user_id', sponsorId);
-          }
-        }
-      });
-
-    // Insert purchase record into badge_purchases table
+    // Record badge purchase first
     const { data: purchase, error: purchaseError } = await supabase
       .from('badge_purchases')
       .insert({
         user_id: payer_id,
         badge_name,
         bsk_amount: delta_amount,
+        inr_amount: 0,
+        bsk_rate_at_purchase: 1,
         previous_badge,
-        delta_amount,
         is_upgrade
       })
       .select()
@@ -119,46 +92,121 @@ Deno.serve(async (req) => {
 
     const eventId = purchase?.id || crypto.randomUUID();
 
-    // Insert into referral_commissions table
-    const { error: commissionError } = await supabase
-      .from('referral_commissions')
-      .insert({
-        earner_id: sponsorId,
-        payer_id,
-        level: 1,
-        event_type: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
-        event_id: eventId,
-        bsk_amount: commissionAmount,
-        destination: 'withdrawable',
-        status: 'settled',
-        earner_badge_at_event: currentBadge
+    // Calculate and distribute multi-level commissions
+    const maxLevels = Math.min(referralTreeRows.length, settings.max_levels || 50);
+    const commissions = [];
+    let totalDistributed = 0;
+
+    for (let i = 0; i < maxLevels; i++) {
+      const treeRow = referralTreeRows[i];
+      const sponsorId = treeRow.ancestor_id;
+      const levelNumber = treeRow.level;
+
+      // Get commission rate for this level
+      const commissionRate = settings.level_percentages?.[levelNumber] || 0;
+
+      if (commissionRate <= 0) {
+        console.log(`No commission rate for level ${levelNumber}, skipping`);
+        continue;
+      }
+
+      const commissionAmount = (delta_amount * commissionRate) / 100;
+
+      if (commissionAmount <= 0) {
+        continue;
+      }
+
+      // Get sponsor's current badge
+      const { data: sponsorBadge } = await supabase
+        .from('user_badge_holdings')
+        .select('current_badge')
+        .eq('user_id', sponsorId)
+        .maybeSingle();
+
+      const currentBadge = sponsorBadge?.current_badge || 'NONE';
+
+      // Determine destination based on settings (withdrawable for badge commissions)
+      const destination = 'withdrawable';
+
+      // Credit sponsor's balance
+      const { data: existingBalance } = await supabase
+        .from('user_bsk_balances')
+        .select('withdrawable_balance, total_earned_withdrawable')
+        .eq('user_id', sponsorId)
+        .maybeSingle();
+
+      if (existingBalance) {
+        await supabase
+          .from('user_bsk_balances')
+          .update({
+            withdrawable_balance: Number(existingBalance.withdrawable_balance) + commissionAmount,
+            total_earned_withdrawable: Number(existingBalance.total_earned_withdrawable) + commissionAmount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', sponsorId);
+      } else {
+        await supabase
+          .from('user_bsk_balances')
+          .insert({
+            user_id: sponsorId,
+            withdrawable_balance: commissionAmount,
+            total_earned_withdrawable: commissionAmount,
+            holding_balance: 0,
+            total_earned_holding: 0
+          });
+      }
+
+      // Insert into referral_commissions table
+      await supabase
+        .from('referral_commissions')
+        .insert({
+          earner_id: sponsorId,
+          payer_id,
+          level: levelNumber,
+          event_type: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
+          event_id: eventId,
+          bsk_amount: commissionAmount,
+          destination: destination,
+          status: 'settled',
+          earner_badge_at_event: currentBadge,
+          commission_percent: commissionRate
+        });
+
+      // Insert into bonus_ledger
+      await supabase.from('bonus_ledger').insert({
+        user_id: sponsorId,
+        type: is_upgrade ? 'referral_badge_upgrade' : 'referral_badge_purchase',
+        amount_bsk: commissionAmount,
+        meta_json: {
+          payer_id,
+          badge_name,
+          delta_amount,
+          level: levelNumber,
+          commission_percent: commissionRate,
+          is_upgrade
+        }
       });
 
-    if (commissionError) {
-      console.error('Error inserting commission record:', commissionError);
+      commissions.push({
+        sponsor_id: sponsorId,
+        level: levelNumber,
+        commission_bsk: commissionAmount,
+        rate: commissionRate
+      });
+
+      totalDistributed += commissionAmount;
+
+      console.log(`Level ${levelNumber} commission: ${commissionAmount} BSK to sponsor ${sponsorId}`);
     }
 
-    // Insert into bonus_ledger
-    await supabase.from('bonus_ledger').insert({
-      user_id: sponsorId,
-      type: is_upgrade ? 'referral_badge_upgrade' : 'referral_badge_purchase',
-      amount_bsk: commissionAmount,
-      meta_json: {
-        payer_id,
-        badge_name,
-        delta_amount,
-        commission_percent: 10,
-        is_upgrade
-      }
-    });
-
-    console.log(`Successfully paid ${commissionAmount} BSK commission to sponsor ${sponsorId}`);
+    console.log(`Successfully distributed ${totalDistributed} BSK across ${commissions.length} levels`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        sponsor_id: sponsorId,
-        commission_paid: commissionAmount,
+        total_commission_paid: totalDistributed,
+        levels_paid: commissions.length,
+        commissions: commissions,
         badge_name,
         is_upgrade,
         event_id: eventId

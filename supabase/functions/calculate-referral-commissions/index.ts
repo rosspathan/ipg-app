@@ -57,14 +57,14 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 2. Get referral tree for the earner
-    const { data: referralTree, error: treeError } = await supabase
+    // 2. Get referral tree for the earner (get all levels)
+    const { data: referralTreeRows, error: treeError } = await supabase
       .from('referral_tree')
-      .select('*')
+      .select('ancestor_id, level, path')
       .eq('user_id', earnerId)
-      .single()
+      .order('level', { ascending: true })
 
-    if (treeError || !referralTree || !referralTree.upline_path) {
+    if (treeError || !referralTreeRows || referralTreeRows.length === 0) {
       console.log('No referral tree found for user:', earnerId)
       return new Response(
         JSON.stringify({ 
@@ -76,8 +76,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 3. Parse upline path (array of sponsor user IDs from direct to highest level)
-    const uplinePath = referralTree.upline_path as string[]
+    // 3. Build upline path from tree rows
+    const uplinePath = referralTreeRows.map(row => row.ancestor_id)
     const maxLevels = Math.min(uplinePath.length, settings.max_levels || 50)
 
     console.log('Upline path:', uplinePath.slice(0, maxLevels))
@@ -105,17 +105,43 @@ Deno.serve(async (req) => {
       }
 
       // Credit commission to sponsor's holding balance
-      const { error: balanceError } = await supabase
+      const { data: existingBalance } = await supabase
         .from('user_bsk_balances')
-        .upsert({
-          user_id: sponsorId,
-          holding_balance: supabase.rpc('increment', { x: commissionAmount }),
-          total_earned_holding: supabase.rpc('increment', { x: commissionAmount })
-        }, { onConflict: 'user_id' })
+        .select('holding_balance, total_earned_holding')
+        .eq('user_id', sponsorId)
+        .maybeSingle()
 
-      if (balanceError) {
-        console.error(`Error crediting sponsor ${sponsorId} at level ${levelNumber}:`, balanceError)
-        continue
+      if (existingBalance) {
+        // Update existing balance
+        const { error: updateError } = await supabase
+          .from('user_bsk_balances')
+          .update({
+            holding_balance: Number(existingBalance.holding_balance) + commissionAmount,
+            total_earned_holding: Number(existingBalance.total_earned_holding) + commissionAmount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', sponsorId)
+
+        if (updateError) {
+          console.error(`Error updating balance for sponsor ${sponsorId}:`, updateError)
+          continue
+        }
+      } else {
+        // Create new balance record
+        const { error: insertError } = await supabase
+          .from('user_bsk_balances')
+          .insert({
+            user_id: sponsorId,
+            holding_balance: commissionAmount,
+            total_earned_holding: commissionAmount,
+            withdrawable_balance: 0,
+            total_earned_withdrawable: 0
+          })
+
+        if (insertError) {
+          console.error(`Error creating balance for sponsor ${sponsorId}:`, insertError)
+          continue
+        }
       }
 
       // Create referral ledger entry
