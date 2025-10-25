@@ -117,15 +117,42 @@ export function useHierarchicalReferralTree() {
     // Calculate stats for all root nodes
     rootNodes.forEach(node => calculateSubTreeStats(node));
 
-    // For display purposes, create a virtual root if we have multiple root nodes
-    const rootNode = rootNodes.length === 1 ? rootNodes[0] : null;
+// For display purposes, create a virtual root if we have multiple root nodes
+let rootNode: TreeNode | null;
+if (rootNodes.length === 1) {
+  rootNode = rootNodes[0];
+} else {
+  // Create a virtual root representing the viewer to attach all Level 1 referrals
+  const virtualRoot: TreeNode = {
+    id: 'virtual-root',
+    userId: 'virtual-root',
+    displayName: 'Your Team',
+    username: 'you',
+    badgeName: null,
+    level: 0,
+    generatedAmount: 0,
+    joinedAt: '',
+    isActive: true,
+    children: rootNodes,
+    directReferralsCount: 0,
+    subTreeSize: 0,
+    subTreeVIPCount: 0,
+    subTreeBSK: 0,
+    subTreeDepth: 0,
+    isExpanded: true,
+    parentId: null,
+  };
+  // Aggregate stats from children for the virtual root
+  calculateSubTreeStats(virtualRoot);
+  rootNode = virtualRoot;
+}
 
-    return {
-      rootNode,
-      flatMap: nodeMap,
-      maxDepth: downlineData.deepestLevel,
-      totalNodes: downlineData.members.length,
-    };
+return {
+  rootNode,
+  flatMap: nodeMap,
+  maxDepth: downlineData.deepestLevel,
+  totalNodes: downlineData.members.length,
+};
   }, [downlineData, expandedNodes]);
 
   const filteredTree = useMemo((): TreeNode | null => {
