@@ -7398,6 +7398,42 @@ export type Database = {
           },
         ]
       }
+      retroactive_commission_audit: {
+        Row: {
+          executed_by: string | null
+          execution_completed_at: string | null
+          execution_started_at: string
+          id: string
+          notes: string | null
+          status: string | null
+          total_commissions_paid: number | null
+          total_entries_created: number | null
+          total_sponsors_credited: number | null
+        }
+        Insert: {
+          executed_by?: string | null
+          execution_completed_at?: string | null
+          execution_started_at?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          total_commissions_paid?: number | null
+          total_entries_created?: number | null
+          total_sponsors_credited?: number | null
+        }
+        Update: {
+          executed_by?: string | null
+          execution_completed_at?: string | null
+          execution_started_at?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          total_commissions_paid?: number | null
+          total_entries_created?: number | null
+          total_sponsors_credited?: number | null
+        }
+        Relationships: []
+      }
       retroactive_processing_log: {
         Row: {
           batch_id: string
@@ -8519,7 +8555,9 @@ export type Database = {
           eligibility_policy: string | null
           enabled: boolean
           id: string
+          level_percentages: Json | null
           max_daily_direct_commission_bsk: number | null
+          max_levels: number | null
           min_referrer_badge_required: string | null
           payout_destination: string | null
           per_downline_event_cap: number | null
@@ -8543,7 +8581,9 @@ export type Database = {
           eligibility_policy?: string | null
           enabled?: boolean
           id?: string
+          level_percentages?: Json | null
           max_daily_direct_commission_bsk?: number | null
+          max_levels?: number | null
           min_referrer_badge_required?: string | null
           payout_destination?: string | null
           per_downline_event_cap?: number | null
@@ -8567,7 +8607,9 @@ export type Database = {
           eligibility_policy?: string | null
           enabled?: boolean
           id?: string
+          level_percentages?: Json | null
           max_daily_direct_commission_bsk?: number | null
+          max_levels?: number | null
           min_referrer_badge_required?: string | null
           payout_destination?: string | null
           per_downline_event_cap?: number | null
@@ -10361,6 +10403,18 @@ export type Database = {
           segment_index: number
         }[]
       }
+      calculate_retroactive_commissions: {
+        Args: never
+        Returns: {
+          actually_earned: number
+          badge_purchase_id: string
+          level: number
+          missing_commission: number
+          payer_id: string
+          should_have_earned: number
+          sponsor_id: string
+        }[]
+      }
       calculate_user_balance: {
         Args: {
           p_base_currency?: string
@@ -10474,6 +10528,10 @@ export type Database = {
         Returns: string
       }
       get_badge_tier_value: { Args: { badge_name: string }; Returns: number }
+      get_commission_rate_for_level: {
+        Args: { p_level: number; p_level_percentages: Json }
+        Returns: number
+      }
       get_current_bsk_rate: { Args: never; Returns: number }
       get_current_program_config: {
         Args: { p_module_key: string }
@@ -10597,6 +10655,14 @@ export type Database = {
           p_resource_type: string
         }
         Returns: undefined
+      }
+      pay_retroactive_commissions: {
+        Args: never
+        Returns: {
+          total_commissions_paid: number
+          total_entries_created: number
+          total_sponsors_credited: number
+        }[]
       }
       process_badge_qualification: {
         Args: {
