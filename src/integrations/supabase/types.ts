@@ -10408,7 +10408,7 @@ export type Database = {
         Returns: {
           actually_earned: number
           badge_purchase_id: string
-          level: number
+          level_num: number
           missing_commission: number
           payer_id: string
           should_have_earned: number
