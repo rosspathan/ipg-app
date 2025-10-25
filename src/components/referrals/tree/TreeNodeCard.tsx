@@ -92,9 +92,11 @@ export function TreeNodeCard({ node, onClick, isHighlighted }: TreeNodeCardProps
       </div>
 
       {/* Level badge */}
-      <div className="absolute -top-2 -left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
-        L{node.level}
-      </div>
+      {node.id !== 'virtual-root' && (
+        <div className="absolute -top-2 -left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+          L{node.level}
+        </div>
+      )}
     </div>
   );
 }

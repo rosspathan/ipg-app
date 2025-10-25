@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { TreeNode as TreeNodeType } from '@/hooks/useHierarchicalReferralTree';
 import { TreeNodeCard } from './TreeNodeCard';
-import { TreeConnector } from './TreeConnector';
+
 import { Button } from '@/components/ui/button';
 
 interface TreeNodeProps {
@@ -81,25 +81,19 @@ export function TreeNode({
 
       {/* Children */}
       {hasChildren && isExpanded && (
-        <div className="ml-10 mt-4 space-y-4 relative">
-          {/* Connector line */}
-          <TreeConnector childrenCount={node.children.length} />
-          
-          {/* Child nodes */}
-          {node.children.map((child, index) => (
-            <div key={child.id} className="relative">
-              {/* Horizontal connector */}
-              <div className="absolute left-0 top-6 w-6 h-px bg-border" />
-              
+        <div className="ml-10 mt-4 relative">
+          <div className="flex flex-wrap gap-4 items-start">
+            {node.children.map((child) => (
               <TreeNode
+                key={child.id}
                 node={child}
                 onToggle={onToggle}
                 onNodeClick={onNodeClick}
                 highlightedPath={highlightedPath}
                 depth={depth + 1}
               />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

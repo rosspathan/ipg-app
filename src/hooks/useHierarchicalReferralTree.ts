@@ -173,7 +173,7 @@ export function useHierarchicalReferralTree() {
     const virtualRoot: TreeNode = {
       id: 'virtual-root',
       userId: 'virtual-root',
-      displayName: 'Your Team',
+      displayName: 'You',
       username: 'you',
       badgeName: null,
       level: 0,
