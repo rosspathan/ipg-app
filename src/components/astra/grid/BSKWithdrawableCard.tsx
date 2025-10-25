@@ -14,7 +14,7 @@ export function BSKWithdrawableCard({ balance = 125000, className }: BSKWithdraw
   const [isPrivate, setIsPrivate] = useState(false)
   const navigate = useNavigate()
 
-  const fiatValue = (balance * 0.1).toFixed(2) // Mock conversion rate
+  const fiatValue = (balance * 1.0).toFixed(2) // 1 BSK = ₹1.00
 
   return (
     <div
@@ -58,7 +58,7 @@ export function BSKWithdrawableCard({ balance = 125000, className }: BSKWithdraw
         <div className="mb-5">
           <div className="flex items-baseline gap-2">
             <span className="font-heading font-bold text-3xl text-foreground tabular-nums">
-              {isPrivate ? "••••••" : `${(balance / 1000).toFixed(1)}K`}
+              {isPrivate ? "••••••" : balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             <span className="font-heading font-semibold text-base text-success">BSK</span>
           </div>
