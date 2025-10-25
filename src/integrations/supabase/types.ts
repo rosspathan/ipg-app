@@ -10385,6 +10385,16 @@ export type Database = {
         Args: { required_badge: string; sponsor_badge: string }
         Returns: boolean
       }
+      check_bsk_balance_reconciliation: {
+        Args: { p_user_id: string }
+        Returns: {
+          balance_type: string
+          database_balance: number
+          difference: number
+          is_reconciled: boolean
+          ledger_sum: number
+        }[]
+      }
       clone_program_module: {
         Args: {
           p_module_id: string
