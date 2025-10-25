@@ -58,14 +58,48 @@ Deno.serve(async (req) => {
     }
 
     // 2. Get referral tree for the earner (get all levels)
-    const { data: referralTreeRows, error: treeError } = await supabase
+    let { data: referralTreeRows, error: treeError } = await supabase
       .from('referral_tree')
       .select('ancestor_id, level, path')
       .eq('user_id', earnerId)
       .order('level', { ascending: true })
 
+    // If no tree found or tree is incomplete, try to build it automatically
     if (treeError || !referralTreeRows || referralTreeRows.length === 0) {
-      console.log('No referral tree found for user:', earnerId)
+      console.log('No referral tree found for earner, attempting to build...')
+      
+      // Check if user has a locked sponsor
+      const { data: referralLink } = await supabase
+        .from('referral_links_new')
+        .select('sponsor_id, locked_at')
+        .eq('user_id', earnerId)
+        .maybeSingle()
+
+      if (referralLink?.sponsor_id && referralLink?.locked_at) {
+        // Try to build the tree
+        console.log('Building referral tree for earner...')
+        const buildResponse = await supabase.functions.invoke('build-referral-tree', {
+          body: { user_id: earnerId }
+        })
+
+        if (buildResponse.error) {
+          console.error('Failed to auto-build tree:', buildResponse.error)
+        } else {
+          console.log('Tree built successfully, fetching again...')
+          // Fetch the newly built tree
+          const { data: newTree } = await supabase
+            .from('referral_tree')
+            .select('ancestor_id, level, path')
+            .eq('user_id', earnerId)
+            .order('level', { ascending: true })
+          
+          referralTreeRows = newTree
+        }
+      }
+    }
+
+    if (!referralTreeRows || referralTreeRows.length === 0) {
+      console.log('No sponsors found in referral tree after build attempt')
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -75,6 +109,8 @@ Deno.serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log(`Found ${referralTreeRows.length} levels in referral tree`)
 
     // 3. Build upline path from tree rows
     const uplinePath = referralTreeRows.map(row => row.ancestor_id)
