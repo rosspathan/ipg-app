@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useHierarchicalReferralTree } from '@/hooks/useHierarchicalReferralTree';
 import { TreeNode } from './TreeNode';
 import { TreeStats } from './TreeStats';
@@ -8,8 +8,13 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DownlineMemberProfile } from '@/components/referrals/DownlineMemberProfile';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Info, Network } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Info, Network, RefreshCw, AlertTriangle } from 'lucide-react';
 import { TreeNode as TreeNodeType } from '@/hooks/useHierarchicalReferralTree';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuthUser } from '@/hooks/useAuthUser';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export function ReferralTreeView() {
   const {
@@ -26,9 +31,43 @@ export function ReferralTreeView() {
     setFilterVIPOnly,
     filterActiveOnly,
     setFilterActiveOnly,
+    orphanCount,
   } = useHierarchicalReferralTree();
 
   const [selectedMember, setSelectedMember] = useState<TreeNodeType | null>(null);
+  const [isRebuilding, setIsRebuilding] = useState(false);
+  const { user } = useAuthUser();
+  const queryClient = useQueryClient();
+
+  // Auto-expand to Level 2 on mount
+  useEffect(() => {
+    if (treeData && !isLoading) {
+      expandToLevel(2);
+    }
+  }, []);
+
+  const handleRebuildTree = async () => {
+    if (!user?.id) return;
+    
+    setIsRebuilding(true);
+    try {
+      const { error } = await supabase.functions.invoke('build-referral-tree', {
+        body: { user_id: user.id }
+      });
+      
+      if (error) throw error;
+      
+      // Refetch the downline tree data
+      await queryClient.invalidateQueries({ queryKey: ['downline-tree', user.id] });
+      
+      toast.success('Tree rebuilt successfully!');
+    } catch (error) {
+      console.error('Error rebuilding tree:', error);
+      toast.error('Failed to rebuild tree. Please try again.');
+    } finally {
+      setIsRebuilding(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -58,6 +97,37 @@ export function ReferralTreeView() {
     <div className="space-y-6">
       {/* Stats Dashboard */}
       <TreeStats data={rawData} />
+
+      {/* Orphan Warning Banner */}
+      {orphanCount > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              Found {orphanCount} unlinked member{orphanCount > 1 ? 's' : ''} in your tree. 
+              These members' direct sponsors are missing from the dataset.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRebuildTree}
+              disabled={isRebuilding}
+            >
+              {isRebuilding ? (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-2 animate-spin" />
+                  Rebuilding...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-2" />
+                  Rebuild My Tree
+                </>
+              )}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Main Tree Card */}
       <Card>

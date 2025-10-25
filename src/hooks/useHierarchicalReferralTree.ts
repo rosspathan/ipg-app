@@ -30,10 +30,11 @@ export interface HierarchicalTreeData {
 
 export function useHierarchicalReferralTree() {
   const { data: downlineData, isLoading, error } = useDownlineTree();
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['virtual-root']));
   const [searchQuery, setSearchQuery] = useState('');
   const [filterVIPOnly, setFilterVIPOnly] = useState(false);
   const [filterActiveOnly, setFilterActiveOnly] = useState(false);
+  const [orphanCount, setOrphanCount] = useState(0);
 
   const hierarchicalData = useMemo((): HierarchicalTreeData => {
     if (!downlineData || downlineData.members.length === 0) {
@@ -66,7 +67,9 @@ export function useHierarchicalReferralTree() {
       });
     });
 
-    // Build parent-child relationships using actual sponsor data
+    // Build parent-child relationships using direct_sponsor_id
+    const orphans: TreeNode[] = [];
+    
     downlineData.members.forEach(member => {
       const node = nodeMap.get(member.user_id);
       if (!node) return;
@@ -78,11 +81,24 @@ export function useHierarchicalReferralTree() {
           // Parent exists in our downline tree
           parent.children.push(node);
           node.parentId = parent.userId;
+        } else if (member.level > 1) {
+          // Level > 1 but parent not found = orphan
+          orphans.push(node);
         }
-        // Note: If parent doesn't exist in nodeMap, it means this person's
-        // direct sponsor is outside our downline view (likely us, the viewer)
+        // If level === 1 and parent not in nodeMap, parent is the viewer (expected)
       }
     });
+
+    // Sort children by join date, then username for stable ordering
+    const sortChildren = (node: TreeNode) => {
+      node.children.sort((a, b) => {
+        const dateA = a.joinedAt || '';
+        const dateB = b.joinedAt || '';
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        return a.username.localeCompare(b.username);
+      });
+      node.children.forEach(sortChildren);
+    };
 
     // Calculate sub-tree statistics recursively
     const calculateSubTreeStats = (node: TreeNode): void => {
@@ -101,58 +117,88 @@ export function useHierarchicalReferralTree() {
       });
     };
 
-    // Find all root nodes (members whose sponsor is not in our downline)
-    // These are typically Level 1 members or members whose direct_sponsor_id is not in nodeMap
+    // Find root nodes: ONLY Level 1 members (direct referrals of viewer)
     const rootNodes: TreeNode[] = [];
     downlineData.members.forEach(member => {
       const node = nodeMap.get(member.user_id);
       if (!node) return;
       
-      // If this node has no parent set, it's a root node
-      if (node.parentId === null) {
+      // Strict rule: root nodes are ONLY level === 1
+      if (member.level === 1 && node.parentId === null) {
         rootNodes.push(node);
       }
     });
 
-    // Calculate stats for all root nodes
-    rootNodes.forEach(node => calculateSubTreeStats(node));
+    // Sort and calculate stats for all root nodes
+    rootNodes.forEach(node => {
+      sortChildren(node);
+      calculateSubTreeStats(node);
+    });
+    
+    // Track orphan count
+    setOrphanCount(orphans.length);
+    
+    // Log diagnostics for violations
+    if (orphans.length > 0) {
+      console.warn(`[Tree Health] Found ${orphans.length} orphaned nodes (level > 1 without parent in dataset)`);
+    }
 
-// For display purposes, create a virtual root if we have multiple root nodes
-let rootNode: TreeNode | null;
-if (rootNodes.length === 1) {
-  rootNode = rootNodes[0];
-} else {
-  // Create a virtual root representing the viewer to attach all Level 1 referrals
-  const virtualRoot: TreeNode = {
-    id: 'virtual-root',
-    userId: 'virtual-root',
-    displayName: 'Your Team',
-    username: 'you',
-    badgeName: null,
-    level: 0,
-    generatedAmount: 0,
-    joinedAt: '',
-    isActive: true,
-    children: rootNodes,
-    directReferralsCount: 0,
-    subTreeSize: 0,
-    subTreeVIPCount: 0,
-    subTreeBSK: 0,
-    subTreeDepth: 0,
-    isExpanded: true,
-    parentId: null,
-  };
-  // Aggregate stats from children for the virtual root
-  calculateSubTreeStats(virtualRoot);
-  rootNode = virtualRoot;
-}
+    // Create virtual root representing the viewer
+    // Add orphans as a special collapsed branch if any exist
+    const allChildren = [...rootNodes];
+    
+    if (orphans.length > 0) {
+      const orphanBranch: TreeNode = {
+        id: 'orphaned-members',
+        userId: 'orphaned-members',
+        displayName: `Unlinked members (${orphans.length})`,
+        username: 'orphans',
+        badgeName: null,
+        level: 0,
+        generatedAmount: 0,
+        joinedAt: '',
+        isActive: false,
+        children: orphans,
+        directReferralsCount: orphans.length,
+        subTreeSize: orphans.length,
+        subTreeVIPCount: 0,
+        subTreeBSK: 0,
+        subTreeDepth: 0,
+        isExpanded: false,
+        parentId: null,
+      };
+      allChildren.push(orphanBranch);
+    }
+    
+    const virtualRoot: TreeNode = {
+      id: 'virtual-root',
+      userId: 'virtual-root',
+      displayName: 'Your Team',
+      username: 'you',
+      badgeName: null,
+      level: 0,
+      generatedAmount: 0,
+      joinedAt: '',
+      isActive: true,
+      children: allChildren,
+      directReferralsCount: 0,
+      subTreeSize: 0,
+      subTreeVIPCount: 0,
+      subTreeBSK: 0,
+      subTreeDepth: 0,
+      isExpanded: true,
+      parentId: null,
+    };
+    
+    // Aggregate stats from children for the virtual root
+    calculateSubTreeStats(virtualRoot);
 
-return {
-  rootNode,
-  flatMap: nodeMap,
-  maxDepth: downlineData.deepestLevel,
-  totalNodes: downlineData.members.length,
-};
+    return {
+      rootNode: virtualRoot,
+      flatMap: nodeMap,
+      maxDepth: downlineData.deepestLevel,
+      totalNodes: downlineData.members.length,
+    };
   }, [downlineData, expandedNodes]);
 
   const filteredTree = useMemo((): TreeNode | null => {
@@ -231,5 +277,6 @@ return {
     filterActiveOnly,
     setFilterActiveOnly,
     expandedNodes,
+    orphanCount,
   };
 }

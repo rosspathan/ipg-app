@@ -7,7 +7,7 @@ import { LevelUnlockVisualizer } from "@/components/referrals/LevelUnlockVisuali
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Users, Network } from "lucide-react"
+import { Users, Network, RefreshCw } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
@@ -24,6 +24,8 @@ import { useQuery } from "@tanstack/react-query"
 import { ReferralCodeUsageTracker } from "@/components/referrals/ReferralCodeUsageTracker"
 import { ReferralHelpDialog } from "@/components/referrals/ReferralHelpDialog"
 import { VIPMilestoneExplainer } from "@/components/referrals/VIPMilestoneExplainer"
+import { toast } from "sonner"
+import { useQueryClient } from "@tanstack/react-query"
 
 export default function TeamTreeView() {
   const { user } = useAuthUser()
@@ -31,6 +33,8 @@ export default function TeamTreeView() {
   const [selectedLevel, setSelectedLevel] = useState(1)
   const [selectedMember, setSelectedMember] = useState<DownlineMember | null>(null)
   const [showUsageTracker, setShowUsageTracker] = useState(false)
+  const [isRebuilding, setIsRebuilding] = useState(false)
+  const queryClient = useQueryClient()
 
   // Fetch user's badge and unlock levels
   const { data: userBadgeData } = useQuery({
@@ -60,6 +64,29 @@ export default function TeamTreeView() {
     },
     enabled: !!user?.id
   })
+
+  const handleRebuildTree = async () => {
+    if (!user?.id) return;
+    
+    setIsRebuilding(true);
+    try {
+      const { error } = await supabase.functions.invoke('build-referral-tree', {
+        body: { user_id: user.id }
+      });
+      
+      if (error) throw error;
+      
+      // Refetch the downline tree data
+      await queryClient.invalidateQueries({ queryKey: ['downline-tree', user.id] });
+      
+      toast.success('Tree rebuilt successfully!');
+    } catch (error) {
+      console.error('Error rebuilding tree:', error);
+      toast.error('Failed to rebuild tree. Please try again.');
+    } finally {
+      setIsRebuilding(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -131,6 +158,24 @@ export default function TeamTreeView() {
               {showUsageTracker ? 'Hide' : 'Show'} Code Usage
             </Button>
           </div>
+          <Button 
+            variant="secondary" 
+            size="sm"
+            onClick={handleRebuildTree}
+            disabled={isRebuilding}
+          >
+            {isRebuilding ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Rebuilding...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Rebuild My Tree
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Referral Code Usage Tracker */}
