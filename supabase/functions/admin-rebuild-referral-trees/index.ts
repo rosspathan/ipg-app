@@ -5,11 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface RebuildRequest {
-  user_ids?: string[];  // Optional: specific users, otherwise all users with locked sponsors
-  force?: boolean;      // Force rebuild even if tree exists
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -17,19 +12,12 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Verify admin access
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
+    // Authenticate user
+    const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
@@ -49,136 +37,154 @@ Deno.serve(async (req) => {
     const isAdmin = roles?.some(r => r.role === 'admin');
     if (!isAdmin) {
       return new Response(
-        JSON.stringify({ error: 'Admin access required' }),
+        JSON.stringify({ error: 'Forbidden: Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { user_ids, force } = await req.json() as RebuildRequest;
+    const { force = false } = await req.json().catch(() => ({ force: false }));
 
-    console.log('🔧 Starting referral tree rebuild...', { user_ids, force });
+    console.log(`Starting referral tree rebuild (force=${force})`);
 
-    // Get users that need tree building
+    // Get all users with locked sponsors
     let query = supabase
       .from('referral_links_new')
       .select('user_id, sponsor_id')
       .not('sponsor_id', 'is', null)
       .not('locked_at', 'is', null);
 
-    if (user_ids && user_ids.length > 0) {
-      query = query.in('user_id', user_ids);
+    const { data: usersWithSponsors, error: fetchError } = await query;
+
+    if (fetchError) {
+      throw new Error(`Failed to fetch users: ${fetchError.message}`);
     }
 
-    const { data: referralLinks, error: linksError } = await query;
-
-    if (linksError) {
-      throw new Error(`Failed to fetch referral links: ${linksError.message}`);
-    }
-
-    if (!referralLinks || referralLinks.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'No users found with locked sponsors',
-          processed: 0 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`📋 Found ${referralLinks.length} users with locked sponsors`);
+    console.log(`Found ${usersWithSponsors?.length || 0} users with locked sponsors`);
 
     const results = [];
     let successCount = 0;
-    let skipCount = 0;
+    let skippedCount = 0;
     let errorCount = 0;
 
-    for (const link of referralLinks) {
+    for (const link of usersWithSponsors || []) {
       try {
         // Check if tree already exists
         if (!force) {
           const { data: existingTree } = await supabase
             .from('referral_tree')
-            .select('user_id')
+            .select('id')
             .eq('user_id', link.user_id)
-            .limit(1)
-            .maybeSingle();
+            .limit(1);
 
-          if (existingTree) {
-            console.log(`⏭️  Skipping ${link.user_id} - tree already exists`);
-            skipCount++;
+          if (existingTree && existingTree.length > 0) {
             results.push({
               user_id: link.user_id,
               status: 'skipped',
-              reason: 'tree_already_exists'
+              reason: 'Tree already exists'
             });
+            skippedCount++;
             continue;
           }
         } else {
-          // Delete existing tree if force rebuild
+          // Force mode: delete existing tree first
           await supabase
             .from('referral_tree')
             .delete()
             .eq('user_id', link.user_id);
         }
 
-        // Call build-referral-tree function
-        const { data: buildResult, error: buildError } = await supabase.functions.invoke(
-          'build-referral-tree',
-          {
-            body: { user_id: link.user_id }
-          }
-        );
+        // Build the tree by walking up the chain
+        const ancestors: Array<{ ancestor_id: string; level: number; direct_sponsor_id: string }> = [];
+        const path: string[] = [link.user_id];
+        
+        let currentSponsor = link.sponsor_id;
+        let currentLevel = 1;
+        let directSponsor = link.sponsor_id;
 
-        if (buildError) {
-          console.error(`❌ Failed to build tree for ${link.user_id}:`, buildError);
-          errorCount++;
-          results.push({
-            user_id: link.user_id,
-            status: 'error',
-            error: buildError.message
+        // Walk up the chain, max 50 levels
+        while (currentSponsor && currentLevel <= 50) {
+          ancestors.push({ 
+            ancestor_id: currentSponsor, 
+            level: currentLevel,
+            direct_sponsor_id: directSponsor
           });
-        } else {
-          console.log(`✅ Built tree for ${link.user_id}:`, buildResult);
-          successCount++;
-          results.push({
-            user_id: link.user_id,
-            status: 'success',
-            levels: buildResult.levels_built
-          });
+          path.push(currentSponsor);
+
+          // Get this sponsor's sponsor
+          const { data: nextLink } = await supabase
+            .from('referral_links_new')
+            .select('sponsor_id, locked_at')
+            .eq('user_id', currentSponsor)
+            .maybeSingle();
+
+          if (!nextLink?.sponsor_id || !nextLink?.locked_at) {
+            break; // Reached the top
+          }
+
+          currentSponsor = nextLink.sponsor_id;
+          currentLevel++;
         }
-      } catch (error) {
-        console.error(`❌ Error processing ${link.user_id}:`, error);
-        errorCount++;
+
+        // Insert all tree records in batch
+        if (ancestors.length > 0) {
+          const treeRecords = ancestors.map(({ ancestor_id, level, direct_sponsor_id }) => ({
+            user_id: link.user_id,
+            ancestor_id,
+            level,
+            path,
+            direct_sponsor_id
+          }));
+
+          const { error: insertError } = await supabase
+            .from('referral_tree')
+            .insert(treeRecords);
+
+          if (insertError) {
+            throw new Error(`Insert failed: ${insertError.message}`);
+          }
+        }
+
+        results.push({
+          user_id: link.user_id,
+          status: 'success',
+          levels: ancestors.length
+        });
+        successCount++;
+
+      } catch (error: any) {
+        console.error(`Error building tree for ${link.user_id}:`, error);
         results.push({
           user_id: link.user_id,
           status: 'error',
           error: error.message
         });
+        errorCount++;
       }
     }
 
-    console.log(`🎉 Rebuild complete: ${successCount} success, ${skipCount} skipped, ${errorCount} errors`);
+    const summary = {
+      total: usersWithSponsors?.length || 0,
+      success: successCount,
+      skipped: skippedCount,
+      errors: errorCount
+    };
+
+    console.log('Rebuild complete:', summary);
 
     return new Response(
       JSON.stringify({
         success: true,
-        summary: {
-          total: referralLinks.length,
-          success: successCount,
-          skipped: skipCount,
-          errors: errorCount
-        },
-        results
+        summary,
+        results: results.slice(0, 100) // Return first 100 for display
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
-    console.error('Error rebuilding referral trees:', error);
+  } catch (error: any) {
+    console.error('Error in referral tree rebuild:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
