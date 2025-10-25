@@ -97,13 +97,14 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
   };
 
 
-  // Filter crypto assets (exclude BSK and INR)
+  // Filter crypto assets (exclude BSK and INR, and show only non-zero balances)
   const filteredCryptoAssets = (cryptoBalances || [])
     .filter(asset => 
       asset.symbol !== 'BSK' && 
       asset.symbol !== 'INR' &&
       asset.network !== 'fiat' &&
-      asset.network !== 'FIAT'
+      asset.network !== 'FIAT' &&
+      asset.balance > 0  // Only show assets with balance
     )
     .filter(asset =>
       searchTerm ? 
