@@ -8,6 +8,8 @@ import { Loader2 } from 'lucide-react';
 
 export const ManualDepositVerification = () => {
   const [txHash, setTxHash] = useState('0xd4b174c531aef2aa108536a1df6ee87f1f50763dded5d84f20e1c99fbaa4a6ec');
+  const [assetSymbol, setAssetSymbol] = useState('IPG');
+  const [amount, setAmount] = useState('1.0');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -21,17 +23,30 @@ export const ManualDepositVerification = () => {
       return;
     }
 
+    if (!assetSymbol || parseFloat(amount) <= 0) {
+      toast({
+        title: 'Invalid Input',
+        description: 'Please enter a valid asset symbol and amount',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('verify-transaction', {
-        body: { txHash },
+      const { data, error } = await supabase.functions.invoke('manual-credit-deposit', {
+        body: { 
+          txHash,
+          assetSymbol,
+          amount: parseFloat(amount)
+        },
       });
 
       if (error) throw error;
 
       if (data.success) {
         toast({
-          title: 'Deposit Verified!',
+          title: 'Deposit Credited!',
           description: data.message || `Successfully credited ${data.amount} ${data.symbol}`,
         });
         setTxHash('');
@@ -39,16 +54,16 @@ export const ManualDepositVerification = () => {
         setTimeout(() => window.location.reload(), 1500);
       } else {
         toast({
-          title: 'Verification Failed',
-          description: data.message || 'Transaction could not be verified',
+          title: 'Credit Failed',
+          description: data.message || (data.alreadyExists ? 'This transaction is already credited' : 'Failed to credit deposit'),
           variant: 'destructive',
         });
       }
     } catch (error: any) {
-      console.error('Verification error:', error);
+      console.error('Credit error:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to verify transaction',
+        description: error.message || 'Failed to credit transaction',
         variant: 'destructive',
       });
     } finally {
@@ -58,25 +73,50 @@ export const ManualDepositVerification = () => {
 
   return (
     <Card className="p-6 mb-6">
-      <h3 className="text-lg font-semibold mb-4">Manual Deposit Verification</h3>
+      <h3 className="text-lg font-semibold mb-4">Manual Deposit Credit</h3>
       <p className="text-sm text-muted-foreground mb-4">
-        Enter your transaction hash to manually verify and credit your deposit
+        Manually credit your deposit by entering the transaction details
       </p>
-      <div className="flex gap-2">
-        <Input
-          placeholder="0x..."
-          value={txHash}
-          onChange={(e) => setTxHash(e.target.value)}
-          className="flex-1"
-        />
-        <Button onClick={handleVerify} disabled={loading}>
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Transaction Hash</label>
+          <Input
+            placeholder="0x..."
+            value={txHash}
+            onChange={(e) => setTxHash(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Asset Symbol</label>
+            <Input
+              placeholder="IPG"
+              value={assetSymbol}
+              onChange={(e) => setAssetSymbol(e.target.value.toUpperCase())}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Amount</label>
+            <Input
+              type="number"
+              step="0.000001"
+              placeholder="1.0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full"
+            />
+          </div>
+        </div>
+        <Button onClick={handleVerify} disabled={loading} className="w-full">
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Verifying...
+              Processing...
             </>
           ) : (
-            'Verify & Credit'
+            'Credit Deposit'
           )}
         </Button>
       </div>

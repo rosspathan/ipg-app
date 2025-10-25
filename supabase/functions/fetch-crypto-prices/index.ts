@@ -129,7 +129,17 @@ Deno.serve(async (req) => {
           priceChange24h = priceData.price_change_24h / quotePrice.current_price;
           high24h = priceData.high_24h / quotePrice.current_price;
           low24h = priceData.low_24h / quotePrice.current_price;
+        } else {
+          // Skip this market if we can't calculate the price
+          console.log(`Skipping ${symbol}: unable to convert to ${quoteSymbol}`);
+          continue;
         }
+      }
+
+      // Skip if price is null or 0
+      if (!currentPrice || currentPrice === 0) {
+        console.log(`Skipping ${symbol}: invalid price`);
+        continue;
       }
 
       priceUpdates.push({
