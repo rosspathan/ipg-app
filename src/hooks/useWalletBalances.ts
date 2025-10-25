@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuthUser } from '@/hooks/useAuthUser';
 
 export interface AssetBalance {
@@ -120,12 +121,44 @@ export function useWalletBalances() {
   useEffect(() => {
     fetchBalances();
 
+    // Set up real-time subscription for balance updates
+    let channel: RealtimeChannel | null = null;
+    
+    const setupRealtimeSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      channel = supabase
+        .channel('wallet_balances_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'wallet_balances',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Balance updated:', payload);
+            fetchBalances();
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtimeSubscription();
+
     // Poll for price updates every 30 seconds
     const interval = setInterval(() => {
       fetchBalances();
     }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+      clearInterval(interval);
+    };
   }, [user]);
 
   return {

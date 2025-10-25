@@ -1,10 +1,34 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.55.0"
+import { createWalletClient, createPublicClient, http, parseEther, formatUnits, parseUnits } from 'https://esm.sh/viem@2.34.0'
+import { privateKeyToAccount } from 'https://esm.sh/viem@2.34.0/accounts'
+import { bsc } from 'https://esm.sh/viem@2.34.0/chains'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+// ERC20 ABI for transfer function
+const ERC20_ABI = [
+  {
+    constant: false,
+    inputs: [
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' }
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    type: 'function'
+  },
+  {
+    constant: true,
+    inputs: [{ name: '_owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: 'balance', type: 'uint256' }],
+    type: 'function'
+  }
+] as const;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -36,26 +60,16 @@ serve(async (req) => {
     // Validate address format
     const trimmedAddress = to_address.trim();
     
-    // EVM networks (BEP20, Ethereum)
-    if (network === 'BEP20' || network === 'Ethereum') {
-      if (!trimmedAddress.startsWith('0x') || trimmedAddress.length !== 42) {
-        throw new Error('Invalid EVM address format');
-      }
-      if (!/^0x[a-fA-F0-9]{40}$/.test(trimmedAddress)) {
-        throw new Error('Invalid EVM address characters');
-      }
+    // Only support BEP20 for now
+    if (network !== 'BEP20') {
+      throw new Error('Only BEP20 withdrawals are supported currently');
     }
-    // Bitcoin
-    else if (network === 'Bitcoin') {
-      if (!/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(trimmedAddress)) {
-        throw new Error('Invalid Bitcoin address format');
-      }
+    
+    if (!trimmedAddress.startsWith('0x') || trimmedAddress.length !== 42) {
+      throw new Error('Invalid BEP20 address format');
     }
-    // Tron
-    else if (network === 'Tron') {
-      if (!trimmedAddress.startsWith('T') || trimmedAddress.length !== 34) {
-        throw new Error('Invalid Tron address format');
-      }
+    if (!/^0x[a-fA-F0-9]{40}$/.test(trimmedAddress)) {
+      throw new Error('Invalid BEP20 address characters');
     }
 
     // Check daily withdrawal limit (5 per day)
@@ -105,13 +119,15 @@ serve(async (req) => {
       throw new Error(`Maximum withdrawal is ${asset.max_withdraw_amount} ${asset_symbol}`);
     }
 
-    // Calculate fees
-    const withdrawFee = parseFloat(asset.withdraw_fee) || 0;
-    const netAmount = amountNum - withdrawFee;
+    // Get admin wallet private key
+    const privateKey = Deno.env.get('ADMIN_WALLET_PRIVATE_KEY');
+    const rpcUrl = Deno.env.get('BSC_RPC_URL') || 'https://bsc-dataseed.binance.org';
+    
+    if (!privateKey) {
+      throw new Error('Admin wallet not configured');
+    }
 
-    if (netAmount <= 0) throw new Error('Amount too small to cover fees');
-
-    // Lock the withdrawal amount (deduct from available, add to locked)
+    // Lock the withdrawal amount first
     const { error: lockError } = await supabase.rpc('lock_balance_for_order', {
       p_user_id: user.id,
       p_asset_symbol: asset_symbol,
@@ -120,63 +136,163 @@ serve(async (req) => {
 
     if (lockError) throw new Error('Failed to lock balance: ' + lockError.message);
 
-    // Simulate blockchain transaction (in production, use Web3 provider)
-    const tx_hash = `0x${crypto.randomUUID().replace(/-/g, '')}`;
-    
-    // Create withdrawal record with processing status (auto-process, no admin approval)
-    const { data: withdrawal, error: withdrawalError } = await supabase
-      .from('withdrawals')
-      .insert({
-        user_id: user.id,
-        asset_id: asset.id,
-        amount: amountNum,
-        fee: withdrawFee,
-        net_amount: netAmount,
-        to_address,
-        network,
-        status: 'processing',
-        tx_hash: tx_hash
-      })
-      .select()
-      .single();
+    console.log(`[process-withdrawal] Processing ${network} withdrawal: ${amountNum} ${asset_symbol} to ${trimmedAddress}`);
 
-    if (withdrawalError) {
+    // Initialize viem clients
+    const account = privateKeyToAccount(privateKey as `0x${string}`);
+    
+    const publicClient = createPublicClient({
+      chain: bsc,
+      transport: http(rpcUrl)
+    });
+
+    const walletClient = createWalletClient({
+      account,
+      chain: bsc,
+      transport: http(rpcUrl)
+    });
+
+    let tx_hash: string;
+    let gasUsed = 0;
+
+    try {
+      // Check if it's native BNB or ERC20 token
+      if (asset_symbol === 'BNB' || !asset.contract_address) {
+        // Native BNB transfer
+        const value = parseEther(amountNum.toString());
+        
+        // Estimate gas
+        const gasEstimate = await publicClient.estimateGas({
+          account: account.address,
+          to: trimmedAddress as `0x${string}`,
+          value
+        });
+
+        console.log(`[process-withdrawal] Gas estimate for BNB: ${gasEstimate}`);
+
+        // Send transaction
+        const hash = await walletClient.sendTransaction({
+          to: trimmedAddress as `0x${string}`,
+          value,
+          gas: gasEstimate
+        });
+
+        tx_hash = hash;
+        console.log(`[process-withdrawal] BNB transaction sent: ${tx_hash}`);
+
+      } else {
+        // ERC20 token transfer
+        const tokenAddress = asset.contract_address as `0x${string}`;
+        const decimals = asset.decimals || 18;
+        const value = parseUnits(amountNum.toString(), decimals);
+
+        // Check admin wallet token balance
+        const adminBalance = await publicClient.readContract({
+          address: tokenAddress,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [account.address]
+        }) as bigint;
+
+        const adminBalanceFormatted = formatUnits(adminBalance, decimals);
+        console.log(`[process-withdrawal] Admin wallet balance: ${adminBalanceFormatted} ${asset_symbol}`);
+
+        if (adminBalance < value) {
+          throw new Error(`Insufficient hot wallet balance. Available: ${adminBalanceFormatted} ${asset_symbol}`);
+        }
+
+        // Estimate gas for token transfer
+        const gasEstimate = await publicClient.estimateContractGas({
+          address: tokenAddress,
+          abi: ERC20_ABI,
+          functionName: 'transfer',
+          args: [trimmedAddress as `0x${string}`, value],
+          account: account.address
+        });
+
+        console.log(`[process-withdrawal] Gas estimate for ${asset_symbol}: ${gasEstimate}`);
+
+        // Execute token transfer
+        const hash = await walletClient.writeContract({
+          address: tokenAddress,
+          abi: ERC20_ABI,
+          functionName: 'transfer',
+          args: [trimmedAddress as `0x${string}`, value],
+          gas: gasEstimate
+        });
+
+        tx_hash = hash;
+        console.log(`[process-withdrawal] ${asset_symbol} transaction sent: ${tx_hash}`);
+      }
+
+      // Calculate actual fees (for now, use configured fee)
+      const withdrawFee = parseFloat(asset.withdraw_fee) || 0;
+      const netAmount = amountNum - withdrawFee;
+
+      if (netAmount <= 0) throw new Error('Amount too small to cover fees');
+
+      // Create withdrawal record with real tx_hash
+      const { data: withdrawal, error: withdrawalError } = await supabase
+        .from('withdrawals')
+        .insert({
+          user_id: user.id,
+          asset_id: asset.id,
+          amount: amountNum,
+          fee: withdrawFee,
+          net_amount: netAmount,
+          to_address: trimmedAddress,
+          network,
+          status: 'processing',
+          tx_hash: tx_hash
+        })
+        .select()
+        .single();
+
+      if (withdrawalError) {
+        console.error('[process-withdrawal] Failed to create withdrawal record:', withdrawalError);
+        // Rollback: unlock balance
+        await supabase.rpc('unlock_balance_for_order', {
+          p_user_id: user.id,
+          p_asset_symbol: asset_symbol,
+          p_amount: amountNum
+        });
+        throw withdrawalError;
+      }
+
+      console.log(`[process-withdrawal] Created withdrawal ${withdrawal.id} with real tx_hash: ${tx_hash}`);
+
+      // Trigger monitoring function to track confirmations
+      await supabase.functions.invoke('monitor-withdrawal', {
+        body: { withdrawal_id: withdrawal.id }
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          withdrawal_id: withdrawal.id,
+          status: 'processing',
+          amount: amountNum,
+          fee: withdrawFee,
+          net_amount: netAmount,
+          tx_hash: tx_hash,
+          message: 'Withdrawal submitted to blockchain. Awaiting confirmations...',
+          explorer_url: `https://bscscan.com/tx/${tx_hash}`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    } catch (blockchainError: any) {
+      console.error('[process-withdrawal] Blockchain error:', blockchainError);
+      
       // Rollback: unlock balance
       await supabase.rpc('unlock_balance_for_order', {
         p_user_id: user.id,
         p_asset_symbol: asset_symbol,
         p_amount: amountNum
       });
-      throw withdrawalError;
+
+      throw new Error(`Blockchain transaction failed: ${blockchainError.message}`);
     }
-
-    console.log(`[process-withdrawal] Created withdrawal ${withdrawal.id} for user ${user.id}: ${amountNum} ${asset_symbol}`);
-
-    // Auto-complete withdrawal (simulate blockchain confirmation)
-    // In production, this would be done by a background job after blockchain confirmation
-    setTimeout(async () => {
-      await supabase
-        .from('withdrawals')
-        .update({ 
-          status: 'completed',
-          approved_at: new Date().toISOString()
-        })
-        .eq('id', withdrawal.id);
-    }, 2000);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        withdrawal_id: withdrawal.id,
-        status: 'processing',
-        amount: amountNum,
-        fee: withdrawFee,
-        net_amount: netAmount,
-        tx_hash: tx_hash,
-        message: 'Withdrawal is being processed. Funds will be sent to blockchain shortly.'
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
 
   } catch (error: any) {
     console.error('[process-withdrawal] Error:', error);

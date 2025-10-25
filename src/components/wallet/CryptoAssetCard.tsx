@@ -53,7 +53,7 @@ export function CryptoAssetCard({
     setSyncing(true)
     try {
       const { data, error } = await supabase.functions.invoke('discover-deposits', {
-        body: { symbol, network: 'bsc', lookbackHours: 336 } // 14 days for better discovery
+        body: { symbol, network: 'bsc', lookbackHours: 336 }
       })
 
       if (error) throw error
@@ -61,14 +61,14 @@ export function CryptoAssetCard({
       if (data?.created > 0) {
         toast({
           title: "Sync Complete",
-          description: `Discovered ${data.created} new ${symbol} deposit(s) from blockchain`,
+          description: `Found ${data.created} new ${symbol} deposit(s)`,
         })
         onSync()
         refetch()
       } else {
         toast({
           title: "No New Deposits",
-          description: `Scanned blockchain - no new ${symbol} deposits found in last 14 days`,
+          description: "Blockchain scan complete",
         })
       }
     } catch (error) {

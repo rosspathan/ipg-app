@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react'
-import { createPublicClient, http, formatUnits, erc20Abi } from 'viem'
-import { bsc } from 'viem/chains'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -11,14 +9,60 @@ interface OnchainBalanceResult {
   refetch: () => void
 }
 
-// No fallbacks needed - all contract addresses are now in the database
+// Simple ERC20 balance checker using JSON-RPC
+async function getERC20Balance(contractAddress: string, walletAddress: string, decimals: number): Promise<string> {
+  const data = `0x70a08231000000000000000000000000${walletAddress.replace('0x', '')}`
+  
+  const response = await fetch('https://bsc-dataseed.binance.org', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_call',
+      params: [{
+        data,
+        to: contractAddress
+      }, 'latest'],
+      id: 1
+    })
+  })
+
+  const result = await response.json()
+  const balanceHex = result.result
+  const balanceWei = BigInt(balanceHex)
+  const divisor = BigInt(10 ** decimals)
+  const balance = Number(balanceWei) / Number(divisor)
+  
+  return balance.toFixed(decimals)
+}
+
+async function getBNBBalance(walletAddress: string): Promise<string> {
+  const response = await fetch('https://bsc-dataseed.binance.org', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_getBalance',
+      params: [walletAddress, 'latest'],
+      id: 1
+    })
+  })
+
+  const result = await response.json()
+  const balanceHex = result.result
+  const balanceWei = BigInt(balanceHex)
+  const divisor = BigInt(10 ** 18)
+  const balance = Number(balanceWei) / Number(divisor)
+  
+  return balance.toFixed(18)
+}
 
 export function useErc20OnchainBalance(
   symbol: string,
   network: 'bsc' = 'bsc'
 ): OnchainBalanceResult {
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
-  const [assetInfo, setAssetInfo] = useState<{ contract: `0x${string}`; decimals: number } | null>(null)
+  const [assetInfo, setAssetInfo] = useState<{ contract: string; decimals: number; isNative?: boolean } | null>(null)
 
   // Fetch user's wallet address
   useEffect(() => {
@@ -46,7 +90,13 @@ export function useErc20OnchainBalance(
   // Fetch asset info (contract address and decimals)
   useEffect(() => {
     const fetchAssetInfo = async () => {
-      // Try to find asset in database - try different network variations
+      // Check if it's native BNB
+      if (symbol === 'BNB') {
+        setAssetInfo({ contract: '', decimals: 18, isNative: true })
+        return
+      }
+
+      // Try to find asset in database
       let { data: asset } = await supabase
         .from('assets')
         .select('contract_address, decimals')
@@ -71,8 +121,9 @@ export function useErc20OnchainBalance(
 
       if (asset?.contract_address) {
         setAssetInfo({
-          contract: asset.contract_address as `0x${string}`,
-          decimals: asset.decimals || 18
+          contract: asset.contract_address,
+          decimals: asset.decimals || 18,
+          isNative: false
         })
       }
     }
@@ -90,17 +141,9 @@ export function useErc20OnchainBalance(
         return '0'
       }
 
-      const publicClient = createPublicClient({
-        chain: bsc,
-        transport: http('https://bsc-dataseed.binance.org')
-      })
-
       // Handle native BNB balance
-      if ('isNative' in assetInfo && assetInfo.isNative) {
-        const balance = await publicClient.getBalance({
-          address: walletAddress as `0x${string}`
-        })
-        return formatUnits(balance, assetInfo.decimals)
+      if (assetInfo.isNative) {
+        return await getBNBBalance(walletAddress)
       }
 
       // Handle ERC20 tokens
@@ -108,14 +151,7 @@ export function useErc20OnchainBalance(
         return '0'
       }
 
-      const balance = await publicClient.readContract({
-        address: assetInfo.contract,
-        abi: erc20Abi,
-        functionName: 'balanceOf',
-        args: [walletAddress as `0x${string}`]
-      })
-
-      return formatUnits(balance, assetInfo.decimals)
+      return await getERC20Balance(assetInfo.contract, walletAddress, assetInfo.decimals)
     },
     enabled: !!walletAddress && !!assetInfo,
     refetchInterval: 30000,

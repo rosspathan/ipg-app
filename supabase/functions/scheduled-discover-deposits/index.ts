@@ -26,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[scheduled-discover-deposits] Starting automated deposit discovery...')
+    console.log('[scheduled-discover-deposits] Starting automated deposit discovery (30s polling)...')
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -79,8 +79,8 @@ serve(async (req) => {
         if (!evmAddress) continue
 
         try {
-          // Calculate lookback timestamp (14 days)
-          const lookbackHours = 14 * 24 // 14 days
+          // Reduced lookback period for faster, more frequent checks (last 24 hours)
+          const lookbackHours = 24
           const startTimestamp = Math.floor(Date.now() / 1000) - (lookbackHours * 3600)
 
           // Query BscScan for token transfers TO this address
@@ -99,94 +99,94 @@ serve(async (req) => {
             parseInt(tx.timeStamp) >= startTimestamp
           )
 
-          totalDiscovered += inboundTransfers.length
+          console.log(`[scheduled-discover-deposits] Found ${inboundTransfers.length} recent ${asset.symbol} transfers for user ${profile.user_id}`)
 
-          // Upsert deposits (ignore duplicates)
           for (const transfer of inboundTransfers) {
-            const amount = parseFloat(transfer.value) / Math.pow(10, parseInt(transfer.tokenDecimal))
+            totalDiscovered++
 
-            // Check if deposit already exists
-            const { data: existing } = await supabaseClient
+            // Check if this deposit already exists
+            const { data: existingDeposit } = await supabaseClient
               .from('deposits')
               .select('id')
-              .eq('user_id', profile.user_id)
               .eq('tx_hash', transfer.hash)
-              .single()
+              .eq('user_id', profile.user_id)
+              .maybeSingle()
 
-            if (existing) {
+            if (existingDeposit) {
               console.log(`[scheduled-discover-deposits] Deposit already exists: ${transfer.hash}`)
               continue
             }
 
-            // Create new deposit record
-            const { data: newDeposit, error: insertError } = await supabaseClient
+            // Calculate amount
+            const decimals = parseInt(transfer.tokenDecimal) || asset.decimals || 18
+            const amount = parseFloat(transfer.value) / Math.pow(10, decimals)
+
+            // Create deposit record (pending status)
+            const { data: newDeposit, error: depositError } = await supabaseClient
               .from('deposits')
               .insert({
                 user_id: profile.user_id,
                 asset_id: asset.id,
-                network: 'bsc',
-                amount: amount.toString(),
-                tx_hash: transfer.hash,
+                amount,
                 from_address: transfer.from,
-                to_address: transfer.to,
+                tx_hash: transfer.hash,
+                network: 'BEP20',
                 status: 'pending',
-                required_confirmations: 12,
-                confirmations: 0,
-                detected_at: new Date(parseInt(transfer.timeStamp) * 1000).toISOString()
+                confirmations: parseInt(transfer.confirmations) || 0,
+                required_confirmations: 12
               })
               .select()
               .single()
 
-            if (insertError) {
-              console.error(`[scheduled-discover-deposits] Failed to insert deposit:`, insertError)
+            if (depositError) {
+              console.error(`[scheduled-discover-deposits] Failed to create deposit:`, depositError)
               continue
             }
 
             totalCreated++
-            console.log(`[scheduled-discover-deposits] Created deposit: ${transfer.hash} - ${amount} ${asset.symbol}`)
+            console.log(`[scheduled-discover-deposits] Created deposit ${newDeposit.id}: ${amount} ${asset.symbol}`)
 
-            // Immediately call monitor-deposit to process this new deposit
-            try {
-              const monitorUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/monitor-deposit`
-              await fetch(monitorUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-                },
-                body: JSON.stringify({ deposit_id: newDeposit.id })
-              })
-            } catch (monitorError) {
-              console.error(`[scheduled-discover-deposits] Failed to call monitor-deposit:`, monitorError)
-            }
+            // Trigger monitor-deposit function to verify and credit
+            await supabaseClient.functions.invoke('monitor-deposit', {
+              body: { depositId: newDeposit.id }
+            })
+
+            discoveryResults.push({
+              user_id: profile.user_id,
+              asset: asset.symbol,
+              amount,
+              tx_hash: transfer.hash,
+              status: 'pending'
+            })
           }
-        } catch (error) {
-          console.error(`[scheduled-discover-deposits] Error processing ${asset.symbol} for user ${profile.user_id}:`, error)
+
+        } catch (error: any) {
+          console.error(`[scheduled-discover-deposits] Error processing ${asset.symbol} for user ${profile.user_id}:`, error.message)
+          continue
         }
       }
     }
 
-    console.log(`[scheduled-discover-deposits] Complete: discovered ${totalDiscovered}, created ${totalCreated} new deposits`)
+    const summary = {
+      success: true,
+      total_discovered: totalDiscovered,
+      total_created: totalCreated,
+      results: discoveryResults,
+      message: `Discovered ${totalDiscovered} transactions, created ${totalCreated} new deposits`
+    }
+
+    console.log(`[scheduled-discover-deposits] Summary:`, summary)
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        timestamp: new Date().toISOString(),
-        totalDiscovered,
-        totalCreated,
-        assetsScanned: assets?.length || 0,
-        profilesScanned: profiles?.length || 0
-      }),
+      JSON.stringify(summary),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+
+  } catch (error: any) {
     console.error('[scheduled-discover-deposits] Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
 })
