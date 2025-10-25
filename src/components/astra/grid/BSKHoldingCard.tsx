@@ -9,7 +9,7 @@ interface BSKHoldingCardProps {
   className?: string
 }
 
-export function BSKHoldingCard({ balance = 89500, className }: BSKHoldingCardProps) {
+export function BSKHoldingCard({ balance = 0, className }: BSKHoldingCardProps) {
   const [isPrivate, setIsPrivate] = useState(false)
 
   const fiatValue = (balance * 1.0).toFixed(2) // 1 BSK = ₹1.00

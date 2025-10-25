@@ -10,7 +10,7 @@ interface BSKWithdrawableCardProps {
   className?: string
 }
 
-export function BSKWithdrawableCard({ balance = 125000, className }: BSKWithdrawableCardProps) {
+export function BSKWithdrawableCard({ balance = 0, className }: BSKWithdrawableCardProps) {
   const [isPrivate, setIsPrivate] = useState(false)
   const navigate = useNavigate()
 
