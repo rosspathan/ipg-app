@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { CryptoAssetCard } from "@/components/wallet/CryptoAssetCard"
 import { PendingDepositsAlert } from "@/components/wallet/PendingDepositsAlert"
+import { ManualDepositVerification } from "@/components/wallet/ManualDepositVerification"
 
 interface BalanceClusterProps {
   className?: string
@@ -156,6 +157,9 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
           <>
             {/* Pending Deposits Alert */}
             <PendingDepositsAlert />
+
+            {/* Manual Deposit Verification */}
+            <ManualDepositVerification />
 
             {/* Search */}
             <div className="relative mb-3">
