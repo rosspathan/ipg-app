@@ -285,9 +285,19 @@ const AdminReferralsNova = () => {
             <p className="text-sm text-muted-foreground">Manage BSK referral rewards and settings</p>
           </div>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          {settings.enabled ? 'Active' : 'Inactive'}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="default"
+            onClick={() => navigate('/app/admin/retroactive-commission-fix')}
+            className="bg-gradient-primary"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Fix Commissions
+          </Button>
+          <Badge variant="secondary" className="text-xs">
+            {settings.enabled ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
       </div>
 
       {/* Stats Cards */}
