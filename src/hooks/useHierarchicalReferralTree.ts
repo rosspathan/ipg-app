@@ -66,26 +66,21 @@ export function useHierarchicalReferralTree() {
       });
     });
 
-    // Build parent-child relationships
-    // Sort by level to ensure parents are processed first
-    const sortedMembers = [...downlineData.members].sort((a, b) => a.level - b.level);
-    
-    sortedMembers.forEach(member => {
+    // Build parent-child relationships using actual sponsor data
+    downlineData.members.forEach(member => {
       const node = nodeMap.get(member.user_id);
       if (!node) return;
 
-      // Find parent (member at level - 1 who referred this user)
-      if (member.level > 1) {
-        const potentialParents = sortedMembers.filter(m => m.level === member.level - 1);
-        // In the data structure, we need to infer relationships
-        // For now, we'll build a linear chain based on level ordering
-        if (potentialParents.length > 0) {
-          const parent = nodeMap.get(potentialParents[potentialParents.length - 1].user_id);
-          if (parent) {
-            parent.children.push(node);
-            node.parentId = parent.userId;
-          }
+      // Use direct_sponsor_id to find the actual parent in the tree
+      if (member.direct_sponsor_id) {
+        const parent = nodeMap.get(member.direct_sponsor_id);
+        if (parent) {
+          // Parent exists in our downline tree
+          parent.children.push(node);
+          node.parentId = parent.userId;
         }
+        // Note: If parent doesn't exist in nodeMap, it means this person's
+        // direct sponsor is outside our downline view (likely us, the viewer)
       }
     });
 
@@ -106,13 +101,24 @@ export function useHierarchicalReferralTree() {
       });
     };
 
-    // Find root (level 1 member)
-    const rootMember = downlineData.members.find(m => m.level === 1);
-    const rootNode = rootMember ? nodeMap.get(rootMember.user_id) : null;
+    // Find all root nodes (members whose sponsor is not in our downline)
+    // These are typically Level 1 members or members whose direct_sponsor_id is not in nodeMap
+    const rootNodes: TreeNode[] = [];
+    downlineData.members.forEach(member => {
+      const node = nodeMap.get(member.user_id);
+      if (!node) return;
+      
+      // If this node has no parent set, it's a root node
+      if (node.parentId === null) {
+        rootNodes.push(node);
+      }
+    });
 
-    if (rootNode) {
-      calculateSubTreeStats(rootNode);
-    }
+    // Calculate stats for all root nodes
+    rootNodes.forEach(node => calculateSubTreeStats(node));
+
+    // For display purposes, create a virtual root if we have multiple root nodes
+    const rootNode = rootNodes.length === 1 ? rootNodes[0] : null;
 
     return {
       rootNode,

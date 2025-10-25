@@ -7171,6 +7171,7 @@ export type Database = {
         Row: {
           ancestor_id: string
           created_at: string | null
+          direct_sponsor_id: string | null
           id: string
           level: number
           path: string[]
@@ -7179,6 +7180,7 @@ export type Database = {
         Insert: {
           ancestor_id: string
           created_at?: string | null
+          direct_sponsor_id?: string | null
           id?: string
           level: number
           path: string[]
@@ -7187,6 +7189,7 @@ export type Database = {
         Update: {
           ancestor_id?: string
           created_at?: string | null
+          direct_sponsor_id?: string | null
           id?: string
           level?: number
           path?: string[]

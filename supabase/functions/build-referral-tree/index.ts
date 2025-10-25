@@ -44,10 +44,15 @@ Deno.serve(async (req) => {
     
     let currentSponsor = referralLink.sponsor_id;
     let currentLevel = 1;
+    let previousSponsor = referralLink.sponsor_id; // Track direct sponsor
 
     // Walk up the chain, max 50 levels
     while (currentSponsor && currentLevel <= 50) {
-      ancestors.push({ ancestor_id: currentSponsor, level: currentLevel });
+      ancestors.push({ 
+        ancestor_id: currentSponsor, 
+        level: currentLevel,
+        direct_sponsor_id: currentLevel === 1 ? currentSponsor : previousSponsor
+      });
       path.push(currentSponsor);
 
       // Get this sponsor's sponsor
@@ -61,6 +66,7 @@ Deno.serve(async (req) => {
         break; // Reached the top of the tree
       }
 
+      previousSponsor = currentSponsor; // Keep track for direct_sponsor_id
       currentSponsor = nextLink.sponsor_id;
       currentLevel++;
     }
@@ -69,11 +75,12 @@ Deno.serve(async (req) => {
 
     // Insert all tree records in batch
     if (ancestors.length > 0) {
-      const treeRecords = ancestors.map(({ ancestor_id, level }) => ({
+      const treeRecords = ancestors.map(({ ancestor_id, level, direct_sponsor_id }) => ({
         user_id,
         ancestor_id,
         level,
-        path
+        path,
+        direct_sponsor_id
       }));
 
       const { error: insertError } = await supabase

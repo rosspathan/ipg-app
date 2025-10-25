@@ -12,6 +12,7 @@ export interface DownlineMember {
   badge_date: string | null;
   join_date: string | null;
   total_generated: number;
+  direct_sponsor_id: string | null;
 }
 
 export interface LevelStats {
@@ -41,7 +42,7 @@ export function useDownlineTree() {
       // Fetch all descendants from referral_tree
       const { data: treeData, error: treeError } = await supabase
         .from('referral_tree')
-        .select('level, user_id')
+        .select('level, user_id, direct_sponsor_id')
         .eq('ancestor_id', user.id)
         .order('level', { ascending: true });
 
@@ -119,6 +120,7 @@ export function useDownlineTree() {
           badge_date: badge?.purchased_at || null,
           join_date: link?.locked_at || null,
           total_generated: commissionMap.get(t.user_id) || 0,
+          direct_sponsor_id: t.direct_sponsor_id || null,
         };
       });
 
