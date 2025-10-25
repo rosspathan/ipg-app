@@ -49,18 +49,46 @@ serve(async (req: Request) => {
     // Check if transaction already exists
     const { data: existing } = await supabaseClient
       .from('deposits')
-      .select('id, amount, status, assets(symbol)')
+      .select('id, amount, status, asset_id')
       .eq('tx_hash', txHash.toLowerCase())
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (existing) {
-      console.log(`[manual-credit] Transaction already exists: ${existing.id}`);
+      console.log(`[manual-credit] Transaction already exists: ${existing.id}, ensuring wallet balance...`);
+      
+      // Ensure wallet balance exists for this deposit
+      const { data: existingBalance } = await supabaseClient
+        .from('wallet_balances')
+        .select('available')
+        .eq('user_id', user.id)
+        .eq('asset_id', existing.asset_id)
+        .maybeSingle();
+
+      if (!existingBalance) {
+        // Create missing wallet balance
+        const { error: createError } = await supabaseClient
+          .from('wallet_balances')
+          .insert({
+            user_id: user.id,
+            asset_id: existing.asset_id,
+            available: existing.amount,
+            locked: 0
+          });
+
+        if (createError) {
+          console.error('[manual-credit] Failed to create wallet balance:', createError);
+          throw new Error('Failed to create wallet balance');
+        }
+
+        console.log(`[manual-credit] Created missing wallet balance for deposit ${existing.id}`);
+      }
+
       return new Response(JSON.stringify({
-        success: false,
+        success: true,
         alreadyExists: true,
         deposit: existing,
-        message: `This transaction is already credited: ${existing.amount} ${existing.assets?.symbol}`
+        message: `Deposit previously recorded; wallet balance ensured.`
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
@@ -107,17 +135,16 @@ serve(async (req: Request) => {
     // Credit wallet balance directly
     const { data: existingBalance } = await supabaseClient
       .from('wallet_balances')
-      .select('total, available')
+      .select('available')
       .eq('user_id', user.id)
       .eq('asset_id', asset.id)
       .maybeSingle();
 
     if (existingBalance) {
-      // Update existing balance
+      // Update existing balance (only update available, total is generated)
       const { error: updateError } = await supabaseClient
         .from('wallet_balances')
         .update({
-          total: existingBalance.total + amount,
           available: existingBalance.available + amount,
           updated_at: new Date().toISOString()
         })
@@ -129,15 +156,14 @@ serve(async (req: Request) => {
         throw new Error('Failed to update wallet balance');
       }
 
-      console.log(`[manual-credit] Updated balance: ${existingBalance.total} -> ${existingBalance.total + amount} ${asset.symbol}`);
+      console.log(`[manual-credit] Updated available balance: ${existingBalance.available} -> ${existingBalance.available + amount} ${asset.symbol}`);
     } else {
-      // Create new balance entry
+      // Create new balance entry (do not set total, it's generated)
       const { error: createError } = await supabaseClient
         .from('wallet_balances')
         .insert({
           user_id: user.id,
           asset_id: asset.id,
-          total: amount,
           available: amount,
           locked: 0
         });
