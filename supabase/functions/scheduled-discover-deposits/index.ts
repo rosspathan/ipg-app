@@ -42,7 +42,7 @@ serve(async (req) => {
     const { data: assets, error: assetsError } = await supabaseClient
       .from('assets')
       .select('id, symbol, contract_address, decimals, network')
-      .eq('network', 'bsc')
+      .eq('network', 'BEP20')
       .eq('is_active', true)
       .not('contract_address', 'is', null)
 
@@ -79,8 +79,8 @@ serve(async (req) => {
         if (!evmAddress) continue
 
         try {
-          // Reduced lookback period for faster, more frequent checks (last 24 hours)
-          const lookbackHours = 24
+          // Extended lookback period to catch older transactions
+          const lookbackHours = 720 // 30 days
           const startTimestamp = Math.floor(Date.now() / 1000) - (lookbackHours * 3600)
 
           // Query BscScan for token transfers TO this address
