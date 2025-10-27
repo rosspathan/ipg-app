@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Users, GitBranch, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { RebuildAllTreesTool } from "@/components/admin/RebuildAllTreesTool";
+import { ReferralBackfillTool } from "@/components/admin/ReferralBackfillTool";
 
 interface TreeHealthStats {
   totalUsersWithSponsors: number;
@@ -213,6 +214,9 @@ export default function TreeHealthDashboard() {
             </p>
           </CardContent>
         </Card>
+
+        {/* Backfill Tool */}
+        <ReferralBackfillTool />
 
         {/* Rebuild Tool */}
         <RebuildAllTreesTool />
