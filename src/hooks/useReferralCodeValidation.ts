@@ -19,7 +19,7 @@ export function useReferralCodeValidation(code: string): ValidationResult {
     error: null,
   });
 
-  const [debouncedCode] = useDebounce(code.trim().toUpperCase(), 500);
+  const [debouncedCode] = useDebounce(code.trim(), 500);
 
   useEffect(() => {
     if (!debouncedCode) {
@@ -37,12 +37,30 @@ export function useReferralCodeValidation(code: string): ValidationResult {
       setResult(prev => ({ ...prev, loading: true, error: null }));
 
       try {
-        // Check if code exists in profiles table
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('user_id, username, display_name')
-          .eq('referral_code', debouncedCode)
-          .maybeSingle();
+        // Check if it's a UUID (direct user_id reference)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        let data = null;
+        let error = null;
+
+        if (uuidRegex.test(debouncedCode)) {
+          // Direct UUID lookup
+          const result = await supabase
+            .from('profiles')
+            .select('user_id, username, display_name')
+            .eq('user_id', debouncedCode)
+            .maybeSingle();
+          data = result.data;
+          error = result.error;
+        } else {
+          // Legacy short code lookup
+          const result = await supabase
+            .from('profiles')
+            .select('user_id, username, display_name')
+            .eq('referral_code', debouncedCode.toUpperCase())
+            .maybeSingle();
+          data = result.data;
+          error = result.error;
+        }
 
         if (error) throw error;
 

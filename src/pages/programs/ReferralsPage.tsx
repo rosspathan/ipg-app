@@ -6,6 +6,7 @@ import { Users, Award, Crown, Share2, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useReferralCode } from "@/hooks/useReferralCode"
+import { useDirectReferralCount } from "@/hooks/useDirectReferralCount"
 import { copyToClipboard } from "@/utils/clipboard"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -13,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function ReferralsPage() {
   const { toast } = useToast();
   const { referralCode, referralLink, stats, loading } = useReferralCode();
+  const { data: directReferralCount = 0 } = useDirectReferralCount();
 
   const handleCopyCode = async () => {
     const success = await copyToClipboard(referralCode);
@@ -50,38 +52,38 @@ export default function ReferralsPage() {
     {
       id: "silver",
       title: "Silver",
-      subtitle: `${stats.totalReferrals}/5 referrals`,
+      subtitle: `${directReferralCount}/5 referrals`,
       icon: <Award className="h-5 w-5" />,
-      progress: { value: Math.min((stats.totalReferrals / 5) * 100, 100), label: `${stats.totalReferrals}/5` },
+      progress: { value: Math.min((directReferralCount / 5) * 100, 100), label: `${directReferralCount}/5` },
       footer: "Unlock 2% bonus",
       onPress: () => console.log("Silver")
     },
     {
       id: "gold",
       title: "Gold",
-      subtitle: `${stats.totalReferrals}/10 referrals`,
+      subtitle: `${directReferralCount}/10 referrals`,
       icon: <Award className="h-5 w-5" />,
-      badge: stats.totalReferrals >= 5 ? "HOT" as const : undefined,
-      progress: { value: Math.min((stats.totalReferrals / 10) * 100, 100), label: `${stats.totalReferrals}/10` },
+      badge: directReferralCount >= 5 ? "HOT" as const : undefined,
+      progress: { value: Math.min((directReferralCount / 10) * 100, 100), label: `${directReferralCount}/10` },
       footer: "Unlock 5% bonus",
       onPress: () => console.log("Gold")
     },
     {
       id: "platinum",
       title: "Platinum",
-      subtitle: `${stats.totalReferrals}/25 referrals`,
+      subtitle: `${directReferralCount}/25 referrals`,
       icon: <Crown className="h-5 w-5" />,
-      progress: { value: Math.min((stats.totalReferrals / 25) * 100, 100), label: `${stats.totalReferrals}/25` },
+      progress: { value: Math.min((directReferralCount / 25) * 100, 100), label: `${directReferralCount}/25` },
       footer: "Unlock 10% bonus",
       onPress: () => console.log("Platinum")
     },
     {
       id: "diamond",
       title: "Diamond",
-      subtitle: `${stats.totalReferrals}/50 referrals`,
+      subtitle: `${directReferralCount}/50 referrals`,
       icon: <Crown className="h-5 w-5" />,
-      badge: stats.totalReferrals >= 25 ? "NEW" as const : undefined,
-      progress: { value: Math.min((stats.totalReferrals / 50) * 100, 100), label: `${stats.totalReferrals}/50` },
+      badge: directReferralCount >= 25 ? "NEW" as const : undefined,
+      progress: { value: Math.min((directReferralCount / 50) * 100, 100), label: `${directReferralCount}/50` },
       footer: "Unlock 20% bonus",
       onPress: () => console.log("Diamond")
     }
@@ -134,8 +136,8 @@ export default function ReferralsPage() {
         <div className="grid grid-cols-3 gap-3">
           <Card>
             <CardContent className="pt-4 text-center">
-              <p className="text-2xl font-bold">{loading ? <Skeleton className="h-8 w-12 mx-auto" /> : stats.totalReferrals}</p>
-              <p className="text-xs text-muted-foreground mt-1">Total</p>
+              <p className="text-2xl font-bold">{loading ? <Skeleton className="h-8 w-12 mx-auto" /> : directReferralCount}</p>
+              <p className="text-xs text-muted-foreground mt-1">Direct</p>
             </CardContent>
           </Card>
           <Card>

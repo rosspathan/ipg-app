@@ -54,12 +54,55 @@ export function clearPendingReferral(): void {
  * Called after email verification (default)
  */
 export async function captureReferralAfterEmailVerify(userId: string): Promise<void> {
-  const pending = getPendingReferral();
-  if (!pending) return;
-
-  console.log('📋 Capturing referral - sponsorID:', pending.sponsorId);
-
   try {
+    console.log('[ReferralCapture] Starting capture for userId:', userId);
+    
+    // Get pending referral from URL params if just landed
+    const urlParams = new URLSearchParams(window.location.search);
+    const refParam = urlParams.get('ref');
+    const codeParam = urlParams.get('code');
+    
+    let sponsorId: string | null = null;
+
+    // Priority 1: UUID ref parameter (unambiguous)
+    if (refParam) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(refParam)) {
+        sponsorId = refParam;
+        console.log('[ReferralCapture] Using UUID ref:', sponsorId);
+      }
+    }
+
+    // Priority 2: Legacy code parameter (lookup required)
+    if (!sponsorId && codeParam) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('referral_code', codeParam.toUpperCase())
+        .maybeSingle();
+      
+      if (data) {
+        sponsorId = data.user_id;
+        console.log('[ReferralCapture] Resolved code to sponsor:', sponsorId);
+      }
+    }
+
+    // Priority 3: Check localStorage for pending referral
+    if (!sponsorId) {
+      const pending = getPendingReferral();
+      if (pending) {
+        sponsorId = pending.sponsorId;
+        console.log('[ReferralCapture] Using pending referral:', sponsorId);
+      }
+    }
+
+    if (!sponsorId) {
+      console.log('[ReferralCapture] No referral source found');
+      return;
+    }
+
+    console.log('[ReferralCapture] Processing sponsor:', sponsorId);
+
     // Get settings
     const { data: settings } = await supabase
       .from('mobile_linking_settings')
@@ -78,9 +121,9 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       return; // Not the right stage yet
     }
 
-    // Check for self-referral (sponsorId is now the user_id)
-    if (settings.self_referral_block && userId === pending.sponsorId) {
-      console.warn('❌ Self-referral blocked');
+    // Check for self-referral
+    if (settings.self_referral_block && userId === sponsorId) {
+      console.log('[ReferralCapture] Blocked self-referral attempt');
       clearPendingReferral();
       return;
     }
@@ -88,12 +131,12 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
     // Validate sponsor exists in profiles table
     const { data: sponsorProfile } = await supabase
       .from('profiles')
-      .select('user_id')
-      .eq('user_id', pending.sponsorId)
+      .select('user_id, referral_code')
+      .eq('user_id', sponsorId)
       .maybeSingle();
 
     if (!sponsorProfile) {
-      console.warn('⚠️ Sponsor not found in profiles:', pending.sponsorId);
+      console.log('[ReferralCapture] Sponsor not found in profiles:', sponsorId);
       clearPendingReferral();
       return;
     }
@@ -111,27 +154,28 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       return;
     }
 
-    // Create or update referral link - store the actual readable code
-    const { error } = await supabase
+    // Lock the referral
+    const { error: updateError } = await supabase
       .from('referral_links_new')
-      .upsert({
-        user_id: userId,
-        sponsor_id: pending.sponsorId,
-        sponsor_code_used: pending.code, // Store the actual readable code
+      .update({
+        sponsor_id: sponsorId,
+        sponsor_code_used: sponsorProfile.referral_code || sponsorId,
         locked_at: new Date().toISOString(),
-        first_touch_at: new Date(pending.timestamp).toISOString(),
-        source: 'manual_entry',
-        capture_stage: 'after_email_verify'
-      }, {
-        onConflict: 'user_id'
-      });
+        lock_stage: 'after_email_verify'
+      })
+      .eq('user_id', userId)
+      .is('locked_at', null);
 
-    if (error) {
-      console.error('❌ Error locking referral:', error);
+    if (updateError) {
+      if (updateError.code === 'PGRST116') {
+        console.log('[ReferralCapture] No unlocked record found - may already be locked');
+      } else {
+        console.error('[ReferralCapture] Failed to lock referral:', updateError);
+      }
       return;
     }
 
-    console.log('✅ Referral locked to sponsor:', pending.sponsorId);
+    console.log('[ReferralCapture] Successfully locked referral to sponsor:', sponsorId);
     clearPendingReferral();
   } catch (error) {
     console.error('Error capturing referral:', error);

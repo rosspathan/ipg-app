@@ -49,7 +49,8 @@ export const useReferralCode = () => {
         }
 
         setReferralCode(code);
-        setReferralLink(`${window.location.origin}/?ref=${code}`);
+        // Use UUID-based link for unambiguous sponsor resolution
+        setReferralLink(`${window.location.origin}/?ref=${user.id}`);
 
         // Get stats
         const { data: refData } = await supabase

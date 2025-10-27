@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useNavigate } from "react-router-dom"
 import { useReferralCode } from "@/hooks/useReferralCode"
+import { useDirectReferralCount } from "@/hooks/useDirectReferralCount"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Info } from "lucide-react"
@@ -13,6 +14,7 @@ import { Info } from "lucide-react"
 export default function TeamReferralsNew() {
   const navigate = useNavigate()
   const { referralCode, referralLink, stats, loading } = useReferralCode()
+  const { data: directReferralCount = 0, isLoading: countLoading } = useDirectReferralCount()
 
   if (loading) {
     return (
@@ -46,8 +48,8 @@ export default function TeamReferralsNew() {
         <div className="grid grid-cols-2 gap-3">
           <StatCard
             icon={Users}
-            label="Total Referrals"
-            value={stats.totalReferrals}
+            label="Direct Referrals"
+            value={countLoading ? '...' : directReferralCount}
             onClick={() => navigate('/app/programs/team-referrals/team')}
           />
           <StatCard
@@ -58,9 +60,9 @@ export default function TeamReferralsNew() {
           />
           <StatCard
             icon={Award}
-            label="Active Members"
-            value={stats.activeReferrals}
-            sublabel="Generating earnings"
+            label="Total Network"
+            value={stats.totalReferrals}
+            sublabel="All levels"
             onClick={() => navigate('/app/programs/team-referrals/team')}
           />
           <StatCard

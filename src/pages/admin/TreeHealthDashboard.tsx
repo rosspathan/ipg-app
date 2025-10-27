@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, GitBranch, AlertTriangle, CheckCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Users, GitBranch, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { RebuildAllTreesTool } from "@/components/admin/RebuildAllTreesTool";
 
@@ -12,6 +13,7 @@ interface TreeHealthStats {
   usersWithIncompleteTree: number;
   usersWithNoTree: number;
   avgTreeDepth: number;
+  lockFailures: number;
 }
 
 export default function TreeHealthDashboard() {
@@ -66,12 +68,20 @@ export default function TreeHealthDashboard() {
 
       const avgTreeDepth = usersWithTree > 0 ? totalDepth / usersWithTree : 0;
 
+      // Get lock failures: users who signed up but have no locked sponsor
+      const { count: lockFailuresCount } = await supabase
+        .from('referral_links_new')
+        .select('*', { count: 'exact', head: true })
+        .is('sponsor_id', null)
+        .is('locked_at', null);
+
       return {
         totalUsersWithSponsors,
         usersWithCompleteTree,
         usersWithIncompleteTree,
         usersWithNoTree,
-        avgTreeDepth: Math.round(avgTreeDepth * 10) / 10
+        avgTreeDepth: Math.round(avgTreeDepth * 10) / 10,
+        lockFailures: lockFailuresCount || 0
       } as TreeHealthStats;
     }
   });
@@ -96,8 +106,19 @@ export default function TreeHealthDashboard() {
           </div>
         </div>
 
+        {/* Lock Failures Alert */}
+        {stats && stats.lockFailures > 0 && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>{stats.lockFailures}</strong> users signed up but have no locked sponsor. 
+              They may have missed referral code capture or need manual assignment.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -154,6 +175,21 @@ export default function TreeHealthDashboard() {
               </div>
               <p className="text-xs text-muted-foreground">
                 Missing tree data
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Lock Failures</CardTitle>
+              <XCircle className="h-4 w-4 text-destructive" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {isLoading ? '...' : stats?.lockFailures}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                No sponsor captured
               </p>
             </CardContent>
           </Card>
