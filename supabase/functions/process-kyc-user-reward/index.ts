@@ -25,13 +25,26 @@ Deno.serve(async (req) => {
 
     console.log(`[KYC User Reward] Processing reward for user: ${user_id}, amount: ${reward_bsk} BSK`);
 
+    // Get user's current holding balance
+    const { data: currentBalance } = await supabase
+      .from('user_bsk_balances')
+      .select('holding_balance, total_earned_holding')
+      .eq('user_id', user_id)
+      .maybeSingle();
+
+    console.log(`[KYC User Reward] Current balance:`, currentBalance);
+
+    // Calculate new balances
+    const newHoldingBalance = Number(currentBalance?.holding_balance || 0) + reward_bsk;
+    const newTotalEarned = Number(currentBalance?.total_earned_holding || 0) + reward_bsk;
+
     // Credit 5 BSK to user's holding balance
     const { error: balanceError } = await supabase
       .from('user_bsk_balances')
       .upsert({
         user_id: user_id,
-        holding_balance: supabase.raw(`COALESCE(holding_balance, 0) + ${reward_bsk}`),
-        total_earned_holding: supabase.raw(`COALESCE(total_earned_holding, 0) + ${reward_bsk}`),
+        holding_balance: newHoldingBalance,
+        total_earned_holding: newTotalEarned,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
 
