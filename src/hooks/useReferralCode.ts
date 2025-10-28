@@ -20,7 +20,6 @@ const generateReferralCode = (): string => {
 export const useReferralCode = () => {
   const { user } = useAuthUser();
   const [referralCode, setReferralCode] = useState<string>('');
-  const [referralLink, setReferralLink] = useState<string>('');
   const [stats, setStats] = useState<ReferralStats>({
     totalReferrals: 0,
     totalEarned: 0,
@@ -49,8 +48,6 @@ export const useReferralCode = () => {
         }
 
         setReferralCode(code);
-        // Use UUID-based link for unambiguous sponsor resolution
-        setReferralLink(`${window.location.origin}/?ref=${user.id}`);
 
         // Get stats
         const { data: refData } = await supabase
@@ -74,5 +71,5 @@ export const useReferralCode = () => {
     fetchData();
   }, [user]);
 
-  return { referralCode, referralLink, stats, loading };
+  return { referralCode, stats, loading };
 };

@@ -13,7 +13,7 @@ import { Info } from "lucide-react"
 
 export default function TeamReferralsNew() {
   const navigate = useNavigate()
-  const { referralCode, referralLink, stats, loading } = useReferralCode()
+  const { referralCode, stats, loading } = useReferralCode()
   const { data: directReferralCount = 0, isLoading: countLoading } = useDirectReferralCount()
 
   if (loading) {
@@ -41,7 +41,6 @@ export default function TeamReferralsNew() {
         {/* Referral Code Card */}
         <ReferralCodeCard 
           referralCode={referralCode}
-          referralLink={referralLink}
         />
 
         {/* Quick Stats Grid */}

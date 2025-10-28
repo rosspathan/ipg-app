@@ -57,42 +57,30 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
   try {
     console.log('[ReferralCapture] Starting capture for userId:', userId);
     
-    // Get pending referral from URL params if just landed
-    const urlParams = new URLSearchParams(window.location.search);
-    const refParam = urlParams.get('ref');
-    const codeParam = urlParams.get('code');
-    
     let sponsorId: string | null = null;
+    let referralCode: string | null = null;
 
-    // Priority 1: UUID ref parameter (unambiguous)
-    if (refParam) {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (uuidRegex.test(refParam)) {
-        sponsorId = refParam;
-        console.log('[ReferralCapture] Using UUID ref:', sponsorId);
-      }
-    }
-
-    // Priority 2: Legacy code parameter (lookup required)
-    if (!sponsorId && codeParam) {
+    // Check localStorage for referral code entered during signup
+    const storedCode = localStorage.getItem('ismart_signup_ref');
+    
+    if (storedCode) {
+      referralCode = storedCode.toUpperCase();
+      console.log('[ReferralCapture] Found stored referral code:', referralCode);
+      
+      // Lookup sponsor by referral code
       const { data } = await supabase
         .from('profiles')
         .select('user_id')
-        .eq('referral_code', codeParam.toUpperCase())
+        .eq('referral_code', referralCode)
         .maybeSingle();
       
       if (data) {
         sponsorId = data.user_id;
         console.log('[ReferralCapture] Resolved code to sponsor:', sponsorId);
-      }
-    }
-
-    // Priority 3: Check localStorage for pending referral
-    if (!sponsorId) {
-      const pending = getPendingReferral();
-      if (pending) {
-        sponsorId = pending.sponsorId;
-        console.log('[ReferralCapture] Using pending referral:', sponsorId);
+      } else {
+        console.log('[ReferralCapture] Invalid referral code:', referralCode);
+        localStorage.removeItem('ismart_signup_ref');
+        return;
       }
     }
 
@@ -176,7 +164,7 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
     }
 
     console.log('[ReferralCapture] Successfully locked referral to sponsor:', sponsorId);
-    clearPendingReferral();
+    localStorage.removeItem('ismart_signup_ref');
   } catch (error) {
     console.error('Error capturing referral:', error);
   }

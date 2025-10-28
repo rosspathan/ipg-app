@@ -43,30 +43,43 @@ export default function TeamReferralsPageNew() {
     enabled: !!user?.id
   })
 
-  const referralCode = referralData?.link?.sponsor_code_used || user?.id?.slice(0, 8).toUpperCase()
-  const referralLink = `${window.location.origin}/ref/${referralCode}`
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null
+      const { data } = await supabase
+        .from('profiles')
+        .select('referral_code')
+        .eq('user_id', user.id)
+        .single()
+      return data
+    },
+    enabled: !!user?.id
+  })
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(referralLink)
+  const referralCode = profile?.referral_code || user?.id?.slice(0, 8).toUpperCase()
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(referralCode)
     toast({
       title: "Copied!",
-      description: "Referral link copied to clipboard"
+      description: "Referral code copied to clipboard"
     })
   }
 
   const handleShare = async () => {
+    const shareText = `Join me on IPG I-SMART! Use my referral code: ${referralCode}`
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Join IPG I-SMART',
-          text: 'Join me on IPG I-SMART and earn rewards!',
-          url: referralLink
+          text: shareText
         })
       } catch (err) {
-        handleCopyLink()
+        handleCopyCode()
       }
     } else {
-      handleCopyLink()
+      handleCopyCode()
     }
   }
 
@@ -94,28 +107,28 @@ export default function TeamReferralsPageNew() {
           <p className="text-muted-foreground">Invite friends and earn rewards together</p>
         </div>
 
-        {/* Referral Link Card */}
+        {/* Referral Code Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Share2 className="w-5 h-5" />
-              Your Referral Link
+              Your Referral Code
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input 
-                value={referralLink} 
-                readOnly 
-                className="font-mono text-sm"
-              />
-              <Button onClick={handleCopyLink} variant="outline" size="icon">
-                <Copy className="w-4 h-4" />
+            <div className="text-center p-8 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-2">Share this code</p>
+              <div className="text-4xl font-bold text-primary tracking-widest mb-4 font-mono">
+                {referralCode}
+              </div>
+              <Button onClick={handleCopyCode} variant="outline" size="sm">
+                <Copy className="w-4 h-4 mr-2" />
+                Copy Code
               </Button>
             </div>
             <Button onClick={handleShare} className="w-full" size="lg">
               <Share2 className="w-4 h-4 mr-2" />
-              Share Referral Link
+              Share Code
             </Button>
           </CardContent>
         </Card>

@@ -20,7 +20,6 @@ export default function TeamReferralsDashboard() {
   const { toast } = useToast();
 
   const referralCode = user?.id?.substring(0, 8).toUpperCase() || '';
-  const referralLink = `${window.location.origin}/signup?ref=${referralCode}`;
 
   const handleCopyCode = async () => {
     const success = await copyToClipboard(referralCode);
@@ -32,29 +31,19 @@ export default function TeamReferralsDashboard() {
     }
   };
 
-  const handleCopyLink = async () => {
-    const success = await copyToClipboard(referralLink);
-    if (success) {
-      toast({
-        title: "Copied!",
-        description: "Referral link copied to clipboard"
-      });
-    }
-  };
-
   const handleShare = async () => {
+    const shareText = `Join i-SMART with my referral code: ${referralCode}`;
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Join i-SMART with my referral code',
-          text: `Use my referral code ${referralCode} to join i-SMART and start earning!`,
-          url: referralLink
+          title: 'Join i-SMART',
+          text: shareText
         });
       } catch (error) {
         console.error('Error sharing:', error);
       }
     } else {
-      handleCopyLink();
+      handleCopyCode();
     }
   };
 
@@ -74,43 +63,25 @@ export default function TeamReferralsDashboard() {
         </div>
       </div>
 
-      {/* Referral Code Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Referral Code & Link</CardTitle>
+          <CardTitle>Your Referral Code</CardTitle>
           <CardDescription>
-            Share this code or link to invite people to your team
+            Share this code to invite people to your team
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Referral Code</label>
-            <div className="flex gap-2">
-              <Input
-                value={referralCode}
-                readOnly
-                className="flex-1 text-center font-mono text-2xl font-bold"
-              />
-              <Button onClick={handleCopyCode} variant="outline">
-                <Copy className="w-4 h-4 mr-2" />
-                Copy
-              </Button>
+          <div className="text-center p-8 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg">
+            <p className="text-sm text-muted-foreground mb-2">Share this code</p>
+            <div className="text-5xl font-bold text-primary tracking-widest mb-4 font-mono">
+              {referralCode}
             </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Referral Link</label>
-            <div className="flex gap-2">
-              <Input
-                value={referralLink}
-                readOnly
-                className="flex-1 text-sm"
-              />
-              <Button onClick={handleCopyLink} variant="outline">
+            <div className="flex gap-2 justify-center">
+              <Button onClick={handleCopyCode} variant="outline" size="lg">
                 <Copy className="w-4 h-4 mr-2" />
-                Copy
+                Copy Code
               </Button>
-              <Button onClick={handleShare}>
+              <Button onClick={handleShare} size="lg">
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>

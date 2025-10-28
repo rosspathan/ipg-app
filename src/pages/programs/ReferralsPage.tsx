@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ReferralsPage() {
   const { toast } = useToast();
-  const { referralCode, referralLink, stats, loading } = useReferralCode();
+  const { referralCode, stats, loading } = useReferralCode();
   const { data: directReferralCount = 0 } = useDirectReferralCount();
 
   const handleCopyCode = async () => {
@@ -27,22 +27,22 @@ export default function ReferralsPage() {
   };
 
   const handleShare = async () => {
+    const shareText = `Join IPG I-SMART! Use my referral code: ${referralCode}`;
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Join IPG Exchange',
-          text: `Sign up using my referral code: ${referralCode}`,
-          url: referralLink
+          text: shareText
         });
       } catch (error) {
         console.log('Share cancelled');
       }
     } else {
-      const success = await copyToClipboard(referralLink);
+      const success = await copyToClipboard(shareText);
       if (success) {
         toast({
-          title: "Link Copied!",
-          description: "Referral link copied to clipboard",
+          title: "Copied!",
+          description: "Referral code copied to clipboard",
         });
       }
     }
@@ -124,7 +124,7 @@ export default function ReferralsPage() {
                   </Button>
                   <Button size="sm" onClick={handleShare} className="flex-1">
                     <Share2 className="h-4 w-4 mr-2" />
-                    Share Link
+                    Share Code
                   </Button>
                 </div>
               </>

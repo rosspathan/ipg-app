@@ -7,13 +7,11 @@ import { useToast } from "@/hooks/use-toast"
 
 interface ReferralCodeCardProps {
   referralCode: string
-  referralLink: string
   onShare?: () => void
 }
 
-export function ReferralCodeCard({ referralCode, referralLink, onShare }: ReferralCodeCardProps) {
+export function ReferralCodeCard({ referralCode, onShare }: ReferralCodeCardProps) {
   const { toast } = useToast()
-  const [showQR, setShowQR] = useState(false)
 
   const handleCopyCode = async () => {
     const success = await copyToClipboard(referralCode)
@@ -25,29 +23,23 @@ export function ReferralCodeCard({ referralCode, referralLink, onShare }: Referr
     }
   }
 
-  const handleCopyLink = async () => {
-    const success = await copyToClipboard(referralLink)
-    if (success) {
-      toast({
-        title: "Link Copied!",
-        description: "Referral link copied to clipboard",
-      })
-    }
-  }
-
   const handleShare = async () => {
+    const shareText = `Join IPG I-SMART! Use my referral code: ${referralCode}`;
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Join IPG Exchange',
-          text: `Sign up using my referral code: ${referralCode}`,
-          url: referralLink
+          text: shareText
         })
       } catch (error) {
         console.log('Share cancelled')
       }
     } else {
-      handleCopyLink()
+      await copyToClipboard(shareText)
+      toast({
+        title: "Copied!",
+        description: "Share text copied to clipboard",
+      })
     }
     onShare?.()
   }

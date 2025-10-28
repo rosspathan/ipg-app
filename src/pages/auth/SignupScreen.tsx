@@ -32,25 +32,7 @@ const SignupScreen: React.FC = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [referralCode, setReferralCode] = useState<string | null>(null);
-
-  // Capture referral code from multiple sources
-  useEffect(() => {
-    // Priority: URL param > sessionStorage > location state
-    const urlRef = searchParams.get('ref');
-    const sessionRef = sessionStorage.getItem('ismart_ref_code');
-    const stateRef = (location.state as any)?.referralCode;
-
-    const capturedCode = urlRef || sessionRef || stateRef;
-    
-    if (capturedCode) {
-      const upperCode = capturedCode.toUpperCase();
-      console.log('📨 Referral code captured in signup:', upperCode);
-      setReferralCode(upperCode);
-      // Store in localStorage for persistence through signup flow
-      localStorage.setItem('ismart_signup_ref', upperCode);
-    }
-  }, [searchParams, location.state]);
+  const [referralCode, setReferralCode] = useState<string>('');
 
   const passwordStrength = (pwd: string) => {
     let strength = 0;
@@ -104,10 +86,11 @@ const SignupScreen: React.FC = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Navigate to celebration screen, pass referral code if captured
-        navigate('/onboarding/account-created', { 
-          state: { referralCode: referralCode || localStorage.getItem('ismart_signup_ref') }
-        });
+        // Store referral code for later processing
+        if (referralCode.trim()) {
+          localStorage.setItem('ismart_signup_ref', referralCode.toUpperCase());
+        }
+        navigate('/onboarding/account-created');
       }
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -143,15 +126,26 @@ const SignupScreen: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="flex-1 space-y-6 max-w-md mx-auto w-full"
         >
-          {/* Referral Code Banner */}
-          {referralCode && (
-            <Alert className="bg-success/20 border-success/50">
-              <Gift className="w-4 h-4 text-success" />
-              <AlertDescription className="text-white">
-                Referral code <strong>{referralCode}</strong> will be applied to your account
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* Referral Code Input */}
+          <div className="space-y-2">
+            <Label htmlFor="referralCode" className="text-white">
+              Referral Code (Optional)
+            </Label>
+            <Input
+              id="referralCode"
+              type="text"
+              placeholder="Enter referral code"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 uppercase"
+              maxLength={8}
+            />
+            {referralCode && (
+              <p className="text-green-300 text-sm flex items-center gap-1">
+                <Gift className="w-4 h-4" /> Referral code will be applied
+              </p>
+            )}
+          </div>
 
           {/* Email */}
           <div className="space-y-2">
