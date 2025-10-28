@@ -1,5 +1,7 @@
-import { Card, CardContent } from '@/components/ui/card'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { CleanCard } from '@/components/admin/clean/CleanCard'
+import { TrendingUp, TrendingDown, Wallet, Lock } from 'lucide-react'
+import { formatCurrency } from '@/utils/formatters'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 interface PortfolioSummaryCardProps {
   totalUsd: number
@@ -18,63 +20,85 @@ export function PortfolioSummaryCard({
 }: PortfolioSummaryCardProps) {
   const isPositiveChange = change24h >= 0
 
+  const isMobile = useIsMobile()
+
   if (loading) {
     return (
-      <Card className="bg-card/60 backdrop-blur-xl border-border/40">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center py-4">
-            <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        </CardContent>
-      </Card>
+      <CleanCard variant="elevated" padding="lg">
+        <div className="flex items-center justify-center py-8">
+          <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </CleanCard>
     )
   }
 
   return (
-    <Card className="bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-xl border-border/40 shadow-lg">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-muted-foreground">Portfolio Summary</h2>
-          {change24h !== 0 && (
-            <div className={`flex items-center gap-1 text-xs font-medium ${
-              isPositiveChange ? 'text-success' : 'text-destructive'
-            }`}>
-              {isPositiveChange ? (
-                <TrendingUp className="h-3.5 w-3.5" />
-              ) : (
-                <TrendingDown className="h-3.5 w-3.5" />
-              )}
-              {isPositiveChange ? '+' : ''}{change24h.toFixed(2)}%
-            </div>
-          )}
+    <CleanCard variant="elevated" padding="none" className="overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 pt-5 pb-4">
+        <h2 className="text-sm font-medium text-muted-foreground">Portfolio Summary</h2>
+        {change24h !== 0 && (
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+            isPositiveChange 
+              ? 'bg-emerald-500/10 text-emerald-400' 
+              : 'bg-red-500/10 text-red-400'
+          }`}>
+            {isPositiveChange ? (
+              <TrendingUp className="h-3 w-3" />
+            ) : (
+              <TrendingDown className="h-3 w-3" />
+            )}
+            {isPositiveChange ? '+' : ''}{change24h.toFixed(2)}%
+          </div>
+        )}
+      </div>
+
+      {/* Total Value - Primary Metric */}
+      <div className="px-6 pb-5">
+        <p className="text-xs text-muted-foreground mb-1.5">Total Value</p>
+        <div className="flex items-baseline gap-3">
+          <p 
+            className="text-2xl md:text-3xl font-bold text-foreground tabular-nums truncate"
+            title={formatCurrency(totalUsd)}
+          >
+            {isMobile ? formatCurrency(totalUsd, { abbreviated: true }) : formatCurrency(totalUsd)}
+          </p>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-border/40" />
+
+      {/* Available & Locked - Secondary Metrics */}
+      <div className="px-6 py-4 space-y-3">
+        {/* Available */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Wallet className="h-4 w-4 text-emerald-400" />
+            <span className="text-sm text-muted-foreground">Available</span>
+          </div>
+          <p 
+            className="text-lg md:text-xl font-semibold text-emerald-400 tabular-nums truncate ml-4"
+            title={formatCurrency(availableUsd)}
+          >
+            {isMobile ? formatCurrency(availableUsd, { abbreviated: true }) : formatCurrency(availableUsd)}
+          </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          {/* Total Value */}
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground whitespace-nowrap">Total Value</p>
-            <p className="text-xl font-bold text-foreground tabular-nums">
-              ${totalUsd.toFixed(2)}
-            </p>
+        {/* Locked */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Lock className="h-4 w-4 text-amber-400" />
+            <span className="text-sm text-muted-foreground">Locked</span>
           </div>
-
-          {/* Available */}
-          <div className="space-y-1 border-l border-border/40 pl-4">
-            <p className="text-xs text-muted-foreground whitespace-nowrap">Available</p>
-            <p className="text-xl font-bold text-success tabular-nums">
-              ${availableUsd.toFixed(2)}
-            </p>
-          </div>
-
-          {/* Locked */}
-          <div className="space-y-1 border-l border-border/40 pl-4">
-            <p className="text-xs text-muted-foreground whitespace-nowrap">Locked</p>
-            <p className="text-xl font-bold text-warning tabular-nums">
-              ${lockedUsd.toFixed(2)}
-            </p>
-          </div>
+          <p 
+            className="text-lg md:text-xl font-semibold text-amber-400 tabular-nums truncate ml-4"
+            title={formatCurrency(lockedUsd)}
+          >
+            {isMobile ? formatCurrency(lockedUsd, { abbreviated: true }) : formatCurrency(lockedUsd)}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </CleanCard>
   )
 }
