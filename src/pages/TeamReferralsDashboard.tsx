@@ -13,7 +13,7 @@ import { SponsorInfoCard } from '@/components/referrals/SponsorInfoCard';
 import { DirectReferralsList } from '@/components/referrals/DirectReferralsList';
 import { ReferralCommissionHistory } from '@/components/referrals/ReferralCommissionHistory';
 import { DownlineTreeViewer } from '@/components/referrals/DownlineTreeViewer';
-import { BadgeUnlockLevels } from '@/components/referrals/BadgeUnlockLevels';
+import { CommissionStructureCard } from '@/components/referrals/CommissionStructureCard';
 
 export default function TeamReferralsDashboard() {
   const navigate = useNavigate();
@@ -59,7 +59,7 @@ export default function TeamReferralsDashboard() {
         <div>
           <h1 className="text-3xl font-bold">Team Referrals Dashboard</h1>
           <p className="text-muted-foreground">
-            Build your network and earn BSK rewards across 50 levels
+            Build your network and track your 50-level team structure
           </p>
         </div>
       </div>
@@ -110,13 +110,13 @@ export default function TeamReferralsDashboard() {
             <VIPMilestoneProgress />
           </div>
 
-          {/* Badge Unlock Levels */}
-          <BadgeUnlockLevels />
+          {/* Commission Structure */}
+          <CommissionStructureCard />
 
           {/* How It Works */}
           <Card>
             <CardHeader>
-              <CardTitle>How the 50-Level System Works</CardTitle>
+              <CardTitle>How the Referral System Works</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -127,28 +127,25 @@ export default function TeamReferralsDashboard() {
                   </p>
                 </div>
                 <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                  <h3 className="font-semibold mb-2">2. They Sign Up & Purchase</h3>
+                  <h3 className="font-semibold mb-2">2. They Join & Purchase</h3>
                   <p className="text-sm text-muted-foreground">
-                    When they verify email and purchase/upgrade badges, you earn rewards
+                    When they verify email and purchase/upgrade badges, you earn 10% commission
                   </p>
                 </div>
                 <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                  <h3 className="font-semibold mb-2">3. Earn from 50 Levels</h3>
+                  <h3 className="font-semibold mb-2">3. Track Your Team</h3>
                   <p className="text-sm text-muted-foreground">
-                    Get BSK rewards from direct referrals and their networks, up to 50 levels deep
+                    View your entire 50-level team structure and monitor their activities
                   </p>
                 </div>
               </div>
 
               <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-semibold mb-2">Badge-Based Level Unlocking</h4>
+                <h4 className="font-semibold mb-2">Badge Purchase Commission</h4>
                 <ul className="space-y-1 text-sm">
-                  <li>• <strong>No Badge:</strong> No levels unlocked</li>
-                  <li>• <strong>Silver Badge:</strong> Unlock levels 1-10</li>
-                  <li>• <strong>Gold Badge:</strong> Unlock levels 1-20</li>
-                  <li>• <strong>Platinum Badge:</strong> Unlock levels 1-30</li>
-                  <li>• <strong>Diamond Badge:</strong> Unlock levels 1-40</li>
-                  <li>• <strong>VIP Badge:</strong> Unlock all 50 levels + VIP milestone bonuses</li>
+                  <li>• <strong>Direct Sponsor (Level 1):</strong> Earns 10% commission on badge purchases/upgrades</li>
+                  <li>• <strong>Upline (Levels 2-50):</strong> No commission on badge purchases (tree is for tracking only)</li>
+                  <li>• <strong>VIP Badge Holders:</strong> Earn additional milestone bonuses when your direct referrals become VIP</li>
                 </ul>
               </div>
             </CardContent>
