@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const REQUIRED_CONFIRMATIONS = 12;
 const BSC_RPC_URL = Deno.env.get('BSC_RPC_URL') || 'https://bsc-dataseed.binance.org';
+const MAX_PENDING_HOURS = 24; // Auto-fail transactions pending for more than 24 hours
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -84,13 +85,46 @@ serve(async (req) => {
     const txData = await txResponse.json();
 
     if (!txData.result) {
-      console.log(`[monitor-withdrawal] Transaction not yet mined: ${withdrawal.tx_hash}`);
+      // Check if transaction has been pending for too long
+      const createdAt = new Date(withdrawal.created_at);
+      const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursSinceCreation > MAX_PENDING_HOURS) {
+        console.error(`[monitor-withdrawal] Transaction timeout after ${hoursSinceCreation.toFixed(1)} hours: ${withdrawal.tx_hash}`);
+        
+        // Mark as failed and unlock balance
+        await supabase
+          .from('withdrawals')
+          .update({ 
+            status: 'failed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', withdrawal_id);
+
+        await supabase.rpc('unlock_balance_for_order', {
+          p_user_id: withdrawal.user_id,
+          p_asset_symbol: withdrawal.asset_id,
+          p_amount: withdrawal.amount
+        });
+
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: `Transaction timeout after ${MAX_PENDING_HOURS} hours`,
+            status: 'failed'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`[monitor-withdrawal] Transaction not yet mined (${hoursSinceCreation.toFixed(1)}h old): ${withdrawal.tx_hash}`);
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Transaction pending in mempool',
+          message: `Transaction pending in mempool (${hoursSinceCreation.toFixed(1)}h)`,
           status: 'pending',
-          confirmations: 0
+          confirmations: 0,
+          hours_pending: hoursSinceCreation
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

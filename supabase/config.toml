@@ -147,5 +147,8 @@ verify_jwt = false
 [functions.verify-transaction]
 verify_jwt = true
 
+[functions.scheduled-monitor-withdrawals]
+verify_jwt = false
+
 [functions.manual-credit-deposit]
 verify_jwt = true
