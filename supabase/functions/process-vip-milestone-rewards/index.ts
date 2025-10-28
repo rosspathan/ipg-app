@@ -10,6 +10,19 @@ interface VIPMilestoneRequest {
   new_vip_referral_id: string;
 }
 
+/**
+ * Normalizes badge names to handle database variations
+ * "i-Smart VIP", "I-SMART VIP", "VIP" -> "VIP"
+ */
+function normalizeBadgeName(badge: string | null | undefined): string {
+  if (!badge) return '';
+  const badgeUpper = badge.toUpperCase().trim();
+  if (badgeUpper.includes('VIP') || badgeUpper.includes('SMART')) {
+    return 'VIP';
+  }
+  return badge.trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -23,9 +36,9 @@ Deno.serve(async (req) => {
 
     const { sponsor_id, new_vip_referral_id }: VIPMilestoneRequest = await req.json();
     
-    console.log('💎 Checking VIP milestone rewards for sponsor:', sponsor_id);
+    console.log('💎 [VIP Milestone] Processing for sponsor:', sponsor_id);
 
-    // 1. Check if sponsor has i-Smart VIP badge (required to earn milestone rewards)
+    // 1. Check if sponsor has VIP badge (required for milestone rewards)
     const { data: sponsorBadge, error: badgeError } = await supabaseClient
       .from('user_badge_holdings')
       .select('current_badge')
@@ -33,27 +46,25 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (badgeError) {
-      console.error('Error fetching sponsor badge:', badgeError);
+      console.error('[VIP Milestone] Error fetching sponsor badge:', badgeError);
       throw badgeError;
     }
 
-    const badgeName = sponsorBadge?.current_badge?.toUpperCase() || '';
-    const isVIP = badgeName.includes('VIP') || badgeName.includes('SMART');
+    const normalizedBadge = normalizeBadgeName(sponsorBadge?.current_badge);
 
-    if (!isVIP) {
-      console.log('⚠️ Sponsor does not have i-Smart VIP badge, not eligible for milestone rewards');
+    if (normalizedBadge !== 'VIP') {
+      console.log('[VIP Milestone] ⚠️ Sponsor not VIP (has:', sponsorBadge?.current_badge, ')');
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Sponsor not VIP',
+          message: 'Sponsor not VIP - not eligible',
           milestones_achieved: []
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 2. Count sponsor's total direct VIP referrals
-    // Get Level 1 referrals from referral_tree
+    // 2. Count sponsor's direct (L1) VIP referrals
     const { data: directReferrals, error: referralError } = await supabaseClient
       .from('referral_tree')
       .select('user_id')
@@ -61,16 +72,17 @@ Deno.serve(async (req) => {
       .eq('level', 1);
 
     if (referralError) {
-      console.error('Error fetching direct referrals:', referralError);
+      console.error('[VIP Milestone] Error fetching referrals:', referralError);
       throw referralError;
     }
 
     if (!directReferrals || directReferrals.length === 0) {
-      console.log('⚠️ No direct referrals found');
+      console.log('[VIP Milestone] No direct referrals found');
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'No direct referrals',
+          current_vip_count: 0,
           milestones_achieved: []
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -79,42 +91,42 @@ Deno.serve(async (req) => {
 
     const referralIds = directReferrals.map(r => r.user_id);
 
-    // Count how many have i-Smart VIP badge
+    // Count VIPs among direct referrals
     const { data: vipReferrals, error: vipError } = await supabaseClient
       .from('user_badge_holdings')
       .select('user_id, current_badge')
       .in('user_id', referralIds);
 
     if (vipError) {
-      console.error('Error fetching VIP referral badges:', vipError);
+      console.error('[VIP Milestone] Error fetching VIP badges:', vipError);
       throw vipError;
     }
 
-    const vipCount = vipReferrals?.filter(b => {
-      const badge = b.current_badge?.toUpperCase() || '';
-      return badge.includes('VIP') || badge.includes('SMART');
-    }).length || 0;
+    const vipCount = vipReferrals?.filter(b => 
+      normalizeBadgeName(b.current_badge) === 'VIP'
+    ).length || 0;
 
-    console.log(`📊 Sponsor has ${vipCount} direct VIP referrals`);
+    console.log(`[VIP Milestone] 📊 Sponsor has ${vipCount} direct VIP referrals`);
 
-    // 3. Fetch all active VIP milestones
+    // 3. Fetch active VIP milestones from database
     const { data: milestones, error: milestoneError } = await supabaseClient
       .from('vip_milestones')
       .select('*')
       .eq('is_active', true)
-      .order('vip_count_required', { ascending: true });
+      .order('vip_count_threshold', { ascending: true });
 
     if (milestoneError) {
-      console.error('Error fetching milestones:', milestoneError);
+      console.error('[VIP Milestone] Error fetching milestones:', milestoneError);
       throw milestoneError;
     }
 
     if (!milestones || milestones.length === 0) {
-      console.log('⚠️ No active VIP milestones configured');
+      console.log('[VIP Milestone] ⚠️ No active milestones configured');
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'No milestones configured',
+          current_vip_count: vipCount,
           milestones_achieved: []
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -126,7 +138,7 @@ Deno.serve(async (req) => {
     let totalBSKRewarded = 0;
 
     for (const milestone of milestones) {
-      if (vipCount >= milestone.vip_count_required) {
+      if (vipCount >= milestone.vip_count_threshold) {
         // Check if already claimed
         const { data: existingClaim, error: claimError } = await supabaseClient
           .from('user_vip_milestone_claims')
@@ -136,18 +148,18 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (claimError && claimError.code !== 'PGRST116') {
-          console.error('Error checking claim:', claimError);
+          console.error('[VIP Milestone] Error checking claim:', claimError);
           continue;
         }
 
         if (existingClaim) {
-          console.log(`✓ Milestone ${milestone.vip_count_required} VIPs already claimed`);
+          console.log(`[VIP Milestone] ✓ ${milestone.vip_count_threshold} VIPs already claimed`);
           continue;
         }
 
         // NEW MILESTONE ACHIEVED! 🎉
-        const rewardBSK = Number(milestone.reward_inr_value); // Using INR value as BSK amount
-        console.log(`🎉 NEW MILESTONE! ${milestone.vip_count_required} VIPs → ${rewardBSK} BSK`);
+        const rewardBSK = Number(milestone.reward_inr_value);
+        console.log(`[VIP Milestone] 🎉 NEW! ${milestone.vip_count_threshold} VIPs → ${rewardBSK} BSK`);
 
         // Get current balance
         const { data: currentBalance } = await supabaseClient
@@ -157,44 +169,43 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         // Credit withdrawable balance
+        const newWithdrawable = Number(currentBalance?.withdrawable_balance || 0) + rewardBSK;
+        const newTotalEarned = Number(currentBalance?.total_earned_withdrawable || 0) + rewardBSK;
+
         const { error: balanceUpdateError } = await supabaseClient
           .from('user_bsk_balances')
           .upsert({
             user_id: sponsor_id,
-            withdrawable_balance: Number(currentBalance?.withdrawable_balance || 0) + rewardBSK,
-            total_earned_withdrawable: Number(currentBalance?.total_earned_withdrawable || 0) + rewardBSK,
+            withdrawable_balance: newWithdrawable,
+            total_earned_withdrawable: newTotalEarned,
             updated_at: new Date().toISOString()
           }, {
             onConflict: 'user_id'
           });
 
         if (balanceUpdateError) {
-          console.error('Error updating balance:', balanceUpdateError);
+          console.error('[VIP Milestone] ❌ Balance update failed:', balanceUpdateError);
           continue;
         }
 
         // Insert commission record
-        const { error: commissionError } = await supabaseClient
+        await supabaseClient
           .from('referral_commissions')
           .insert({
             earner_id: sponsor_id,
-            payer_id: null, // No specific payer for milestone rewards
+            payer_id: null,
             level: 0, // Special level for milestones
-            event_type: `vip_milestone_${milestone.vip_count_required}`,
+            event_type: `vip_milestone_${milestone.vip_count_threshold}`,
             commission_type: 'vip_milestone',
             bsk_amount: rewardBSK,
             destination: 'withdrawable',
             status: 'settled',
-            my_badge_at_event: sponsorBadge?.current_badge,
+            my_badge_at_event: 'VIP',
             created_at: new Date().toISOString()
           });
 
-        if (commissionError) {
-          console.error('Error inserting commission:', commissionError);
-        }
-
         // Mark milestone as claimed
-        const { error: claimInsertError } = await supabaseClient
+        await supabaseClient
           .from('user_vip_milestone_claims')
           .insert({
             user_id: sponsor_id,
@@ -203,10 +214,6 @@ Deno.serve(async (req) => {
             bsk_rewarded: rewardBSK,
             claimed_at: new Date().toISOString()
           });
-
-        if (claimInsertError) {
-          console.error('Error marking claim:', claimInsertError);
-        }
 
         // Insert ledger entry
         await supabaseClient
@@ -219,24 +226,26 @@ Deno.serve(async (req) => {
             meta_json: {
               milestone_id: milestone.id,
               vip_count: vipCount,
-              required_count: milestone.vip_count_required,
+              required_count: milestone.vip_count_threshold,
+              milestone_description: milestone.reward_description,
               timestamp: new Date().toISOString()
             },
             usd_value: 0
           });
 
         milestonesAchieved.push({
-          vip_count_required: milestone.vip_count_required,
-          bsk_rewarded: rewardBSK
+          vip_count_required: milestone.vip_count_threshold,
+          bsk_rewarded: rewardBSK,
+          description: milestone.reward_description
         });
         totalBSKRewarded += rewardBSK;
       }
     }
 
     if (milestonesAchieved.length > 0) {
-      console.log(`🎉 ${milestonesAchieved.length} milestone(s) achieved! Total: ${totalBSKRewarded} BSK`);
+      console.log(`[VIP Milestone] 🎉 ${milestonesAchieved.length} achieved! Total: ${totalBSKRewarded} BSK`);
     } else {
-      console.log('✓ No new milestones achieved');
+      console.log('[VIP Milestone] ✓ No new milestones');
     }
 
     return new Response(
@@ -249,7 +258,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('VIP milestone processing error:', error);
+    console.error('[VIP Milestone] ❌ Error:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

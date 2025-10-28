@@ -93,6 +93,7 @@ const AdminKYCSettings = React.lazy(() => import("./pages/AdminKYCSettings"));
 const AdminRoleManagement = React.lazy(() => import("./pages/admin/AdminRoleManagement"));
 const AdminBadgeSystem = React.lazy(() => import("./pages/admin/AdminBadgeSystem"));
 const AdminBSKManagement = React.lazy(() => import("./pages/admin/AdminBSKManagement"));
+const VIPMilestoneMonitor = React.lazy(() => import("./pages/admin/VIPMilestoneMonitor"));
 import ManualReferralAssignment from "./pages/admin/ManualReferralAssignment";
 import RetroactiveCommissionFix from "./pages/admin/RetroactiveCommissionFix";
 import TreeHealthDashboard from "./pages/admin/TreeHealthDashboard";
@@ -571,6 +572,7 @@ function AppContent() {
                 
                 {/* Phase 6: BSK Management */}
                 <Route path="bsk" element={<React.Suspense fallback={<LoadingFallback />}><AdminBSKManagement /></React.Suspense>} />
+                <Route path="vip-milestones" element={<React.Suspense fallback={<LoadingFallback />}><VIPMilestoneMonitor /></React.Suspense>} />
                 
                 {/* Financial Management Routes - Phase 2-4 */}
                 <Route path="transactions" element={<TransactionControlCenter />} />
