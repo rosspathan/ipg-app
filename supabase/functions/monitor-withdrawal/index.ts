@@ -156,8 +156,25 @@ serve(async (req) => {
       })
       .eq('id', withdrawal_id);
 
-    // Balance is already locked during withdrawal creation
-    // No need to unlock as the withdrawal is successful
+    // Deduct the withdrawn amount from user's balance (locked + total)
+    console.log(`[monitor-withdrawal] Deducting ${withdrawal.amount} from user balance...`);
+    
+    const { data: deductResult, error: deductError } = await supabase.rpc(
+      'complete_withdrawal_balance_deduction',
+      {
+        p_user_id: withdrawal.user_id,
+        p_asset_id: withdrawal.asset_id,
+        p_amount: withdrawal.amount
+      }
+    );
+
+    if (deductError || !deductResult) {
+      console.error(`[monitor-withdrawal] CRITICAL: Failed to deduct balance:`, deductError);
+      // Note: Withdrawal is already on-chain and confirmed, cannot rollback
+      // This requires manual intervention to fix the balance
+    } else {
+      console.log(`[monitor-withdrawal] Successfully deducted ${withdrawal.amount} from balance`);
+    }
 
     console.log(`[monitor-withdrawal] Withdrawal ${withdrawal_id} completed successfully`);
 

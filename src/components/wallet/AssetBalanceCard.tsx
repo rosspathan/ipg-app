@@ -29,8 +29,8 @@ export function AssetBalanceCard({
   const { toast } = useToast()
   const [showOnchain, setShowOnchain] = useState(false)
   
-  // Only fetch on-chain balance for supported assets (USDT on BSC for now)
-  const shouldShowOnchain = asset.symbol === "USDT"
+  // Only fetch on-chain balance for supported assets (USDT and IPG on BSC)
+  const shouldShowOnchain = ["USDT", "IPG"].includes(asset.symbol)
   const { balance: onchainBalanceStr, isLoading: onchainLoading } = useErc20OnchainBalance(
     shouldShowOnchain ? asset.symbol : "",
     "bsc"
