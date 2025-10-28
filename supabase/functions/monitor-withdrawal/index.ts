@@ -41,6 +41,42 @@ serve(async (req) => {
     }
 
     if (withdrawal.status === 'completed') {
+      // Verify locked balance was properly decremented, repair if needed
+      console.log('[monitor-withdrawal] Withdrawal already completed, verifying locked balance');
+      
+      const { data: balanceData, error: balanceError } = await supabase
+        .from('wallet_balances')
+        .select('locked')
+        .eq('user_id', withdrawal.user_id)
+        .eq('asset_id', withdrawal.asset_id)
+        .single();
+
+      if (!balanceError && balanceData) {
+        const currentLocked = Number(balanceData.locked || 0);
+        const amount = Number(withdrawal.amount);
+        const decrement = Math.min(currentLocked, amount);
+
+        console.log(`[monitor-withdrawal] Locked: ${currentLocked}, withdrawal: ${amount}, will decrement: ${decrement}`);
+
+        if (decrement > 0) {
+          const newLocked = currentLocked - decrement;
+          const { error: updateError } = await supabase
+            .from('wallet_balances')
+            .update({ 
+              locked: newLocked,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', withdrawal.user_id)
+            .eq('asset_id', withdrawal.asset_id);
+
+          if (updateError) {
+            console.error('[monitor-withdrawal] Failed to repair locked balance:', updateError);
+          } else {
+            console.log(`[monitor-withdrawal] ✓ Repaired locked balance: ${currentLocked} → ${newLocked}`);
+          }
+        }
+      }
+
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -190,24 +226,44 @@ serve(async (req) => {
       })
       .eq('id', withdrawal_id);
 
-    // Deduct the withdrawn amount from user's balance (locked + total)
-    console.log(`[monitor-withdrawal] Deducting ${withdrawal.amount} from user balance...`);
+    // Directly decrement locked balance (idempotent - won't go negative)
+    console.log(`[monitor-withdrawal] Decrementing locked balance for withdrawal ${withdrawal.amount}`);
     
-    const { data: deductResult, error: deductError } = await supabase.rpc(
-      'complete_withdrawal_balance_deduction',
-      {
-        p_user_id: withdrawal.user_id,
-        p_asset_id: withdrawal.asset_id,
-        p_amount: withdrawal.amount
-      }
-    );
+    const { data: balanceData, error: balanceError } = await supabase
+      .from('wallet_balances')
+      .select('locked')
+      .eq('user_id', withdrawal.user_id)
+      .eq('asset_id', withdrawal.asset_id)
+      .single();
 
-    if (deductError || !deductResult) {
-      console.error(`[monitor-withdrawal] CRITICAL: Failed to deduct balance:`, deductError);
-      // Note: Withdrawal is already on-chain and confirmed, cannot rollback
-      // This requires manual intervention to fix the balance
+    if (balanceError) {
+      console.error('[monitor-withdrawal] CRITICAL: Failed to fetch locked balance:', balanceError);
     } else {
-      console.log(`[monitor-withdrawal] Successfully deducted ${withdrawal.amount} from balance`);
+      const currentLocked = Number(balanceData?.locked || 0);
+      const amount = Number(withdrawal.amount);
+      const decrement = Math.min(currentLocked, amount);
+
+      console.log(`[monitor-withdrawal] Locked: ${currentLocked}, withdrawal: ${amount}, decrement: ${decrement}`);
+
+      if (decrement > 0) {
+        const newLocked = currentLocked - decrement;
+        const { error: updateError } = await supabase
+          .from('wallet_balances')
+          .update({ 
+            locked: newLocked,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', withdrawal.user_id)
+          .eq('asset_id', withdrawal.asset_id);
+
+        if (updateError) {
+          console.error('[monitor-withdrawal] CRITICAL: Failed to decrement locked balance:', updateError);
+        } else {
+          console.log(`[monitor-withdrawal] ✓ Decremented locked balance: ${currentLocked} → ${newLocked}`);
+        }
+      } else {
+        console.log('[monitor-withdrawal] Locked balance already at zero');
+      }
     }
 
     console.log(`[monitor-withdrawal] Withdrawal ${withdrawal_id} completed successfully`);

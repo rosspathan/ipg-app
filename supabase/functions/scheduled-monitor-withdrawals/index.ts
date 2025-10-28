@@ -19,11 +19,14 @@ serve(async (req) => {
 
     console.log('[scheduled-monitor-withdrawals] Starting scheduled withdrawal monitoring...');
 
-    // Find all withdrawals in 'processing' status
+    // Find processing withdrawals and recent completed ones (to repair locked balances if needed)
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
     const { data: processingWithdrawals, error: fetchError } = await supabase
       .from('withdrawals')
-      .select('id, tx_hash, created_at')
-      .eq('status', 'processing')
+      .select('id, tx_hash, created_at, status')
+      .or(`status.eq.processing,and(status.eq.completed,created_at.gte.${twoDaysAgo.toISOString()})`)
       .order('created_at', { ascending: true });
 
     if (fetchError) {
@@ -32,18 +35,18 @@ serve(async (req) => {
     }
 
     if (!processingWithdrawals || processingWithdrawals.length === 0) {
-      console.log('[scheduled-monitor-withdrawals] No processing withdrawals found');
+      console.log('[scheduled-monitor-withdrawals] No withdrawals to check');
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'No processing withdrawals to monitor',
+          message: 'No withdrawals to monitor',
           checked: 0
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`[scheduled-monitor-withdrawals] Found ${processingWithdrawals.length} processing withdrawals`);
+    console.log(`[scheduled-monitor-withdrawals] Found ${processingWithdrawals.length} withdrawals to check`);
 
     const results = [];
     let completedCount = 0;
