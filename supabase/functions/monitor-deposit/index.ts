@@ -98,9 +98,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}))
-    // Accept both deposit_id and depositId for compatibility
     const { deposit_id, depositId } = body
-    const finalDepositId = deposit_id || depositId
+    const actualDepositId = deposit_id || depositId // Accept both parameter names for compatibility
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -108,12 +107,12 @@ serve(async (req) => {
     )
 
     // If no deposit_id provided, process all pending/confirmed deposits (batch mode)
-    if (!finalDepositId) {
+    if (!actualDepositId) {
       const { data: pendingDeposits, error: queryError } = await supabaseClient
         .from('deposits')
-        .select('*, assets(symbol, decimals, contract_address, max_deposit_per_tx)')
+        .select('*, assets(symbol, decimals, contract_address)')
         .in('status', ['pending', 'confirmed'])
-        .is('credited_at', null)
+        .is('credited_at', null) // Only process deposits that haven't been credited yet
         .limit(50)
 
       if (queryError) throw queryError
@@ -148,14 +147,29 @@ serve(async (req) => {
             continue
           }
 
-          // Sanity check: Verify amount doesn't exceed max_deposit_per_tx
-          if (asset.max_deposit_per_tx && parseFloat(deposit.amount) > asset.max_deposit_per_tx) {
-            console.log(`[monitor-deposit] Deposit ${deposit.id} exceeds limit: ${deposit.amount} > ${asset.max_deposit_per_tx}`)
+          // Sanity check: Check max_deposit_per_tx limit if set
+          const { data: assetDetails } = await supabaseClient
+            .from('assets')
+            .select('max_deposit_per_tx')
+            .eq('symbol', asset.symbol)
+            .single()
+
+          if (assetDetails?.max_deposit_per_tx && parseFloat(deposit.amount) > assetDetails.max_deposit_per_tx) {
+            console.log(`[monitor-deposit] Deposit ${deposit.id} exceeds max limit: ${deposit.amount} > ${assetDetails.max_deposit_per_tx}`)
+            
             await supabaseClient
               .from('deposits')
-              .update({ status: 'failed', updated_at: new Date().toISOString() })
+              .update({ 
+                status: 'failed',
+                updated_at: new Date().toISOString()
+              })
               .eq('id', deposit.id)
-            results.push({ id: deposit.id, status: 'failed', reason: 'exceeds_limit' })
+            
+            results.push({ 
+              id: deposit.id, 
+              status: 'failed', 
+              error: `Amount ${deposit.amount} exceeds maximum allowed ${assetDetails.max_deposit_per_tx}`
+            })
             continue
           }
 
@@ -204,14 +218,8 @@ serve(async (req) => {
             continue
           }
 
-          // Check idempotency: Only credit if not already credited
-          const { data: currentDeposit } = await supabaseClient
-            .from('deposits')
-            .select('credited_at, status')
-            .eq('id', deposit.id)
-            .single()
-
-          if (currentDeposit?.credited_at) {
+          // Idempotency check: Verify this deposit hasn't been credited already
+          if (deposit.credited_at) {
             console.log(`[monitor-deposit] Deposit ${deposit.id} already credited, skipping`)
             results.push({ id: deposit.id, status: 'already_credited' })
             continue
@@ -239,7 +247,6 @@ serve(async (req) => {
               credited_at: new Date().toISOString()
             })
             .eq('id', deposit.id)
-            .is('credited_at', null)
 
           if (updateError) {
             console.error(`[monitor-deposit] Failed to update deposit ${deposit.id}:`, updateError)
@@ -269,8 +276,8 @@ serve(async (req) => {
     // Single deposit mode
     const { data: deposit, error: depositError } = await supabaseClient
       .from('deposits')
-      .select('*, assets(symbol, decimals, contract_address, max_deposit_per_tx)')
-      .eq('id', finalDepositId)
+      .select('*, assets(symbol, decimals, contract_address)')
+      .eq('id', actualDepositId)
       .single()
 
     if (depositError) throw depositError
@@ -293,21 +300,39 @@ serve(async (req) => {
       throw new Error('Missing contract address or wallet address')
     }
 
-    // Sanity check: Verify amount doesn't exceed max_deposit_per_tx
-    if (asset.max_deposit_per_tx && parseFloat(deposit.amount) > asset.max_deposit_per_tx) {
-      console.log(`[monitor-deposit] Deposit ${finalDepositId} exceeds limit: ${deposit.amount} > ${asset.max_deposit_per_tx}`)
-      await supabaseClient
-        .from('deposits')
-        .update({ status: 'failed', updated_at: new Date().toISOString() })
-        .eq('id', finalDepositId)
+    // Idempotency check
+    if (deposit.credited_at) {
+      console.log(`[monitor-deposit] Deposit ${actualDepositId} already credited`)
       return new Response(
         JSON.stringify({ 
-          success: false, 
-          deposit_id: finalDepositId,
-          error: `Amount ${deposit.amount} exceeds maximum allowed ${asset.max_deposit_per_tx}`
+          success: true, 
+          deposit_id: actualDepositId,
+          status: 'already_credited',
+          message: 'Deposit already processed'
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Sanity check: Check max_deposit_per_tx limit if set
+    const { data: assetDetails } = await supabaseClient
+      .from('assets')
+      .select('max_deposit_per_tx')
+      .eq('symbol', asset.symbol)
+      .single()
+
+    if (assetDetails?.max_deposit_per_tx && parseFloat(deposit.amount) > assetDetails.max_deposit_per_tx) {
+      console.log(`[monitor-deposit] Deposit ${actualDepositId} exceeds max limit: ${deposit.amount} > ${assetDetails.max_deposit_per_tx}`)
+      
+      await supabaseClient
+        .from('deposits')
+        .update({ 
+          status: 'failed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', actualDepositId)
+
+      throw new Error(`Deposit amount ${deposit.amount} exceeds maximum allowed ${assetDetails.max_deposit_per_tx}`)
     }
 
     const verification = await verifyBEP20Transfer(
@@ -322,7 +347,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          deposit_id: finalDepositId,
+          deposit_id: actualDepositId,
           error: verification.error,
           confirmations: verification.confirmations
         }),
@@ -330,30 +355,9 @@ serve(async (req) => {
       )
     }
 
-    console.log(`[monitor-deposit] Checking deposit ${finalDepositId}: ${verification.confirmations}/${deposit.required_confirmations} confirmations`)
+    console.log(`[monitor-deposit] Checking deposit ${actualDepositId}: ${verification.confirmations}/${deposit.required_confirmations} confirmations`)
 
     if (verification.confirmations >= deposit.required_confirmations) {
-      // Check idempotency
-      const { data: currentDeposit } = await supabaseClient
-        .from('deposits')
-        .select('credited_at, status')
-        .eq('id', finalDepositId)
-        .single()
-
-      if (currentDeposit?.credited_at) {
-        console.log(`[monitor-deposit] Deposit ${finalDepositId} already credited`)
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            deposit_id: finalDepositId,
-            status: 'already_completed',
-            confirmations: verification.confirmations,
-            required: deposit.required_confirmations
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
       const { error: creditError } = await supabaseClient.rpc('credit_deposit_balance', {
         p_user_id: deposit.user_id,
         p_asset_symbol: asset.symbol,
@@ -372,8 +376,7 @@ serve(async (req) => {
           status: 'completed',
           credited_at: new Date().toISOString()
         })
-        .eq('id', finalDepositId)
-        .is('credited_at', null)
+        .eq('id', actualDepositId)
 
       if (updateError) throw updateError
 
@@ -383,13 +386,13 @@ serve(async (req) => {
       await supabaseClient
         .from('deposits')
         .update({ confirmations: verification.confirmations })
-        .eq('id', finalDepositId)
+        .eq('id', actualDepositId)
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        deposit_id: finalDepositId,
+        deposit_id: actualDepositId,
         status: verification.confirmations >= deposit.required_confirmations ? 'completed' : 'pending',
         confirmations: verification.confirmations,
         required: deposit.required_confirmations
