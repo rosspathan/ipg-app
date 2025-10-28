@@ -10461,6 +10461,10 @@ export type Database = {
         }
         Returns: string
       }
+      complete_withdrawal_balance_deduction: {
+        Args: { p_amount: number; p_asset_id: string; p_user_id: string }
+        Returns: boolean
+      }
       convert_bsk_to_inr: { Args: { bsk_amount: number }; Returns: number }
       convert_inr_to_bsk: { Args: { inr_amount: number }; Returns: number }
       count_lucky_draw_tickets: {

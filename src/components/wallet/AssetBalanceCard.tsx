@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { useErc20OnchainBalance } from "@/hooks/useErc20OnchainBalance"
 import AssetLogo from "@/components/AssetLogo"
 import { AssetBalance } from "@/hooks/useWalletBalances"
+import { BalanceReconciliationAlert } from "./BalanceReconciliationAlert"
 
 interface AssetBalanceCardProps {
   asset: AssetBalance
@@ -148,7 +149,18 @@ export function AssetBalanceCard({
           </div>
         )}
 
-        {/* Sync Alert */}
+        {/* Balance Reconciliation Alert - Shows for ANY significant mismatch */}
+        {shouldShowOnchain && !onchainLoading && (
+          <BalanceReconciliationAlert
+            assetSymbol={asset.symbol}
+            appBalance={asset.balance}
+            onchainBalance={onchainBalance}
+            onSync={handleSync}
+            isSyncing={isSyncing}
+          />
+        )}
+
+        {/* Sync Alert - Only shows when on-chain > app (uncredited deposits) */}
         {syncNeeded && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
             <p className="text-sm text-yellow-600 mb-2">
