@@ -16,39 +16,46 @@ export const badgeTokens = {
       text: "240 5% 90%",
     },
     silver: {
-      primary: "210 20% 75%",       // #B8C5D6
-      secondary: "210 20% 65%",     // #9FAFC4
-      accent: "200 40% 85%",        // #CCE5F0
-      glow: "210 40% 70% / 0.4",
+      primary: "210 30% 85%",       // Bright polished silver
+      secondary: "210 25% 75%",     // Medium silver
+      accent: "210 40% 92%",        // Highlight shine
+      glow: "210 60% 80% / 0.6",    // Strong metallic glow
       text: "210 30% 20%",
+      metallic: "linear-gradient(135deg, #B8C5D6 0%, #E8EEF5 50%, #B8C5D6 100%)",
     },
     gold: {
-      primary: "45 90% 60%",        // #F4C542
-      secondary: "42 85% 55%",      // #E8B73A
-      accent: "48 95% 70%",         // #F9D975
-      glow: "45 100% 60% / 0.5",
+      primary: "43 100% 55%",       // Rich 24K gold
+      secondary: "38 100% 50%",     // Deep gold
+      accent: "48 100% 70%",        // Bright golden highlight
+      glow: "43 100% 60% / 0.7",    // Warm golden glow
       text: "45 80% 15%",
+      metallic: "linear-gradient(135deg, #DAA520 0%, #FFD700 25%, #FFF4A3 50%, #FFD700 75%, #DAA520 100%)",
     },
     platinum: {
-      primary: "200 15% 70%",       // #A3B8C2
-      secondary: "200 20% 60%",     // #8AA3B3
-      accent: "180 25% 85%",        // #C8E0E8
-      glow: "200 30% 70% / 0.5",
+      primary: "200 15% 90%",       // Bright platinum white
+      secondary: "200 20% 80%",     // Medium platinum
+      accent: "180 30% 95%",        // Pure white shine
+      glow: "200 40% 85% / 0.7",    // Bright platinum glow
       text: "200 30% 15%",
+      metallic: "linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 25%, #FFFFFF 50%, #E8E8E8 75%, #C0C0C0 100%)",
     },
     diamond: {
-      primary: "200 100% 75%",      // #80E5FF
-      secondary: "195 100% 65%",    // #5CD9F5
-      accent: "185 100% 85%",       // #B3F0FF
-      glow: "200 100% 70% / 0.6",
+      primary: "200 100% 70%",      // Bright cyan brilliance
+      secondary: "195 100% 60%",    // Deep cyan
+      accent: "185 100% 90%",       // Crystal highlight
+      glow: "200 100% 75% / 0.8",   // Intense sparkle
       text: "200 80% 10%",
+      prismatic: "linear-gradient(135deg, #66D9FF 0%, #A366FF 25%, #FFD966 50%, #66FFB3 75%, #66D9FF 100%)",
+      sparkle: true,
     },
     vip: {
-      primary: "280 100% 65%",      // #B366FF
-      secondary: "275 90% 55%",     // #9A33E8
-      accent: "285 100% 75%",       // #D699FF
-      glow: "280 100% 60% / 0.7",
+      primary: "280 100% 70%",      // Brighter royal purple
+      secondary: "275 90% 60%",     // Deep purple
+      accent: "285 100% 80%",       // Light purple accent
+      glow: "280 100% 65% / 0.9",   // Intense royal glow
       text: "280 80% 98%",
+      aurora: "linear-gradient(135deg, #CC66FF 0%, #66D9FF 25%, #66FFB3 50%, #CC66FF 75%, #FF66B3 100%)",
+      animated: true,
     },
   },
 
