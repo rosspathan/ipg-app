@@ -7,6 +7,7 @@ import { ArrowLeft, Users, GitBranch, AlertTriangle, CheckCircle, XCircle } from
 import { useNavigate } from "react-router-dom";
 import { RebuildAllTreesTool } from "@/components/admin/RebuildAllTreesTool";
 import { ReferralBackfillTool } from "@/components/admin/ReferralBackfillTool";
+import { ReferralSystemRepairTool } from "@/components/admin/ReferralSystemRepairTool";
 
 interface TreeHealthStats {
   totalUsersWithSponsors: number;
@@ -214,6 +215,9 @@ export default function TreeHealthDashboard() {
             </p>
           </CardContent>
         </Card>
+
+        {/* System Repair Tool - Use this first! */}
+        <ReferralSystemRepairTool />
 
         {/* Backfill Tool */}
         <ReferralBackfillTool />
