@@ -203,7 +203,10 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Approving this KYC will automatically credit <span className="font-semibold text-primary">5 BSK</span> to the user's holding balance as a welcome reward.
+              ✅ <span className="font-semibold text-primary">5 BSK (holding)</span> will be credited directly to the user's account upon approval.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              No rewards are distributed to sponsors for KYC approvals.
             </p>
           </CardContent>
         </Card>

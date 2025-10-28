@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
       throw new Error('Failed to update badge holding');
     }
 
-    // 4. Process 10% direct commission (L1 sponsor only)
+    // 4. Process 10% direct commission (L1 sponsor only - NO multi-level rewards)
     try {
       console.log('💰 Processing 10% direct commission...');
       
@@ -152,29 +152,6 @@ Deno.serve(async (req) => {
     } catch (commissionError) {
       console.error('❌ Direct commission processor error (non-critical):', commissionError);
       // Don't fail the purchase if commission fails
-    }
-
-    // 4b. Process 50-level team income rewards
-    try {
-      console.log('🌳 Processing 50-level team income rewards...');
-      
-      const teamIncomeResponse = await supabaseClient.functions.invoke('process-team-income-rewards', {
-        body: {
-          payer_id: user_id,
-          event_type: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
-          event_id: crypto.randomUUID(),
-          badge_name,
-          payment_amount: bsk_amount
-        }
-      });
-
-      if (teamIncomeResponse.error) {
-        console.error('❌ Team income processing error:', teamIncomeResponse.error);
-      } else {
-        console.log('✅ Team income rewards processed:', teamIncomeResponse.data);
-      }
-    } catch (teamIncomeError) {
-      console.error('❌ Team income processor error (non-critical):', teamIncomeError);
     }
 
     // 5. Credit bonus holding balance for badge purchase

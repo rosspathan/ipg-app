@@ -101,29 +101,33 @@ export function useAdminKYC() {
         notes: adminNotes,
       });
 
-      // CRITICAL: Trigger 50-level referral commission distribution for KYC reward
-      // This ensures sponsors earn commissions on the 5 BSK KYC reward
+      // CRITICAL: Credit 5 BSK reward directly to the KYC user
+      // NO sponsor distribution for KYC approvals
       if (userId) {
         try {
-          console.log('🎁 Triggering KYC referral commissions for user:', userId);
-          const { data: commissionResult, error: commissionError } = await supabase.functions.invoke(
-            'process-kyc-commissions',
+          console.log('🎁 Crediting KYC reward to user:', userId);
+          const { data: rewardResult, error: rewardError } = await supabase.functions.invoke(
+            'process-kyc-user-reward',
             {
               body: {
                 user_id: userId,
-                kyc_reward_bsk: 5
+                reward_bsk: 5
               }
             }
           );
 
-          if (commissionError) {
-            console.error('⚠️ KYC commission distribution failed:', commissionError);
-            // Don't fail approval if commission distribution fails
+          if (rewardError) {
+            console.error('⚠️ KYC reward crediting failed:', rewardError);
+            toast({
+              title: "Warning",
+              description: "KYC approved but reward crediting failed. Check logs.",
+              variant: "destructive",
+            });
           } else {
-            console.log('✅ KYC commissions distributed:', commissionResult);
+            console.log('✅ KYC reward credited:', rewardResult);
           }
-        } catch (commissionError) {
-          console.error('⚠️ Error triggering KYC commissions:', commissionError);
+        } catch (rewardError) {
+          console.error('⚠️ Error crediting KYC reward:', rewardError);
           // Non-critical - KYC approval still succeeds
         }
       }

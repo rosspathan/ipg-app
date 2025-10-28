@@ -120,7 +120,7 @@ verify_jwt = true
 [functions.admin-rebuild-referral-trees]
 verify_jwt = true
 
-[functions.process-kyc-commissions]
+[functions.process-kyc-user-reward]
 verify_jwt = false
 
 [functions.build-referral-tree]
