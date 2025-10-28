@@ -39,6 +39,11 @@ export function useWalletBalances() {
     setError(null);
 
     try {
+      // Trigger native BNB sync in background (non-blocking)
+      supabase.functions.invoke('sync-native-bnb', {
+        body: { userIds: [user.id] }
+      }).catch(err => console.warn('Native BNB sync failed:', err));
+
       // Fetch user's wallet balances with asset details
       const { data: balanceData, error: balanceError } = await supabase
         .from('wallet_balances')
@@ -51,7 +56,8 @@ export function useWalletBalances() {
             symbol,
             name,
             logo_url,
-            initial_price
+            initial_price,
+            network
           )
         `)
         .eq('user_id', user.id)

@@ -76,16 +76,16 @@ serve(async (req) => {
     // Validate address format
     const trimmedAddress = to_address.trim();
     
-    // Only support BEP20 for now
-    if (network !== 'BEP20') {
-      throw new Error('Only BEP20 withdrawals are supported currently');
+    // Support BEP20 and native BNB
+    if (network !== 'BEP20' && network !== 'BNB') {
+      throw new Error('Only BEP20 and native BNB withdrawals are supported currently');
     }
     
     if (!trimmedAddress.startsWith('0x') || trimmedAddress.length !== 42) {
-      throw new Error('Invalid BEP20 address format');
+      throw new Error('Invalid BSC address format');
     }
     if (!/^0x[a-fA-F0-9]{40}$/.test(trimmedAddress)) {
-      throw new Error('Invalid BEP20 address characters');
+      throw new Error('Invalid BSC address characters');
     }
 
     // Check daily withdrawal limit (5 per day)
@@ -173,7 +173,7 @@ serve(async (req) => {
 
     try {
       // Check if it's native BNB or ERC20 token
-      if (asset_symbol === 'BNB' || !asset.contract_address) {
+      if ((asset_symbol === 'BNB' && network === 'BNB') || !asset.contract_address) {
         // Native BNB transfer
         const value = parseEther(amountNum.toString());
         

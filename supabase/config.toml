@@ -152,3 +152,9 @@ verify_jwt = false
 
 [functions.manual-credit-deposit]
 verify_jwt = true
+
+[functions.sync-native-bnb]
+verify_jwt = false
+
+[functions.scheduled-sync-native-bnb]
+verify_jwt = false
