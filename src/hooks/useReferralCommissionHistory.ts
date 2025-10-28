@@ -48,46 +48,64 @@ export function useReferralCommissionHistory() {
     queryFn: async () => {
       if (!user?.id) throw new Error('No user ID');
 
-      // Fetch all commissions earned by current user
-      const { data: commissions, error } = await supabase
-        .from('referral_commissions')
+      // Fetch all commissions earned by current user from referral_ledger
+      const { data: ledgerData, error } = await supabase
+        .from('referral_ledger')
         .select(`
           id,
-          payer_id,
-          level,
-          event_type,
-          commission_type,
+          source_user_id,
+          depth,
           bsk_amount,
-          destination,
+          trigger_type,
+          badge_at_event,
           created_at,
-          my_badge_at_event,
-          payer:profiles!referral_commissions_payer_id_fkey(
+          source:profiles!referral_ledger_source_user_id_fkey(
             username,
-            display_name,
-            user_badge_holdings(current_badge)
+            display_name
           )
         `)
-        .eq('earner_id', user.id)
-        .eq('status', 'settled')
+        .eq('referrer_id', user.id)
+        .eq('ledger_type', 'referral')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
+      // Fetch badge info for all source users
+      const sourceIds = [...new Set(ledgerData?.map(l => l.source_user_id) || [])];
+      const { data: badgeData } = await supabase
+        .from('user_badge_holdings')
+        .select('user_id, current_badge')
+        .in('user_id', sourceIds);
+
+      const badgeMap = new Map(badgeData?.map(b => [b.user_id, b.current_badge]) || []);
+
       // Transform data
-      const entries: CommissionHistoryEntry[] = commissions.map((c: any) => ({
-        id: c.id,
-        payer_id: c.payer_id,
-        payer_username: c.payer?.username || 'Unknown',
-        payer_display_name: c.payer?.display_name || 'Unknown User',
-        payer_badge: c.payer?.user_badge_holdings?.[0]?.current_badge || null,
-        level: c.level,
-        event_type: c.event_type,
-        commission_type: c.commission_type || 'direct_commission',
-        bsk_amount: c.bsk_amount,
-        destination: c.destination,
-        created_at: c.created_at,
-        my_badge_at_event: c.my_badge_at_event,
-      }));
+      const entries: CommissionHistoryEntry[] = (ledgerData || []).map((c: any) => {
+        const level = c.depth || 1;
+        
+        // Determine commission type based on level and trigger
+        let commissionType: 'direct_commission' | 'team_income' | 'vip_milestone' = 'team_income';
+        if (level === 1) {
+          commissionType = 'direct_commission';
+        } else if (c.trigger_type === 'vip_milestone') {
+          commissionType = 'vip_milestone';
+        }
+
+        return {
+          id: c.id,
+          payer_id: c.source_user_id,
+          payer_username: c.source?.username || 'Unknown',
+          payer_display_name: c.source?.display_name || 'Unknown User',
+          payer_badge: badgeMap.get(c.source_user_id) || null,
+          level: level,
+          event_type: c.trigger_type || 'unknown',
+          commission_type: commissionType,
+          bsk_amount: Number(c.bsk_amount || 0),
+          destination: 'holding',
+          created_at: c.created_at,
+          my_badge_at_event: c.badge_at_event || null,
+        };
+      });
 
       // Calculate level summaries
       const levelMap = new Map<number, { total: number; people: Set<string>; latest: string | null }>();

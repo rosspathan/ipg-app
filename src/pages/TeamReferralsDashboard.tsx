@@ -13,6 +13,7 @@ import { SponsorInfoCard } from '@/components/referrals/SponsorInfoCard';
 import { DirectReferralsList } from '@/components/referrals/DirectReferralsList';
 import { ReferralCommissionHistory } from '@/components/referrals/ReferralCommissionHistory';
 import { DownlineTreeViewer } from '@/components/referrals/DownlineTreeViewer';
+import { BadgeUnlockLevels } from '@/components/referrals/BadgeUnlockLevels';
 
 export default function TeamReferralsDashboard() {
   const navigate = useNavigate();
@@ -108,6 +109,9 @@ export default function TeamReferralsDashboard() {
             <UserReferralStatsWidget />
             <VIPMilestoneProgress />
           </div>
+
+          {/* Badge Unlock Levels */}
+          <BadgeUnlockLevels />
 
           {/* How It Works */}
           <Card>

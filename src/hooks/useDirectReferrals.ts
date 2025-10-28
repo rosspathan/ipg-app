@@ -71,10 +71,13 @@ export function useDirectReferrals() {
         return acc;
       }, {} as Record<string, number>) || {};
 
-      // Get latest badge per user
+      // Get latest badge per user (normalized)
       const latestBadges = badges?.reduce((acc, b) => {
         if (!acc[b.user_id] || new Date(b.purchased_at) > new Date(acc[b.user_id].purchased_at)) {
-          acc[b.user_id] = b;
+          acc[b.user_id] = {
+            current_badge: b.current_badge,
+            purchased_at: b.purchased_at
+          };
         }
         return acc;
       }, {} as Record<string, { current_badge: string; purchased_at: string }>) || {};

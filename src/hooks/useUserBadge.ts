@@ -41,6 +41,19 @@ export const useUserBadge = () => {
         return;
       }
 
+      // Check badge_thresholds for default badge
+      const { data: thresholdData } = await supabase
+        .from('badge_thresholds')
+        .select('badge_name')
+        .order('threshold_amount', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (thresholdData?.badge_name) {
+        setBadge(normalizeBadgeName(thresholdData.badge_name));
+        return;
+      }
+
       // Default to None if no badge found
       setBadge('None');
     } catch (error) {

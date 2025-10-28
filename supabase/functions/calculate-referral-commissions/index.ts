@@ -126,6 +126,32 @@ Deno.serve(async (req) => {
       const sponsorId = uplinePath[level]
       const levelNumber = level + 1
 
+      // Get sponsor's current badge and unlock levels
+      const { data: sponsorBadgeData } = await supabase
+        .from('user_badge_holdings')
+        .select('current_badge')
+        .eq('user_id', sponsorId)
+        .order('purchased_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      const sponsorBadge = sponsorBadgeData?.current_badge || 'None'
+
+      // Get unlock levels for sponsor's badge
+      const { data: badgeThreshold } = await supabase
+        .from('badge_thresholds')
+        .select('unlock_levels')
+        .eq('badge_name', sponsorBadge)
+        .maybeSingle()
+
+      const unlockedLevels = badgeThreshold?.unlock_levels || 1
+
+      // Check if sponsor's badge unlocks this level
+      if (levelNumber > unlockedLevels) {
+        console.log(`Level ${levelNumber} commission skipped for sponsor ${sponsorId}: requires badge with ${levelNumber}+ unlock levels (current: ${sponsorBadge} with ${unlockedLevels} levels)`)
+        continue
+      }
+
       // Get commission rate for this level
       const commissionRate = settings.level_percentages?.[levelNumber] || 0
 

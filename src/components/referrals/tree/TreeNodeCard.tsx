@@ -88,6 +88,13 @@ export function TreeNodeCard({ node, onClick, isHighlighted }: TreeNodeCardProps
               </div>
             )}
           </div>
+
+          {/* Downline indicator */}
+          {node.subTreeSize > 0 && (
+            <div className="mt-1 text-xs text-muted-foreground">
+              Total Downline: {node.subTreeSize}
+            </div>
+          )}
         </div>
       </div>
 
