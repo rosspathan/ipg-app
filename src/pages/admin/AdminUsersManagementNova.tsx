@@ -284,11 +284,81 @@ export default function AdminUsersManagementNova() {
     },
   ];
 
-  const handleApproveKYC = (userId: string) => {
-    updateUser.mutate({
-      userId,
-      updates: { kyc_status: 'approved' }
-    });
+  const handleApproveKYC = async (userId: string) => {
+    try {
+      // 1. Update KYC status to approved
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ kyc_status: 'approved' })
+        .eq('user_id', userId);
+
+      if (updateError) throw updateError;
+
+      // 2. Credit 5 BSK to user's holding balance
+      const { error: balanceError } = await supabase
+        .from('user_bsk_balances')
+        .upsert({
+          user_id: userId,
+          holding_balance: 5,
+          total_earned_holding: 5
+        }, { 
+          onConflict: 'user_id',
+          ignoreDuplicates: false 
+        })
+        .select()
+        .single();
+
+      // If user already has balance, we need to increment it
+      if (balanceError) {
+        // Try to increment existing balance
+        const { data: existingBalance } = await supabase
+          .from('user_bsk_balances')
+          .select('holding_balance, total_earned_holding')
+          .eq('user_id', userId)
+          .single();
+
+        if (existingBalance) {
+          await supabase
+            .from('user_bsk_balances')
+            .update({
+              holding_balance: (existingBalance.holding_balance || 0) + 5,
+              total_earned_holding: (existingBalance.total_earned_holding || 0) + 5
+            })
+            .eq('user_id', userId);
+        }
+      }
+
+      // 3. Distribute team income to upline via edge function
+      const { error: commissionError } = await supabase.functions.invoke('process-kyc-commissions', {
+        body: { 
+          user_id: userId, 
+          kyc_reward_bsk: 5 
+        }
+      });
+
+      if (commissionError) {
+        console.error('Commission distribution error:', commissionError);
+        // Don't fail the whole operation if commission distribution fails
+      }
+
+      // 4. Invalidate queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['user-bsk-balance', userId] });
+      refetchKyc();
+
+      toast({ 
+        title: "KYC Approved Successfully", 
+        description: "User received 5 BSK reward and team income was distributed to upline members."
+      });
+      
+    } catch (error: any) {
+      console.error('KYC approval error:', error);
+      toast({ 
+        title: "Failed to approve KYC", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
   };
 
   const handleSuspendUser = (userId: string) => {
