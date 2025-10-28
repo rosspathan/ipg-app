@@ -12,9 +12,28 @@ export interface UnifiedBSKTransaction {
   balance_type: 'withdrawable' | 'holding';
   reference_id?: string;
   description: string;
-  metadata?: any;
+  metadata?: {
+    transaction_ref?: string;
+    recipient_id?: string;
+    sender_id?: string;
+    status?: string;
+    withdrawal_type?: string;
+    bank_name?: string;
+    account_number?: string;
+    ifsc_code?: string;
+    account_holder_name?: string;
+    crypto_symbol?: string;
+    crypto_address?: string;
+    crypto_network?: string;
+    loan_id?: string;
+    installment_id?: string;
+    notes?: string;
+    admin_notes?: string;
+    [key: string]: any;
+  };
   balance_before?: number;
   balance_after?: number;
+  idempotency_key?: string;
   source_table: string;
 }
 
