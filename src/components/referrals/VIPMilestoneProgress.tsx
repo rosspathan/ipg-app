@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useTeamReferrals } from '@/hooks/useTeamReferrals';
 import { useAuthUser } from '@/hooks/useAuthUser';
-import { Crown, Gift, Check, Lock } from 'lucide-react';
+import { Crown, Gift, Check, Lock, History } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function VIPMilestoneProgress() {
   const { user } = useAuthUser();
@@ -16,6 +17,7 @@ export function VIPMilestoneProgress() {
     claimVipMilestone,
     loading
   } = useTeamReferrals();
+  const navigate = useNavigate();
 
   const [claiming, setClaiming] = useState<string | null>(null);
 
@@ -54,13 +56,24 @@ export function VIPMilestoneProgress() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Crown className="w-5 h-5 text-yellow-500" />
-          VIP Milestone Progress
-        </CardTitle>
-        <CardDescription>
-          Refer VIP badge holders to unlock exclusive rewards
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-yellow-500" />
+              VIP Milestone Progress
+            </CardTitle>
+            <CardDescription>
+              Refer VIP badge holders to unlock exclusive rewards
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/app/programs/team-referrals/vip-milestone-history')}
+          >
+            <History className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Current Progress */}

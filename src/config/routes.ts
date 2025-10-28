@@ -54,6 +54,10 @@ export const ROUTES = {
   // Referrals
   REFERRALS: '/app/referrals',
   REFERRAL_PROGRAM: '/app/referral-program',
+  TEAM_REFERRALS: '/app/programs/team-referrals',
+  TEAM_REFERRALS_TEAM: '/app/programs/team-referrals/team',
+  TEAM_REFERRALS_EARNINGS: '/app/programs/team-referrals/earnings',
+  VIP_MILESTONE_HISTORY: '/app/programs/team-referrals/vip-milestone-history',
   
   // KYC & Verification
   KYC: '/app/kyc',

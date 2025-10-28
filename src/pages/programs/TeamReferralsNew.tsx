@@ -1,7 +1,7 @@
 import { ProgramPageTemplate } from "@/components/programs-pro/ProgramPageTemplate"
 import { ReferralCodeCard } from "@/components/referrals/ReferralCodeCard"
 import { StatCard } from "@/components/referrals/StatCard"
-import { Users, TrendingUp, Award, Target, ArrowRight } from "lucide-react"
+import { Users, TrendingUp, Award, Target, ArrowRight, History } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useNavigate } from "react-router-dom"
@@ -129,6 +129,19 @@ export default function TeamReferralsNew() {
             <div className="flex items-center gap-3">
               <TrendingUp className="h-5 w-5" />
               <span className="font-semibold">Commission History</span>
+            </div>
+            <ArrowRight className="h-5 w-5" />
+          </Button>
+
+          <Button 
+            size="lg" 
+            variant="outline" 
+            className="w-full h-14 justify-between"
+            onClick={() => navigate('/app/programs/team-referrals/vip-milestone-history')}
+          >
+            <div className="flex items-center gap-3">
+              <History className="h-5 w-5" />
+              <span className="font-semibold">VIP Milestone History</span>
             </div>
             <ArrowRight className="h-5 w-5" />
           </Button>
