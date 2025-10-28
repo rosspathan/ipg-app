@@ -168,7 +168,7 @@ serve(async (req: Request) => {
 
     // Invoke monitor-deposit to finalize
     await supabaseClient.functions.invoke('monitor-deposit', {
-      body: { depositId: deposit.id }
+      body: { deposit_id: deposit.id }
     });
 
     return new Response(JSON.stringify({

@@ -148,7 +148,7 @@ serve(async (req) => {
 
             // Trigger monitor-deposit function to verify and credit
             await supabaseClient.functions.invoke('monitor-deposit', {
-              body: { depositId: newDeposit.id }
+              body: { deposit_id: newDeposit.id }
             })
 
             discoveryResults.push({

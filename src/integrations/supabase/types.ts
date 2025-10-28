@@ -559,6 +559,7 @@ export type Database = {
           logo_file_name: string | null
           logo_file_path: string | null
           logo_url: string | null
+          max_deposit_per_tx: number | null
           max_withdraw_amount: number | null
           min_trade_amount: number | null
           min_withdraw_amount: number | null
@@ -585,6 +586,7 @@ export type Database = {
           logo_file_name?: string | null
           logo_file_path?: string | null
           logo_url?: string | null
+          max_deposit_per_tx?: number | null
           max_withdraw_amount?: number | null
           min_trade_amount?: number | null
           min_withdraw_amount?: number | null
@@ -611,6 +613,7 @@ export type Database = {
           logo_file_name?: string | null
           logo_file_path?: string | null
           logo_url?: string | null
+          max_deposit_per_tx?: number | null
           max_withdraw_amount?: number | null
           min_trade_amount?: number | null
           min_withdraw_amount?: number | null
