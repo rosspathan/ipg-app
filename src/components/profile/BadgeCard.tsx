@@ -5,6 +5,7 @@ import { useUserBadge } from "@/hooks/useUserBadge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { badgeTokens, getTierTokens, getTierKey } from "@/design-system/badge-tokens"
 import { motion } from "framer-motion"
+import { normalizeBadgeName, getBadgeDisplayName } from "@/lib/badgeUtils"
 
 const getBadgeIcon = (tier: string) => {
   const tierUpper = tier.toUpperCase();
@@ -22,6 +23,7 @@ export function BadgeCard() {
   const { badge, loading } = useUserBadge()
   
   const displayBadge = badge || "None"
+  const normalizedBadge = normalizeBadgeName(displayBadge);
   
   if (loading) {
     return (
@@ -29,10 +31,12 @@ export function BadgeCard() {
     )
   }
 
-  const tierKey = getTierKey(displayBadge);
+  const tierKey = getTierKey(normalizedBadge);
   const tokens = getTierTokens(tierKey);
-  const Icon = getBadgeIcon(displayBadge);
+  const Icon = getBadgeIcon(normalizedBadge);
   const isPremium = ['platinum', 'diamond', 'vip'].includes(tierKey);
+  
+  console.log('🎖️ [BadgeCard] Display:', { badge, normalizedBadge, tierKey });
   
   return (
     <motion.button 
@@ -123,7 +127,7 @@ export function BadgeCard() {
               className="font-heading font-bold text-2xl tracking-wide"
               style={{ color: `hsl(${tokens.primary})` }}
             >
-              {displayBadge === "None" ? "Member" : displayBadge}
+              {getBadgeDisplayName(normalizedBadge)}
             </h3>
             <p className="text-xs text-muted-foreground/70 uppercase tracking-widest mt-1">
               Current Rank
@@ -132,12 +136,12 @@ export function BadgeCard() {
 
           {/* Badge Description */}
           <p className="text-sm text-foreground/70 leading-relaxed max-w-xs">
-            {displayBadge === "VIP" && "Premium member with exclusive benefits and elite features"}
-            {displayBadge === "Diamond" && "Elite member with maximum privileges"}
-            {displayBadge === "Platinum" && "Distinguished member with premium benefits"}
-            {displayBadge === "Gold" && "Top-tier member with advanced benefits"}
-            {displayBadge === "Silver" && "Valued member with special perks"}
-            {displayBadge === "None" && "Start your journey to unlock rewards"}
+            {normalizedBadge === "VIP" && "Premium member with exclusive benefits and elite features"}
+            {normalizedBadge === "Diamond" && "Elite member with maximum privileges"}
+            {normalizedBadge === "Platinum" && "Distinguished member with premium benefits"}
+            {normalizedBadge === "Gold" && "Top-tier member with advanced benefits"}
+            {normalizedBadge === "Silver" && "Valued member with special perks"}
+            {normalizedBadge === "None" && "Start your journey to unlock rewards"}
           </p>
 
           {/* Premium Badge Indicator */}

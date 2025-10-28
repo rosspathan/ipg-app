@@ -100,18 +100,23 @@ Deno.serve(async (req) => {
       throw new Error('Failed to update balance');
     }
 
-    // 3. Create or update badge holding
+    // 3. Create or update badge holding (STORE NORMALIZED NAME)
     const { error: badgeError } = await supabaseClient
       .from('user_badge_holdings')
       .upsert({
         user_id,
-        current_badge: badge_name,
+        current_badge: normalizedBadge, // ✅ Store normalized name ("VIP" not "i-Smart VIP")
         previous_badge,
         price_bsk: bsk_amount,
         purchased_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id'
       });
+    
+    console.log('✅ Badge holding created/updated:', { 
+      stored_badge: normalizedBadge, 
+      original_input: badge_name 
+    });
 
     if (badgeError) {
       console.error('Badge holding error:', badgeError);

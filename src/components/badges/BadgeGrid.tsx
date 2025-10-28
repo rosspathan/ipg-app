@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { badgeTokens, getTierTokens, getTierGradients } from "@/design-system/badge-tokens";
 import { cn } from "@/lib/utils";
+import { normalizeBadgeName, getBadgeDisplayName } from "@/lib/badgeUtils";
 
 export interface BadgeGridItem {
   id: string;
@@ -38,7 +39,10 @@ const getBadgeIcon = (badgeName: string) => {
 };
 
 const getTierKey = (badge: string): keyof typeof badgeTokens.tiers => {
-  const key = badge.toLowerCase() as keyof typeof badgeTokens.tiers;
+  const normalized = normalizeBadgeName(badge); // "i-Smart VIP" → "VIP"
+  const key = (normalized === 'None' ? 'none' : normalized.toLowerCase()) as keyof typeof badgeTokens.tiers;
+  
+  console.log('🎨 [BadgeGrid] getTierKey:', { input: badge, normalized, key });
   return badgeTokens.tiers[key] ? key : 'none';
 };
 
@@ -113,7 +117,7 @@ export function BadgeGrid({ badges, onPurchase, isProcessing, className }: Badge
                           fontFamily: badgeTokens.typography.fontFamily.heading
                         }}
                       >
-                        {badge.name}
+                        {getBadgeDisplayName(normalizeBadgeName(badge.name))}
                       </h3>
                       {badge.isCurrent && (
                         <Badge 
