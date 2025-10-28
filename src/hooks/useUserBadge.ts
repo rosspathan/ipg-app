@@ -10,54 +10,94 @@ export const useUserBadge = () => {
 
   const fetchBadge = async () => {
     if (!user) {
+      console.log('🎖️ [useUserBadge] No user authenticated, setting badge to None');
+      setBadge('None');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
+      console.log('🎖️ [useUserBadge] Fetching badge for user:', user.id);
       
-      // Try user_badge_holdings first (for purchased badges)
-      const { data: holdingData } = await supabase
+      // PRIORITY 1: Check user_badge_holdings (PURCHASED badges - highest priority)
+      console.log('🎖️ [useUserBadge] Step 1: Checking user_badge_holdings for purchased badge...');
+      const { data: holdingData, error: holdingError } = await supabase
         .from('user_badge_holdings')
         .select('current_badge')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (holdingData?.current_badge) {
-        setBadge(normalizeBadgeName(holdingData.current_badge));
-        return;
+      if (holdingError) {
+        console.error('❌ [useUserBadge] Error fetching from user_badge_holdings:', holdingError);
       }
 
-      // Fall back to user_badge_status (for qualification-based badges)
-      const { data: statusData } = await supabase
+      if (holdingData?.current_badge) {
+        const rawBadge = holdingData.current_badge;
+        const normalizedBadge = normalizeBadgeName(rawBadge);
+        console.log('✅ [useUserBadge] PURCHASED badge found!');
+        console.log('   Raw badge from DB:', rawBadge);
+        console.log('   Normalized badge:', normalizedBadge);
+        setBadge(normalizedBadge);
+        return;
+      } else {
+        console.log('⚠️ [useUserBadge] No purchased badge in user_badge_holdings');
+      }
+
+      // PRIORITY 2: Check user_badge_status (QUALIFIED badges)
+      console.log('🎖️ [useUserBadge] Step 2: Checking user_badge_status for qualified badge...');
+      const { data: statusData, error: statusError } = await supabase
         .from('user_badge_status')
         .select('current_badge')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (statusData?.current_badge) {
-        setBadge(normalizeBadgeName(statusData.current_badge));
-        return;
+      if (statusError) {
+        console.error('❌ [useUserBadge] Error fetching from user_badge_status:', statusError);
       }
 
-      // Check badge_thresholds for default badge
-      const { data: thresholdData } = await supabase
+      if (statusData?.current_badge) {
+        const rawBadge = statusData.current_badge;
+        const normalizedBadge = normalizeBadgeName(rawBadge);
+        console.log('⚠️ [useUserBadge] QUALIFIED badge found (not purchased)');
+        console.log('   Raw badge from DB:', rawBadge);
+        console.log('   Normalized badge:', normalizedBadge);
+        setBadge(normalizedBadge);
+        return;
+      } else {
+        console.log('⚠️ [useUserBadge] No qualified badge in user_badge_status');
+      }
+
+      // PRIORITY 3: Check badge_thresholds for default/lowest badge
+      console.log('🎖️ [useUserBadge] Step 3: Checking badge_thresholds for default badge...');
+      const { data: thresholdData, error: thresholdError } = await supabase
         .from('badge_thresholds')
         .select('badge_name')
         .order('threshold_amount', { ascending: true })
         .limit(1)
         .maybeSingle();
 
-      if (thresholdData?.badge_name) {
-        setBadge(normalizeBadgeName(thresholdData.badge_name));
-        return;
+      if (thresholdError) {
+        console.error('❌ [useUserBadge] Error fetching from badge_thresholds:', thresholdError);
       }
 
-      // Default to None if no badge found
+      if (thresholdData?.badge_name) {
+        const rawBadge = thresholdData.badge_name;
+        const normalizedBadge = normalizeBadgeName(rawBadge);
+        console.log('ℹ️ [useUserBadge] Using DEFAULT badge from thresholds');
+        console.log('   Raw badge from DB:', rawBadge);
+        console.log('   Normalized badge:', normalizedBadge);
+        setBadge(normalizedBadge);
+        return;
+      } else {
+        console.log('⚠️ [useUserBadge] No default badge in badge_thresholds');
+      }
+
+      // FALLBACK: No badge found anywhere
+      console.log('❌ [useUserBadge] No badge found in any table, defaulting to None');
       setBadge('None');
     } catch (error) {
-      console.error('Error fetching user badge:', error);
+      console.error('❌ [useUserBadge] Critical error in fetchBadge:', error);
       setBadge('None');
     } finally {
       setLoading(false);
