@@ -175,6 +175,15 @@ const AdminTeamReferralsScreen = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Info Card - Two Commission Systems */}
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-semibold text-sm mb-2 text-blue-900 dark:text-blue-100">Two Separate Commission Systems</h4>
+                <ul className="list-disc list-inside space-y-1 text-xs text-blue-800 dark:text-blue-200">
+                  <li><strong>Direct Commission:</strong> {formData.direct_commission_percent}% of badge purchase → L1 sponsor only (withdrawable)</li>
+                  <li><strong>Team Income:</strong> Fixed BSK rewards (5, 0.5, 0.4, 0.3, 0.2, 0.1) → 50 levels deep (based on badge unlocks)</li>
+                </ul>
+              </div>
+
               {/* Program Status */}
               <div className="flex items-center justify-between">
                 <div>
@@ -222,7 +231,9 @@ const AdminTeamReferralsScreen = () => {
                   onChange={(e) => setFormData({...formData, direct_commission_percent: parseFloat(e.target.value)})}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Commission paid on badge purchases/upgrades (only if referrer holds required badge)
+                  💰 Paid to DIRECT REFERRER ONLY (L1) when someone purchases/upgrades a badge.
+                  Separate from the 50-level team income rewards.
+                  Example: Silver purchase (1000 BSK) → Direct referrer gets 100 BSK withdrawable.
                 </p>
               </div>
 

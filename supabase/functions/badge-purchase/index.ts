@@ -126,26 +126,26 @@ Deno.serve(async (req) => {
       throw new Error('Failed to update badge holding');
     }
 
-    // 4. Process NEW 50-level referral commissions (10% direct commission)
+    // 4. Process 10% direct commission (L1 sponsor only)
     try {
-      // Call the new badge sale commission processor
-      const commissionResponse = await supabaseClient.functions.invoke('process-badge-sale-commissions', {
+      console.log('💰 Processing 10% direct commission...');
+      
+      const commissionResponse = await supabaseClient.functions.invoke('process-badge-subscription-commission', {
         body: {
-          payer_id: user_id,
+          user_id,
           badge_name,
-          delta_amount: bsk_amount,
-          is_upgrade,
+          bsk_amount,
           previous_badge
         }
       });
 
       if (commissionResponse.error) {
-        console.error('Commission processing error:', commissionResponse.error);
+        console.error('❌ Direct commission processing error:', commissionResponse.error);
       } else {
-        console.log('Badge sale commission processed:', commissionResponse.data);
+        console.log('✅ Direct commission processed:', commissionResponse.data);
       }
     } catch (commissionError) {
-      console.error('Commission processor error (non-critical):', commissionError);
+      console.error('❌ Direct commission processor error (non-critical):', commissionError);
       // Don't fail the purchase if commission fails
     }
 
