@@ -65,9 +65,9 @@ export function useReferralCodeValidation(code: string): ValidationResult {
         if (error) throw error;
 
         if (data) {
-          // Check if user is trying to refer themselves
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user && user.id === data.user_id) {
+          // Check if user is trying to refer themselves (only if authenticated with active session)
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user && session.user.id === data.user_id) {
             setResult({
               isValid: false,
               sponsorId: null,
