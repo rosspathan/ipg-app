@@ -54,7 +54,7 @@ serve(async (req) => {
     // ==========================================
     const { data: existingBadge, error: existingError } = await supabase
       .from('user_badge_holdings')
-      .select('current_badge, purchase_date')
+      .select('current_badge, purchased_at')
       .eq('user_id', user_id)
       .maybeSingle();
 
@@ -143,7 +143,7 @@ serve(async (req) => {
       .upsert({
         user_id,
         current_badge: badge_name,
-        purchase_date: new Date().toISOString(),
+        purchased_at: new Date().toISOString(),
         previous_badge: existingBadge?.current_badge || null,
         badge_cost: cost,
         updated_at: new Date().toISOString()
