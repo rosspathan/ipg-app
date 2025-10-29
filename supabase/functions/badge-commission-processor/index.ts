@@ -31,107 +31,75 @@ Deno.serve(async (req) => {
     console.log(`[Badge Purchase] Processing: User ${userId}, Badge ${toBadge}, Amount ${paidAmountBSK} BSK`);
 
     // ==========================================
-    // STEP 1: CHECK KYC APPROVAL (SOFT VALIDATION)
+    // ATOMIC BADGE PURCHASE WITH TRANSACTION
     // ==========================================
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_kyc_approved')
-      .eq('user_id', userId)
-      .single();
-
-    if (profileError) {
-      console.warn(`[Badge Purchase] Profile fetch warning: ${profileError.message}`);
-    }
-
-    // Log KYC status but don't block purchase
-    if (!profile?.is_kyc_approved) {
-      console.warn(`[Badge Purchase] ⚠️ KYC NOT APPROVED for user ${userId} - purchase allowed but flagged`);
-    } else {
-      console.log(`[Badge Purchase] KYC verified ✅`);
-    }
-
-    // ==========================================
-    // STEP 2: DEDUCT BSK FROM USER BALANCE
-    // ==========================================
-    const { data: currentBalance } = await supabase
-      .from('user_bsk_balances')
-      .select('withdrawable_balance')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    const availableBalance = Number(currentBalance?.withdrawable_balance ?? 0);
-
-    if (availableBalance < paidAmountBSK) {
-      const shortfall = paidAmountBSK - availableBalance;
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'INSUFFICIENT_BALANCE',
-          message: `You need ${shortfall.toFixed(2)} more BSK to complete this purchase`,
-          details: {
-            required_balance: paidAmountBSK,
-            current_balance: availableBalance,
-            shortfall: shortfall
-          }
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-          status: 400 
-        }
-      );
-    }
-
-    const newBalance = availableBalance - paidAmountBSK;
-
-    await supabase
-      .from('user_bsk_balances')
-      .upsert(
-        {
-          user_id: userId,
-          withdrawable_balance: newBalance,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id' }
-      );
-
-    console.log(`[Badge Purchase] Deducted ${paidAmountBSK} BSK. New balance: ${newBalance}`);
-
-    // ==========================================
-    // STEP 3: RECORD BADGE PURCHASE
-    // ==========================================
-    const { error: purchaseError } = await supabase
-      .from('badge_purchases')
-      .insert({
-        user_id: userId,
-        badge_name: toBadge,
-        previous_badge: fromBadge || null,
-        bsk_amount: paidAmountBSK,
-        inr_amount: 0,
-        bsk_rate_at_purchase: 1,
-        is_upgrade: !!fromBadge,
-        payment_method: paymentMethod,
-        payment_ref: paymentRef,
-        status: 'completed'
-      });
+    // Call the atomic database function that handles:
+    // 1. Balance check & lock
+    // 2. Idempotency check (duplicate badge prevention)
+    // 3. Balance deduction
+    // 4. Purchase recording
+    // 5. Badge assignment
+    // All in a single atomic transaction with automatic rollback on failure
+    
+    const { data: purchaseResult, error: purchaseError } = await supabase.rpc(
+      'atomic_badge_purchase',
+      {
+        p_user_id: userId,
+        p_badge_name: toBadge,
+        p_previous_badge: fromBadge || null,
+        p_bsk_amount: paidAmountBSK,
+        p_payment_ref: paymentRef,
+        p_payment_method: paymentMethod,
+        p_unlock_levels: 50
+      }
+    );
 
     if (purchaseError) {
-      throw new Error(`Badge purchase insert failed: ${purchaseError.message}`);
+      console.error('[Badge Purchase] Atomic purchase failed:', purchaseError);
+      
+      // Parse specific error types
+      if (purchaseError.message?.includes('INSUFFICIENT_BALANCE')) {
+        const match = purchaseError.message.match(/Required ([\d.]+), Available ([\d.]+)/);
+        const required = match ? parseFloat(match[1]) : paidAmountBSK;
+        const available = match ? parseFloat(match[2]) : 0;
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'INSUFFICIENT_BALANCE',
+            message: `You need ${(required - available).toFixed(2)} more BSK to complete this purchase`,
+            details: {
+              required_balance: required,
+              current_balance: available,
+              shortfall: required - available
+            }
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+            status: 400 
+          }
+        );
+      }
+      
+      if (purchaseError.message?.includes('DUPLICATE_BADGE')) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'DUPLICATE_BADGE',
+            message: 'You already own this badge'
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+            status: 409 
+          }
+        );
+      }
+      
+      // Generic error
+      throw new Error(`Badge purchase failed: ${purchaseError.message}`);
     }
 
-    // ==========================================
-    // STEP 4: UPDATE USER_BADGE_HOLDINGS
-    // ==========================================
-    const { error: holdingError } = await supabase
-      .from('user_badge_holdings')
-      .upsert({
-        user_id: userId,
-        current_badge: toBadge,
-        purchased_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
-
-    if (holdingError) {
-      throw new Error(`Badge holding update failed: ${holdingError.message}`);
-    }
+    console.log(`[Badge Purchase] SUCCESS - Atomic transaction completed:`, purchaseResult);
 
     // ==========================================
     // STEP 5: TRIGGER COMMISSIONS
@@ -170,7 +138,9 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true,
         badge: toBadge,
-        amount_paid: paidAmountBSK
+        amount_paid: paidAmountBSK,
+        new_balance: purchaseResult.new_balance,
+        purchase_id: purchaseResult.purchase_id
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );

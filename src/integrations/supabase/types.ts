@@ -10377,6 +10377,18 @@ export type Database = {
         Args: { p_admin_id: string; p_new_rate: number; p_notes?: string }
         Returns: Json
       }
+      atomic_badge_purchase: {
+        Args: {
+          p_badge_name: string
+          p_bsk_amount: number
+          p_payment_method: string
+          p_payment_ref: string
+          p_previous_badge: string
+          p_unlock_levels?: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       award_bsk_standard: {
         Args: {
           p_amount: number
@@ -10722,6 +10734,15 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      refund_failed_badge_purchases: {
+        Args: never
+        Returns: {
+          badge_name: string
+          refund_amount: number
+          status: string
+          user_id: string
+        }[]
       }
       reset_monthly_claim_counts: { Args: never; Returns: undefined }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
