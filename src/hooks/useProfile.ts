@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
 import { extractUsernameFromEmail } from '@/lib/user/username';
-import { useWeb3 } from '@/contexts/Web3Context';
 
 /**
  * Profile Fields Usage Guide:
@@ -43,7 +42,6 @@ export interface UserApp {
 
 export const useProfile = () => {
   const { user } = useAuthUser();
-  const { wallet, isConnected } = useWeb3();
   const { toast } = useToast();
   const [userApp, setUserApp] = useState<UserApp | null>(null);
   const [loading, setLoading] = useState(true);
