@@ -168,9 +168,8 @@ export const generateTierBenefits = (
     bonus_bsk_holding: number;
   }>
 ): TierBenefits[] => {
-  return badgeThresholds.map((badge) => ({
-    tier: badge.badge_name,
-    benefits: [
+  return badgeThresholds.map((badge) => {
+    const baseBenefits = [
       {
         icon: Users,
         title: `${badge.unlock_levels} Referral Levels`,
@@ -180,12 +179,20 @@ export const generateTierBenefits = (
         icon: Percent,
         title: 'Progressive Commissions',
         description: 'Earn higher commission rates on all trading activities in your network'
-      },
-      {
+      }
+    ];
+    
+    // Only add BSK bonus if > 0
+    if (badge.bonus_bsk_holding > 0) {
+      baseBenefits.push({
         icon: Coins,
-        title: `${badge.bonus_bsk_holding} BSK Bonus`,
-        description: `Receive ${badge.bonus_bsk_holding} BSK as bonus holding balance when you upgrade`
-      },
+        title: `${badge.bonus_bsk_holding.toLocaleString()} BSK Bonus`,
+        description: `Receive ${badge.bonus_bsk_holding.toLocaleString()} BSK as bonus holding balance when you upgrade`
+      });
+    }
+    
+    // Add standard benefits
+    baseBenefits.push(
       {
         icon: Shield,
         title: 'Priority Support',
@@ -195,24 +202,34 @@ export const generateTierBenefits = (
         icon: Zap,
         title: 'Early Access',
         description: 'Be the first to access new features and exclusive platform updates'
-      },
-      ...(badge.badge_name.toUpperCase() === 'VIP' ? [
-        {
-          icon: Crown,
-          title: 'VIP Physical Card',
-          description: 'Receive an exclusive physical VIP membership card'
-        },
-        {
-          icon: Gift,
-          title: 'Exclusive Rewards',
-          description: 'Access VIP-only airdrops, contests, and special events'
-        },
-        {
-          icon: TrendingUp,
-          title: 'Maximum Earnings',
-          description: 'Unlock the highest commission rates and deepest referral network'
-        }
-      ] : [])
-    ]
-  }));
+      }
+    );
+    
+    // Add VIP-specific benefits
+    const allBenefits = badge.badge_name.toUpperCase() === 'VIP' 
+      ? [
+          ...baseBenefits,
+          {
+            icon: Crown,
+            title: 'VIP Physical Card',
+            description: 'Receive an exclusive physical VIP membership card'
+          },
+          {
+            icon: Gift,
+            title: 'Exclusive Rewards',
+            description: 'Access VIP-only airdrops, contests, and special events'
+          },
+          {
+            icon: TrendingUp,
+            title: 'Maximum Earnings',
+            description: 'Unlock the highest commission rates and deepest referral network'
+          }
+        ]
+      : baseBenefits;
+    
+    return {
+      tier: badge.badge_name,
+      benefits: allBenefits
+    };
+  });
 };

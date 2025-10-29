@@ -21,34 +21,6 @@ interface BadgeBenefitsModalProps {
   onPurchase?: () => void;
 }
 
-const benefits = [
-  {
-    icon: Users,
-    title: "Deep Referral Network",
-    getDescription: (levels: number) => `Earn commissions from ${levels} levels deep in your referral network`
-  },
-  {
-    icon: Percent,
-    title: "Progressive Commissions",
-    getDescription: () => "Earn higher commission rates on all trading activities in your network"
-  },
-  {
-    icon: Coins,
-    title: "Bonus BSK Holding",
-    getDescription: (levels: number, bonus: number) => `Receive ${bonus} BSK as bonus holding balance when you upgrade`
-  },
-  {
-    icon: Shield,
-    title: "Priority Support",
-    getDescription: () => "Get faster response times and dedicated assistance from our support team"
-  },
-  {
-    icon: Zap,
-    title: "Early Access",
-    getDescription: () => "Be the first to access new features and exclusive platform updates"
-  }
-];
-
 const vipBenefits = [
   {
     icon: Crown,
@@ -73,6 +45,45 @@ export function BadgeBenefitsModal({ isOpen, onClose, badge, onPurchase }: Badge
   const tierKey = getTierKey(badge.name);
   const tokens = getTierTokens(tierKey);
   const isVip = badge.name.toUpperCase() === 'VIP';
+  
+  // Build benefits list based on badge properties
+  const baseBenefits = [
+    {
+      icon: Users,
+      title: "Deep Referral Network",
+      getDescription: (levels: number) => `Earn commissions from ${levels} levels deep in your referral network`
+    },
+    {
+      icon: Percent,
+      title: "Progressive Commissions",
+      getDescription: () => "Earn higher commission rates on all trading activities in your network"
+    },
+    {
+      icon: Shield,
+      title: "Priority Support",
+      getDescription: () => "Get faster response times and dedicated assistance from our support team"
+    },
+    {
+      icon: Zap,
+      title: "Early Access",
+      getDescription: () => "Be the first to access new features and exclusive platform updates"
+    }
+  ];
+
+  // Only add bonus benefit if badge actually has a bonus
+  const benefits = badge.bonusBsk > 0 
+    ? [
+        baseBenefits[0],
+        baseBenefits[1],
+        {
+          icon: Coins,
+          title: "Bonus BSK Holding",
+          getDescription: (levels: number, bonus: number) => `Receive ${bonus.toLocaleString()} BSK as bonus holding balance when you upgrade`
+        },
+        ...baseBenefits.slice(2)
+      ]
+    : baseBenefits;
+
   const allBenefits = isVip ? [...benefits, ...vipBenefits] : benefits;
 
   const handlePurchase = async () => {

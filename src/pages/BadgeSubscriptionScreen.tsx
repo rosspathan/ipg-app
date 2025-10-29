@@ -241,6 +241,8 @@ const BadgeSubscriptionScreen = () => {
   }));
 
   // Comparison features
+  const hasBonuses = activeBadges.some(b => b.bonus_bsk_holding > 0);
+  
   const comparisonFeatures = [
     {
       name: 'Referral Levels',
@@ -248,12 +250,15 @@ const BadgeSubscriptionScreen = () => {
         activeBadges.map(b => [b.badge_name.toUpperCase(), b.unlock_levels])
       )
     },
-    {
+    ...(hasBonuses ? [{
       name: 'Bonus BSK',
       values: Object.fromEntries(
-        activeBadges.map(b => [b.badge_name.toUpperCase(), `${b.bonus_bsk_holding} BSK`])
+        activeBadges.map(b => [
+          b.badge_name.toUpperCase(), 
+          b.bonus_bsk_holding > 0 ? `${b.bonus_bsk_holding.toLocaleString()} BSK` : '—'
+        ])
       )
-    },
+    }] : []),
     {
       name: 'Commission Rate',
       values: {
