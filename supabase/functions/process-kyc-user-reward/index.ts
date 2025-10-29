@@ -71,7 +71,18 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to create ledger entry: ${ledgerError.message}`);
     }
 
-    console.log(`[KYC User Reward] SUCCESS: Credited ${reward_bsk} BSK to user ${user_id}`);
+    // Update profiles.is_kyc_approved = TRUE
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ is_kyc_approved: true })
+      .eq('user_id', user_id);
+
+    if (profileError) {
+      console.error('[KYC Reward] Failed to update is_kyc_approved:', profileError);
+      throw new Error(`Failed to set KYC approval flag: ${profileError.message}`);
+    }
+
+    console.log(`[KYC User Reward] SUCCESS: Credited ${reward_bsk} BSK and set is_kyc_approved = TRUE for user ${user_id}`);
 
     return new Response(
       JSON.stringify({

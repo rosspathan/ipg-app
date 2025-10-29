@@ -141,7 +141,7 @@ export function BadgeCard() {
             {normalizedBadge === "Platinum" && "Distinguished member with premium benefits"}
             {normalizedBadge === "Gold" && "Top-tier member with advanced benefits"}
             {normalizedBadge === "Silver" && "Valued member with special perks"}
-            {normalizedBadge === "None" && "Start your journey to unlock rewards"}
+            {normalizedBadge === "None" && "Complete KYC and purchase a badge to unlock team rewards"}
           </p>
 
           {/* Premium Badge Indicator */}

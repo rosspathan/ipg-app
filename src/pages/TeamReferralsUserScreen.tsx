@@ -2,14 +2,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Copy, Users, Trophy, TrendingUp, Info } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ArrowLeft, Copy, Users, Trophy, TrendingUp, Info, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useTeamReferrals } from '@/hooks/useTeamReferrals';
 import { useReferrals } from '@/hooks/useReferrals';
 import { useToast } from '@/hooks/use-toast';
 import { copyToClipboard } from "@/utils/clipboard";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const TeamReferralsUserScreen = () => {
   const navigate = useNavigate();
@@ -22,6 +24,23 @@ const TeamReferralsUserScreen = () => {
     badgePurchases,
     loading 
   } = useTeamReferrals();
+
+  // Fetch KYC approval status
+  const { data: profile } = useQuery({
+    queryKey: ['profile-kyc-status', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_kyc_approved')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  const isKYCApproved = profile?.is_kyc_approved || false;
 
   if (loading || !user) {
     return (
@@ -56,6 +75,33 @@ const TeamReferralsUserScreen = () => {
           <Info className="w-4 h-4" />
           <AlertDescription>
             The team referral program is currently inactive. Contact support for more information.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* KYC Status Alert */}
+      {!isKYCApproved ? (
+        <Alert className="border-yellow-500/50 bg-yellow-500/10">
+          <AlertCircle className="h-4 w-4 text-yellow-500" />
+          <AlertTitle>Complete KYC to Unlock L1 Income</AlertTitle>
+          <AlertDescription className="flex items-center justify-between">
+            <span>Verify your identity to start earning team income from direct referrals.</span>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/app/kyc')}
+              className="ml-4"
+            >
+              Complete KYC
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Alert className="border-green-500/50 bg-green-500/10">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <AlertTitle>L1 Income Unlocked</AlertTitle>
+          <AlertDescription>
+            Your KYC is approved! You can now earn team income from your direct referrals.
           </AlertDescription>
         </Alert>
       )}
@@ -142,24 +188,26 @@ const TeamReferralsUserScreen = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {badgeThresholds.map((badge) => (
-              <div key={badge.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <Badge variant="secondary">{badge.badge_name}</Badge>
-                  <div>
-                    <p className="font-medium">{badge.bsk_threshold.toLocaleString()} BSK</p>
-                    <p className="text-sm text-muted-foreground">
-                      Unlocks L1-L{badge.unlock_levels}
-                    </p>
+            {badgeThresholds
+              .filter(badge => badge.badge_name !== 'None')
+              .map((badge) => (
+                <div key={badge.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <Badge variant="secondary">{badge.badge_name}</Badge>
+                    <div>
+                      <p className="font-medium">{badge.bsk_threshold.toLocaleString()} BSK</p>
+                      <p className="text-sm text-muted-foreground">
+                        {badge.unlock_levels === 0 ? 'L1 unlocked by KYC' : `Unlocks L2-L${badge.unlock_levels}`}
+                      </p>
+                    </div>
                   </div>
+                  {badge.bonus_bsk_holding > 0 && (
+                    <p className="text-sm text-green-600">
+                      +{badge.bonus_bsk_holding.toLocaleString()} BSK Bonus
+                    </p>
+                  )}
                 </div>
-                {badge.bonus_bsk_holding > 0 && (
-                  <p className="text-sm text-green-600">
-                    +{badge.bonus_bsk_holding.toLocaleString()} BSK Bonus
-                  </p>
-                )}
-              </div>
-            ))}
+              ))}
           </div>
         </CardContent>
       </Card>

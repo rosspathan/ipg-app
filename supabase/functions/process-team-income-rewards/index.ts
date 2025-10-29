@@ -117,14 +117,34 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Check if sponsor has unlocked this level
-      const sponsorBadge = badgeMap.get(sponsorId);
-      const unlockLevels = sponsorBadge ? unlockLevelsMap.get(sponsorBadge) : 1;
+      // CRITICAL: Check if sponsor has unlocked this level
+      // Fetch sponsor's KYC approval status
+      const { data: sponsorProfile } = await supabaseClient
+        .from('profiles')
+        .select('is_kyc_approved')
+        .eq('user_id', sponsorId)
+        .single();
 
-      if (!unlockLevels || level > unlockLevels) {
-        console.log(`🔒 Level ${level} locked for sponsor ${sponsorId} (badge: ${sponsorBadge}, unlocks: ${unlockLevels})`);
+      const isKYCApproved = sponsorProfile?.is_kyc_approved || false;
+      const sponsorBadge = badgeMap.get(sponsorId);
+      const badgeUnlockLevels = sponsorBadge ? (unlockLevelsMap.get(sponsorBadge) || 0) : 0;
+
+      // Determine effective unlock levels
+      let effectiveUnlockLevels = badgeUnlockLevels;
+
+      // L1 is unlocked ONLY if KYC approved (even without badge purchase)
+      if (level === 1 && isKYCApproved) {
+        effectiveUnlockLevels = Math.max(effectiveUnlockLevels, 1);
+      }
+
+      // Check if this level is unlocked
+      if (level > effectiveUnlockLevels) {
+        console.log(`🔒 Level ${level} locked for sponsor ${sponsorId} (KYC: ${isKYCApproved}, Badge: ${sponsorBadge}, Effective Unlocks: ${effectiveUnlockLevels})`);
         continue; // Skip this level - sponsor hasn't unlocked it
       }
+
+      console.log(`✅ Level ${level} unlocked for sponsor ${sponsorId} (KYC: ${isKYCApproved}, Badge: ${sponsorBadge || 'None'}, Effective Unlocks: ${effectiveUnlockLevels})`);
+
 
       const rewardAmount = Number(config.reward_amount);
       const destination = config.destination || 'withdrawable';

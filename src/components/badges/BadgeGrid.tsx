@@ -47,9 +47,14 @@ const getTierKey = (badge: string): keyof typeof badgeTokens.tiers => {
 };
 
 export function BadgeGrid({ badges, onPurchase, isProcessing, className }: BadgeGridProps) {
+  // Filter out "None" badge - it's free and automatic
+  const purchasableBadges = badges.filter(b => 
+    b.name.toLowerCase() !== 'none' && b.fullPrice > 0
+  );
+
   return (
     <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6", className)}>
-      {badges.map((badge, index) => {
+      {purchasableBadges.map((badge, index) => {
         const tierKey = getTierKey(badge.name);
         const tokens = getTierTokens(tierKey);
         const gradients = getTierGradients(tierKey);
