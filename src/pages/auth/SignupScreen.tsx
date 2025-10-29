@@ -35,8 +35,8 @@ const SignupScreen: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [referralCode, setReferralCode] = useState<string>('');
   
-  // Real-time referral code validation
-  const { isValid, sponsorUsername, loading: validating, error: validationError } = useReferralCodeValidation(referralCode);
+  // Real-time referral code validation (ignore self-referral during signup)
+  const { isValid, sponsorUsername, loading: validating, error: validationError } = useReferralCodeValidation(referralCode, { ignoreSelfReferral: true });
 
   const passwordStrength = (pwd: string) => {
     let strength = 0;
