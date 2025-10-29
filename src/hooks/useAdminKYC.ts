@@ -10,7 +10,7 @@ export interface KYCSubmissionWithUser extends KYCProfile {
   profiles?: Partial<Profile> | { user_id: string; email: string };
 }
 
-export type KYCStatusFilter = 'all' | 'pending' | 'approved' | 'rejected' | 'needs_info';
+export type KYCStatusFilter = 'all' | 'pending' | 'approved' | 'rejected' | 'needs_info' | 'submitted' | 'draft';
 
 export function useAdminKYC() {
   const [submissions, setSubmissions] = useState<KYCSubmissionWithUser[]>([]);
@@ -250,7 +250,12 @@ export function useAdminKYC() {
   // Filter and search logic
   const filteredSubmissions = submissions.filter((submission) => {
     // Status filter
-    if (statusFilter !== 'all' && submission.status !== statusFilter) {
+    if (statusFilter === 'pending') {
+      // Pending includes both 'pending' and 'submitted' statuses
+      if (submission.status !== 'pending' && submission.status !== 'submitted') {
+        return false;
+      }
+    } else if (statusFilter !== 'all' && submission.status !== statusFilter) {
       return false;
     }
 

@@ -13,13 +13,17 @@ interface KYCSubmissionListProps {
 export function KYCSubmissionList({ submissions, selectedId, onSelect }: KYCSubmissionListProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'submitted':
         return 'default';
+      case 'pending':
+        return 'secondary';
       case 'approved':
         return 'outline';
       case 'rejected':
         return 'destructive';
       case 'needs_info':
+        return 'secondary';
+      case 'draft':
         return 'secondary';
       default:
         return 'default';
@@ -55,7 +59,7 @@ export function KYCSubmissionList({ submissions, selectedId, onSelect }: KYCSubm
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 {submission.submitted_at
-                  ? format(new Date(submission.submitted_at), 'MMM dd, yyyy HH:mm')
+                  ? `Submitted ${format(new Date(submission.submitted_at), 'MMM dd, yyyy HH:mm')}`
                   : 'Not submitted'}
               </p>
             </div>

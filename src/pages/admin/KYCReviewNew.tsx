@@ -75,8 +75,9 @@ export default function KYCReviewNew() {
             />
           </div>
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as KYCStatusFilter)} className="w-full sm:w-auto">
-            <TabsList className="grid grid-cols-4 w-full sm:w-auto">
+            <TabsList className="grid grid-cols-5 w-full sm:w-auto">
               <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="submitted">Submitted</TabsTrigger>
               <TabsTrigger value="pending">Pending</TabsTrigger>
               <TabsTrigger value="approved">Approved</TabsTrigger>
               <TabsTrigger value="rejected">Rejected</TabsTrigger>
