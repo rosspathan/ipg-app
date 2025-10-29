@@ -565,7 +565,7 @@ function AppContent() {
                 <Route path="settings" element={<AdminSettingsClean />} />
                 <Route path="system/health" element={<React.Suspense fallback={<LoadingFallback />}><AdminSystemHealth /></React.Suspense>} />
                 <Route path="kyc" element={<React.Suspense fallback={<LoadingFallback />}><KYCReviewNew /></React.Suspense>} />
-                <Route path="kyc-review" element={<AdminKYCReview />} />
+                <Route path="kyc-review" element={<React.Suspense fallback={<LoadingFallback />}><KYCReviewNew /></React.Suspense>} />
                 <Route path="kyc/settings" element={<React.Suspense fallback={<LoadingFallback />}><AdminKYCSettings /></React.Suspense>} />
                 
                 {/* Phase 5: Role & Badge Management */}
