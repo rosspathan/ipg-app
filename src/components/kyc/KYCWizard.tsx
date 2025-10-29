@@ -33,9 +33,12 @@ export const KYCWizard = () => {
     }
   }, [profiles.L1]);
 
-  // Auto-save on data change
+  // Auto-save on data change (but NOT after submission)
   useEffect(() => {
-    if (Object.keys(formData).length > 0 && currentStep > 1) {
+    const currentStatus = profiles.L1?.status;
+    const isStillDraft = !currentStatus || currentStatus === 'draft' || currentStatus === 'none';
+    
+    if (Object.keys(formData).length > 0 && currentStep > 1 && isStillDraft) {
       const timer = setTimeout(() => {
         updateKYCLevel('L1', formData, 'draft').catch(err => {
           console.error('Auto-save failed:', err);
@@ -43,7 +46,7 @@ export const KYCWizard = () => {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [formData, currentStep]);
+  }, [formData, currentStep, profiles.L1?.status]);
 
   const handlePersonalNext = (data: any) => {
     setFormData((prev: any) => ({ ...prev, ...data }));
