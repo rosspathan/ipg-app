@@ -7,7 +7,7 @@ type KYCProfile = Database['public']['Tables']['kyc_profiles_new']['Row'];
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export interface KYCSubmissionWithUser extends KYCProfile {
-  profiles?: Profile;
+  profiles?: Partial<Profile> | { user_id: string; email: string };
 }
 
 export type KYCStatusFilter = 'all' | 'pending' | 'approved' | 'rejected' | 'needs_info';
@@ -54,21 +54,44 @@ export function useAdminKYC() {
   const fetchSubmissions = async () => {
     try {
       setLoading(true);
+      
+      // First, fetch KYC submissions without JOIN to avoid RLS issues
       const { data, error } = await supabase
         .from('kyc_profiles_new')
-        .select(`
-          *,
-          profiles!kyc_profiles_new_user_id_fkey (*)
-        `)
+        .select('*')
         .order('submitted_at', { ascending: false });
 
       if (error) throw error;
-      setSubmissions(data as any || []);
+
+      // Then, try to hydrate with user profiles (gracefully handle RLS restrictions)
+      let merged: KYCSubmissionWithUser[] = data || [];
+      try {
+        const userIds = Array.from(new Set(merged.map(r => r.user_id).filter(Boolean)));
+        if (userIds.length > 0) {
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('user_id, email')
+            .in('user_id', userIds);
+          
+          if (!profilesError && profiles) {
+            const profileMap = new Map(profiles.map(p => [p.user_id, p]));
+            merged = merged.map(row => ({ 
+              ...row, 
+              profiles: profileMap.get(row.user_id) 
+            }));
+          }
+        }
+      } catch (profileError) {
+        console.warn('Profile hydration skipped due to permissions:', profileError);
+        // Continue with KYC data only - admin can still review
+      }
+      
+      setSubmissions(merged);
     } catch (error) {
       console.error('Error fetching KYC submissions:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load KYC submissions',
+        description: `Failed to load KYC submissions${(error as any)?.message ? `: ${(error as any).message}` : ''}`,
         variant: 'destructive',
       });
     } finally {

@@ -227,28 +227,30 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
+      {/* Action Buttons - Sticky on mobile */}
       {submission.status === 'pending' && (
-        <div className="flex gap-4">
-          <Button
-            onClick={handleApprove}
-            disabled={loading}
-            className="flex-1"
-            size="lg"
-          >
-            <CheckCircle className="mr-2 h-5 w-5" />
-            Approve & Award 5 BSK
-          </Button>
-          <Button
-            onClick={() => setRejectModalOpen(true)}
-            disabled={loading}
-            variant="destructive"
-            className="flex-1"
-            size="lg"
-          >
-            <XCircle className="mr-2 h-5 w-5" />
-            Reject
-          </Button>
+        <div className="sticky bottom-0 left-0 right-0 bg-background pt-4 pb-2 -mb-2 border-t lg:border-t-0 lg:static lg:pb-0">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <Button
+              onClick={handleApprove}
+              disabled={loading}
+              className="flex-1"
+              size="lg"
+            >
+              <CheckCircle className="mr-2 h-5 w-5" />
+              Approve & Award 5 BSK
+            </Button>
+            <Button
+              onClick={() => setRejectModalOpen(true)}
+              disabled={loading}
+              variant="destructive"
+              className="flex-1"
+              size="lg"
+            >
+              <XCircle className="mr-2 h-5 w-5" />
+              Reject
+            </Button>
+          </div>
         </div>
       )}
 
