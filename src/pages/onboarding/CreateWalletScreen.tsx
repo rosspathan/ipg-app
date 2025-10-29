@@ -208,28 +208,101 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
             </Card>
           </motion.div>
 
-          {/* Wallet Address & QR */}
+          {/* Recovery Phrase - PRIORITY #1 */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            <Card className="bg-black/40 backdrop-blur-md border-white/30">
-              <div className="p-6 text-center">
-                <h3 className="text-white font-semibold mb-4">Your Wallet Address</h3>
+            <Card className="bg-gradient-to-r from-orange-900/70 to-red-900/70 backdrop-blur-md border-orange-500/50 border-2">
+              <div className="p-6">
+                <h3 className="text-white text-xl font-bold mb-4">🔐 Your Recovery Phrase</h3>
                 
-                {/* QR Code */}
-                <div className="mb-4">
+                <div className="bg-orange-500/20 rounded-lg p-3 mb-4">
+                  <p className="text-orange-100 text-sm leading-relaxed">
+                    <strong>⚠️ Critical:</strong> These {wordCount} words are the ONLY way to recover your wallet. 
+                    Write them down in order and store them in a safe place.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  {wallet.mnemonic.split(' ').map((word, index) => (
+                    <div
+                      key={index}
+                      className="bg-black/30 rounded-lg p-2 text-center"
+                    >
+                      <span className="text-orange-400 text-xs font-semibold">{index + 1}</span>
+                      <p className="text-white font-mono text-sm font-medium">{word}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => handleCopy(wallet.mnemonic, 'Recovery phrase')}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3"
+                    aria-label="Copy recovery phrase"
+                    data-testid="copy-recovery-phrase"
+                  >
+                    <Copy className="w-5 h-5 mr-2" />
+                    Copy Recovery Phrase
+                  </Button>
+                  <Button
+                    onClick={downloadBackup}
+                    variant="outline"
+                    className="w-full border-orange-400/50 text-orange-200 hover:bg-orange-500/20 hover:border-orange-400/70 font-semibold py-3"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Download Backup File
+                  </Button>
+                </div>
+
+                <p className="text-orange-300 text-xs text-center mt-4">
+                  Never share these words with anyone. IPG iSmart will never ask for them.
+                </p>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Why This Matters Info Box */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Card className="bg-blue-500/20 backdrop-blur-md border-blue-400/50">
+              <div className="p-4">
+                <p className="text-blue-100 text-sm leading-relaxed">
+                  <strong>💡 Why backup matters:</strong> Your recovery phrase is like a master key to your wallet. 
+                  If you lose your device or forget your PIN, these words are the ONLY way to access your funds again. 
+                  IPG iSmart cannot recover them for you.
+                </p>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Wallet Address & QR - Secondary */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <Card className="bg-black/40 backdrop-blur-md border-white/20">
+              <div className="p-5 text-center">
+                <h4 className="text-white/90 font-semibold mb-3 text-base">Your Wallet Address</h4>
+                
+                {/* QR Code - smaller */}
+                <div className="mb-3">
                   <img 
                     src={wallet.qrCode} 
                     alt="Wallet QR Code"
-                    className="w-32 h-32 mx-auto rounded-lg bg-white p-2"
+                    className="w-28 h-28 mx-auto rounded-lg bg-white p-2"
                   />
                 </div>
 
                 {/* Address */}
-                <div className="bg-black/30 rounded-lg p-3 mb-4">
-                  <p className="text-white/90 text-sm font-mono break-all">
+                <div className="bg-black/30 rounded-lg p-2.5 mb-3">
+                  <p className="text-white/90 text-xs font-mono break-all">
                     {wallet.address}
                   </p>
                 </div>
@@ -243,62 +316,12 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                   data-testid="copy-wallet-address"
                 >
                   <Copy className="w-4 h-4 mr-2" />
-                  Copy Address
+                  Copy Address (For Receiving)
                 </Button>
-              </div>
-            </Card>
-          </motion.div>
-
-          {/* Recovery Phrase */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <Card className="bg-gradient-to-r from-orange-900/70 to-red-900/70 backdrop-blur-md border-orange-500/50">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-white font-semibold">🔐 Recovery Phrase</h3>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopy(wallet.mnemonic, 'Recovery phrase')}
-                      className="border-orange-400/50 text-orange-300 hover:bg-orange-500/10 hover:border-orange-400/70"
-                      aria-label="Copy recovery phrase"
-                      data-testid="copy-recovery-phrase"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={downloadBackup}
-                      className="border-orange-400/50 text-orange-300 hover:bg-orange-500/10 hover:border-orange-400/70"
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  {wallet.mnemonic.split(' ').map((word, index) => (
-                    <div
-                      key={index}
-                      className="bg-black/30 rounded-lg p-2 text-center"
-                    >
-                      <span className="text-orange-400 text-xs">{index + 1}</span>
-                      <p className="text-white font-mono text-sm">{word}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-orange-500/20 rounded-lg p-3 mb-4">
-                  <p className="text-orange-200 text-xs">
-                    ⚠️ <strong>Critical:</strong> Write down these words in order and store them safely. 
-                    This is the ONLY way to recover your wallet if you lose access.
-                  </p>
-                </div>
+                
+                <p className="text-white/60 text-xs mt-3">
+                  Share this address to receive funds. You'll see this again in your wallet.
+                </p>
               </div>
             </Card>
           </motion.div>
@@ -307,7 +330,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
           >
             <Card className="bg-black/40 backdrop-blur-md border-white/20">
               <div className="p-4">
@@ -338,7 +361,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
           >
             <Card className={`backdrop-blur-md border-2 transition-all duration-300 ${
               hasConfirmedBackup 
@@ -351,14 +374,15 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
                     type="checkbox"
                     checked={hasConfirmedBackup}
                     onChange={(e) => setHasConfirmedBackup(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-2 border-white/50 bg-black/30 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="mt-1 w-6 h-6 rounded border-2 border-white/50 bg-black/30 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   />
                   <div>
-                    <p className="text-white text-base font-bold mb-1">
-                      ✓ I have safely backed up my recovery phrase
+                    <p className="text-white text-lg font-bold mb-2">
+                      ✓ I have written down all {wordCount} words in order
                     </p>
                     <p className="text-white/90 text-sm leading-relaxed">
-                      I understand that I need these words to recover my wallet and IPG iSmart cannot help me recover them if lost.
+                      I understand these words are the ONLY way to recover my wallet. 
+                      IPG iSmart cannot recover them for me if I lose them.
                     </p>
                   </div>
                 </label>
@@ -370,7 +394,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
             className="space-y-3"
           >
             {!hasConfirmedBackup && (
@@ -391,7 +415,7 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
               }`}
               size="lg"
             >
-              {hasConfirmedBackup ? '✓ Continue to Security Setup' : 'Confirm Backup First'}
+              {hasConfirmedBackup ? '✓ Continue to Security Setup' : '⚠️ Back Up Recovery Phrase First'}
             </Button>
           </motion.div>
         </div>
