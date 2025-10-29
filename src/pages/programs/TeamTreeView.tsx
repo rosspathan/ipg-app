@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { DownlineMemberProfile } from "@/components/referrals/DownlineMemberProfile"
 import { ReferralTreeView } from "@/components/referrals/tree/ReferralTreeView"
+import { DownlineTableView } from "@/components/referrals/DownlineTableView"
 import type { DownlineMember } from "@/hooks/useDownlineTree"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuthUser } from "@/hooks/useAuthUser"
@@ -191,8 +192,12 @@ export default function TeamTreeView() {
         <LevelUnlockVisualizer userBadge={userBadgeData} />
 
         {/* Tabs for different views */}
-        <Tabs defaultValue="tree" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+        <Tabs defaultValue="table" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="table" className="gap-2">
+              <Users className="h-4 w-4" />
+              Table View
+            </TabsTrigger>
             <TabsTrigger value="tree" className="gap-2">
               <Network className="h-4 w-4" />
               Tree View
@@ -202,6 +207,11 @@ export default function TeamTreeView() {
               Level View
             </TabsTrigger>
           </TabsList>
+
+          {/* Table View Tab */}
+          <TabsContent value="table" className="space-y-6">
+            <DownlineTableView />
+          </TabsContent>
 
           {/* Tree View Tab */}
           <TabsContent value="tree" className="space-y-6">

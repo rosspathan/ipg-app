@@ -144,7 +144,7 @@ export function DownlineTableView() {
 
             {levels.map(level => (
               <TabsContent key={level} value={level.toString()}>
-                <div className="rounded-md border">
+                <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
