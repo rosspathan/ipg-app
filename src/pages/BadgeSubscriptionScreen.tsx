@@ -96,10 +96,11 @@ const BadgeSubscriptionScreen = () => {
 
     const costToPay = selectedBadge.isUpgrade ? selectedBadge.upgradeCost : selectedBadge.price;
     
+    // Pre-purchase validation already prevents this, but keep as safety check
     if (bskBalance < costToPay) {
       toast({
         title: "Insufficient Balance",
-        description: `You need ${costToPay} BSK but only have ${bskBalance.toFixed(2)} BSK`,
+        description: `You need ${(costToPay - bskBalance).toFixed(2)} more BSK to complete this purchase`,
         variant: "destructive"
       });
       setSelectedBadge(null);
@@ -130,7 +131,14 @@ const BadgeSubscriptionScreen = () => {
 
       toast({
         title: "🎉 Success!",
-        description: `${selectedBadge.isUpgrade ? 'Upgraded to' : 'Purchased'} ${selectedBadge.name} badge! Your referrer earned 10% commission.`
+        description: (
+          <div className="space-y-2">
+            <p>{selectedBadge.isUpgrade ? 'Upgraded to' : 'Purchased'} {selectedBadge.name} badge!</p>
+            <p className="text-sm text-muted-foreground">
+              Your referrer earned {(costToPay * 0.1).toFixed(2)} BSK (10% commission)
+            </p>
+          </div>
+        )
       });
 
       // Refresh data
@@ -163,16 +171,47 @@ const BadgeSubscriptionScreen = () => {
       
     } catch (error: any) {
       console.error('Badge purchase error:', error);
-      const description =
-        error?.data?.message ||
-        error?.data?.error ||
-        error?.message ||
-        error?.error_description ||
-        error?.context ||
-        'Failed to process badge purchase';
+      
+      // Parse structured error response
+      const errorData = error?.data || {};
+      const errorCode = errorData?.error;
+      
+      let title = 'Purchase Failed';
+      let description = 'Failed to process badge purchase';
+      let action = null;
+      
+      if (errorCode === 'INSUFFICIENT_BALANCE') {
+        title = '💰 Insufficient Balance';
+        const shortfall = errorData?.details?.shortfall || (costToPay - bskBalance);
+        description = errorData?.message || `You need ${shortfall.toFixed(2)} more BSK`;
+        action = (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => {
+              setSelectedBadge(null);
+              window.location.href = '/app/wallet/deposit';
+            }}
+            className="mt-2"
+          >
+            Add Funds
+          </Button>
+        );
+      } else if (errorCode === 'KYC_REQUIRED') {
+        title = '🔒 KYC Required';
+        description = 'Complete KYC verification to purchase badges';
+      } else {
+        description = errorData?.message || error?.message || 'Failed to process badge purchase';
+      }
+      
       toast({
-        title: 'Purchase Failed',
-        description,
+        title,
+        description: (
+          <div className="space-y-2">
+            <p>{description}</p>
+            {action}
+          </div>
+        ),
         variant: 'destructive',
       });
     } finally {
@@ -425,22 +464,71 @@ const BadgeSubscriptionScreen = () => {
                   <span className="font-semibold">{selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price} BSK</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Your Balance:</span>
+                  <span className="text-muted-foreground">Current Balance:</span>
                   <span className="font-semibold">{bskBalance.toFixed(2)} BSK</span>
                 </div>
+                <div className="h-px bg-border my-2" />
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Balance After Purchase:</span>
+                  <span className={`font-bold text-lg ${
+                    bskBalance >= (selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price || 0)
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-destructive'
+                  }`}>
+                    {(bskBalance - (selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price || 0)).toFixed(2)} BSK
+                    {bskBalance >= (selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price || 0)
+                      ? ' ✓'
+                      : ' ✗'}
+                  </span>
+                </div>
+                <div className="h-px bg-border my-2" />
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Referrer Commission:</span>
+                  <span className="text-muted-foreground">Referrer Earns:</span>
                   <span className="font-semibold text-accent">
                     {((selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price || 0) * 0.1).toFixed(2)} BSK (10%)
                   </span>
                 </div>
               </div>
+              {bskBalance < (selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price || 0) && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-medium text-destructive">
+                    ⚠️ Insufficient Balance
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    You need {((selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price || 0) - bskBalance).toFixed(2)} more BSK
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedBadge(null);
+                      window.location.href = '/app/wallet/deposit';
+                    }}
+                    className="w-full"
+                  >
+                    Add Funds
+                  </Button>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={purchasingBadge !== null}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPurchase} disabled={purchasingBadge !== null}>
-              {purchasingBadge ? 'Processing...' : 'Confirm Purchase'}
+            <AlertDialogAction 
+              onClick={confirmPurchase} 
+              disabled={
+                purchasingBadge !== null || 
+                bskBalance < (selectedBadge?.isUpgrade ? selectedBadge.upgradeCost : selectedBadge?.price || 0)
+              }
+            >
+              {purchasingBadge ? (
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin">⚙️</span>
+                  Processing...
+                </span>
+              ) : (
+                'Confirm Purchase'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

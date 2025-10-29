@@ -62,11 +62,17 @@ Deno.serve(async (req) => {
     const availableBalance = Number(currentBalance?.withdrawable_balance ?? 0);
 
     if (availableBalance < paidAmountBSK) {
+      const shortfall = paidAmountBSK - availableBalance;
       return new Response(
         JSON.stringify({ 
           success: false,
           error: 'INSUFFICIENT_BALANCE',
-          message: `Insufficient BSK balance. Required: ${paidAmountBSK}, Available: ${availableBalance}` 
+          message: `You need ${shortfall.toFixed(2)} more BSK to complete this purchase`,
+          details: {
+            required_balance: paidAmountBSK,
+            current_balance: availableBalance,
+            shortfall: shortfall
+          }
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
