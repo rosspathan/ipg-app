@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Eye, EyeOff, ArrowLeft, Loader2, Check, X, Gift } from 'lucide-react';
 import { z } from 'zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useReferralCodeValidation } from '@/hooks/useReferralCodeValidation';
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -33,6 +34,9 @@ const SignupScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [referralCode, setReferralCode] = useState<string>('');
+  
+  // Real-time referral code validation
+  const { isValid, sponsorUsername, loading: validating, error: validationError } = useReferralCodeValidation(referralCode);
 
   const passwordStrength = (pwd: string) => {
     let strength = 0;
@@ -131,18 +135,52 @@ const SignupScreen: React.FC = () => {
             <Label htmlFor="referralCode" className="text-white">
               Referral Code (Optional)
             </Label>
-            <Input
-              id="referralCode"
-              type="text"
-              placeholder="Enter referral code"
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 uppercase"
-              maxLength={8}
-            />
-            {referralCode && (
-              <p className="text-green-300 text-sm flex items-center gap-1">
-                <Gift className="w-4 h-4" /> Referral code will be applied
+            <div className="relative">
+              <Input
+                id="referralCode"
+                type="text"
+                placeholder="Enter referral code"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 uppercase"
+                maxLength={36}
+              />
+              {referralCode && validating && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="w-4 h-4 animate-spin text-white/60" />
+                </div>
+              )}
+              {referralCode && !validating && isValid && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Check className="w-4 h-4 text-green-400" />
+                </div>
+              )}
+              {referralCode && !validating && !isValid && validationError && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <X className="w-4 h-4 text-red-400" />
+                </div>
+              )}
+            </div>
+            
+            {/* Validation Feedback */}
+            {referralCode && !validating && isValid && sponsorUsername && (
+              <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3">
+                <p className="text-green-300 text-sm font-medium flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  Sponsor Confirmed: {sponsorUsername}
+                </p>
+              </div>
+            )}
+            
+            {referralCode && !validating && validationError && (
+              <p className="text-red-300 text-sm flex items-center gap-1">
+                <X className="w-4 h-4" /> {validationError}
+              </p>
+            )}
+            
+            {!referralCode && (
+              <p className="text-white/60 text-xs">
+                Have a referral code? Enter it to join your sponsor's network
               </p>
             )}
           </div>
