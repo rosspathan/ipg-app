@@ -148,7 +148,7 @@ export default function BadgeMarketplaceScreen() {
       {/* Badge Grid */}
       <BadgeGrid 
         badges={filteredBadges}
-        onPurchase={() => {}}
+        onPurchase={() => navigate('/app/programs/badge-subscription')}
         isProcessing={false}
       />
 

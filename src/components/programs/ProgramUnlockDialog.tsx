@@ -39,7 +39,7 @@ export function ProgramUnlockDialog({
         label: 'Unlock Badge',
         action: () => {
           onOpenChange(false);
-          navigate('/badge-system');
+          navigate('/app/programs/badge-subscription');
         },
       };
     }

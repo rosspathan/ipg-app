@@ -114,7 +114,7 @@ export function UserReferralStatsWidget() {
                 <Button 
                   size="sm" 
                   variant="outline"
-                  onClick={() => navigate('/app/programs/badge-purchase')}
+                  onClick={() => navigate('/app/programs/badge-subscription')}
                 >
                   Upgrade Badge
                 </Button>
