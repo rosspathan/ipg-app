@@ -208,6 +208,18 @@ export function useActivePrograms() {
       route: "/app/programs/insurance",
       category: "finance",
       order_index: 8
+    },
+    {
+      id: "badge-subscription",
+      key: "badge-subscription",
+      name: "Badge System",
+      description: "Unlock levels & earn more",
+      icon: "Shield",
+      badge: "EXCLUSIVE",
+      badgeColor: "bg-purple-500/20 text-purple-400",
+      route: "/app/programs/badge-subscription",
+      category: "rewards",
+      order_index: 10
     }
   ];
 
