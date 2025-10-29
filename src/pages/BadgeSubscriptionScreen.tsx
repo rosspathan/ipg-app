@@ -120,7 +120,9 @@ const BadgeSubscriptionScreen = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw { message: error.message, data } as any;
+      }
 
       // Show celebration
       setShowCelebration(true);
@@ -161,10 +163,17 @@ const BadgeSubscriptionScreen = () => {
       
     } catch (error: any) {
       console.error('Badge purchase error:', error);
+      const description =
+        error?.data?.message ||
+        error?.data?.error ||
+        error?.message ||
+        error?.error_description ||
+        error?.context ||
+        'Failed to process badge purchase';
       toast({
-        title: "Purchase Failed",
-        description: error.message || "Failed to process badge purchase",
-        variant: "destructive"
+        title: 'Purchase Failed',
+        description,
+        variant: 'destructive',
       });
     } finally {
       setPurchasingBadge(null);

@@ -355,7 +355,9 @@ export const useTeamReferrals = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw { message: (error as any)?.message, data } as any;
+      }
 
       // Refresh data
       await Promise.all([
@@ -370,12 +372,17 @@ export const useTeamReferrals = () => {
       });
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error purchasing badge:', error);
+      const description =
+        error?.data?.message ||
+        error?.data?.error ||
+        error?.message ||
+        'Failed to purchase badge';
       toast({
-        title: "Error",
-        description: "Failed to purchase badge",
-        variant: "destructive",
+        title: 'Error',
+        description,
+        variant: 'destructive',
       });
       throw error;
     }

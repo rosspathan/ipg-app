@@ -55,11 +55,11 @@ Deno.serve(async (req) => {
     // ==========================================
     const { data: currentBalance } = await supabase
       .from('user_bsk_balances')
-      .select('holding_balance')
+      .select('withdrawable_balance')
       .eq('user_id', userId)
       .maybeSingle();
 
-    const availableBalance = Number(currentBalance?.holding_balance || 0);
+    const availableBalance = Number(currentBalance?.withdrawable_balance ?? 0);
 
     if (availableBalance < paidAmountBSK) {
       return new Response(
@@ -79,11 +79,14 @@ Deno.serve(async (req) => {
 
     await supabase
       .from('user_bsk_balances')
-      .upsert({
-        user_id: userId,
-        holding_balance: newBalance,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
+      .upsert(
+        {
+          user_id: userId,
+          withdrawable_balance: newBalance,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      );
 
     console.log(`[Badge Purchase] Deducted ${paidAmountBSK} BSK. New balance: ${newBalance}`);
 
@@ -127,21 +130,33 @@ Deno.serve(async (req) => {
     // ==========================================
     // STEP 5: TRIGGER COMMISSIONS
     // ==========================================
-    // Call direct commission processor (10% to L1 sponsor)
-    await supabase.functions.invoke('process-badge-subscription-commission', {
-      body: { user_id: userId, badge_name: toBadge, bsk_amount: paidAmountBSK, previous_badge: fromBadge || null }
-    });
+    try {
+      await supabase.functions.invoke('process-badge-subscription-commission', {
+        body: {
+          user_id: userId,
+          badge_name: toBadge,
+          bsk_amount: paidAmountBSK,
+          previous_badge: fromBadge || null,
+        },
+      });
+    } catch (e) {
+      console.warn('[Badge Purchase] Direct commission failed:', (e as any)?.message || e);
+    }
 
     // Call 50-level team income processor
-    await supabase.functions.invoke('process-team-income-rewards', {
-      body: { 
-        payer_id: userId, 
-        event_type: 'badge_purchase',
-        event_id: paymentRef,
-        badge_name: toBadge,
-        payment_amount: paidAmountBSK
-      }
-    });
+    try {
+      await supabase.functions.invoke('process-team-income-rewards', {
+        body: {
+          payer_id: userId,
+          event_type: 'badge_purchase',
+          event_id: paymentRef,
+          badge_name: toBadge,
+          payment_amount: paidAmountBSK,
+        },
+      });
+    } catch (e) {
+      console.warn('[Badge Purchase] Team income processing failed:', (e as any)?.message || e);
+    }
 
     console.log(`[Badge Purchase] SUCCESS: ${toBadge} badge purchased by ${userId}`);
 
