@@ -5,7 +5,7 @@ import { KYCStepPersonal } from "./KYCStepPersonal";
 import { KYCStepAddress } from "./KYCStepAddress";
 import { KYCStepDocuments } from "./KYCStepDocuments";
 import { KYCStepReview } from "./KYCStepReview";
-import { useKYCSimple } from "@/hooks/useKYCSimple";
+import { useKYCNew } from "@/hooks/useKYCNew";
 import { toast } from "sonner";
 
 const STEPS = [
@@ -18,21 +18,23 @@ const STEPS = [
 export const KYCWizard = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<any>({});
-  const { submission, saveForm, uploadDocument, submitForReview, uploading } = useKYCSimple();
+  const { profiles, uploadDocument, updateKYCLevel, submitKYCLevel, uploading } = useKYCNew();
   const [submitting, setSubmitting] = useState(false);
 
-  // Load existing submission data
+  // Load existing L1 KYC data
   useEffect(() => {
-    if (submission) {
-      setFormData(submission);
+    if (profiles.L1?.data_json) {
+      setFormData(profiles.L1.data_json);
     }
-  }, [submission]);
+  }, [profiles.L1]);
 
   // Auto-save on data change
   useEffect(() => {
     if (Object.keys(formData).length > 0 && currentStep > 1) {
       const timer = setTimeout(() => {
-        saveForm({ ...formData, status: 'draft' });
+        updateKYCLevel('L1', formData, 'draft').catch(err => {
+          console.error('Auto-save failed:', err);
+        });
       }, 2000);
       return () => clearTimeout(timer);
     }
@@ -56,15 +58,16 @@ export const KYCWizard = () => {
   const handleFinalSubmit = async () => {
     setSubmitting(true);
     try {
-      const saved = await saveForm({ ...formData, status: 'draft' });
-      if (saved) {
-        const submitted = await submitForReview();
-        if (submitted) {
-          toast.success("KYC submitted successfully! We'll review it within 24-48 hours.");
-        }
-      }
-    } catch (error) {
-      toast.error("Failed to submit KYC. Please try again.");
+      // First save the final form data
+      const profile = await updateKYCLevel('L1', formData, 'draft');
+      
+      // Then submit for review
+      await submitKYCLevel('L1', profile.id);
+      
+      toast.success("KYC submitted successfully! We'll review it within 24-48 hours.");
+    } catch (error: any) {
+      console.error('KYC submission error:', error);
+      toast.error(error?.message || "Failed to submit KYC. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -100,7 +103,7 @@ export const KYCWizard = () => {
               initialData={formData}
               onNext={handleDocumentsNext}
               onBack={() => setCurrentStep(2)}
-              onUpload={uploadDocument}
+              onUpload={(file, type) => uploadDocument(file, 'L1', type)}
               uploading={uploading}
             />
           )}
