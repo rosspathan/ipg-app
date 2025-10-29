@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { Users, TrendingUp, Award, Layers } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -14,6 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useDownlineTree } from '@/hooks/useDownlineTree';
 import { Loader2 } from 'lucide-react';
+import { ModernLevelSelector } from './ModernLevelSelector';
 
 export function DownlineTableView() {
   const { data, isLoading } = useDownlineTree();
@@ -51,11 +51,14 @@ export function DownlineTableView() {
 
   const formatCurrency = (amount: number | null) => {
     if (!amount) return '-';
-    return `${amount.toFixed(2)} BSK`;
+    return `${amount.toFixed(0)} BSK`;
   };
 
-  // Get unique levels and sort them
-  const levels = [...new Set(data.members.map(m => m.level))].sort((a, b) => a - b);
+  // Prepare level data for selector
+  const levelData = data.levelStats.map((stats) => ({
+    level: stats.level,
+    count: stats.member_count
+  })).sort((a, b) => a.level - b.level);
 
   // Filter members by selected level
   const membersForLevel = data.members.filter(m => m.level === selectedLevel);
@@ -121,82 +124,83 @@ export function DownlineTableView() {
         </Card>
       </div>
 
-      {/* Level Tabs and Table */}
+      {/* Level Selector and Table */}
       <Card>
         <CardHeader>
           <CardTitle>Team Structure by Level</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Tabs value={selectedLevel.toString()} onValueChange={(v) => setSelectedLevel(Number(v))}>
-            <TabsList className="mb-4">
-              {levels.map(level => {
-                const levelData = data.levelStats.find(ls => ls.level === level);
-                return (
-                  <TabsTrigger key={level} value={level.toString()}>
-                    Level {level}
-                    <Badge variant="secondary" className="ml-2">
-                      {levelData?.member_count || 0}
-                    </Badge>
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
+        <CardContent className="space-y-6">
+          {/* Modern Level Selector */}
+          <ModernLevelSelector
+            levels={levelData}
+            selectedLevel={selectedLevel}
+            onLevelChange={setSelectedLevel}
+          />
 
-            {levels.map(level => (
-              <TabsContent key={level} value={level.toString()}>
-                <div className="rounded-md border overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>NAME</TableHead>
-                        <TableHead>DOJ</TableHead>
-                        <TableHead>SPONSOR ID</TableHead>
-                        <TableHead className="text-right">Package Cost</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {membersForLevel.length > 0 ? (
-                        membersForLevel.map((member) => (
-                          <TableRow key={member.user_id}>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{member.display_name}</span>
-                                <span className="text-sm text-muted-foreground">
-                                  @{member.username}
-                                </span>
-                                {member.current_badge && (
-                                  <Badge variant="outline" className="mt-1 w-fit">
-                                    {member.current_badge}
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>{formatDate(member.join_date)}</TableCell>
-                            <TableCell>
-                              {member.sponsor_username ? (
-                                <span className="text-primary">@{member.sponsor_username}</span>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              {formatCurrency(member.package_cost)}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground">
-                            No members at this level yet
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+          {/* Table */}
+          <div className="rounded-lg border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-semibold">NAME</TableHead>
+                  <TableHead className="font-semibold">DOJ</TableHead>
+                  <TableHead className="font-semibold">SPONSOR ID</TableHead>
+                  <TableHead className="text-right font-semibold">Package Cost</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {membersForLevel.length > 0 ? (
+                  membersForLevel.map((member) => (
+                    <TableRow 
+                      key={member.user_id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
+                      <TableCell className="py-4">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-base">{member.display_name}</span>
+                          <span className="text-sm text-muted-foreground">
+                            @{member.username}
+                          </span>
+                          {member.current_badge && (
+                            <Badge 
+                              variant="outline" 
+                              className="mt-1.5 w-fit text-xs px-2 py-0.5 border-primary/40 text-primary"
+                            >
+                              {member.current_badge}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4 text-muted-foreground">
+                        {formatDate(member.join_date)}
+                      </TableCell>
+                      <TableCell className="py-4">
+                        {member.sponsor_username ? (
+                          <span className="text-primary font-medium">
+                            @{member.sponsor_username}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-4 text-right font-semibold text-base">
+                        {formatCurrency(member.package_cost)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-12 text-center">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Users className="w-8 h-8 opacity-50" />
+                        <p className="text-sm">No members at Level {selectedLevel} yet</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
