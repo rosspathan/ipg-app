@@ -1,4 +1,4 @@
-import { FC, useState, useRef } from 'react';
+import { FC, useState, useRef, useEffect } from 'react';
 import { Download, Share2, Copy, Check, Pen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -50,6 +50,11 @@ export const BadgeIdCardSheet: FC<BadgeIdCardSheetProps> = ({
   const [signatureUrl, setSignatureUrl] = useState<string | undefined>();
   const frontCardRef = useRef<HTMLDivElement>(null);
   const backCardRef = useRef<HTMLDivElement>(null);
+
+  // Keep selected tier in sync when currentTier prop changes (e.g., after async fetch)
+  useEffect(() => {
+    setSelectedTier(currentTier);
+  }, [currentTier]);
 
   const theme = getThemeForTier(selectedTier);
   const allTiers = getAllTiers();
