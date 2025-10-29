@@ -40,11 +40,22 @@ export function IDCardPage() {
   const userId = user?.id || (userApp as any)?.user_id || `guest-${Math.random().toString(36).slice(2, 8)}`;
   
   // Use centralized badge logic from useUserBadge hook
-  const currentTier: BadgeTier = (badgeLoading || !userBadge || userBadge === 'None') 
-    ? 'Silver' 
-    : (userBadge as BadgeTier);
+  const hasPurchasedBadge = !badgeLoading && userBadge && userBadge !== 'None';
+  const currentTier: BadgeTier = hasPurchasedBadge
+    ? (userBadge as BadgeTier)
+    : 'Silver'; // Default is harmless because no card renders when purchasedBadges is empty
   
-  const purchasedBadges: BadgeTier[] = [currentTier];
+  const purchasedBadges: BadgeTier[] = hasPurchasedBadge
+    ? [userBadge as BadgeTier]
+    : [];
+  
+  // Debug logging for badge display logic
+  console.info('[IDCardPage] Badge state:', { 
+    hasPurchasedBadge, 
+    userBadge, 
+    badgeLoading,
+    purchasedBadgesCount: purchasedBadges.length 
+  });
   
   const qrCode = referralCode?.code || userId;
 
@@ -94,7 +105,7 @@ export function IDCardPage() {
 
           <BadgeIdCardSheet
             user={userData}
-            currentTier={currentTier || 'Silver'}
+            currentTier={currentTier}
             purchasedBadges={purchasedBadges}
             qrCode={qrCode}
             onAvatarUpload={isAuthed ? uploadAvatar : async () => {}}
