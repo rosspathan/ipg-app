@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
+import { VIPNextMilestoneCard } from "@/components/referrals/VIPNextMilestoneCard";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function VIPMilestoneHistoryPage() {
   const { data: history = [], isLoading: historyLoading } = useVIPMilestoneHistory();
@@ -18,6 +21,27 @@ export default function VIPMilestoneHistoryPage() {
 
   const totalEarned = history.reduce((sum, item) => sum + Number(item.bsk_rewarded), 0);
   const totalMilestones = history.length;
+
+  // Fetch active milestones
+  const { data: activeMilestones = [] } = useQuery({
+    queryKey: ['vip-milestones-active'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('vip_milestones')
+        .select('*')
+        .eq('is_active', true)
+        .order('vip_count_threshold', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Calculate next unclaimed milestone
+  const claimedMilestoneIds = new Set(history.map(h => h.milestone_id));
+  const nextMilestone = activeMilestones
+    .filter(m => !claimedMilestoneIds.has(m.id))
+    .sort((a, b) => a.vip_count_threshold - b.vip_count_threshold)[0] || null;
 
   const handleExport = () => {
     const csvContent = [
@@ -93,6 +117,12 @@ export default function VIPMilestoneHistoryPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Next Milestone Progress */}
+        <VIPNextMilestoneCard 
+          currentVIPCount={currentVIPCount}
+          nextMilestone={nextMilestone}
+        />
 
         {/* Export Button */}
         {history.length > 0 && (
