@@ -6064,6 +6064,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_kyc_approved: boolean | null
           kyc_status: string | null
           onboarding_completed_at: string | null
           onboarding_step: string | null
@@ -6086,6 +6087,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_kyc_approved?: boolean | null
           kyc_status?: string | null
           onboarding_completed_at?: string | null
           onboarding_step?: string | null
@@ -6108,6 +6110,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_kyc_approved?: boolean | null
           kyc_status?: string | null
           onboarding_completed_at?: string | null
           onboarding_step?: string | null
@@ -10727,6 +10730,12 @@ export type Database = {
           p_seller_id: string
         }
         Returns: boolean
+      }
+      sync_kyc_approval_status: {
+        Args: never
+        Returns: {
+          updated_count: number
+        }[]
       }
       system_update_bonus_balance: {
         Args: { p_asset_id: string; p_balance_delta: number; p_user_id: string }
