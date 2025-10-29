@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
               sponsor_id: null,
               sponsor_code_used: null,
               locked_at: null,
-              lock_stage: null
+              capture_stage: null
             });
 
           if (insertError) {
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
               .update({
                 sponsor_id: sponsorId,
                 locked_at: new Date().toISOString(),
-                lock_stage: 'admin_repair'
+                capture_stage: 'admin_repair'
               })
               .eq('user_id', profile.user_id)
               .is('locked_at', null);
