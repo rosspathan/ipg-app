@@ -22,7 +22,7 @@ export interface KYCSubmission {
   id_front_url?: string;
   id_back_url?: string;
   selfie_url?: string;
-  status: 'draft' | 'pending' | 'submitted' | 'approved' | 'rejected';
+  status: 'none' | 'draft' | 'submitted' | 'in_review' | 'approved' | 'rejected';
   rejection_reason?: string;
   admin_notes?: string;
   submitted_at?: string;
@@ -285,7 +285,7 @@ export const useKYCSubmission = () => {
         user_id: user.id,
         level: 'L1',
         data_json: dataJson,
-        status: 'pending',
+        status: 'submitted',
         submitted_at: new Date().toISOString()
       };
 

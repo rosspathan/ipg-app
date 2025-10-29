@@ -247,6 +247,7 @@ import { TradingPairPage } from "@/pages/astra/TradingPairPage";
 import { ProfileHub } from "@/pages/ProfileHub";
 import { KYCPage } from "@/pages/KYCPage";
 import KYCSubmission from "@/pages/KYCSubmission";
+import KYCSubmissionSimple from "@/pages/KYCSubmissionSimple";
 import { IDCardPage } from "@/pages/IDCardPage";
 import { SecurityPage } from "@/pages/SecurityPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
@@ -431,7 +432,7 @@ function AppContent() {
               
               {/* Profile Hub */}
               <Route path="profile" element={<ProfileHub />} />
-              <Route path="profile/kyc" element={<KYCSubmission />} />
+              <Route path="profile/kyc" element={<KYCSubmissionSimple />} />
               <Route path="profile/id-card" element={<IDCardPage />} />
               <Route path="profile/security" element={<SecurityPage />} />
               <Route path="profile/notify" element={<NotificationsPage />} />
