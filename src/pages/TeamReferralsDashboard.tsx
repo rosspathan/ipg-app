@@ -12,7 +12,7 @@ import { VIPMilestoneProgress } from '@/components/referrals/VIPMilestoneProgres
 import { SponsorInfoCard } from '@/components/referrals/SponsorInfoCard';
 import { DirectReferralsList } from '@/components/referrals/DirectReferralsList';
 import { ReferralCommissionHistory } from '@/components/referrals/ReferralCommissionHistory';
-import { DownlineTreeViewer } from '@/components/referrals/DownlineTreeViewer';
+import { DownlineTableView } from '@/components/referrals/DownlineTableView';
 import { CommissionStructureCard } from '@/components/referrals/CommissionStructureCard';
 
 export default function TeamReferralsDashboard() {
@@ -157,7 +157,7 @@ export default function TeamReferralsDashboard() {
         </TabsContent>
 
         <TabsContent value="downline">
-          <DownlineTreeViewer />
+          <DownlineTableView />
         </TabsContent>
 
         <TabsContent value="commissions">

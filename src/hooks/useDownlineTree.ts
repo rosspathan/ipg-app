@@ -13,6 +13,8 @@ export interface DownlineMember {
   join_date: string | null;
   total_generated: number;
   direct_sponsor_id: string | null;
+  sponsor_username: string | null;
+  package_cost: number | null;
 }
 
 export interface LevelStats {
@@ -71,7 +73,7 @@ export function useDownlineTree() {
       // Fetch badge holdings
       const { data: badges, error: badgeError } = await supabase
         .from('user_badge_holdings')
-        .select('user_id, current_badge, purchased_at')
+        .select('user_id, current_badge, purchased_at, price_bsk')
         .in('user_id', userIds);
 
       if (badgeError) throw badgeError;
@@ -94,10 +96,18 @@ export function useDownlineTree() {
 
       if (commError) throw commError;
 
+      // Fetch sponsor usernames for display
+      const sponsorIds = [...new Set(treeData.map(t => t.direct_sponsor_id).filter(Boolean))];
+      const { data: sponsorProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, username')
+        .in('user_id', sponsorIds);
+
       // Create lookup maps
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
       const badgeMap = new Map(badges?.map(b => [b.user_id, b]) || []);
       const linkMap = new Map(links?.map(l => [l.user_id, l]) || []);
+      const sponsorMap = new Map(sponsorProfiles?.map(s => [s.user_id, s.username]) || []);
       const commissionMap = new Map<string, number>();
       
       commissions?.forEach(c => {
@@ -109,6 +119,7 @@ export function useDownlineTree() {
         const profile = profileMap.get(t.user_id);
         const badge = badgeMap.get(t.user_id);
         const link = linkMap.get(t.user_id);
+        const sponsorUsername = t.direct_sponsor_id ? sponsorMap.get(t.direct_sponsor_id) : null;
         
         return {
           level: t.level,
@@ -121,6 +132,8 @@ export function useDownlineTree() {
           join_date: link?.locked_at || null,
           total_generated: commissionMap.get(t.user_id) || 0,
           direct_sponsor_id: t.direct_sponsor_id || null,
+          sponsor_username: sponsorUsername || null,
+          package_cost: badge?.price_bsk || null,
         };
       });
 

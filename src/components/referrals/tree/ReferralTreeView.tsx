@@ -199,6 +199,8 @@ export function ReferralTreeView() {
                 total_generated: selectedMember.generatedAmount,
                 join_date: selectedMember.joinedAt,
                 direct_sponsor_id: null,
+                sponsor_username: null,
+                package_cost: null,
               }}
               open={!!selectedMember}
               onClose={() => setSelectedMember(null)}
