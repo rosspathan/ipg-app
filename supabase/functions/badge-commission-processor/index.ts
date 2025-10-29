@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     console.log(`[Badge Purchase] Processing: User ${userId}, Badge ${toBadge}, Amount ${paidAmountBSK} BSK`);
 
     // ==========================================
-    // STEP 1: VALIDATE KYC APPROVAL (CRITICAL)
+    // STEP 1: CHECK KYC APPROVAL (SOFT VALIDATION)
     // ==========================================
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -40,25 +40,15 @@ Deno.serve(async (req) => {
       .single();
 
     if (profileError) {
-      throw new Error(`Profile fetch failed: ${profileError.message}`);
+      console.warn(`[Badge Purchase] Profile fetch warning: ${profileError.message}`);
     }
 
+    // Log KYC status but don't block purchase
     if (!profile?.is_kyc_approved) {
-      console.error(`[Badge Purchase] KYC NOT APPROVED for user ${userId}`);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'KYC_REQUIRED',
-          message: 'Complete KYC verification before purchasing badges' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-          status: 403 
-        }
-      );
+      console.warn(`[Badge Purchase] ⚠️ KYC NOT APPROVED for user ${userId} - purchase allowed but flagged`);
+    } else {
+      console.log(`[Badge Purchase] KYC verified ✅`);
     }
-
-    console.log(`[Badge Purchase] KYC verified ✅`);
 
     // ==========================================
     // STEP 2: DEDUCT BSK FROM USER BALANCE
