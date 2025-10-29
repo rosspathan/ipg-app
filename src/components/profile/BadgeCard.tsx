@@ -2,10 +2,12 @@ import * as React from "react"
 import { Award, Sparkles, Shield, Crown, Star, ChevronRight, Gem } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useUserBadge } from "@/hooks/useUserBadge"
+import { useAuthUser } from "@/hooks/useAuthUser"
 import { Skeleton } from "@/components/ui/skeleton"
 import { badgeTokens, getTierTokens, getTierKey } from "@/design-system/badge-tokens"
 import { motion } from "framer-motion"
 import { normalizeBadgeName, getBadgeDisplayName } from "@/lib/badgeUtils"
+import { supabase } from "@/integrations/supabase/client"
 
 const getBadgeIcon = (tier: string) => {
   const tierUpper = tier.toUpperCase();
@@ -20,10 +22,38 @@ const getBadgeIcon = (tier: string) => {
 }
 
 export function BadgeCard() {
-  const { badge, loading } = useUserBadge()
+  const { badge, loading, refetch } = useUserBadge()
+  const { user } = useAuthUser()
   
   const displayBadge = badge || "None"
   const normalizedBadge = normalizeBadgeName(displayBadge);
+
+  // ✅ DEFENSIVE CHECK: Verify badge integrity
+  React.useEffect(() => {
+    if (user && badge && badge !== 'None') {
+      const verifyBadge = async () => {
+        console.log('🔍 [BadgeCard] Verifying badge integrity:', badge);
+        const { data: holding } = await supabase
+          .from('user_badge_holdings')
+          .select('current_badge')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (!holding?.current_badge) {
+          console.error('⚠️ [BadgeCard] CRITICAL: Badge displayed but NOT in holdings table!');
+          console.error('   User:', user.email);
+          console.error('   Badge shown:', badge);
+          console.error('   Holdings record:', holding);
+          // Force refetch to correct the issue
+          refetch();
+        } else {
+          console.log('✅ [BadgeCard] Badge verified in holdings table');
+        }
+      };
+      
+      verifyBadge();
+    }
+  }, [badge, user, refetch]);
   
   if (loading) {
     return (

@@ -4,6 +4,10 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { badgeTokens, getTierTokens, getTierKey } from "@/design-system/badge-tokens";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuthUser } from "@/hooks/useAuthUser";
+import { toast } from "sonner";
 
 interface BadgeBenefitsModalProps {
   isOpen: boolean;
@@ -64,10 +68,62 @@ const vipBenefits = [
 ];
 
 export function BadgeBenefitsModal({ isOpen, onClose, badge, onPurchase }: BadgeBenefitsModalProps) {
+  const { user } = useAuthUser();
+  const [loading, setLoading] = useState(false);
   const tierKey = getTierKey(badge.name);
   const tokens = getTierTokens(tierKey);
   const isVip = badge.name.toUpperCase() === 'VIP';
   const allBenefits = isVip ? [...benefits, ...vipBenefits] : benefits;
+
+  const handlePurchase = async () => {
+    if (!user) {
+      toast.error('Please login to purchase badges');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log('🎖️ [BadgeBenefitsModal] Initiating badge purchase:', { 
+        userId: user.id, 
+        badge: badge.name, 
+        cost: badge.cost 
+      });
+      
+      // Call verification edge function
+      const { data, error } = await supabase.functions.invoke(
+        'verify-badge-purchase',
+        {
+          body: {
+            user_id: user.id,
+            badge_name: badge.name,
+            cost: badge.cost
+          }
+        }
+      );
+
+      if (error) {
+        console.error('❌ Purchase error:', error);
+        toast.error(error.message || 'Failed to purchase badge');
+        return;
+      }
+
+      if (!data?.purchased) {
+        console.error('❌ Purchase failed:', data);
+        toast.error(data?.error || 'Failed to purchase badge');
+        return;
+      }
+
+      console.log('✅ Badge purchased successfully:', data);
+      toast.success(`${badge.name} badge purchased successfully! 🎉`);
+      onPurchase?.();
+      onClose();
+    } catch (err) {
+      console.error('❌ Critical purchase error:', err);
+      toast.error('Purchase failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -144,15 +200,16 @@ export function BadgeBenefitsModal({ isOpen, onClose, badge, onPurchase }: Badge
             <p className="text-2xl font-bold">{badge.cost.toLocaleString()} BSK</p>
           </div>
           <Button
-            onClick={onPurchase}
+            onClick={handlePurchase}
+            disabled={loading}
             size="lg"
             style={{
               background: badgeTokens.gradients[tierKey].card,
               color: 'white'
             }}
-            className="hover:opacity-90 transition-opacity"
+            className="hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            Upgrade Now
+            {loading ? 'Processing...' : 'Upgrade Now'}
           </Button>
         </div>
       </DialogContent>

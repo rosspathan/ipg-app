@@ -47,9 +47,9 @@ export function getBadgeDisplayName(badge: BadgeTier | 'None'): string {
     'Platinum': 'Platinum',
     'Diamond': 'Diamond',
     'VIP': 'i-Smart VIP', // ✨ Branded display name
-    'None': 'Member'
+    'None': 'No Badge' // ✅ Clear indication - user must purchase
   };
-  return displayNames[badge] || badge;
+  return displayNames[badge] || 'No Badge';
 }
 
 /**

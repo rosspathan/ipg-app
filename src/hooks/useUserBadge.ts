@@ -68,33 +68,10 @@ export const useUserBadge = () => {
         console.log('⚠️ [useUserBadge] No qualified badge in user_badge_status');
       }
 
-      // PRIORITY 3: Check badge_thresholds for default/lowest badge
-      console.log('🎖️ [useUserBadge] Step 3: Checking badge_thresholds for default badge...');
-      const { data: thresholdData, error: thresholdError } = await supabase
-        .from('badge_thresholds')
-        .select('badge_name')
-        .order('threshold_amount', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (thresholdError) {
-        console.error('❌ [useUserBadge] Error fetching from badge_thresholds:', thresholdError);
-      }
-
-      if (thresholdData?.badge_name) {
-        const rawBadge = thresholdData.badge_name;
-        const normalizedBadge = normalizeBadgeName(rawBadge);
-        console.log('ℹ️ [useUserBadge] Using DEFAULT badge from thresholds');
-        console.log('   Raw badge from DB:', rawBadge);
-        console.log('   Normalized badge:', normalizedBadge);
-        setBadge(normalizedBadge);
-        return;
-      } else {
-        console.log('⚠️ [useUserBadge] No default badge in badge_thresholds');
-      }
-
-      // FALLBACK: No badge found anywhere
-      console.log('❌ [useUserBadge] No badge found in any table, defaulting to None');
+      // PRIORITY 3: NO DEFAULT BADGE - User must purchase or qualify
+      console.log('🎖️ [useUserBadge] No purchased or qualified badge found');
+      console.log('✅ [useUserBadge] Setting badge to None (user must purchase)');
+      console.log('📌 [useUserBadge] Badge will only show if explicitly purchased or qualified');
       setBadge('None');
     } catch (error) {
       console.error('❌ [useUserBadge] Critical error in fetchBadge:', error);
