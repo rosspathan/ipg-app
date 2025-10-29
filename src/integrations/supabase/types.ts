@@ -10597,6 +10597,14 @@ export type Database = {
         }[]
       }
       get_transaction_stats: { Args: never; Returns: Json }
+      get_user_display_info: {
+        Args: { p_user_id: string }
+        Returns: {
+          display_name: string
+          email: string
+          username: string
+        }[]
+      }
       get_user_lucky_draw_tickets: {
         Args: { p_config_id: string; p_user_id: string }
         Returns: {

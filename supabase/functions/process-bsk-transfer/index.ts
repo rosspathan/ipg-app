@@ -44,7 +44,22 @@ Deno.serve(async (req) => {
       throw new Error('Cannot transfer to yourself');
     }
 
-    // Use atomic RPC function for transfer (create this in migration)
+    // Fetch sender and recipient display info
+    const { data: senderProfile } = await supabaseClient
+      .from('profiles')
+      .select('display_name, username, email, full_name')
+      .eq('user_id', user.id)
+      .single();
+
+    const { data: recipientProfile } = await supabaseClient
+      .from('profiles')
+      .select('display_name, username, email, full_name')
+      .eq('user_id', recipient_id)
+      .single();
+
+    console.log('[BSK Transfer] User profiles fetched');
+
+    // Use atomic RPC function for transfer
     const { data: result, error: transferError } = await supabaseClient.rpc(
       'execute_bsk_transfer',
       {
@@ -64,6 +79,27 @@ Deno.serve(async (req) => {
     }
 
     console.log('[BSK Transfer] Success:', result.transaction_ref);
+
+    // Update metadata with user display info
+    const senderDisplayName = senderProfile?.display_name || senderProfile?.full_name || senderProfile?.username || senderProfile?.email || 'Unknown';
+    const recipientDisplayName = recipientProfile?.display_name || recipientProfile?.full_name || recipientProfile?.username || recipientProfile?.email || 'Unknown';
+
+    // Update the transaction metadata with display names
+    await supabaseClient
+      .from('unified_bsk_transactions')
+      .update({
+        metadata: {
+          transaction_ref: result.transaction_ref,
+          sender_id: user.id,
+          sender_display_name: senderDisplayName,
+          sender_username: senderProfile?.username,
+          recipient_id: recipient_id,
+          recipient_display_name: recipientDisplayName,
+          recipient_username: recipientProfile?.username,
+        }
+      })
+      .eq('reference_id', result.transaction_ref)
+      .in('transaction_type', ['transfer_in', 'transfer_out']);
 
     return new Response(
       JSON.stringify({

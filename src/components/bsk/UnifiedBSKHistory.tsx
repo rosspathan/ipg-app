@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   Table, 
   TableBody, 
@@ -22,7 +21,6 @@ import {
 import {
   Download,
   Search,
-  Filter,
   ChevronLeft,
   ChevronRight,
   TrendingUp,
@@ -30,21 +28,17 @@ import {
   DollarSign,
   Gift,
   Users,
-  Shield,
   Sparkles,
   ArrowRightLeft,
   Award,
   Loader2,
-  ChevronDown,
-  ChevronUp,
   Send,
   ArrowDownRight,
   Banknote,
   Wallet,
-  ShoppingCart,
   CreditCard,
 } from 'lucide-react';
-import { useUnifiedBSKHistory } from '@/hooks/useUnifiedBSKHistory';
+import { useUnifiedBSKHistory, UnifiedBSKTransaction } from '@/hooks/useUnifiedBSKHistory';
 import { BSKHistoryEmptyState } from './BSKHistoryEmptyState';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -54,58 +48,164 @@ interface UnifiedBSKHistoryProps {
   className?: string;
 }
 
-// Icon mapping for transaction types
-const getTransactionIcon = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'transfer_out':
-      return Send;
-    case 'transfer_in':
-      return ArrowDownRight;
-    case 'withdrawal':
-      return Banknote;
-    case 'loan_disbursement':
-    case 'loan_repayment':
-    case 'loan':
-      return Wallet;
-    case 'badge_bonus':
-    case 'badge_purchase':
-      return Award;
-    case 'referral_commission':
-    case 'referral_bonus':
-      return Users;
-    case 'insurance_claim':
-    case 'insurance_premium':
-      return Shield;
-    case 'staking_reward':
-    case 'ad_reward':
-    case 'ad_subscription':
-      return Sparkles;
-    case 'promotion_bonus':
-    case 'admin_credit':
-    case 'admin_debit':
-    case 'admin_operation':
-      return Gift;
-    case 'manual_purchase':
-      return ShoppingCart;
-    case 'holding_to_withdrawable':
-      return ArrowRightLeft;
-    case 'deposit':
-    case 'credit':
-      return CreditCard;
-    default:
-      return DollarSign;
+interface TransactionDisplay {
+  label: string;
+  secondaryInfo: string;
+  icon: any;
+  color: string;
+  bgColor: string;
+}
+
+// Truncate crypto address
+const truncateAddress = (address?: string) => {
+  if (!address) return '';
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
+// Get transaction display information
+const getTransactionDisplay = (tx: UnifiedBSKTransaction): TransactionDisplay => {
+  const isIncoming = tx.amount_bsk > 0;
+  
+  // Transfer transactions
+  if (tx.transaction_type === 'transfer_in') {
+    return {
+      label: 'Received from',
+      secondaryInfo: tx.metadata?.sender_display_name || tx.metadata?.sender_username || 'Unknown User',
+      icon: ArrowDownRight,
+      color: 'text-green-600 dark:text-green-400',
+      bgColor: 'bg-green-50 dark:bg-green-950/30',
+    };
   }
-};
+  
+  if (tx.transaction_type === 'transfer_out') {
+    return {
+      label: 'Sent to',
+      secondaryInfo: tx.metadata?.recipient_display_name || tx.metadata?.recipient_username || 'Unknown User',
+      icon: Send,
+      color: 'text-red-600 dark:text-red-400',
+      bgColor: 'bg-red-50 dark:bg-red-950/30',
+    };
+  }
+  
+  // Withdrawal transactions
+  if (tx.transaction_type === 'withdrawal') {
+    const withdrawalType = tx.metadata?.withdrawal_type;
+    if (withdrawalType === 'bank') {
+      return {
+        label: 'Withdrawn to Bank',
+        secondaryInfo: tx.metadata?.bank_name && tx.metadata?.account_holder_name 
+          ? `${tx.metadata.bank_name} - ${tx.metadata.account_holder_name}` 
+          : 'Bank withdrawal',
+        icon: Banknote,
+        color: 'text-orange-600 dark:text-orange-400',
+        bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+      };
+    }
+    if (withdrawalType === 'crypto') {
+      return {
+        label: 'Withdrawn to Crypto',
+        secondaryInfo: tx.metadata?.crypto_symbol && tx.metadata?.crypto_address
+          ? `${tx.metadata.crypto_symbol} (${truncateAddress(tx.metadata.crypto_address)})`
+          : 'Crypto withdrawal',
+        icon: Wallet,
+        color: 'text-purple-600 dark:text-purple-400',
+        bgColor: 'bg-purple-50 dark:bg-purple-950/30',
+      };
+    }
+    return {
+      label: 'Withdrawal',
+      secondaryInfo: tx.description,
+      icon: Banknote,
+      color: 'text-orange-600 dark:text-orange-400',
+      bgColor: 'bg-orange-50 dark:bg-orange-950/30',
+    };
+  }
+  
+  // Deposit/Credit
+  if (tx.transaction_type === 'deposit' || tx.transaction_type === 'credit') {
+    return {
+      label: 'Deposit',
+      secondaryInfo: 'Added to your account',
+      icon: CreditCard,
+      color: 'text-blue-600 dark:text-blue-400',
+      bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+    };
+  }
+  
+  // Referral earnings
+  if (tx.transaction_type.includes('referral')) {
+    return {
+      label: 'Referral Reward',
+      secondaryInfo: tx.description || 'Commission earned',
+      icon: Users,
+      color: 'text-green-600 dark:text-green-400',
+      bgColor: 'bg-green-50 dark:bg-green-950/30',
+    };
+  }
+  
+  // Ad rewards
+  if (tx.transaction_type.includes('ad_')) {
+    return {
+      label: 'Ad Reward',
+      secondaryInfo: tx.description || 'Earned from viewing ads',
+      icon: Sparkles,
+      color: 'text-yellow-600 dark:text-yellow-400',
+      bgColor: 'bg-yellow-50 dark:bg-yellow-950/30',
+    };
+  }
+  
+  // Badge/Bonus
+  if (tx.transaction_type.includes('badge') || tx.transaction_type.includes('bonus')) {
+    return {
+      label: 'Bonus Reward',
+      secondaryInfo: tx.description,
+      icon: Gift,
+      color: 'text-purple-600 dark:text-purple-400',
+      bgColor: 'bg-purple-50 dark:bg-purple-950/30',
+    };
+  }
+  
+  // Staking
+  if (tx.transaction_type.includes('staking')) {
+    return {
+      label: 'Staking Reward',
+      secondaryInfo: tx.description || 'Interest earned',
+      icon: TrendingUp,
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
+    };
+  }
+  
+  // Internal conversion
+  if (tx.transaction_type === 'holding_to_withdrawable') {
+    return {
+      label: 'Converted',
+      secondaryInfo: 'Holding → Withdrawable',
+      icon: ArrowRightLeft,
+      color: 'text-indigo-600 dark:text-indigo-400',
+      bgColor: 'bg-indigo-50 dark:bg-indigo-950/30',
+    };
+  }
 
-// Color coding for transaction types
-const getTransactionColor = (amount: number) => {
-  if (amount > 0) return 'text-success';
-  if (amount < 0) return 'text-destructive';
-  return 'text-muted-foreground';
-};
-
-const getBalanceTypeBadgeVariant = (balanceType: string) => {
-  return balanceType === 'withdrawable' ? 'default' : 'secondary';
+  // Loan transactions
+  if (tx.transaction_type.includes('loan')) {
+    return {
+      label: tx.transaction_type.includes('disbursement') ? 'Loan Received' : 'Loan Payment',
+      secondaryInfo: tx.description,
+      icon: Wallet,
+      color: tx.amount_bsk > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400',
+      bgColor: tx.amount_bsk > 0 ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-orange-50 dark:bg-orange-950/30',
+    };
+  }
+  
+  // Default fallback
+  return {
+    label: tx.transaction_type.replace(/_/g, ' '),
+    secondaryInfo: tx.description,
+    icon: DollarSign,
+    color: 'text-gray-600 dark:text-gray-400',
+    bgColor: 'bg-gray-50 dark:bg-gray-950/30',
+  };
 };
 
 const getStatusBadge = (status?: string) => {
@@ -129,10 +229,10 @@ const getStatusBadge = (status?: string) => {
 
 export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedBalanceType, setSelectedBalanceType] = useState<string>('all');
   const [selectedTransactionType, setSelectedTransactionType] = useState<string>('all');
-  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [transactionDirection, setTransactionDirection] = useState<string>('all');
+  const [isMobile, setIsMobile] = useState(false);
 
   const {
     transactions,
@@ -146,6 +246,14 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
     totalPages,
     exportToCSV,
   } = useUnifiedBSKHistory(userId, {});
+
+  // Detect mobile screen
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleSearch = () => {
     setFilters({ ...filters, searchTerm });
@@ -170,6 +278,19 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
     setPage(1);
   };
 
+  const handleDirectionFilter = (value: string) => {
+    setTransactionDirection(value);
+    if (value === 'incoming') {
+      setFilters({ ...filters, minAmount: 0.01 });
+    } else if (value === 'outgoing') {
+      setFilters({ ...filters, maxAmount: -0.01 });
+    } else {
+      const { minAmount, maxAmount, ...rest } = filters;
+      setFilters(rest);
+    }
+    setPage(1);
+  };
+
   // Show empty state if no transactions and not loading
   if (!isLoading && transactions.length === 0 && !searchTerm && selectedBalanceType === 'all' && selectedTransactionType === 'all') {
     return (
@@ -181,7 +302,7 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
 
   return (
     <div className={cn('space-y-6', className)}>
-      {/* Statistics Overview - Enhanced Design */}
+      {/* Statistics Overview */}
       {statistics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Total Earned */}
@@ -294,13 +415,13 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
         </div>
       )}
 
-      {/* Filters and Search - Enhanced Design */}
+      {/* Filters and Search */}
       <Card className="p-4 border-border/50">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 flex gap-2">
               <Input
-                placeholder="Search transactions by type, description..."
+                placeholder="Search transactions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -312,6 +433,17 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
             </div>
 
             <div className="flex gap-2 flex-wrap">
+              <Select value={transactionDirection} onValueChange={handleDirectionFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Direction" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Transactions</SelectItem>
+                  <SelectItem value="incoming">💰 Incoming</SelectItem>
+                  <SelectItem value="outgoing">📤 Outgoing</SelectItem>
+                </SelectContent>
+              </Select>
+
               <Select value={selectedBalanceType} onValueChange={handleBalanceTypeFilter}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Balance Type" />
@@ -332,24 +464,22 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
                   <SelectItem value="transfer_in">Transfers In</SelectItem>
                   <SelectItem value="transfer_out">Transfers Out</SelectItem>
                   <SelectItem value="withdrawal">Withdrawals</SelectItem>
-                  <SelectItem value="loan">Loans</SelectItem>
-                  <SelectItem value="referral_commission">Commissions</SelectItem>
-                  <SelectItem value="badge_bonus">Badge Bonuses</SelectItem>
+                  <SelectItem value="deposit">Deposits</SelectItem>
+                  <SelectItem value="referral_commission">Referrals</SelectItem>
                   <SelectItem value="ad_reward">Ad Rewards</SelectItem>
-                  <SelectItem value="admin_operation">Admin Ops</SelectItem>
                 </SelectContent>
               </Select>
 
               <Button variant="outline" onClick={exportToCSV} className="gap-2">
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Export CSV</span>
+                <span className="hidden sm:inline">Export</span>
               </Button>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* Transactions Table - Enhanced with Expandable Rows */}
+      {/* Transactions Display */}
       <Card className="overflow-hidden border-border/50">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
@@ -368,6 +498,7 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
                   setSearchTerm('');
                   setSelectedBalanceType('all');
                   setSelectedTransactionType('all');
+                  setTransactionDirection('all');
                   setFilters({});
                   setPage(1);
                 }}
@@ -377,198 +508,111 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
               </Button>
             )}
           </div>
+        ) : isMobile ? (
+          // Mobile Card View
+          <div className="space-y-3 p-4">
+            {transactions.map(tx => {
+              const displayInfo = getTransactionDisplay(tx);
+              const IconComponent = displayInfo.icon;
+              
+              return (
+                <Card key={tx.id} className="p-4 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-start gap-3">
+                    {/* Icon */}
+                    <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shrink-0", displayInfo.bgColor)}>
+                      <IconComponent className={cn("w-6 h-6", displayInfo.color)} />
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-1">
+                        <p className="font-semibold text-sm">{displayInfo.label}</p>
+                        <p className={cn("text-lg font-bold", tx.amount_bsk > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
+                          {tx.amount_bsk > 0 ? '+' : ''}{tx.amount_bsk.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      
+                      <p className="text-xs text-muted-foreground truncate mb-2">{displayInfo.secondaryInfo}</p>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(tx.created_at), 'MMM dd, hh:mm a')}
+                        </span>
+                        <Badge variant={tx.balance_type === 'withdrawable' ? 'default' : 'secondary'} className="text-xs">
+                          {tx.balance_type === 'withdrawable' ? '💰 Withdrawable' : '🔒 Holding'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         ) : (
+          // Desktop Table View
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Balance Type</TableHead>
+                <TableHead className="w-14"></TableHead>
+                <TableHead>Type & Details</TableHead>
+                <TableHead>Date & Time</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right w-10"></TableHead>
+                <TableHead className="text-right">Status & Type</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((tx, index) => {
-                const Icon = getTransactionIcon(tx.transaction_type);
-                const isExpanded = expandedRow === tx.id;
+              {transactions.map((tx) => {
+                const displayInfo = getTransactionDisplay(tx);
+                const IconComponent = displayInfo.icon;
 
                 return (
-                  <Collapsible key={tx.id} open={isExpanded} onOpenChange={() => setExpandedRow(isExpanded ? null : tx.id)}>
-                    <TableRow
-                      className={cn(
-                        "transition-colors",
-                        "hover:bg-muted/50",
-                        index % 2 === 0 ? "bg-background" : "bg-muted/20"
-                      )}
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex flex-col">
-                          <span className="text-sm">
-                            {format(new Date(tx.created_at), 'MMM dd, yyyy')}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(tx.created_at), 'HH:mm:ss')}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                            <Icon className="w-4 h-4 text-primary" />
-                          </div>
-                          <span className="text-sm font-medium capitalize">
-                            {tx.transaction_type.replace(/_/g, ' ')}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <p className="text-sm max-w-xs truncate">{tx.description}</p>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(tx.transaction_subtype)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={getBalanceTypeBadgeVariant(tx.balance_type)}
-                          className="capitalize text-xs"
-                        >
-                          {tx.balance_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className={cn(
-                          'font-bold text-base',
-                          getTransactionColor(tx.amount_bsk)
+                  <TableRow key={tx.id} className="hover:bg-muted/30">
+                    {/* Icon Column */}
+                    <TableCell className="w-14">
+                      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", displayInfo.bgColor)}>
+                        <IconComponent className={cn("w-5 h-5", displayInfo.color)} />
+                      </div>
+                    </TableCell>
+                    
+                    {/* Type & Details Column */}
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-sm">{displayInfo.label}</p>
+                        <p className="text-xs text-muted-foreground">{displayInfo.secondaryInfo}</p>
+                      </div>
+                    </TableCell>
+                    
+                    {/* Date & Time Column */}
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-medium">{format(new Date(tx.created_at), 'MMM dd, yyyy')}</p>
+                        <p className="text-xs text-muted-foreground">{format(new Date(tx.created_at), 'hh:mm a')}</p>
+                      </div>
+                    </TableCell>
+                    
+                    {/* Amount Column */}
+                    <TableCell className="text-right">
+                      <div className="space-y-0.5">
+                        <p className={cn(
+                          "text-lg font-bold",
+                          tx.amount_bsk > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                         )}>
-                          {tx.amount_bsk >= 0 ? '+' : ''}
-                          {tx.amount_bsk.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-1">BSK</span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </Button>
-                        </CollapsibleTrigger>
-                      </TableCell>
-                    </TableRow>
-                    <CollapsibleContent asChild>
-                      <TableRow>
-                        <TableCell colSpan={7} className="bg-muted/20 p-6">
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {/* Balance Information */}
-                              {(tx.balance_before !== null || tx.balance_after !== null) && (
-                                <div className="space-y-2">
-                                  <p className="text-xs font-semibold text-muted-foreground uppercase">Balance Information</p>
-                                  {tx.balance_before !== null && (
-                                    <div className="flex justify-between">
-                                      <span className="text-sm text-muted-foreground">Before:</span>
-                                      <span className="text-sm font-medium">{Number(tx.balance_before).toLocaleString(undefined, { minimumFractionDigits: 2 })} BSK</span>
-                                    </div>
-                                  )}
-                                  {tx.balance_after !== null && (
-                                    <div className="flex justify-between">
-                                      <span className="text-sm text-muted-foreground">After:</span>
-                                      <span className="text-sm font-medium">{Number(tx.balance_after).toLocaleString(undefined, { minimumFractionDigits: 2 })} BSK</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Transaction Details */}
-                              <div className="space-y-2">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Transaction Details</p>
-                                <div className="flex justify-between">
-                                  <span className="text-sm text-muted-foreground">ID:</span>
-                                  <span className="text-sm font-mono">{tx.id.slice(0, 8)}...</span>
-                                </div>
-                                {tx.source_table && (
-                                  <div className="flex justify-between">
-                                    <span className="text-sm text-muted-foreground">Source:</span>
-                                    <span className="text-sm capitalize">{tx.source_table.replace(/_/g, ' ')}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Metadata - Transfer/Withdrawal/Loan specific details */}
-                            {tx.metadata && Object.keys(tx.metadata).length > 0 && (
-                              <div className="space-y-2">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase">Additional Details</p>
-                                <div className="p-3 bg-background rounded border space-y-2 text-sm">
-                                  {tx.metadata.transaction_ref && (
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Ref:</span>
-                                      <span className="font-mono text-xs">{tx.metadata.transaction_ref}</span>
-                                    </div>
-                                  )}
-                                  {tx.metadata.recipient_id && (
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Recipient:</span>
-                                      <span className="font-mono text-xs">{tx.metadata.recipient_id}</span>
-                                    </div>
-                                  )}
-                                  {tx.metadata.sender_id && (
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Sender:</span>
-                                      <span className="font-mono text-xs">{tx.metadata.sender_id}</span>
-                                    </div>
-                                  )}
-                                  {tx.metadata.withdrawal_type && (
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Withdrawal:</span>
-                                      <span className="capitalize">{tx.metadata.withdrawal_type}</span>
-                                    </div>
-                                  )}
-                                  {tx.metadata.bank_name && (
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Bank:</span>
-                                      <span>{tx.metadata.bank_name}</span>
-                                    </div>
-                                  )}
-                                  {tx.metadata.account_number && (
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Account:</span>
-                                      <span className="font-mono">***{String(tx.metadata.account_number).slice(-4)}</span>
-                                    </div>
-                                  )}
-                                  {tx.metadata.crypto_symbol && (
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Crypto:</span>
-                                      <span>{tx.metadata.crypto_symbol} ({tx.metadata.crypto_network})</span>
-                                    </div>
-                                  )}
-                                  {tx.metadata.loan_id && (
-                                    <div className="flex justify-between">
-                                      <span className="text-muted-foreground">Loan ID:</span>
-                                      <span className="font-mono text-xs">{tx.metadata.loan_id}</span>
-                                    </div>
-                                  )}
-                                  {tx.metadata.notes && (
-                                    <div className="pt-2 border-t">
-                                      <span className="text-muted-foreground font-medium">Notes:</span>
-                                      <p className="mt-1">{tx.metadata.notes}</p>
-                                    </div>
-                                  )}
-                                  {tx.metadata.admin_notes && (
-                                    <div className="pt-2 border-t">
-                                      <span className="text-muted-foreground font-medium">Admin Notes:</span>
-                                      <p className="mt-1">{tx.metadata.admin_notes}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    </CollapsibleContent>
-                  </Collapsible>
+                          {tx.amount_bsk > 0 ? '+' : ''}{tx.amount_bsk.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">BSK</p>
+                      </div>
+                    </TableCell>
+                    
+                    {/* Status & Balance Type Column */}
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end gap-1">
+                        {getStatusBadge(tx.transaction_subtype)}
+                        <Badge variant={tx.balance_type === 'withdrawable' ? 'default' : 'secondary'} className="text-xs">
+                          {tx.balance_type === 'withdrawable' ? '💰 Withdrawable' : '🔒 Holding'}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
             </TableBody>
