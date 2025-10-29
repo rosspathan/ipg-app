@@ -7,21 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, EyeOff, ArrowLeft, Loader2, Check, CheckCircle, X, Gift, AlertTriangle, Mail } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Loader2, Check, X, Gift } from 'lucide-react';
 import { z } from 'zod';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useReferralCodeValidation } from '@/hooks/useReferralCodeValidation';
-// @ts-ignore
-import Mailcheck from 'mailcheck';
 
 const signupSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  confirmEmail: z.string().email('Invalid email address'),
+  email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string()
-}).refine(data => data.email === data.confirmEmail, {
-  message: "Email addresses don't match",
-  path: ["confirmEmail"]
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"]
@@ -33,7 +26,6 @@ const SignupScreen: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
-  const [confirmEmail, setConfirmEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,27 +33,9 @@ const SignupScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [referralCode, setReferralCode] = useState<string>('');
-  const [emailSuggestion, setEmailSuggestion] = useState<string>('');
   
   // Real-time referral code validation (ignore self-referral during signup)
   const { isValid, sponsorUsername, loading: validating, error: validationError } = useReferralCodeValidation(referralCode, { ignoreSelfReferral: true });
-
-  // Smart email typo detection
-  useEffect(() => {
-    if (email && email.includes('@')) {
-      Mailcheck.run({
-        email: email,
-        suggested: (suggestion: { full: string }) => {
-          setEmailSuggestion(suggestion.full);
-        },
-        empty: () => {
-          setEmailSuggestion('');
-        }
-      });
-    } else {
-      setEmailSuggestion('');
-    }
-  }, [email]);
 
   const passwordStrength = (pwd: string) => {
     let strength = 0;
@@ -80,7 +54,7 @@ const SignupScreen: React.FC = () => {
     setErrors({});
     
     // Validate input
-    const validation = signupSchema.safeParse({ email, confirmEmail, password, confirmPassword });
+    const validation = signupSchema.safeParse({ email, password, confirmPassword });
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
       validation.error.errors.forEach(err => {
@@ -222,63 +196,9 @@ const SignupScreen: React.FC = () => {
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
             />
             {errors.email && (
-              <p className="text-red-300 text-sm flex items-center gap-1">
-                <X className="w-4 h-4" /> {errors.email}
-              </p>
-            )}
-            {emailSuggestion && emailSuggestion !== email && (
-              <Alert className="bg-blue-500/20 border-blue-500/30">
-                <AlertTriangle className="h-4 w-4 text-blue-300" />
-                <AlertDescription className="text-blue-300 text-sm">
-                  Did you mean{' '}
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setEmail(emailSuggestion);
-                      setEmailSuggestion('');
-                    }} 
-                    className="underline font-medium hover:text-blue-200"
-                  >
-                    {emailSuggestion}
-                  </button>?
-                </AlertDescription>
-              </Alert>
+              <p className="text-red-300 text-sm">{errors.email}</p>
             )}
           </div>
-
-          {/* Confirm Email */}
-          <div className="space-y-2">
-            <Label htmlFor="confirmEmail" className="text-white">Confirm Email Address</Label>
-            <Input
-              id="confirmEmail"
-              type="email"
-              placeholder="Confirm your email"
-              value={confirmEmail}
-              onChange={(e) => setConfirmEmail(e.target.value)}
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
-            />
-            {errors.confirmEmail && (
-              <p className="text-red-300 text-sm flex items-center gap-1">
-                <X className="w-4 h-4" /> {errors.confirmEmail}
-              </p>
-            )}
-            {email && confirmEmail && email === confirmEmail && !errors.email && !errors.confirmEmail && (
-              <p className="text-green-300 text-sm flex items-center gap-1">
-                <CheckCircle className="w-4 h-4" /> Email addresses match
-              </p>
-            )}
-          </div>
-
-          {/* Email Preview - Show where verification will be sent */}
-          {email && confirmEmail && email === confirmEmail && !errors.email && (
-            <Alert className="bg-white/10 border-white/30">
-              <Mail className="h-4 w-4 text-white" />
-              <AlertDescription className="text-white text-sm">
-                <strong>Verification code will be sent to:</strong><br/>
-                <span className="text-base font-mono mt-1 block">{email}</span>
-              </AlertDescription>
-            </Alert>
-          )}
 
           {/* Password */}
           <div className="space-y-2">
