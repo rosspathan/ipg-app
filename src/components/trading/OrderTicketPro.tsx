@@ -28,6 +28,7 @@ interface OrderTicketProProps {
   loading?: boolean;
   onSubmit: (order: OrderTicketData) => void;
   defaultSide?: "buy" | "sell";
+  autoFillPrice?: number | null;
 }
 
 export function OrderTicketPro({
@@ -40,7 +41,8 @@ export function OrderTicketPro({
   bestAsk,
   loading = false,
   onSubmit,
-  defaultSide = "buy"
+  defaultSide = "buy",
+  autoFillPrice
 }: OrderTicketProProps) {
   const [side, setSide] = useState<OrderSide>(defaultSide);
   const [type, setType] = useState<OrderType>("market");
@@ -49,6 +51,14 @@ export function OrderTicketPro({
   const [percentage, setPercentage] = useState<number>(0);
 
   const [baseAsset, quoteAsset] = pair.split("/");
+
+  // Auto-fill price when clicked from order book
+  useEffect(() => {
+    if (autoFillPrice) {
+      setPrice(autoFillPrice.toFixed(2));
+      setType("limit"); // Switch to limit order when price is clicked
+    }
+  }, [autoFillPrice]);
 
   // Update price when currentPrice changes
   useEffect(() => {
