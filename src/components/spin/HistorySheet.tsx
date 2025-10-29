@@ -1,10 +1,11 @@
-import React from 'react'
-import { X, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react'
+import React, { useState, useMemo } from 'react'
+import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet'
-import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { formatDistanceToNow } from 'date-fns'
+import { SpinHistoryStats } from './SpinHistoryStats'
+import { SpinHistoryCard } from './SpinHistoryCard'
+import { SpinHistoryFilters, FilterType } from './SpinHistoryFilters'
 
 interface SpinResult {
   id: string
@@ -32,100 +33,127 @@ export function HistorySheet({
   onViewAll,
   onRefresh
 }: HistorySheetProps) {
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const totalSpins = history.length
+    const totalWagered = history.reduce((sum, spin) => sum + (spin.bet_bsk ?? 0), 0)
+    const netProfit = history.reduce((sum, spin) => sum + (spin.net_change_bsk ?? 0), 0)
+    const wins = history.filter(spin => spin.multiplier > 0).length
+    const winRate = totalSpins > 0 ? (wins / totalSpins) * 100 : 0
+
+    return { totalSpins, totalWagered, netProfit, winRate }
+  }, [history])
+
+  // Filter counts
+  const filterCounts = useMemo(() => ({
+    all: history.length,
+    wins: history.filter(spin => spin.multiplier > 0).length,
+    losses: history.filter(spin => spin.multiplier === 0).length,
+    free: history.filter(spin => spin.bet_bsk === 0).length,
+  }), [history])
+
+  // Filtered history
+  const filteredHistory = useMemo(() => {
+    switch (activeFilter) {
+      case 'wins':
+        return history.filter(spin => spin.multiplier > 0)
+      case 'losses':
+        return history.filter(spin => spin.multiplier === 0)
+      case 'free':
+        return history.filter(spin => spin.bet_bsk === 0)
+      default:
+        return history
+    }
+  }, [history, activeFilter])
+
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="bottom"
-        className="h-[80vh] rounded-t-3xl"
+        className="h-[85vh] rounded-t-3xl bg-gradient-to-b from-background via-background to-background/95 backdrop-blur-xl border-t-2"
         data-testid="spin-history"
       >
-        <SheetHeader className="pb-4">
+        {/* Pull handle indicator */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-muted-foreground/30" />
+
+        {/* Header */}
+        <SheetHeader className="pb-4 pt-4 sticky top-0 bg-background/80 backdrop-blur-md z-10">
           <div className="flex items-center justify-between">
-            <SheetTitle>Recent Spins</SheetTitle>
+            <div>
+              <SheetTitle className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                Spin History
+              </SheetTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Track your performance
+              </p>
+            </div>
             <SheetClose asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-9 w-9 p-0 rounded-full hover:bg-muted/50 transition-all"
+              >
                 <X className="w-4 h-4" />
               </Button>
             </SheetClose>
           </div>
         </SheetHeader>
 
-        <ScrollArea className="h-[calc(80vh-120px)]">
-          <div className="space-y-2 pr-4">
-            {history.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-sm text-muted-foreground">No spins yet</p>
-                <p className="text-xs text-muted-foreground mt-1">Your spin history will appear here</p>
+        {/* Stats Cards */}
+        <SpinHistoryStats
+          totalSpins={stats.totalSpins}
+          totalWagered={stats.totalWagered}
+          netProfit={stats.netProfit}
+          winRate={stats.winRate}
+        />
+
+        {/* Filters */}
+        <SpinHistoryFilters
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+          counts={filterCounts}
+        />
+
+        {/* History List */}
+        <ScrollArea className="h-[calc(85vh-280px)] mt-4">
+          <div className="space-y-3 pr-4 pb-4">
+            {filteredHistory.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                  <div className="text-3xl">🎰</div>
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {activeFilter === 'all' ? 'No spins yet' : `No ${activeFilter} found`}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {activeFilter === 'all' 
+                    ? 'Your spin history will appear here' 
+                    : 'Try adjusting your filters'}
+                </p>
               </div>
             ) : (
-              history.map((spin) => (
-                <div
-                  key={spin.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                >
-                  <div
-                    className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                      spin.multiplier > 0 ? 'bg-green-500/20' : 'bg-rose-500/20'
-                    }`}
-                  >
-                    {spin.multiplier > 0 ? (
-                      <TrendingUp className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5 text-rose-500" />
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={spin.multiplier > 0 ? "default" : "secondary"}
-                        className="text-[10px]"
-                      >
-                        {spin.segment_label}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {spin.created_at && !isNaN(new Date(spin.created_at).getTime())
-                          ? formatDistanceToNow(new Date(spin.created_at), { addSuffix: true })
-                          : 'Just now'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs">Bet: {(spin.bet_bsk ?? 0).toFixed(2)} BSK</span>
-                      <span className="text-xs">•</span>
-                      <span
-                        className={`text-xs font-medium ${
-                          (spin.net_change_bsk ?? 0) > 0 ? 'text-green-500' : 'text-rose-500'
-                        }`}
-                      >
-                        {(spin.net_change_bsk ?? 0) > 0 ? '+' : ''}
-                        {(spin.net_change_bsk ?? 0).toFixed(2)} BSK
-                      </span>
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => window.open(`/app/spin/verify?hash=${spin.server_seed_hash}`, '_blank')}
-                    aria-label="View proof"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                  </Button>
-                </div>
+              filteredHistory.map((spin, index) => (
+                <SpinHistoryCard 
+                  key={spin.id} 
+                  spin={spin}
+                  isFirst={index === 0 && activeFilter === 'all'}
+                />
               ))
             )}
           </div>
         </ScrollArea>
 
-        {onViewAll && (
-          <div className="pt-4 border-t">
+        {/* Footer with View All button */}
+        {onViewAll && history.length > 0 && (
+          <div className="pt-4 border-t border-border/40 sticky bottom-0 bg-background/80 backdrop-blur-md">
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full h-11 font-medium hover:bg-primary/5 transition-all"
               onClick={onViewAll}
             >
-              View All Spins
+              View Complete History
             </Button>
           </div>
         )}
