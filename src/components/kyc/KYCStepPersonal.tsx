@@ -14,7 +14,10 @@ const personalSchema = z.object({
     return age >= 18;
   }, "Must be 18 or older"),
   nationality: z.string().min(2, "Please select your nationality"),
-  phone: z.string().min(10, "Phone number must be at least 10 characters"),
+  phone: z.string().regex(
+    /^\+\d{1,3}\s?\d{6,14}$/,
+    "Use format: +CountryCode PhoneNumber (e.g., +91 9876543210 or +1 5551234567)"
+  ),
 });
 
 type PersonalData = z.infer<typeof personalSchema>;
@@ -126,11 +129,14 @@ export const KYCStepPersonal = ({ initialData, onNext }: KYCStepPersonalProps) =
                 <FormControl>
                   <Input 
                     type="tel" 
-                    placeholder="+91 98765 43210" 
+                    placeholder="+91 9876543210" 
                     className="h-12 text-base"
                     {...field} 
                   />
                 </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  Format: +CountryCode PhoneNumber (e.g., +91 9876543210, +1 5551234567)
+                </p>
                 <FormMessage />
               </FormItem>
             )}

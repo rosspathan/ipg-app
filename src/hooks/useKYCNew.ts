@@ -57,11 +57,9 @@ export const useKYCNew = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  // Use Supabase user ID if available, otherwise use wallet address
+  // CRITICAL: Only use Supabase auth for KYC operations (RLS requirement)
   const getUserId = (): string | null => {
-    if (user?.id) return user.id;
-    if (wallet?.address) return wallet.address;
-    return null;
+    return user?.id ?? null;
   };
 
   const fetchKYC = async () => {
@@ -209,66 +207,51 @@ export const useKYCNew = () => {
       console.error('[KYC] Update attempted without authentication');
       toast({
         title: "Authentication Required",
-        description: "Please log in to update your KYC information",
+        description: "Please sign in to update your KYC information",
         variant: "destructive",
       });
-      throw new Error('User not authenticated. Please log in to continue.');
+      throw new Error('User not authenticated. Please sign in to continue.');
     }
     
-    console.log('[KYC] Updating level:', level, 'status:', status);
+    console.log('[KYC] Updating level:', level, 'userId:', userId.slice(0, 8), 'status:', status);
 
     try {
-      const existing = profiles[level];
-      
-      if (existing) {
-        const { data: updated, error } = await supabase
-          .from('kyc_profiles_new')
-          .update({
-            data_json: data,
-            status: status || existing.status,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existing.id)
-          .select()
-          .single();
-
-        if (error) throw error;
-        
-        setProfiles(prev => ({
-          ...prev,
-          [level]: updated as KYCProfile
-        }));
-        
-        return updated as KYCProfile;
-      } else {
-        const { data: created, error } = await supabase
-          .from('kyc_profiles_new')
-          .insert({
+      // Use atomic upsert to avoid RLS issues with separate insert/update
+      const { data: upserted, error } = await supabase
+        .from('kyc_profiles_new')
+        .upsert(
+          {
             user_id: userId,
             level,
             data_json: data,
-            status: status || 'draft'
-          })
-          .select()
-          .single();
+            status: status ?? 'draft',
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,level' }
+        )
+        .select()
+        .single();
 
-        if (error) throw error;
-        
-        setProfiles(prev => ({
-          ...prev,
-          [level]: created as KYCProfile
-        }));
-        
-        return created as KYCProfile;
+      if (error) {
+        console.error('[KYC] Upsert error:', error.code, error.message);
+        throw error;
       }
+      
+      setProfiles(prev => ({
+        ...prev,
+        [level]: upserted as KYCProfile
+      }));
+      
+      return upserted as KYCProfile;
     } catch (error: any) {
       console.error('[KYC] Error updating KYC level:', error);
+      const errorDetail = error?.code ? ` (${error.code})` : '';
       const errorMsg = error?.message || 'Failed to update KYC';
       toast({
         title: "Update Failed",
         description: errorMsg.includes('authenticated') 
-          ? "Please log in to update your KYC" 
-          : "Failed to save your information. Please try again.",
+          ? "Please sign in to update your KYC" 
+          : `Failed to save your information. Please try again.${errorDetail}`,
         variant: "destructive",
       });
       throw error;
@@ -281,15 +264,16 @@ export const useKYCNew = () => {
       console.error('[KYC] Submit attempted without authentication');
       toast({
         title: "Authentication Required",
-        description: "Please log in to submit your KYC for review",
+        description: "Please sign in to submit your KYC for review",
         variant: "destructive",
       });
-      throw new Error('User not authenticated. Please log in to continue.');
+      throw new Error('User not authenticated. Please sign in to continue.');
     }
     
-    console.log('[KYC] Submitting level:', level, 'profile:', profileId);
+    console.log('[KYC] Submitting level:', level, 'userId:', userId.slice(0, 8), 'profileId:', profileId);
 
     try {
+      // Update with both id and user_id to satisfy RLS ownership
       const { data, error } = await supabase
         .from('kyc_profiles_new')
         .update({
@@ -297,10 +281,14 @@ export const useKYCNew = () => {
           status: 'submitted'
         })
         .eq('id', profileId)
+        .eq('user_id', userId)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[KYC] Submit update error:', error.code, error.message);
+        throw error;
+      }
 
       setProfiles(prev => ({
         ...prev,
@@ -310,17 +298,38 @@ export const useKYCNew = () => {
       await fetchKYC();
     } catch (error: any) {
       console.error('[KYC] Error submitting KYC:', error);
+      const errorDetail = error?.code ? ` (${error.code})` : '';
       const errorMsg = error?.message || 'Failed to submit KYC';
       toast({
         title: "Submission Failed",
         description: errorMsg.includes('authenticated') 
-          ? "Please log in to submit your KYC" 
-          : "Failed to submit your KYC for review. Please try again.",
+          ? "Please sign in to submit your KYC" 
+          : `Failed to submit your KYC for review. Please try again.${errorDetail}`,
         variant: "destructive",
       });
       throw error;
     }
   };
+
+  // Monitor for status changes and show in-app notifications
+  useEffect(() => {
+    const prevL1Status = profiles.L1?.status;
+    
+    if (profiles.L1 && prevL1Status && prevL1Status !== profiles.L1.status) {
+      if (profiles.L1.status === 'approved') {
+        toast({
+          title: "🎉 KYC Approved!",
+          description: "Your identity has been verified successfully.",
+        });
+      } else if (profiles.L1.status === 'rejected') {
+        toast({
+          title: "KYC Review Required",
+          description: profiles.L1.rejection_reason || "Please check the details and resubmit.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [profiles.L1?.status]);
 
   useEffect(() => {
     if (!authLoading) {

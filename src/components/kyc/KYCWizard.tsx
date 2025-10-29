@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import { KYCProgressBar } from "./KYCProgressBar";
 import { KYCStepPersonal } from "./KYCStepPersonal";
 import { KYCStepAddress } from "./KYCStepAddress";
 import { KYCStepDocuments } from "./KYCStepDocuments";
 import { KYCStepReview } from "./KYCStepReview";
 import { useKYCNew } from "@/hooks/useKYCNew";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { toast } from "sonner";
 
 const STEPS = [
@@ -18,6 +22,7 @@ const STEPS = [
 export const KYCWizard = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<any>({});
+  const { user } = useAuthUser();
   const { profiles, uploadDocument, updateKYCLevel, submitKYCLevel, uploading } = useKYCNew();
   const [submitting, setSubmitting] = useState(false);
 
@@ -56,6 +61,11 @@ export const KYCWizard = () => {
   };
 
   const handleFinalSubmit = async () => {
+    if (!user) {
+      toast.error("Please sign in to submit your KYC application.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       // First save the final form data
@@ -73,9 +83,65 @@ export const KYCWizard = () => {
     }
   };
 
+  const handleResubmit = () => {
+    setCurrentStep(1);
+    updateKYCLevel('L1', formData, 'draft').catch(console.error);
+  };
+
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-3xl mx-auto">
+        {/* Auth Guard */}
+        {!user && (
+          <Alert className="mb-4 border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+            <AlertDescription className="text-amber-800 dark:text-amber-300">
+              Please sign in to submit your KYC application. You can still fill out the form, but submission requires authentication.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Status Banners */}
+        {profiles.L1?.status === 'approved' && (
+          <Alert className="mb-4 border-green-500/50 bg-green-50 dark:bg-green-950/20">
+            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500" />
+            <AlertDescription className="text-green-800 dark:text-green-300">
+              🎉 Your KYC has been approved! You now have full access to all features.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {profiles.L1?.status === 'rejected' && (
+          <Alert className="mb-4 border-red-500/50 bg-red-50 dark:bg-red-950/20">
+            <XCircle className="h-4 w-4 text-red-600 dark:text-red-500" />
+            <AlertDescription className="text-red-800 dark:text-red-300">
+              <div className="space-y-2">
+                <p className="font-medium">KYC application needs revision</p>
+                {profiles.L1.rejection_reason && (
+                  <p className="text-sm">Reason: {profiles.L1.rejection_reason}</p>
+                )}
+                <Button 
+                  onClick={handleResubmit}
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                >
+                  Resubmit KYC
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {profiles.L1?.status === 'submitted' && (
+          <Alert className="mb-4 border-blue-500/50 bg-blue-50 dark:bg-blue-950/20">
+            <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-500" />
+            <AlertDescription className="text-blue-800 dark:text-blue-300">
+              Your KYC is under review. We'll notify you within 24-48 hours.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Card className="p-6 md:p-8">
           <KYCProgressBar 
             currentStep={currentStep} 
