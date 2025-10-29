@@ -37,6 +37,9 @@ const LoginScreen: React.FC = () => {
     }
 
     setLoading(true);
+    
+    // Set flag to prevent validation during login
+    sessionStorage.setItem('login_in_progress', 'true');
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -112,6 +115,8 @@ const LoginScreen: React.FC = () => {
         variant: "destructive"
       });
     } finally {
+      // Clear login flag
+      sessionStorage.removeItem('login_in_progress');
       setLoading(false);
     }
   };

@@ -145,6 +145,7 @@ export async function resolveSessionConflict(sessionUserId: string): Promise<voi
 
 /**
  * Auto-resolve conflicts if safe to do so
+ * Only clears local data, does NOT sign out the user
  */
 export async function autoResolveIfSafe(session: Session | null): Promise<boolean> {
   if (!session) return false;
@@ -152,8 +153,26 @@ export async function autoResolveIfSafe(session: Session | null): Promise<boolea
   const validation = await validateSessionOwnership(session);
   
   if (validation.conflict && validation.details) {
-    console.log('[SessionValidator] Auto-resolving conflict');
-    await resolveSessionConflict(session.user.id);
+    console.log('[SessionValidator] Auto-resolving by clearing old local data only');
+    
+    // Import dynamically to avoid circular dependencies
+    const { clearLocalSecurity } = await import('@/utils/localSecurityStorage');
+    const { clearLockData } = await import('@/utils/lockState');
+    
+    clearLocalSecurity();
+    clearLockData();
+    
+    // DON'T call supabase.auth.signOut() - keep the session alive
+    
+    // Emit event for UI handling
+    window.dispatchEvent(new CustomEvent('auth:security_data_cleared', {
+      detail: {
+        previousUserId: validation.details.localSecurityUserId,
+        currentUserId: session.user.id
+      }
+    }));
+    
+    console.log('[SessionValidator] ✅ Conflict resolved - session preserved');
     return true;
   }
 

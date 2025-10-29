@@ -32,21 +32,8 @@ export const useAuthSession = () => {
         setCurrentUserId(userId);
         setSecurityUserId(userId);
         
-        // Validate session ownership
-        if (session) {
-          const validation = await validateSessionOwnership(session);
-          
-          if (validation.conflict) {
-            console.warn('[useAuthSession] Session ownership conflict on init');
-            // Auto-resolve by clearing mismatched data
-            await autoResolveIfSafe(session);
-            
-            // Emit event for UI handling
-            window.dispatchEvent(new CustomEvent('auth:session_conflict', {
-              detail: validation.details
-            }));
-          }
-        }
+        // Skip validation on initial load to allow fresh logins to complete
+        // Validation will happen on SIGNED_IN event instead
         
         setState({
           session,
@@ -89,12 +76,15 @@ export const useAuthSession = () => {
           setCurrentUserId(userId);
           setSecurityUserId(userId);
           
-          // Validate session ownership on auth changes
-          if (session) {
+          // Only validate on explicit sign-in events, not during token refresh
+          // Skip validation during active login to prevent interference
+          const loginInProgress = sessionStorage.getItem('login_in_progress');
+          if (event === 'SIGNED_IN' && session && !loginInProgress) {
             const validation = await validateSessionOwnership(session);
             
             if (validation.conflict) {
-              console.warn('[useAuthSession] Session ownership conflict on auth change');
+              console.warn('[useAuthSession] Session ownership conflict - clearing old data');
+              // Clear mismatched local data but keep session alive
               await autoResolveIfSafe(session);
               
               window.dispatchEvent(new CustomEvent('auth:session_conflict', {
