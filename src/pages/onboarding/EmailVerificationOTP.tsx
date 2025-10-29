@@ -25,6 +25,7 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [otpError, setOtpError] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
 
   const handleVerifyOtp = async (code: string) => {
     if (code.length !== 6) return;
@@ -75,6 +76,7 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
       toast.error(error.message || "Invalid or expired code");
       setOtp("");
       setOtpError(true);
+      setFailedAttempts(prev => prev + 1);
       setTimeout(() => setOtpError(false), 2000);
     } finally {
       setIsVerifying(false);
@@ -154,6 +156,14 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
               Enter the 6-digit code sent to
               <br />
               <span className="font-semibold text-foreground">{email}</span>
+              <br />
+              <Button 
+                variant="link" 
+                className="h-auto p-0 mt-1 text-xs text-muted-foreground hover:text-foreground"
+                onClick={onBack}
+              >
+                Wrong email?
+              </Button>
             </CardDescription>
           </CardHeader>
 
@@ -182,6 +192,23 @@ export default function EmailVerificationOTP({ email, onVerified, onBack }: Emai
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Verifying...
               </motion.div>
+            )}
+
+            {/* Show helpful message after 2 failed attempts */}
+            {failedAttempts >= 2 && (
+              <Alert className="bg-yellow-500/20 border-yellow-500/30">
+                <AlertCircle className="h-4 w-4 text-yellow-300" />
+                <AlertDescription className="text-yellow-300 text-sm">
+                  Having trouble? Make sure you're checking the correct email address.
+                  <Button 
+                    variant="link" 
+                    className="h-auto p-0 ml-1 text-yellow-200 hover:text-yellow-100 underline"
+                    onClick={onBack}
+                  >
+                    Change Email
+                  </Button>
+                </AlertDescription>
+              </Alert>
             )}
 
             <div className="space-y-3 pt-2">
