@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useWeb3 } from '@/contexts/Web3Context';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -23,7 +22,6 @@ interface BSKBalanceStats {
 }
 
 export const useUserBSKBalance = () => {
-  const { wallet } = useWeb3();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<any>(null);
   const [balance, setBalance] = useState<BSKBalanceStats>({
