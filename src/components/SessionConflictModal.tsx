@@ -69,6 +69,13 @@ export function SessionConflictModal({
           >
             Keep Current Account & Disconnect Wallet
           </Button>
+          <Button 
+            onClick={() => onOpenChange(false)}
+            variant="ghost"
+            className="w-full text-muted-foreground"
+          >
+            Dismiss (I'll handle this later)
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

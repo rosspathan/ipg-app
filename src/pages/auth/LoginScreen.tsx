@@ -65,6 +65,30 @@ const LoginScreen: React.FC = () => {
         
         const hasWalletInDB = !!profile?.wallet_address;
         
+        // Check for session conflicts at login boundary
+        if (hasLocalWallet) {
+          const storedWallet = localStorage.getItem('cryptoflow_wallet');
+          if (storedWallet) {
+            try {
+              const walletData = JSON.parse(storedWallet);
+              const { detectAndResolveSessionConflict } = await import('@/utils/sessionConflictDetector');
+              const conflictResult = await detectAndResolveSessionConflict(walletData.address);
+              
+              if (conflictResult.conflict && !conflictResult.resolved) {
+                // Conflict couldn't be auto-resolved - clear mismatched wallet
+                toast({
+                  title: "Wallet Mismatch",
+                  description: "Your wallet belongs to a different account. Please reconnect your wallet.",
+                  variant: "destructive"
+                });
+                localStorage.removeItem('cryptoflow_wallet');
+              }
+            } catch (conflictError) {
+              console.error('[LOGIN] Error checking session conflict:', conflictError);
+            }
+          }
+        }
+        
         // If no wallet anywhere, must import
         if (!hasLocalWallet && !hasWalletInDB) {
           navigate('/auth/import-wallet');

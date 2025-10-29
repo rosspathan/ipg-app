@@ -138,26 +138,21 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeWallet();
   }, []);
 
-  // Session conflict detector: Ensure Supabase session matches wallet owner
-  useEffect(() => {
-    if (wallet?.address) {
-      console.log('[WEB3] Checking session conflict for wallet:', wallet.address);
-      detectAndResolveSessionConflict(wallet.address)
-        .then(result => {
-          if (result.conflict) {
-            // Don't auto-resolve, let user choose
-            console.log('[WEB3] ⚠️ Session conflict detected, waiting for user action');
-          }
-        });
-    }
-  }, [wallet?.address]);
+  // Session conflict detection removed - now only happens at auth boundaries
 
-  // Listen for session conflict events
+  // Listen for session conflict events (only high severity from auth boundaries)
   useEffect(() => {
     const handleConflict = (event: CustomEvent) => {
-      const { sessionEmail, walletAddress } = event.detail;
-      setConflictDetails({ sessionEmail, walletAddress });
-      setConflictModalOpen(true);
+      const { sessionEmail, walletAddress, severity } = event.detail;
+      
+      // Only show modal for HIGH severity conflicts (during login/wallet connection)
+      if (severity === 'high') {
+        setConflictDetails({ sessionEmail, walletAddress });
+        setConflictModalOpen(true);
+      } else {
+        // Low severity - auto-resolved silently
+        console.log('[WEB3] Session conflict auto-resolved silently');
+      }
     };
 
     window.addEventListener('auth:session_conflict' as any, handleConflict);
@@ -255,6 +250,12 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
             .from('profiles')
             .update({ wallet_address: ethersWallet.address, wallet_addresses: walletAddresses })
             .eq('user_id', user.id);
+          
+          // Check for session conflicts at wallet creation boundary
+          const conflictResult = await detectAndResolveSessionConflict(ethersWallet.address);
+          if (conflictResult.conflict && !conflictResult.resolved) {
+            console.log('[WALLET] Session conflict detected during wallet creation');
+          }
         }
       } catch (profileError) {
         console.warn('Could not update profile with wallet address:', profileError);
@@ -302,6 +303,12 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
             .from('profiles')
             .update({ wallet_address: ethersWallet.address, wallet_addresses: walletAddresses })
             .eq('user_id', user.id);
+          
+          // Check for session conflicts at wallet import boundary
+          const conflictResult = await detectAndResolveSessionConflict(ethersWallet.address);
+          if (conflictResult.conflict && !conflictResult.resolved) {
+            console.log('[WALLET] Session conflict detected during wallet import');
+          }
         }
       } catch (profileError) {
         console.warn('Could not update profile with wallet address:', profileError);
@@ -433,6 +440,12 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
             .from('profiles')
             .update({ wallet_address: address, wallet_addresses: walletAddresses })
             .eq('user_id', user.id);
+          
+          // Check for session conflicts at MetaMask connection boundary
+          const conflictResult = await detectAndResolveSessionConflict(address);
+          if (conflictResult.conflict && !conflictResult.resolved) {
+            console.log('[WALLET] Session conflict detected during MetaMask connection');
+          }
         }
       } catch (persistErr) {
         console.warn('Could not persist MetaMask address to profile:', persistErr);

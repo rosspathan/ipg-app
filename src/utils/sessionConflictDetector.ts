@@ -45,32 +45,63 @@ export async function detectAndResolveSessionConflict(walletAddress: string) {
 
     // Check if session user matches wallet owner
     if (session.user.id !== walletProfile.user_id) {
-      console.warn('[SESSION_CONFLICT] ⚠️ CONFLICT DETECTED:', {
+      console.warn('[SESSION_CONFLICT] ⚠️ CONFLICT DETECTED - Attempting silent resolution:', {
         supabaseSession: session.user.email,
         sessionUserId: session.user.id,
         walletOwner: walletProfile.user_id,
         walletAddress
       });
 
-      // DO NOT sign out automatically - emit event for user to choose
-      window.dispatchEvent(new CustomEvent('auth:session_conflict', {
-        detail: {
-          sessionUserId: session.user.id,
-          sessionEmail: session.user.email,
-          walletOwnerUserId: walletProfile.user_id,
-          walletAddress
-        }
-      }));
-      
-      return { 
-        conflict: true, 
-        resolved: false,
-        details: {
-          sessionEmail: session.user.email,
-          sessionUserId: session.user.id,
-          walletOwnerUserId: walletProfile.user_id
-        }
-      };
+      // SILENT RESOLUTION: Update wallet ownership to current session user
+      // This is safe because the user is authenticated and has the wallet locally
+      try {
+        // Clear wallet from old owner
+        await supabase
+          .from('profiles')
+          .update({ wallet_address: null })
+          .eq('user_id', walletProfile.user_id);
+        
+        // Assign wallet to current session user
+        await supabase
+          .from('profiles')
+          .update({ wallet_address: walletAddress })
+          .eq('user_id', session.user.id);
+        
+        console.log('[SESSION_CONFLICT] ✓ Silently resolved - wallet ownership updated to current user');
+        
+        return { 
+          conflict: true, 
+          resolved: true,
+          details: {
+            sessionEmail: session.user.email,
+            sessionUserId: session.user.id,
+            walletOwnerUserId: walletProfile.user_id
+          }
+        };
+      } catch (resolutionError) {
+        console.error('[SESSION_CONFLICT] Failed to auto-resolve:', resolutionError);
+        
+        // If auto-resolution fails, emit high-severity event for user intervention
+        window.dispatchEvent(new CustomEvent('auth:session_conflict', {
+          detail: {
+            sessionUserId: session.user.id,
+            sessionEmail: session.user.email,
+            walletOwnerUserId: walletProfile.user_id,
+            walletAddress,
+            severity: 'high'
+          }
+        }));
+        
+        return { 
+          conflict: true, 
+          resolved: false,
+          details: {
+            sessionEmail: session.user.email,
+            sessionUserId: session.user.id,
+            walletOwnerUserId: walletProfile.user_id
+          }
+        };
+      }
     }
 
     console.log('[SESSION_CONFLICT] ✓ Session matches wallet owner');
