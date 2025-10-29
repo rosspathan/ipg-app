@@ -109,13 +109,14 @@ const BadgeSubscriptionScreen = () => {
     setPurchasingBadge(selectedBadge.name);
     
     try {
-      const { data, error } = await supabase.functions.invoke('badge-purchase', {
+      const { data, error } = await supabase.functions.invoke('badge-commission-processor', {
         body: {
-          user_id: user.id,
-          badge_name: selectedBadge.name,
-          previous_badge: currentBadge === 'NONE' ? null : currentBadge,
-          bsk_amount: costToPay,
-          is_upgrade: selectedBadge.isUpgrade
+          userId: user.id,
+          toBadge: selectedBadge.name,
+          fromBadge: currentBadge === 'NONE' ? undefined : currentBadge,
+          paidAmountBSK: costToPay,
+          paymentRef: `badge_${Date.now()}`,
+          paymentMethod: 'BSK'
         }
       });
 
