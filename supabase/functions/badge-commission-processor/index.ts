@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
     // ==========================================
     // Call direct commission processor (10% to L1 sponsor)
     await supabase.functions.invoke('process-badge-subscription-commission', {
-      body: { user_id: userId, badge_name: toBadge, amount_bsk: paidAmountBSK }
+      body: { user_id: userId, badge_name: toBadge, bsk_amount: paidAmountBSK, previous_badge: fromBadge || null }
     });
 
     // Call 50-level team income processor
