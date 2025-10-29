@@ -7062,7 +7062,7 @@ export type Database = {
           id: string
           locked_at: string | null
           source: string | null
-          sponsor_code_used: string
+          sponsor_code_used: string | null
           sponsor_id: string | null
           total_commissions: number
           total_referrals: number
@@ -7076,7 +7076,7 @@ export type Database = {
           id?: string
           locked_at?: string | null
           source?: string | null
-          sponsor_code_used: string
+          sponsor_code_used?: string | null
           sponsor_id?: string | null
           total_commissions?: number
           total_referrals?: number
@@ -7090,7 +7090,7 @@ export type Database = {
           id?: string
           locked_at?: string | null
           source?: string | null
-          sponsor_code_used?: string
+          sponsor_code_used?: string | null
           sponsor_id?: string | null
           total_commissions?: number
           total_referrals?: number
