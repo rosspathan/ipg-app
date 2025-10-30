@@ -2658,6 +2658,7 @@ export type Database = {
           amount_bsk: number
           created_at: string | null
           id: string
+          metadata: Json | null
           notes: string | null
           recipient_balance_after: number
           recipient_balance_before: number
@@ -2673,6 +2674,7 @@ export type Database = {
           amount_bsk: number
           created_at?: string | null
           id?: string
+          metadata?: Json | null
           notes?: string | null
           recipient_balance_after: number
           recipient_balance_before: number
@@ -2688,6 +2690,7 @@ export type Database = {
           amount_bsk?: number
           created_at?: string | null
           id?: string
+          metadata?: Json | null
           notes?: string | null
           recipient_balance_after?: number
           recipient_balance_before?: number
@@ -2907,6 +2910,7 @@ export type Database = {
           crypto_symbol: string | null
           id: string
           ifsc_code: string | null
+          metadata: Json | null
           processed_at: string | null
           processed_by: string | null
           status: string
@@ -2926,6 +2930,7 @@ export type Database = {
           crypto_symbol?: string | null
           id?: string
           ifsc_code?: string | null
+          metadata?: Json | null
           processed_at?: string | null
           processed_by?: string | null
           status?: string
@@ -2945,6 +2950,7 @@ export type Database = {
           crypto_symbol?: string | null
           id?: string
           ifsc_code?: string | null
+          metadata?: Json | null
           processed_at?: string | null
           processed_by?: string | null
           status?: string
