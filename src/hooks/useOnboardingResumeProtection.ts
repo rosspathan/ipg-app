@@ -24,12 +24,12 @@ export function useOnboardingResumeProtection() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('onboarding_completed_at, email_confirmed_at, wallet_address')
+          .select('onboarding_completed_at, wallet_address, email')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        // If email verified + wallet exists but onboarding not complete
-        if (profile?.email_confirmed_at && 
+        // If email exists + wallet exists but onboarding not complete
+        if (profile?.email && 
             profile?.wallet_address && 
             !profile?.onboarding_completed_at) {
           

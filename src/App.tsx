@@ -315,11 +315,11 @@ function App() {
 // Separate component that uses hooks requiring providers
 function AppContent() {
   useSecuritySync();
+  useOnboardingResumeProtection();
   
   return (
     <>
       <AppStateManager />
-      <OnboardingResumeProtection />
       <RouterWrapper>
         <Routes>
           {/* Landing & Splash */}
