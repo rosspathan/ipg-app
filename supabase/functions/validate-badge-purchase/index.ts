@@ -81,15 +81,16 @@ Deno.serve(async (req) => {
     // 3. Check KYC status
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('kyc_verified')
-      .eq('id', userId)
+      .select('is_kyc_approved, kyc_status')
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (profileError) {
       console.error('Error checking KYC:', profileError);
       warnings.push('Unable to verify KYC status.');
     } else {
-      kycCompleted = profileData?.kyc_verified || false;
+      // User is KYC completed if is_kyc_approved is true OR kyc_status is 'approved'
+      kycCompleted = (profileData?.is_kyc_approved === true) || (profileData?.kyc_status === 'approved');
       
       if (!kycCompleted) {
         errors.push('KYC verification required. Please complete verification first.');

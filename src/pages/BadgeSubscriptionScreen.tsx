@@ -117,7 +117,53 @@ const BadgeSubscriptionScreen = () => {
 
       if (validationError) {
         console.error('Validation error:', validationError);
-        throw new Error('Unable to validate purchase. Please try again.');
+        console.log('Validation error details:', { 
+          status: (validationError as any)?.status, 
+          message: (validationError as any)?.message 
+        });
+        
+        // Fallback: perform local checks and potentially proceed
+        const alreadyOwned = selectedBadge.name.toUpperCase() === currentBadge.toUpperCase();
+        const insufficient = bskBalance < costToPay;
+        
+        if (insufficient) {
+          // Show Buy BSK dialog
+          toast({
+            title: "💰 Insufficient Balance",
+            description: (
+              <div className="space-y-3">
+                <p>You need {(costToPay - bskBalance).toLocaleString()} more BSK</p>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedBadge(null);
+                    setShowBuyBSKDialog(true);
+                  }}
+                  className="w-full"
+                >
+                  Buy BSK Now
+                </Button>
+              </div>
+            ),
+            variant: "destructive",
+          });
+          setSelectedBadge(null);
+          return;
+        }
+        
+        if (alreadyOwned) {
+          toast({
+            title: "Already Owned",
+            description: "You already own this badge",
+            variant: "destructive",
+          });
+          setSelectedBadge(null);
+          return;
+        }
+        
+        // Otherwise, proceed to purchase - server will validate
+        console.log('Validation service unavailable, proceeding with purchase (server will validate)');
       }
 
       const validation = validationData as {

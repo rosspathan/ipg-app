@@ -1,5 +1,8 @@
 project_id = "ocblgldglqhlrmtnynmu"
 
+[functions.validate-badge-purchase]
+verify_jwt = true
+
 [functions.bsk-balance-by-identifier]
 verify_jwt = false
 
