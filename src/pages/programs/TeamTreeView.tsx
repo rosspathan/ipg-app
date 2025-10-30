@@ -78,8 +78,10 @@ export default function TeamTreeView() {
       
       if (error) throw error;
       
-      // Refetch the downline tree data
+      // Refetch all team-related data
       await queryClient.invalidateQueries({ queryKey: ['downline-tree', user.id] });
+      await queryClient.invalidateQueries({ queryKey: ['direct-referral-count', user.id] });
+      await queryClient.invalidateQueries({ queryKey: ['direct-referrals', user.id] });
       
       toast.success('Tree rebuilt successfully!');
     } catch (error) {
@@ -88,6 +90,16 @@ export default function TeamTreeView() {
     } finally {
       setIsRebuilding(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    if (!user?.id) return;
+    
+    await queryClient.invalidateQueries({ queryKey: ['downline-tree', user.id] });
+    await queryClient.invalidateQueries({ queryKey: ['direct-referral-count', user.id] });
+    await queryClient.invalidateQueries({ queryKey: ['direct-referrals', user.id] });
+    
+    toast.success('Data refreshed!');
   };
 
   if (isLoading) {
@@ -179,24 +191,34 @@ export default function TeamTreeView() {
               {showUsageTracker ? 'Hide' : 'Show'} Code Usage
             </Button>
           </div>
-          <Button 
-            variant="secondary" 
-            size="sm"
-            onClick={handleRebuildTree}
-            disabled={isRebuilding}
-          >
-            {isRebuilding ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Rebuilding...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Rebuild My Tree
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleRefresh}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={handleRebuildTree}
+              disabled={isRebuilding}
+            >
+              {isRebuilding ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Rebuilding...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Force Rebuild
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Referral Code Usage Tracker */}

@@ -120,6 +120,25 @@ export function ReferralBackfillTool() {
         .eq('user_id', userId);
 
       if (error) throw error;
+
+      // Immediately build the referral tree for this user
+      try {
+        const { error: treeError } = await supabase.functions.invoke('build-referral-tree', {
+          body: { user_id: userId, include_unlocked: false }
+        });
+        
+        if (treeError) {
+          console.error('Tree build error:', treeError);
+          toast({
+            title: 'Tree Build Warning',
+            description: 'User locked but tree build failed. Sponsor may need to refresh.',
+            variant: 'destructive',
+          });
+        }
+      } catch (treeError) {
+        console.error('Tree build failed:', treeError);
+      }
+
       return true;
     } catch (error) {
       console.error('Lock error:', error);
