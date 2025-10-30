@@ -56,8 +56,15 @@ Deno.serve(async (req) => {
     let currentLevel = 1;
     const directSponsor = referralLink.sponsor_id; // Normalized: always the direct sponsor
 
-    // Walk up the chain, max 50 levels
+    // Detect cycles and walk up the chain, max 50 levels
+    const visited = new Set<string>([user_id]);
     while (currentSponsor && currentLevel <= 50) {
+      if (visited.has(currentSponsor)) {
+        console.warn('Cycle detected in referral chain, stopping at', currentSponsor);
+        break;
+      }
+      visited.add(currentSponsor);
+
       ancestors.push({ 
         ancestor_id: currentSponsor, 
         level: currentLevel,
@@ -87,16 +94,7 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${ancestors.length} ancestors for user ${user_id}`);
 
-    // Delete existing tree records for this user before inserting new ones
-    const { error: deleteError } = await supabase
-      .from('referral_tree')
-      .delete()
-      .eq('user_id', user_id);
-
-    if (deleteError) {
-      console.error('Error deleting existing tree records:', deleteError);
-      throw new Error(`Failed to delete existing tree records: ${deleteError.message}`);
-    }
+    // No pre-delete: we'll upsert below and then remove stale rows to avoid race conditions
 
     // Insert all tree records in batch
     if (ancestors.length > 0) {
@@ -108,13 +106,30 @@ Deno.serve(async (req) => {
         direct_sponsor_id
       }));
 
-      const { error: insertError } = await supabase
+      // Upsert to avoid duplicate key errors under concurrency
+      const { error: upsertError } = await supabase
         .from('referral_tree')
-        .insert(treeRecords);
+        .upsert(treeRecords, { onConflict: 'user_id,ancestor_id' });
 
-      if (insertError) {
-        console.error('Error inserting tree records:', insertError);
-        throw new Error(`Failed to insert tree records: ${insertError.message}`);
+      if (upsertError) {
+        console.error('Error upserting tree records:', upsertError);
+        throw new Error(`Failed to upsert tree records: ${upsertError.message}`);
+      }
+
+      // Remove any stale ancestors no longer in the computed list
+      const ancestorIds = ancestors.map(a => a.ancestor_id);
+      if (ancestorIds.length > 0) {
+        const idList = `(${ancestorIds.join(',')})`;
+        const { error: pruneError } = await supabase
+          .from('referral_tree')
+          .delete()
+          .eq('user_id', user_id)
+          .not('ancestor_id', 'in', idList);
+
+        if (pruneError) {
+          console.error('Error pruning stale tree records:', pruneError);
+          // Not fatal; proceed without throwing to remain resilient
+        }
       }
     }
 
