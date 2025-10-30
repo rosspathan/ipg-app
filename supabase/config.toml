@@ -167,3 +167,9 @@ verify_jwt = true
 
 [functions.admin-audit-referral-consistency]
 verify_jwt = true
+
+[functions.backfill-signup-commissions]
+verify_jwt = true
+
+[functions.scheduled-referral-audit]
+verify_jwt = false
