@@ -268,24 +268,27 @@ export function ReferralBackfillTool() {
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
-                    <TableHead>Username</TableHead>
-                    <TableHead>Sponsor Assigned</TableHead>
-                    <TableHead>Result</TableHead>
+                    <TableHead className="w-[200px]">Username</TableHead>
+                    <TableHead className="w-[300px]">Sponsor Assigned</TableHead>
+                    <TableHead className="min-w-[250px]">Result</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {results.map((result) => (
                     <TableRow key={result.user_id}>
                       <TableCell className="font-mono text-xs">{result.username}</TableCell>
-                      <TableCell className="font-mono text-xs">{result.sponsor_assigned.substring(0, 8)}...</TableCell>
-                      <TableCell>
+                      <TableCell className="font-mono text-xs break-all align-top">{result.sponsor_assigned}</TableCell>
+                      <TableCell className="align-top">
                         {result.success ? (
-                          <Badge variant="default" className="bg-green-500">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Success
-                          </Badge>
+                          <div className="flex items-center gap-1 text-green-600">
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span className="text-xs font-medium">Success</span>
+                          </div>
                         ) : (
-                          <Badge variant="destructive">{result.error}</Badge>
+                          <div className="space-y-1">
+                            <Badge variant="destructive" className="whitespace-nowrap">Error</Badge>
+                            <p className="text-xs text-muted-foreground break-words">{result.error}</p>
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>
