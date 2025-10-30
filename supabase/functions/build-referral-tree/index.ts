@@ -7,6 +7,7 @@ const corsHeaders = {
 
 interface BuildTreeRequest {
   user_id: string;
+  include_unlocked?: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -20,9 +21,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { user_id } = await req.json() as BuildTreeRequest;
+    const { user_id, include_unlocked = false } = await req.json() as BuildTreeRequest;
 
-    console.log(`Building referral tree for user: ${user_id}`);
+    console.log(`Building referral tree for user: ${user_id}, include_unlocked: ${include_unlocked}`);
 
     // Get the user's sponsor from referral_links_new
     const { data: referralLink, error: linkError } = await supabase
@@ -31,10 +32,19 @@ Deno.serve(async (req) => {
       .eq('user_id', user_id)
       .single();
 
-    if (linkError || !referralLink?.sponsor_id || !referralLink?.locked_at) {
-      console.log('No locked sponsor found for user');
+    if (linkError || !referralLink?.sponsor_id) {
+      console.log('No sponsor found for user');
       return new Response(
         JSON.stringify({ success: true, message: 'No sponsor to build tree', levels: 0 }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check lock requirement if include_unlocked is false
+    if (!include_unlocked && !referralLink?.locked_at) {
+      console.log('Sponsor not locked and include_unlocked is false');
+      return new Response(
+        JSON.stringify({ success: true, message: 'No locked sponsor to build tree', levels: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -44,14 +54,14 @@ Deno.serve(async (req) => {
     
     let currentSponsor = referralLink.sponsor_id;
     let currentLevel = 1;
-    let previousSponsor = referralLink.sponsor_id; // Track direct sponsor
+    const directSponsor = referralLink.sponsor_id; // Normalized: always the direct sponsor
 
     // Walk up the chain, max 50 levels
     while (currentSponsor && currentLevel <= 50) {
       ancestors.push({ 
         ancestor_id: currentSponsor, 
         level: currentLevel,
-        direct_sponsor_id: currentLevel === 1 ? currentSponsor : previousSponsor
+        direct_sponsor_id: directSponsor // Constant for all levels
       });
       path.push(currentSponsor);
 
@@ -62,11 +72,15 @@ Deno.serve(async (req) => {
         .eq('user_id', currentSponsor)
         .maybeSingle();
 
-      if (!nextLink?.sponsor_id || !nextLink?.locked_at) {
+      if (!nextLink?.sponsor_id) {
         break; // Reached the top of the tree
       }
 
-      previousSponsor = currentSponsor; // Keep track for direct_sponsor_id
+      // Check lock requirement if include_unlocked is false
+      if (!include_unlocked && !nextLink?.locked_at) {
+        break;
+      }
+
       currentSponsor = nextLink.sponsor_id;
       currentLevel++;
     }
