@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertTriangle, CheckCircle2, UserPlus } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -216,9 +217,9 @@ export function ReferralBackfillTool() {
         {unlockedUsers.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-sm font-medium">Unlocked Users ({unlockedUsers.length})</h3>
-            <div className="border rounded-lg max-h-96 overflow-auto">
+            <ScrollArea className="h-[400px] border rounded-lg">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
                     <TableHead>Username</TableHead>
                     <TableHead>Code Used</TableHead>
@@ -256,16 +257,16 @@ export function ReferralBackfillTool() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            </ScrollArea>
           </div>
         )}
 
         {results.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-sm font-medium">Backfill Results</h3>
-            <div className="border rounded-lg max-h-64 overflow-auto">
+            <ScrollArea className="h-[300px] border rounded-lg">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
                     <TableHead>Username</TableHead>
                     <TableHead>Sponsor Assigned</TableHead>
@@ -291,7 +292,7 @@ export function ReferralBackfillTool() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            </ScrollArea>
           </div>
         )}
       </CardContent>

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle, RefreshCw, CheckCircle, XCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface RebuildResult {
   success: boolean;
@@ -148,18 +149,22 @@ export function RebuildAllTreesTool() {
             </div>
 
             {result.results && result.results.length > 0 && (
-              <div className="max-h-48 overflow-y-auto space-y-2 text-sm">
+              <div className="space-y-2 text-sm">
                 <h5 className="font-medium">Sample Results (first 100):</h5>
-                {result.results.map((res, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs">
-                    {res.status === 'success' && <CheckCircle className="h-3 w-3 text-green-500" />}
-                    {res.status === 'failed' && <XCircle className="h-3 w-3 text-destructive" />}
-                    {res.status === 'skipped' && <AlertCircle className="h-3 w-3 text-yellow-500" />}
-                    <span className="font-mono">{res.user_id.slice(0, 8)}...</span>
-                    {res.levels_built && <span className="text-muted-foreground">({res.levels_built} levels)</span>}
-                    {res.error && <span className="text-destructive">{res.error}</span>}
+                <ScrollArea className="h-[200px] border rounded-lg p-2">
+                  <div className="space-y-2">
+                    {result.results.map((res, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs">
+                        {res.status === 'success' && <CheckCircle className="h-3 w-3 text-green-500" />}
+                        {res.status === 'failed' && <XCircle className="h-3 w-3 text-destructive" />}
+                        {res.status === 'skipped' && <AlertCircle className="h-3 w-3 text-yellow-500" />}
+                        <span className="font-mono">{res.user_id.slice(0, 8)}...</span>
+                        {res.levels_built && <span className="text-muted-foreground">({res.levels_built} levels)</span>}
+                        {res.error && <span className="text-destructive">{res.error}</span>}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </ScrollArea>
               </div>
             )}
           </div>

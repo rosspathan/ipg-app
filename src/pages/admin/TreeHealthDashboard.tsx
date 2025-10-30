@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { RebuildAllTreesTool } from "@/components/admin/RebuildAllTreesTool";
 import { ReferralBackfillTool } from "@/components/admin/ReferralBackfillTool";
 import { ReferralSystemRepairTool } from "@/components/admin/ReferralSystemRepairTool";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TreeHealthStats {
   totalUsersWithSponsors: number;
@@ -89,8 +91,8 @@ export default function TreeHealthDashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="flex flex-col h-screen bg-background">
+      <div className="flex-none p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -215,64 +217,80 @@ export default function TreeHealthDashboard() {
             </p>
           </CardContent>
         </Card>
-
-        {/* System Repair Tool - Use this first! */}
-        <ReferralSystemRepairTool />
-
-        {/* Backfill Tool */}
-        <ReferralBackfillTool />
-
-        {/* Rebuild Tool */}
-        <RebuildAllTreesTool />
-
-        {/* Health Status */}
-        {stats && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Health Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {stats.usersWithNoTree > 0 && (
-                <div className="flex items-start gap-3 p-4 bg-destructive/10 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-destructive">Critical Issue</div>
-                    <div className="text-sm text-muted-foreground">
-                      {stats.usersWithNoTree} users have no referral tree data. These users will not receive commissions
-                      from their downline. Use the rebuild tool above to fix this.
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {stats.usersWithIncompleteTree > 0 && (
-                <div className="flex items-start gap-3 p-4 bg-yellow-500/10 rounded-lg">
-                  <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-yellow-600 dark:text-yellow-500">Warning</div>
-                    <div className="text-sm text-muted-foreground">
-                      {stats.usersWithIncompleteTree} users have shallow trees (less than 10 levels). 
-                      This might indicate incomplete tree building. Consider using the force rebuild option.
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {stats.usersWithNoTree === 0 && stats.usersWithIncompleteTree === 0 && (
-                <div className="flex items-start gap-3 p-4 bg-green-500/10 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-green-600 dark:text-green-500">All Good!</div>
-                    <div className="text-sm text-muted-foreground">
-                      All referral trees are complete and healthy. Commission distribution should work correctly.
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
       </div>
+
+      {/* Scrollable Tools Section */}
+      <ScrollArea className="flex-1 px-6">
+        <div className="max-w-7xl mx-auto pb-6">
+          <Tabs defaultValue="system-repair" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="system-repair">System Repair</TabsTrigger>
+              <TabsTrigger value="backfill">Backfill Tool</TabsTrigger>
+              <TabsTrigger value="rebuild">Rebuild Trees</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="system-repair" className="space-y-6">
+              <ReferralSystemRepairTool />
+              
+              {/* Health Status */}
+              {stats && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Health Status</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {stats.usersWithNoTree > 0 && (
+                      <div className="flex items-start gap-3 p-4 bg-destructive/10 rounded-lg">
+                        <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+                        <div>
+                          <div className="font-semibold text-destructive">Critical Issue</div>
+                          <div className="text-sm text-muted-foreground">
+                            {stats.usersWithNoTree} users have no referral tree data. These users will not receive commissions
+                            from their downline. Use the rebuild tool above to fix this.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {stats.usersWithIncompleteTree > 0 && (
+                      <div className="flex items-start gap-3 p-4 bg-yellow-500/10 rounded-lg">
+                        <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
+                        <div>
+                          <div className="font-semibold text-yellow-600 dark:text-yellow-500">Warning</div>
+                          <div className="text-sm text-muted-foreground">
+                            {stats.usersWithIncompleteTree} users have shallow trees (less than 10 levels). 
+                            This might indicate incomplete tree building. Consider using the force rebuild option.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {stats.usersWithNoTree === 0 && stats.usersWithIncompleteTree === 0 && (
+                      <div className="flex items-start gap-3 p-4 bg-green-500/10 rounded-lg">
+                        <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                        <div>
+                          <div className="font-semibold text-green-600 dark:text-green-500">All Good!</div>
+                          <div className="text-sm text-muted-foreground">
+                            All referral trees are complete and healthy. Commission distribution should work correctly.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="backfill">
+              <ReferralBackfillTool />
+            </TabsContent>
+
+            <TabsContent value="rebuild">
+              <RebuildAllTreesTool />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </ScrollArea>
     </div>
   );
 }
