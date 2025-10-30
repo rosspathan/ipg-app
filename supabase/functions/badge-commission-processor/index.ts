@@ -147,6 +147,26 @@ Deno.serve(async (req) => {
       console.warn('[Badge Purchase] Team income processing failed:', (e as any)?.message || e);
     }
 
+    // Check VIP milestone rewards for sponsor if user purchased VIP badge
+    if (toBadge === 'VIP') {
+      try {
+        const { data: referralLink } = await supabase
+          .from('referral_links_new')
+          .select('sponsor_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (referralLink?.sponsor_id) {
+          console.log(`[Badge Purchase] Checking VIP milestones for sponsor: ${referralLink.sponsor_id}`);
+          await supabase.functions.invoke('check-vip-milestones', {
+            body: { sponsor_id: referralLink.sponsor_id },
+          });
+        }
+      } catch (e) {
+        console.warn('[Badge Purchase] VIP milestone check failed:', (e as any)?.message || e);
+      }
+    }
+
     console.log(`[Badge Purchase] SUCCESS: ${toBadge} badge purchased by ${userId}`);
 
     return new Response(

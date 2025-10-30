@@ -148,26 +148,50 @@ export function Admin50LevelEditor() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => quickSetRange(1, 10, 10, 'withdrawable')}
+                onClick={() => quickSetRange(1, 1, 5, 'holding')}
                 className="w-full"
               >
-                L1-L10: 10 BSK (W)
+                L1: 5 BSK (Holding)
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => quickSetRange(11, 30, 5, 'holding')}
+                onClick={() => quickSetRange(2, 10, 0.5, 'withdrawable')}
                 className="w-full"
               >
-                L11-L30: 5 BSK (H)
+                L2-L10: 0.5 BSK (W)
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => quickSetRange(31, 50, 2, 'holding')}
+                onClick={() => quickSetRange(11, 20, 0.4, 'withdrawable')}
                 className="w-full"
               >
-                L31-L50: 2 BSK (H)
+                L11-L20: 0.4 BSK (W)
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => quickSetRange(21, 30, 0.3, 'withdrawable')}
+                className="w-full"
+              >
+                L21-L30: 0.3 BSK (W)
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => quickSetRange(31, 40, 0.2, 'withdrawable')}
+                className="w-full"
+              >
+                L31-L40: 0.2 BSK (W)
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => quickSetRange(41, 50, 0.1, 'withdrawable')}
+                className="w-full"
+              >
+                L41-L50: 0.1 BSK (W)
               </Button>
             </div>
           </div>

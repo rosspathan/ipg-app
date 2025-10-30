@@ -146,8 +146,8 @@ Deno.serve(async (req) => {
       console.log(`✅ Level ${level} unlocked for sponsor ${sponsorId} (KYC: ${isKYCApproved}, Badge: ${sponsorBadge || 'None'}, Effective Unlocks: ${effectiveUnlockLevels})`);
 
 
-      const rewardAmount = Number(config.reward_amount);
-      const destination = config.destination || 'withdrawable';
+      const rewardAmount = Number(config.bsk_reward);
+      const destination = config.balance_type || 'withdrawable';
 
       if (rewardAmount <= 0) {
         continue;
@@ -161,11 +161,12 @@ Deno.serve(async (req) => {
         payer_id: payer_id,
         level: level,
         event_type: event_type,
+        event_id: event_id,
         commission_type: 'team_income',
         bsk_amount: rewardAmount,
         destination: destination,
         status: 'settled',
-        my_badge_at_event: sponsorBadge || null,
+        earner_badge_at_event: sponsorBadge || null,
         created_at: new Date().toISOString()
       });
 

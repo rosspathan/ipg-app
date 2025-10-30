@@ -94,39 +94,24 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${ancestors.length} ancestors for user ${user_id}`);
 
-    // Prepare records once
-    const treeRecords = ancestors.map(({ ancestor_id, level, direct_sponsor_id }) => ({
-      user_id,
-      ancestor_id,
-      level,
-      path,
-      direct_sponsor_id
-    }));
+    // Use atomic upsert function to prevent race conditions
+    if (ancestors.length > 0) {
+      const treeRecords = ancestors.map(({ ancestor_id, level, direct_sponsor_id }) => ({
+        user_id,
+        ancestor_id,
+        level,
+        path,
+        direct_sponsor_id
+      }));
 
-    // 1) Update existing rows (level/path/direct_sponsor) safely
-    if (treeRecords.length > 0) {
-      const updatePromises = treeRecords.map((r) =>
-        supabase
-          .from('referral_tree')
-          .update({ level: r.level, path: r.path, direct_sponsor_id: r.direct_sponsor_id })
-          .eq('user_id', r.user_id)
-          .eq('ancestor_id', r.ancestor_id)
-      );
-      const updateResults = await Promise.all(updatePromises);
-      const updateError = updateResults.find(res => (res as any).error)?.error;
-      if (updateError) {
-        console.error('Error updating existing tree rows:', updateError);
-        // Proceed; we'll still try inserts below
-      }
+      const { error: upsertError } = await supabase.rpc('upsert_referral_tree', {
+        p_user_id: user_id,
+        p_tree_records: treeRecords
+      });
 
-      // 2) Insert missing rows, ignore duplicates at DB level (race-safe)
-      const { error: insertError } = await supabase
-        .from('referral_tree')
-        .insert(treeRecords, { onConflict: 'user_id,ancestor_id', ignoreDuplicates: true });
-
-      if (insertError) {
-        console.error('Error inserting tree records with ignoreDuplicates:', insertError);
-        throw new Error(`Failed to insert tree records: ${insertError.message}`);
+      if (upsertError) {
+        console.error('Error upserting referral tree:', upsertError);
+        throw new Error(`Failed to upsert referral tree: ${upsertError.message}`);
       }
     }
 
