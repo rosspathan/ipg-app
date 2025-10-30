@@ -10,7 +10,7 @@ import { BskCardCompact } from "@/components/home/BskCardCompact"
 import { RewardsBreakdown } from "@/components/home/RewardsBreakdown"
 import { AnnouncementsBar } from "@/components/home/AnnouncementsBar"
 import { HeroCarousel } from "@/components/home/HeroCarousel"
-
+import { ProgramsGrid } from "@/components/programs-pro/ProgramsGrid"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
@@ -92,6 +92,16 @@ export function HomePageRebuilt() {
     navigate("/app/wallet")
   }
 
+  // Transform programs for ProgramsGrid
+  const programs = allPrograms.slice(0, 8).map((prog) => {
+    const IconComponent = getLucideIcon(prog.icon)
+    return {
+      id: prog.id,
+      title: prog.name,
+      icon: <IconComponent className="h-5 w-5" />,
+      onPress: () => navigate(prog.route)
+    }
+  })
 
   // Map real activity to display format
   const getActivityIcon = (txType: string, txSubtype: string) => {
@@ -207,6 +217,13 @@ export function HomePageRebuilt() {
 
         {/* Image Carousel - Admin uploaded banners */}
         <ImageCarousel />
+
+        {/* Programs Grid */}
+        <ProgramsGrid
+          programs={programs}
+          title="My Programs"
+          onViewAll={() => navigate("/app/programs")}
+        />
 
         {/* Activity Timeline */}
         {activities.length > 0 && (
