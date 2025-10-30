@@ -8,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 import { RebuildAllTreesTool } from "@/components/admin/RebuildAllTreesTool";
 import { ReferralBackfillTool } from "@/components/admin/ReferralBackfillTool";
 import { ReferralSystemRepairTool } from "@/components/admin/ReferralSystemRepairTool";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TreeHealthStats {
@@ -91,8 +90,8 @@ export default function TreeHealthDashboard() {
   });
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <div className="flex-none p-6 space-y-6">
+    <div className="w-full space-y-6">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -219,17 +218,16 @@ export default function TreeHealthDashboard() {
         </Card>
       </div>
 
-      {/* Scrollable Tools Section */}
-      <ScrollArea className="flex-1 px-6">
-        <div className="max-w-7xl mx-auto pb-6">
-          <Tabs defaultValue="system-repair" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="system-repair">System Repair</TabsTrigger>
-              <TabsTrigger value="backfill">Backfill Tool</TabsTrigger>
-              <TabsTrigger value="rebuild">Rebuild Trees</TabsTrigger>
-            </TabsList>
+      {/* Tools Section */}
+      <div className="space-y-6">
+        <Tabs defaultValue="system-repair" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="system-repair">System Repair</TabsTrigger>
+            <TabsTrigger value="backfill">Backfill Tool</TabsTrigger>
+            <TabsTrigger value="rebuild">Rebuild Trees</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="system-repair" className="space-y-6">
+            <TabsContent value="system-repair" className="space-y-6 mt-6">
               <ReferralSystemRepairTool />
               
               {/* Health Status */}
@@ -281,16 +279,15 @@ export default function TreeHealthDashboard() {
               )}
             </TabsContent>
 
-            <TabsContent value="backfill">
-              <ReferralBackfillTool />
-            </TabsContent>
+          <TabsContent value="backfill" className="mt-6">
+            <ReferralBackfillTool />
+          </TabsContent>
 
-            <TabsContent value="rebuild">
-              <RebuildAllTreesTool />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </ScrollArea>
+          <TabsContent value="rebuild" className="mt-6">
+            <RebuildAllTreesTool />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
