@@ -7,7 +7,7 @@ import { LevelUnlockVisualizer } from "@/components/referrals/LevelUnlockVisuali
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Users, Network, RefreshCw } from "lucide-react"
+import { Users, Network, RefreshCw, List } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
@@ -18,6 +18,7 @@ import {
 import { DownlineMemberProfile } from "@/components/referrals/DownlineMemberProfile"
 import { ReferralTreeView } from "@/components/referrals/tree/ReferralTreeView"
 import { DownlineTableView } from "@/components/referrals/DownlineTableView"
+import { TeamOverviewDashboard, SmartListView } from "@/components/referrals/team"
 import type { DownlineMember } from "@/hooks/useDownlineTree"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuthUser } from "@/hooks/useAuthUser"
@@ -107,13 +108,32 @@ export default function TeamTreeView() {
   if (!data || data.totalMembers === 0) {
     return (
       <ProgramPageTemplate title="Your Team" subtitle="Network overview">
-        <div className="pb-24">
+        <div className="pb-24 space-y-6">
           <Alert>
             <Users className="h-4 w-4" />
             <AlertDescription>
               You don't have any team members yet. Share your referral code to start building your network!
             </AlertDescription>
           </Alert>
+          <div className="p-8 text-center bg-muted/30 rounded-lg border-2 border-dashed">
+            <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">Build Your Team</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+              Once people join using your referral code, you'll see them here. 
+              All team members will be displayed, whether they have a badge or not.
+            </p>
+            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                ✅ Direct referrals (Level 1)
+              </div>
+              <div className="flex items-center gap-2">
+                ✅ Multi-level network (up to Level 50)
+              </div>
+              <div className="flex items-center gap-2">
+                ✅ All badge statuses tracked
+              </div>
+            </div>
+          </div>
         </div>
       </ProgramPageTemplate>
     )
@@ -182,6 +202,9 @@ export default function TeamTreeView() {
         {/* Referral Code Usage Tracker */}
         {showUsageTracker && <ReferralCodeUsageTracker />}
 
+        {/* Overview Dashboard */}
+        <TeamOverviewDashboard data={data} />
+
         {/* VIP Milestone Explainer */}
         <VIPMilestoneExplainer 
           directVIPCount={directVIPCount}
@@ -192,8 +215,12 @@ export default function TeamTreeView() {
         <LevelUnlockVisualizer userBadge={userBadgeData} />
 
         {/* Tabs for different views */}
-        <Tabs defaultValue="table" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+        <Tabs defaultValue="smart-list" className="space-y-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+            <TabsTrigger value="smart-list" className="gap-2">
+              <List className="h-4 w-4" />
+              Smart List
+            </TabsTrigger>
             <TabsTrigger value="table" className="gap-2">
               <Users className="h-4 w-4" />
               Table View
@@ -207,6 +234,15 @@ export default function TeamTreeView() {
               Level View
             </TabsTrigger>
           </TabsList>
+
+          {/* Smart List View Tab */}
+          <TabsContent value="smart-list" className="space-y-6">
+            <SmartListView 
+              members={data.members}
+              maxLevel={data.deepestLevel}
+              onMemberClick={setSelectedMember}
+            />
+          </TabsContent>
 
           {/* Table View Tab */}
           <TabsContent value="table" className="space-y-6">
