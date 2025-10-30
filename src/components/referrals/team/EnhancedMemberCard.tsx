@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Award, Calendar, TrendingUp, Users, CheckCircle2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import type { DownlineMember } from "@/hooks/useDownlineTree";
+import { normalizeBadgeName, getBadgeDisplayName } from "@/lib/badgeUtils";
 
 interface EnhancedMemberCardProps {
   member: DownlineMember;
@@ -11,10 +12,10 @@ interface EnhancedMemberCardProps {
 }
 
 export function EnhancedMemberCard({ member, onClick }: EnhancedMemberCardProps) {
-  const hasNoBadge = !member.current_badge;
+  const normalizedBadge = normalizeBadgeName(member.current_badge);
+  const hasNoBadge = normalizedBadge === 'None';
   const isActive = member.total_generated > 0;
-  const isVIP = member.current_badge?.toUpperCase().includes('VIP') || 
-                member.current_badge?.toUpperCase().includes('SMART');
+  const isVIP = normalizedBadge === 'VIP';
   
   // Get initials from display name or username
   const displayText = member.display_name || member.username || 'NA';
@@ -101,7 +102,7 @@ export function EnhancedMemberCard({ member, onClick }: EnhancedMemberCardProps)
                 ) : (
                   <span className="flex items-center gap-1">
                     <Award className="h-3 w-3" />
-                    {member.current_badge}
+                    {getBadgeDisplayName(normalizedBadge)}
                   </span>
                 )}
               </Badge>

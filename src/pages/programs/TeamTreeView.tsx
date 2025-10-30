@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Users, Network, RefreshCw, List } from "lucide-react"
+import { normalizeBadgeName } from "@/lib/badgeUtils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
@@ -163,13 +164,11 @@ export default function TeamTreeView() {
   // Calculate VIP counts
   const directVIPCount = data.members.filter(m => {
     if (m.level !== 1) return false
-    const badge = m.current_badge?.toUpperCase() || ''
-    return badge.includes('VIP') || badge.includes('SMART')
+    return normalizeBadgeName(m.current_badge) === 'VIP'
   }).length
 
   const totalVIPCount = data.members.filter(m => {
-    const badge = m.current_badge?.toUpperCase() || ''
-    return badge.includes('VIP') || badge.includes('SMART')
+    return normalizeBadgeName(m.current_badge) === 'VIP'
   }).length
 
   return (

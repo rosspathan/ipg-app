@@ -38,6 +38,7 @@ export function useDownlineTree() {
 
   return useQuery({
     queryKey: ['downline-tree', user?.id],
+    staleTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     queryFn: async () => {
@@ -79,6 +80,8 @@ export function useDownlineTree() {
         .in('user_id', userIds);
 
       if (badgeError) throw badgeError;
+      
+      console.log('📛 Badge data fetched:', badges?.length || 0, 'badges');
 
       // Fetch referral links for join dates
       const { data: links, error: linkError } = await supabase

@@ -7,6 +7,7 @@ import { EnhancedMemberCard } from "./EnhancedMemberCard";
 import { TeamFilters } from "./TeamFilters";
 import type { DownlineMember } from "@/hooks/useDownlineTree";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { normalizeBadgeName } from "@/lib/badgeUtils";
 
 interface SmartListViewProps {
   members: DownlineMember[];
@@ -36,13 +37,13 @@ export function SmartListView({ members, maxLevel, onMemberClick }: SmartListVie
 
       // Badge filter
       if (badgeFilter !== "all") {
-        const badge = member.current_badge?.toUpperCase() || '';
+        const normalizedBadge = normalizeBadgeName(member.current_badge);
         if (badgeFilter === "vip") {
-          if (!badge.includes('VIP') && !badge.includes('SMART')) return false;
+          if (normalizedBadge !== 'VIP') return false;
         } else if (badgeFilter === "with-badge") {
-          if (!member.current_badge) return false;
+          if (normalizedBadge === 'None') return false;
         } else if (badgeFilter === "no-badge") {
-          if (member.current_badge) return false;
+          if (normalizedBadge !== 'None') return false;
         }
       }
 
@@ -83,13 +84,13 @@ export function SmartListView({ members, maxLevel, onMemberClick }: SmartListVie
         level,
         members: members.sort((a, b) => {
           // Sort by badge status first (VIP, then other badges, then no badge)
-          const aIsVIP = a.current_badge?.toUpperCase().includes('VIP') || a.current_badge?.toUpperCase().includes('SMART');
-          const bIsVIP = b.current_badge?.toUpperCase().includes('VIP') || b.current_badge?.toUpperCase().includes('SMART');
+          const aIsVIP = normalizeBadgeName(a.current_badge) === 'VIP';
+          const bIsVIP = normalizeBadgeName(b.current_badge) === 'VIP';
           if (aIsVIP && !bIsVIP) return -1;
           if (!aIsVIP && bIsVIP) return 1;
           
-          const aHasBadge = !!a.current_badge;
-          const bHasBadge = !!b.current_badge;
+          const aHasBadge = normalizeBadgeName(a.current_badge) !== 'None';
+          const bHasBadge = normalizeBadgeName(b.current_badge) !== 'None';
           if (aHasBadge && !bHasBadge) return -1;
           if (!aHasBadge && bHasBadge) return 1;
           
@@ -172,11 +173,10 @@ export function SmartListView({ members, maxLevel, onMemberClick }: SmartListVie
           {membersByLevel.map(({ level, members: levelMembers }) => {
             const isExpanded = expandedLevels.has(level);
             const vipCount = levelMembers.filter(m => 
-              m.current_badge?.toUpperCase().includes('VIP') || 
-              m.current_badge?.toUpperCase().includes('SMART')
+              normalizeBadgeName(m.current_badge) === 'VIP'
             ).length;
-            const badgeCount = levelMembers.filter(m => m.current_badge).length;
-            const noBadgeCount = levelMembers.filter(m => !m.current_badge).length;
+            const badgeCount = levelMembers.filter(m => normalizeBadgeName(m.current_badge) !== 'None').length;
+            const noBadgeCount = levelMembers.filter(m => normalizeBadgeName(m.current_badge) === 'None').length;
 
             return (
               <Collapsible key={level} open={isExpanded} onOpenChange={() => toggleLevel(level)}>
