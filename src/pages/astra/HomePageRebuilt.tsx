@@ -12,7 +12,6 @@ import { AnnouncementsBar } from "@/components/home/AnnouncementsBar"
 import { HeroCarousel } from "@/components/home/HeroCarousel"
 
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
-import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
@@ -243,9 +242,6 @@ export function HomePageRebuilt() {
           }
         }}
       />
-
-      {/* DockNav - NEVER TOUCH THIS */}
-      <DockNav />
     </div>
   )
 }
