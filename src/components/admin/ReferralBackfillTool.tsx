@@ -6,8 +6,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, CheckCircle2, UserPlus } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle2, UserPlus, Search } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SponsorSearchDialog } from './SponsorSearchDialog';
 import {
   Table,
   TableBody,
@@ -39,6 +40,8 @@ export function ReferralBackfillTool() {
   const [unlockedUsers, setUnlockedUsers] = useState<UnlockedUser[]>([]);
   const [results, setResults] = useState<BackfillResult[]>([]);
   const [manualSponsorId, setManualSponsorId] = useState<{ [userId: string]: string }>({});
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [searchingForUser, setSearchingForUser] = useState<string | null>(null);
   const { toast } = useToast();
 
   const scanUnlockedUsers = async () => {
@@ -185,6 +188,21 @@ export function ReferralBackfillTool() {
     setManualSponsorId(prev => ({ ...prev, [userId]: sponsorId }));
   };
 
+  const openSponsorSearch = (userId: string) => {
+    setSearchingForUser(userId);
+    setSearchDialogOpen(true);
+  };
+
+  const handleSponsorSelect = (sponsorCodeOrId: string, username: string) => {
+    if (searchingForUser) {
+      assignManualSponsor(searchingForUser, sponsorCodeOrId);
+      toast({
+        title: 'Sponsor Selected',
+        description: `${username} assigned as sponsor`,
+      });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -242,12 +260,22 @@ export function ReferralBackfillTool() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Input
-                          placeholder="Enter referral code or UUID"
-                          value={manualSponsorId[user.user_id] || ''}
-                          onChange={(e) => assignManualSponsor(user.user_id, e.target.value)}
-                          className="h-8 text-xs font-mono"
-                        />
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            placeholder="Enter referral code or UUID"
+                            value={manualSponsorId[user.user_id] || ''}
+                            onChange={(e) => assignManualSponsor(user.user_id, e.target.value)}
+                            className="h-8 text-xs font-mono flex-1"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0 flex-shrink-0"
+                            onClick={() => openSponsorSearch(user.user_id)}
+                          >
+                            <Search className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell>
                         {user.sponsor_code_used || manualSponsorId[user.user_id] ? (
@@ -301,6 +329,12 @@ export function ReferralBackfillTool() {
             </ScrollArea>
           </div>
         )}
+
+        <SponsorSearchDialog
+          open={searchDialogOpen}
+          onOpenChange={setSearchDialogOpen}
+          onSponsorSelect={handleSponsorSelect}
+        />
       </CardContent>
     </Card>
   );
