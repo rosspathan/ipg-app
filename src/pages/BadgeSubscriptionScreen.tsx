@@ -127,7 +127,6 @@ const BadgeSubscriptionScreen = () => {
         const insufficient = bskBalance < costToPay;
         
         if (insufficient) {
-          // Show Buy BSK dialog
           toast({
             title: "💰 Insufficient Balance",
             description: (
@@ -164,90 +163,91 @@ const BadgeSubscriptionScreen = () => {
         
         // Otherwise, proceed to purchase - server will validate
         console.log('Validation service unavailable, proceeding with purchase (server will validate)');
-      }
+      } else {
+        // Only access validation object when no error occurred
+        const validation = validationData as {
+          valid: boolean;
+          errors: string[];
+          warnings: string[];
+          userBalance: number;
+          shortfall: number;
+          alreadyOwned: boolean;
+          kycCompleted: boolean;
+        };
 
-      const validation = validationData as {
-        valid: boolean;
-        errors: string[];
-        warnings: string[];
-        userBalance: number;
-        shortfall: number;
-        alreadyOwned: boolean;
-        kycCompleted: boolean;
-      };
+        console.log('Validation result:', validation);
 
-      console.log('Validation result:', validation);
+        // Handle validation errors with specific CTAs
+        if (!validation.valid) {
+          if (validation.errors.some(e => e.includes('Insufficient balance'))) {
+            toast({
+              title: "💰 Insufficient Balance",
+              description: (
+                <div className="space-y-3">
+                  <p>You need {validation.shortfall.toLocaleString()} more BSK</p>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedBadge(null);
+                      setShowBuyBSKDialog(true);
+                    }}
+                    className="w-full"
+                  >
+                    Buy BSK Now
+                  </Button>
+                </div>
+              ),
+              variant: "destructive",
+            });
+            setSelectedBadge(null);
+            return;
+          }
 
-      // Handle validation errors with specific CTAs
-      if (!validation.valid) {
-        if (validation.errors.some(e => e.includes('Insufficient balance'))) {
+          if (validation.alreadyOwned) {
+            toast({
+              title: "Already Owned",
+              description: "You already own this badge",
+              variant: "destructive",
+            });
+            setSelectedBadge(null);
+            return;
+          }
+
+          if (!validation.kycCompleted) {
+            toast({
+              title: "🔒 KYC Required",
+              description: (
+                <div className="space-y-3">
+                  <p>Complete KYC verification to purchase badges</p>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedBadge(null);
+                      window.location.href = '/app/kyc';
+                    }}
+                    className="w-full"
+                  >
+                    Complete KYC
+                  </Button>
+                </div>
+              ),
+              variant: "destructive",
+            });
+            setSelectedBadge(null);
+            return;
+          }
+
+          // Generic validation error
           toast({
-            title: "💰 Insufficient Balance",
-            description: (
-              <div className="space-y-3">
-                <p>You need {validation.shortfall.toLocaleString()} more BSK</p>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedBadge(null);
-                    setShowBuyBSKDialog(true);
-                  }}
-                  className="w-full"
-                >
-                  Buy BSK Now
-                </Button>
-              </div>
-            ),
+            title: "Validation Failed",
+            description: validation.errors.join('. '),
             variant: "destructive",
           });
           setSelectedBadge(null);
           return;
         }
-
-        if (validation.alreadyOwned) {
-          toast({
-            title: "Already Owned",
-            description: "You already own this badge",
-            variant: "destructive",
-          });
-          setSelectedBadge(null);
-          return;
-        }
-
-        if (!validation.kycCompleted) {
-          toast({
-            title: "🔒 KYC Required",
-            description: (
-              <div className="space-y-3">
-                <p>Complete KYC verification to purchase badges</p>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedBadge(null);
-                    window.location.href = '/app/kyc';
-                  }}
-                  className="w-full"
-                >
-                  Complete KYC
-                </Button>
-              </div>
-            ),
-            variant: "destructive",
-          });
-          setSelectedBadge(null);
-          return;
-        }
-
-        // Generic validation error
-        toast({
-          title: "Validation Failed",
-          description: validation.errors.join('. '),
-          variant: "destructive",
-        });
-        setSelectedBadge(null);
-        return;
       }
 
       // Step 2: Process purchase
