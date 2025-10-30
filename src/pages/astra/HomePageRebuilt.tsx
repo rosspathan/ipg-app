@@ -13,8 +13,6 @@ import { HeroCarousel } from "@/components/home/HeroCarousel"
 import { ProgramsGrid } from "@/components/programs-pro/ProgramsGrid"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
-import { Button } from "@/components/ui/button"
-import { History, ChevronRight } from "lucide-react"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
@@ -210,19 +208,6 @@ export function HomePageRebuilt() {
             onViewSchedule={() => setShowRewardsBreakdown(true)}
           />
         </BalanceDuoGrid>
-
-        {/* View Full History Button */}
-        <div className="px-4 -mt-2">
-          <Button
-            variant="outline"
-            className="w-full rounded-xl"
-            onClick={() => navigate("/app/wallet/history")}
-          >
-            <History className="w-4 h-4 mr-2" />
-            View Full History
-            <ChevronRight className="w-4 h-4 ml-auto" />
-          </Button>
-        </div>
 
         {/* Scrolling Announcement */}
         <ScrollingAnnouncement />
