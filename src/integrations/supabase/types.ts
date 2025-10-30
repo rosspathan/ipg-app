@@ -7111,6 +7111,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_sponsor_profile"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_sponsor_profile"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
+          {
             foreignKeyName: "referral_links_new_sponsor_id_fkey"
             columns: ["sponsor_id"]
             isOneToOne: false
@@ -10416,6 +10430,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_sponsor_profile"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_sponsor_profile"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
+          {
             foreignKeyName: "referral_links_new_sponsor_id_fkey"
             columns: ["sponsor_id"]
             isOneToOne: false
@@ -10640,6 +10668,17 @@ export type Database = {
           p_sender_id: string
         }
         Returns: Json
+      }
+      find_users_missing_referral_tree: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          locked_at: string
+          sponsor_id: string
+          user_id: string
+          username: string
+        }[]
       }
       generate_referral_code: {
         Args: { code_length?: number }
