@@ -39,7 +39,7 @@ export function ProgramsPagePro() {
         )}
 
         {/* Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 gap-3">
           {programs.map((program) => {
             const IconComponent = getLucideIcon(program.icon);
             return (
@@ -47,51 +47,34 @@ export function ProgramsPagePro() {
                 key={program.id}
                 onClick={() => navigate(program.route)}
                 className={cn(
-                  "p-4 rounded-2xl",
-                  "bg-card/60 backdrop-blur-xl border border-border/30",
-                  "transition-all duration-200",
-                  "hover:bg-card/80 hover:scale-[1.02] active:scale-95",
-                  "flex flex-col items-start gap-3"
+                  "flex flex-col items-center gap-2 p-2 rounded-xl",
+                  "transition-all duration-300 ease-out",
+                  "hover:bg-gradient-to-br hover:from-primary/5 hover:to-accent/5",
+                  "active:scale-95"
                 )}
-                style={{
-                  WebkitBackdropFilter: 'blur(16px)',
-                  backdropFilter: 'blur(16px)',
-                  boxShadow: '0 4px 20px rgba(124, 77, 255, 0.1)'
-                }}
               >
-                {/* Icon & Badge */}
-                <div className="flex items-start justify-between w-full">
-                  <div
-                    className={cn(
-                      "h-14 w-14 rounded-full",
-                      "bg-primary/10 border border-primary/20",
-                      "flex items-center justify-center",
-                      "text-primary"
-                    )}
-                  >
-                    <IconComponent className="h-6 w-6" />
-                  </div>
-                  {program.badge && (
-                    <span
-                      className={cn(
-                        "px-2 py-0.5 rounded-full text-[9px] font-[Inter] font-bold uppercase",
-                        program.badgeColor
-                      )}
-                    >
-                      {program.badge}
-                    </span>
+                {/* Icon Circle */}
+                <div
+                  className={cn(
+                    "h-14 w-14 rounded-full",
+                    "bg-gradient-to-br from-primary/10 via-accent/10 to-primary/10",
+                    "border border-primary/30",
+                    "shadow-lg shadow-primary/10",
+                    "backdrop-blur-xl",
+                    "flex items-center justify-center",
+                    "text-primary",
+                    "transition-all duration-300 ease-out",
+                    "hover:scale-110 hover:shadow-xl hover:shadow-primary/20",
+                    "hover:border-primary/50"
                   )}
+                >
+                  <IconComponent className="h-6 w-6" />
                 </div>
 
-                {/* Content */}
-                <div className="text-left w-full">
-                  <h3 className="font-[Space_Grotesk] font-bold text-sm text-foreground mb-1">
-                    {program.name}
-                  </h3>
-                  <p className="font-[Inter] text-[11px] text-muted-foreground leading-tight">
-                    {program.description}
-                  </p>
-                </div>
+                {/* Label */}
+                <span className="font-[Inter] text-[10px] text-center text-foreground/90 font-medium leading-tight">
+                  {program.name}
+                </span>
               </button>
             );
           })}
