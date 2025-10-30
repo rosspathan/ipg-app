@@ -142,7 +142,7 @@ export function ReferralBackfillTool() {
 
       // Try manual assignment first
       if (manualSponsorId[user.user_id]) {
-        sponsorId = manualSponsorId[user.user_id];
+        sponsorId = await resolveSponsorId(manualSponsorId[user.user_id]);
       } else if (user.sponsor_code_used) {
         // Try to resolve from code
         sponsorId = await resolveSponsorId(user.sponsor_code_used);
@@ -158,12 +158,15 @@ export function ReferralBackfillTool() {
           error: success ? undefined : 'Lock failed',
         });
       } else {
+        const errorMsg = manualSponsorId[user.user_id] 
+          ? 'Invalid referral code or UUID' 
+          : 'No sponsor code or manual assignment';
         backfillResults.push({
           user_id: user.user_id,
           username: user.username,
           sponsor_assigned: 'N/A',
           success: false,
-          error: 'No sponsor code or manual assignment',
+          error: errorMsg,
         });
       }
     }
@@ -223,7 +226,7 @@ export function ReferralBackfillTool() {
                   <TableRow>
                     <TableHead>Username</TableHead>
                     <TableHead>Code Used</TableHead>
-                    <TableHead>Manual Sponsor ID</TableHead>
+                    <TableHead>Manual Sponsor (Code or ID)</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -240,7 +243,7 @@ export function ReferralBackfillTool() {
                       </TableCell>
                       <TableCell>
                         <Input
-                          placeholder="Sponsor UUID"
+                          placeholder="Enter referral code or UUID"
                           value={manualSponsorId[user.user_id] || ''}
                           onChange={(e) => assignManualSponsor(user.user_id, e.target.value)}
                           className="h-8 text-xs font-mono"
