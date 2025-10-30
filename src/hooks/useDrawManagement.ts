@@ -106,7 +106,7 @@ export function useDrawManagement() {
       // Full implementation would use provably fair draw logic
       const { error } = await supabase
         .from('draw_configs')
-        .update({ status: 'completed', executed_at: new Date().toISOString() })
+        .update({ executed_at: new Date().toISOString() } as any)
         .eq('id', configId);
 
       if (error) throw error;
