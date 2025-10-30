@@ -41,6 +41,12 @@ const LoginScreen: React.FC = () => {
     // Set flag to prevent validation during login
     sessionStorage.setItem('login_in_progress', 'true');
 
+    // Add timeout to clear flag as failsafe
+    const timeoutId = setTimeout(() => {
+      console.warn('[LOGIN] Clearing login_in_progress flag after timeout');
+      sessionStorage.removeItem('login_in_progress');
+    }, 5000);
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -139,7 +145,7 @@ const LoginScreen: React.FC = () => {
         variant: "destructive"
       });
     } finally {
-      // Clear login flag
+      clearTimeout(timeoutId);
       sessionStorage.removeItem('login_in_progress');
       setLoading(false);
     }

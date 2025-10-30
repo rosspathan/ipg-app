@@ -19,21 +19,54 @@ export const useAuthSession = () => {
     userId: null,
     status: 'loading'
   });
-  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
     let mounted = true;
+    let isInitialized = false;
     
-    // Get session FIRST
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (mounted) {
-        // Set user ID in storage systems
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+
+        console.log('[useAuthSession] Auth event:', event, session?.user?.email);
+        
+        // Handle sign out or invalid session
+        if (event === 'SIGNED_OUT' || !session) {
+          console.log('[useAuthSession] User signed out or session invalid');
+          setCurrentUserId(null);
+          setSecurityUserId(null);
+          
+          setState({
+            session: null,
+            user: null,
+            userId: null,
+            status: 'ready'
+          });
+          return;
+        }
+
+        // Update user ID in storage systems
         const userId = session?.user?.id ?? null;
         setCurrentUserId(userId);
         setSecurityUserId(userId);
         
-        // Skip validation on initial load to allow fresh logins to complete
-        // Validation will happen on SIGNED_IN event instead
+        // Only validate on explicit sign-in events after initialization
+        // Skip validation during active login to prevent interference
+        const loginInProgress = sessionStorage.getItem('login_in_progress');
+        
+        if (event === 'SIGNED_IN' && session && !loginInProgress && isInitialized) {
+          const validation = await validateSessionOwnership(session);
+          
+          if (validation.conflict) {
+            console.warn('[useAuthSession] Session ownership conflict - clearing old data');
+            await autoResolveIfSafe(session);
+            
+            window.dispatchEvent(new CustomEvent('auth:session_conflict', {
+              detail: validation.details
+            }));
+          }
+        }
         
         setState({
           session,
@@ -41,73 +74,32 @@ export const useAuthSession = () => {
           userId,
           status: 'ready'
         });
-        setInitialCheckDone(true);
-      }
-    });
-
-    // THEN set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (mounted && initialCheckDone) {
-          // Handle sign out or invalid session
-          if (event === 'SIGNED_OUT' || !session) {
-            console.log('[useAuthSession] User signed out or session invalid');
-            setCurrentUserId(null);
-            setSecurityUserId(null);
-            
-            // Clear any stale local data
-            try {
-              await supabase.auth.signOut();
-            } catch (e) {
-              console.warn('[useAuthSession] Error during cleanup signOut:', e);
-            }
-            
-            setState({
-              session: null,
-              user: null,
-              userId: null,
-              status: 'ready'
-            });
-            return;
-          }
-
-          // Update user ID in storage systems
-          const userId = session?.user?.id ?? null;
-          setCurrentUserId(userId);
-          setSecurityUserId(userId);
-          
-          // Only validate on explicit sign-in events, not during token refresh
-          // Skip validation during active login to prevent interference
-          const loginInProgress = sessionStorage.getItem('login_in_progress');
-          if (event === 'SIGNED_IN' && session && !loginInProgress) {
-            const validation = await validateSessionOwnership(session);
-            
-            if (validation.conflict) {
-              console.warn('[useAuthSession] Session ownership conflict - clearing old data');
-              // Clear mismatched local data but keep session alive
-              await autoResolveIfSafe(session);
-              
-              window.dispatchEvent(new CustomEvent('auth:session_conflict', {
-                detail: validation.details
-              }));
-            }
-          }
-          
-          setState({
-            session,
-            user: session?.user ?? null,
-            userId,
-            status: 'ready'
-          });
-        }
       }
     );
+
+    // THEN get initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+      
+      const userId = session?.user?.id ?? null;
+      setCurrentUserId(userId);
+      setSecurityUserId(userId);
+      
+      setState({
+        session,
+        user: session?.user ?? null,
+        userId,
+        status: 'ready'
+      });
+      
+      isInitialized = true;
+    });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [initialCheckDone]);
+  }, []);
 
   return state;
 };
