@@ -65,7 +65,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
       <button
         onClick={onCardPress}
         className={cn(
-          "relative w-full p-5 pr-14 rounded-2xl overflow-hidden",
+          "relative w-full p-4 pr-10 rounded-2xl overflow-hidden",
           "glass-card",
           "bg-gradient-to-br from-card/95 via-card/85 to-card/95",
           "backdrop-blur-xl border-2 border-primary/20",
@@ -84,15 +84,15 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
         
         {/* Clean 2-column vertical layout */}
-        <div className="relative flex flex-col gap-4 max-w-[calc(100%-3rem)]">
+        <div className="relative flex flex-col gap-3 max-w-[calc(100%-2.5rem)]">
           
           {/* Row 1: Portfolio Section */}
           <div className="flex items-center gap-3 w-full">
             <div className={cn(
-              "h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0",
+              "h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0",
               "bg-gradient-to-br from-success/25 to-success/5"
             )}>
-              <Wallet className="h-5 w-5 text-success" />
+              <Wallet className="h-4.5 w-4.5 text-success" />
             </div>
             
             <div className="flex flex-col gap-1 flex-1 min-w-0">
@@ -100,11 +100,11 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
                 Portfolio
               </span>
               <div className="flex flex-col gap-0.5">
-                <span className="font-heading font-bold text-xl text-foreground tabular-nums">
+                <span className="font-heading font-bold text-lg text-foreground tabular-nums">
                   {showBalance ? (portfolioData?.value || "₹0") : "••••••"}
                 </span>
                 {portfolioData?.subValue && (
-                  <span className="text-sm font-semibold text-success/80 tabular-nums">
+                  <span className="text-xs font-semibold text-success/80 tabular-nums">
                     {showBalance ? portfolioData.subValue : "••••••"}
                   </span>
                 )}
@@ -116,9 +116,9 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
           <div className="flex items-center justify-between gap-3 w-full">
             {/* Left: 24H Change */}
             <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-primary/20 to-primary/5">
+              <div className="h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-primary/20 to-primary/5">
                 <TrendingUp className={cn(
-                  "h-4 w-4",
+                  "h-3.5 w-3.5",
                   changeData?.trend === "up" ? "text-success" : "text-danger"
                 )} />
               </div>
@@ -128,7 +128,7 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
                   Today
                 </span>
                 <span className={cn(
-                  "font-heading font-bold text-base tabular-nums",
+                  "font-heading font-bold text-sm tabular-nums",
                   changeData?.trend === "up" ? "text-success" : "text-danger"
                 )}>
                   {showBalance ? (

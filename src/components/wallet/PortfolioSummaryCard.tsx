@@ -35,7 +35,7 @@ export function PortfolioSummaryCard({
   return (
     <CleanCard variant="elevated" padding="none" className="overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 pt-5 pb-4">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3">
         <h2 className="text-sm font-medium text-muted-foreground">Portfolio Summary</h2>
         {change24h !== 0 && (
           <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -54,11 +54,11 @@ export function PortfolioSummaryCard({
       </div>
 
       {/* Total Value - Primary Metric */}
-      <div className="px-6 pb-5">
+      <div className="px-5 pb-4">
         <p className="text-xs text-muted-foreground mb-1.5">Total Value</p>
         <div className="flex items-baseline gap-3">
           <p 
-            className="text-2xl md:text-3xl font-bold text-foreground tabular-nums truncate"
+            className="text-xl md:text-2xl font-bold text-foreground tabular-nums truncate"
             title={formatCurrency(totalUsd)}
           >
             {isMobile ? formatCurrency(totalUsd, { abbreviated: true }) : formatCurrency(totalUsd)}
@@ -70,7 +70,7 @@ export function PortfolioSummaryCard({
       <div className="border-t border-border/40" />
 
       {/* Available & Locked - Secondary Metrics */}
-      <div className="px-6 py-4 space-y-3">
+      <div className="px-5 py-3 space-y-2.5">
         {/* Available */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-shrink-0">
