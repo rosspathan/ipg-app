@@ -162,7 +162,7 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
           sponsor_id: sponsorId,
           sponsor_code_used: sponsorProfile.referral_code,
           locked_at: new Date().toISOString(),
-          lock_stage: 'after_email_verify',
+          capture_stage: 'after_email_verify',
           first_touch_at: new Date().toISOString()
         });
       
@@ -186,7 +186,7 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
         sponsor_id: sponsorId,
         sponsor_code_used: sponsorProfile.referral_code || sponsorId,
         locked_at: new Date().toISOString(),
-        lock_stage: 'after_email_verify'
+        capture_stage: 'after_email_verify'
       })
       .eq('user_id', userId)
       .is('locked_at', null);
