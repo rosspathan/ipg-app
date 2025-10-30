@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import './styles/safe-area.css'
+import './styles/mobile-optimizations.css'
 import { Buffer } from 'buffer'
 
 // Make Buffer available globally for crypto libraries (bip39, ethers, etc.)

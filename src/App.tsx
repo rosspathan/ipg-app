@@ -17,6 +17,7 @@ import { AppStateManager } from "@/components/AppStateManager";
 import PrefixRedirect from "@/components/routing/PrefixRedirect";
 import { ThemeProvider } from "next-themes";
 import { Loader2 } from "lucide-react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Loading fallback component for Suspense
 function LoadingFallback() {
@@ -290,27 +291,28 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <Web3Provider>
-          <NotificationProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <AppContent />
-              </BrowserRouter>
-            </TooltipProvider>
-          </NotificationProvider>
-        </Web3Provider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <Web3Provider>
+            <NotificationProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <AppContent />
+                </BrowserRouter>
+              </TooltipProvider>
+            </NotificationProvider>
+          </Web3Provider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
 // Separate component that uses hooks requiring providers
 function AppContent() {
-  // Initialize security sync hook (now inside providers)
   useSecuritySync();
   
   return (

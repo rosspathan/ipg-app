@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { toast } from "sonner";
+import { ProgramLoadingSkeleton } from "@/components/programs/ProgramLoadingSkeleton";
+
+const SpinWheelCanvas = React.lazy(() => import("@/components/spin-wheel/SpinWheelCanvas").then(m => ({ default: m.SpinWheelCanvas })));
 
 export default function SpinWheelPage() {
   const { user } = useAuthUser();
@@ -90,7 +93,10 @@ export default function SpinWheelPage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 pb-24">
       <BacklinkBar programName="Spin Wheel" />
 
-      <div className="p-4 space-y-4">
+      {!segments || segments.length === 0 ? (
+        <ProgramLoadingSkeleton />
+      ) : (
+        <div className="p-4 space-y-4">
         <p className="text-sm text-muted-foreground mb-4">
           Spin the wheel to multiply your BSK! Each spin costs {spinCost} BSK.
         </p>
@@ -117,39 +123,43 @@ export default function SpinWheelPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Wheel placeholder */}
-            <div className="relative aspect-square max-w-sm mx-auto bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-full flex items-center justify-center border-4 border-primary/30">
-              <div
-                className={`w-4 h-4 bg-warning rounded-full ${
-                  isSpinning ? "animate-spin" : ""
-                }`}
-              />
-              {lastResult && !isSpinning && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-background/90 p-4 rounded-xl">
-                    <p className="text-3xl font-bold text-warning">
-                      {lastResult.multiplier}x
-                    </p>
+            {/* Animated Spin Wheel */}
+            {segments && segments.length > 0 ? (
+              <div className="flex justify-center">
+                <Suspense fallback={
+                  <div className="w-[400px] h-[400px] flex items-center justify-center">
+                    <RotateCw className="w-12 h-12 animate-spin text-primary" />
                   </div>
-                </div>
-              )}
-            </div>
+                }>
+                  <SpinWheelCanvas
+                    segments={segments}
+                    isSpinning={isSpinning}
+                    result={lastResult}
+                    onSpinComplete={() => setIsSpinning(false)}
+                  />
+                </Suspense>
+              </div>
+            ) : (
+              <div className="aspect-square max-w-sm mx-auto bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-full flex items-center justify-center border-4 border-primary/30">
+                <p className="text-muted-foreground">Loading wheel...</p>
+              </div>
+            )}
 
             {/* Spin Button */}
             <Button
               onClick={handleSpin}
               disabled={isSpinning || !user || (bskBalance || 0) < spinCost}
-              className="w-full gap-2 bg-gradient-to-r from-warning to-warning/80"
+              className="w-full gap-2 bg-gradient-to-r from-warning to-warning/80 haptic-hint min-h-[56px] text-lg font-bold"
               size="lg"
             >
               {isSpinning ? (
                 <>
-                  <RotateCw className="w-4 h-4 animate-spin" />
+                  <RotateCw className="w-5 h-5 animate-spin" />
                   Spinning...
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-5 h-5" />
                   Spin ({spinCost} BSK)
                 </>
               )}
@@ -163,22 +173,28 @@ export default function SpinWheelPage() {
             <CardTitle className="text-lg">Possible Prizes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-2">
-              {segments?.map((segment: any) => (
-                <div
-                  key={segment.id}
-                  className="p-3 bg-muted/30 rounded-lg text-center"
-                >
-                  <p className="text-2xl font-bold text-foreground">
-                    {segment.multiplier}x
-                  </p>
-                  <p className="text-xs text-muted-foreground">{segment.label}</p>
-                </div>
-              ))}
-            </div>
+            {segments && segments.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2">
+                {segments.map((segment: any) => (
+                  <div
+                    key={segment.id}
+                    className="p-3 bg-muted/30 rounded-lg text-center"
+                    style={{ borderLeft: `4px solid ${segment.color_hex}` }}
+                  >
+                    <p className="text-2xl font-bold text-foreground">
+                      {segment.multiplier}x
+                    </p>
+                    <p className="text-xs text-muted-foreground">{segment.label}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-4">Loading prizes...</p>
+            )}
           </CardContent>
         </Card>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
