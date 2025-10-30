@@ -206,8 +206,11 @@ export default function LuckyDrawPage() {
             </div>
           ) : draws && draws.length > 0 ? (
             draws.map((draw: any) => {
-              const spacesLeft = draw.pool_size - draw.current_participants;
-              const progress = (draw.current_participants / draw.pool_size) * 100;
+              // Extract prizes from jsonb
+              const prizes = draw.prizes || {};
+              const firstPrize = prizes['1st'] || 0;
+              const secondPrize = prizes['2nd'] || 0;
+              const thirdPrize = prizes['3rd'] || 0;
 
               return (
                 <Card
@@ -236,45 +239,34 @@ export default function LuckyDrawPage() {
                       <div className="text-center">
                         <p className="text-xs text-muted-foreground mb-1">1st Prize</p>
                         <p className="text-sm font-bold text-warning">
-                          {draw.first_place_prize} BSK
+                          {firstPrize} BSK
                         </p>
                       </div>
                       <div className="text-center">
                         <p className="text-xs text-muted-foreground mb-1">2nd Prize</p>
                         <p className="text-sm font-bold text-primary">
-                          {draw.second_place_prize} BSK
+                          {secondPrize} BSK
                         </p>
                       </div>
                       <div className="text-center">
                         <p className="text-xs text-muted-foreground mb-1">3rd Prize</p>
                         <p className="text-sm font-bold text-success">
-                          {draw.third_place_prize} BSK
+                          {thirdPrize} BSK
                         </p>
                       </div>
                     </div>
 
-                    {/* Pool Progress */}
+                    {/* Pool Info */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">Participants</span>
+                          <span className="text-muted-foreground">Pool Size</span>
                         </div>
                         <span className="font-medium text-foreground">
-                          {draw.current_participants} / {draw.pool_size}
+                          {draw.pool_size} tickets
                         </span>
                       </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary to-success transition-all"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                      {spacesLeft <= 10 && (
-                        <p className="text-xs text-warning">
-                          Only {spacesLeft} spots left!
-                        </p>
-                      )}
                     </div>
 
                     {/* Ticket Info */}
@@ -291,10 +283,9 @@ export default function LuckyDrawPage() {
                     <Button
                       onClick={() => handleBuyTickets(draw)}
                       className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80"
-                      disabled={spacesLeft === 0}
                     >
                       <Plus className="w-4 h-4" />
-                      {spacesLeft === 0 ? "Pool Full" : "Buy Tickets"}
+                      Buy Tickets
                     </Button>
                   </CardContent>
                 </Card>
