@@ -10680,6 +10680,15 @@ export type Database = {
           valid_from: string
         }[]
       }
+      get_downline_badges: {
+        Args: never
+        Returns: {
+          current_badge: string
+          price_bsk: number
+          purchased_at: string
+          user_id: string
+        }[]
+      }
       get_inr_stats: {
         Args: never
         Returns: {

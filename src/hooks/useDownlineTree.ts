@@ -73,15 +73,13 @@ export function useDownlineTree() {
 
       if (profileError) throw profileError;
 
-      // Fetch badge holdings
+      // Fetch badge holdings using secure RPC function (bypasses RLS)
       const { data: badges, error: badgeError } = await supabase
-        .from('user_badge_holdings')
-        .select('user_id, current_badge, purchased_at, price_bsk')
-        .in('user_id', userIds);
+        .rpc('get_downline_badges');
 
       if (badgeError) throw badgeError;
       
-      console.log('📛 Badge data fetched:', badges?.length || 0, 'badges');
+      console.log('📛 Badge data via RPC:', badges?.length || 0, 'badges', badges?.slice(0, 3));
 
       // Fetch referral links for join dates
       const { data: links, error: linkError } = await supabase
