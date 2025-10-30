@@ -120,15 +120,6 @@ Deno.serve(async (req) => {
       console.error('[fix-broken-referrals] Tree build error:', treeResponse.error);
     }
 
-    // Process signup commissions
-    const commissionResponse = await supabase.functions.invoke('process-signup-commissions', {
-      body: { user_id }
-    });
-
-    if (commissionResponse.error) {
-      console.error('[fix-broken-referrals] Commission error:', commissionResponse.error);
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
@@ -136,9 +127,7 @@ Deno.serve(async (req) => {
         sponsor_id: sponsor.user_id,
         sponsor_username: sponsor.username,
         tree_built: !treeResponse.error,
-        commissions_processed: !commissionResponse.error,
-        tree_result: treeResponse.data,
-        commission_result: commissionResponse.data
+        tree_result: treeResponse.data
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

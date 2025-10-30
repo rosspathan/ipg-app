@@ -395,17 +395,6 @@ serve(async (req) => {
         } else {
           console.log('[complete-onboarding] ✓ Referral tree built:', treeResponse.data);
         }
-        
-        // Call process-signup-commissions
-        const commissionResponse = await supabaseAdmin.functions.invoke('process-signup-commissions', {
-          body: { user_id: userId }
-        });
-        
-        if (commissionResponse.error) {
-          console.error('[complete-onboarding] Commission processing error:', commissionResponse.error);
-        } else {
-          console.log('[complete-onboarding] ✓ Signup commissions processed:', commissionResponse.data);
-        }
       } catch (err) {
         console.error('[complete-onboarding] Error in referral processing:', err);
       }
