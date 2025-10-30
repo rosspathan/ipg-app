@@ -164,23 +164,6 @@ export function AnnouncementCarousel({ slides, className }: AnnouncementCarousel
       >
         <ChevronRight className="h-4 w-4 text-foreground" />
       </button>
-
-      {/* Dots indicator */}
-      <div className="flex justify-center gap-1.5 mt-3">
-        {carouselSlides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => emblaApi?.scrollTo(index)}
-            className={cn(
-              "h-1.5 rounded-full transition-all duration-300",
-              index === selectedIndex
-                ? "w-6 bg-primary"
-                : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-            )}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
     </div>
   )
 }
