@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_kyc_approved')
-      .eq('user_id', userId)
+      .eq('id', userId)
       .single();
 
     if (profileError) {
@@ -60,10 +60,9 @@ Deno.serve(async (req) => {
         p_user_id: userId,
         p_badge_name: toBadge,
         p_previous_badge: fromBadge || null,
-        p_bsk_amount: paidAmountBSK,
+        p_paid_amount_bsk: paidAmountBSK,
         p_payment_ref: paymentRef,
-        p_payment_method: paymentMethod,
-        p_unlock_levels: 50
+        p_payment_method: paymentMethod
       });
 
     if (purchaseError) {

@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
         bsk_amount: commissionAmount,
         destination: 'withdrawable',
         status: 'settled',
-        my_badge_at_event: sponsorBadge?.current_badge,
+        earner_badge_at_event: sponsorBadge?.current_badge,
         metadata: {
           badge_purchased: badge_name,
           previous_badge: previous_badge,
