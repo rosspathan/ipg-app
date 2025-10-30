@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook to detect and resume incomplete onboarding
- * If user has verified email + wallet but hasn't completed onboarding,
+ * If user has email + wallet but hasn't completed onboarding,
  * automatically navigate them to the success screen
  */
 export function useOnboardingResumeProtection() {
@@ -24,7 +24,7 @@ export function useOnboardingResumeProtection() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('onboarding_completed_at, wallet_address, email')
+          .select('onboarding_completed_at, email, wallet_address')
           .eq('user_id', user.id)
           .maybeSingle();
 
