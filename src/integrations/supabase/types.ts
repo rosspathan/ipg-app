@@ -8531,6 +8531,63 @@ export type Database = {
         }
         Relationships: []
       }
+      system_errors: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          error_details: Json | null
+          error_message: string
+          error_type: string
+          id: string
+          max_retries: number | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          retry_count: number | null
+          severity: string | null
+          source_function: string | null
+          stack_trace: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          error_details?: Json | null
+          error_message: string
+          error_type: string
+          id?: string
+          max_retries?: number | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          retry_count?: number | null
+          severity?: string | null
+          source_function?: string | null
+          stack_trace?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          error_details?: Json | null
+          error_message?: string
+          error_type?: string
+          id?: string
+          max_retries?: number | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          retry_count?: number | null
+          severity?: string | null
+          source_function?: string | null
+          stack_trace?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           created_at: string | null
@@ -10662,6 +10719,15 @@ export type Database = {
         }[]
       }
       get_transaction_stats: { Args: never; Returns: Json }
+      get_unresolved_error_count: {
+        Args: never
+        Returns: {
+          critical_count: number
+          error_count: number
+          total_count: number
+          warning_count: number
+        }[]
+      }
       get_user_display_info: {
         Args: { p_user_id: string }
         Returns: {
@@ -10742,6 +10808,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_system_error: {
+        Args: {
+          p_context?: Json
+          p_error_details?: Json
+          p_error_message: string
+          p_error_type: string
+          p_severity?: string
+          p_source_function?: string
+          p_stack_trace?: string
+          p_user_id?: string
+        }
+        Returns: string
+      }
       pay_retroactive_commissions: {
         Args: never
         Returns: {
@@ -10798,6 +10877,10 @@ export type Database = {
         }[]
       }
       reset_monthly_claim_counts: { Args: never; Returns: undefined }
+      resolve_system_error: {
+        Args: { p_error_id: string; p_resolution_notes?: string }
+        Returns: boolean
+      }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
       settle_pending_referrer_rewards: { Args: never; Returns: Json }
       settle_trade: {
