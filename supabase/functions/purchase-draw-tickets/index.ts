@@ -1,182 +1,131 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
 
-    const authHeader = req.headers.get('Authorization')!
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user } } = await supabase.auth.getUser(token)
-
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      throw new Error('Unauthorized');
     }
 
-    const { drawId, ticketCount } = await req.json()
+    const { drawId, ticketCount } = await req.json();
+    console.log('[purchase-draw-tickets] User:', user.id, 'Draw:', drawId, 'Tickets:', ticketCount);
 
     if (!drawId || !ticketCount || ticketCount < 1) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid request parameters' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      throw new Error('Invalid input');
     }
 
-    // 1. Get draw configuration from draw_templates
-    const { data: drawConfig, error: drawError } = await supabase
+    const { data: draw, error: drawError } = await supabaseClient
       .from('draw_templates')
       .select('*')
       .eq('id', drawId)
       .eq('is_active', true)
-      .single()
+      .single();
 
-    if (drawError || !drawConfig) {
-      console.error('Draw config error:', drawError)
-      return new Response(
-        JSON.stringify({ error: 'Draw not found or inactive' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (drawError || !draw) {
+      throw new Error('Draw not found or inactive');
     }
 
-    const ticketPrice = drawConfig.ticket_price_bsk || 100
-    const totalCost = ticketPrice * ticketCount
+    const { count: existingTickets } = await supabaseClient
+      .from('draw_tickets')
+      .select('*', { count: 'exact', head: true })
+      .eq('draw_id', drawId)
+      .eq('user_id', user.id);
 
-    console.log('Purchase request:', { user: user.id, drawId, ticketCount, ticketPrice, totalCost })
+    const maxTicketsPerUser = 10;
+    if ((existingTickets || 0) + ticketCount > maxTicketsPerUser) {
+      throw new Error(`Cannot purchase more than ${maxTicketsPerUser} tickets per draw`);
+    }
 
-    // 2. Check user's BSK balance
-    const { data: bskBalance, error: balanceError } = await supabase
+    const totalCost = draw.ticket_price_bsk * ticketCount;
+
+    const { data: balance, error: balanceError } = await supabaseClient
       .from('user_bsk_balances')
       .select('withdrawable_balance')
       .eq('user_id', user.id)
-      .maybeSingle()
+      .single();
 
-    if (balanceError) {
-      console.error('Balance check error:', balanceError)
+    if (balanceError) throw new Error('Failed to fetch balance');
+    if (!balance || balance.withdrawable_balance < totalCost) {
+      throw new Error('Insufficient BSK balance');
     }
 
-    if (!bskBalance || bskBalance.withdrawable_balance < totalCost) {
-      return new Response(
-        JSON.stringify({
-          error: 'Insufficient BSK balance',
-          required: totalCost,
-          available: bskBalance?.withdrawable_balance || 0
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // 3. Check pool capacity (if pool_size is set)
-    if (drawConfig.pool_size) {
-      const { count: currentParticipants } = await supabase
-        .from('lucky_draw_tickets')
-        .select('*', { count: 'exact', head: true })
-        .eq('config_id', drawId)
-
-      const remainingSlots = drawConfig.pool_size - (currentParticipants || 0)
-      if (ticketCount > remainingSlots) {
-        return new Response(
-          JSON.stringify({
-            error: 'Not enough space in pool',
-            requested: ticketCount,
-            available: remainingSlots
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    }
-
-    // 4. Deduct BSK from user
-    const { error: deductError } = await supabase
+    const { error: deductError } = await supabaseClient
       .from('user_bsk_balances')
-      .update({
-        withdrawable_balance: bskBalance.withdrawable_balance - totalCost
-      })
-      .eq('user_id', user.id)
+      .update({ withdrawable_balance: balance.withdrawable_balance - totalCost })
+      .eq('user_id', user.id);
 
-    if (deductError) {
-      console.error('Deduct error:', deductError)
-      throw new Error('Failed to deduct BSK')
-    }
+    if (deductError) throw deductError;
 
-    // 5. Create tickets
-    const tickets = []
+    const tickets = [];
     for (let i = 0; i < ticketCount; i++) {
-      const ticketNumber = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 8).toUpperCase()}`
       tickets.push({
+        draw_id: drawId,
         user_id: user.id,
-        config_id: drawId,
-        ticket_number: ticketNumber,
-        status: 'pending',
-        ipg_paid: 0,
-        bsk_paid: ticketPrice
-      })
+        ticket_number: `${drawId.substring(0, 8)}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`.toUpperCase(),
+        purchase_price_bsk: draw.ticket_price_bsk,
+        status: 'active'
+      });
     }
 
-    const { data: createdTickets, error: ticketError } = await supabase
-      .from('lucky_draw_tickets')
+    const { data: createdTickets, error: ticketError } = await supabaseClient
+      .from('draw_tickets')
       .insert(tickets)
-      .select()
+      .select();
 
     if (ticketError) {
-      console.error('Ticket creation error:', ticketError)
-      
-      // Rollback: refund BSK
-      await supabase
+      await supabaseClient
         .from('user_bsk_balances')
-        .update({
-          withdrawable_balance: bskBalance.withdrawable_balance
-        })
-        .eq('user_id', user.id)
-      
-      throw new Error('Failed to create tickets')
+        .update({ withdrawable_balance: balance.withdrawable_balance })
+        .eq('user_id', user.id);
+      throw ticketError;
     }
 
-    // 6. Create bonus ledger entry
-    await supabase
-      .from('bonus_ledger')
-      .insert({
-        user_id: user.id,
-        type: 'lucky_draw_purchase',
-        amount_bsk: -totalCost,
-        meta_json: {
-          draw_id: drawId,
-          tickets_purchased: ticketCount,
-          ticket_price: ticketPrice
-        }
-      })
+    await supabaseClient.from('bsk_withdrawable_ledger').insert({
+      user_id: user.id,
+      amount_bsk: -totalCost,
+      tx_type: 'debit',
+      tx_subtype: 'lucky_draw_purchase',
+      reference_id: drawId,
+      balance_before: balance.withdrawable_balance,
+      balance_after: balance.withdrawable_balance - totalCost,
+      notes: `Purchased ${ticketCount} lucky draw tickets`
+    });
 
-    console.log('Success! Created tickets:', createdTickets?.length)
+    console.log('✅ Tickets purchased:', createdTickets?.length);
 
     return new Response(
       JSON.stringify({
         success: true,
-        tickets_created: ticketCount,
-        total_cost: totalCost,
         tickets: createdTickets,
-        remaining_balance: bskBalance.withdrawable_balance - totalCost
+        remaining_balance: balance.withdrawable_balance - totalCost
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('Error purchasing tickets:', error)
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error: any) {
+    console.error('❌ Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    );
   }
-})
+});

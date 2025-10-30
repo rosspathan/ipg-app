@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useState } from "react"
 import { Gift, Zap, Star, MessageCircle } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 import { useNavigation } from "@/hooks/useNavigation"
 import { KPICardUnified } from "@/components/home/KPICardUnified"
 import { AddFundsCTA } from "@/components/home/AddFundsCTA"
@@ -17,10 +18,12 @@ import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
 import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
 import { ImageCarousel } from "@/components/home/ImageCarousel"
+import { RefreshControl } from "@/components/ui/refresh-control"
 import { useDisplayName } from "@/hooks/useDisplayName";
 import { supabase } from "@/integrations/supabase/client";
 import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms";
 import { useUserBSKBalance } from "@/hooks/useUserBSKBalance";
+import { useAuthUser } from "@/hooks/useAuthUser";
 /**
  * HomePageRebuilt - World-class mobile-first home screen
  * DO NOT MODIFY THE FOOTER - DockNav remains untouched
@@ -31,7 +34,8 @@ export function HomePageRebuilt() {
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const displayName = useDisplayName()
   const { programs: allPrograms } = useActivePrograms()
-  const { balance, loading: balanceLoading } = useUserBSKBalance()
+  const { balance, loading: balanceLoading, refresh: refreshBalance } = useUserBSKBalance()
+  const { user } = useAuthUser()
 
   const BSK_TO_INR = 1; // 1 BSK = 1 INR
 
@@ -42,6 +46,47 @@ export function HomePageRebuilt() {
       }
     });
   }, []);
+
+  // Fetch real activity from ledger tables
+  const { data: recentActivity, refetch: refetchActivity } = useQuery({
+    queryKey: ['home-activity', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      // Get recent withdrawable transactions
+      const { data: withdrawable } = await supabase
+        .from('bsk_withdrawable_ledger')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Get recent holding transactions
+      const { data: holding } = await supabase
+        .from('bsk_holding_ledger')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Combine and sort by date
+      const combined = [
+        ...(withdrawable || []).map(tx => ({ ...tx, source: 'withdrawable' })),
+        ...(holding || []).map(tx => ({ ...tx, source: 'holding' }))
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 10);
+
+      return combined;
+    },
+    enabled: !!user?.id
+  });
+
+  const handleRefresh = async () => {
+    await Promise.all([
+      refreshBalance(),
+      refetchActivity()
+    ]);
+  };
 
   const handleKPIPress = () => {
     console.log("KPI card pressed")
@@ -59,41 +104,34 @@ export function HomePageRebuilt() {
     };
   });
 
-  const activities = [
-    {
-      id: "1",
-      type: "reward" as const,
-      title: "Daily Ad Mining Reward",
-      subtitle: "Premium subscription tier",
-      amount: 150,
-      currency: "BSK",
-      timestamp: new Date(Date.now() - 1800000),
-      status: "completed" as const,
-      icon: <Gift className="h-4 w-4" />
-    },
-    {
-      id: "2",
-      type: "spin" as const,
-      title: "Fortune Wheel Spin",
-      subtitle: "Lucky spin result",
-      amount: 50,
-      currency: "BSK",
-      timestamp: new Date(Date.now() - 3600000),
-      status: "completed" as const,
-      icon: <Zap className="h-4 w-4" />
-    },
-    {
-      id: "3",
-      type: "stake" as const,
-      title: "Staking Reward",
-      subtitle: "12.4% APY earnings",
-      amount: 89,
-      currency: "BSK",
-      timestamp: new Date(Date.now() - 7200000),
-      status: "completed" as const,
-      icon: <Star className="h-4 w-4" />
-    }
-  ]
+  // Map real activity to display format
+  const getActivityIcon = (txType: string, txSubtype: string) => {
+    if (txSubtype?.includes('ad_mining') || txSubtype?.includes('ad')) return <Gift className="h-4 w-4" />;
+    if (txSubtype?.includes('spin')) return <Zap className="h-4 w-4" />;
+    if (txSubtype?.includes('stake')) return <Star className="h-4 w-4" />;
+    return <Gift className="h-4 w-4" />;
+  };
+
+  const getActivityTitle = (txType: string, txSubtype: string) => {
+    if (txSubtype?.includes('ad_mining')) return 'Ad Mining Reward';
+    if (txSubtype?.includes('spin')) return 'Spin Wheel Win';
+    if (txSubtype?.includes('lucky_draw')) return 'Lucky Draw';
+    if (txSubtype?.includes('stake')) return 'Staking Reward';
+    if (txSubtype?.includes('referral')) return 'Referral Bonus';
+    return txSubtype || 'Transaction';
+  };
+
+  const activities = (recentActivity || []).map((tx: any) => ({
+    id: tx.id,
+    type: (tx.tx_type === 'credit' ? 'reward' : 'trade') as "reward" | "trade",
+    title: getActivityTitle(tx.tx_type, tx.tx_subtype),
+    subtitle: tx.notes || tx.tx_subtype,
+    amount: Math.abs(tx.amount_bsk || 0),
+    currency: "BSK" as const,
+    timestamp: new Date(tx.created_at),
+    status: "completed" as const,
+    icon: getActivityIcon(tx.tx_type, tx.tx_subtype)
+  }))
 
   const announcementItems = [
     { id: "1", text: "BSK Loans: 0% interest for 16 weeks on amounts up to ₹50,000", type: "promotion" as const },
@@ -115,9 +153,9 @@ export function HomePageRebuilt() {
   ]
 
   return (
-    <div className="min-h-screen" data-testid="page-home" data-version="usr-wallet-link-v3">
-      {/* Main Content with Padding */}
-      <div className="space-y-6">
+    <div className="min-h-screen bg-background pb-20" data-testid="page-home" data-version="usr-wallet-link-v3">
+      <RefreshControl onRefresh={handleRefresh} className="min-h-screen">
+        <div className="space-y-6">
         {/* Add Funds CTA */}
         <AddFundsCTA onPress={() => navigate("/app/wallet/deposit")} />
 
@@ -187,6 +225,13 @@ export function HomePageRebuilt() {
           onViewAll={() => navigate("/app/programs")}
         />
 
+        {/* Activity Timeline */}
+        {activities.length > 0 && (
+          <ActivityTimeline activities={activities} />
+        )}
+        </div>
+      </RefreshControl>
+
       {/* Rewards Breakdown Bottom Sheet */}
       <RewardsBreakdown
         isOpen={showRewardsBreakdown}
@@ -214,7 +259,9 @@ export function HomePageRebuilt() {
           }
         }}
       />
-      </div>
+
+      {/* DockNav - NEVER TOUCH THIS */}
+      <DockNav />
     </div>
   )
 }
