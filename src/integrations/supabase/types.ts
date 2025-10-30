@@ -1267,6 +1267,45 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_balance_audit_log: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          context: string | null
+          id: string
+          new_holding: number | null
+          new_withdrawable: number | null
+          old_holding: number | null
+          old_withdrawable: number | null
+          operation: string
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          context?: string | null
+          id?: string
+          new_holding?: number | null
+          new_withdrawable?: number | null
+          old_holding?: number | null
+          old_withdrawable?: number | null
+          operation: string
+          user_id: string
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          context?: string | null
+          id?: string
+          new_holding?: number | null
+          new_withdrawable?: number | null
+          old_holding?: number | null
+          old_withdrawable?: number | null
+          operation?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bsk_bonus_campaigns: {
         Row: {
           allow_stacking: boolean
