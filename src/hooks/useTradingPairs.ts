@@ -96,8 +96,8 @@ export function useTradingPairs(type?: 'listed' | 'all') {
 
       return pairs;
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
-    staleTime: 10000,
+    refetchInterval: 60000, // Refresh every 60 seconds (reduced to avoid rate limits)
+    staleTime: 30000,
   });
 }
 

@@ -5,6 +5,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Cache configuration
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+let priceCache: { data: any; timestamp: number } | null = null;
+
 interface CoinGeckoPrice {
   id: string;
   symbol: string;
@@ -61,22 +65,88 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // Check cache first
+    const now = Date.now();
+    if (priceCache && (now - priceCache.timestamp) < CACHE_DURATION_MS) {
+      console.log('Returning cached prices (age: ' + Math.round((now - priceCache.timestamp) / 1000) + 's)');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          updated: priceCache.data.updated,
+          message: `Returned ${priceCache.data.updated} cached prices`,
+          cached: true,
+          cacheAge: Math.round((now - priceCache.timestamp) / 1000)
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     console.log('Fetching cryptocurrency prices from CoinGecko...');
 
     // Get all coin IDs
     const coinIds = Object.values(symbolToCoinGeckoId).join(',');
 
-    // Fetch prices from CoinGecko (free tier, no API key needed)
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h`
-    );
+    // Fetch prices from CoinGecko with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    if (!response.ok) {
-      throw new Error(`CoinGecko API error: ${response.statusText}`);
+    let prices: CoinGeckoPrice[];
+    try {
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h`,
+        { signal: controller.signal }
+      );
+      clearTimeout(timeoutId);
+
+      if (response.status === 429) {
+        console.log('Rate limited by CoinGecko, returning cached data if available');
+        if (priceCache) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              updated: priceCache.data.updated,
+              message: 'Rate limited - returning stale cache',
+              cached: true,
+              cacheAge: Math.round((now - priceCache.timestamp) / 1000),
+              rateLimited: true
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+        throw new Error('CoinGecko API rate limit exceeded and no cache available');
+      }
+
+      if (!response.ok) {
+        throw new Error(`CoinGecko API error: ${response.status} ${response.statusText}`);
+      }
+
+      prices = await response.json();
+      console.log(`Fetched ${prices.length} cryptocurrency prices`);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        console.log('CoinGecko request timeout, using cache if available');
+        if (priceCache) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              updated: priceCache.data.updated,
+              message: 'Timeout - returning stale cache',
+              cached: true,
+              cacheAge: Math.round((now - priceCache.timestamp) / 1000)
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+      }
+      throw error;
     }
-
-    const prices: CoinGeckoPrice[] = await response.json();
-    console.log(`Fetched ${prices.length} cryptocurrency prices`);
 
     // Get all markets from database
     const { data: markets, error: marketsError } = await supabase
@@ -173,11 +243,21 @@ Deno.serve(async (req) => {
       console.log(`Successfully updated ${priceUpdates.length} market prices`);
     }
 
+    // Update cache
+    const responseData = {
+      updated: priceUpdates.length,
+    };
+    priceCache = {
+      data: responseData,
+      timestamp: Date.now()
+    };
+
     return new Response(
       JSON.stringify({
         success: true,
         updated: priceUpdates.length,
         message: `Updated ${priceUpdates.length} market prices`,
+        cached: false
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

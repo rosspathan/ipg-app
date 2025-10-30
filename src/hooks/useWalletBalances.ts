@@ -154,10 +154,10 @@ export function useWalletBalances() {
 
     setupRealtimeSubscription();
 
-    // Poll for price updates every 30 seconds
+    // Poll for price updates every 2 minutes (reduced to avoid rate limits)
     const interval = setInterval(() => {
       fetchBalances();
-    }, 30000);
+    }, 120000);
 
     return () => {
       if (channel) {
