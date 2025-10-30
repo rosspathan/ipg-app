@@ -62,15 +62,24 @@ const truncateAddress = (address?: string) => {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
+// Capitalize wallet type
+const capitalizeWallet = (walletType: string) => {
+  return walletType.charAt(0).toUpperCase() + walletType.slice(1);
+};
+
 // Get transaction display information
 const getTransactionDisplay = (tx: UnifiedBSKTransaction): TransactionDisplay => {
   const isIncoming = tx.amount_bsk > 0;
   
   // Transfer transactions
   if (tx.transaction_type === 'transfer_in') {
+    const senderName = tx.metadata?.sender_display_name || tx.metadata?.sender_username || 'Unknown User';
+    const fromWallet = tx.metadata?.from_wallet_type || 'withdrawable';
+    const toWallet = tx.metadata?.to_wallet_type || tx.balance_type;
+    
     return {
       label: 'Received from',
-      secondaryInfo: tx.metadata?.sender_display_name || tx.metadata?.sender_username || 'Unknown User',
+      secondaryInfo: `${senderName} • ${capitalizeWallet(fromWallet)} → ${capitalizeWallet(toWallet)}`,
       icon: ArrowDownRight,
       color: 'text-green-600 dark:text-green-400',
       bgColor: 'bg-green-50 dark:bg-green-950/30',
@@ -78,9 +87,13 @@ const getTransactionDisplay = (tx: UnifiedBSKTransaction): TransactionDisplay =>
   }
   
   if (tx.transaction_type === 'transfer_out') {
+    const recipientName = tx.metadata?.recipient_display_name || tx.metadata?.recipient_username || 'Unknown User';
+    const fromWallet = tx.metadata?.from_wallet_type || tx.balance_type;
+    const toWallet = tx.metadata?.to_wallet_type || 'withdrawable';
+    
     return {
       label: 'Sent to',
-      secondaryInfo: tx.metadata?.recipient_display_name || tx.metadata?.recipient_username || 'Unknown User',
+      secondaryInfo: `${recipientName} • ${capitalizeWallet(fromWallet)} → ${capitalizeWallet(toWallet)}`,
       icon: Send,
       color: 'text-red-600 dark:text-red-400',
       bgColor: 'bg-red-50 dark:bg-red-950/30',
@@ -90,30 +103,38 @@ const getTransactionDisplay = (tx: UnifiedBSKTransaction): TransactionDisplay =>
   // Withdrawal transactions
   if (tx.transaction_type === 'withdrawal') {
     const withdrawalType = tx.metadata?.withdrawal_type;
+    const fromWallet = tx.metadata?.from_wallet_type || tx.balance_type;
+    
     if (withdrawalType === 'bank') {
+      const bankInfo = tx.metadata?.bank_name && tx.metadata?.account_holder_name 
+        ? `${tx.metadata.bank_name} - ${tx.metadata.account_holder_name}` 
+        : 'Bank Account';
+      
       return {
-        label: 'Withdrawn to Bank',
-        secondaryInfo: tx.metadata?.bank_name && tx.metadata?.account_holder_name 
-          ? `${tx.metadata.bank_name} - ${tx.metadata.account_holder_name}` 
-          : 'Bank withdrawal',
+        label: `Withdrawn from ${capitalizeWallet(fromWallet)}`,
+        secondaryInfo: `To ${bankInfo}`,
         icon: Banknote,
         color: 'text-orange-600 dark:text-orange-400',
         bgColor: 'bg-orange-50 dark:bg-orange-950/30',
       };
     }
+    
     if (withdrawalType === 'crypto') {
+      const cryptoInfo = tx.metadata?.crypto_symbol && tx.metadata?.crypto_address
+        ? `${tx.metadata.crypto_symbol} (${truncateAddress(tx.metadata.crypto_address)})`
+        : 'Crypto Wallet';
+      
       return {
-        label: 'Withdrawn to Crypto',
-        secondaryInfo: tx.metadata?.crypto_symbol && tx.metadata?.crypto_address
-          ? `${tx.metadata.crypto_symbol} (${truncateAddress(tx.metadata.crypto_address)})`
-          : 'Crypto withdrawal',
+        label: `Withdrawn from ${capitalizeWallet(fromWallet)}`,
+        secondaryInfo: `To ${cryptoInfo}`,
         icon: Wallet,
         color: 'text-purple-600 dark:text-purple-400',
         bgColor: 'bg-purple-50 dark:bg-purple-950/30',
       };
     }
+    
     return {
-      label: 'Withdrawal',
+      label: `Withdrawn from ${capitalizeWallet(fromWallet)}`,
       secondaryInfo: tx.description,
       icon: Banknote,
       color: 'text-orange-600 dark:text-orange-400',
@@ -180,7 +201,7 @@ const getTransactionDisplay = (tx: UnifiedBSKTransaction): TransactionDisplay =>
   if (tx.transaction_type === 'holding_to_withdrawable') {
     return {
       label: 'Converted',
-      secondaryInfo: 'Holding → Withdrawable',
+      secondaryInfo: 'From Holding Wallet → To Withdrawable Wallet',
       icon: ArrowRightLeft,
       color: 'text-indigo-600 dark:text-indigo-400',
       bgColor: 'bg-indigo-50 dark:bg-indigo-950/30',

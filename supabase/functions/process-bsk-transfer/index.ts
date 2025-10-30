@@ -80,11 +80,11 @@ Deno.serve(async (req) => {
 
     console.log('[BSK Transfer] Success:', result.transaction_ref);
 
-    // Update metadata with user display info
+    // Update metadata with user display info and wallet types
     const senderDisplayName = senderProfile?.display_name || senderProfile?.full_name || senderProfile?.username || senderProfile?.email || 'Unknown';
     const recipientDisplayName = recipientProfile?.display_name || recipientProfile?.full_name || recipientProfile?.username || recipientProfile?.email || 'Unknown';
 
-    // Update the transaction metadata with display names
+    // Update the transaction metadata with complete details
     await supabaseClient
       .from('unified_bsk_transactions')
       .update({
@@ -93,9 +93,13 @@ Deno.serve(async (req) => {
           sender_id: user.id,
           sender_display_name: senderDisplayName,
           sender_username: senderProfile?.username,
+          sender_email: senderProfile?.email,
           recipient_id: recipient_id,
           recipient_display_name: recipientDisplayName,
           recipient_username: recipientProfile?.username,
+          recipient_email: recipientProfile?.email,
+          from_wallet_type: 'withdrawable',
+          to_wallet_type: 'withdrawable',
         }
       })
       .eq('reference_id', result.transaction_ref)

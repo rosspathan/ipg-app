@@ -21,6 +21,15 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
+    // Fetch user profile for display information
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('display_name, username, email, full_name')
+      .eq('user_id', user.id)
+      .single();
+
+    const userDisplayName = userProfile?.display_name || userProfile?.full_name || userProfile?.username || userProfile?.email || 'Unknown User';
+
     const { 
       amount_bsk, 
       withdrawal_type,
@@ -93,12 +102,17 @@ serve(async (req) => {
 
     const balanceAfter = (lockResult as any)?.balance_after || 0;
 
-    // Create withdrawal request
+    // Create withdrawal request with metadata
     const requestData: any = {
       user_id: user.id,
       amount_bsk: amountNum,
       withdrawal_type,
-      status: 'pending'
+      status: 'pending',
+      metadata: {
+        user_display_name: userDisplayName,
+        user_username: userProfile?.username,
+        from_wallet_type: 'withdrawable',
+      }
     };
 
     if (withdrawal_type === 'bank') {
@@ -106,10 +120,15 @@ serve(async (req) => {
       requestData.account_number = account_number;
       requestData.ifsc_code = ifsc_code;
       requestData.account_holder_name = account_holder_name;
+      requestData.metadata.bank_name = bank_name;
+      requestData.metadata.account_holder_name = account_holder_name;
     } else {
       requestData.crypto_symbol = crypto_symbol;
       requestData.crypto_address = crypto_address;
       requestData.crypto_network = crypto_network;
+      requestData.metadata.crypto_symbol = crypto_symbol;
+      requestData.metadata.crypto_address = crypto_address;
+      requestData.metadata.crypto_network = crypto_network;
     }
 
     const { data: withdrawal, error: withdrawalError } = await supabase
