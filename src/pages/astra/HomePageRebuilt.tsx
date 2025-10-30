@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState } from "react"
-import { Gift, Zap, Star, MessageCircle } from "lucide-react"
+import { Gift, Zap, Star, MessageCircle, History, ChevronRight } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { useNavigation } from "@/hooks/useNavigation"
 import { KPICardUnified } from "@/components/home/KPICardUnified"
@@ -12,6 +12,7 @@ import { AnnouncementsBar } from "@/components/home/AnnouncementsBar"
 import { HeroCarousel } from "@/components/home/HeroCarousel"
 import { ProgramsGrid } from "@/components/programs-pro/ProgramsGrid"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
+import { Button } from "@/components/ui/button"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
@@ -208,6 +209,19 @@ export function HomePageRebuilt() {
             onViewSchedule={() => setShowRewardsBreakdown(true)}
           />
         </BalanceDuoGrid>
+
+        {/* View Full History Button */}
+        <div className="px-4 -mt-2">
+          <Button
+            variant="outline"
+            className="w-full rounded-xl"
+            onClick={() => navigate("/app/wallet/history")}
+          >
+            <History className="w-4 h-4 mr-2" />
+            View Full History
+            <ChevronRight className="w-4 h-4 ml-auto" />
+          </Button>
+        </div>
 
         {/* Scrolling Announcement */}
         <ScrollingAnnouncement />

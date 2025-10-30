@@ -70,23 +70,6 @@ export function ProgramsHeroCarousel() {
           </div>
         </div>
       ))}
-      
-      {/* Indicators */}
-      <div className="absolute bottom-4 right-4 flex gap-1.5">
-        {mockSlides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={cn(
-              "w-1.5 h-1.5 rounded-full transition-all duration-220",
-              index === currentIndex
-                ? "bg-primary w-6"
-                : "bg-white/40 hover:bg-white/60"
-            )}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
     </div>
   )
 }
