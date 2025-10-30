@@ -6059,6 +6059,7 @@ export type Database = {
       profiles: {
         Row: {
           account_status: string | null
+          bsc_wallet_address: string | null
           created_at: string | null
           display_name: string | null
           email: string | null
@@ -6082,6 +6083,7 @@ export type Database = {
         }
         Insert: {
           account_status?: string | null
+          bsc_wallet_address?: string | null
           created_at?: string | null
           display_name?: string | null
           email?: string | null
@@ -6105,6 +6107,7 @@ export type Database = {
         }
         Update: {
           account_status?: string | null
+          bsc_wallet_address?: string | null
           created_at?: string | null
           display_name?: string | null
           email?: string | null
