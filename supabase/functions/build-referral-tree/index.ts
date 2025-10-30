@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const ancestors: Array<{ ancestor_id: string; level: number }> = [];
+    const ancestors: Array<{ ancestor_id: string; level: number; direct_sponsor_id: string }> = [];
     const path: string[] = [user_id];
     
     let currentSponsor = referralLink.sponsor_id;
@@ -94,7 +94,16 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${ancestors.length} ancestors for user ${user_id}`);
 
-    // No pre-delete: we'll upsert below and then remove stale rows to avoid race conditions
+    // Delete existing tree records for this user first to avoid conflicts
+    const { error: deleteError } = await supabase
+      .from('referral_tree')
+      .delete()
+      .eq('user_id', user_id);
+
+    if (deleteError) {
+      console.error('Error deleting existing tree records:', deleteError);
+      throw new Error(`Failed to delete existing tree records: ${deleteError.message}`);
+    }
 
     // Insert all tree records in batch
     if (ancestors.length > 0) {
@@ -106,30 +115,13 @@ Deno.serve(async (req) => {
         direct_sponsor_id
       }));
 
-      // Upsert to avoid duplicate key errors under concurrency
-      const { error: upsertError } = await supabase
+      const { error: insertError } = await supabase
         .from('referral_tree')
-        .upsert(treeRecords, { onConflict: 'user_id,ancestor_id' });
+        .insert(treeRecords);
 
-      if (upsertError) {
-        console.error('Error upserting tree records:', upsertError);
-        throw new Error(`Failed to upsert tree records: ${upsertError.message}`);
-      }
-
-      // Remove any stale ancestors no longer in the computed list
-      const ancestorIds = ancestors.map(a => a.ancestor_id);
-      if (ancestorIds.length > 0) {
-        const idList = `(${ancestorIds.join(',')})`;
-        const { error: pruneError } = await supabase
-          .from('referral_tree')
-          .delete()
-          .eq('user_id', user_id)
-          .not('ancestor_id', 'in', idList);
-
-        if (pruneError) {
-          console.error('Error pruning stale tree records:', pruneError);
-          // Not fatal; proceed without throwing to remain resilient
-        }
+      if (insertError) {
+        console.error('Error inserting tree records:', insertError);
+        throw new Error(`Failed to insert tree records: ${insertError.message}`);
       }
     }
 
