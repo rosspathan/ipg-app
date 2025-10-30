@@ -142,7 +142,32 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       return;
     }
 
-    // Lock the referral
+    // If no link exists at all, create it (fallback)
+    if (!existingLink) {
+      console.log('[ReferralCapture] No referral link found, creating new one');
+      
+      const { error: insertError } = await supabase
+        .from('referral_links_new')
+        .insert({
+          user_id: userId,
+          sponsor_id: sponsorId,
+          sponsor_code_used: sponsorProfile.referral_code,
+          locked_at: new Date().toISOString(),
+          lock_stage: 'after_email_verify',
+          first_touch_at: new Date().toISOString()
+        });
+      
+      if (insertError) {
+        console.error('[ReferralCapture] Failed to insert referral link:', insertError);
+        return;
+      }
+      
+      console.log('[ReferralCapture] ✓ Created and locked new referral link');
+      localStorage.removeItem('ismart_signup_ref');
+      return;
+    }
+
+    // Lock the existing referral
     const { error: updateError } = await supabase
       .from('referral_links_new')
       .update({

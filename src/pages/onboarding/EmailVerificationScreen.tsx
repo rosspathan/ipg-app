@@ -132,6 +132,9 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         }
       }
       
+      // Get stored referral code to pass to backend
+      const storedReferralCode = localStorage.getItem('ismart_signup_ref') || '';
+      
       // Complete onboarding via edge function (creates user + links wallet)
       const { data, error } = await supabase.functions.invoke('complete-onboarding', {
         body: {
@@ -140,6 +143,9 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
           verificationCode: code,
           storedCode,
           importedWallet // Pass imported wallet to edge function
+        },
+        headers: {
+          'X-Referral-Code': storedReferralCode
         }
       });
       

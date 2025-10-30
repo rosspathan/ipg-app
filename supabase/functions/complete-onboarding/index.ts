@@ -314,53 +314,86 @@ serve(async (req) => {
       console.warn('Profile update warning:', profileError);
     }
 
-    // Initialize referral_links_new entry for this user
+    // NEW: Check if user has a pending referral code from signup
+    const storedReferralCode = req.headers.get('X-Referral-Code');
+    let sponsorId: string | null = null;
+    let sponsorCodeUsed: string | null = null;
+
+    if (storedReferralCode && storedReferralCode.trim()) {
+      const codeToLookup = storedReferralCode.toUpperCase().trim();
+      console.log('[complete-onboarding] Looking up referral code:', codeToLookup);
+      
+      // Lookup sponsor by code
+      const { data: sponsor } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id, referral_code')
+        .eq('referral_code', codeToLookup)
+        .maybeSingle();
+      
+      if (sponsor && sponsor.user_id !== userId) {
+        sponsorId = sponsor.user_id;
+        sponsorCodeUsed = sponsor.referral_code;
+        console.log('[complete-onboarding] ✓ Found sponsor for code:', codeToLookup, '→', sponsorId);
+      } else if (sponsor && sponsor.user_id === userId) {
+        console.log('[complete-onboarding] ⚠️ Blocked self-referral attempt');
+      } else {
+        console.log('[complete-onboarding] ⚠️ Invalid referral code:', codeToLookup);
+      }
+    }
+
+    // Initialize referral_links_new with sponsor_id if available
     const { error: refLinkError } = await supabaseAdmin
       .from('referral_links_new')
       .upsert({
         user_id: userId,
         referral_code: referralCode,
+        sponsor_id: sponsorId,
+        sponsor_code_used: sponsorCodeUsed,
+        locked_at: sponsorId ? new Date().toISOString() : null,
+        lock_stage: sponsorId ? 'after_email_verify' : null,
+        first_touch_at: new Date().toISOString(),
         total_referrals: 0,
         total_commissions: 0
       }, {
         onConflict: 'user_id',
-        ignoreDuplicates: true
+        ignoreDuplicates: false
       });
     
     if (refLinkError) {
       console.warn('Referral link initialization warning:', refLinkError);
+    } else {
+      console.log('[complete-onboarding] ✓ Referral link initialized', { userId, sponsorId });
     }
 
-    // Capture referral if pending
-    try {
-      const { data: pendingReferral } = await supabaseAdmin
-        .from('referral_links_new')
-        .select('sponsor_id, referral_code, first_touch_at')
-        .eq('user_id', userId)
-        .is('locked_at', null)
-        .maybeSingle();
-
-      if (pendingReferral?.sponsor_id) {
-        const { data: settings } = await supabaseAdmin
-          .from('mobile_linking_settings')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const shouldLock = settings?.lock_policy === 'email_verified';
-
-        if (shouldLock) {
-          await supabaseAdmin
-            .from('referral_links_new')
-            .update({ locked_at: new Date().toISOString() })
-            .eq('user_id', userId);
-          
-          console.log('Referral locked for user:', userId);
+    // If we have a sponsor, build tree and process commissions
+    if (sponsorId) {
+      console.log('[complete-onboarding] Building referral tree for:', userId);
+      
+      try {
+        // Call build-referral-tree
+        const treeResponse = await supabaseAdmin.functions.invoke('build-referral-tree', {
+          body: { user_id: userId, include_unlocked: false }
+        });
+        
+        if (treeResponse.error) {
+          console.error('[complete-onboarding] Tree build error:', treeResponse.error);
+        } else {
+          console.log('[complete-onboarding] ✓ Referral tree built:', treeResponse.data);
         }
+        
+        // Call process-signup-commissions
+        const commissionResponse = await supabaseAdmin.functions.invoke('process-signup-commissions', {
+          body: { user_id: userId }
+        });
+        
+        if (commissionResponse.error) {
+          console.error('[complete-onboarding] Commission processing error:', commissionResponse.error);
+        } else {
+          console.log('[complete-onboarding] ✓ Signup commissions processed:', commissionResponse.data);
+        }
+      } catch (err) {
+        console.error('[complete-onboarding] Error in referral processing:', err);
       }
-    } catch (err) {
-      console.warn('Referral capture warning:', err);
     }
 
     // Web3-first: Return success without Supabase session tokens
