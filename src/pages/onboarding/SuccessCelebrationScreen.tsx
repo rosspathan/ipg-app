@@ -35,44 +35,64 @@ const SuccessCelebrationScreen: React.FC<SuccessCelebrationScreenProps> = ({ has
     
     try {
       setIsCompleting(true);
-      console.log('[SUCCESS] Starting onboarding completion...');
+      console.log('[SUCCESS] Starting final onboarding completion...');
       
-      // CRITICAL: Lock referral to database before completing onboarding
-      if (user?.id) {
-        console.log('🔒 Locking referral for user:', user.id);
-        await captureReferralAfterEmailVerify(user.id);
-        
-        // CRITICAL: Build referral tree immediately after locking
-        console.log('🌳 Building referral tree for user:', user.id);
-        const { data: treeData, error: treeError } = await supabase.functions.invoke('build-referral-tree', {
-          body: { user_id: user.id }
-        });
-
-        if (treeError) {
-          console.error('❌ Failed to build referral tree:', treeError);
-          // Don't fail onboarding if tree build fails, but log it
-        } else {
-          console.log('✅ Referral tree built successfully:', treeData);
-        }
+      if (!user?.id) {
+        throw new Error('No user ID available');
       }
       
+      // CRITICAL: Mark onboarding as complete in database FIRST
+      const { error: completeError } = await supabase
+        .from('profiles')
+        .update({ 
+          onboarding_completed_at: new Date().toISOString(),
+          setup_complete: true 
+        })
+        .eq('user_id', user.id);
+      
+      if (completeError) {
+        console.error('❌ Failed to mark onboarding complete:', completeError);
+        throw completeError;
+      }
+      
+      console.log('✅ Onboarding marked complete in database');
+      
+      // Lock referral (if not already locked)
+      console.log('🔒 Ensuring referral is locked for user:', user.id);
+      await captureReferralAfterEmailVerify(user.id);
+      
+      // Build referral tree
+      console.log('🌳 Building referral tree for user:', user.id);
+      const { data: treeData, error: treeError } = await supabase.functions.invoke('build-referral-tree', {
+        body: { user_id: user.id }
+      });
+
+      if (treeError) {
+        console.error('❌ Failed to build referral tree:', treeError);
+      } else {
+        console.log('✅ Referral tree built successfully:', treeData);
+      }
+      
+      // Call parent onComplete (for navigation)
       await onComplete();
       
       // Clean up referral code storage
       localStorage.removeItem('ismart_signup_ref');
       sessionStorage.removeItem('ismart_ref_code');
       
-      console.log('[SUCCESS] Onboarding completed, navigating...');
+      console.log('[SUCCESS] Onboarding completed, navigating to home');
+      navigate('/app/home', { replace: true });
+      
     } catch (error) {
       console.error('[SUCCESS] Failed to complete onboarding:', error);
       
-      // Show warning but still try to navigate
+      // Show error but try to navigate anyway (better UX)
       toast({
         title: "Setup Warning",
         description: "Some settings may need to be completed in your profile.",
       });
       
-      // Try to navigate anyway after 1 second
+      // Force navigate after 1 second
       setTimeout(() => {
         navigate('/app/home', { replace: true });
       }, 1000);

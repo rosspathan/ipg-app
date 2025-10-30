@@ -11,6 +11,7 @@ import { Web3Provider } from "@/contexts/Web3Context";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { UnlockGate } from "@/components/UnlockGate";
 import { useSecuritySync } from "@/hooks/useSecuritySync";
+import { useOnboardingResumeProtection } from "@/hooks/useOnboardingResumeProtection";
 import { RouterWrapper } from "@/components/RouterWrapper";
 import { AppInitializer } from "@/components/AppInitializer";
 import { AppStateManager } from "@/components/AppStateManager";
@@ -318,6 +319,7 @@ function AppContent() {
   return (
     <>
       <AppStateManager />
+      <OnboardingResumeProtection />
       <RouterWrapper>
         <Routes>
           {/* Landing & Splash */}
