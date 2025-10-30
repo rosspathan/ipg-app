@@ -23,15 +23,15 @@ export default function SpinWheelPage() {
   const spinCost = config?.pricing?.costPerSpin || 10;
   const freeSpinsPerDay = config?.pricing?.freeSpinsPerDay || 1;
 
-  // Fetch spin segments
+  // Fetch spin segments (from ismart_spin_segments, not spin_segments)
   const { data: segments } = useQuery({
     queryKey: ["spin-segments"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("spin_segments")
+        .from("ismart_spin_segments")
         .select("*")
         .eq("is_active", true)
-        .order("weight", { ascending: false });
+        .order("position_order", { ascending: true });
 
       if (error) throw error;
       return data || [];

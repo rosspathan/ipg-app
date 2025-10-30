@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Ad } from "@/hooks/useAdInventory";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Upload, Image as ImageIcon } from "lucide-react";
 
 interface AdInventoryDialogProps {
   open: boolean;
@@ -23,8 +26,55 @@ export function AdInventoryDialog({ open, onOpenChange, ad, onSave }: AdInventor
     reward_per_click: ad?.reward_per_click || 0,
     budget_total: ad?.budget_total || 0,
   });
+  const [uploading, setUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState(ad?.image_url || "");
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileName = `${Date.now()}-${file.name}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('ad-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('ad-images')
+        .getPublicUrl(fileName);
+
+      setFormData({ ...formData, image_url: data.publicUrl });
+      setImagePreview(data.publicUrl);
+      toast.success('Image uploaded successfully');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = () => {
+    if (!formData.title || !formData.image_url) {
+      toast.error('Title and image are required');
+      return;
+    }
     onSave(ad ? { id: ad.id, ...formData } : formData);
     onOpenChange(false);
   };
@@ -58,14 +108,45 @@ export function AdInventoryDialog({ open, onOpenChange, ad, onSave }: AdInventor
             />
           </div>
 
-          <div>
-            <Label htmlFor="image_url">Image URL</Label>
-            <Input
-              id="image_url"
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://example.com/banner.jpg"
-            />
+          <div className="space-y-2">
+            <Label>Ad Image</Label>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('ad-image-upload')?.click()}
+                disabled={uploading}
+                className="gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                {uploading ? 'Uploading...' : 'Upload Image'}
+              </Button>
+              <input
+                id="ad-image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              {imagePreview && (
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-success" />
+                  <span className="text-xs text-muted-foreground">Image uploaded</span>
+                </div>
+              )}
+            </div>
+            {imagePreview && (
+              <div className="mt-2 p-2 border border-border rounded-lg">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="w-full h-32 object-cover rounded"
+                />
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Max 5MB • JPG, PNG, WebP, GIF
+            </p>
           </div>
 
           <div>
