@@ -99,20 +99,113 @@ const BadgeSubscriptionScreen = () => {
 
     const costToPay = selectedBadge.isUpgrade ? selectedBadge.upgradeCost : selectedBadge.price;
     
-    // Pre-purchase validation already prevents this, but keep as safety check
-    if (bskBalance < costToPay) {
-      toast({
-        title: "Insufficient Balance",
-        description: `You need ${(costToPay - bskBalance).toFixed(2)} more BSK to complete this purchase`,
-        variant: "destructive"
-      });
-      setSelectedBadge(null);
-      return;
-    }
-
     setPurchasingBadge(selectedBadge.name);
     
     try {
+      // Step 1: Pre-purchase validation
+      console.log('Running pre-purchase validation...');
+      const { data: validationData, error: validationError } = await supabase.functions.invoke(
+        'validate-badge-purchase',
+        {
+          body: {
+            userId: user.id,
+            badgeName: selectedBadge.name,
+            requiredAmount: costToPay,
+          },
+        }
+      );
+
+      if (validationError) {
+        console.error('Validation error:', validationError);
+        throw new Error('Unable to validate purchase. Please try again.');
+      }
+
+      const validation = validationData as {
+        valid: boolean;
+        errors: string[];
+        warnings: string[];
+        userBalance: number;
+        shortfall: number;
+        alreadyOwned: boolean;
+        kycCompleted: boolean;
+      };
+
+      console.log('Validation result:', validation);
+
+      // Handle validation errors with specific CTAs
+      if (!validation.valid) {
+        if (validation.errors.some(e => e.includes('Insufficient balance'))) {
+          toast({
+            title: "💰 Insufficient Balance",
+            description: (
+              <div className="space-y-3">
+                <p>You need {validation.shortfall.toLocaleString()} more BSK</p>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedBadge(null);
+                    setShowBuyBSKDialog(true);
+                  }}
+                  className="w-full"
+                >
+                  Buy BSK Now
+                </Button>
+              </div>
+            ),
+            variant: "destructive",
+          });
+          setSelectedBadge(null);
+          return;
+        }
+
+        if (validation.alreadyOwned) {
+          toast({
+            title: "Already Owned",
+            description: "You already own this badge",
+            variant: "destructive",
+          });
+          setSelectedBadge(null);
+          return;
+        }
+
+        if (!validation.kycCompleted) {
+          toast({
+            title: "🔒 KYC Required",
+            description: (
+              <div className="space-y-3">
+                <p>Complete KYC verification to purchase badges</p>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedBadge(null);
+                    window.location.href = '/app/kyc';
+                  }}
+                  className="w-full"
+                >
+                  Complete KYC
+                </Button>
+              </div>
+            ),
+            variant: "destructive",
+          });
+          setSelectedBadge(null);
+          return;
+        }
+
+        // Generic validation error
+        toast({
+          title: "Validation Failed",
+          description: validation.errors.join('. '),
+          variant: "destructive",
+        });
+        setSelectedBadge(null);
+        return;
+      }
+
+      // Step 2: Process purchase
+      console.log('Validation passed, processing purchase...');
       const { data, error } = await supabase.functions.invoke('badge-commission-processor', {
         body: {
           userId: user.id,
@@ -125,7 +218,7 @@ const BadgeSubscriptionScreen = () => {
       });
 
       if (error) {
-        throw { message: error.message, data } as any;
+        throw error;
       }
 
       // Show celebration
@@ -164,7 +257,6 @@ const BadgeSubscriptionScreen = () => {
         .single();
       
       if (balanceData) {
-        // Only withdrawable balance can be used for purchases
         setBskBalance(Number(balanceData.withdrawable_balance));
       } else {
         setBskBalance(prev => prev - costToPay);
@@ -175,48 +267,85 @@ const BadgeSubscriptionScreen = () => {
     } catch (error: any) {
       console.error('Badge purchase error:', error);
       
-      // Parse structured error response
-      const errorData = error?.data || {};
-      const errorCode = errorData?.error;
+      // Parse error message for specific cases
+      const errorMessage = error?.message || '';
       
-      let title = 'Purchase Failed';
-      let description = 'Failed to process badge purchase';
-      let action = null;
-      
-      if (errorCode === 'INSUFFICIENT_BALANCE') {
-        title = '💰 Insufficient Balance';
-        const shortfall = errorData?.details?.shortfall || (costToPay - bskBalance);
-        description = errorData?.message || `You need ${shortfall.toFixed(2)} more BSK`;
-        action = (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => {
-              setSelectedBadge(null);
-              setShowBuyBSKDialog(true);
-            }}
-            className="mt-2"
-          >
-            Buy BSK Now
-          </Button>
-        );
-      } else if (errorCode === 'KYC_REQUIRED') {
-        title = '🔒 KYC Required';
-        description = 'Complete KYC verification to purchase badges';
+      if (errorMessage.includes('INSUFFICIENT_BALANCE')) {
+        const match = errorMessage.match(/Required ([\d.]+), Available ([\d.]+)/);
+        const shortfall = match ? parseFloat(match[1]) - parseFloat(match[2]) : costToPay - bskBalance;
+        
+        toast({
+          title: '💰 Insufficient Balance',
+          description: (
+            <div className="space-y-3">
+              <p>You need {shortfall.toFixed(2)} more BSK</p>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setSelectedBadge(null);
+                  setShowBuyBSKDialog(true);
+                }}
+                className="w-full"
+              >
+                Buy BSK Now
+              </Button>
+            </div>
+          ),
+          variant: 'destructive',
+        });
+      } else if (errorMessage.includes('DUPLICATE_BADGE')) {
+        toast({
+          title: 'Already Owned',
+          description: 'You already own this badge',
+          variant: 'destructive',
+        });
+      } else if (errorMessage.includes('KYC_REQUIRED') || errorMessage.includes('KYC')) {
+        toast({
+          title: '🔒 KYC Required',
+          description: (
+            <div className="space-y-3">
+              <p>Complete KYC verification to purchase badges</p>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setSelectedBadge(null);
+                  window.location.href = '/app/kyc';
+                }}
+                className="w-full"
+              >
+                Complete KYC
+              </Button>
+            </div>
+          ),
+          variant: 'destructive',
+        });
       } else {
-        description = errorData?.message || error?.message || 'Failed to process badge purchase';
+        // Generic error with retry option
+        toast({
+          title: 'Purchase Failed',
+          description: (
+            <div className="space-y-3">
+              <p>{errorMessage || 'An unexpected error occurred. Please try again.'}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Retry purchase
+                  confirmPurchase();
+                }}
+                className="w-full"
+              >
+                Try Again
+              </Button>
+            </div>
+          ),
+          variant: 'destructive',
+        });
       }
       
-      toast({
-        title,
-        description: (
-          <div className="space-y-2">
-            <p>{description}</p>
-            {action}
-          </div>
-        ),
-        variant: 'destructive',
-      });
+      setSelectedBadge(null);
     } finally {
       setPurchasingBadge(null);
     }
