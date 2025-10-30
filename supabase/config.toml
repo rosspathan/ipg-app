@@ -161,3 +161,9 @@ verify_jwt = false
 
 [functions.scheduled-sync-native-bnb]
 verify_jwt = false
+
+[functions.admin-rebuild-referral-trees-v2]
+verify_jwt = true
+
+[functions.admin-audit-referral-consistency]
+verify_jwt = true
