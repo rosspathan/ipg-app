@@ -93,31 +93,65 @@ serve(async (req) => {
       );
     }
 
-    // Check holding balance first (preferred for badge purchases)
-    const availableBalance = balance.holding_balance;
+    // Check BOTH balance types (holding + withdrawable)
+    const holdingBalance = balance.holding_balance || 0;
+    const withdrawableBalance = balance.withdrawable_balance || 0;
+    const totalAvailable = holdingBalance + withdrawableBalance;
     
-    if (availableBalance < cost) {
-      console.warn('⚠️ Insufficient BSK balance:', { available: availableBalance, required: cost });
+    console.log('💰 Balance check:', { 
+      holding: holdingBalance, 
+      withdrawable: withdrawableBalance, 
+      total: totalAvailable, 
+      required: cost 
+    });
+    
+    if (totalAvailable < cost) {
+      console.warn('⚠️ Insufficient BSK balance:', { available: totalAvailable, required: cost });
       return new Response(
         JSON.stringify({ 
-          error: `Insufficient BSK balance. You need ${cost} BSK but only have ${availableBalance} BSK in holding balance.`,
+          error: `Insufficient BSK balance. You need ${cost} BSK but only have ${totalAvailable} BSK total.`,
           purchased: false 
         }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('✅ Balance check passed:', { available: availableBalance, required: cost });
+    // ==========================================
+    // STEP 4: Determine deduction strategy
+    // Priority: holding_balance first, then withdrawable_balance
+    // ==========================================
+    let deductFromHolding = 0;
+    let deductFromWithdrawable = 0;
+    let paymentMethod = '';
+
+    if (holdingBalance >= cost) {
+      // Sufficient holding balance - use only that
+      deductFromHolding = cost;
+      paymentMethod = 'bsk_holding';
+    } else {
+      // Use all holding balance, rest from withdrawable
+      deductFromHolding = holdingBalance;
+      deductFromWithdrawable = cost - holdingBalance;
+      paymentMethod = 'bsk_mixed';
+    }
+
+    console.log('💳 Payment breakdown:', { 
+      fromHolding: deductFromHolding, 
+      fromWithdrawable: deductFromWithdrawable,
+      method: paymentMethod
+    });
+
+    const newHoldingBalance = holdingBalance - deductFromHolding;
+    const newWithdrawableBalance = withdrawableBalance - deductFromWithdrawable;
 
     // ==========================================
-    // STEP 4: ATOMIC TRANSACTION - Deduct BSK
+    // STEP 5: ATOMIC TRANSACTION - Deduct BSK
     // ==========================================
-    const newBalance = availableBalance - cost;
-    
     const { error: deductError } = await supabase
       .from('user_bsk_balances')
       .update({ 
-        holding_balance: newBalance,
+        holding_balance: newHoldingBalance,
+        withdrawable_balance: newWithdrawableBalance,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user_id);
@@ -136,7 +170,42 @@ serve(async (req) => {
     console.log('✅ BSK deducted successfully');
 
     // ==========================================
-    // STEP 5: Insert/Update badge in user_badge_holdings
+    // STEP 6: Create ledger entries for audit trail
+    // ==========================================
+    const purchaseId = crypto.randomUUID();
+
+    // Create holding ledger entry if any was deducted
+    if (deductFromHolding > 0) {
+      await supabase.from('bsk_holding_ledger').insert({
+        user_id,
+        amount_bsk: -deductFromHolding,
+        tx_type: 'badge_purchase',
+        balance_before: holdingBalance,
+        balance_after: newHoldingBalance,
+        reference_id: purchaseId,
+        notes: `Badge purchase: ${badge_name} (${deductFromHolding} BSK from holding)`,
+        created_at: new Date().toISOString()
+      });
+      console.log('✅ Holding ledger entry created');
+    }
+
+    // Create withdrawable ledger entry if any was deducted
+    if (deductFromWithdrawable > 0) {
+      await supabase.from('bsk_withdrawable_ledger').insert({
+        user_id,
+        amount_bsk: -deductFromWithdrawable,
+        tx_type: 'badge_purchase',
+        balance_before: withdrawableBalance,
+        balance_after: newWithdrawableBalance,
+        reference_id: purchaseId,
+        notes: `Badge purchase: ${badge_name} (${deductFromWithdrawable} BSK from withdrawable)`,
+        created_at: new Date().toISOString()
+      });
+      console.log('✅ Withdrawable ledger entry created');
+    }
+
+    // ==========================================
+    // STEP 7: Insert/Update badge in user_badge_holdings
     // ==========================================
     const { error: holdingError } = await supabase
       .from('user_badge_holdings')
@@ -154,11 +223,12 @@ serve(async (req) => {
     if (holdingError) {
       console.error('❌ Failed to assign badge, ROLLING BACK:', holdingError);
       
-      // ROLLBACK: Refund BSK
+      // ROLLBACK: Refund BSK to both balances
       await supabase
         .from('user_bsk_balances')
         .update({ 
-          holding_balance: availableBalance,
+          holding_balance: holdingBalance,
+          withdrawable_balance: withdrawableBalance,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user_id);
@@ -175,24 +245,25 @@ serve(async (req) => {
     console.log('✅ Badge assigned successfully');
 
     // ==========================================
-    // STEP 6: Record purchase in badge_purchases table
+    // STEP 8: Record purchase in badge_purchases table
     // ==========================================
     await supabase
       .from('badge_purchases')
       .insert({
+        id: purchaseId,
         user_id,
         badge_name,
         previous_badge: existingBadge?.current_badge || null,
         bsk_amount: cost,
         inr_amount: 0,
         bsk_rate_at_purchase: 1,
-        payment_method: 'bsk_holding',
+        payment_method: paymentMethod,
         status: 'completed',
         is_upgrade: !!existingBadge?.current_badge
       });
 
     // ==========================================
-    // STEP 7: Trigger commission processing
+    // STEP 9: Trigger commission processing
     // ==========================================
     try {
       await supabase.functions.invoke('process-badge-subscription-commission', {
@@ -215,7 +286,10 @@ serve(async (req) => {
         success: true,
         purchased: true,
         badge: badge_name,
-        new_balance: newBalance
+        new_holding_balance: newHoldingBalance,
+        new_withdrawable_balance: newWithdrawableBalance,
+        total_balance: newHoldingBalance + newWithdrawableBalance,
+        deducted_from: paymentMethod
       }), 
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
