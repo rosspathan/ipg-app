@@ -25,6 +25,8 @@ import { BadgeGrid } from "@/components/badges/BadgeGrid";
 import { BadgeComparisonTable } from "@/components/badges/BadgeComparisonTable";
 import { BadgeBenefits, generateTierBenefits } from "@/components/badges/BadgeBenefits";
 import { BadgeSocialProof } from "@/components/badges/BadgeSocialProof";
+import { InsufficientBalanceBanner } from "@/components/badges/InsufficientBalanceBanner";
+import { BuyBSKDialog } from "@/components/badges/BuyBSKDialog";
 import type { BadgeGridItem } from "@/components/badges/BadgeGrid";
 
 const BadgeSubscriptionScreen = () => {
@@ -44,6 +46,7 @@ const BadgeSubscriptionScreen = () => {
     upgradeCost: number;
   } | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showBuyBSKDialog, setShowBuyBSKDialog] = useState(false);
 
   const badgeOrder = ['SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'VIP'];
 
@@ -190,11 +193,11 @@ const BadgeSubscriptionScreen = () => {
             size="sm"
             onClick={() => {
               setSelectedBadge(null);
-              window.location.href = '/app/wallet/deposit';
+              setShowBuyBSKDialog(true);
             }}
             className="mt-2"
           >
-            Add Funds
+            Buy BSK Now
           </Button>
         );
       } else if (errorCode === 'KYC_REQUIRED') {
@@ -389,6 +392,15 @@ const BadgeSubscriptionScreen = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-12">
+        {/* Insufficient Balance Banner */}
+        {activeBadges.length > 0 && bskBalance < Math.min(...activeBadges.map(b => b.bsk_threshold)) && (
+          <InsufficientBalanceBanner
+            currentBalance={bskBalance}
+            minimumRequired={Math.min(...activeBadges.map(b => b.bsk_threshold))}
+            onBuyBSK={() => setShowBuyBSKDialog(true)}
+          />
+        )}
+
         {/* Hero Section */}
         <BadgeHero
           currentBadge={currentBadge}
@@ -502,11 +514,11 @@ const BadgeSubscriptionScreen = () => {
                     size="sm"
                     onClick={() => {
                       setSelectedBadge(null);
-                      window.location.href = '/app/wallet/deposit';
+                      setShowBuyBSKDialog(true);
                     }}
                     className="w-full"
                   >
-                    Add Funds
+                    Buy BSK Now
                   </Button>
                 </div>
               )}
@@ -533,6 +545,14 @@ const BadgeSubscriptionScreen = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Buy BSK Dialog */}
+      <BuyBSKDialog
+        open={showBuyBSKDialog}
+        onOpenChange={setShowBuyBSKDialog}
+        requiredAmount={selectedBadge ? (selectedBadge.isUpgrade ? selectedBadge.upgradeCost : selectedBadge.price) : undefined}
+        currentBalance={bskBalance}
+      />
     </div>
   );
 };
