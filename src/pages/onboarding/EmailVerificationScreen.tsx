@@ -12,7 +12,7 @@ import { storeEvmAddress } from '@/lib/wallet/evmAddress';
 import { useNavigate } from 'react-router-dom';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
-import { storePendingReferral } from '@/utils/referralCapture';
+import { storePendingReferral, getPendingReferral } from '@/utils/referralCapture';
 
 // Mask email for display
 const maskEmail = (e: string) => {
@@ -132,8 +132,16 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         }
       }
       
-      // Get stored referral code to pass to backend
-      const storedReferralCode = localStorage.getItem('ismart_signup_ref') || '';
+      // Check BOTH storage locations for referral code
+      const signupRef = localStorage.getItem('ismart_signup_ref') || '';
+      const pendingRef = getPendingReferral();
+      const storedReferralCode = (pendingRef?.code || signupRef || '').toUpperCase().trim();
+
+      console.info('[VERIFY] Referral header source:', {
+        fromSignup: signupRef,
+        fromPending: pendingRef?.code,
+        chosen: storedReferralCode
+      });
       
       // Complete onboarding via edge function (creates user + links wallet)
       const { data, error } = await supabase.functions.invoke('complete-onboarding', {

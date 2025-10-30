@@ -9,8 +9,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// [STEP 2] Bump function version to force fresh deploy and aid debugging
-const FUNCTION_VERSION = 'v2025-10-17-3-web3-first';
+// Bump function version to force fresh deploy and aid debugging
+const FUNCTION_VERSION = 'v2025-10-30-unified-referral-capture';
 
 interface OnboardingRequest {
   email: string;
@@ -337,7 +337,22 @@ serve(async (req) => {
       } else if (sponsor && sponsor.user_id === userId) {
         console.log('[complete-onboarding] ⚠️ Blocked self-referral attempt');
       } else {
-        console.log('[complete-onboarding] ⚠️ Invalid referral code:', codeToLookup);
+        console.log('[complete-onboarding] ⚠️ Code not found in profiles, checking referral_codes table');
+        
+        // Fallback: Check referral_codes table
+        const { data: codeMap } = await supabaseAdmin
+          .from('referral_codes')
+          .select('user_id')
+          .eq('code', codeToLookup)
+          .maybeSingle();
+        
+        if (codeMap && codeMap.user_id !== userId) {
+          sponsorId = codeMap.user_id;
+          sponsorCodeUsed = codeToLookup;
+          console.log('[complete-onboarding] ✓ Found sponsor via referral_codes:', sponsorId);
+        } else {
+          console.log('[complete-onboarding] ⚠️ Invalid referral code (not in profiles or referral_codes):', codeToLookup);
+        }
       }
     }
 

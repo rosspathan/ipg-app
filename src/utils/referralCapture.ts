@@ -60,27 +60,36 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
     let sponsorId: string | null = null;
     let referralCode: string | null = null;
 
-    // Check localStorage for referral code entered during signup
-    const storedCode = localStorage.getItem('ismart_signup_ref');
+    // Priority 1: Check pending referral (from onboarding)
+    const pending = getPendingReferral();
+    if (pending && pending.code) {
+      referralCode = pending.code;
+      sponsorId = pending.sponsorId;
+      console.log('[ReferralCapture] Using pending referral:', referralCode, '→', sponsorId);
+    }
     
-    if (storedCode) {
-      referralCode = storedCode.toUpperCase();
-      console.log('[ReferralCapture] Found stored referral code:', referralCode);
-      
-      // Lookup sponsor by referral code
-      const { data } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('referral_code', referralCode)
-        .maybeSingle();
-      
-      if (data) {
-        sponsorId = data.user_id;
-        console.log('[ReferralCapture] Resolved code to sponsor:', sponsorId);
-      } else {
-        console.log('[ReferralCapture] Invalid referral code:', referralCode);
-        localStorage.removeItem('ismart_signup_ref');
-        return;
+    // Priority 2: Check signup referral
+    if (!sponsorId) {
+      const storedCode = localStorage.getItem('ismart_signup_ref');
+      if (storedCode) {
+        referralCode = storedCode.toUpperCase();
+        console.log('[ReferralCapture] Using signup referral:', referralCode);
+        
+        // Lookup sponsor by code
+        const { data } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('referral_code', referralCode)
+          .maybeSingle();
+        
+        if (data) {
+          sponsorId = data.user_id;
+          console.log('[ReferralCapture] Resolved sponsor:', sponsorId);
+        } else {
+          console.log('[ReferralCapture] Invalid referral code:', referralCode);
+          localStorage.removeItem('ismart_signup_ref');
+          return;
+        }
       }
     }
 
@@ -162,7 +171,10 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
         return;
       }
       
-      console.log('[ReferralCapture] ✓ Created and locked new referral link');
+    console.log('[ReferralCapture] ✓ Created and locked new referral link');
+      
+      // Clear BOTH storage locations
+      clearPendingReferral();
       localStorage.removeItem('ismart_signup_ref');
       return;
     }
@@ -189,6 +201,9 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
     }
 
     console.log('[ReferralCapture] Successfully locked referral to sponsor:', sponsorId);
+    
+    // Clear BOTH storage locations
+    clearPendingReferral();
     localStorage.removeItem('ismart_signup_ref');
   } catch (error) {
     console.error('Error capturing referral:', error);

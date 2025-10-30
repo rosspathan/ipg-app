@@ -37,6 +37,17 @@ const SignupScreen: React.FC = () => {
   // Real-time referral code validation (ignore self-referral during signup)
   const { isValid, sponsorUsername, loading: validating, error: validationError } = useReferralCodeValidation(referralCode, { ignoreSelfReferral: true });
 
+  // Pre-populate referral code from URL parameter (?ref=CODE)
+  useEffect(() => {
+    const refFromUrl = searchParams.get('ref');
+    if (refFromUrl && !referralCode) {
+      const upperCode = refFromUrl.toUpperCase();
+      setReferralCode(upperCode);
+      localStorage.setItem('ismart_signup_ref', upperCode);
+      console.log('[SIGNUP] Pre-populated referral code from URL:', upperCode);
+    }
+  }, [searchParams, referralCode]);
+
   const passwordStrength = (pwd: string) => {
     let strength = 0;
     if (pwd.length >= 8) strength++;
