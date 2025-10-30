@@ -29,7 +29,7 @@ export interface HierarchicalTreeData {
 }
 
 export function useHierarchicalReferralTree() {
-  const { data: downlineData, isLoading, error } = useDownlineTree();
+  const { data: downlineData, isLoading, error, refetch } = useDownlineTree();
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['virtual-root']));
   const [searchQuery, setSearchQuery] = useState('');
   const [filterVIPOnly, setFilterVIPOnly] = useState(false);
@@ -266,6 +266,7 @@ export function useHierarchicalReferralTree() {
     rawData: hierarchicalData,
     isLoading,
     error,
+    refetch,
     toggleNode,
     expandAll,
     collapseAll,

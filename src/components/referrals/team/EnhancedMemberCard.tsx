@@ -114,7 +114,9 @@ export function EnhancedMemberCard({ member, onClick }: EnhancedMemberCardProps)
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                <span>{format(new Date(member.join_date), 'MMM d, yyyy')}</span>
+                <span>
+                  {member.join_date ? format(new Date(member.join_date), 'MMM d, yyyy') : '—'}
+                </span>
               </div>
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <TrendingUp className="h-3 w-3" />

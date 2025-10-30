@@ -19,6 +19,8 @@ export function useDirectReferrals() {
 
   return useQuery({
     queryKey: ['direct-referrals', user?.id],
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       if (!user?.id) return [];
 

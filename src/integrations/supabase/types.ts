@@ -7109,7 +7109,36 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "referral_links_new_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_links_new_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
+          {
+            foreignKeyName: "referral_links_new_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_links_new_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
+        ]
       }
       referral_rewards_config: {
         Row: {
@@ -10328,7 +10357,22 @@ export type Database = {
           sponsor_id: string | null
           sponsor_username: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "referral_links_new_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_links_new_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
+        ]
       }
       unified_bsk_transactions: {
         Row: {

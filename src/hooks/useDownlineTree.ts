@@ -38,6 +38,8 @@ export function useDownlineTree() {
 
   return useQuery({
     queryKey: ['downline-tree', user?.id],
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       if (!user?.id) throw new Error('No user ID');
 

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Copy, Share2 } from 'lucide-react';
+import { ArrowLeft, Copy, Share2, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
@@ -14,11 +14,15 @@ import { DirectReferralsList } from '@/components/referrals/DirectReferralsList'
 import { ReferralCommissionHistory } from '@/components/referrals/ReferralCommissionHistory';
 import { DownlineTableView } from '@/components/referrals/DownlineTableView';
 import { CommissionStructureCard } from '@/components/referrals/CommissionStructureCard';
+import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
 export default function TeamReferralsDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const referralCode = user?.id?.substring(0, 8).toUpperCase() || '';
 
@@ -48,20 +52,55 @@ export default function TeamReferralsDashboard() {
     }
   };
 
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['downline-tree'] }),
+        queryClient.invalidateQueries({ queryKey: ['direct-referrals'] }),
+        queryClient.invalidateQueries({ queryKey: ['hierarchical-tree'] }),
+      ]);
+      toast({
+        title: "Data Refreshed",
+        description: "Your team data has been refreshed successfully"
+      });
+    } catch (error) {
+      console.error('Error refreshing:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate('/app/programs')}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Team Referrals Dashboard</h1>
-          <p className="text-muted-foreground">
-            Build your network and track your 50-level team structure
-          </p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => navigate('/app/programs')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Team Referrals Dashboard</h1>
+            <p className="text-muted-foreground">
+              Build your network and track your 50-level team structure
+            </p>
+          </div>
         </div>
+        <Button 
+          onClick={handleRefreshData} 
+          disabled={isRefreshing}
+          variant="outline"
+          size="sm"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          Refresh Data
+        </Button>
       </div>
 
       <Card>
