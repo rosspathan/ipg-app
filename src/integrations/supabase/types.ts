@@ -11017,6 +11017,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      upsert_referral_tree: {
+        Args: { p_tree_records: Json; p_user_id: string }
+        Returns: undefined
+      }
       validate_referral_code: { Args: { code: string }; Returns: boolean }
     }
     Enums: {
