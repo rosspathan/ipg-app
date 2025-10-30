@@ -7,6 +7,7 @@ import { KPICardUnified } from "@/components/home/KPICardUnified"
 import { AddFundsCTA } from "@/components/home/AddFundsCTA"
 import { BalanceDuoGrid } from "@/components/home/BalanceDuoGrid"
 import { BskCardCompact } from "@/components/home/BskCardCompact"
+import { BSKHistoryCompact } from "@/components/home/BSKHistoryCompact"
 import { RewardsBreakdown } from "@/components/home/RewardsBreakdown"
 import { AnnouncementsBar } from "@/components/home/AnnouncementsBar"
 import { HeroCarousel } from "@/components/home/HeroCarousel"
@@ -208,6 +209,9 @@ export function HomePageRebuilt() {
             onViewSchedule={() => setShowRewardsBreakdown(true)}
           />
         </BalanceDuoGrid>
+
+        {/* BSK Transaction History */}
+        <BSKHistoryCompact userId={user?.id} />
 
         {/* Scrolling Announcement */}
         <ScrollingAnnouncement />
