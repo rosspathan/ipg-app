@@ -1,49 +1,50 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Image, Trash2, Edit } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAdInventory } from "@/hooks/useAdInventory";
+import { AdInventoryDialog } from "./AdInventoryDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function AdInventoryManager() {
   const isMobile = useIsMobile();
-  const [ads, setAds] = useState([
-    {
-      id: "1",
-      title: "Summer Sale Campaign",
-      imageUrl: "/placeholder.svg",
-      targetUrl: "https://example.com",
-      status: "active",
-      impressions: 12453,
-      clicks: 856
-    },
-    {
-      id: "2",
-      title: "Product Launch",
-      imageUrl: "/placeholder.svg",
-      targetUrl: "https://example.com/product",
-      status: "paused",
-      impressions: 8234,
-      clicks: 432
-    }
-  ]);
+  const { ads, isLoading, createAd, updateAd, deleteAd, toggleAdStatus } = useAdInventory();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedAd, setSelectedAd] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [adToDelete, setAdToDelete] = useState<string | null>(null);
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center p-8">Loading ads...</div>;
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Add New Ad */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Ad Inventory</CardTitle>
-            <Button size={isMobile ? "sm" : "default"}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Ad
-            </Button>
-          </div>
-        </CardHeader>
+    <>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Ad Inventory</CardTitle>
+              <Button size={isMobile ? "sm" : "default"} onClick={() => {
+                setSelectedAd(null);
+                setDialogOpen(true);
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Ad
+              </Button>
+            </div>
+          </CardHeader>
         <CardContent className="space-y-4">
           {/* Ad List */}
           {ads.map((ad) => (
@@ -67,7 +68,7 @@ export function AdInventoryManager() {
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
-                  {ad.targetUrl}
+                  {ad.target_url}
                 </p>
                 <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
                   <span>{ad.impressions.toLocaleString()} views</span>
@@ -80,10 +81,16 @@ export function AdInventoryManager() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                <Button size="sm" variant="ghost">
+                <Button size="sm" variant="ghost" onClick={() => {
+                  setSelectedAd(ad);
+                  setDialogOpen(true);
+                }}>
                   <Edit className="w-4 h-4" />
                 </Button>
-                <Button size="sm" variant="ghost">
+                <Button size="sm" variant="ghost" onClick={() => {
+                  setAdToDelete(ad.id);
+                  setDeleteDialogOpen(true);
+                }}>
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
               </div>
@@ -100,5 +107,39 @@ export function AdInventoryManager() {
         </CardContent>
       </Card>
     </div>
+
+    <AdInventoryDialog
+      open={dialogOpen}
+      onOpenChange={setDialogOpen}
+      ad={selectedAd}
+      onSave={(data) => {
+        if (selectedAd) {
+          updateAd({ ...data, id: selectedAd.id });
+        } else {
+          createAd(data);
+        }
+      }}
+    />
+
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete this ad and all its data.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={() => {
+            if (adToDelete) deleteAd(adToDelete);
+            setDeleteDialogOpen(false);
+          }}>
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }

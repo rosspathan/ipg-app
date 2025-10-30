@@ -2,33 +2,21 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Plus, Play, Pause } from "lucide-react";
+import { Calendar, Plus, Play, Pause } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useDrawManagement } from "@/hooks/useDrawManagement";
+import { DrawScheduleDialog } from "./DrawScheduleDialog";
+import { DrawExecutionDialog } from "./DrawExecutionDialog";
 
 export function DrawScheduler() {
   const isMobile = useIsMobile();
-  const [draws, setDraws] = useState([
-    {
-      id: "1",
-      name: "Weekend Mega Draw",
-      scheduledAt: "2025-10-18T18:00:00",
-      prizePool: 50000,
-      ticketsSold: 78,
-      poolSize: 100,
-      status: "scheduled"
-    },
-    {
-      id: "2",
-      name: "Daily Quick Draw",
-      scheduledAt: "2025-10-15T20:00:00",
-      prizePool: 10000,
-      ticketsSold: 100,
-      poolSize: 100,
-      status: "ready"
-    }
-  ]);
+  const { draws, isLoading, createDraw, executeDraw, cancelDraw } = useDrawManagement();
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [executeDialogOpen, setExecuteDialogOpen] = useState(false);
+  const [selectedDraw, setSelectedDraw] = useState<any>(null);
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'Not scheduled';
     const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", {
       month: "short",
@@ -38,18 +26,23 @@ export function DrawScheduler() {
     });
   };
 
+  if (isLoading) {
+    return <div className="flex items-center justify-center p-8">Loading draws...</div>;
+  }
+
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Scheduled Draws</CardTitle>
-            <Button size={isMobile ? "sm" : "default"}>
-              <Plus className="w-4 h-4 mr-2" />
-              Schedule Draw
-            </Button>
-          </div>
-        </CardHeader>
+    <>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Scheduled Draws</CardTitle>
+              <Button size={isMobile ? "sm" : "default"} onClick={() => setScheduleDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Schedule Draw
+              </Button>
+            </div>
+          </CardHeader>
         <CardContent className="space-y-4">
           {draws.map((draw) => (
             <div
@@ -85,19 +78,19 @@ export function DrawScheduler() {
                 <div>
                   <p className="text-xs text-muted-foreground">Prize Pool</p>
                   <p className="text-sm font-semibold">
-                    {draw.prizePool.toLocaleString()} BSK
+                    {((draw.first_prize_amount || 0) + (draw.second_prize_amount || 0) + (draw.third_prize_amount || 0)).toLocaleString()} BSK
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Tickets</p>
+                  <p className="text-xs text-muted-foreground">Entry Fee</p>
                   <p className="text-sm font-semibold">
-                    {draw.ticketsSold}/{draw.poolSize}
+                    {draw.entry_fee || 0} BSK
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Fill Rate</p>
+                  <p className="text-xs text-muted-foreground">Participants</p>
                   <p className="text-sm font-semibold">
-                    {Math.round((draw.ticketsSold / draw.poolSize) * 100)}%
+                    {draw.current_participants || 0}/{draw.max_participants || 0}
                   </p>
                 </div>
               </div>
@@ -114,21 +107,21 @@ export function DrawScheduler() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                {draw.status === "ready" && (
-                  <Button size="sm" className="flex-1">
+                {!draw.executed_at && (
+                  <Button size="sm" className="flex-1" onClick={() => {
+                    setSelectedDraw(draw);
+                    setExecuteDialogOpen(true);
+                  }}>
                     <Play className="w-3 h-3 mr-2" />
                     Execute Draw
                   </Button>
                 )}
-                {draw.status === "scheduled" && (
-                  <Button size="sm" variant="outline" className="flex-1">
+                {!draw.executed_at && (
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => cancelDraw(draw.id)}>
                     <Pause className="w-3 h-3 mr-2" />
                     Cancel
                   </Button>
                 )}
-                <Button size="sm" variant="ghost">
-                  Details
-                </Button>
               </div>
             </div>
           ))}
@@ -145,5 +138,22 @@ export function DrawScheduler() {
         </CardContent>
       </Card>
     </div>
+
+    <DrawScheduleDialog
+      open={scheduleDialogOpen}
+      onOpenChange={setScheduleDialogOpen}
+      onSchedule={(data) => createDraw(data)}
+    />
+
+    <DrawExecutionDialog
+      open={executeDialogOpen}
+      onOpenChange={setExecuteDialogOpen}
+      drawName={selectedDraw?.name || ''}
+      participants={selectedDraw?.current_participants || 0}
+      onConfirm={() => {
+        if (selectedDraw) executeDraw(selectedDraw.id);
+      }}
+    />
+  </>
   );
 }

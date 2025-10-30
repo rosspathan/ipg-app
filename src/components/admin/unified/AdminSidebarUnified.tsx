@@ -46,6 +46,7 @@ const mainNav: NavItem[] = [
 ];
 
 const managementNav: NavItem[] = [
+  { title: "Program Control", url: "/admin/programs/control", icon: FolderKanban },
   { title: "KYC Reviews", url: "/admin/kyc-review", icon: Shield, badge: 12 },
   { title: "BSK Management", url: "/admin/bsk", icon: Coins },
   { title: "Withdrawals", url: "/admin/bsk-withdrawals", icon: Wallet, badge: 5 },

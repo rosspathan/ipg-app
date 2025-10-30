@@ -68,6 +68,12 @@ const AdminProgramsControl = React.lazy(() => import("./pages/admin/AdminProgram
 const AdMiningControlPanel = React.lazy(() => import("./pages/admin/program-controls/AdMiningControlPanel"));
 const LuckyDrawControlPanel = React.lazy(() => import("./pages/admin/program-controls/LuckyDrawControlPanel"));
 const SpinWheelControlPanel = React.lazy(() => import("./pages/admin/program-controls/SpinWheelControlPanel"));
+const StakingControlPanel = React.lazy(() => import("./pages/admin/program-controls/StakingControlPanel"));
+const InsuranceControlPanel = React.lazy(() => import("./pages/admin/program-controls/InsuranceControlPanel"));
+const LoansControlPanel = React.lazy(() => import("./pages/admin/program-controls/LoansControlPanel"));
+const TradingControlPanel = React.lazy(() => import("./pages/admin/program-controls/TradingControlPanel"));
+const BadgesControlPanel = React.lazy(() => import("./pages/admin/program-controls/BadgesControlPanel"));
+const ReferralsControlPanel = React.lazy(() => import("./pages/admin/program-controls/ReferralsControlPanel"));
 const AdminProgramAnalytics = React.lazy(() => import("./pages/admin/AdminProgramAnalytics"));
 const AuditLogsPage = React.lazy(() => import("./pages/admin/AuditLogs"));
 const ProgramControlCenter = React.lazy(() => import("./pages/admin/ProgramControlCenter"));
@@ -540,6 +546,12 @@ function AppContent() {
                 <Route path="programs/control/ad-mining/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><AdMiningControlPanel /></React.Suspense>} />
                 <Route path="programs/control/lucky-draw/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawControlPanel /></React.Suspense>} />
                 <Route path="programs/control/spin-wheel/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><SpinWheelControlPanel /></React.Suspense>} />
+                <Route path="programs/control/staking/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><StakingControlPanel /></React.Suspense>} />
+                <Route path="programs/control/insurance/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><InsuranceControlPanel /></React.Suspense>} />
+                <Route path="programs/control/loans/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><LoansControlPanel /></React.Suspense>} />
+                <Route path="programs/control/trading/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><TradingControlPanel /></React.Suspense>} />
+                <Route path="programs/control/badges/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><BadgesControlPanel /></React.Suspense>} />
+                <Route path="programs/control/referrals/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><ReferralsControlPanel /></React.Suspense>} />
                 
                 {/* Gamification & Programs */}
                 <Route path="spin" element={<AdminSpinNova />} />

@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Palette } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { useSpinSegments } from "@/hooks/useSpinSegments";
 
 interface Segment {
   id: string;
@@ -15,17 +16,22 @@ interface Segment {
   color: string;
 }
 
-export function SpinSegmentEditor() {
+export function SpinSegmentEditor({ configId }: { configId?: string }) {
   const isMobile = useIsMobile();
-  const { toast } = useToast();
-  const [segments, setSegments] = useState<Segment[]>([
-    { id: "1", label: "0x", multiplier: 0, weight: 30, color: "#ef4444" },
-    { id: "2", label: "1.2x", multiplier: 1.2, weight: 25, color: "#3b82f6" },
-    { id: "3", label: "1.5x", multiplier: 1.5, weight: 20, color: "#10b981" },
-    { id: "4", label: "2x", multiplier: 2, weight: 15, color: "#f59e0b" },
-    { id: "5", label: "5x", multiplier: 5, weight: 8, color: "#8b5cf6" },
-    { id: "6", label: "10x", multiplier: 10, weight: 2, color: "#ec4899" }
-  ]);
+  const { segments: dbSegments, isLoading, saveSegments, isValidating } = useSpinSegments(configId);
+  const [segments, setSegments] = useState<Segment[]>([]);
+
+  useEffect(() => {
+    if (dbSegments && dbSegments.length > 0) {
+      setSegments(dbSegments.map(s => ({
+        id: s.id,
+        label: s.label,
+        multiplier: s.multiplier,
+        weight: s.weight,
+        color: s.color_hex
+      })));
+    }
+  }, [dbSegments]);
 
   const totalWeight = segments.reduce((sum, s) => sum + s.weight, 0);
 
@@ -51,15 +57,37 @@ export function SpinSegmentEditor() {
 
   const removeSegment = (id: string) => {
     if (segments.length <= 3) {
-      toast({
-        title: "Cannot remove",
-        description: "Wheel must have at least 3 segments",
-        variant: "destructive"
-      });
+      toast.error("Wheel must have at least 3 segments");
       return;
     }
     setSegments(segments.filter((s) => s.id !== id));
   };
+
+  const handleSave = () => {
+    if (Math.abs(totalWeight - 100) > 1) {
+      toast.error("Total weight must equal 100%");
+      return;
+    }
+
+    if (!configId) {
+      toast.error("No config ID provided");
+      return;
+    }
+
+    saveSegments({
+      configId,
+      segments: segments.map(s => ({
+        label: s.label,
+        multiplier: s.multiplier,
+        weight: s.weight,
+        color_hex: s.color
+      }))
+    });
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center p-8">Loading segments...</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -173,7 +201,18 @@ export function SpinSegmentEditor() {
           ))}
 
           {/* Save Button */}
-          <Button className="w-full">Save Segment Configuration</Button>
+          <Button 
+            className="w-full" 
+            onClick={handleSave}
+            disabled={isValidating || Math.abs(totalWeight - 100) > 1}
+          >
+            {isValidating ? "Saving..." : "Save Segment Configuration"}
+          </Button>
+          {Math.abs(totalWeight - 100) > 1 && (
+            <p className="text-sm text-destructive text-center">
+              ⚠️ Total weight must equal 100% (currently {totalWeight}%)
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
