@@ -94,33 +94,38 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${ancestors.length} ancestors for user ${user_id}`);
 
-    // Delete existing tree records for this user first to avoid conflicts
-    const { error: deleteError } = await supabase
-      .from('referral_tree')
-      .delete()
-      .eq('user_id', user_id);
+    // Prepare records once
+    const treeRecords = ancestors.map(({ ancestor_id, level, direct_sponsor_id }) => ({
+      user_id,
+      ancestor_id,
+      level,
+      path,
+      direct_sponsor_id
+    }));
 
-    if (deleteError) {
-      console.error('Error deleting existing tree records:', deleteError);
-      throw new Error(`Failed to delete existing tree records: ${deleteError.message}`);
-    }
+    // 1) Update existing rows (level/path/direct_sponsor) safely
+    if (treeRecords.length > 0) {
+      const updatePromises = treeRecords.map((r) =>
+        supabase
+          .from('referral_tree')
+          .update({ level: r.level, path: r.path, direct_sponsor_id: r.direct_sponsor_id })
+          .eq('user_id', r.user_id)
+          .eq('ancestor_id', r.ancestor_id)
+      );
+      const updateResults = await Promise.all(updatePromises);
+      const updateError = updateResults.find(res => (res as any).error)?.error;
+      if (updateError) {
+        console.error('Error updating existing tree rows:', updateError);
+        // Proceed; we'll still try inserts below
+      }
 
-    // Insert all tree records in batch
-    if (ancestors.length > 0) {
-      const treeRecords = ancestors.map(({ ancestor_id, level, direct_sponsor_id }) => ({
-        user_id,
-        ancestor_id,
-        level,
-        path,
-        direct_sponsor_id
-      }));
-
+      // 2) Insert missing rows, ignore duplicates at DB level (race-safe)
       const { error: insertError } = await supabase
         .from('referral_tree')
-        .insert(treeRecords);
+        .insert(treeRecords, { onConflict: 'user_id,ancestor_id', ignoreDuplicates: true });
 
       if (insertError) {
-        console.error('Error inserting tree records:', insertError);
+        console.error('Error inserting tree records with ignoreDuplicates:', insertError);
         throw new Error(`Failed to insert tree records: ${insertError.message}`);
       }
     }
