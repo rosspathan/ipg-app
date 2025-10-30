@@ -10738,10 +10738,10 @@ export type Database = {
       refund_failed_badge_purchases: {
         Args: never
         Returns: {
-          badge_name: string
           refund_amount: number
-          status: string
-          user_id: string
+          refund_badge_name: string
+          refund_status: string
+          refund_user_id: string
         }[]
       }
       reset_monthly_claim_counts: { Args: never; Returns: undefined }

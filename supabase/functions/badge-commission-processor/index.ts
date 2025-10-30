@@ -31,19 +31,32 @@ Deno.serve(async (req) => {
     console.log(`[Badge Purchase] Processing: User ${userId}, Badge ${toBadge}, Amount ${paidAmountBSK} BSK`);
 
     // ==========================================
-    // ATOMIC BADGE PURCHASE WITH TRANSACTION
+    // STEP 1: CHECK KYC APPROVAL (SOFT VALIDATION)
     // ==========================================
-    // Call the atomic database function that handles:
-    // 1. Balance check & lock
-    // 2. Idempotency check (duplicate badge prevention)
-    // 3. Balance deduction
-    // 4. Purchase recording
-    // 5. Badge assignment
-    // All in a single atomic transaction with automatic rollback on failure
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_kyc_approved')
+      .eq('user_id', userId)
+      .single();
+
+    if (profileError) {
+      console.warn(`[Badge Purchase] Profile fetch warning: ${profileError.message}`);
+    }
+
+    // Log KYC status but don't block purchase
+    if (!profile?.is_kyc_approved) {
+      console.warn(`[Badge Purchase] ⚠️ KYC NOT APPROVED for user ${userId} - purchase allowed but flagged`);
+    } else {
+      console.log(`[Badge Purchase] KYC verified ✅`);
+    }
+
+    // ==========================================
+    // STEP 2: ATOMIC TRANSACTION via Database Function
+    // ==========================================
+    console.log(`[Badge Purchase] Calling atomic purchase function...`);
     
-    const { data: purchaseResult, error: purchaseError } = await supabase.rpc(
-      'atomic_badge_purchase',
-      {
+    const { data: purchaseResult, error: purchaseError } = await supabase
+      .rpc('atomic_badge_purchase', {
         p_user_id: userId,
         p_badge_name: toBadge,
         p_previous_badge: fromBadge || null,
@@ -51,27 +64,29 @@ Deno.serve(async (req) => {
         p_payment_ref: paymentRef,
         p_payment_method: paymentMethod,
         p_unlock_levels: 50
-      }
-    );
+      });
 
     if (purchaseError) {
-      console.error('[Badge Purchase] Atomic purchase failed:', purchaseError);
+      console.error(`[Badge Purchase] Transaction failed:`, purchaseError);
       
-      // Parse specific error types
-      if (purchaseError.message?.includes('INSUFFICIENT_BALANCE')) {
-        const match = purchaseError.message.match(/Required ([\d.]+), Available ([\d.]+)/);
+      // Parse error message for specific error types
+      const errorMsg = purchaseError.message || '';
+      
+      if (errorMsg.includes('INSUFFICIENT_BALANCE')) {
+        const match = errorMsg.match(/Required ([\d.]+), Available ([\d.]+)/);
         const required = match ? parseFloat(match[1]) : paidAmountBSK;
         const available = match ? parseFloat(match[2]) : 0;
+        const shortfall = required - available;
         
         return new Response(
           JSON.stringify({ 
             success: false,
             error: 'INSUFFICIENT_BALANCE',
-            message: `You need ${(required - available).toFixed(2)} more BSK to complete this purchase`,
+            message: `You need ${shortfall.toFixed(2)} more BSK to complete this purchase`,
             details: {
               required_balance: required,
               current_balance: available,
-              shortfall: required - available
+              shortfall: shortfall
             }
           }),
           { 
@@ -81,28 +96,28 @@ Deno.serve(async (req) => {
         );
       }
       
-      if (purchaseError.message?.includes('DUPLICATE_BADGE')) {
+      if (errorMsg.includes('DUPLICATE_BADGE')) {
         return new Response(
           JSON.stringify({ 
             success: false,
             error: 'DUPLICATE_BADGE',
-            message: 'You already own this badge'
+            message: `You already own the ${toBadge} badge`
           }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-            status: 409 
+            status: 400 
           }
         );
       }
       
       // Generic error
-      throw new Error(`Badge purchase failed: ${purchaseError.message}`);
+      throw new Error(`Badge purchase failed: ${errorMsg}`);
     }
 
-    console.log(`[Badge Purchase] SUCCESS - Atomic transaction completed:`, purchaseResult);
+    console.log(`[Badge Purchase] Transaction completed successfully:`, purchaseResult);
 
     // ==========================================
-    // STEP 5: TRIGGER COMMISSIONS
+    // STEP 3: TRIGGER COMMISSIONS
     // ==========================================
     try {
       await supabase.functions.invoke('process-badge-subscription-commission', {

@@ -7,10 +7,10 @@ import { AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface RefundResult {
-  user_id: string;
-  badge_name: string;
+  refund_user_id: string;
+  refund_badge_name: string;
   refund_amount: number;
-  status: string;
+  refund_status: string;
 }
 
 export function RefundFailedPurchases() {
@@ -20,13 +20,17 @@ export function RefundFailedPurchases() {
   const handleRefund = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('refund_failed_badge_purchases');
+      const { data, error } = await supabase.functions.invoke('refund-failed-purchases');
       
       if (error) throw error;
       
-      setResults(data || []);
+      if (!data?.success) {
+        throw new Error(data?.error || 'Refund failed');
+      }
       
-      const refundedCount = data?.filter((r: RefundResult) => r.status === 'refunded').length || 0;
+      setResults(data.data || []);
+      
+      const refundedCount = data.data?.filter((r: RefundResult) => r.refund_status === 'refunded').length || 0;
       
       if (refundedCount > 0) {
         toast({
@@ -91,18 +95,18 @@ export function RefundFailedPurchases() {
           <div className="space-y-2 mt-4">
             <h3 className="font-semibold">Refund Results:</h3>
             {results.map((result, index) => (
-              <Alert key={index} variant={result.status === 'refunded' ? 'default' : 'destructive'}>
+              <Alert key={index} variant={result.refund_status === 'refunded' ? 'default' : 'destructive'}>
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>
-                  {result.status === 'refunded' ? (
+                  {result.refund_status === 'refunded' ? (
                     <>
                       Refunded <strong>{result.refund_amount} BSK</strong> for{' '}
-                      <strong>{result.badge_name}</strong> badge
+                      <strong>{result.refund_badge_name}</strong> badge
                       <br />
-                      <span className="text-xs opacity-70">User ID: {result.user_id}</span>
+                      <span className="text-xs opacity-70">User ID: {result.refund_user_id}</span>
                     </>
                   ) : (
-                    result.badge_name
+                    result.refund_badge_name
                   )}
                 </AlertDescription>
               </Alert>
