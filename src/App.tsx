@@ -423,7 +423,7 @@ function AppContent() {
               <Route path="wallet/send" element={<SendScreen />} />
               <Route path="wallet/transfer" element={<TransferScreen />} />
               <Route path="wallet/history" element={<HistoryScreen />} />
-              <Route path="programs" element={<ProgramsListPage />} />
+              <Route path="programs" element={<ProgramsScreen />} />
               <Route path="programs/:programKey" element={<ProgramDetailPage />} />
               <Route path="trade" element={<TradingOverview />} />
               <Route path="trade/:symbol" element={<TradingPairPage />} />
