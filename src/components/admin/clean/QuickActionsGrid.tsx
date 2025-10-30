@@ -1,4 +1,4 @@
-import { LucideIcon, Plus, Users, FolderKanban, FileText, Settings, DollarSign, TrendingUp, Shield } from "lucide-react";
+import { LucideIcon, Plus, Users, FolderKanban, FileText, Settings, DollarSign, TrendingUp, Shield, UserPlus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CleanCard } from "./CleanCard";
 import { useNavigate } from "react-router-dom";
@@ -10,12 +10,12 @@ interface QuickAction {
 }
 
 const quickActions: QuickAction[] = [
+  { label: "Add User", icon: UserPlus, path: "/admin?action=create-user" },
+  { label: "User Search", icon: Search, path: "/admin/users?focus=search" },
   { label: "New Program", icon: Plus, path: "/admin/programs/editor/new" },
-  { label: "Manage Users", icon: Users, path: "/admin/users" },
   { label: "View Markets", icon: TrendingUp, path: "/admin/markets" },
   { label: "KYC Reviews", icon: Shield, path: "/admin/kyc-review" },
   { label: "BSK Management", icon: DollarSign, path: "/admin/bsk" },
-  { label: "Reports", icon: FileText, path: "/admin/reports" },
   { label: "Programs", icon: FolderKanban, path: "/admin/programs" },
   { label: "Settings", icon: Settings, path: "/admin/settings" },
 ];

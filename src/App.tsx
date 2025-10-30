@@ -79,6 +79,7 @@ const ProgramDetail = React.lazy(() => import("./pages/ProgramDetail"));
 const ProgramParticipate = React.lazy(() => import("./pages/ProgramParticipate"));
 const AdminSystemHealth = React.lazy(() => import("./pages/admin/AdminSystemHealth"));
 const AdminUsersManagementNova = React.lazy(() => import("./pages/admin/AdminUsersManagementNova"));
+const AdminUsersManagement = React.lazy(() => import("./pages/admin/AdminUsersManagement"));
 const AdminMobileLinking = React.lazy(() => import("./pages/admin/AdminMobileLinking"));
 import AdminBSKManagementNova from "./pages/admin/AdminBSKManagementNova";
 import AdminBSKLoansNova from "./pages/admin/AdminBSKLoansNova";
@@ -507,7 +508,8 @@ function AppContent() {
                 <Route path="dashboard" element={<AdminDashboardUnified />} />
                 
                 {/* Users Management */}
-                <Route path="users" element={<React.Suspense fallback={<LoadingFallback />}><AdminUsersManagementNova /></React.Suspense>} />
+                <Route path="users" element={<React.Suspense fallback={<LoadingFallback />}><AdminUsersManagement /></React.Suspense>} />
+                <Route path="users-nova" element={<React.Suspense fallback={<LoadingFallback />}><AdminUsersManagementNova /></React.Suspense>} />
                 <Route path="users-clean" element={<AdminUsersClean />} />
                 
                 {/* Markets Management */}

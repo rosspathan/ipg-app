@@ -1,5 +1,6 @@
 import { Users, DollarSign, FolderKanban, Activity, Shield, Wallet, FileText, TrendingUp, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { CleanGrid } from "@/components/admin/clean/CleanGrid";
+import { UserQuickAccessCard } from "@/components/admin/unified/UserQuickAccessCard";
 import { CleanMetricCard } from "@/components/admin/clean/CleanMetricCard";
 import { QueueCard } from "@/components/admin/clean/QueueCard";
 import { ActivityFeed } from "@/components/admin/clean/ActivityFeed";
@@ -127,6 +128,12 @@ export default function AdminDashboardUnified() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - 66% width */}
         <div className="lg:col-span-2 space-y-6">
+          {/* NEW: User Quick Access - Import will be added */}
+          <UserQuickAccessCard 
+            maxHeight="400px"
+            showRecentUsers={true}
+            showQuickStats={true}
+          />
           {/* Pending Action Queues */}
           <div>
             <h2 className="text-lg font-bold text-[hsl(0_0%_98%)] mb-4 flex items-center gap-2">

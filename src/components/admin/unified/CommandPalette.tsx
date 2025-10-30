@@ -20,6 +20,8 @@ import {
   Database,
   Bell,
   BarChart3,
+  UserPlus,
+  Search,
 } from "lucide-react";
 
 interface Command {
@@ -59,6 +61,28 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       category: "Navigation",
       action: () => {
         navigate("/admin/users");
+        onOpenChange(false);
+      },
+    },
+    {
+      id: "create-user",
+      title: "Create New User",
+      description: "Add a new user to the platform",
+      icon: UserPlus,
+      category: "Actions",
+      action: () => {
+        navigate("/admin?action=create-user");
+        onOpenChange(false);
+      },
+    },
+    {
+      id: "search-user",
+      title: "Search Users",
+      description: "Find and manage users",
+      icon: Search,
+      category: "Actions",
+      action: () => {
+        navigate("/admin/users?focus=search");
         onOpenChange(false);
       },
     },
