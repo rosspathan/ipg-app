@@ -36,12 +36,14 @@ function LoadingFallback() {
 // Layouts
 import AdminLayout from "@/layouts/AdminLayout";
 import AdminLayoutClean from "@/layouts/AdminLayoutClean";
+import AdminLayoutUnified from "@/layouts/AdminLayoutUnified";
 import { AdminShellAdaptive } from "@/components/admin/nova/AdminShellAdaptive";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import AuthOnboardingEntry from "@/pages/auth/AuthOnboardingEntry";
 
 // Clean Admin Pages
 import AdminDashboardClean from "./pages/admin/AdminDashboardClean";
+import AdminDashboardUnified from "./pages/admin/AdminDashboardUnified";
 import AdminUsersClean from "./pages/admin/AdminUsersClean";
 import AdminProgramsClean from "./pages/admin/AdminProgramsClean";
 import AdminSettingsClean from "./pages/admin/AdminSettingsClean";
@@ -493,16 +495,16 @@ function AppContent() {
                 </AuthProviderAdmin>
               } />
 
-              {/* Admin Console Routes - Clean DS */}
+              {/* Admin Console Routes - Unified World-Class DS */}
               <Route path="/admin/*" element={
                 <AuthProviderAdmin>
                   <AdminRouteNew>
-                    <AdminLayoutClean />
+                    <AdminLayoutUnified />
                   </AdminRouteNew>
                 </AuthProviderAdmin>
               }>
-                <Route index element={<AdminDashboardClean />} />
-                <Route path="dashboard" element={<AdminDashboardClean />} />
+                <Route index element={<AdminDashboardUnified />} />
+                <Route path="dashboard" element={<AdminDashboardUnified />} />
                 
                 {/* Users Management */}
                 <Route path="users" element={<React.Suspense fallback={<LoadingFallback />}><AdminUsersManagementNova /></React.Suspense>} />
