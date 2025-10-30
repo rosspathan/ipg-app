@@ -87,6 +87,17 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${ancestors.length} ancestors for user ${user_id}`);
 
+    // Delete existing tree records for this user before inserting new ones
+    const { error: deleteError } = await supabase
+      .from('referral_tree')
+      .delete()
+      .eq('user_id', user_id);
+
+    if (deleteError) {
+      console.error('Error deleting existing tree records:', deleteError);
+      throw new Error(`Failed to delete existing tree records: ${deleteError.message}`);
+    }
+
     // Insert all tree records in batch
     if (ancestors.length > 0) {
       const treeRecords = ancestors.map(({ ancestor_id, level, direct_sponsor_id }) => ({
