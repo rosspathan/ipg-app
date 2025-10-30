@@ -1,206 +1,224 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Calendar, Filter } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { ReportBuilder } from "@/components/admin/reports/ReportBuilder";
-import { ReportViewer } from "@/components/admin/reports/ReportViewer";
-import { ExportOptions } from "@/components/admin/reports/ExportOptions";
-import { format } from "date-fns";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Download, TrendingUp, DollarSign, Users } from "lucide-react";
+import { format, subDays, startOfMonth } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 export default function FinancialReports() {
-  const [selectedReport, setSelectedReport] = useState<string>("daily_ops");
-  const [dateRange, setDateRange] = useState({
-    start: format(new Date(), "yyyy-MM-dd"),
-    end: format(new Date(), "yyyy-MM-dd"),
+  const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>('month');
+
+  const { data: financialData, isLoading } = useQuery({
+    queryKey: ['financial-reports', dateRange],
+    queryFn: async () => {
+      const today = new Date();
+      let startDate = new Date();
+      
+      switch(dateRange) {
+        case 'today':
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          startDate = subDays(today, 7);
+          break;
+        case 'month':
+          startDate = startOfMonth(today);
+          break;
+        case 'all':
+          startDate = new Date(2020, 0, 1);
+          break;
+      }
+
+      const { data: inrDeposits } = await supabase
+        .from('fiat_deposits')
+        .select('amount')
+        .gte('created_at', startDate.toISOString())
+        .eq('status', 'approved');
+
+      const { data: inrWithdrawals } = await supabase
+        .from('fiat_withdrawals')
+        .select('amount')
+        .gte('created_at', startDate.toISOString())
+        .eq('status', 'approved');
+
+      const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      const { count: newUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', startDate.toISOString());
+
+      const depositVolume = (inrDeposits || []).reduce((sum, d) => sum + Number(d.amount), 0);
+      const withdrawalVolume = (inrWithdrawals || []).reduce((sum, w) => sum + Number(w.amount), 0);
+
+      return {
+        depositVolume,
+        withdrawalVolume,
+        netFlow: depositVolume - withdrawalVolume,
+        totalUsers: totalUsers || 0,
+        newUsers: newUsers || 0,
+        transactionCount: (inrDeposits?.length || 0) + (inrWithdrawals?.length || 0)
+      };
+    }
   });
 
-  const { data: reportData, isLoading } = useQuery({
-    queryKey: ["report-data", selectedReport, dateRange],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("generate_report_data", {
-        p_report_type: selectedReport,
-        p_date_start: dateRange.start,
-        p_date_end: dateRange.end,
-      });
-      if (error) throw error;
-      return data;
-    },
-  });
+  const exportCSV = () => {
+    const headers = ['Metric', 'Value'];
+    const rows = [
+      ['Deposit Volume', `₹${financialData?.depositVolume.toLocaleString()}`],
+      ['Withdrawal Volume', `₹${financialData?.withdrawalVolume.toLocaleString()}`],
+      ['Net Flow', `₹${financialData?.netFlow.toLocaleString()}`],
+      ['Total Users', financialData?.totalUsers],
+      ['New Users', financialData?.newUsers]
+    ];
 
-  const { data: savedReports } = useQuery({
-    queryKey: ["saved-reports"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("saved_reports")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `financial-report-${dateRange}-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+  };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Financial Reports</h1>
-          <p className="text-muted-foreground">
-            Generate and export comprehensive financial reports
-          </p>
+          <h1 className="text-2xl md:text-3xl font-bold">Financial Reports</h1>
+          <p className="text-muted-foreground mt-1">Comprehensive financial analytics</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Calendar className="w-4 h-4 mr-2" />
-            Schedule Report
-          </Button>
-          <ExportOptions reportData={reportData} reportType={selectedReport} />
-        </div>
+        <Button onClick={exportCSV} variant="outline" size="sm">
+          <Download className="w-4 h-4 mr-2" />
+          Export CSV
+        </Button>
       </div>
 
-      <Tabs defaultValue="templates" className="space-y-6">
+      <div className="flex gap-2">
+        {(['today', 'week', 'month', 'all'] as const).map((range) => (
+          <Button
+            key={range}
+            variant={dateRange === range ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setDateRange(range)}
+          >
+            {range === 'today' ? 'Today' : range === 'week' ? 'Last 7 Days' : range === 'month' ? 'This Month' : 'All Time'}
+          </Button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              Net Cash Flow
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${(financialData?.netFlow || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              ₹{financialData?.netFlow.toLocaleString() || 0}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-500" />
+              Deposits
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{financialData?.depositVolume.toLocaleString() || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Withdrawals
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">₹{financialData?.withdrawalVolume.toLocaleString() || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              New Users
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">+{financialData?.newUsers || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">of {financialData?.totalUsers.toLocaleString() || 0} total</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="summary" className="w-full">
         <TabsList>
-          <TabsTrigger value="templates">Report Templates</TabsTrigger>
-          <TabsTrigger value="custom">Custom Builder</TabsTrigger>
-          <TabsTrigger value="saved">Saved Reports</TabsTrigger>
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="templates" className="space-y-6">
+        <TabsContent value="summary" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Pre-built Report Templates</CardTitle>
+              <CardTitle>Financial Summary</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <Button
-                  variant={selectedReport === "daily_ops" ? "default" : "outline"}
-                  className="justify-start h-auto p-4"
-                  onClick={() => setSelectedReport("daily_ops")}
-                >
-                  <FileText className="w-5 h-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-semibold">Daily Operations</div>
-                    <div className="text-xs opacity-70">
-                      Deposits, withdrawals, and net flow
-                    </div>
-                  </div>
-                </Button>
-
-                <Button
-                  variant={selectedReport === "user_activity" ? "default" : "outline"}
-                  className="justify-start h-auto p-4"
-                  onClick={() => setSelectedReport("user_activity")}
-                >
-                  <FileText className="w-5 h-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-semibold">User Activity</div>
-                    <div className="text-xs opacity-70">
-                      New users, active users, engagement
-                    </div>
-                  </div>
-                </Button>
-
-                <Button
-                  variant={selectedReport === "currency_flow" ? "default" : "outline"}
-                  className="justify-start h-auto p-4"
-                  onClick={() => setSelectedReport("currency_flow")}
-                >
-                  <FileText className="w-5 h-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-semibold">Currency Flow</div>
-                    <div className="text-xs opacity-70">
-                      BSK and INR circulation metrics
-                    </div>
-                  </div>
-                </Button>
-
-                <Button
-                  variant={selectedReport === "compliance" ? "default" : "outline"}
-                  className="justify-start h-auto p-4"
-                  onClick={() => setSelectedReport("compliance")}
-                >
-                  <FileText className="w-5 h-5 mr-3" />
-                  <div className="text-left">
-                    <div className="font-semibold">Compliance Report</div>
-                    <div className="text-xs opacity-70">
-                      KYC status and flagged accounts
-                    </div>
-                  </div>
-                </Button>
-              </div>
-
-              <div className="flex gap-4 mb-6">
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">Start Date</label>
-                  <input
-                    type="date"
-                    value={dateRange.start}
-                    onChange={(e) =>
-                      setDateRange({ ...dateRange, start: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">End Date</label>
-                  <input
-                    type="date"
-                    value={dateRange.end}
-                    onChange={(e) =>
-                      setDateRange({ ...dateRange, end: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-              </div>
-
-              <ReportViewer
-                reportData={reportData}
-                reportType={selectedReport}
-                isLoading={isLoading}
-              />
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Metric</TableHead>
+                    <TableHead className="text-right">Value</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">INR Deposits</TableCell>
+                    <TableCell className="text-right font-mono">₹{financialData?.depositVolume.toLocaleString() || 0}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">INR Withdrawals</TableCell>
+                    <TableCell className="text-right font-mono text-red-500">-₹{financialData?.withdrawalVolume.toLocaleString() || 0}</TableCell>
+                  </TableRow>
+                  <TableRow className="border-t-2">
+                    <TableCell className="font-bold">Net Flow</TableCell>
+                    <TableCell className={`text-right font-mono font-bold ${(financialData?.netFlow || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {(financialData?.netFlow || 0) >= 0 ? '+' : ''}₹{financialData?.netFlow.toLocaleString() || 0}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="custom">
-          <ReportBuilder />
-        </TabsContent>
-
-        <TabsContent value="saved">
+        <TabsContent value="transactions" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Saved Reports</CardTitle>
+              <CardTitle>Transaction Analytics</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {savedReports?.map((report) => (
-                  <div
-                    key={report.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent cursor-pointer"
-                  >
-                    <div>
-                      <h4 className="font-semibold">{report.report_name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Type: {report.report_type} • Last generated:{" "}
-                        {report.last_generated_at
-                          ? format(new Date(report.last_generated_at), "PPP")
-                          : "Never"}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      <Download className="w-4 h-4 mr-2" />
-                      Generate
-                    </Button>
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Transactions</p>
+                    <p className="text-2xl font-bold">{financialData?.transactionCount || 0}</p>
                   </div>
-                ))}
-                {(!savedReports || savedReports.length === 0) && (
-                  <p className="text-center text-muted-foreground py-8">
-                    No saved reports yet. Create custom reports to save them.
-                  </p>
-                )}
+                  <TrendingUp className="w-8 h-8 text-green-500" />
+                </div>
               </div>
             </CardContent>
           </Card>
