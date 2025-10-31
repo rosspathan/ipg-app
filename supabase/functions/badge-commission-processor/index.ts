@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
       
       // Parse error message for specific error types
       const errorMsg = purchaseError.message || '';
+      const errorCode = (purchaseError as any)?.code;
       
       if (errorMsg.includes('INSUFFICIENT_BALANCE')) {
         const match = errorMsg.match(/Required ([\d.]+), Available ([\d.]+)/);
@@ -105,6 +106,21 @@ Deno.serve(async (req) => {
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
             status: 400 
+          }
+        );
+      }
+
+      // Handle balance consistency constraint violations
+      if (errorCode === '23514' || errorMsg.includes('check_balance_consistency')) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'BALANCE_CONSISTENCY_ERROR',
+            message: 'Internal balance check failed while crediting your badge bonus. We have corrected the bonus accounting — please try again.'
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+            status: 500 
           }
         );
       }
