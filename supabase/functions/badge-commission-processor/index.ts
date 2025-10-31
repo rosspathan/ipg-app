@@ -203,8 +203,8 @@ Deno.serve(async (req) => {
         success: true,
         badge: toBadge,
         amount_paid: paidAmountBSK,
-        new_balance: purchaseResult.new_balance,
-        purchase_id: purchaseResult.purchase_id,
+        new_balance: (purchaseResult?.newWithdrawable ?? 0) + (purchaseResult?.newHolding ?? 0),
+        purchase_id: purchaseResult?.purchaseId,
         warnings: postPurchaseWarnings.length > 0 ? postPurchaseWarnings : undefined
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
