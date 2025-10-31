@@ -36,8 +36,8 @@ Deno.serve(async (req) => {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_kyc_approved')
-      .eq('id', userId)
-      .single();
+      .eq('user_id', userId)
+      .maybeSingle();
 
     if (profileError) {
       console.warn(`[Badge Purchase] Profile fetch warning: ${profileError.message}`);
@@ -110,8 +110,14 @@ Deno.serve(async (req) => {
       }
       
       // Generic error
-      throw new Error(`Badge purchase failed: ${errorMsg}`);
-    }
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'PURCHASE_FAILED',
+          message: errorMsg || 'Purchase failed'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
 
     console.log(`[Badge Purchase] Transaction completed successfully:`, purchaseResult);
 
