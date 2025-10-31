@@ -10500,18 +10500,13 @@ export type Database = {
       }
       unified_bsk_transactions: {
         Row: {
-          amount_bsk: number | null
+          amount: number | null
           balance_after: number | null
-          balance_before: number | null
           balance_type: string | null
           created_at: string | null
           description: string | null
           id: string | null
-          idempotency_key: string | null
           metadata: Json | null
-          reference_id: string | null
-          source_table: string | null
-          transaction_subtype: string | null
           transaction_type: string | null
           user_id: string | null
         }
