@@ -45,22 +45,22 @@ Deno.serve(async (req) => {
     const { action } = await req.json();
 
     if (action === 'preview') {
-      // Get preview of missing commissions
-      const { data, error } = await supabase.rpc('calculate_retroactive_commissions');
+      // Find all badge purchases that don't have corresponding commission records
+      const { data: missingCommissions, error } = await supabase.rpc('calculate_retroactive_commissions');
       
       if (error) throw error;
 
-      const totalMissing = (data || []).reduce((sum: number, item: any) => 
+      const totalMissing = (missingCommissions || []).reduce((sum: number, item: any) => 
         sum + Number(item.missing_commission), 0
       );
-      const uniqueSponsors = new Set((data || []).map((item: any) => item.sponsor_id)).size;
+      const uniqueSponsors = new Set((missingCommissions || []).map((item: any) => item.sponsor_id)).size;
 
       return new Response(
         JSON.stringify({
           success: true,
-          preview: data,
+          preview: missingCommissions,
           summary: {
-            total_entries: data?.length || 0,
+            total_entries: missingCommissions?.length || 0,
             unique_sponsors: uniqueSponsors,
             total_bsk: totalMissing
           }
