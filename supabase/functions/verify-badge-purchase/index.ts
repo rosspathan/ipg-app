@@ -263,20 +263,181 @@ serve(async (req) => {
       });
 
     // ==========================================
-    // STEP 9: Trigger commission processing
+    // STEP 9: Trigger commission processing with comprehensive error handling
     // ==========================================
+    let commissionProcessed = false;
     try {
-      await supabase.functions.invoke('process-badge-subscription-commission', {
-        body: {
-          user_id,
+      console.log('🔔 Invoking commission processor with:', {
+        user_id,
+        badge_name,
+        bsk_amount: cost,
+        previous_badge: existingBadge?.current_badge || null
+      });
+      
+      const commissionResponse = await supabase.functions.invoke(
+        'process-badge-subscription-commission',
+        {
+          body: {
+            user_id,
+            badge_name,
+            bsk_amount: cost,
+            previous_badge: existingBadge?.current_badge || null
+          }
+        }
+      );
+      
+      if (commissionResponse.error) {
+        console.error('❌ Commission processing returned error:', commissionResponse.error);
+        await supabase.from('audit_logs').insert({
+          action: 'commission_processing_failed',
+          resource_type: 'badge_purchase',
+          resource_id: purchaseId,
+          old_values: null,
+          new_values: { error: JSON.stringify(commissionResponse.error), user_id, badge_name }
+        });
+      } else {
+        console.log('✅ Commission processing succeeded:', commissionResponse.data);
+        commissionProcessed = true;
+      }
+    } catch (commissionError: any) {
+      console.error('❌ CRITICAL: Commission processor invocation failed:', {
+        error: commissionError,
+        message: commissionError?.message,
+        user_id,
+        badge_name,
+        cost
+      });
+      
+      await supabase.from('audit_logs').insert({
+        action: 'commission_invocation_failed',
+        resource_type: 'badge_purchase',
+        resource_id: purchaseId,
+        old_values: null,
+        new_values: { 
+          error: commissionError?.message, 
+          user_id, 
           badge_name,
-          bsk_amount: cost,
-          previous_badge: existingBadge?.current_badge || null
+          cost
         }
       });
-      console.log('✅ Commission processing triggered');
-    } catch (commissionError) {
-      console.warn('⚠️ Commission processing failed (non-critical):', commissionError);
+    }
+
+    // ==========================================
+    // STEP 9.5: Fallback - Direct commission processing if edge function failed
+    // ==========================================
+    if (!commissionProcessed) {
+      try {
+        console.warn('⚠️ Initiating fallback commission processing...');
+        
+        // Get sponsor from referral_tree
+        const { data: sponsorData } = await supabase
+          .from('referral_tree')
+          .select('ancestor_id')
+          .eq('user_id', user_id)
+          .eq('level', 1)
+          .maybeSingle();
+        
+        if (sponsorData?.ancestor_id) {
+          // Get referral settings for commission rate
+          const { data: settings } = await supabase
+            .from('team_referral_settings')
+            .select('direct_commission_percent, is_active')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (settings?.is_active) {
+            const commissionRate = Number(settings.direct_commission_percent) / 100;
+            const commissionAmount = cost * commissionRate;
+            
+            console.log(`💰 Fallback: Paying ${commissionAmount} BSK (${settings.direct_commission_percent}%) to sponsor ${sponsorData.ancestor_id}`);
+            
+            // Credit sponsor's withdrawable balance
+            const { data: sponsorBalance } = await supabase
+              .from('user_bsk_balances')
+              .select('withdrawable_balance, total_earned_withdrawable')
+              .eq('user_id', sponsorData.ancestor_id)
+              .maybeSingle();
+            
+            await supabase
+              .from('user_bsk_balances')
+              .upsert({
+                user_id: sponsorData.ancestor_id,
+                withdrawable_balance: Number(sponsorBalance?.withdrawable_balance || 0) + commissionAmount,
+                total_earned_withdrawable: Number(sponsorBalance?.total_earned_withdrawable || 0) + commissionAmount,
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'user_id'
+              });
+            
+            // Get sponsor's current badge for record
+            const { data: sponsorBadge } = await supabase
+              .from('user_badge_holdings')
+              .select('current_badge')
+              .eq('user_id', sponsorData.ancestor_id)
+              .maybeSingle();
+            
+            // Create commission record
+            await supabase
+              .from('referral_commissions')
+              .insert({
+                earner_id: sponsorData.ancestor_id,
+                payer_id: user_id,
+                level: 1,
+                event_type: existingBadge?.current_badge ? 'badge_upgrade' : 'badge_purchase',
+                commission_type: 'badge_subscription',
+                bsk_amount: commissionAmount,
+                destination: 'withdrawable',
+                status: 'settled',
+                earner_badge_at_event: sponsorBadge?.current_badge,
+                metadata: {
+                  badge_purchased: badge_name,
+                  previous_badge: existingBadge?.current_badge,
+                  purchase_amount: cost,
+                  commission_rate: settings.direct_commission_percent,
+                  fallback_processed: true
+                }
+              });
+            
+            // Create bonus ledger entry
+            await supabase
+              .from('bonus_ledger')
+              .insert({
+                user_id: sponsorData.ancestor_id,
+                type: existingBadge?.current_badge ? 'badge_upgrade_commission' : 'badge_purchase_commission',
+                amount_bsk: commissionAmount,
+                asset: 'BSK',
+                meta_json: {
+                  referral_user_id: user_id,
+                  badge_name: badge_name,
+                  previous_badge: existingBadge?.current_badge,
+                  purchase_amount: cost,
+                  fallback_processed: true,
+                  timestamp: new Date().toISOString()
+                },
+                usd_value: 0
+              });
+            
+            console.log('✅ Fallback commission processing completed:', {
+              sponsor: sponsorData.ancestor_id,
+              amount: commissionAmount
+            });
+          } else {
+            console.log('⚠️ Referral system is not active, skipping fallback commission');
+          }
+        } else {
+          console.log('⚠️ No sponsor found for user, skipping fallback commission');
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback commission processing failed:', fallbackError);
+        await supabase.from('audit_logs').insert({
+          action: 'fallback_commission_failed',
+          resource_type: 'badge_purchase',
+          resource_id: purchaseId,
+          old_values: null,
+          new_values: { error: String(fallbackError), user_id, badge_name }
+        });
+      }
     }
 
     console.log('🎉 Badge purchase completed successfully');

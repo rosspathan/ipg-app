@@ -17,15 +17,38 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  console.log('💎 [Badge Commission] Function invoked at', new Date().toISOString());
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { user_id, badge_name, bsk_amount, previous_badge }: BadgeCommissionRequest = await req.json();
+    const requestBody = await req.json();
+    const { user_id, badge_name, bsk_amount, previous_badge }: BadgeCommissionRequest = requestBody;
     
-    console.log('💎 Processing badge subscription commission:', { user_id, badge_name, bsk_amount, previous_badge });
+    console.log('💎 Processing badge subscription commission:', { 
+      user_id, 
+      badge_name, 
+      bsk_amount, 
+      previous_badge,
+      timestamp: new Date().toISOString()
+    });
+
+    // Validate required fields
+    if (!user_id || !badge_name || !bsk_amount) {
+      console.error('❌ Missing required fields:', { user_id, badge_name, bsk_amount });
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Missing required fields',
+          received: requestBody
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Get team referral settings for commission rate
     const { data: settings } = await supabaseClient
@@ -147,21 +170,33 @@ Deno.serve(async (req) => {
         usd_value: 0
       });
 
-    console.log(`✅ Successfully paid ${commissionAmount} BSK commission to sponsor ${sponsorId}`);
+    const processingTime = Date.now() - startTime;
+    console.log(`✅ Successfully paid ${commissionAmount} BSK commission to sponsor ${sponsorId} (${processingTime}ms)`);
 
     return new Response(
       JSON.stringify({ 
         success: true,
         sponsor_id: sponsorId,
         commission_paid: commissionAmount,
-        commission_rate: settings.direct_commission_percent
+        commission_rate: settings.direct_commission_percent,
+        processing_time_ms: processingTime
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
-    console.error('Badge commission processing error:', error);
+  } catch (error: any) {
+    const processingTime = Date.now() - startTime;
+    console.error('❌ Badge commission processing error:', {
+      error: error,
+      message: error?.message,
+      stack: error?.stack,
+      processing_time_ms: processingTime
+    });
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ 
+        success: false,
+        error: error?.message || 'Internal server error',
+        processing_time_ms: processingTime
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

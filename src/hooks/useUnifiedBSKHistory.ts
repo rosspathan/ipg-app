@@ -6,11 +6,9 @@ export interface UnifiedBSKTransaction {
   id: string;
   user_id: string;
   created_at: string;
-  amount_bsk: number;
+  amount: number;  // Changed from amount_bsk to match view
   transaction_type: string;
-  transaction_subtype?: string;
   balance_type: 'withdrawable' | 'holding';
-  reference_id?: string;
   description: string;
   metadata?: {
     transaction_ref?: string;
@@ -31,10 +29,7 @@ export interface UnifiedBSKTransaction {
     admin_notes?: string;
     [key: string]: any;
   };
-  balance_before?: number;
   balance_after?: number;
-  idempotency_key?: string;
-  source_table: string;
 }
 
 export interface FilterOptions {
@@ -94,10 +89,10 @@ export const useUnifiedBSKHistory = (userId?: string, initialFilters?: FilterOpt
 
       // Apply amount range filters
       if (filters.minAmount !== undefined) {
-        query = query.gte('amount_bsk', filters.minAmount);
+        query = query.gte('amount', filters.minAmount);
       }
       if (filters.maxAmount !== undefined) {
-        query = query.lte('amount_bsk', filters.maxAmount);
+        query = query.lte('amount', filters.maxAmount);
       }
 
       // Apply search term (search in description)
@@ -131,7 +126,7 @@ export const useUnifiedBSKHistory = (userId?: string, initialFilters?: FilterOpt
     queryFn: async () => {
       let query = supabase
         .from('unified_bsk_transactions')
-        .select('amount_bsk, transaction_type, balance_type');
+        .select('amount, transaction_type, balance_type');
 
       if (userId) {
         query = query.eq('user_id', userId);
@@ -151,10 +146,10 @@ export const useUnifiedBSKHistory = (userId?: string, initialFilters?: FilterOpt
         query = query.in('balance_type', filters.balanceTypes);
       }
       if (filters.minAmount !== undefined) {
-        query = query.gte('amount_bsk', filters.minAmount);
+        query = query.gte('amount', filters.minAmount);
       }
       if (filters.maxAmount !== undefined) {
-        query = query.lte('amount_bsk', filters.maxAmount);
+        query = query.lte('amount', filters.maxAmount);
       }
       if (filters.searchTerm) {
         query = query.ilike('description', `%${filters.searchTerm}%`);
@@ -177,7 +172,7 @@ export const useUnifiedBSKHistory = (userId?: string, initialFilters?: FilterOpt
       };
 
       transactions.forEach((tx) => {
-        const amount = tx.amount_bsk;
+        const amount = tx.amount;
 
         // Total earned/spent
         if (amount > 0) {
@@ -227,13 +222,13 @@ export const useUnifiedBSKHistory = (userId?: string, initialFilters?: FilterOpt
     const rows = transactionsData.transactions.map((tx) => [
       new Date(tx.created_at).toLocaleString(),
       tx.transaction_type,
-      tx.transaction_subtype || '',
-      tx.amount_bsk.toString(),
+      '',
+      tx.amount.toString(),
       tx.balance_type,
       tx.description,
-      tx.balance_before?.toString() || '',
+      '',
       tx.balance_after?.toString() || '',
-      tx.source_table,
+      '',
     ]);
 
     const csvContent = [

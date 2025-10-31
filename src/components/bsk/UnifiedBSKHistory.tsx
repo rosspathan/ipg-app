@@ -69,7 +69,7 @@ const capitalizeWallet = (walletType: string) => {
 
 // Get transaction display information
 const getTransactionDisplay = (tx: UnifiedBSKTransaction): TransactionDisplay => {
-  const isIncoming = tx.amount_bsk > 0;
+  const isIncoming = tx.amount > 0;
   
   // Transfer transactions
   if (tx.transaction_type === 'transfer_in') {
@@ -214,8 +214,8 @@ const getTransactionDisplay = (tx: UnifiedBSKTransaction): TransactionDisplay =>
       label: tx.transaction_type.includes('disbursement') ? 'Loan Received' : 'Loan Payment',
       secondaryInfo: tx.description,
       icon: Wallet,
-      color: tx.amount_bsk > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400',
-      bgColor: tx.amount_bsk > 0 ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-orange-50 dark:bg-orange-950/30',
+      color: tx.amount > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400',
+      bgColor: tx.amount > 0 ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-orange-50 dark:bg-orange-950/30',
     };
   }
   
@@ -548,8 +548,8 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">
                         <p className="font-semibold text-sm">{displayInfo.label}</p>
-                        <p className={cn("text-lg font-bold", tx.amount_bsk > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
-                          {tx.amount_bsk > 0 ? '+' : ''}{tx.amount_bsk.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        <p className={cn("text-lg font-bold", tx.amount > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
+                          {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </p>
                       </div>
                       
@@ -616,9 +616,9 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
                       <div className="space-y-0.5">
                         <p className={cn(
                           "text-lg font-bold",
-                          tx.amount_bsk > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                          tx.amount > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
                         )}>
-                          {tx.amount_bsk > 0 ? '+' : ''}{tx.amount_bsk.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </p>
                         <p className="text-xs text-muted-foreground">BSK</p>
                       </div>
@@ -627,7 +627,6 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
                     {/* Status & Balance Type Column */}
                     <TableCell className="text-right">
                       <div className="flex flex-col items-end gap-1">
-                        {getStatusBadge(tx.transaction_subtype)}
                         <Badge variant={tx.balance_type === 'withdrawable' ? 'default' : 'secondary'} className="text-xs">
                           {tx.balance_type === 'withdrawable' ? '💰 Withdrawable' : '🔒 Holding'}
                         </Badge>
