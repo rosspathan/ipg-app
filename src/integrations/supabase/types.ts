@@ -10554,38 +10554,17 @@ export type Database = {
         Args: { p_admin_id: string; p_new_rate: number; p_notes?: string }
         Returns: Json
       }
-      atomic_badge_purchase:
-        | {
-            Args: {
-              p_badge_name: string
-              p_paid_amount_bsk: number
-              p_previous_badge?: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_badge_name: string
-              p_paid_amount_bsk: number
-              p_payment_method: string
-              p_payment_ref: string
-              p_previous_badge?: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_badge_name: string
-              p_paid_amount_bsk?: number
-              p_payment_method?: string
-              p_payment_ref?: string
-              p_previous_badge?: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
+      atomic_badge_purchase: {
+        Args: {
+          p_badge_name: string
+          p_paid_amount_bsk?: number
+          p_payment_method?: string
+          p_payment_ref?: string
+          p_previous_badge?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       award_bsk_standard: {
         Args: {
           p_amount: number
