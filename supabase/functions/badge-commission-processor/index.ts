@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
       
       // Parse error message for specific error types
       const errorMsg = purchaseError.message || '';
-      const errorCode = (purchaseError as any)?.code;
+      const errorCode = (purchaseError as any).code;
       
       if (errorMsg.includes('INSUFFICIENT_BALANCE')) {
         const match = errorMsg.match(/Required ([\d.]+), Available ([\d.]+)/);
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false,
-            error: 'BALANCE_CONSISTENCY_ERROR',
+            error: 'BALANCE_CONSTRAINT_ERROR',
             message: 'Internal balance check failed while crediting your badge bonus. We have corrected the bonus accounting — please try again.'
           }),
           { 
