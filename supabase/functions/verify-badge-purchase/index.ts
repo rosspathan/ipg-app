@@ -341,12 +341,12 @@ serve(async (req) => {
           // Get referral settings for commission rate
           const { data: settings } = await supabase
             .from('team_referral_settings')
-            .select('direct_commission_percent, is_active')
+            .select('direct_commission_percent, enabled')
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
-          if (settings?.is_active) {
+          if (settings?.enabled) {
             const commissionRate = Number(settings.direct_commission_percent) / 100;
             const commissionAmount = cost * commissionRate;
             
@@ -438,6 +438,31 @@ serve(async (req) => {
           new_values: { error: String(fallbackError), user_id, badge_name }
         });
       }
+    }
+
+    // STEP 9.6: Process multi-level commissions (L2-L50)
+    try {
+      console.log('🎯 Invoking multi-level commission processor...');
+      
+      const multiLevelResponse = await supabase.functions.invoke(
+        'process-multi-level-commissions',
+        {
+          body: {
+            user_id,
+            event_type: existingBadge?.current_badge ? 'badge_upgrade' : 'badge_purchase',
+            base_amount: cost
+          }
+        }
+      );
+      
+      if (multiLevelResponse.error) {
+        console.error('⚠️ Multi-level commission processing failed:', multiLevelResponse.error);
+      } else {
+        console.log('✅ Multi-level commissions processed:', multiLevelResponse.data);
+      }
+    } catch (multiLevelError) {
+      console.error('❌ Multi-level commission processor invocation failed:', multiLevelError);
+      // Non-critical, continue execution
     }
 
     console.log('🎉 Badge purchase completed successfully');

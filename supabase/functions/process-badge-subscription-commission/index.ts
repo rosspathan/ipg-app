@@ -53,12 +53,12 @@ Deno.serve(async (req) => {
     // Get team referral settings for commission rate
     const { data: settings } = await supabaseClient
       .from('team_referral_settings')
-      .select('direct_commission_percent, is_active')
+      .select('direct_commission_percent, enabled')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (!settings?.is_active) {
+    if (!settings?.enabled) {
       console.log('⚠️ Team referral system is not active');
       return new Response(
         JSON.stringify({ success: false, message: 'Referral system inactive' }),

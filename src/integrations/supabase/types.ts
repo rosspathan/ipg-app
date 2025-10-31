@@ -10598,12 +10598,12 @@ export type Database = {
       calculate_retroactive_commissions: {
         Args: never
         Returns: {
-          actually_earned: number
-          badge_purchase_id: string
-          level_num: number
+          badge_name: string
+          buyer_id: string
           missing_commission: number
-          payer_id: string
-          should_have_earned: number
+          purchase_amount: number
+          purchase_date: string
+          purchase_id: string
           sponsor_id: string
         }[]
       }
