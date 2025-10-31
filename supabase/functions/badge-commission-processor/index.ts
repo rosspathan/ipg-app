@@ -118,6 +118,7 @@ Deno.serve(async (req) => {
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
+    }
 
     console.log(`[Badge Purchase] Transaction completed successfully:`, purchaseResult);
 
