@@ -116,10 +116,14 @@ Deno.serve(async (req) => {
     console.log(`[Badge Purchase] Transaction completed successfully:`, purchaseResult);
 
     // ==========================================
-    // STEP 3: TRIGGER COMMISSIONS
+    // STEP 3: TRIGGER COMMISSIONS (NON-BLOCKING)
     // ==========================================
+    const postPurchaseWarnings: string[] = [];
+
+    // Direct commission to sponsor (non-blocking)
     try {
-      await supabase.functions.invoke('process-badge-subscription-commission', {
+      console.log('[Badge Purchase] Triggering direct commission...');
+      const { error: commissionError } = await supabase.functions.invoke('process-badge-subscription-commission', {
         body: {
           user_id: userId,
           badge_name: toBadge,
@@ -127,13 +131,22 @@ Deno.serve(async (req) => {
           previous_badge: fromBadge || null,
         },
       });
+      
+      if (commissionError) {
+        console.warn('[Badge Purchase] Direct commission warning:', commissionError);
+        postPurchaseWarnings.push('Commission processing delayed');
+      } else {
+        console.log('[Badge Purchase] Direct commission completed ✅');
+      }
     } catch (e) {
       console.warn('[Badge Purchase] Direct commission failed:', (e as any)?.message || e);
+      postPurchaseWarnings.push('Commission processing failed');
     }
 
-    // Call 50-level team income processor
+    // 50-level team income processor (non-blocking)
     try {
-      await supabase.functions.invoke('process-team-income-rewards', {
+      console.log('[Badge Purchase] Triggering team income rewards...');
+      const { error: teamIncomeError } = await supabase.functions.invoke('process-team-income-rewards', {
         body: {
           payer_id: userId,
           event_type: 'badge_purchase',
@@ -142,13 +155,22 @@ Deno.serve(async (req) => {
           payment_amount: paidAmountBSK,
         },
       });
+      
+      if (teamIncomeError) {
+        console.warn('[Badge Purchase] Team income warning:', teamIncomeError);
+        postPurchaseWarnings.push('Team rewards processing delayed');
+      } else {
+        console.log('[Badge Purchase] Team income rewards completed ✅');
+      }
     } catch (e) {
       console.warn('[Badge Purchase] Team income processing failed:', (e as any)?.message || e);
+      postPurchaseWarnings.push('Team rewards processing failed');
     }
 
-    // Check VIP milestone rewards for sponsor if user purchased VIP badge
-    if (toBadge === 'VIP') {
+    // VIP milestone rewards for sponsor (non-blocking)
+    if (toBadge.toUpperCase() === 'VIP') {
       try {
+        console.log('[Badge Purchase] Checking VIP milestones...');
         const { data: referralLink } = await supabase
           .from('referral_links_new')
           .select('sponsor_id')
@@ -156,17 +178,25 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (referralLink?.sponsor_id) {
-          console.log(`[Badge Purchase] Checking VIP milestones for sponsor: ${referralLink.sponsor_id}`);
-          await supabase.functions.invoke('check-vip-milestones', {
+          console.log(`[Badge Purchase] Processing VIP milestones for sponsor: ${referralLink.sponsor_id}`);
+          const { error: milestoneError } = await supabase.functions.invoke('check-vip-milestones', {
             body: { sponsor_id: referralLink.sponsor_id },
           });
+          
+          if (milestoneError) {
+            console.warn('[Badge Purchase] VIP milestone warning:', milestoneError);
+            postPurchaseWarnings.push('VIP milestone processing delayed');
+          } else {
+            console.log('[Badge Purchase] VIP milestone check completed ✅');
+          }
         }
       } catch (e) {
         console.warn('[Badge Purchase] VIP milestone check failed:', (e as any)?.message || e);
+        postPurchaseWarnings.push('VIP milestone processing failed');
       }
     }
 
-    console.log(`[Badge Purchase] SUCCESS: ${toBadge} badge purchased by ${userId}`);
+    console.log(`[Badge Purchase] SUCCESS: ${toBadge} badge purchased by ${userId}${postPurchaseWarnings.length > 0 ? ' (with warnings)' : ''}`);
 
     return new Response(
       JSON.stringify({ 
@@ -174,7 +204,8 @@ Deno.serve(async (req) => {
         badge: toBadge,
         amount_paid: paidAmountBSK,
         new_balance: purchaseResult.new_balance,
-        purchase_id: purchaseResult.purchase_id
+        purchase_id: purchaseResult.purchase_id,
+        warnings: postPurchaseWarnings.length > 0 ? postPurchaseWarnings : undefined
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );

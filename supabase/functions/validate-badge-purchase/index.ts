@@ -40,13 +40,16 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
     const warnings: string[] = [];
     let userBalance = 0;
+    let totalAvailableBalance = 0;
     let alreadyOwned = false;
     let kycCompleted = false;
+    let currentBadgeName: string | null = null;
+    let expectedAmount = requiredAmount;
 
-    // 1. Check user's BSK balance
+    // 1. Check user's BSK balance (withdrawable + holding)
     const { data: balanceData, error: balanceError } = await supabase
       .from('user_bsk_balances')
-      .select('withdrawable_balance')
+      .select('withdrawable_balance, holding_balance')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -54,28 +57,68 @@ Deno.serve(async (req) => {
       console.error('Error fetching balance:', balanceError);
       errors.push('Unable to verify your balance. Please try again.');
     } else {
-      userBalance = balanceData?.withdrawable_balance || 0;
+      const withdrawable = balanceData?.withdrawable_balance || 0;
+      const holding = balanceData?.holding_balance || 0;
+      totalAvailableBalance = withdrawable + holding;
+      userBalance = withdrawable; // Legacy field for compatibility
       
-      if (userBalance < requiredAmount) {
-        const shortfall = requiredAmount - userBalance;
-        errors.push(`Insufficient balance. You need ${shortfall.toLocaleString()} more BSK.`);
-      }
+      console.log(`Balance check: withdrawable=${withdrawable}, holding=${holding}, total=${totalAvailableBalance}`);
     }
 
-    // 2. Check if user already owns this badge
-    const { data: holdingData, error: holdingError } = await supabase
+    // 1b. Get current badge to validate amount
+    const { data: currentBadgeData } = await supabase
       .from('user_badge_holdings')
       .select('current_badge')
       .eq('user_id', userId)
-      .eq('current_badge', badgeName)
+      .maybeSingle();
+    
+    currentBadgeName = currentBadgeData?.current_badge || null;
+    console.log(`Current badge: ${currentBadgeName || 'None'}`);
+
+    // 1c. Validate requiredAmount against badge_thresholds
+    const { data: targetBadge } = await supabase
+      .from('badge_thresholds')
+      .select('bsk_threshold')
+      .eq('badge_name', badgeName)
       .maybeSingle();
 
-    if (holdingError) {
-      console.error('Error checking badge ownership:', holdingError);
-      warnings.push('Unable to verify badge ownership.');
-    } else if (holdingData) {
+    if (targetBadge) {
+      let expectedDiff = targetBadge.bsk_threshold;
+      
+      // If upgrading, calculate the difference
+      if (currentBadgeName && currentBadgeName !== 'NONE') {
+        const { data: currentBadge } = await supabase
+          .from('badge_thresholds')
+          .select('bsk_threshold')
+          .eq('badge_name', currentBadgeName)
+          .maybeSingle();
+        
+        if (currentBadge) {
+          expectedDiff = Math.max(0, targetBadge.bsk_threshold - currentBadge.bsk_threshold);
+        }
+      }
+      
+      expectedAmount = expectedDiff;
+      console.log(`Amount validation: expected=${expectedAmount}, provided=${requiredAmount}`);
+      
+      // Allow some tolerance for rounding
+      if (Math.abs(requiredAmount - expectedAmount) > 0.01) {
+        warnings.push(`Amount mismatch detected. Expected ${expectedAmount} BSK, got ${requiredAmount} BSK. Using server value.`);
+      }
+    }
+
+    // Check balance against expected amount
+    if (totalAvailableBalance < expectedAmount) {
+      const shortfall = expectedAmount - totalAvailableBalance;
+      errors.push(`Insufficient balance. You need ${shortfall.toLocaleString()} more BSK.`);
+      console.log(`Insufficient balance: need ${expectedAmount}, have ${totalAvailableBalance}, shortfall ${shortfall}`);
+    }
+
+    // 2. Check if user already owns this badge
+    if (currentBadgeName && currentBadgeName.toUpperCase() === badgeName.toUpperCase()) {
       alreadyOwned = true;
       errors.push('You already own this badge.');
+      console.log(`Already owned: ${badgeName}`);
     }
 
     // 3. Check KYC status
@@ -97,21 +140,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    const shortfall = Math.max(0, requiredAmount - userBalance);
+    const shortfall = Math.max(0, expectedAmount - totalAvailableBalance);
     const valid = errors.length === 0;
 
     const response: ValidationResponse = {
       valid,
       errors,
       warnings,
-      userBalance,
-      requiredAmount,
+      userBalance: totalAvailableBalance,
+      requiredAmount: expectedAmount,
       shortfall,
       alreadyOwned,
       kycCompleted,
     };
 
-    console.log('Validation result:', response);
+    console.log('Validation result:', { valid, errors, warnings, totalAvailableBalance, expectedAmount, shortfall, alreadyOwned, kycCompleted });
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
