@@ -24,19 +24,25 @@ const LoginScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [inlineError, setInlineError] = useState<string>('');
   
   // Refs for safety checks
   const isProcessingRef = useRef(false);
   const mountedRef = useRef(true);
   const loadingRef = useRef(false);
+  const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup on unmount - always reset loading state
   useEffect(() => {
     return () => {
       mountedRef.current = false;
+      if (watchdogTimerRef.current) {
+        clearTimeout(watchdogTimerRef.current);
+      }
       setLoading(false);
       loadingRef.current = false;
       isProcessingRef.current = false;
+      sessionStorage.removeItem('login_in_progress');
     };
   }, []);
 
@@ -51,6 +57,7 @@ const LoginScreen: React.FC = () => {
     const validation = loginSchema.safeParse({ email, password });
     if (!validation.success) {
       const firstError = validation.error.errors[0];
+      setInlineError(firstError.message);
       toast({
         title: "Validation Error",
         description: firstError.message,
@@ -58,6 +65,9 @@ const LoginScreen: React.FC = () => {
       });
       return;
     }
+
+    // Clear previous error
+    setInlineError('');
 
     // Set all loading guards
     isProcessingRef.current = true;
@@ -68,6 +78,24 @@ const LoginScreen: React.FC = () => {
     
     // Set flag to prevent validation during login
     sessionStorage.setItem('login_in_progress', 'true');
+
+    // UI watchdog: force-reset after 20s if something hangs
+    watchdogTimerRef.current = setTimeout(() => {
+      console.error('[LOGIN] WATCHDOG: Login hung for 20s, forcing reset');
+      sessionStorage.removeItem('login_in_progress');
+      if (mountedRef.current) {
+        setLoading(false);
+        setInlineError('Login took too long. Please try again.');
+        toast({
+          title: "Login Timeout",
+          description: "The request took too long. Please check your connection and try again.",
+          variant: "destructive",
+        });
+      }
+      loadingRef.current = false;
+      isProcessingRef.current = false;
+      watchdogTimerRef.current = null;
+    }, 20000);
 
     // Create timeout promise
     const timeoutPromise = new Promise((_, reject) => 
@@ -83,7 +111,21 @@ const LoginScreen: React.FC = () => {
           password
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('[LOGIN] Auth error:', error);
+          
+          // Handle common auth errors with friendly messages
+          let userMessage = error.message || "Invalid email or password";
+          
+          if (error.status === 400 || error.message?.toLowerCase().includes('invalid') || error.message?.toLowerCase().includes('credentials')) {
+            userMessage = "Invalid email or password. Please check and try again.";
+          } else if (!navigator.onLine) {
+            userMessage = "You're offline. Please check your connection.";
+          }
+          
+          setInlineError(userMessage);
+          throw error;
+        }
         console.log('[LOGIN] Step 3: Auth successful');
 
         if (!data.session) {
@@ -204,6 +246,11 @@ const LoginScreen: React.FC = () => {
         console.log('[LOGIN] Step 11: Login flow complete');
       } catch (error: any) {
         console.error('[LOGIN] Error during login flow:', error);
+        
+        // Set inline error if not already set
+        if (!inlineError && mountedRef.current) {
+          setInlineError(error.message || "Invalid email or password");
+        }
         throw error;
       }
     };
@@ -221,6 +268,12 @@ const LoginScreen: React.FC = () => {
         });
       }
     } finally {
+      // Clear watchdog
+      if (watchdogTimerRef.current) {
+        clearTimeout(watchdogTimerRef.current);
+        watchdogTimerRef.current = null;
+      }
+      
       // Always clean up, even if component unmounted
       sessionStorage.removeItem('login_in_progress');
       
@@ -237,10 +290,22 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !loading) {
+      e.preventDefault();
       handleLogin();
     }
+  };
+
+  // Clear inline error when user types
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (inlineError) setInlineError('');
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (inlineError) setInlineError('');
   };
 
   return (
@@ -279,8 +344,8 @@ const LoginScreen: React.FC = () => {
               type="email"
               placeholder="your@email.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onChange={handleEmailChange}
+              onKeyDown={handleKeyDown}
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
               autoFocus
             />
@@ -295,8 +360,8 @@ const LoginScreen: React.FC = () => {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onChange={handlePasswordChange}
+                onKeyDown={handleKeyDown}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 pr-10"
               />
               <button
@@ -335,6 +400,12 @@ const LoginScreen: React.FC = () => {
               'Sign In'
             )}
           </Button>
+          
+          {inlineError && (
+            <p className="text-sm text-destructive bg-destructive/10 px-4 py-2 rounded-lg text-center -mt-2">
+              {inlineError}
+            </p>
+          )}
 
           {/* Sign Up Link */}
           <div className="text-center">

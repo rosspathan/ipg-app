@@ -24,9 +24,9 @@ export const useAuthSession = () => {
     let mounted = true;
     let isInitialized = false;
     
-    // Set up auth state listener FIRST
+    // Set up auth state listener FIRST - FULLY SYNCHRONOUS to prevent deadlocks
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!mounted) return;
 
         console.log('[useAuthSession] Auth event:', event, session?.user?.email);
@@ -46,34 +46,40 @@ export const useAuthSession = () => {
           return;
         }
 
-        // Update user ID in storage systems
+        // Update user ID in storage systems (synchronous)
         const userId = session?.user?.id ?? null;
         setCurrentUserId(userId);
         setSecurityUserId(userId);
         
-        // Only validate on explicit sign-in events after initialization
-        // Skip validation during active login to prevent interference
-        const loginInProgress = sessionStorage.getItem('login_in_progress');
-        
-        if (event === 'SIGNED_IN' && session && !loginInProgress && isInitialized) {
-          const validation = await validateSessionOwnership(session);
-          
-          if (validation.conflict) {
-            console.warn('[useAuthSession] Session ownership conflict - clearing old data');
-            await autoResolveIfSafe(session);
-            
-            window.dispatchEvent(new CustomEvent('auth:session_conflict', {
-              detail: validation.details
-            }));
-          }
-        }
-        
+        // Update state immediately (synchronous)
         setState({
           session,
           user: session?.user ?? null,
           userId,
           status: 'ready'
         });
+        
+        // Defer session validation to prevent blocking the auth callback
+        const loginInProgress = sessionStorage.getItem('login_in_progress');
+        
+        if (event === 'SIGNED_IN' && session && !loginInProgress && isInitialized) {
+          setTimeout(async () => {
+            try {
+              const validation = await validateSessionOwnership(session);
+              
+              if (validation.conflict) {
+                console.warn('[useAuthSession] Session ownership conflict - clearing old data');
+                await autoResolveIfSafe(session);
+                
+                window.dispatchEvent(new CustomEvent('auth:session_conflict', {
+                  detail: validation.details
+                }));
+              }
+            } catch (error) {
+              console.error('[useAuthSession] Validation error:', error);
+            }
+          }, 0);
+        }
       }
     );
 

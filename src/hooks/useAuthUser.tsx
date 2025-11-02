@@ -30,7 +30,7 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener for user sessions
+    // Set up auth state listener for user sessions - FULLY SYNCHRONOUS
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('User auth state change:', event, session?.user?.email);
@@ -38,14 +38,18 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-      // Handle NEW referral system capture after email verification
+        // Defer all async operations to prevent blocking auth callback
         if (event === 'SIGNED_IN' && session?.user) {
           setTimeout(async () => {
-            // Import dynamically to avoid circular deps
-            const { captureReferralAfterEmailVerify } = await import('@/utils/referralCapture');
-            await captureReferralAfterEmailVerify(session.user.id);
-            // Legacy system (keep for backward compatibility)
-            handlePendingReferral(session.user.id);
+            try {
+              // Import dynamically to avoid circular deps
+              const { captureReferralAfterEmailVerify } = await import('@/utils/referralCapture');
+              await captureReferralAfterEmailVerify(session.user.id);
+              // Legacy system (keep for backward compatibility)
+              handlePendingReferral(session.user.id);
+            } catch (error) {
+              console.error('[useAuthUser] Referral handling error:', error);
+            }
           }, 0);
         }
       }
