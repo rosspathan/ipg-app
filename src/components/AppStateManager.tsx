@@ -24,12 +24,6 @@ export const AppStateManager = () => {
       // Don't check on auth, onboarding, or landing routes
       if (isAuthRoute || isOnboardingRoute || isLandingRoute) return;
       
-      // CRITICAL: Don't interfere during active login
-      const loginInProgress = sessionStorage.getItem('login_in_progress');
-      if (loginInProgress) {
-        console.log('[APP_STATE] Login in progress, skipping wallet checks');
-        return;
-      }
       
       try {
         const { data: profile } = await supabase

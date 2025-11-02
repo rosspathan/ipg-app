@@ -132,17 +132,17 @@ const LoginScreen: React.FC = () => {
           throw new Error('No session returned');
         }
 
-        if (!mountedRef.current) {
-          console.log('[LOGIN] Component unmounted, aborting');
-          return;
+        // Immediately navigate to app home; AppStateManager will handle redirects
+        // Use hard navigation fallback if component unmounted mid-flow
+        const target = '/app/home';
+        if (mountedRef.current) {
+          console.log('[LOGIN] Immediate post-login navigate to', target);
+          navigate(target, { replace: true });
+        } else {
+          console.log('[LOGIN] Component unmounted early, forcing navigation to', target);
+          window.location.assign(target);
         }
-
-        toast({
-          title: "Welcome Back!",
-          description: "Signing you in...",
-        });
-
-        console.log('[LOGIN] Step 4: Checking wallet status');
+        return;
         
         // Check for wallet existence - Use .maybeSingle() to prevent errors
         const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
