@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required')
 });
 
+const LOGIN_TIMEOUT = 15000; // 15 seconds timeout
+
 const LoginScreen: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,8 +24,29 @@ const LoginScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // Refs for safety checks
+  const isProcessingRef = useRef(false);
+  const mountedRef = useRef(true);
+  const loadingRef = useRef(false);
+
+  // Cleanup on unmount - always reset loading state
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      setLoading(false);
+      loadingRef.current = false;
+      isProcessingRef.current = false;
+    };
+  }, []);
 
   const handleLogin = async () => {
+    // Prevent double-clicks and multiple simultaneous login attempts
+    if (isProcessingRef.current || loadingRef.current) {
+      console.log('[LOGIN] Already processing, ignoring duplicate request');
+      return;
+    }
+
     // Validate input
     const validation = loginSchema.safeParse({ email, password });
     if (!validation.success) {
@@ -36,84 +59,121 @@ const LoginScreen: React.FC = () => {
       return;
     }
 
+    // Set all loading guards
+    isProcessingRef.current = true;
+    loadingRef.current = true;
     setLoading(true);
+    
+    console.log('[LOGIN] Step 1: Starting authentication');
     
     // Set flag to prevent validation during login
     sessionStorage.setItem('login_in_progress', 'true');
 
-    // Add timeout to clear flag as failsafe
-    const timeoutId = setTimeout(() => {
-      console.warn('[LOGIN] Clearing login_in_progress flag after timeout');
-      sessionStorage.removeItem('login_in_progress');
-    }, 5000);
+    // Create timeout promise
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Login timeout - please try again')), LOGIN_TIMEOUT)
+    );
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+    // Create login promise
+    const loginPromise = async () => {
+      try {
+        console.log('[LOGIN] Step 2: Calling Supabase auth');
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
 
-      if (error) throw error;
+        if (error) throw error;
+        console.log('[LOGIN] Step 3: Auth successful');
 
-      if (data.session) {
+        if (!data.session) {
+          throw new Error('No session returned');
+        }
+
+        if (!mountedRef.current) {
+          console.log('[LOGIN] Component unmounted, aborting');
+          return;
+        }
+
         toast({
           title: "Welcome Back!",
           description: "Signing you in...",
         });
 
-        // Check for wallet existence first
+        console.log('[LOGIN] Step 4: Checking wallet status');
+        
+        // Check for wallet existence - Use .maybeSingle() to prevent errors
         const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
         const { data: profile } = await supabase
           .from('profiles')
           .select('wallet_address')
           .eq('user_id', data.user.id)
-          .single();
+          .maybeSingle(); // ✅ Safe - returns null instead of throwing
+        
+        console.log('[LOGIN] Step 5: Profile fetched', { hasProfile: !!profile, hasWalletInDB: !!profile?.wallet_address });
         
         const hasWalletInDB = !!profile?.wallet_address;
         
-        // Check for session conflicts at login boundary
+        // Non-blocking session conflict check - runs in background
         if (hasLocalWallet) {
+          console.log('[LOGIN] Step 6: Checking wallet conflicts (non-blocking)');
           const storedWallet = localStorage.getItem('cryptoflow_wallet');
           if (storedWallet) {
-            try {
-              const walletData = JSON.parse(storedWallet);
-              const { detectAndResolveSessionConflict } = await import('@/utils/sessionConflictDetector');
-              const conflictResult = await detectAndResolveSessionConflict(walletData.address);
-              
-              if (conflictResult.conflict && !conflictResult.resolved) {
-                // Conflict couldn't be auto-resolved - clear mismatched wallet
-                toast({
-                  title: "Wallet Mismatch",
-                  description: "Your wallet belongs to a different account. Please reconnect your wallet.",
-                  variant: "destructive"
-                });
-                localStorage.removeItem('cryptoflow_wallet');
+            // Run conflict check in background without blocking
+            setTimeout(async () => {
+              try {
+                const walletData = JSON.parse(storedWallet);
+                const { detectAndResolveSessionConflict } = await import('@/utils/sessionConflictDetector');
+                const conflictResult = await detectAndResolveSessionConflict(walletData.address);
+                
+                if (conflictResult.conflict && !conflictResult.resolved) {
+                  console.warn('[LOGIN] Wallet conflict detected, clearing local wallet');
+                  toast({
+                    title: "Wallet Mismatch",
+                    description: "Your wallet belongs to a different account. Please reconnect your wallet.",
+                    variant: "destructive"
+                  });
+                  localStorage.removeItem('cryptoflow_wallet');
+                }
+              } catch (conflictError) {
+                console.error('[LOGIN] Error checking session conflict:', conflictError);
               }
-            } catch (conflictError) {
-              console.error('[LOGIN] Error checking session conflict:', conflictError);
-            }
+            }, 0);
           }
         }
         
+        console.log('[LOGIN] Step 7: Determining navigation path');
+        
         // If no wallet anywhere, must import
         if (!hasLocalWallet && !hasWalletInDB) {
-          navigate('/auth/import-wallet');
+          console.log('[LOGIN] Step 8: No wallet found, navigating to import');
+          if (mountedRef.current) {
+            navigate('/auth/import-wallet');
+          }
           return;
         }
         
         // If wallet in DB but not local, need to import
         if (!hasLocalWallet && hasWalletInDB) {
-          navigate('/auth/import-wallet');
+          console.log('[LOGIN] Step 8: Wallet in DB only, navigating to import');
+          if (mountedRef.current) {
+            navigate('/auth/import-wallet');
+          }
           return;
         }
 
+        console.log('[LOGIN] Step 8: Checking security status');
+        
         // Check if user has security setup (modern or legacy)
         const hasSecurity = hasAnySecurity();
         
         if (!hasSecurity) {
-          // First time user or no security setup yet
-          navigate('/onboarding/security');
+          console.log('[LOGIN] Step 9: No security, navigating to setup');
+          if (mountedRef.current) {
+            navigate('/onboarding/security');
+          }
         } else {
+          console.log('[LOGIN] Step 9: Has security, checking lock state');
           // Has security, check if session is still valid
           const lockStateRaw = localStorage.getItem('cryptoflow_lock_state');
           let isUnlocked = false;
@@ -129,25 +189,51 @@ const LoginScreen: React.FC = () => {
           }
           
           if (isUnlocked) {
-            // Session still valid - go directly to home
-            navigate('/app/home');
+            console.log('[LOGIN] Step 10: Session valid, navigating to home');
+            if (mountedRef.current) {
+              navigate('/app/home');
+            }
           } else {
-            // Session expired - require unlock
-            navigate('/auth/lock');
+            console.log('[LOGIN] Step 10: Session expired, navigating to lock screen');
+            if (mountedRef.current) {
+              navigate('/auth/lock');
+            }
           }
         }
+
+        console.log('[LOGIN] Step 11: Login flow complete');
+      } catch (error: any) {
+        console.error('[LOGIN] Error during login flow:', error);
+        throw error;
       }
+    };
+
+    try {
+      // Race between login and timeout
+      await Promise.race([loginPromise(), timeoutPromise]);
     } catch (error: any) {
-      console.error('Login error:', error);
-      toast({
-        title: "Login Failed",
-        description: error.message || "Invalid email or password",
-        variant: "destructive"
-      });
+      console.error('[LOGIN] Login failed:', error);
+      if (mountedRef.current) {
+        toast({
+          title: "Login Failed",
+          description: error.message || "Invalid email or password",
+          variant: "destructive"
+        });
+      }
     } finally {
-      clearTimeout(timeoutId);
+      // Always clean up, even if component unmounted
       sessionStorage.removeItem('login_in_progress');
-      setLoading(false);
+      
+      // Only update state if still mounted
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+      
+      // Always reset refs
+      loadingRef.current = false;
+      isProcessingRef.current = false;
+      
+      console.log('[LOGIN] Cleanup complete');
     }
   };
 
