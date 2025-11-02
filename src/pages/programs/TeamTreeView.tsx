@@ -53,16 +53,27 @@ export default function TeamTreeView() {
 
       if (!badge) return null;
 
+      // Try to get unlock levels from DB; fall back to known defaults by badge
       const { data: threshold } = await supabase
         .from('badge_thresholds')
-        .select('badge_name, unlock_levels')
+        .select('badge_name, unlock_levels, is_active')
         .ilike('badge_name', badge.current_badge)
-        .eq('is_active', true)
         .maybeSingle();
+
+      const normalized = normalizeBadgeName(badge.current_badge).toLowerCase();
+      const defaultLevelsByBadge: Record<string, number> = {
+        silver: 10,
+        gold: 20,
+        platinum: 30,
+        diamond: 40,
+        vip: 50,
+      };
+
+      const unlockLevels = threshold?.unlock_levels ?? defaultLevelsByBadge[normalized] ?? 1;
 
       return {
         badge_name: badge.current_badge,
-        unlock_levels: threshold?.unlock_levels || 1
+        unlock_levels: unlockLevels
       };
     },
     enabled: !!user?.id

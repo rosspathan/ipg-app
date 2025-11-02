@@ -61,7 +61,7 @@ export function useWalletBalances() {
           )
         `)
         .eq('user_id', user.id)
-        .gt('total', 0); // Only show non-zero balances
+        .or('total.gt.0,available.gt.0,locked.gt.0'); // Include any positive balances (total may be null)
 
       if (balanceError) throw balanceError;
 
