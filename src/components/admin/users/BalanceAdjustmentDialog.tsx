@@ -68,11 +68,11 @@ export function BalanceAdjustmentDialog({
     try {
       const { error: rpcError } = await supabase.rpc("admin_adjust_user_balance", {
         p_target_user_id: userId,
-        p_balance_type: balanceType,
-        p_subtype: balanceType === "BSK" ? bskSubtype : undefined,
+        p_balance_type: balanceType.toLowerCase(), // Convert to lowercase: 'bsk' or 'inr'
         p_operation: operation,
         p_amount: numAmount,
         p_reason: reason.trim(),
+        p_subtype: balanceType === "BSK" ? bskSubtype : undefined,
       });
 
       if (rpcError) throw rpcError;

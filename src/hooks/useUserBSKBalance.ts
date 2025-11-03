@@ -152,13 +152,14 @@ export const useUserBSKBalance = () => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
     if (user?.id) {
       channel = supabase
-        .channel('bsk-balance-changes')
+        .channel(`bsk-balance-changes-${user.id}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'user_bsk_balances',
+            filter: `user_id=eq.${user.id}`, // Only listen to this user's balance changes
           },
           (payload) => {
             console.log('[BSK Balance] 🔔 Live update received:', payload);
