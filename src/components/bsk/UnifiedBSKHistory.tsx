@@ -37,11 +37,14 @@ import {
   Banknote,
   Wallet,
   CreditCard,
+  Eye,
 } from 'lucide-react';
 import { useUnifiedBSKHistory, UnifiedBSKTransaction } from '@/hooks/useUnifiedBSKHistory';
 import { BSKHistoryEmptyState } from './BSKHistoryEmptyState';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { TransferDetailsModal } from './TransferDetailsModal';
+import { TransferReceiptButton } from '@/components/user/TransferReceiptButton';
 
 interface UnifiedBSKHistoryProps {
   userId?: string;
@@ -255,6 +258,8 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
   const [selectedTransactionType, setSelectedTransactionType] = useState<string>('all');
   const [transactionDirection, setTransactionDirection] = useState<string>('all');
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<UnifiedBSKTransaction | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
   const {
     transactions,
@@ -311,6 +316,15 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
       setFilters(rest);
     }
     setPage(1);
+  };
+
+  const handleViewDetails = (transaction: UnifiedBSKTransaction) => {
+    setSelectedTransaction(transaction);
+    setDetailsModalOpen(true);
+  };
+
+  const isTransferTransaction = (tx: UnifiedBSKTransaction) => {
+    return tx.transaction_type === 'transfer_in' || tx.transaction_type === 'transfer_out';
   };
 
   // Show empty state if no transactions and not loading
@@ -540,7 +554,7 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
               const IconComponent = displayInfo.icon;
               
               return (
-                <Card key={tx.id} className="p-4 hover:bg-muted/30 transition-colors">
+                <Card key={tx.id} className="p-4 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => handleViewDetails(tx)}>
                   <div className="flex items-start gap-3">
                     {/* Icon */}
                     <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shrink-0", displayInfo.bgColor)}>
@@ -558,13 +572,25 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                       
                       <p className="text-xs text-muted-foreground truncate mb-2">{displayInfo.secondaryInfo}</p>
                       
+                      {/* Memo if exists */}
+                      {(tx.metadata as any)?.memo && (
+                        <p className="text-xs italic text-muted-foreground mb-2">"{(tx.metadata as any).memo}"</p>
+                      )}
+                      
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
                           {format(new Date(tx.created_at), 'MMM dd, hh:mm a')}
                         </span>
-                        <Badge variant={tx.balance_type === 'withdrawable' ? 'default' : 'secondary'} className="text-xs">
-                          {tx.balance_type === 'withdrawable' ? '💰 Withdrawable' : '🔒 Holding'}
-                        </Badge>
+                        <div className="flex gap-2 items-center">
+                          <Badge variant={tx.balance_type === 'withdrawable' ? 'default' : 'secondary'} className="text-xs">
+                            {tx.balance_type === 'withdrawable' ? '💰 Withdrawable' : '🔒 Holding'}
+                          </Badge>
+                          {isTransferTransaction(tx) && (
+                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); }}>
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -582,6 +608,7 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                 <TableHead>Date & Time</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="text-right">Status & Type</TableHead>
+                <TableHead className="w-24"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -590,7 +617,7 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                 const IconComponent = displayInfo.icon;
 
                 return (
-                  <TableRow key={tx.id} className="hover:bg-muted/30">
+                  <TableRow key={tx.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => handleViewDetails(tx)}>
                     {/* Icon Column */}
                     <TableCell className="w-14">
                       <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", displayInfo.bgColor)}>
@@ -603,6 +630,9 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                       <div className="space-y-1">
                         <p className="font-semibold text-sm">{displayInfo.label}</p>
                         <p className="text-xs text-muted-foreground">{displayInfo.secondaryInfo}</p>
+                        {(tx.metadata as any)?.memo && (
+                          <p className="text-xs italic text-muted-foreground mt-1">"{(tx.metadata as any).memo}"</p>
+                        )}
                       </div>
                     </TableCell>
                     
@@ -634,6 +664,25 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                           {tx.balance_type === 'withdrawable' ? '💰 Withdrawable' : '🔒 Holding'}
                         </Badge>
                       </div>
+                    </TableCell>
+
+                    {/* Actions Column */}
+                    <TableCell>
+                      {isTransferTransaction(tx) && (
+                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <TransferReceiptButton 
+                            transaction={{
+                              reference_id: tx.id,
+                              created_at: tx.created_at,
+                              amount: tx.amount,
+                              transaction_type: tx.transaction_type,
+                              metadata: tx.metadata,
+                            }} 
+                            variant="ghost" 
+                            size="sm" 
+                          />
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
@@ -674,6 +723,13 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
           </div>
         )}
       </Card>
+
+      {/* Transfer Details Modal */}
+      <TransferDetailsModal
+        transaction={selectedTransaction}
+        open={detailsModalOpen}
+        onOpenChange={setDetailsModalOpen}
+      />
     </div>
   );
 }

@@ -8,6 +8,7 @@ const corsHeaders = {
 interface TransferRequest {
   recipient_id: string;
   amount: number;
+  memo?: string;
 }
 
 Deno.serve(async (req) => {
@@ -31,9 +32,9 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { recipient_id, amount }: TransferRequest = await req.json();
+    const { recipient_id, amount, memo }: TransferRequest = await req.json();
 
-    console.log('[BSK Transfer] Processing:', { sender_id: user.id, recipient_id, amount });
+    console.log('[BSK Transfer] Processing:', { sender_id: user.id, recipient_id, amount, memo });
 
     // Validation
     if (!recipient_id || !amount || amount <= 0) {
@@ -100,6 +101,7 @@ Deno.serve(async (req) => {
           recipient_email: recipientProfile?.email,
           from_wallet_type: 'withdrawable',
           to_wallet_type: 'withdrawable',
+          memo: memo || null,
         }
       })
       .eq('reference_id', result.transaction_ref)

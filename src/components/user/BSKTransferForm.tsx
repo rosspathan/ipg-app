@@ -7,8 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowRightLeft, CheckCircle2, Loader2, User } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, Loader2, User, Clock, Send as SendIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useRecentRecipients } from "@/hooks/useRecentRecipients";
+import { useTransferLimits } from "@/hooks/useTransferLimits";
+import { TransferReceiptButton } from "./TransferReceiptButton";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { format } from "date-fns";
 
 export function BSKTransferForm() {
   const { toast } = useToast();
@@ -16,8 +22,12 @@ export function BSKTransferForm() {
   const navigate = useNavigate();
   const [recipientEmail, setRecipientEmail] = useState("");
   const [amount, setAmount] = useState("");
+  const [memo, setMemo] = useState("");
   const [verifiedRecipient, setVerifiedRecipient] = useState<{ id: string; email: string; full_name?: string } | null>(null);
-  const [transferSuccess, setTransferSuccess] = useState<string | null>(null);
+  const [transferSuccess, setTransferSuccess] = useState<any>(null);
+  
+  const { data: recentRecipients } = useRecentRecipients();
+  const { data: limits } = useTransferLimits();
 
   // Get user's BSK balance with proper error handling
   const { data: userBalance, isLoading: balanceLoading, error: balanceError, refetch: refetchBalance } = useQuery({
@@ -149,11 +159,20 @@ export function BSKTransferForm() {
         throw new Error("Maximum transfer amount is 1,000,000 BSK per transaction");
       }
 
+      // Check transfer limits
+      if (limits) {
+        const limitCheck = limits.canTransfer(amountBSK);
+        if (!limitCheck.allowed) {
+          throw new Error(limitCheck.reason || 'Transfer limit exceeded');
+        }
+      }
+
       // Use atomic edge function for secure transfer
       const { data, error } = await supabase.functions.invoke('process-bsk-transfer', {
         body: {
           recipient_id: verifiedRecipient.id,
           amount: amountBSK,
+          memo: memo.trim() || undefined,
         }
       });
 
@@ -162,10 +181,17 @@ export function BSKTransferForm() {
 
       return data.transaction_ref;
     },
-    onSuccess: (transactionRef) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["user-bsk-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["transfer-limits"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-recipients"] });
       refetchBalance();
-      setTransferSuccess(transactionRef);
+      setTransferSuccess({
+        ref: data,
+        amount: amount,
+        recipient: verifiedRecipient,
+        memo: memo,
+      });
       toast({
         title: "Transfer successful",
         description: `${amount} BSK transferred to ${verifiedRecipient?.full_name || verifiedRecipient?.email}`,
@@ -207,8 +233,14 @@ export function BSKTransferForm() {
   const handleReset = () => {
     setRecipientEmail("");
     setAmount("");
+    setMemo("");
     setVerifiedRecipient(null);
     setTransferSuccess(null);
+  };
+
+  const handleSelectRecipient = (recipient: any) => {
+    setRecipientEmail(recipient.email);
+    verifyRecipientMutation.mutate(recipient.email);
   };
 
   if (transferSuccess) {
@@ -236,8 +268,14 @@ export function BSKTransferForm() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Transaction ID</span>
-                <span className="font-mono text-xs">{transferSuccess}</span>
+                <span className="font-mono text-xs">{transferSuccess.ref}</span>
               </div>
+              {transferSuccess.memo && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Memo</span>
+                  <span className="italic text-sm">"{transferSuccess.memo}"</span>
+                </div>
+              )}
             </AlertDescription>
           </Alert>
 
@@ -249,6 +287,22 @@ export function BSKTransferForm() {
               View History
             </Button>
           </div>
+
+          <TransferReceiptButton
+            transaction={{
+              reference_id: transferSuccess.ref,
+              created_at: new Date().toISOString(),
+              amount: parseFloat(transferSuccess.amount),
+              transaction_type: 'transfer_out',
+              metadata: {
+                sender_display_name: 'You',
+                recipient_display_name: transferSuccess.recipient?.full_name || transferSuccess.recipient?.email,
+                recipient_email: transferSuccess.recipient?.email,
+                memo: transferSuccess.memo,
+              }
+            }}
+            variant="outline"
+          />
         </CardContent>
       </Card>
     );
@@ -256,6 +310,33 @@ export function BSKTransferForm() {
 
   return (
     <div className="space-y-6">
+      {/* Transfer Limits Card */}
+      {limits && (
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Daily Transfer Limit
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Used Today</span>
+                <span className="font-semibold">
+                  {limits.usedToday.toLocaleString()} / {limits.dailyLimit.toLocaleString()} BSK
+                </span>
+              </div>
+              <Progress value={limits.percentUsed} className="h-2" />
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Remaining: {limits.remainingToday.toLocaleString()} BSK</span>
+              <span>{limits.percentUsed.toFixed(1)}% used</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Available Balance</CardTitle>
@@ -291,6 +372,37 @@ export function BSKTransferForm() {
           <CardDescription>Enter the email address of the i-smart user</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Recent Recipients */}
+          {recentRecipients && recentRecipients.length > 0 && !verifiedRecipient && (
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Recent Recipients</Label>
+              <div className="grid grid-cols-1 gap-2">
+                {recentRecipients.map((recipient) => (
+                  <Button
+                    key={recipient.user_id}
+                    variant="outline"
+                    className="w-full justify-start h-auto py-3"
+                    onClick={() => handleSelectRecipient(recipient)}
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-semibold text-sm">{recipient.display_name || recipient.email}</p>
+                        <p className="text-xs text-muted-foreground">{recipient.email}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Last: {recipient.last_amount.toLocaleString()} BSK</p>
+                        <p className="text-xs text-muted-foreground">{format(new Date(recipient.last_transfer_date), 'MMM d')}</p>
+                      </div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="email">Recipient Email</Label>
             <div className="flex gap-2">
@@ -338,6 +450,21 @@ export function BSKTransferForm() {
             <CardDescription>How much BSK do you want to transfer?</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="memo">Memo (Optional)</Label>
+              <Textarea
+                id="memo"
+                placeholder="e.g., Lunch money, Birthday gift..."
+                value={memo}
+                onChange={(e) => setMemo(e.target.value.slice(0, 100))}
+                maxLength={100}
+                rows={2}
+              />
+              <p className="text-xs text-muted-foreground">
+                {memo.length}/100 characters
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="amount">Amount (BSK)</Label>
               <div className="flex gap-2">
