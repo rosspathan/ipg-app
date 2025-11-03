@@ -33,21 +33,77 @@ export default function AdminBSKManagementNova() {
   const [currentRate, setCurrentRate] = useState("1.00")
 
   // Fetch current BSK rate
-  const { data: bskRate } = useQuery({
+  const { data: bskRate, isLoading: isLoadingRate } = useQuery({
     queryKey: ["bsk-rate"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("bonus_prices")
-        .select("price")
-        .eq("asset_id", (
-          await supabase.from("bonus_assets").select("id").eq("symbol", "BSK").single()
-        ).data?.id)
-        .single();
+        .from("bsk_rates")
+        .select("rate_inr_per_bsk")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (error) throw error;
-      return data?.price || 1.0;
+      return data?.rate_inr_per_bsk || 1.0;
     },
   });
+
+  // Fetch active users count
+  const { data: activeUsersCount, isLoading: isLoadingUsers } = useQuery({
+    queryKey: ["active-users-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("account_status", "active");
+      
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  // Fetch BSK circulation stats
+  const { data: circulationStats, isLoading: isLoadingCirculation } = useQuery({
+    queryKey: ["bsk-circulation"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_total_bsk_circulation");
+      
+      if (error) throw error;
+      return data?.[0] || { total_supply: 0, total_withdrawable: 0, total_holding: 0 };
+    },
+  });
+
+  // Fetch 24h volume
+  const { data: volume24h, isLoading: isLoadingVolume } = useQuery({
+    queryKey: ["bsk-24h-volume"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("unified_bsk_transactions")
+        .select("amount")
+        .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      
+      if (error) throw error;
+      
+      const totalVolume = data?.reduce((sum, tx) => sum + Math.abs(Number(tx.amount) || 0), 0) || 0;
+      return totalVolume;
+    },
+  });
+
+  // Helper: Format large numbers (300000 -> "300K", 2500000 -> "2.5M")
+  const formatLargeNumber = (num: number): string => {
+    if (num >= 1_000_000) {
+      return `${(num / 1_000_000).toFixed(1)}M`;
+    }
+    if (num >= 1_000) {
+      return `${(num / 1_000).toFixed(1)}K`;
+    }
+    return num.toFixed(0);
+  };
+
+  // Helper: Format currency with INR symbol
+  const formatINR = (num: number): string => {
+    return `₹${formatLargeNumber(num)}`;
+  };
 
   // Fetch BSK operations audit
   const { data: operations } = useQuery({
@@ -234,28 +290,25 @@ export default function AdminBSKManagementNova() {
         <KPIStat
           icon={<DollarSign className="h-5 w-5" />}
           label="Current Rate"
-          value={`₹${(bskRate || 1.0).toFixed(2)} / BSK`}
+          value={isLoadingRate ? "..." : `₹${(bskRate || 1.0).toFixed(2)} / BSK`}
           variant="default"
         />
         <KPIStat
           icon={<Users className="h-5 w-5" />}
           label="Active Users"
-          value="1,234"
-          delta={{ value: 12, trend: "up" }}
+          value={isLoadingUsers ? "..." : (activeUsersCount || 0).toLocaleString()}
           variant="success"
         />
         <KPIStat
           icon={<Wallet className="h-5 w-5" />}
           label="Total Supply"
-          value="2.5M BSK"
-          delta={{ value: 5, trend: "up" }}
+          value={isLoadingCirculation ? "..." : `${formatLargeNumber(circulationStats?.total_supply || 0)} BSK`}
           variant="warning"
         />
         <KPIStat
           icon={<TrendingUp className="h-5 w-5" />}
           label="24h Volume"
-          value="₹125K"
-          delta={{ value: 8, trend: "up" }}
+          value={isLoadingVolume ? "..." : formatINR((volume24h || 0) * (bskRate || 1))}
           variant="success"
         />
       </div>
