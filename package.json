@@ -59,6 +59,7 @@
     "@vitest/ui": "^3.2.4",
     "@wagmi/core": "^2.19.0",
     "bcryptjs": "^2.4.3",
+    "bignumber.js": "^9.3.1",
     "bip39": "^3.1.0",
     "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.1",
