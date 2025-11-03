@@ -185,3 +185,6 @@ verify_jwt = false
 
 [functions.check-vip-milestones]
 verify_jwt = false
+
+[functions.admin-lock-referral]
+verify_jwt = true

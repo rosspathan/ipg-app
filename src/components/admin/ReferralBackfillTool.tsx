@@ -47,7 +47,8 @@ export function ReferralBackfillTool() {
   const scanUnlockedUsers = async () => {
     setScanning(true);
     try {
-      const { data, error } = await supabase
+      // Get unlocked users from referral_links_new
+      const { data: unlockedData, error: unlockedError } = await supabase
         .from('referral_links_new')
         .select(`
           user_id,
@@ -60,9 +61,9 @@ export function ReferralBackfillTool() {
         `)
         .is('locked_at', null);
 
-      if (error) throw error;
+      if (unlockedError) throw unlockedError;
 
-      const formatted = data?.map((row: any) => ({
+      const unlocked = unlockedData?.map((row: any) => ({
         user_id: row.user_id,
         username: row.profiles?.username || 'Unknown',
         email: row.profiles?.email || 'N/A',
@@ -70,10 +71,28 @@ export function ReferralBackfillTool() {
         created_at: row.created_at,
       })) || [];
 
-      setUnlockedUsers(formatted);
+      // Get profiles without referral_links_new entries (orphaned users)
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, username, email, created_at')
+        .not('user_id', 'in', `(SELECT user_id FROM referral_links_new)`);
+
+      if (profilesError) throw profilesError;
+
+      const orphaned = profilesData?.map((profile: any) => ({
+        user_id: profile.user_id,
+        username: profile.username || 'Unknown',
+        email: profile.email || 'N/A',
+        sponsor_code_used: null,
+        created_at: profile.created_at,
+      })) || [];
+
+      const allUsers = [...unlocked, ...orphaned];
+      setUnlockedUsers(allUsers);
+      
       toast({
         title: 'Scan Complete',
-        description: `Found ${formatted.length} users with unlocked sponsors`,
+        description: `Found ${unlocked.length} unlocked + ${orphaned.length} orphaned users = ${allUsers.length} total`,
       });
     } catch (error: any) {
       toast({
@@ -106,37 +125,23 @@ export function ReferralBackfillTool() {
 
   const lockSponsor = async (userId: string, sponsorId: string): Promise<boolean> => {
     try {
-      // Prevent self-referral
-      if (userId === sponsorId) {
-        throw new Error('Cannot self-refer');
-      }
-
-      const { error } = await supabase
-        .from('referral_links_new')
-        .update({
-          sponsor_id: sponsorId,
-          locked_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId);
+      // Use the new admin-lock-referral edge function
+      const { data, error } = await supabase.functions.invoke('admin-lock-referral', {
+        body: { user_id: userId, sponsor_code_or_id: sponsorId }
+      });
 
       if (error) throw error;
+      
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to lock referral');
+      }
 
-      // Immediately build the referral tree for this user
-      try {
-        const { error: treeError } = await supabase.functions.invoke('build-referral-tree', {
-          body: { user_id: userId, include_unlocked: false }
+      if (data?.warning) {
+        toast({
+          title: 'Partial Success',
+          description: data.warning,
+          variant: 'destructive',
         });
-        
-        if (treeError) {
-          console.error('Tree build error:', treeError);
-          toast({
-            title: 'Tree Build Warning',
-            description: 'User locked but tree build failed. Sponsor may need to refresh.',
-            variant: 'destructive',
-          });
-        }
-      } catch (treeError) {
-        console.error('Tree build failed:', treeError);
       }
 
       return true;
@@ -230,7 +235,7 @@ export function ReferralBackfillTool() {
           Referral Backfill Tool
         </CardTitle>
         <CardDescription>
-          Scan and assign missing sponsor relationships for users with unlocked referrals
+          Scan for users with unlocked sponsors OR users without any referral_links_new entry (orphaned profiles). Manually assign sponsors to fix missing downline relationships.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

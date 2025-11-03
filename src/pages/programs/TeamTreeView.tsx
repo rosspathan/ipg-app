@@ -129,7 +129,24 @@ export default function TeamTreeView() {
     )
   }
 
+  // Fetch user's referral code
+  const { data: profileData } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('referral_code')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
   if (!data || data.totalMembers === 0) {
+    const referralCode = profileData?.referral_code || 'Loading...';
+    
     return (
       <ProgramPageTemplate title="Your Team" subtitle="Network overview">
         <div className="pb-24 space-y-6">
@@ -139,22 +156,59 @@ export default function TeamTreeView() {
               You don't have any team members yet. Share your referral code to start building your network!
             </AlertDescription>
           </Alert>
-          <div className="p-8 text-center bg-muted/30 rounded-lg border-2 border-dashed">
-            <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          
+          <div className="p-8 text-center bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border">
+            <Users className="h-16 w-16 mx-auto mb-4 text-primary" />
             <h3 className="text-lg font-semibold mb-2">Build Your Team</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-              Once people join using your referral code, you'll see them here. 
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
+              Once people join using your referral code, you'll see them here organized by levels (1-50). 
               All team members will be displayed, whether they have a badge or not.
             </p>
-            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            
+            {/* Referral Code Display */}
+            <div className="max-w-md mx-auto mb-6 p-4 bg-background rounded-lg border">
+              <p className="text-xs text-muted-foreground mb-2">Your Referral Code</p>
+              <p className="text-2xl font-bold font-mono tracking-wider">{referralCode}</p>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(referralCode);
+                  toast.success('Referral code copied!');
+                }}
+                variant="default"
+                className="gap-2"
+              >
+                Copy Code
+              </Button>
+              <Button
+                onClick={() => {
+                  const url = `${window.location.origin}/ref/${referralCode}`;
+                  if (navigator.share) {
+                    navigator.share({ text: `Join using my referral code: ${url}` });
+                  } else {
+                    navigator.clipboard.writeText(url);
+                    toast.success('Referral link copied!');
+                  }
+                }}
+                variant="outline"
+                className="gap-2"
+              >
+                Share Link
+              </Button>
+            </div>
+            
+            <div className="mt-6 flex items-center justify-center gap-6 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
-                ✅ Direct referrals (Level 1)
+                ✅ Level 1 (Direct)
               </div>
               <div className="flex items-center gap-2">
-                ✅ Multi-level network (up to Level 50)
+                ✅ Up to Level 50
               </div>
               <div className="flex items-center gap-2">
-                ✅ All badge statuses tracked
+                ✅ All badges tracked
               </div>
             </div>
           </div>

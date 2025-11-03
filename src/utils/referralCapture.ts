@@ -55,7 +55,7 @@ export function clearPendingReferral(): void {
  */
 export async function captureReferralAfterEmailVerify(userId: string): Promise<void> {
   try {
-    console.log('[ReferralCapture] Starting capture for userId:', userId);
+    console.log('[ReferralCapture] ✓ Starting capture for userId:', userId);
     
     let sponsorId: string | null = null;
     let referralCode: string | null = null;
@@ -64,7 +64,7 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
     const storedCode = localStorage.getItem('ismart_signup_ref');
     if (storedCode) {
       referralCode = storedCode.toUpperCase();
-      console.log('[ReferralCapture] Using signup referral code:', referralCode);
+      console.log('[ReferralCapture] ✓ Using signup referral code:', referralCode);
       
       // Lookup sponsor by code
       const { data } = await supabase
@@ -75,9 +75,9 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       
       if (data) {
         sponsorId = data.user_id;
-        console.log('[ReferralCapture] Resolved sponsor:', sponsorId);
+        console.log('[ReferralCapture] ✓ Resolved sponsor:', sponsorId);
       } else {
-        console.log('[ReferralCapture] Invalid referral code:', referralCode);
+        console.warn('[ReferralCapture] ✗ Invalid referral code:', referralCode);
         localStorage.removeItem('ismart_signup_ref');
         return;
       }
@@ -89,16 +89,16 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       if (pending && pending.code) {
         referralCode = pending.code;
         sponsorId = pending.sponsorId;
-        console.log('[ReferralCapture] Using onboarding referral:', referralCode, '→', sponsorId);
+        console.log('[ReferralCapture] ✓ Using onboarding referral:', referralCode, '→', sponsorId);
       }
     }
 
     if (!sponsorId) {
-      console.log('[ReferralCapture] No referral code entered - user signing up without sponsor');
+      console.log('[ReferralCapture] ℹ No referral code entered - user signing up without sponsor');
       return;
     }
 
-    console.log('[ReferralCapture] Processing sponsor:', sponsorId);
+    console.log('[ReferralCapture] ✓ Processing sponsor:', sponsorId);
 
     // Get settings
     const { data: settings } = await supabase
@@ -109,13 +109,15 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       .maybeSingle();
 
     if (!settings) {
-      console.warn('No mobile linking settings found');
+      console.error('[ReferralCapture] ✗ CRITICAL: No mobile_linking_settings found! Referral capture will not work.');
+      console.error('[ReferralCapture] ✗ Admin must create a mobile_linking_settings row with capture_stage = "after_email_verify"');
       return;
     }
 
     // Check if capture stage matches
     if (settings.capture_stage !== 'after_email_verify') {
-      return; // Not the right stage yet
+      console.log('[ReferralCapture] ℹ Skipping: capture_stage is', settings.capture_stage, '(need after_email_verify)');
+      return;
     }
 
     // Check for self-referral
@@ -200,12 +202,13 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       return;
     }
 
-    console.log('[ReferralCapture] Successfully locked referral to sponsor:', sponsorId);
+    console.log('[ReferralCapture] ✓ Successfully locked referral to sponsor:', sponsorId);
+    console.log('[ReferralCapture] ✓ Tree will be auto-built by database trigger');
     
     // Clear BOTH storage locations
     clearPendingReferral();
     localStorage.removeItem('ismart_signup_ref');
   } catch (error) {
-    console.error('Error capturing referral:', error);
+    console.error('[ReferralCapture] ✗ Error capturing referral:', error);
   }
 }
