@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -12,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, User, Wallet, Activity, Users as UsersIcon, Shield, AlertTriangle } from "lucide-react";
 import { CleanCard } from "@/components/admin/clean/CleanCard";
+import { BalanceAdjustmentDialog } from "@/components/admin/users/BalanceAdjustmentDialog";
 
 interface UserDetailPanelProps {
   userId: string;
@@ -20,6 +22,9 @@ interface UserDetailPanelProps {
 }
 
 export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps) {
+  const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false);
+  const [adjustmentOperation, setAdjustmentOperation] = useState<"add" | "deduct">("add");
+
   const { data: user, isLoading } = useQuery({
     queryKey: ["admin-user-detail", userId],
     queryFn: async () => {
@@ -201,10 +206,25 @@ export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps)
                     )}
 
                     <div className="grid grid-cols-2 gap-2 pt-4">
-                      <Button size="sm" className="bg-[hsl(152_64%_48%)] hover:bg-[hsl(152_64%_43%)]">
+                      <Button 
+                        size="sm" 
+                        className="bg-[hsl(152_64%_48%)] hover:bg-[hsl(152_64%_43%)]"
+                        onClick={() => {
+                          setAdjustmentOperation("add");
+                          setAdjustmentDialogOpen(true);
+                        }}
+                      >
                         Add BSK
                       </Button>
-                      <Button size="sm" variant="outline" className="border-[hsl(235_20%_22%/0.4)]">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="border-[hsl(235_20%_22%/0.4)]"
+                        onClick={() => {
+                          setAdjustmentOperation("deduct");
+                          setAdjustmentDialogOpen(true);
+                        }}
+                      >
                         Subtract BSK
                       </Button>
                     </div>
@@ -284,6 +304,13 @@ export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps)
             <p className="text-[hsl(240_10%_70%)]">User not found</p>
           </div>
         )}
+
+        <BalanceAdjustmentDialog
+          userId={userId}
+          open={adjustmentDialogOpen}
+          onClose={() => setAdjustmentDialogOpen(false)}
+          defaultOperation={adjustmentOperation}
+        />
       </SheetContent>
     </Sheet>
   );
