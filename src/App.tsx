@@ -158,7 +158,6 @@ import OrderConfirmationScreen from "./pages/OrderConfirmationScreen";
 import SwapScreen from "./pages/SwapScreen";
 import ProgramsScreen from "./pages/ProgramsScreen";
 import SubscriptionsScreen from "./pages/SubscriptionsScreen";
-import ReferralsScreen from "./pages/ReferralsScreen";
 import BadgeSubscriptionScreen from "./pages/BadgeSubscriptionScreen";
 import StakingScreen from "./pages/StakingScreen";
 import StakingDetailScreen from "./pages/StakingDetailScreen";
@@ -194,7 +193,6 @@ const StakingPage = React.lazy(() => import("./pages/programs/StakingPage"));
 const InsurancePage = React.lazy(() => import("./pages/programs/InsurancePage"));
 const BSKLoansPage = React.lazy(() => import("./pages/programs/BSKLoansPage"));
 const BSKPromotionsPage = React.lazy(() => import("./pages/programs/BSKPromotionsPage"));
-import ReferralsPage from "./pages/programs/ReferralsPage";
 import TeamReferralsNew from "./pages/programs/TeamReferralsNew";
 import TeamTreeView from "./pages/programs/TeamTreeView";
 import CommissionHistory from "./pages/programs/CommissionHistory";
@@ -264,7 +262,6 @@ import { IDCardPage } from "@/pages/IDCardPage";
 import { SecurityPage } from "@/pages/SecurityPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
-import { ReferralsPage as ReferralsPageOld } from "@/pages/ReferralsPage";
 
 import { DownloadPage } from "@/pages/DownloadPage";
 import { DeepLinkResolver } from "@/pages/DeepLinkResolver";
@@ -278,7 +275,6 @@ const ReferralsPageAstra = React.lazy(() => import("./pages/astra/ReferralsPage"
 const AdMiningPageNew = React.lazy(() => import("./pages/programs/AdMiningPageNew"));
 const LuckyDrawPageNew = React.lazy(() => import("./pages/programs/LuckyDrawPageNew"));
 const TeamReferralsPageNew = React.lazy(() => import("./pages/programs/TeamReferralsPageNew"));
-const TeamReferralsDashboard = React.lazy(() => import("./pages/TeamReferralsDashboard"));
 const StakingPageNewV2 = React.lazy(() => import("./pages/programs/StakingPageNew"));
 const TradingPageNew = React.lazy(() => import("./pages/programs/TradingPageNew"));
 const InsurancePageNewV2 = React.lazy(() => import("./pages/programs/InsurancePageNew"));
@@ -476,7 +472,7 @@ function AppContent() {
                 
                 {/* Legacy program routes */}
                 <Route path="programs/ads" element={<React.Suspense fallback={<LoadingFallback />}><AdvertisingPage /></React.Suspense>} />
-                <Route path="programs/referrals" element={<React.Suspense fallback={<LoadingFallback />}><ReferralsPage /></React.Suspense>} />
+                <Route path="programs/referrals" element={<Navigate to="/app/programs/team-referrals" replace />} />
                 <Route path="programs/loans" element={<React.Suspense fallback={<LoadingFallback />}><LoansPageNew /></React.Suspense>} />
                 <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<LoadingFallback />}><PurchasePage /></React.Suspense>} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />

@@ -6913,6 +6913,7 @@ export type Database = {
       }
       referral_commissions: {
         Row: {
+          amount_inr: number | null
           bsk_amount: number
           commission_type: string | null
           created_at: string | null
@@ -6928,6 +6929,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          amount_inr?: number | null
           bsk_amount: number
           commission_type?: string | null
           created_at?: string | null
@@ -6943,6 +6945,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          amount_inr?: number | null
           bsk_amount?: number
           commission_type?: string | null
           created_at?: string | null
