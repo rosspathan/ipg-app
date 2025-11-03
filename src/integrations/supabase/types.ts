@@ -182,6 +182,7 @@ export type Database = {
       }
       ad_user_subscriptions: {
         Row: {
+          active_until: string | null
           created_at: string
           daily_bsk: number
           days_total: number
@@ -199,6 +200,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_until?: string | null
           created_at?: string
           daily_bsk: number
           days_total?: number
@@ -216,6 +218,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_until?: string | null
           created_at?: string
           daily_bsk?: number
           days_total?: number
@@ -241,6 +244,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      admin_actions_log: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          target_id: string | null
+          target_table: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Relationships: []
       }
       admin_fees_ledger: {
         Row: {
@@ -4518,6 +4551,7 @@ export type Database = {
           policy_id: string
           rejection_reason: string | null
           requested_amount_inr: number | null
+          requires_manual_review: boolean | null
           reviewed_at: string | null
           reviewer_id: string | null
           status: string
@@ -4545,6 +4579,7 @@ export type Database = {
           policy_id: string
           rejection_reason?: string | null
           requested_amount_inr?: number | null
+          requires_manual_review?: boolean | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           status?: string
@@ -4572,6 +4607,7 @@ export type Database = {
           policy_id?: string
           rejection_reason?: string | null
           requested_amount_inr?: number | null
+          requires_manual_review?: boolean | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           status?: string
