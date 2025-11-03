@@ -111,6 +111,23 @@ serve(async (req) => {
       });
     }
 
+    // Log admin action
+    await supabase
+      .from('admin_actions_log')
+      .insert({
+        admin_id: user.id,
+        action: action === 'approve' ? 'insurance_claim_approved' : 'insurance_claim_rejected',
+        target_type: 'insurance_claim',
+        target_id: claim.id,
+        details: {
+          claim_id: claim.id,
+          action,
+          approved_amount_inr: action === 'approve' ? approved_amount_inr : null,
+          rejection_reason: action === 'reject' ? rejection_reason : null,
+          admin_notes: admin_notes
+        }
+      });
+
     // If approved, process payout
     if (action === 'approve' && approved_amount_inr) {
       // Get current BSK rate

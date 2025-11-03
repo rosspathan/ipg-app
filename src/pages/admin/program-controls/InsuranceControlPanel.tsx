@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useInsuranceManagement } from "@/hooks/useInsuranceManagement";
-import { Loader2, Plus, CheckCircle, XCircle } from "lucide-react";
+import { ClaimsQueue } from "@/components/admin/insurance/ClaimsQueue";
+import { ClaimsAnalytics } from "@/components/admin/insurance/ClaimsAnalytics";
+import { AutoApprovalSettings } from "@/components/admin/insurance/AutoApprovalSettings";
+import { Loader2, Plus, CheckCircle, XCircle, FileText, BarChart3, Shield, Users, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -53,12 +56,37 @@ export default function InsuranceControlPanel() {
         </Card>
       </div>
 
-      <Tabs defaultValue="claims">
+      <Tabs defaultValue="queue">
         <TabsList>
-          <TabsTrigger value="claims">Claims Review</TabsTrigger>
-          <TabsTrigger value="plans">Plans</TabsTrigger>
-          <TabsTrigger value="policies">Policies</TabsTrigger>
+          <TabsTrigger value="queue">
+            <FileText className="w-4 h-4 mr-2" />
+            Claims Queue
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="plans">
+            <Shield className="w-4 h-4 mr-2" />
+            Plans
+          </TabsTrigger>
+          <TabsTrigger value="policies">
+            <Users className="w-4 h-4 mr-2" />
+            Policies
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings className="w-4 h-4 mr-2" />
+            Auto-Approval
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="queue" className="space-y-4">
+          <ClaimsQueue />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-4">
+          <ClaimsAnalytics />
+        </TabsContent>
 
         <TabsContent value="claims" className="space-y-4">
           {pendingClaims.length === 0 ? (
@@ -124,6 +152,10 @@ export default function InsuranceControlPanel() {
               ))}
             </div>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-4">
+          <AutoApprovalSettings />
         </TabsContent>
       </Tabs>
 
