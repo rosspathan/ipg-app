@@ -28,6 +28,7 @@ export default function AdminUserCleanup() {
   const [results, setResults] = useState<DeleteResult[]>([]);
   const [progress, setProgress] = useState(0);
   const [dryRun, setDryRun] = useState(false);
+  const [serverSummary, setServerSummary] = useState<any>(null);
 
   // Delete all non-admin users
   const handleDeleteAllUsers = async () => {
@@ -42,89 +43,82 @@ export default function AdminUserCleanup() {
 
     setLoading(true);
     setResults([]);
+    setServerSummary(null);
     setProgress(0);
 
     try {
-      // Get all users except admins
-      const { data: allProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, email');
-
-      if (!allProfiles || allProfiles.length === 0) {
-        toast({
-          title: "No Users Found",
-          description: "There are no users to delete",
+      if (dryRun) {
+        // Dry run: just fetch counts, don't delete
+        const { data, error } = await supabase.functions.invoke('admin-reset-database', {
+          body: {
+            confirmToken: 'RESET_DATABASE_CONFIRM',
+            resetUsers: false, // Don't actually delete
+            resetBalances: false,
+            resetTransactions: false,
+          },
         });
-        setLoading(false);
-        return;
+
+        if (error) throw error;
+
+        setServerSummary(data);
+        setProgress(100);
+        
+        const results: DeleteResult[] = [{
+          success: true,
+          deletedAuthUser: false,
+          deletedProfile: false,
+          tablesCleared: [],
+          errors: [`[DRY RUN] Would delete ${data.counts?.non_admin_users || 0} non-admin users`],
+        }];
+        
+        setResults(results);
+
+        toast({
+          title: "Dry Run Complete",
+          description: `Would delete ${data.counts?.non_admin_users || 0} non-admin users. No changes made.`,
+        });
+      } else {
+        // Real deletion: use bulk reset
+        const { data, error } = await supabase.functions.invoke('admin-reset-database', {
+          body: {
+            confirmToken: 'RESET_DATABASE_CONFIRM',
+            resetUsers: true,
+            resetBalances: true,
+            resetTransactions: true,
+          },
+        });
+
+        if (error) throw error;
+
+        setServerSummary(data);
+        setProgress(100);
+
+        const results: DeleteResult[] = [{
+          success: true,
+          deletedAuthUser: true,
+          deletedProfile: true,
+          tablesCleared: [],
+          errors: [`Deleted ${data.deleted_auth_users || 0} auth users, ${data.deleted_profiles || 0} profiles`],
+        }];
+        
+        setResults(results);
+
+        toast({
+          title: "Deletion Complete",
+          description: `Successfully deleted ${data.deleted_auth_users || 0} users and all their data. Refresh the Users page to see changes.`,
+        });
       }
 
-      // Get admin user IDs
-      const { data: adminRoles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'admin');
-
-      const adminIds = new Set(adminRoles?.map(r => r.user_id) || []);
-
-      // Filter out admins
-      const nonAdminUsers = allProfiles.filter(p => !adminIds.has(p.user_id));
-
-      toast({
-        title: "Starting Bulk Deletion",
-        description: `Deleting ${nonAdminUsers.length} non-admin users...`,
-      });
-
-      const deletionResults: DeleteResult[] = [];
-      let processed = 0;
-
-      // Delete each user
-      for (const user of nonAdminUsers) {
-        if (dryRun) {
-          deletionResults.push({
-            success: true,
-            deletedAuthUser: false,
-            deletedProfile: false,
-            tablesCleared: [],
-            errors: [`[DRY RUN] Would delete: ${user.email}`],
-          });
-        } else {
-          const { data, error } = await supabase.functions.invoke('admin-delete-user', {
-            body: {
-              user_id: user.user_id,
-              confirm: 'DELETE',
-              confirmForce: false,
-            },
-          });
-
-          deletionResults.push(error ? {
-            success: false,
-            deletedAuthUser: false,
-            deletedProfile: false,
-            tablesCleared: [],
-            errors: [error.message],
-          } : data);
-        }
-
-        processed++;
-        setProgress((processed / nonAdminUsers.length) * 100);
-      }
-
-      setResults(deletionResults);
-
-      toast({
-        title: dryRun ? "Dry Run Complete" : "Deletion Complete",
-        description: `${deletionResults.filter(r => r.success).length}/${nonAdminUsers.length} users ${dryRun ? 'would be' : 'were'} deleted successfully`,
-      });
+      setConfirmText("");
     } catch (error: any) {
+      console.error('Error during deletion:', error);
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Deletion Failed",
+        description: error.message || "Failed to delete users",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
-      setConfirmText("");
     }
   };
 
@@ -228,6 +222,15 @@ export default function AdminUserCleanup() {
         </AlertDescription>
       </Alert>
 
+      {dryRun && (
+        <Alert className="bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
+          <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+          <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+            <strong>Dry Run Mode is ON</strong> — No deletions will be made. This will only preview what would be deleted.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Tabs defaultValue="bulk" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="bulk">Delete All Users</TabsTrigger>
@@ -282,15 +285,43 @@ export default function AdminUserCleanup() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Deleting Users...
+                    {dryRun ? "Running Dry Run..." : "Deleting Users..."}
                   </>
                 ) : (
                   <>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    {dryRun ? "Run Dry Run" : "Delete All Non-Admin Users"}
+                    {dryRun ? "Run Dry Run (No Deletions)" : "Delete All Non-Admin Users"}
                   </>
                 )}
               </Button>
+
+              {serverSummary && (
+                <div className="mt-4 p-4 bg-muted rounded-lg space-y-2">
+                  <h3 className="font-semibold">Server Summary:</h3>
+                  <div className="text-sm space-y-1">
+                    {dryRun ? (
+                      <>
+                        <p><strong>[DRY RUN]</strong> Would delete {serverSummary.counts?.non_admin_users || 0} non-admin users</p>
+                        <p>Admin users: {serverSummary.counts?.admin_users || 0}</p>
+                        <p className="text-muted-foreground mt-2">No changes were made</p>
+                      </>
+                    ) : (
+                      <>
+                        <p>Deleted auth users: <strong>{serverSummary.deleted_auth_users || 0}</strong></p>
+                        <p>Deleted profiles: <strong>{serverSummary.deleted_profiles || 0}</strong></p>
+                        <p>Remaining auth users: <strong>{serverSummary.remaining_auth_users || 0}</strong></p>
+                        <p>Remaining profiles: <strong>{serverSummary.remaining_profiles || 0}</strong></p>
+                        <p className="text-green-600 dark:text-green-400 mt-2 font-semibold">
+                          ✓ Deletion completed successfully
+                        </p>
+                        <p className="text-muted-foreground text-xs mt-2">
+                          Refresh the Users page to see updated counts
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,288 +1,251 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-interface DeleteUserRequest {
-  user_id?: string;
-  email?: string;
-  confirm?: string;
-  confirmForce?: boolean;
 }
 
-const handler = async (req: Request): Promise<Response> => {
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Get authorization header
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    // Create authenticated client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: authHeader },
+          headers: { Authorization: req.headers.get('Authorization')! },
         },
       }
-    );
+    )
 
-    // Verify user is admin
-    const { data: { user: callingUser } } = await supabaseClient.auth.getUser();
-    if (!callingUser) {
-      throw new Error('Not authenticated');
-    }
-
-    const { data: userRole } = await supabaseClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', callingUser.id)
-      .eq('role', 'admin')
-      .maybeSingle();
-
-    if (!userRole) {
-      throw new Error('Only admins can delete users');
-    }
-
-    const { user_id, email, confirm, confirmForce = false }: DeleteUserRequest = await req.json();
-
-    // Safety check - require confirmation
-    if (confirm !== 'DELETE') {
-      throw new Error('Invalid confirmation. Type DELETE to confirm.');
-    }
-
-    // Use service role client for admin operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    )
 
-    console.log('🗑️ Starting user deletion...');
-    let targetUserId = user_id;
+    // Verify user is authenticated
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseClient.auth.getUser()
 
-    // Resolve user ID from email if needed
+    if (authError || !user) {
+      console.error('Auth error:', authError)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      )
+    }
+
+    // Check if user is admin
+    const { data: roleData, error: roleError } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single()
+
+    if (roleError || !roleData) {
+      console.error('Role check error:', roleError)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Admin access required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      )
+    }
+
+    const { user_id, email, confirm, confirmForce } = await req.json()
+
+    // Validate confirmation
+    if (confirm !== 'DELETE') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid confirmation' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
+    let targetUserId = user_id
+
+    // Resolve email to user_id if provided
     if (!targetUserId && email) {
-      console.log(`🔍 Looking up user by email: ${email}`);
-      const list = await supabaseAdmin.auth.admin.listUsers();
-      const users = (list as any).users || [];
-      const found = users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
-      if (found) {
-        targetUserId = found.id;
-        console.log(`✅ Found user: ${targetUserId}`);
-      } else {
-        throw new Error(`User not found with email: ${email}`);
+      const { data: userData } = await supabaseAdmin.auth.admin.listUsers()
+      const targetUser = userData.users.find(u => u.email === email)
+      if (targetUser) {
+        targetUserId = targetUser.id
       }
     }
 
     if (!targetUserId) {
-      throw new Error('user_id or email is required');
-    }
-
-    // Get all admin user_ids to protect them
-    const { data: adminUsers } = await supabaseAdmin
-      .from('user_roles')
-      .select('user_id')
-      .eq('role', 'admin');
-
-    const adminIds = [...new Set([...(adminUsers?.map(a => a.user_id) || []), callingUser.id])];
-
-    // Check if target is admin
-    if (adminIds.includes(targetUserId) && !confirmForce) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'This user has admin role. To delete an admin user, set confirmForce to true.',
-          isAdmin: true,
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        }
-      );
+        JSON.stringify({ success: false, error: 'User not found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      )
     }
 
-    const results = {
-      success: true,
-      deletedAuthUser: false,
-      deletedProfile: false,
-      tablesCleared: [] as string[],
-      errors: [] as string[],
-    };
+    // Check if target user is admin
+    const { data: targetRoleData } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', targetUserId)
+      .eq('role', 'admin')
+      .single()
 
-    console.log(`🗑️ Deleting all data for user: ${targetUserId}`);
+    if (targetRoleData && !confirmForce) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Cannot delete admin user without confirmForce' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
 
-    // Delete all user-linked data (COMPREHENSIVE LIST)
-    const tablesToClean = [
-      // Core user data
-      { name: 'referral_tree', column: 'user_id' },
-      { name: 'referral_tree', column: 'referred_by' },
-      { name: 'user_roles', column: 'user_id' },
-      { name: 'referral_links_new', column: 'user_id' },
-      { name: 'kyc_profiles_new', column: 'user_id' },
-      { name: 'kyc_submissions_simple', column: 'user_id' },
-      
-      // Badge system
-      { name: 'badge_purchases', column: 'user_id' },
-      { name: 'badge_purchase_events', column: 'user_id' },
-      { name: 'badge_qualification_events', column: 'user_id' },
-      { name: 'user_badge_holdings', column: 'user_id' },
-      { name: 'user_badge_status', column: 'user_id' },
-      { name: 'user_bsk_holdings', column: 'user_id' },
-      { name: 'badge_holdings', column: 'user_id' },
-      
-      // Commissions & earnings
-      { name: 'commission_payouts', column: 'user_id' },
-      { name: 'commission_audit_log', column: 'user_id' },
-      { name: 'referral_commissions', column: 'user_id' },
-      { name: 'team_income_ledger', column: 'user_id' },
-      { name: 'direct_referrer_rewards', column: 'user_id' },
-      { name: 'referral_balance_slabs', column: 'user_id' },
-      
-      // BSK ledgers & balances
-      { name: 'user_bsk_balances', column: 'user_id' },
-      { name: 'bsk_withdrawable_ledger', column: 'user_id' },
-      { name: 'bsk_holding_ledger', column: 'user_id' },
-      { name: 'bsk_bonus_ledger', column: 'user_id' },
-      { name: 'bsk_loan_ledger', column: 'user_id' },
-      { name: 'admin_fees_ledger', column: 'user_id' },
-      { name: 'inr_balance_ledger', column: 'user_id' },
-      { name: 'insurance_bsk_ledger', column: 'user_id' },
-      { name: 'insurance_bsk_policies', column: 'user_id' },
-      
-      // BSK transfers
-      { name: 'bsk_transfers', column: 'sender_id' },
-      { name: 'bsk_transfers', column: 'receiver_id' },
-      { name: 'unified_bsk_transactions', column: 'user_id' },
-      
-      // Legacy ledgers
-      { name: 'referral_ledger', column: 'user_id' },
-      { name: 'bonus_ledger', column: 'user_id' },
-      
-      // VIP & milestones
-      { name: 'user_vip_milestone_claims', column: 'user_id' },
-      { name: 'vip_activity_log', column: 'user_id' },
-      
-      // Wallet & trading
-      { name: 'wallet_balances', column: 'user_id' },
-      { name: 'orders', column: 'user_id' },
-      { name: 'trades', column: 'buyer_id' },
-      { name: 'trades', column: 'seller_id' },
-      
-      // Withdrawals & deposits
-      { name: 'withdrawals', column: 'user_id' },
-      { name: 'deposits', column: 'user_id' },
-      { name: 'fiat_deposits', column: 'user_id' },
-      
-      // Programs & activities
-      { name: 'ad_clicks', column: 'user_id' },
-      { name: 'referral_events', column: 'user_id' },
-      { name: 'spin_results', column: 'user_id' },
-      { name: 'lucky_draw_tickets', column: 'user_id' },
-      { name: 'user_program_participations', column: 'user_id' },
-      { name: 'bsk_vesting_releases', column: 'user_id' },
-    ];
+    console.log(`Starting deletion for user: ${targetUserId}`)
 
-    // Delete from all tables
-    const deletePromises = tablesToClean.map(({ name, column }) =>
-      supabaseAdmin.from(name).delete().eq(column, targetUserId)
-        .then(() => {
-          results.tablesCleared.push(`${name}(${column})`);
-          console.log(`✅ Deleted from ${name} where ${column}=${targetUserId}`);
-        })
-        .catch(err => {
-          const msg = err.message || String(err);
-          if (!msg.includes('not found')) {
-            results.errors.push(`${name}: ${msg}`);
-            console.warn(`⚠️ Error deleting from ${name}:`, msg);
+    const tablesCleared: string[] = []
+    const errors: string[] = []
+
+    // Delete from tables in order (respecting foreign keys)
+    const tablesToClear = [
+      'referral_tree',
+      'user_bsk_balances',
+      'user_bsk_vesting',
+      'bsk_vesting_releases',
+      'bsk_vesting_referral_rewards',
+      'wallet_bonus_balances',
+      'bonus_ledger',
+      'user_badge_status',
+      'badge_qualification_events',
+      'direct_referrer_rewards',
+      'user_wallets',
+      'wallet_balances',
+      'user_gamification_stats',
+      'user_achievements',
+      'daily_rewards',
+      'kyc_submissions',
+      'referral_links',
+      'referral_relationships',
+      'user_promotion_claims',
+      'lucky_draw_tickets',
+      'fiat_bank_accounts',
+      'fiat_upi_accounts',
+      'fiat_deposits',
+      'fiat_withdrawals',
+      'crypto_to_inr_requests',
+      'deposits',
+      'withdrawals',
+      'orders',
+      'user_insurance_subscriptions',
+      'support_tickets',
+      'support_messages',
+      'audit_logs',
+      'user_roles',
+    ]
+
+    for (const table of tablesToClear) {
+      try {
+        // Handle referral_tree separately (has both user_id and ancestor_id)
+        if (table === 'referral_tree') {
+          const { error: e1 } = await supabaseAdmin
+            .from(table)
+            .delete()
+            .eq('user_id', targetUserId)
+          
+          const { error: e2 } = await supabaseAdmin
+            .from(table)
+            .delete()
+            .eq('ancestor_id', targetUserId)
+
+          if (!e1 && !e2) {
+            tablesCleared.push(table)
+          } else {
+            if (e1) errors.push(`${table} (user_id): ${e1.message}`)
+            if (e2) errors.push(`${table} (ancestor_id): ${e2.message}`)
           }
-        })
-    );
+          continue
+        }
 
-    await Promise.all(deletePromises);
+        // Handle referral_relationships (has referrer_id and referee_id)
+        if (table === 'referral_relationships') {
+          const { error: e1 } = await supabaseAdmin
+            .from(table)
+            .delete()
+            .eq('referrer_id', targetUserId)
+          
+          const { error: e2 } = await supabaseAdmin
+            .from(table)
+            .delete()
+            .eq('referee_id', targetUserId)
+
+          if (!e1 && !e2) {
+            tablesCleared.push(table)
+          } else {
+            if (e1) errors.push(`${table} (referrer_id): ${e1.message}`)
+            if (e2) errors.push(`${table} (referee_id): ${e2.message}`)
+          }
+          continue
+        }
+
+        const { error } = await supabaseAdmin
+          .from(table)
+          .delete()
+          .eq('user_id', targetUserId)
+
+        if (!error) {
+          tablesCleared.push(table)
+        } else {
+          // Only log as error if it's not a "table doesn't exist" or "no rows" error
+          if (!error.message.includes('does not exist') && !error.message.includes('No rows found')) {
+            errors.push(`${table}: ${error.message}`)
+          }
+        }
+      } catch (err: any) {
+        errors.push(`${table}: ${err.message}`)
+      }
+    }
 
     // Delete profile
-    try {
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .delete()
-        .eq('user_id', targetUserId);
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('user_id', targetUserId)
 
-      if (profileError) {
-        if (!profileError.message.includes('not found')) {
-          results.errors.push(`Profile deletion: ${profileError.message}`);
-        }
-      } else {
-        results.deletedProfile = true;
-        console.log('✅ Profile deleted');
-      }
-    } catch (err: any) {
-      results.errors.push(`Profile deletion: ${err.message}`);
+    if (!profileError) {
+      tablesCleared.push('profiles')
+    } else {
+      errors.push(`profiles: ${profileError.message}`)
     }
 
     // Delete auth user
-    try {
-      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
-      if (authError) {
-        if (authError.message?.includes('not found') || (authError as any).status === 404) {
-          console.log('ℹ️ Auth user not found (already deleted)');
-        } else {
-          results.errors.push(`Auth deletion: ${authError.message}`);
-          console.error('❌ Auth user deletion failed:', authError);
-        }
-      } else {
-        results.deletedAuthUser = true;
-        console.log('✅ Auth user deleted');
-      }
-    } catch (err: any) {
-      results.errors.push(`Auth deletion: ${err.message}`);
+    const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId)
+
+    if (authDeleteError) {
+      errors.push(`auth.users: ${authDeleteError.message}`)
     }
 
-    // Create audit log
-    await supabaseAdmin.from('audit_logs').insert({
-      user_id: callingUser.id,
-      action: 'force_delete_user',
-      resource_type: 'user',
-      resource_id: targetUserId,
-      new_values: {
-        deletedAuthUser: results.deletedAuthUser,
-        deletedProfile: results.deletedProfile,
-        tablesCleared: results.tablesCleared.length,
-        timestamp: new Date().toISOString(),
-      }
-    });
+    console.log(`Deletion complete for user: ${targetUserId}`)
+    console.log(`Tables cleared: ${tablesCleared.length}`)
+    console.log(`Errors: ${errors.length}`)
 
-    console.log('✅ User deletion completed');
-    console.log(`📊 Summary: Auth=${results.deletedAuthUser}, Profile=${results.deletedProfile}, Tables=${results.tablesCleared.length}`);
-
-    return new Response(JSON.stringify(results), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
-    });
-  } catch (error: any) {
-    console.error('❌ User deletion failed:', error);
     return new Response(
       JSON.stringify({
-        success: false,
-        error: error.message || 'Failed to delete user',
+        success: errors.length === 0,
+        deletedAuthUser: !authDeleteError,
+        deletedProfile: !profileError,
+        tablesCleared,
+        errors,
+        message: errors.length === 0 
+          ? 'User and all associated data deleted successfully' 
+          : `Deletion completed with ${errors.length} errors`,
       }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      }
-    );
-  }
-};
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
 
-serve(handler);
+  } catch (error: any) {
+    console.error('Error in admin-delete-user:', error)
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    )
+  }
+})
