@@ -11028,9 +11028,10 @@ export type Database = {
       lookup_user_by_referral_code: {
         Args: { p_referral_code: string }
         Returns: {
-          full_name: string
+          display_name: string
           referral_code: string
           user_id: string
+          username: string
         }[]
       }
       pay_retroactive_commissions: {

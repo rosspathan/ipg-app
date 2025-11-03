@@ -41,30 +41,12 @@ export function useReferralCodeValidation(code: string, options?: ValidationOpti
       setResult(prev => ({ ...prev, loading: true, error: null }));
 
       try {
-        // Check if it's a UUID (direct user_id reference)
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        let data = null;
-        let error = null;
-
-        if (uuidRegex.test(debouncedCode)) {
-          // Direct UUID lookup
-          const result = await supabase
-            .from('profiles')
-            .select('user_id, username, display_name')
-            .eq('user_id', debouncedCode)
-            .maybeSingle();
-          data = result.data;
-          error = result.error;
-        } else {
-          // Legacy short code lookup
-          const result = await supabase
-            .from('profiles')
-            .select('user_id, username, display_name')
-            .eq('referral_code', debouncedCode.toUpperCase())
-            .maybeSingle();
-          data = result.data;
-          error = result.error;
-        }
+        // Use the safe lookup function instead of direct table query
+        const { data, error } = await supabase
+          .rpc('lookup_user_by_referral_code', {
+            p_referral_code: debouncedCode
+          })
+          .maybeSingle();
 
         if (error) throw error;
 
