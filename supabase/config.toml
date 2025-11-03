@@ -188,3 +188,12 @@ verify_jwt = false
 
 [functions.admin-lock-referral]
 verify_jwt = true
+
+[functions.ad-mining-daily-reset]
+verify_jwt = false
+
+[functions.process-ad-reward]
+verify_jwt = true
+
+[functions.insurance-claim-process]
+verify_jwt = true
