@@ -6923,6 +6923,7 @@ export type Database = {
           event_id: string
           event_type: string
           id: string
+          idempotency_key: string | null
           level: number
           payer_id: string
           settled_at: string | null
@@ -6939,6 +6940,7 @@ export type Database = {
           event_id: string
           event_type: string
           id?: string
+          idempotency_key?: string | null
           level: number
           payer_id: string
           settled_at?: string | null
@@ -6955,6 +6957,7 @@ export type Database = {
           event_id?: string
           event_type?: string
           id?: string
+          idempotency_key?: string | null
           level?: number
           payer_id?: string
           settled_at?: string | null
