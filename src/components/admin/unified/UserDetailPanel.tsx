@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Sheet,
@@ -11,12 +11,16 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Wallet, Activity, Shield, AlertTriangle, TrendingUp, Lock } from "lucide-react";
+import { Loader2, User, Wallet, Activity, Shield, AlertTriangle, TrendingUp, Lock, Mail, Eye, Download, KeyRound } from "lucide-react";
 import { CleanCard } from "@/components/admin/clean/CleanCard";
 import { BalanceAdjustmentDialog } from "@/components/admin/users/BalanceAdjustmentDialog";
 import { UserBalanceOverview } from "@/components/admin/users/UserBalanceOverview";
 import { UserTransactionHistory } from "@/components/admin/users/UserTransactionHistory";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ForceDeleteDialog } from "@/components/admin/users/ForceDeleteDialog";
+import { SendEmailDialog } from "@/components/admin/users/SendEmailDialog";
+import { AccountActionDialog } from "@/components/admin/users/AccountActionDialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserDetailPanelProps {
   userId: string;
@@ -27,7 +31,14 @@ interface UserDetailPanelProps {
 export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps) {
   const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false);
   const [adjustmentOperation, setAdjustmentOperation] = useState<"add" | "deduct">("add");
+  const [sendEmailDialogOpen, setSendEmailDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [accountActionDialogOpen, setAccountActionDialogOpen] = useState(false);
+  const [accountAction, setAccountAction] = useState<"suspend" | "ban">("suspend");
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: user, isLoading } = useQuery({
     queryKey: ["admin-user-detail", userId],
@@ -39,6 +50,17 @@ export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps)
         .single();
 
       if (error) throw error;
+
+      // Check if user has admin role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .single();
+
+      setIsUserAdmin(!!roleData);
+
       return data;
     },
     enabled: open && !!userId,
@@ -73,6 +95,78 @@ export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps)
     },
     enabled: open && !!userId,
   });
+
+  const handleResetPassword = async () => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user?.email || "", {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password Reset Email Sent",
+        description: `Reset link sent to ${user?.email}`,
+      });
+    } catch (error: any) {
+      console.error('Error sending reset email:', error);
+      toast({
+        title: "Failed to Send",
+        description: error.message || "Failed to send password reset email",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleViewAsUser = () => {
+    window.open(`/app/profile`, '_blank');
+    toast({
+      title: "Opening User View",
+      description: "Opening user profile in new tab",
+    });
+  };
+
+  const handleExportData = async () => {
+    try {
+      const exportData = {
+        user: user,
+        balance: balance,
+        inrBalance: inrBalance,
+        exportedAt: new Date().toISOString(),
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `user-${userId.substring(0, 8)}-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Data Exported",
+        description: "User data exported successfully",
+      });
+    } catch (error: any) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export user data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAccountActionSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin-user-detail", userId] });
+  };
+
+  const handleDeleteSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    onClose();
+  };
 
   return (
     <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
@@ -172,16 +266,40 @@ export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps)
                       Quick Actions
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <Button variant="outline" size="sm" className="border-[hsl(235_20%_22%/0.4)] min-h-[44px]">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-[hsl(235_20%_22%/0.4)] min-h-[44px]"
+                        onClick={handleResetPassword}
+                      >
+                        <KeyRound className="w-4 h-4 mr-2" />
                         Reset Password
                       </Button>
-                      <Button variant="outline" size="sm" className="border-[hsl(235_20%_22%/0.4)] min-h-[44px]">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-[hsl(235_20%_22%/0.4)] min-h-[44px]"
+                        onClick={() => setSendEmailDialogOpen(true)}
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
                         Send Email
                       </Button>
-                      <Button variant="outline" size="sm" className="border-[hsl(235_20%_22%/0.4)] min-h-[44px]">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-[hsl(235_20%_22%/0.4)] min-h-[44px]"
+                        onClick={handleViewAsUser}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
                         View as User
                       </Button>
-                      <Button variant="outline" size="sm" className="border-[hsl(235_20%_22%/0.4)] min-h-[44px]">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-[hsl(235_20%_22%/0.4)] min-h-[44px]"
+                        onClick={handleExportData}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
                         Export Data
                       </Button>
                     </div>
@@ -325,7 +443,16 @@ export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps)
                             Temporarily disable user access
                           </div>
                         </div>
-                        <Button variant="destructive" size="sm" className="min-h-[44px] w-full sm:w-auto">
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          className="min-h-[44px] w-full sm:w-auto"
+                          onClick={() => {
+                            setAccountAction("suspend");
+                            setAccountActionDialogOpen(true);
+                          }}
+                        >
+                          <Lock className="w-4 h-4 mr-2" />
                           Suspend
                         </Button>
                       </div>
@@ -337,7 +464,16 @@ export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps)
                             Permanently ban from platform
                           </div>
                         </div>
-                        <Button variant="destructive" size="sm" className="min-h-[44px] w-full sm:w-auto">
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          className="min-h-[44px] w-full sm:w-auto"
+                          onClick={() => {
+                            setAccountAction("ban");
+                            setAccountActionDialogOpen(true);
+                          }}
+                        >
+                          <AlertTriangle className="w-4 h-4 mr-2" />
                           Ban
                         </Button>
                       </div>
@@ -349,7 +485,13 @@ export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps)
                             Permanently delete all data
                           </div>
                         </div>
-                        <Button variant="destructive" size="sm" className="min-h-[44px] w-full sm:w-auto">
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          className="min-h-[44px] w-full sm:w-auto"
+                          onClick={() => setDeleteDialogOpen(true)}
+                        >
+                          <AlertTriangle className="w-4 h-4 mr-2" />
                           Delete
                         </Button>
                       </div>
@@ -371,6 +513,34 @@ export function UserDetailPanel({ userId, open, onClose }: UserDetailPanelProps)
           onClose={() => setAdjustmentDialogOpen(false)}
           defaultOperation={adjustmentOperation}
         />
+
+        {user && (
+          <>
+            <SendEmailDialog
+              open={sendEmailDialogOpen}
+              onOpenChange={setSendEmailDialogOpen}
+              userEmail={user.email}
+            />
+
+            <AccountActionDialog
+              open={accountActionDialogOpen}
+              onOpenChange={setAccountActionDialogOpen}
+              userId={userId}
+              userEmail={user.email}
+              action={accountAction}
+              onSuccess={handleAccountActionSuccess}
+            />
+
+            <ForceDeleteDialog
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              userId={userId}
+              userEmail={user.email}
+              isAdmin={isUserAdmin}
+              onSuccess={handleDeleteSuccess}
+            />
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );
