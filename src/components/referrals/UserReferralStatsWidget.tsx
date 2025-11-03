@@ -149,7 +149,7 @@ export function UserReferralStatsWidget() {
           <div className="text-center py-6 text-muted-foreground">
             <Trophy className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No referral earnings yet</p>
-            <p className="text-xs">Share your link to start earning BSK!</p>
+            <p className="text-xs">Share your code to start earning BSK!</p>
           </div>
         )}
       </CardContent>

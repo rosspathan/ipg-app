@@ -200,7 +200,7 @@ export default function TeamReferralsPageNew() {
             <div className="text-center py-8 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>No referral activity yet</p>
-              <p className="text-sm mt-1">Share your link to get started!</p>
+              <p className="text-sm mt-1">Share your code to get started!</p>
             </div>
           </CardContent>
         </Card>

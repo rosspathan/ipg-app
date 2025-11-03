@@ -66,7 +66,7 @@ const profileSections = [
   {
     id: "referrals",
     title: "Referrals & Invite",
-    description: "Share your referral link",
+    description: "Share your referral code",
     icon: Users,
     route: "/app/profile/referrals",
     testId: "nav-referrals",

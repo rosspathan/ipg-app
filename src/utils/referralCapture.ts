@@ -60,41 +60,41 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
     let sponsorId: string | null = null;
     let referralCode: string | null = null;
 
-    // Priority 1: Check pending referral (from onboarding)
-    const pending = getPendingReferral();
-    if (pending && pending.code) {
-      referralCode = pending.code;
-      sponsorId = pending.sponsorId;
-      console.log('[ReferralCapture] Using pending referral:', referralCode, '→', sponsorId);
+    // Priority 1: Check signup referral code (directly entered during signup)
+    const storedCode = localStorage.getItem('ismart_signup_ref');
+    if (storedCode) {
+      referralCode = storedCode.toUpperCase();
+      console.log('[ReferralCapture] Using signup referral code:', referralCode);
+      
+      // Lookup sponsor by code
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('referral_code', referralCode)
+        .maybeSingle();
+      
+      if (data) {
+        sponsorId = data.user_id;
+        console.log('[ReferralCapture] Resolved sponsor:', sponsorId);
+      } else {
+        console.log('[ReferralCapture] Invalid referral code:', referralCode);
+        localStorage.removeItem('ismart_signup_ref');
+        return;
+      }
     }
-    
-    // Priority 2: Check signup referral
+
+    // Priority 2: Check onboarding referral (fallback)
     if (!sponsorId) {
-      const storedCode = localStorage.getItem('ismart_signup_ref');
-      if (storedCode) {
-        referralCode = storedCode.toUpperCase();
-        console.log('[ReferralCapture] Using signup referral:', referralCode);
-        
-        // Lookup sponsor by code
-        const { data } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('referral_code', referralCode)
-          .maybeSingle();
-        
-        if (data) {
-          sponsorId = data.user_id;
-          console.log('[ReferralCapture] Resolved sponsor:', sponsorId);
-        } else {
-          console.log('[ReferralCapture] Invalid referral code:', referralCode);
-          localStorage.removeItem('ismart_signup_ref');
-          return;
-        }
+      const pending = getPendingReferral();
+      if (pending && pending.code) {
+        referralCode = pending.code;
+        sponsorId = pending.sponsorId;
+        console.log('[ReferralCapture] Using onboarding referral:', referralCode, '→', sponsorId);
       }
     }
 
     if (!sponsorId) {
-      console.log('[ReferralCapture] No referral source found');
+      console.log('[ReferralCapture] No referral code entered - user signing up without sponsor');
       return;
     }
 

@@ -45,7 +45,7 @@ export function DirectReferralsList() {
               <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
               <p className="font-semibold mb-1">No Direct Referrals Yet</p>
               <p className="text-sm text-muted-foreground">
-                Share your referral link to start building your team
+                Share your referral code to start building your team
               </p>
             </div>
           </div>

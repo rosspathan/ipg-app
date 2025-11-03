@@ -23,7 +23,7 @@ export function DownlineTreeViewer() {
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <p className="text-muted-foreground">No downline members yet. Share your referral link to build your team!</p>
+          <p className="text-muted-foreground">No downline members yet. Share your referral code to build your team!</p>
         </CardContent>
       </Card>
     );

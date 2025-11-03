@@ -37,14 +37,13 @@ const SignupScreen: React.FC = () => {
   // Real-time referral code validation (ignore self-referral during signup)
   const { isValid, sponsorUsername, loading: validating, error: validationError } = useReferralCodeValidation(referralCode, { ignoreSelfReferral: true });
 
-  // Pre-populate referral code from URL parameter (?ref=CODE)
+  // Optional: Pre-populate referral code from URL parameter (?ref=CODE) for convenience
   useEffect(() => {
     const refFromUrl = searchParams.get('ref');
     if (refFromUrl && !referralCode) {
       const upperCode = refFromUrl.toUpperCase();
       setReferralCode(upperCode);
-      localStorage.setItem('ismart_signup_ref', upperCode);
-      console.log('[SIGNUP] Pre-populated referral code from URL:', upperCode);
+      console.log('[SIGNUP] Pre-populated referral code from URL (optional):', upperCode);
     }
   }, [searchParams, referralCode]);
 
@@ -142,14 +141,15 @@ const SignupScreen: React.FC = () => {
         >
           {/* Referral Code Input */}
           <div className="space-y-2">
-            <Label htmlFor="referralCode" className="text-white">
-              Referral Code (Optional)
+            <Label htmlFor="referralCode" className="text-white flex items-center gap-2">
+              <Gift className="w-4 h-4" />
+              Sponsor Referral Code (Optional)
             </Label>
             <div className="relative">
               <Input
                 id="referralCode"
                 type="text"
-                placeholder="Enter referral code"
+                placeholder="Enter sponsor's code"
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 uppercase"

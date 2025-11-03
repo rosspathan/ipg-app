@@ -168,23 +168,21 @@ Hey! I'm earning crypto rewards with I-SMART Exchange. Join me! 💎
 ✅ Secure wallet with biometric protection
 ✅ Daily reward programs & lucky draws
 
-🎁 *YOUR REFERRAL CODE:*
+🎁 *USE MY REFERRAL CODE:*
 {CODE}
 
 📱 *How to Join (3 Easy Steps):*
-1️⃣ Download I-SMART Exchange app:
-   [APK DOWNLOAD LINK - Coming Soon]
+1️⃣ Sign up at: https://i-smartapp.com
 
-2️⃣ Sign up with your email
+2️⃣ Enter my referral code during signup: {CODE}
 
-3️⃣ Enter referral code: {CODE}
-   (Enter it during verification to get bonuses!)
+3️⃣ Start trading and earning together!
 
-💪 I've helped {TOTAL_REFERRALS} friends join!
+💪 I've helped {TOTAL_REFERRALS} friends join already!
 
 Referred by: {REFERRER_NAME}
 
-Start earning together! 🚀
+Let's earn together! 🚀
 #CryptoTrading #ISMART #ReferralRewards`;
     
     // Parse template with variables
@@ -200,7 +198,8 @@ Start earning together! 🚀
       try {
         await navigator.share({
           title: 'Join I-SMART Exchange',
-          text: message
+          text: message,
+          url: 'https://i-smartapp.com'
         });
       } catch (error) {
         console.error('Error sharing:', error);

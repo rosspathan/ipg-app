@@ -28,24 +28,23 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
   const [autoValidated, setAutoValidated] = useState(false);
   const validation = useReferralCodeValidation(code);
 
-  // Auto-populate referral code if captured from previous screens
+  // Auto-populate referral code if entered during signup
   useEffect(() => {
-    // Check multiple sources for pre-captured referral code
+    // Check for referral code from signup screen
+    const signupRef = localStorage.getItem('ismart_signup_ref');
     const stateRef = (location.state as any)?.referralCode;
-    const localRef = localStorage.getItem('ismart_signup_ref');
-    const sessionRef = sessionStorage.getItem('ismart_ref_code');
     
-    const capturedCode = stateRef || localRef || sessionRef;
+    const capturedCode = signupRef || stateRef;
     
     if (capturedCode && !code && !autoValidated) {
       const upperCode = capturedCode.toUpperCase();
-      console.log('📨 Auto-populating referral code:', upperCode);
+      console.log('📨 Auto-populating referral code from signup:', upperCode);
       setCode(upperCode);
       setAutoValidated(true);
       
       toast({
         title: "Referral Code Applied",
-        description: `Code ${upperCode} from your referral link`,
+        description: `Using code ${upperCode} from signup`,
         duration: 3000,
       });
     }
@@ -237,7 +236,7 @@ const ReferralCodeInputScreen: React.FC<ReferralCodeInputScreenProps> = ({
               className="text-center"
             >
               <p className="text-white/50 text-xs">
-                Don't have a code? You can add it later in Settings (within 7 days)
+                Don't have a referral code? You can skip this step and add one later in Settings
               </p>
             </motion.div>
           </motion.div>
