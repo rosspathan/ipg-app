@@ -157,17 +157,17 @@ const SignupScreen: React.FC = () => {
               />
               {referralCode && validating && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <Loader2 className="w-4 h-4 animate-spin text-white/60" />
+                  <Loader2 className="w-5 h-5 animate-spin text-white/60" />
                 </div>
               )}
               {referralCode && !validating && isValid && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <Check className="w-4 h-4 text-green-400" />
+                  <Check className="w-5 h-5 text-green-400" />
                 </div>
               )}
               {referralCode && !validating && !isValid && validationError && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <X className="w-4 h-4 text-red-400" />
+                  <X className="w-5 h-5 text-red-400" />
                 </div>
               )}
             </div>
@@ -176,7 +176,7 @@ const SignupScreen: React.FC = () => {
             {referralCode && !validating && isValid && sponsorUsername && (
               <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3">
                 <p className="text-green-300 text-sm font-medium flex items-center gap-2">
-                  <Check className="w-4 h-4" />
+                  <Check className="w-5 h-5" />
                   Sponsor Confirmed: {sponsorUsername}
                 </p>
               </div>
@@ -184,7 +184,7 @@ const SignupScreen: React.FC = () => {
             
             {referralCode && !validating && validationError && (
               <p className="text-red-300 text-sm flex items-center gap-1">
-                <X className="w-4 h-4" /> {validationError}
+                <X className="w-5 h-5" /> {validationError}
               </p>
             )}
             
@@ -228,7 +228,7 @@ const SignupScreen: React.FC = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
             
@@ -253,7 +253,7 @@ const SignupScreen: React.FC = () => {
             
             {errors.password && (
               <p className="text-red-300 text-sm flex items-center gap-1">
-                <X className="w-4 h-4" /> {errors.password}
+                <X className="w-5 h-5" /> {errors.password}
               </p>
             )}
           </div>
@@ -271,23 +271,23 @@ const SignupScreen: React.FC = () => {
             />
             {confirmPassword && password === confirmPassword && (
               <p className="text-green-300 text-sm flex items-center gap-1">
-                <Check className="w-4 h-4" /> Passwords match
+                <Check className="w-5 h-5" /> Passwords match
               </p>
             )}
             {errors.confirmPassword && (
               <p className="text-red-300 text-sm flex items-center gap-1">
-                <X className="w-4 h-4" /> {errors.confirmPassword}
+                <X className="w-5 h-5" /> {errors.confirmPassword}
               </p>
             )}
           </div>
 
           {/* Terms Checkbox */}
-          <div className="flex items-start space-x-2">
+          <div className="flex items-center space-x-2">
             <Checkbox
               id="terms"
               checked={agreedToTerms}
               onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
-              className="mt-1 border-white/30 data-[state=checked]:bg-white data-[state=checked]:text-primary"
+              className="border-white/30 data-[state=checked]:bg-white data-[state=checked]:text-primary"
             />
             <Label
               htmlFor="terms"
