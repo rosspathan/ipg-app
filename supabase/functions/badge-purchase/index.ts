@@ -1,4 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import BigNumber from 'https://esm.sh/bignumber.js@9.1.2';
+
+// Configure BigNumber for financial calculations
+BigNumber.config({
+  DECIMAL_PLACES: 8,
+  ROUNDING_MODE: BigNumber.ROUND_DOWN,
+  EXPONENTIAL_AT: [-20, 20],
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -66,32 +74,39 @@ Deno.serve(async (req) => {
       throw new Error('Failed to fetch balance');
     }
 
-    const totalBalance = Number(balance.withdrawable_balance) + Number(balance.holding_balance);
+    const totalBalance = new BigNumber(balance.withdrawable_balance)
+      .plus(balance.holding_balance)
+      .toNumber();
     
-    if (totalBalance < bsk_amount) {
+    if (new BigNumber(totalBalance).lt(bsk_amount)) {
       return new Response(
         JSON.stringify({ error: 'Insufficient BSK balance' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 2. Deduct BSK from user's balance (prioritize withdrawable first)
-    let remainingDeduction = bsk_amount;
-    let withdrawableDeduction = 0;
-    let holdingDeduction = 0;
+    // 2. Deduct BSK from user's balance (prioritize withdrawable first) with BigNumber precision
+    const remainingDeduction = new BigNumber(bsk_amount);
+    let withdrawableDeduction = new BigNumber(0);
+    let holdingDeduction = new BigNumber(0);
 
-    if (Number(balance.withdrawable_balance) >= remainingDeduction) {
+    const withdrawableBN = new BigNumber(balance.withdrawable_balance);
+    
+    if (withdrawableBN.gte(remainingDeduction)) {
       withdrawableDeduction = remainingDeduction;
     } else {
-      withdrawableDeduction = Number(balance.withdrawable_balance);
-      holdingDeduction = remainingDeduction - withdrawableDeduction;
+      withdrawableDeduction = withdrawableBN;
+      holdingDeduction = remainingDeduction.minus(withdrawableDeduction);
     }
+
+    const newWithdrawable = new BigNumber(balance.withdrawable_balance).minus(withdrawableDeduction);
+    const newHolding = new BigNumber(balance.holding_balance).minus(holdingDeduction);
 
     const { error: updateBalanceError } = await supabaseClient
       .from('user_bsk_balances')
       .update({
-        withdrawable_balance: Number(balance.withdrawable_balance) - withdrawableDeduction,
-        holding_balance: Number(balance.holding_balance) - holdingDeduction,
+        withdrawable_balance: newWithdrawable.toNumber(),
+        holding_balance: newHolding.toNumber(),
       })
       .eq('user_id', user_id);
 
@@ -99,6 +114,8 @@ Deno.serve(async (req) => {
       console.error('Balance update error:', updateBalanceError);
       throw new Error('Failed to update balance');
     }
+
+    console.log(`💰 Balance deducted: ${withdrawableDeduction.toString()} from withdrawable, ${holdingDeduction.toString()} from holding`);
 
     // 3. Create or update badge holding (STORE NORMALIZED NAME)
     const { error: badgeError } = await supabaseClient
@@ -131,7 +148,7 @@ Deno.serve(async (req) => {
       throw new Error('Failed to update badge holding');
     }
 
-    // 4. Process 10% direct commission (L1 sponsor only - NO multi-level rewards)
+    // 4. Process 10% direct commission (L1 sponsor only)
     try {
       console.log('💰 Processing 10% direct commission...');
       
@@ -151,7 +168,29 @@ Deno.serve(async (req) => {
       }
     } catch (commissionError) {
       console.error('❌ Direct commission processor error (non-critical):', commissionError);
-      // Don't fail the purchase if commission fails
+    }
+
+    // 4.5 🌳 CRITICAL: Process 50-level team income rewards
+    try {
+      console.log('🌳 Processing 50-level team income...');
+      
+      const teamIncomeResponse = await supabaseClient.functions.invoke('process-team-income-rewards', {
+        body: {
+          payer_id: user_id,
+          event_type: 'badge_purchase',
+          event_id: `badge_${user_id}_${Date.now()}`,
+          badge_name: normalizedBadge,
+          payment_amount: bsk_amount
+        }
+      });
+
+      if (teamIncomeResponse.error) {
+        console.error('❌ Team income processing error:', teamIncomeResponse.error);
+      } else {
+        console.log('✅ Team income processed:', teamIncomeResponse.data);
+      }
+    } catch (teamIncomeError) {
+      console.error('❌ Team income processor error (non-critical):', teamIncomeError);
     }
 
     // 5. Credit bonus holding balance for badge purchase
@@ -189,8 +228,8 @@ Deno.serve(async (req) => {
       if (!badgeThreshold && normalizedBadge === 'VIP') {
         console.log('⚠️ No threshold found for VIP badge, using default 10,000 BSK bonus');
         bonusAmount = 10000;
-      } else if (badgeThreshold && Number(badgeThreshold.bonus_bsk_holding || 0) > 0) {
-        bonusAmount = Number(badgeThreshold.bonus_bsk_holding);
+      } else if (badgeThreshold && new BigNumber(badgeThreshold.bonus_bsk_holding || 0).gt(0)) {
+        bonusAmount = new BigNumber(badgeThreshold.bonus_bsk_holding).toNumber();
       }
 
       if (thresholdError) {
@@ -214,13 +253,16 @@ Deno.serve(async (req) => {
           throw balanceQueryError;
         }
         
-        // Credit bonus to holding balance - upsert to handle new users
+        // Credit bonus to holding balance with BigNumber precision
+        const newHoldingBalance = new BigNumber(currentBalance?.holding_balance || 0).plus(bonusAmount);
+        const newTotalEarnedHolding = new BigNumber(currentBalance?.total_earned_holding || 0).plus(bonusAmount);
+
         const { error: bonusUpdateError } = await supabaseClient
           .from('user_bsk_balances')
           .upsert({
             user_id,
-            holding_balance: Number(currentBalance?.holding_balance || 0) + bonusAmount,
-            total_earned_holding: Number(currentBalance?.total_earned_holding || 0) + bonusAmount,
+            holding_balance: newHoldingBalance.toNumber(),
+            total_earned_holding: newTotalEarnedHolding.toNumber(),
             updated_at: new Date().toISOString(),
           }, {
             onConflict: 'user_id'

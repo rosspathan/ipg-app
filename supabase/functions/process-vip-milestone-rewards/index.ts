@@ -1,4 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import BigNumber from 'https://esm.sh/bignumber.js@9.1.2';
+
+// Configure BigNumber for financial calculations
+BigNumber.config({
+  DECIMAL_PLACES: 8,
+  ROUNDING_MODE: BigNumber.ROUND_DOWN,
+  EXPONENTIAL_AT: [-20, 20],
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -158,7 +166,8 @@ Deno.serve(async (req) => {
         }
 
         // NEW MILESTONE ACHIEVED! 🎉
-        const rewardBSK = Number(milestone.reward_inr_value);
+        const rewardBSKBN = new BigNumber(milestone.reward_inr_value);
+        const rewardBSK = rewardBSKBN.toNumber();
         console.log(`[VIP Milestone] 🎉 NEW! ${milestone.vip_count_threshold} VIPs → ${rewardBSK} BSK`);
 
         // Get current balance
@@ -168,16 +177,16 @@ Deno.serve(async (req) => {
           .eq('user_id', sponsor_id)
           .maybeSingle();
 
-        // Credit withdrawable balance
-        const newWithdrawable = Number(currentBalance?.withdrawable_balance || 0) + rewardBSK;
-        const newTotalEarned = Number(currentBalance?.total_earned_withdrawable || 0) + rewardBSK;
+        // Credit withdrawable balance with BigNumber precision
+        const newWithdrawable = new BigNumber(currentBalance?.withdrawable_balance || 0).plus(rewardBSK);
+        const newTotalEarned = new BigNumber(currentBalance?.total_earned_withdrawable || 0).plus(rewardBSK);
 
         const { error: balanceUpdateError } = await supabaseClient
           .from('user_bsk_balances')
           .upsert({
             user_id: sponsor_id,
-            withdrawable_balance: newWithdrawable,
-            total_earned_withdrawable: newTotalEarned,
+            withdrawable_balance: newWithdrawable.toNumber(),
+            total_earned_withdrawable: newTotalEarned.toNumber(),
             updated_at: new Date().toISOString()
           }, {
             onConflict: 'user_id'

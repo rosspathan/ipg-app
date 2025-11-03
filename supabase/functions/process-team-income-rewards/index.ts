@@ -1,4 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import BigNumber from 'https://esm.sh/bignumber.js@9.1.2';
+
+// Configure BigNumber for financial calculations
+BigNumber.config({
+  DECIMAL_PLACES: 8,
+  ROUNDING_MODE: BigNumber.ROUND_DOWN,
+  EXPONENTIAL_AT: [-20, 20],
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -145,17 +153,20 @@ Deno.serve(async (req) => {
 
       console.log(`✅ Level ${level} unlocked for sponsor ${sponsorId} (KYC: ${isKYCApproved}, Badge: ${sponsorBadge || 'None'}, Effective Unlocks: ${effectiveUnlockLevels})`);
 
-
-      const rewardAmount = Number(config.bsk_reward);
+      const rewardAmountBN = new BigNumber(config.bsk_reward);
       const destination = config.balance_type || 'withdrawable';
 
-      if (rewardAmount <= 0) {
+      if (rewardAmountBN.lte(0)) {
         continue;
       }
 
+      const rewardAmount = rewardAmountBN.toNumber();
       console.log(`✅ Level ${level}: Paying ${rewardAmount} BSK to ${sponsorId} (${destination})`);
 
-      // Prepare commission record
+      // Generate idempotency key to prevent duplicates
+      const idempotencyKey = `team_income_${event_id}_${sponsorId}_L${level}`;
+
+      // Prepare commission record with idempotency
       commissionsToInsert.push({
         earner_id: sponsorId,
         payer_id: payer_id,
@@ -167,18 +178,19 @@ Deno.serve(async (req) => {
         destination: destination,
         status: 'settled',
         earner_badge_at_event: sponsorBadge || null,
+        idempotency_key: idempotencyKey,
         created_at: new Date().toISOString()
       });
 
-      // Prepare balance update
+      // Prepare balance update with BigNumber precision
       if (!balanceUpdates.has(sponsorId)) {
-        balanceUpdates.set(sponsorId, { withdrawable: 0, holding: 0 });
+        balanceUpdates.set(sponsorId, { withdrawable: new BigNumber(0), holding: new BigNumber(0) });
       }
       const balanceUpdate = balanceUpdates.get(sponsorId)!;
       if (destination === 'withdrawable') {
-        balanceUpdate.withdrawable += rewardAmount;
+        balanceUpdate.withdrawable = balanceUpdate.withdrawable.plus(rewardAmount);
       } else {
-        balanceUpdate.holding += rewardAmount;
+        balanceUpdate.holding = balanceUpdate.holding.plus(rewardAmount);
       }
 
       // Prepare ledger entry
@@ -215,7 +227,7 @@ Deno.serve(async (req) => {
       console.log(`✅ Inserted ${commissionsToInsert.length} commission records`);
     }
 
-    // 7. Batch update balances
+    // 7. Batch update balances with BigNumber precision
     for (const [userId, updates] of balanceUpdates.entries()) {
       // Get current balance
       const { data: currentBalance } = await supabaseClient
@@ -224,15 +236,21 @@ Deno.serve(async (req) => {
         .eq('user_id', userId)
         .maybeSingle();
 
+      // Calculate new balances with BigNumber
+      const newWithdrawable = new BigNumber(currentBalance?.withdrawable_balance || 0).plus(updates.withdrawable);
+      const newHolding = new BigNumber(currentBalance?.holding_balance || 0).plus(updates.holding);
+      const newTotalWithdrawable = new BigNumber(currentBalance?.total_earned_withdrawable || 0).plus(updates.withdrawable);
+      const newTotalHolding = new BigNumber(currentBalance?.total_earned_holding || 0).plus(updates.holding);
+
       // Update balance
       const { error: balanceUpdateError } = await supabaseClient
         .from('user_bsk_balances')
         .upsert({
           user_id: userId,
-          withdrawable_balance: Number(currentBalance?.withdrawable_balance || 0) + updates.withdrawable,
-          holding_balance: Number(currentBalance?.holding_balance || 0) + updates.holding,
-          total_earned_withdrawable: Number(currentBalance?.total_earned_withdrawable || 0) + updates.withdrawable,
-          total_earned_holding: Number(currentBalance?.total_earned_holding || 0) + updates.holding,
+          withdrawable_balance: newWithdrawable.toNumber(),
+          holding_balance: newHolding.toNumber(),
+          total_earned_withdrawable: newTotalWithdrawable.toNumber(),
+          total_earned_holding: newTotalHolding.toNumber(),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
