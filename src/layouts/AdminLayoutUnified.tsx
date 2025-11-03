@@ -6,6 +6,7 @@ import { AdminDockUnified } from "@/components/admin/unified/AdminDockUnified";
 import { CommandPalette } from "@/components/admin/unified/CommandPalette";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useState } from "react";
+import { useTransferNotifications } from "@/hooks/useTransferNotifications";
 
 /**
  * Unified Admin Layout - World-Class Admin Panel
@@ -17,6 +18,9 @@ import { useState } from "react";
  */
 const AdminLayoutUnified = () => {
   const [commandOpen, setCommandOpen] = useState(false);
+  
+  // Enable real-time notifications for large transfers
+  useTransferNotifications();
 
   return (
     <NavigationStateManager>

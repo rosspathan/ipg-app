@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Minus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAdminBSKTransfers } from "@/hooks/useAdminBSKTransfers";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserTransferHistory } from "./UserTransferHistory";
 
 interface UserFinancialOperationsProps {
   userId: string;
@@ -96,88 +101,102 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Financial Operations</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Balance Type</Label>
-            <Select value={balanceType} onValueChange={(v: any) => setBalanceType(v)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bsk">BSK Balance</SelectItem>
-                <SelectItem value="inr">INR Balance</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <Tabs defaultValue="operations" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="operations">Financial Operations</TabsTrigger>
+        <TabsTrigger value="transfer-history">Transfer History</TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="operations">
+        <Card>
+          <CardHeader>
+            <CardTitle>Financial Operations</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* ... keep existing code */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Balance Type</Label>
+                <Select value={balanceType} onValueChange={(v: any) => setBalanceType(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bsk">BSK Balance</SelectItem>
+                    <SelectItem value="inr">INR Balance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {balanceType === "bsk" && (
-            <div className="space-y-2">
-              <Label>BSK Subtype</Label>
-              <Select value={bskSubtype} onValueChange={(v: any) => setBskSubtype(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="withdrawable">Withdrawable</SelectItem>
-                  <SelectItem value="holding">Holding</SelectItem>
-                </SelectContent>
-              </Select>
+              {balanceType === "bsk" && (
+                <div className="space-y-2">
+                  <Label>BSK Subtype</Label>
+                  <Select value={bskSubtype} onValueChange={(v: any) => setBskSubtype(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="withdrawable">Withdrawable</SelectItem>
+                      <SelectItem value="holding">Holding</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Operation</Label>
+                <Select value={operation} onValueChange={(v: any) => setOperation(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="add">Add Balance</SelectItem>
+                    <SelectItem value="deduct">Deduct Balance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label>Operation</Label>
-            <Select value={operation} onValueChange={(v: any) => setOperation(v)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="add">Add Balance</SelectItem>
-                <SelectItem value="deduct">Deduct Balance</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+            <div className="space-y-2">
+              <Label>Amount</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Enter amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label>Amount</Label>
-          <Input
-            type="number"
-            step="0.01"
-            placeholder="Enter amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-        </div>
+            <div className="space-y-2">
+              <Label>Reason</Label>
+              <Textarea
+                placeholder="Provide a reason for this adjustment..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={3}
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label>Reason</Label>
-          <Textarea
-            placeholder="Provide a reason for this adjustment..."
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-          />
-        </div>
-
-        <Button
-          onClick={handleBalanceAdjustment}
-          disabled={loading}
-          className="w-full"
-        >
-          {operation === "add" ? (
-            <Plus className="h-4 w-4 mr-2" />
-          ) : (
-            <Minus className="h-4 w-4 mr-2" />
-          )}
-          {operation === "add" ? "Add" : "Deduct"} Balance
-        </Button>
-      </CardContent>
-    </Card>
+            <Button
+              onClick={handleBalanceAdjustment}
+              disabled={loading}
+              className="w-full"
+            >
+              {operation === "add" ? (
+                <Plus className="h-4 w-4 mr-2" />
+              ) : (
+                <Minus className="h-4 w-4 mr-2" />
+              )}
+              {operation === "add" ? "Add" : "Deduct"} Balance
+            </Button>
+          </CardContent>
+        </Card>
+      </TabsContent>
+      
+      <TabsContent value="transfer-history">
+        <UserTransferHistory userId={userId} />
+      </TabsContent>
+    </Tabs>
   );
 }

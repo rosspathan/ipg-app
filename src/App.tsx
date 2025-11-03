@@ -96,6 +96,7 @@ import AdminManualPurchasesScreen from "./pages/AdminManualPurchasesScreen";
 import ManualBSKPurchaseScreen from "./pages/ManualBSKPurchaseScreen";
 import AdminCryptoConversionsScreen from "./pages/AdminCryptoConversionsScreen";
 import AdminBSKTransferSend from "./pages/AdminBSKTransferSend";
+import AdminBSKTransferHistory from "./pages/admin/AdminBSKTransferHistory";
 const AdminAnnouncementsManager = React.lazy(() => import("./pages/admin/AdminAnnouncementsManager"));
 const AdminCarouselManager = React.lazy(() => import("./pages/admin/AdminCarouselManager"));
 const AdminProgramConfigEditor = React.lazy(() => import("./pages/admin/AdminProgramConfigEditor"));
@@ -530,6 +531,7 @@ function AppContent() {
                 {/* BSK Management */}
                 <Route path="bsk-management" element={<AdminBSKManagementNova />} />
                 <Route path="bsk-send" element={<AdminBSKTransferSend />} />
+                <Route path="bsk-transfer-history" element={<AdminBSKTransferHistory />} />
                 <Route path="bsk-loans" element={<AdminBSKLoansNova />} />
                 <Route path="bsk-manual-purchases" element={<AdminManualPurchasesScreen />} />
                 <Route path="crypto-conversions" element={<AdminCryptoConversionsScreen />} />
