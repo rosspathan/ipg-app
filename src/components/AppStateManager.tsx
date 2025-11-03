@@ -15,6 +15,12 @@ export const AppStateManager = () => {
   // Check if user has completed wallet setup
   useEffect(() => {
     const checkOnboardingCompletion = async () => {
+      // Skip checks if login is in progress to prevent race conditions
+      if (sessionStorage.getItem('login_in_progress')) {
+        console.log('[APP_STATE] Skipping checks - login in progress');
+        return;
+      }
+
       if (!user) return;
       
       const isAuthRoute = location.pathname.startsWith('/auth');
@@ -64,6 +70,11 @@ export const AppStateManager = () => {
 
     // Check if unlock is needed on initial app load (when app is reopened from task switcher)
     const checkInitialLockState = async () => {
+      // Skip if login in progress
+      if (sessionStorage.getItem('login_in_progress')) {
+        return;
+      }
+
       const isAuthRoute = location.pathname.startsWith('/auth') || 
                          location.pathname.startsWith('/onboarding');
       
@@ -110,6 +121,11 @@ export const AppStateManager = () => {
       resumeListener = await CapacitorApp.addListener('resume', async () => {
         console.log('App resuming from background');
         
+        // Skip if login in progress
+        if (sessionStorage.getItem('login_in_progress')) {
+          return;
+        }
+
         // Don't lock if on auth/onboarding routes
         const isAuthRoute = location.pathname.startsWith('/auth') || 
                            location.pathname.startsWith('/onboarding');

@@ -5,6 +5,7 @@ import { hasLocalSecurity } from '@/utils/localSecurityStorage';
 import { validateSessionOwnership, autoResolveIfSafe } from '@/utils/sessionOwnershipValidator';
 import { setCurrentUserId } from '@/utils/lockState';
 import { setSecurityUserId } from '@/utils/localSecurityStorage';
+import { SessionIntegrityService } from '@/services/SessionIntegrityService';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -41,8 +42,25 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
 
     const initializeApp = async () => {
       try {
+        // Skip if login is in progress
+        if (sessionStorage.getItem('login_in_progress')) {
+          console.log('[AppInitializer] Skipping - login in progress');
+          setIsChecking(false);
+          return;
+        }
+
         console.log('[AppInitializer] Starting initialization...');
         
+        // Verify session integrity before proceeding
+        console.log('[AppInitializer] Checking session integrity');
+        const sessionValid = await SessionIntegrityService.verifySessionIntegrity();
+        if (!sessionValid) {
+          console.warn('[AppInitializer] Session integrity check failed, redirecting to login');
+          navigateSafely('/auth/login');
+          setIsChecking(false);
+          return;
+        }
+
         // Check for active session
         const { data: { session } } = await supabase.auth.getSession();
         console.log('[AppInitializer] Session check:', session ? 'Active' : 'None');

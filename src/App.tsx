@@ -12,6 +12,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { UnlockGate } from "@/components/UnlockGate";
 import { useSecuritySync } from "@/hooks/useSecuritySync";
 import { useOnboardingResumeProtection } from "@/hooks/useOnboardingResumeProtection";
+import { useSessionIntegrityMonitor } from "@/hooks/useSessionIntegrityMonitor";
 import { RouterWrapper } from "@/components/RouterWrapper";
 import { AppInitializer } from "@/components/AppInitializer";
 import { AppStateManager } from "@/components/AppStateManager";
@@ -316,10 +317,12 @@ function App() {
 function AppContent() {
   useSecuritySync();
   useOnboardingResumeProtection();
+  const { ConflictModal } = useSessionIntegrityMonitor();
   
   return (
     <>
       <AppStateManager />
+      {ConflictModal}
       <RouterWrapper>
         <Routes>
           {/* Landing & Splash */}

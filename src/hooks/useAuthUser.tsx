@@ -1,8 +1,11 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { clearUserScopedData } from '@/utils/lockState';
 import { clearUserSecurityData } from '@/utils/localSecurityStorage';
+import { useQueryClient } from '@tanstack/react-query';
+import { SessionIntegrityService } from '@/services/SessionIntegrityService';
+import { clearLegacyLocalStorage } from '@/utils/clearLegacyStorage';
 
 interface UserAuthContextType {
   user: User | null;
@@ -28,29 +31,75 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const prevUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Set up auth state listener for user sessions - FULLY SYNCHRONOUS
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('User auth state change:', event, session?.user?.email);
+        console.log('[AUTH_USER] Auth state change:', event, {
+          userId: session?.user?.id,
+          email: session?.user?.email,
+          previousUserId: prevUserIdRef.current
+        });
+
+        const currentUserId = session?.user?.id ?? null;
+        const previousUserId = prevUserIdRef.current;
+
+        // Detect user switch (different user logged in)
+        if (currentUserId && previousUserId && currentUserId !== previousUserId) {
+          console.warn('[AUTH_USER] ⚠️ USER SWITCH DETECTED', {
+            from: previousUserId,
+            to: currentUserId
+          });
+
+          // Clear all React Query caches to prevent data leakage
+          console.log('[AUTH_USER] Clearing all cached data from previous user');
+          queryClient.clear();
+
+          // Dispatch event for observability
+          window.dispatchEvent(new CustomEvent('auth:user_switched', {
+            detail: { from: previousUserId, to: currentUserId }
+          }));
+        }
+
+        // Update state
         setSession(session);
         setUser(session?.user ?? null);
+        prevUserIdRef.current = currentUserId;
         setLoading(false);
         
         // Defer all async operations to prevent blocking auth callback
         if (event === 'SIGNED_IN' && session?.user) {
           setTimeout(async () => {
             try {
+              console.log('[AUTH_USER] User signed in, setting user IDs:', session.user.id);
+              
+              // Update session integrity tracking
+              SessionIntegrityService.setLastKnownUser(session.user.id);
+              
+              // Clear legacy non-scoped keys once on sign in
+              clearLegacyLocalStorage();
+
               // Import dynamically to avoid circular deps
               const { captureReferralAfterEmailVerify } = await import('@/utils/referralCapture');
               await captureReferralAfterEmailVerify(session.user.id);
               // Legacy system (keep for backward compatibility)
               handlePendingReferral(session.user.id);
             } catch (error) {
-              console.error('[useAuthUser] Referral handling error:', error);
+              console.error('[AUTH_USER] Post-signin handling error:', error);
             }
           }, 0);
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          console.log('[AUTH_USER] User signed out, clearing tracking');
+          SessionIntegrityService.clearLastKnownUser();
+          prevUserIdRef.current = null;
+          
+          // Clear all cached data
+          queryClient.clear();
         }
       }
     );
@@ -174,6 +223,11 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    console.log('[AUTH_USER] Starting sign out');
+    
+    // Clear session integrity tracking
+    SessionIntegrityService.clearLastKnownUser();
+    
     // Clear user-scoped security data
     if (user?.id) {
       clearUserScopedData(user.id);
@@ -193,9 +247,19 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("cryptoflow_lock_state");
     localStorage.removeItem("cryptoflow_unlocked");
     
-    console.log('[Auth] Cleared all user data for sign out');
+    // Clear legacy storage
+    clearLegacyLocalStorage();
+    
+    // Clear session storage
+    sessionStorage.clear();
+    
+    // Clear all React Query caches
+    queryClient.clear();
+    
+    console.log('[AUTH_USER] Cleared all user data for sign out');
     
     await supabase.auth.signOut();
+    console.log('[AUTH_USER] Successfully signed out');
   };
 
   const contextValue = {

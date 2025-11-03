@@ -105,9 +105,15 @@ const LoginScreen: React.FC = () => {
     // Create login promise
     const loginPromise = async () => {
       try {
+        // STEP 1: Clear any existing session before login
+        console.log('[LOGIN] Step 1: Clearing any existing session');
+        await supabase.auth.signOut().catch(() => {
+          // Ignore errors from signOut
+        });
+
         console.log('[LOGIN] Step 2: Calling Supabase auth');
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password
         });
 
@@ -131,6 +137,34 @@ const LoginScreen: React.FC = () => {
         if (!data.session) {
           throw new Error('No session returned');
         }
+
+        // STEP 3: Verify session matches the email we just logged in with
+        console.log('[LOGIN] Step 3.5: Verifying session integrity');
+        const { data: { session: verifySession } } = await supabase.auth.getSession();
+        const sessionEmail = verifySession?.user?.email?.toLowerCase();
+        const enteredEmail = email.trim().toLowerCase();
+        
+        if (!verifySession || sessionEmail !== enteredEmail) {
+          console.error('[LOGIN] SESSION MISMATCH DETECTED', {
+            enteredEmail,
+            sessionEmail,
+            sessionUserId: verifySession?.user?.id
+          });
+          
+          // Clear the wrong session
+          await supabase.auth.signOut();
+          
+          // Import and use the cleanup utility
+          const { clearAllUserData } = await import('@/utils/clearLegacyStorage');
+          clearAllUserData();
+          
+          setInlineError('Account mismatch detected. Please try signing in again.');
+          throw new Error('Session verification failed');
+        }
+
+        console.log('[LOGIN] Step 3.6: Session verified, updating integrity tracking');
+        const { SessionIntegrityService } = await import('@/services/SessionIntegrityService');
+        SessionIntegrityService.setLastKnownUser(verifySession.user.id);
 
         // Immediately navigate to app home; AppStateManager will handle redirects
         // Use hard navigation fallback if component unmounted mid-flow
