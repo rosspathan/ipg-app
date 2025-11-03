@@ -1,3 +1,10 @@
+/**
+ * Match Orders Edge Function
+ * Phase 2.1: Fixed order matching priority (no infinite prices for market orders)
+ * Phase 2.2: Fixed fee calculation (fees in correct assets)
+ * Phase 4.3: Implemented circuit breaker logic
+ */
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
 
 const corsHeaders = {
@@ -11,6 +18,8 @@ interface EngineSettings {
   maker_fee_percent: number;
   taker_fee_percent: number;
 }
+
+const MAX_PRICE_DEVIATION = 0.10; // 10% price deviation triggers circuit breaker
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -52,7 +61,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get all trading pairs (for now, we'll use symbols from orders)
+    // Get all pending orders
     const { data: pendingOrders, error: ordersError } = await supabase
       .from('orders')
       .select('*')
@@ -91,34 +100,94 @@ Deno.serve(async (req) => {
     for (const [symbol, orders] of Object.entries(ordersBySymbol)) {
       console.log(`[Matching Engine] Processing ${symbol}: ${orders.buys.length} buys, ${orders.sells.length} sells`);
 
-      // Sort orders: buys by highest price first, sells by lowest price first
-      const sortedBuys = orders.buys.sort((a, b) => (b.price || 0) - (a.price || 0));
-      const sortedSells = orders.sells.sort((a, b) => (a.price || 0) - (b.price || 0));
+      // PHASE 2.1 FIX: Sort market orders LAST (lower priority than limit orders)
+      // Market orders should match against existing limit orders, not get infinite priority
+      const sortedBuys = orders.buys.sort((a, b) => {
+        // Market orders go to the back
+        if (a.order_type === 'market' && b.order_type !== 'market') return 1;
+        if (a.order_type !== 'market' && b.order_type === 'market') return -1;
+        // Both limit orders: highest price first
+        return (b.price || 0) - (a.price || 0);
+      });
+
+      const sortedSells = orders.sells.sort((a, b) => {
+        // Market orders go to the back
+        if (a.order_type === 'market' && b.order_type !== 'market') return 1;
+        if (a.order_type !== 'market' && b.order_type === 'market') return -1;
+        // Both limit orders: lowest price first
+        return (a.price || 0) - (b.price || 0);
+      });
 
       // Match orders using price-time priority
       for (const buyOrder of sortedBuys) {
         for (const sellOrder of sortedSells) {
-          // Check if orders can match
-          const buyPrice = buyOrder.order_type === 'market' ? Number.MAX_SAFE_INTEGER : buyOrder.price;
-          const sellPrice = sellOrder.order_type === 'market' ? 0 : sellOrder.price;
+          // PHASE 2.1 FIX: Determine if orders can match without infinite prices
+          let canMatch = false;
+          let executionPrice = 0;
 
-          if (buyPrice >= sellPrice) {
+          if (buyOrder.order_type === 'market' && sellOrder.order_type === 'market') {
+            // Both market orders - should not match (no price reference)
+            continue;
+          } else if (buyOrder.order_type === 'market') {
+            // Buy market order takes seller's limit price
+            canMatch = true;
+            executionPrice = sellOrder.price;
+          } else if (sellOrder.order_type === 'market') {
+            // Sell market order takes buyer's limit price
+            canMatch = true;
+            executionPrice = buyOrder.price;
+          } else {
+            // Both limit orders: match if buy price >= sell price
+            canMatch = buyOrder.price >= sellOrder.price;
+            executionPrice = sellOrder.price; // Maker (seller) sets the price
+          }
+
+          if (canMatch && executionPrice > 0) {
+            // PHASE 4.3: Circuit Breaker Check
+            const { data: lastTrade } = await supabase
+              .from('trades')
+              .select('price')
+              .eq('symbol', symbol)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+
+            if (lastTrade) {
+              const priceDeviation = Math.abs((executionPrice - lastTrade.price) / lastTrade.price);
+              
+              if (priceDeviation > MAX_PRICE_DEVIATION) {
+                console.warn(`[Circuit Breaker] Price deviation too high: ${(priceDeviation * 100).toFixed(2)}%`);
+                
+                // Activate circuit breaker
+                await supabase
+                  .from('trading_engine_settings')
+                  .update({ circuit_breaker_active: true })
+                  .eq('id', settings.id);
+                
+                console.error(`[Circuit Breaker] ACTIVATED for ${symbol}. Last: ${lastTrade.price}, Current: ${executionPrice}`);
+                
+                // Stop matching for this symbol
+                break;
+              }
+            }
+
             // Calculate matched quantity
             const matchedQuantity = Math.min(buyOrder.remaining_amount, sellOrder.remaining_amount);
-            const executionPrice = sellOrder.order_type === 'market' ? buyOrder.price : sellOrder.price;
 
             console.log(`[Matching Engine] Matching ${matchedQuantity} ${symbol} at ${executionPrice}`);
 
-            // Calculate fees
-            const totalValue = matchedQuantity * executionPrice;
-            const buyerFee = totalValue * (engineSettings.taker_fee_percent / 100);
-            const sellerFee = totalValue * (engineSettings.maker_fee_percent / 100);
+            // PHASE 2.2 FIX: Calculate fees in correct assets
+            // Buyer pays fee in quote asset (e.g., USDT when buying BTC/USDT)
+            // Seller pays fee in base asset (e.g., BTC when selling BTC/USDT)
+            const totalValueQuote = matchedQuantity * executionPrice;
+            const buyerFeeQuote = totalValueQuote * (engineSettings.taker_fee_percent / 100);
+            const sellerFeeBase = matchedQuantity * (engineSettings.maker_fee_percent / 100);
 
             // Parse symbol (e.g., BTC/USDT -> base: BTC, quote: USDT)
             const [baseSymbol, quoteSymbol] = symbol.split('/');
 
             try {
-              // Settle trade (update balances)
+              // Settle trade (update balances) with corrected fee parameters
               const { error: settleError } = await supabase.rpc('settle_trade', {
                 p_buyer_id: buyOrder.user_id,
                 p_seller_id: sellOrder.user_id,
@@ -126,8 +195,8 @@ Deno.serve(async (req) => {
                 p_quote_symbol: quoteSymbol,
                 p_quantity: matchedQuantity,
                 p_price: executionPrice,
-                p_buyer_fee: buyerFee,
-                p_seller_fee: sellerFee
+                p_buyer_fee: buyerFeeQuote,  // Fee in quote asset
+                p_seller_fee: sellerFeeBase   // Fee in base asset (but converted to quote for ledger)
               });
 
               if (settleError) {
@@ -146,9 +215,9 @@ Deno.serve(async (req) => {
                   seller_id: sellOrder.user_id,
                   quantity: matchedQuantity,
                   price: executionPrice,
-                  total_value: totalValue,
-                  buyer_fee: buyerFee,
-                  seller_fee: sellerFee,
+                  total_value: totalValueQuote,
+                  buyer_fee: buyerFeeQuote,
+                  seller_fee: sellerFeeBase * executionPrice, // Convert to quote asset for display
                   trading_type: buyOrder.trading_type || 'spot'
                 });
 
@@ -193,7 +262,7 @@ Deno.serve(async (req) => {
               buyOrder.remaining_amount = newBuyRemaining;
               sellOrder.remaining_amount = newSellRemaining;
 
-              console.log(`[Matching Engine] Trade executed: ${matchedQuantity} ${symbol} at ${executionPrice}`);
+              console.log(`[Matching Engine] ✓ Trade executed: ${matchedQuantity} ${symbol} at ${executionPrice}`);
 
               // If buy order is fully filled, break inner loop
               if (buyOrder.remaining_amount <= 0) {

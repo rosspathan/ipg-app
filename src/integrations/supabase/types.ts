@@ -1010,6 +1010,56 @@ export type Database = {
         }
         Relationships: []
       }
+      balance_reconciliation_reports: {
+        Row: {
+          asset_id: string
+          discrepancy: number | null
+          id: string
+          ledger_sum: number
+          report_date: string | null
+          resolution_notes: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          user_id: string
+          wallet_balance: number
+        }
+        Insert: {
+          asset_id: string
+          discrepancy?: number | null
+          id?: string
+          ledger_sum: number
+          report_date?: string | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          user_id: string
+          wallet_balance: number
+        }
+        Update: {
+          asset_id?: string
+          discrepancy?: number | null
+          id?: string
+          ledger_sum?: number
+          report_date?: string | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          user_id?: string
+          wallet_balance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balance_reconciliation_reports_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banking_inr: {
         Row: {
           account_name: string | null
@@ -4246,6 +4296,39 @@ export type Database = {
           quote?: string
           rate?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      idempotency_keys: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          key: string
+          operation_type: string
+          resource_id: string | null
+          response_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          key: string
+          operation_type: string
+          resource_id?: string | null
+          response_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          key?: string
+          operation_type?: string
+          resource_id?: string | null
+          response_data?: Json | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -10680,6 +10763,7 @@ export type Database = {
           ledger_sum: number
         }[]
       }
+      cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       clone_program_module: {
         Args: {
           p_module_id: string
@@ -11008,6 +11092,16 @@ export type Database = {
       resolve_system_error: {
         Args: { p_error_id: string; p_resolution_notes?: string }
         Returns: boolean
+      }
+      run_balance_reconciliation: {
+        Args: never
+        Returns: {
+          asset_symbol: string
+          discrepancy: number
+          ledger_total: number
+          user_id: string
+          wallet_total: number
+        }[]
       }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
       settle_pending_referrer_rewards: { Args: never; Returns: Json }
