@@ -22,6 +22,7 @@ interface UserFinancialOperationsProps {
 
 export function UserFinancialOperations({ userId }: UserFinancialOperationsProps) {
   const [balanceType, setBalanceType] = useState<"bsk" | "inr">("bsk");
+  const [bskSubtype, setBskSubtype] = useState<"withdrawable" | "holding">("withdrawable");
   const [operation, setOperation] = useState<"add" | "deduct">("add");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
@@ -50,23 +51,18 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
 
     setLoading(true);
     try {
-      console.debug('[RPC] admin_adjust_user_balance payload', {
+      const payload = {
         p_target_user_id: userId,
         p_balance_type: balanceType,
-        p_subtype: balanceType === 'bsk' ? 'withdrawable' : undefined,
-        p_operation: operation,
-        p_amount: parseFloat(amount),
-        p_reason: reason
-      });
-
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('admin_adjust_user_balance', {
-        p_target_user_id: userId,
-        p_balance_type: balanceType,
-        p_subtype: balanceType === 'bsk' ? 'withdrawable' : undefined,
         p_operation: operation,
         p_amount: parseFloat(amount),
         p_reason: reason,
-      });
+        ...(balanceType === 'bsk' && { p_subtype: bskSubtype })
+      };
+
+      console.debug('[RPC] admin_adjust_user_balance payload', payload);
+
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('admin_adjust_user_balance', payload);
 
       console.debug('[RPC] admin_adjust_user_balance result', { data: rpcResult, error: rpcError });
 
@@ -118,6 +114,21 @@ export function UserFinancialOperations({ userId }: UserFinancialOperationsProps
               </SelectContent>
             </Select>
           </div>
+
+          {balanceType === "bsk" && (
+            <div className="space-y-2">
+              <Label>BSK Subtype</Label>
+              <Select value={bskSubtype} onValueChange={(v: any) => setBskSubtype(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="withdrawable">Withdrawable</SelectItem>
+                  <SelectItem value="holding">Holding</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Operation</Label>

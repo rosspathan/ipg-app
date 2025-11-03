@@ -4282,6 +4282,45 @@ export type Database = {
         }
         Relationships: []
       }
+      inr_balance_ledger: {
+        Row: {
+          admin_id: string | null
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at: string
+          id: string
+          operation: string
+          reason: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          admin_id?: string | null
+          amount: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          id?: string
+          operation: string
+          reason?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string | null
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          id?: string
+          operation?: string
+          reason?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inr_funding_routes: {
         Row: {
           account_name: string | null
