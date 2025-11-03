@@ -6,7 +6,8 @@ import { ArrowLeft, CircleDot, TrendingUp, Users, DollarSign } from "lucide-reac
 import { useIsMobile } from "@/hooks/use-mobile";
 import { QuickEditSpinWheel } from "@/components/admin/program-control/QuickEditSpinWheel";
 import { SpinSegmentEditor } from "@/components/admin/spin-wheel/SpinSegmentEditor";
-import { ProgramAnalyticsDashboard } from "@/components/admin/analytics/ProgramAnalyticsDashboard";
+import { SpinAnalytics } from "@/components/admin/spin-wheel/SpinAnalytics";
+import { FraudDetection } from "@/components/admin/spin-wheel/FraudDetection";
 
 export default function SpinWheelControlPanel() {
   const { moduleId } = useParams();
@@ -89,10 +90,11 @@ export default function SpinWheelControlPanel() {
 
       {/* Main Content */}
       <Tabs defaultValue="settings" className="space-y-4">
-        <TabsList className={isMobile ? "w-full grid grid-cols-3" : ""}>
-          <TabsTrigger value="settings">Quick Settings</TabsTrigger>
-          <TabsTrigger value="segments">Wheel Segments</TabsTrigger>
+        <TabsList className={isMobile ? "w-full grid grid-cols-2" : ""}>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="segments">Segments</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="fraud">Fraud</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="space-y-4">
@@ -111,7 +113,11 @@ export default function SpinWheelControlPanel() {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
-          <ProgramAnalyticsDashboard programType="spin_wheel" />
+          <SpinAnalytics />
+        </TabsContent>
+
+        <TabsContent value="fraud" className="space-y-4">
+          <FraudDetection />
         </TabsContent>
       </Tabs>
     </div>

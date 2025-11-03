@@ -6,7 +6,8 @@ import { ArrowLeft, Ticket, Trophy, Users, DollarSign } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { QuickEditLuckyDraw } from "@/components/admin/program-control/QuickEditLuckyDraw";
 import { DrawScheduler } from "@/components/admin/lucky-draw/DrawScheduler";
-import { ProgramAnalyticsDashboard } from "@/components/admin/analytics/ProgramAnalyticsDashboard";
+import { DrawAnalytics } from "@/components/admin/lucky-draw/DrawAnalytics";
+import { WinnerSelector } from "@/components/admin/lucky-draw/WinnerSelector";
 
 export default function LuckyDrawControlPanel() {
   const { moduleId } = useParams();
@@ -89,10 +90,11 @@ export default function LuckyDrawControlPanel() {
 
       {/* Main Content */}
       <Tabs defaultValue="settings" className="space-y-4">
-        <TabsList className={isMobile ? "w-full grid grid-cols-3" : ""}>
-          <TabsTrigger value="settings">Quick Settings</TabsTrigger>
-          <TabsTrigger value="scheduler">Draw Schedule</TabsTrigger>
+        <TabsList className={isMobile ? "w-full grid grid-cols-2" : ""}>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="scheduler">Draws</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="winners">Winners</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="space-y-4">
@@ -111,7 +113,11 @@ export default function LuckyDrawControlPanel() {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
-          <ProgramAnalyticsDashboard programType="lucky_draw" />
+          <DrawAnalytics />
+        </TabsContent>
+
+        <TabsContent value="winners" className="space-y-4">
+          <WinnerSelector />
         </TabsContent>
       </Tabs>
     </div>

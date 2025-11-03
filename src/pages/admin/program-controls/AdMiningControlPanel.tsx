@@ -7,7 +7,7 @@ import { ArrowLeft, TrendingUp, Users, DollarSign, Activity } from "lucide-react
 import { useIsMobile } from "@/hooks/use-mobile";
 import { QuickEditAdMining } from "@/components/admin/program-control/QuickEditAdMining";
 import { AdInventoryManager } from "@/components/admin/ad-mining/AdInventoryManager";
-import { ProgramAnalyticsDashboard } from "@/components/admin/analytics/ProgramAnalyticsDashboard";
+import { AdMiningAnalytics } from "@/components/admin/ad-mining/AdMiningAnalytics";
 
 export default function AdMiningControlPanel() {
   const { moduleId } = useParams();
@@ -112,7 +112,7 @@ export default function AdMiningControlPanel() {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
-          <ProgramAnalyticsDashboard programType="ad_mining" />
+          <AdMiningAnalytics />
         </TabsContent>
       </Tabs>
     </div>
