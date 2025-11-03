@@ -77,6 +77,7 @@ const navItems: NavItem[] = [
     icon: DollarSign,
     children: [
       { title: "BSK Management", url: "/admin/bsk-management", icon: Coins },
+      { title: "Send BSK", url: "/admin/bsk-send", icon: Gift },
       { title: "BSK Withdrawals", url: "/admin/bsk-withdrawals", icon: Wallet },
       { title: "Crypto Withdrawals", url: "/admin/crypto-withdrawals", icon: Wallet },
       { title: "Deposits", url: "/admin/funding", icon: DollarSign },
