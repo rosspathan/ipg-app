@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuthUser } from "@/hooks/useAuthUser";
-import { UnifiedBSKHistory } from "@/components/bsk/UnifiedBSKHistory";
+import { UnifiedActivityHistory } from "@/components/activity/UnifiedActivityHistory";
 
 const HistoryScreen = () => {
   const navigate = useNavigate();
@@ -30,15 +30,15 @@ const HistoryScreen = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">BSK Transaction History</h1>
+            <h1 className="text-2xl font-bold text-foreground">Activity History</h1>
             <p className="text-sm text-muted-foreground">
-              Complete history of all your BSK earnings and transactions
+              Complete history of all your BSK transactions and program activities
             </p>
           </div>
         </div>
 
-        {/* Unified BSK History Component */}
-        <UnifiedBSKHistory userId={user?.id} />
+        {/* Unified Activity History Component */}
+        <UnifiedActivityHistory userId={user?.id} />
       </div>
     </div>
   );

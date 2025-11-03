@@ -1,5 +1,5 @@
 import { ProgramPageTemplate } from '@/components/programs-pro/ProgramPageTemplate';
-import { UnifiedBSKHistory } from '@/components/bsk/UnifiedBSKHistory';
+import { UnifiedActivityHistory } from '@/components/activity/UnifiedActivityHistory';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { Loader2 } from 'lucide-react';
 
@@ -16,10 +16,10 @@ export default function BSKWalletHistoryPage() {
 
   return (
     <ProgramPageTemplate
-      title="BSK Transaction History"
-      subtitle="Complete history of all your BSK earnings and transactions"
+      title="Activity History"
+      subtitle="Complete history of all your BSK transactions and program activities"
     >
-      <UnifiedBSKHistory userId={user?.id} />
+      <UnifiedActivityHistory userId={user?.id} />
     </ProgramPageTemplate>
   );
 }

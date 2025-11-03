@@ -46,6 +46,7 @@ import { format } from 'date-fns';
 interface UnifiedBSKHistoryProps {
   userId?: string;
   className?: string;
+  compact?: boolean;
 }
 
 interface TransactionDisplay {
@@ -248,7 +249,7 @@ const getStatusBadge = (status?: string) => {
   return null;
 };
 
-export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps) {
+export function UnifiedBSKHistory({ userId, className, compact = false }: UnifiedBSKHistoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBalanceType, setSelectedBalanceType] = useState<string>('all');
   const [selectedTransactionType, setSelectedTransactionType] = useState<string>('all');
@@ -323,8 +324,8 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
 
   return (
     <div className={cn('space-y-6', className)}>
-      {/* Statistics Overview */}
-      {statistics && (
+      {/* Statistics Overview - Hidden in compact mode */}
+      {!compact && statistics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Total Earned */}
           <Card className="relative overflow-hidden p-6 border-success/20 bg-gradient-to-br from-success/5 to-transparent">
@@ -436,7 +437,8 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
         </div>
       )}
 
-      {/* Filters and Search */}
+      {/* Filters and Search - Hidden in compact mode */}
+      {!compact && (
       <Card className="p-4 border-border/50">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col md:flex-row gap-4">
@@ -499,6 +501,7 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
           </div>
         </div>
       </Card>
+      )}
 
       {/* Transactions Display */}
       <Card className="overflow-hidden border-border/50">
@@ -532,7 +535,7 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
         ) : isMobile ? (
           // Mobile Card View
           <div className="space-y-3 p-4">
-            {transactions.map(tx => {
+            {(compact ? transactions.slice(0, 5) : transactions).map(tx => {
               const displayInfo = getTransactionDisplay(tx);
               const IconComponent = displayInfo.icon;
               
@@ -582,7 +585,7 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((tx) => {
+              {(compact ? transactions.slice(0, 5) : transactions).map((tx) => {
                 const displayInfo = getTransactionDisplay(tx);
                 const IconComponent = displayInfo.icon;
 
@@ -639,8 +642,8 @@ export function UnifiedBSKHistory({ userId, className }: UnifiedBSKHistoryProps)
           </Table>
         )}
 
-        {/* Pagination */}
-        {!isLoading && transactions.length > 0 && totalPages > 1 && (
+        {/* Pagination - Hidden in compact mode */}
+        {!compact && !isLoading && transactions.length > 0 && totalPages > 1 && (
           <div className="flex items-center justify-between p-4 border-t">
             <div className="text-sm text-muted-foreground">
               Showing {transactions.length} of {totalCount} transactions
