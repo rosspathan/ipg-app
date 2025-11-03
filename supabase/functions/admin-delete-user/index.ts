@@ -120,32 +120,75 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`🗑️ Deleting all data for user: ${targetUserId}`);
 
-    // Delete all user-linked data
+    // Delete all user-linked data (COMPREHENSIVE LIST)
     const tablesToClean = [
+      // Core user data
       { name: 'referral_tree', column: 'user_id' },
       { name: 'referral_tree', column: 'referred_by' },
       { name: 'user_roles', column: 'user_id' },
       { name: 'referral_links_new', column: 'user_id' },
       { name: 'kyc_profiles_new', column: 'user_id' },
       { name: 'kyc_submissions_simple', column: 'user_id' },
+      
+      // Badge system
+      { name: 'badge_purchases', column: 'user_id' },
+      { name: 'badge_purchase_events', column: 'user_id' },
+      { name: 'badge_qualification_events', column: 'user_id' },
+      { name: 'user_badge_holdings', column: 'user_id' },
+      { name: 'user_badge_status', column: 'user_id' },
       { name: 'user_bsk_holdings', column: 'user_id' },
       { name: 'badge_holdings', column: 'user_id' },
+      
+      // Commissions & earnings
+      { name: 'commission_payouts', column: 'user_id' },
+      { name: 'commission_audit_log', column: 'user_id' },
+      { name: 'referral_commissions', column: 'user_id' },
+      { name: 'team_income_ledger', column: 'user_id' },
+      { name: 'direct_referrer_rewards', column: 'user_id' },
+      { name: 'referral_balance_slabs', column: 'user_id' },
+      
+      // BSK ledgers & balances
+      { name: 'user_bsk_balances', column: 'user_id' },
+      { name: 'bsk_withdrawable_ledger', column: 'user_id' },
+      { name: 'bsk_holding_ledger', column: 'user_id' },
+      { name: 'bsk_bonus_ledger', column: 'user_id' },
+      { name: 'bsk_loan_ledger', column: 'user_id' },
+      { name: 'admin_fees_ledger', column: 'user_id' },
+      { name: 'inr_balance_ledger', column: 'user_id' },
+      { name: 'insurance_bsk_ledger', column: 'user_id' },
+      { name: 'insurance_bsk_policies', column: 'user_id' },
+      
+      // BSK transfers
+      { name: 'bsk_transfers', column: 'sender_id' },
+      { name: 'bsk_transfers', column: 'receiver_id' },
+      { name: 'unified_bsk_transactions', column: 'user_id' },
+      
+      // Legacy ledgers
       { name: 'referral_ledger', column: 'user_id' },
       { name: 'bonus_ledger', column: 'user_id' },
-      { name: 'user_bsk_balances', column: 'user_id' },
+      
+      // VIP & milestones
+      { name: 'user_vip_milestone_claims', column: 'user_id' },
+      { name: 'vip_activity_log', column: 'user_id' },
+      
+      // Wallet & trading
       { name: 'wallet_balances', column: 'user_id' },
       { name: 'orders', column: 'user_id' },
       { name: 'trades', column: 'buyer_id' },
       { name: 'trades', column: 'seller_id' },
+      
+      // Withdrawals & deposits
+      { name: 'withdrawals', column: 'user_id' },
+      { name: 'deposits', column: 'user_id' },
+      { name: 'fiat_deposits', column: 'user_id' },
+      
+      // Programs & activities
       { name: 'ad_clicks', column: 'user_id' },
       { name: 'referral_events', column: 'user_id' },
       { name: 'spin_results', column: 'user_id' },
       { name: 'lucky_draw_tickets', column: 'user_id' },
       { name: 'user_program_participations', column: 'user_id' },
       { name: 'bsk_vesting_releases', column: 'user_id' },
-      { name: 'withdrawals', column: 'user_id' },
-      { name: 'deposits', column: 'user_id' },
-      { name: 'fiat_deposits', column: 'user_id' },
     ];
 
     // Delete from all tables

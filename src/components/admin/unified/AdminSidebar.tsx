@@ -173,6 +173,8 @@ const navItems: NavItem[] = [
       { title: "System Health", url: "/admin/system-health", icon: Activity },
       { title: "Database Reset", url: "/admin/database-reset", icon: Database },
       { title: "Database Cleanup", url: "/admin/database-cleanup", icon: Trash2 },
+      { title: "User Cleanup", url: "/admin/user-cleanup", icon: Trash2 },
+      { title: "Test User Generator", url: "/admin/test-user-generator", icon: UserPlus },
       { title: "Currencies", url: "/admin/currency-control", icon: DollarSign },
       { title: "Transactions", url: "/admin/transaction-control", icon: TrendingUp },
       { title: "Assets", url: "/admin/assets", icon: Coins },

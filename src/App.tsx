@@ -108,6 +108,8 @@ const AdminRoleManagement = React.lazy(() => import("./pages/admin/AdminRoleMana
 const AdminBadgeSystem = React.lazy(() => import("./pages/admin/AdminBadgeSystem"));
 const AdminBSKManagement = React.lazy(() => import("./pages/admin/AdminBSKManagement"));
 const VIPMilestoneMonitor = React.lazy(() => import("./pages/admin/VIPMilestoneMonitor"));
+const AdminUserCleanup = React.lazy(() => import("./pages/admin/AdminUserCleanup"));
+const AdminTestUserGenerator = React.lazy(() => import("./pages/admin/AdminTestUserGenerator"));
 import ManualReferralAssignment from "./pages/admin/ManualReferralAssignment";
 import RetroactiveCommissionFix from "./pages/admin/RetroactiveCommissionFix";
 import TreeHealthDashboard from "./pages/admin/TreeHealthDashboard";
@@ -607,6 +609,8 @@ function AppContent() {
                 
                 <Route path="database-reset" element={<React.Suspense fallback={<LoadingFallback />}><AdminDatabaseReset /></React.Suspense>} />
                 <Route path="database-cleanup" element={<React.Suspense fallback={<LoadingFallback />}><AdminDatabaseCleanup /></React.Suspense>} />
+                <Route path="user-cleanup" element={<React.Suspense fallback={<LoadingFallback />}><AdminUserCleanup /></React.Suspense>} />
+                <Route path="test-user-generator" element={<React.Suspense fallback={<LoadingFallback />}><AdminTestUserGenerator /></React.Suspense>} />
                 <Route path="mobile-linking" element={<React.Suspense fallback={<LoadingFallback />}><AdminMobileLinking /></React.Suspense>} />
               </Route>
 
