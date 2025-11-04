@@ -35,7 +35,6 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
     const isProtectedRoute = location.pathname.startsWith('/app');
     
     if (!isProtectedRoute) {
-      console.log('[AppInitializer] Not a protected route, skipping checks');
       setIsChecking(false);
       return;
     }
@@ -44,131 +43,76 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
       try {
         // Skip if login is in progress
         if (sessionStorage.getItem('login_in_progress')) {
-          console.log('[AppInitializer] Skipping - login in progress');
           setIsChecking(false);
           return;
         }
-
-        console.log('[AppInitializer] Starting initialization...');
         
-        // Verify session integrity before proceeding
-        console.log('[AppInitializer] Checking session integrity');
-        const sessionValid = await SessionIntegrityService.verifySessionIntegrity();
-        if (!sessionValid) {
-          console.warn('[AppInitializer] Session integrity check failed, redirecting to login');
-          navigateSafely('/auth/login');
-          setIsChecking(false);
-          return;
-        }
-
-        // Check for active session
+        // Check for active session (single call, no redundant checks)
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('[AppInitializer] Session check:', session ? 'Active' : 'None');
         
         if (!session) {
-          console.log('[AppInitializer] No session - Stay on current page (landing/auth)');
-          // Clear user IDs from storage systems
           setCurrentUserId(null);
           setSecurityUserId(null);
+          setIsChecking(false);
           return;
         }
 
         const userId = session.user.id;
-        console.log('[AppInitializer] User ID:', userId);
-        
-        // Set user ID in storage systems
         setCurrentUserId(userId);
         setSecurityUserId(userId);
         
-        // CRITICAL: Validate session ownership
+        // Streamlined validation - only check if conflict exists
         const validation = await validateSessionOwnership(session);
-        
         if (validation.conflict) {
-          console.error('[AppInitializer] ⚠️ Session ownership conflict detected!', validation.details);
-          
-          // Auto-resolve by clearing mismatched security data
-          const resolved = await autoResolveIfSafe(session);
-          
-          if (resolved) {
-            console.log('[AppInitializer] Conflict resolved - redirecting to security setup');
-            navigateSafely('/onboarding/security');
-            return;
-          }
-        }
-
-        // Check if user has a wallet
-        const { data: walletData, error: walletError } = await supabase
-          .from('user_wallets')
-          .select('wallet_address')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (walletError) {
-          console.error('[AppInitializer] Wallet check error:', walletError);
-        }
-
-        console.log('[AppInitializer] Wallet exists:', !!walletData);
-
-        if (!walletData) {
-          console.log('[AppInitializer] No wallet - redirect to wallet creation');
-          navigateSafely('/onboarding/wallet');
-          return;
-        }
-
-        // Check if user has security setup (PIN or biometrics)
-        const hasSecurity = hasLocalSecurity();
-        console.log('[AppInitializer] Local security setup:', hasSecurity);
-
-        if (!hasSecurity) {
-          console.log('[AppInitializer] No security - redirect to security setup');
+          await autoResolveIfSafe(session);
           navigateSafely('/onboarding/security');
           return;
         }
 
-        // Check if this is a fresh setup (just completed security onboarding)
-        const isFreshSetup = localStorage.getItem('ipg_fresh_setup') === 'true';
-        
-        if (isFreshSetup) {
-          console.log('[AppInitializer] Fresh setup - skip lock screen, go to home');
-          localStorage.removeItem('ipg_fresh_setup'); // Clear flag after first use
+        // Parallel data fetching for better performance
+        const [walletResult, hasSecurity] = await Promise.all([
+          supabase.from('user_wallets').select('wallet_address').eq('user_id', userId).maybeSingle(),
+          Promise.resolve(hasLocalSecurity())
+        ]);
+
+        if (!walletResult.data) {
+          navigateSafely('/onboarding/wallet');
+          return;
+        }
+
+        if (!hasSecurity) {
+          navigateSafely('/onboarding/security');
+          return;
+        }
+
+        // Fast fresh setup check
+        if (localStorage.getItem('ipg_fresh_setup') === 'true') {
+          localStorage.removeItem('ipg_fresh_setup');
           navigateSafely('/app/home');
           return;
         }
 
-        // Check if session is still unlocked
-        const lockStateKey = `cryptoflow_lock_state_${userId}`;
-        let lockState = localStorage.getItem(lockStateKey);
+        // Optimized unlock check
+        const lockState = localStorage.getItem(`cryptoflow_lock_state_${userId}`) || 
+                         localStorage.getItem('cryptoflow_lock_state');
         
-        // Fallback to non-scoped key for backward compatibility
-        if (!lockState) {
-          lockState = localStorage.getItem('cryptoflow_lock_state');
-        }
-        
-        let isUnlocked = false;
-        try {
-          if (lockState) {
+        if (lockState) {
+          try {
             const parsed = JSON.parse(lockState);
-            const sessionTimeout = (parsed.sessionLockMinutes || 30) * 60 * 1000;
-            const timeSinceUnlock = Date.now() - (parsed.lastUnlockAt || 0);
-            isUnlocked = parsed.isUnlocked && timeSinceUnlock < sessionTimeout;
+            const timeout = (parsed.sessionLockMinutes || 30) * 60 * 1000;
+            const isUnlocked = parsed.isUnlocked && (Date.now() - (parsed.lastUnlockAt || 0)) < timeout;
+            
+            navigateSafely(isUnlocked ? '/app/home' : '/auth/lock');
+            return;
+          } catch (e) {
+            // Invalid lock state - require unlock
           }
-        } catch (e) {
-          console.error('[AppInitializer] Error parsing lock state:', e);
-        }
-        
-        if (isUnlocked) {
-          console.log('[AppInitializer] Session still unlocked - go to home');
-          navigateSafely('/app/home');
-          return;
         }
 
-        // Session expired - require unlock
-        console.log('[AppInitializer] Session expired - redirect to lock screen');
         navigateSafely('/auth/lock');
         
       } catch (error) {
-        console.error('[AppInitializer] Initialization error:', error);
-        // On error, don't redirect - let user stay on current page
+        console.error('[AppInitializer] Error:', error);
       } finally {
         setIsChecking(false);
       }

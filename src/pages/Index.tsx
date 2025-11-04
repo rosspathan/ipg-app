@@ -23,11 +23,10 @@ const Index = () => {
     }
   };
 
-  // Redirect authenticated users to the proper app routes
+  // Redirect authenticated users efficiently
   useEffect(() => {
     if (user && !isAdmin) {
-      navigate("/app/home");
-      return;
+      navigate("/app/home", { replace: true });
     }
   }, [user, isAdmin, navigate]);
 
