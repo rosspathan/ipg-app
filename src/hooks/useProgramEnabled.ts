@@ -22,7 +22,7 @@ export function useProgramEnabled(programCode: ProgramCode) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['program-flag', programCode],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_program_flag', {
+      const { data, error } = await (supabase as any).rpc('get_program_flag', {
         p_program_code: programCode
       })
 
@@ -51,7 +51,7 @@ export function useAllProgramFlags() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['program-flags-all'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_program_flags')
+      const { data, error } = await (supabase as any).rpc('get_program_flags')
 
       if (error) {
         console.error('Error fetching program flags:', error)

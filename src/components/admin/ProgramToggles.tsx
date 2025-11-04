@@ -37,7 +37,7 @@ export function ProgramToggles() {
   const loadFlags = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .rpc('get_program_flags')
 
       if (error) {
@@ -84,7 +84,7 @@ export function ProgramToggles() {
       
       const newEnabled = !currentEnabled
 
-      const { error } = await supabase.rpc('upsert_program_flag', {
+      const { error } = await (supabase as any).rpc('upsert_program_flag', {
         p_program_code: programCode,
         p_enabled: newEnabled
       })
@@ -114,7 +114,7 @@ export function ProgramToggles() {
       setUpdating('all')
       
       for (const program of PROGRAMS) {
-        await supabase.rpc('upsert_program_flag', {
+        await (supabase as any).rpc('upsert_program_flag', {
           p_program_code: program.code,
           p_enabled: true
         })
@@ -138,7 +138,7 @@ export function ProgramToggles() {
       setUpdating('all')
       
       for (const program of PROGRAMS) {
-        await supabase.rpc('upsert_program_flag', {
+        await (supabase as any).rpc('upsert_program_flag', {
           p_program_code: program.code,
           p_enabled: false
         })

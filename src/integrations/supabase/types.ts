@@ -6477,6 +6477,24 @@ export type Database = {
           },
         ]
       }
+      program_flags: {
+        Row: {
+          enabled: boolean
+          program_code: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          program_code: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          program_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       program_media: {
         Row: {
           alt_text: string | null
@@ -11034,6 +11052,22 @@ export type Database = {
           total_participants: number
         }[]
       }
+      get_program_flag: {
+        Args: { p_program_code: string }
+        Returns: {
+          enabled: boolean
+          program_code: string
+          updated_at: string
+        }[]
+      }
+      get_program_flags: {
+        Args: never
+        Returns: {
+          enabled: boolean
+          program_code: string
+          updated_at: string
+        }[]
+      }
       get_total_bsk_circulation: {
         Args: never
         Returns: {
@@ -11290,6 +11324,10 @@ export type Database = {
       }
       update_user_referral_state: {
         Args: { p_user_id: string }
+        Returns: undefined
+      }
+      upsert_program_flag: {
+        Args: { p_enabled: boolean; p_program_code: string }
         Returns: undefined
       }
       upsert_referral_tree: {
