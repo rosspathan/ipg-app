@@ -11011,6 +11011,19 @@ export type Database = {
         }
         Returns: Json
       }
+      get_my_bsk_balance: {
+        Args: never
+        Returns: {
+          holding_balance: number
+          last_transaction_at: string
+          today_earned: number
+          total_earned_holding: number
+          total_earned_withdrawable: number
+          total_transactions: number
+          week_earned: number
+          withdrawable_balance: number
+        }[]
+      }
       get_pool_draw_stats: {
         Args: { p_config_id: string }
         Returns: {

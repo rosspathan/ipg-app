@@ -315,14 +315,40 @@ function App() {
 
 // Separate component that uses hooks requiring providers
 function AppContent() {
-  useSecuritySync();
-  useOnboardingResumeProtection();
-  const { ConflictModal } = useSessionIntegrityMonitor();
+  const [sessionInitialized, setSessionInitialized] = React.useState(false);
+
+  // Initialize SessionManager once on app start
+  React.useEffect(() => {
+    const initSession = async () => {
+      const { SessionManager } = await import('@/services/SessionManager');
+      
+      // Setup auth listener
+      SessionManager.setupAuthListener();
+      
+      // Initialize session state
+      await SessionManager.initialize();
+      
+      setSessionInitialized(true);
+    };
+
+    initSession();
+  }, []);
+
+  // Show loading while session initializes
+  if (!sessionInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-green-900 to-slate-900">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 mx-auto animate-spin text-white" />
+          <p className="text-white/80">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <>
       <AppStateManager />
-      {ConflictModal}
       <RouterWrapper>
         <Routes>
           {/* Landing & Splash */}
