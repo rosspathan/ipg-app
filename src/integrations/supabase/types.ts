@@ -10822,6 +10822,7 @@ export type Database = {
         }
         Returns: string
       }
+      build_user_referral_tree: { Args: { p_user_id: string }; Returns: number }
       bulk_update_program_status: {
         Args: {
           p_module_ids: string[]
