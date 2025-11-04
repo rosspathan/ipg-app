@@ -232,8 +232,8 @@ const PinSetupScreen: React.FC<PinSetupScreenProps> = ({
         />
         
         <ProgressIndicator 
-          currentStep={6}
-          totalSteps={8}
+          currentStep={5}
+          totalSteps={7}
           stepName="Set PIN"
           className="mt-4"
         />

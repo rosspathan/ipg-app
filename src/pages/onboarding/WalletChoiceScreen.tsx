@@ -49,8 +49,8 @@ const WalletChoiceScreen: React.FC<WalletChoiceScreenProps> = ({
         />
         
         <ProgressIndicator 
-          currentStep={2}
-          totalSteps={8}
+          currentStep={1}
+          totalSteps={7}
           stepName="Choose Wallet"
           className="mt-4"
         />

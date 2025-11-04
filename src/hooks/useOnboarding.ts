@@ -21,7 +21,6 @@ export type OnboardingStep =
   | 'verify-wallet-email'
   | 'wallet-connect'
   | 'email-input'
-  | 'referral-code'
   | 'email-verification'
   | 'pin-setup'
   | 'biometric-setup'
@@ -147,7 +146,6 @@ export function useOnboarding() {
       'wallet-choice',
       // Wallet creation steps are handled dynamically
       'email-input',
-      'referral-code',
       'email-verification',
       'pin-setup',
       'biometric-setup',
@@ -170,7 +168,6 @@ export function useOnboarding() {
       'support-intro',
       'wallet-choice',
       'email-input',
-      'referral-code',
       'email-verification',
       'pin-setup',
       'biometric-setup',

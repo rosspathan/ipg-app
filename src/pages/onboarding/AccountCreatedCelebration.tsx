@@ -30,7 +30,7 @@ export default function AccountCreatedCelebration() {
   // Auto-advance after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate('/onboarding/referral', { state: { referralCode } });
+      navigate('/onboarding/wallet', { state: { referralCode } });
     }, 3000);
 
     return () => clearTimeout(timer);
@@ -38,7 +38,7 @@ export default function AccountCreatedCelebration() {
 
   // Allow tap to continue immediately
   const handleContinue = () => {
-    navigate('/onboarding/referral', { state: { referralCode } });
+    navigate('/onboarding/wallet', { state: { referralCode } });
   };
 
   return (

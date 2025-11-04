@@ -396,11 +396,6 @@ function AppContent() {
               <AccountCreatedCelebration />
             </AuthProviderUser>
           } />
-          <Route path="/onboarding/referral" element={
-            <AuthProviderUser>
-              <OnboardingFlow />
-            </AuthProviderUser>
-          } />
           <Route path="/onboarding/wallet" element={
             <AuthProviderUser>
               <OnboardingFlow />

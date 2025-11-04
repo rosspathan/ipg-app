@@ -5,11 +5,9 @@ import { useAuthUser } from '@/hooks/useAuthUser';
 import WalletChoiceScreen from './onboarding/WalletChoiceScreen';
 import CreateWalletScreen from './onboarding/CreateWalletScreen';
 import ImportWalletScreen from './onboarding/ImportWalletScreen';
-import ReferralCodeInputScreen from './onboarding/ReferralCodeInputScreen';
 import PinSetupScreen from './onboarding/PinSetupScreen';
 import BiometricSetupScreen from './onboarding/BiometricSetupScreen';
 import SuccessCelebrationScreen from './onboarding/SuccessCelebrationScreen';
-import { storePendingReferral } from '@/utils/referralCapture';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
@@ -50,9 +48,7 @@ const OnboardingFlow: React.FC = () => {
 
     // Map path to step, then only update when different to avoid loops
     let targetStep: typeof state.step | null = null;
-    if (path.includes('/onboarding/referral')) {
-      targetStep = 'referral-code';
-    } else if (path === '/onboarding/wallet') {
+    if (path === '/onboarding/wallet') {
       targetStep = 'wallet-choice';
     } else if (path === '/onboarding/wallet/create') {
       targetStep = 'create-wallet';
@@ -65,25 +61,14 @@ const OnboardingFlow: React.FC = () => {
     } else if (path.includes('/onboarding/security')) {
       targetStep = 'pin-setup';
     } else {
-      // Default to referral code entry
-      targetStep = 'referral-code';
+      // Default to wallet choice
+      targetStep = 'wallet-choice';
     }
 
     if (targetStep && state.step !== targetStep) {
       setStep(targetStep as any);
     }
   }, [user, loading, navigate, setStep, state.step]);
-
-  const handleReferralSubmitted = (code: string, sponsorId: string) => {
-    storePendingReferral(code, sponsorId);
-    setReferralCode(code, sponsorId);
-    navigate('/onboarding/wallet');
-  };
-
-  const handleReferralSkipped = () => {
-    // Skip referral and go directly to wallet setup
-    navigate('/onboarding/wallet');
-  };
 
   const handleWalletChoice = (choice: 'create' | 'import') => {
     setStep(choice + '-wallet' as any);
@@ -141,21 +126,12 @@ const OnboardingFlow: React.FC = () => {
 
   // Render based on current step
   switch (state.step) {
-    case 'referral-code':
-      return (
-        <ReferralCodeInputScreen
-          onCodeSubmitted={handleReferralSubmitted}
-          onSkip={handleReferralSkipped}
-          onBack={() => navigate('/auth/signup')}
-        />
-      );
-    
     case 'wallet-choice':
       return (
         <WalletChoiceScreen
           onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
           onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
-          onBack={() => { setStep('referral-code'); navigate('/onboarding/referral'); }}
+          onBack={() => navigate('/auth/signup')}
         />
       );
     
@@ -205,7 +181,7 @@ const OnboardingFlow: React.FC = () => {
         <WalletChoiceScreen
           onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
           onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
-          onBack={() => { setStep('referral-code'); navigate('/onboarding/referral'); }}
+          onBack={() => navigate('/auth/signup')}
         />
       );
   }
