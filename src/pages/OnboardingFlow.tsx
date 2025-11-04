@@ -12,6 +12,7 @@ import SuccessCelebrationScreen from './onboarding/SuccessCelebrationScreen';
 import { storePendingReferral } from '@/utils/referralCapture';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
+import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
 
 /**
  * OnboardingFlow - Post-authentication wallet and security setup
@@ -80,6 +81,7 @@ const OnboardingFlow: React.FC = () => {
   };
 
   const handleReferralSkipped = () => {
+    // Skip referral and go directly to wallet setup
     navigate('/onboarding/wallet');
   };
 

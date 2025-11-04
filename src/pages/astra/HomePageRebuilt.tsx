@@ -232,10 +232,49 @@ export function HomePageRebuilt() {
         {/* Image Carousel - Admin uploaded banners */}
         <ImageCarousel />
 
-        {/* Programs Grid */}
+        {/* Quick Access - Popular Programs */}
+        <div className="px-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Quick Access</h2>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate("/app/programs")}
+              className="text-primary"
+            >
+              View All
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            {allPrograms.slice(0, 4).map((prog) => {
+              const IconComponent = getLucideIcon(prog.icon);
+              return (
+                <button
+                  key={prog.id}
+                  onClick={() => navigate(prog.route)}
+                  className="p-4 rounded-xl bg-card border border-border hover:bg-accent hover:shadow-md transition-all active:scale-95 text-left"
+                >
+                  <div className="flex flex-col gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <IconComponent className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{prog.name}</p>
+                      <p className="text-xs text-muted-foreground">Tap to start</p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* All Programs Grid */}
         <ProgramsGrid
           programs={programs}
-          title="My Programs"
+          title="All Programs"
           onViewAll={() => navigate("/app/programs")}
         />
 

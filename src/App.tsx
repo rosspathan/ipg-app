@@ -204,7 +204,7 @@ const LoansPageNew = React.lazy(() => import("./pages/programs/LoansPage"));
 const PurchasePage = React.lazy(() => import("./pages/programs/PurchasePage"));
 
 // Admin Pages
-import AdminLoginScreen from "./pages/AdminLoginScreen";
+import AdminLogin from "./pages/admin/AdminLogin";
 const AdminDashboard = React.lazy(() => import("./pages/AdminDashboard"));
 const AdminDatabaseReset = React.lazy(() => import("./pages/AdminDatabaseReset"));
 const AdminDatabaseCleanup = React.lazy(() => import("./pages/admin/AdminDatabaseCleanup"));
@@ -505,7 +505,7 @@ function AppContent() {
               {/* Admin Authentication */}
               <Route path="/admin/login" element={
                 <AuthProviderAdmin>
-                  <AdminLoginScreen />
+                  <AdminLogin />
                 </AuthProviderAdmin>
               } />
 

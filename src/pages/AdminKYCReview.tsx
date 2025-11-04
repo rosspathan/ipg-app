@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { DraftCleanupButton } from "@/components/admin/kyc/DraftCleanupButton";
 import {
   Dialog,
   DialogContent,
@@ -186,17 +187,20 @@ export default function AdminKYCReview() {
 
       {/* Filter Tabs */}
       <div className="sticky top-14 z-30 bg-background/80 backdrop-blur-xl border-b border-border/40 px-4 py-3">
-        <div className="flex gap-2 overflow-x-auto">
-          {['all', 'L0', 'L1', 'L2'].map((level) => (
-            <Button
-              key={level}
-              variant={filterLevel === level ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilterLevel(level as any)}
-            >
-              {level === 'all' ? 'All' : level}
-            </Button>
-          ))}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-2 overflow-x-auto">
+            {['all', 'L0', 'L1', 'L2'].map((level) => (
+              <Button
+                key={level}
+                variant={filterLevel === level ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilterLevel(level as any)}
+              >
+                {level === 'all' ? 'All' : level}
+              </Button>
+            ))}
+          </div>
+          <DraftCleanupButton onCleanupComplete={fetchNotifications} />
         </div>
       </div>
 

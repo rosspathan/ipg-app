@@ -139,11 +139,11 @@ const SignupScreen: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="flex-1 space-y-6 max-w-md mx-auto w-full"
         >
-          {/* Referral Code Input */}
+          {/* Referral Code Input - Made fully optional */}
           <div className="space-y-2">
-            <Label htmlFor="referralCode" className="text-white flex items-center gap-2">
+            <Label htmlFor="referralCode" className="text-white/80 flex items-center gap-2 text-sm">
               <Gift className="w-4 h-4" />
-              Sponsor Referral Code (Optional)
+              Referral Code (Optional - Skip if you don't have one)
             </Label>
             <div className="relative">
               <Input
@@ -189,8 +189,8 @@ const SignupScreen: React.FC = () => {
             )}
             
             {!referralCode && (
-              <p className="text-white/60 text-xs">
-                Have a referral code? Enter it to join your sponsor's network
+              <p className="text-white/50 text-xs">
+                Don't have a code? No problem! You can continue without one.
               </p>
             )}
           </div>
