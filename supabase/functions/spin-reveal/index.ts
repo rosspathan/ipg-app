@@ -12,6 +12,13 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Create service role client for atomic operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Create user client for auth
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -30,7 +37,7 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    const { serverSeedHash, clientSeed, nonce, betBsk, spinFee, isFree } = await req.json()
+    const { serverSeedHash, clientSeed, nonce, betBsk, spinFee, isFree, idempotencyKey } = await req.json()
 
     console.log(`[spin-reveal] Revealing for user ${user.id}, nonce ${nonce}`)
 
@@ -117,28 +124,45 @@ Deno.serve(async (req) => {
 
     const netChangeBsk = netPayoutBsk - betBsk - spinFee
 
-    // Credit winnings to user balance
+    // ATOMIC TRANSACTION: Credit winnings using record_bsk_transaction() (if any)
     if (netPayoutBsk > 0) {
-      const { data: balance, error: balanceError } = await supabaseClient
-        .from('user_bsk_balances')
-        .select('withdrawable_balance')
-        .eq('user_id', user.id)
-        .single()
+      const payoutIdempotencyKey = `spin_payout_${user.id}_${nonce}_${Date.now()}`
+      
+      try {
+        const { data: creditResult, error: creditError } = await supabaseAdmin.rpc(
+          'record_bsk_transaction',
+          {
+            p_user_id: user.id,
+            p_idempotency_key: payoutIdempotencyKey,
+            p_tx_type: 'credit',
+            p_tx_subtype: 'spin_win',
+            p_balance_type: 'withdrawable',
+            p_amount_bsk: netPayoutBsk,
+            p_notes: `Spin win: ${multiplier}x multiplier, payout ${netPayoutBsk} BSK`,
+            p_meta_json: {
+              bet_bsk: betBsk,
+              multiplier: multiplier,
+              payout_bsk: payoutBsk,
+              profit_fee_bsk: profitFeeBsk,
+              net_payout_bsk: netPayoutBsk,
+              segment_id: winningSegment.id,
+              segment_label: winningSegment.label,
+              nonce: nonce,
+              commit_idempotency_key: idempotencyKey,
+            },
+          }
+        )
 
-      if (balanceError || !balance) {
-        throw new Error('Failed to fetch balance')
-      }
+        if (creditError) {
+          console.error('[spin-reveal] Credit error:', creditError)
+          throw new Error(creditError.message || 'Failed to credit winnings')
+        }
 
-      const { error: updateError } = await supabaseClient
-        .from('user_bsk_balances')
-        .update({
-          withdrawable_balance: balance.withdrawable_balance + netPayoutBsk,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id)
-
-      if (updateError) {
-        throw new Error('Failed to credit winnings')
+        console.log(`[spin-reveal] ✅ Atomically credited ${netPayoutBsk} BSK (tx: ${creditResult})`)
+      } catch (error: any) {
+        // If credit fails, log but don't throw - user already lost their bet
+        console.error('[spin-reveal] ❌ Failed to credit winnings:', error)
+        throw new Error('Failed to process winnings - please contact support')
       }
     }
 
@@ -190,7 +214,7 @@ Deno.serve(async (req) => {
       console.error('[spin-reveal] Failed to record history:', historyError)
     }
 
-    console.log(`[spin-reveal] Success: multiplier=${multiplier}, payout=${netPayoutBsk} BSK`)
+    console.log(`[spin-reveal] ✅ Success: multiplier=${multiplier}, payout=${netPayoutBsk} BSK`)
 
     return new Response(
       JSON.stringify({
@@ -207,7 +231,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('[spin-reveal] Error:', error)
+    console.error('[spin-reveal] ❌ Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -12,6 +12,13 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Create service role client for atomic operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Create user client for auth
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -85,32 +92,54 @@ Deno.serve(async (req) => {
     const spinFee = isFree ? 0 : config.post_free_spin_fee_bsk
     const totalCost = betBsk + spinFee
 
-    // Get user BSK balance
-    const { data: bskBalance, error: balanceError } = await supabaseClient
-      .from('user_bsk_balances')
-      .select('withdrawable_balance')
-      .eq('user_id', user.id)
-      .single()
+    // Generate idempotency key for this spin commit
+    const nonce = limits.total_spins + 1
+    const idempotencyKey = `spin_commit_${user.id}_${nonce}_${Date.now()}`
 
-    if (balanceError || !bskBalance) {
-      throw new Error('Failed to fetch BSK balance')
-    }
+    console.log(`[spin-commit] Idempotency key: ${idempotencyKey}`)
 
-    if (bskBalance.withdrawable_balance < totalCost) {
-      throw new Error('Insufficient BSK balance')
-    }
+    // ATOMIC TRANSACTION: Deduct bet using record_bsk_transaction()
+    try {
+      const { data: deductResult, error: deductError } = await supabaseAdmin.rpc(
+        'record_bsk_transaction',
+        {
+          p_user_id: user.id,
+          p_idempotency_key: idempotencyKey,
+          p_tx_type: 'debit',
+          p_tx_subtype: 'spin_bet',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: totalCost,
+          p_notes: `Spin bet: ${betBsk} BSK + ${spinFee} BSK fee`,
+          p_meta_json: {
+            bet_bsk: betBsk,
+            spin_fee_bsk: spinFee,
+            is_free: isFree,
+            nonce: nonce,
+            config_id: config.id,
+          },
+        }
+      )
 
-    // Deduct bet + fee from balance
-    const { error: deductError } = await supabaseClient
-      .from('user_bsk_balances')
-      .update({
-        withdrawable_balance: bskBalance.withdrawable_balance - totalCost,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', user.id)
+      if (deductError) {
+        console.error('[spin-commit] Deduction error:', deductError)
+        throw new Error(deductError.message || 'Failed to deduct BSK - insufficient balance or duplicate transaction')
+      }
 
-    if (deductError) {
-      throw new Error('Failed to deduct BSK')
+      if (!deductResult) {
+        throw new Error('Failed to deduct BSK')
+      }
+
+      console.log(`[spin-commit] ✅ Atomically deducted ${totalCost} BSK (tx: ${deductResult})`)
+    } catch (error: any) {
+      // Check if it's an insufficient balance error
+      if (error.message?.includes('Insufficient balance')) {
+        throw new Error('Insufficient BSK balance')
+      }
+      // Check if it's an idempotency error (already processed)
+      if (error.message?.includes('duplicate key') || error.message?.includes('idempotency')) {
+        throw new Error('This spin has already been committed')
+      }
+      throw error
     }
 
     // Generate server seed and hash
@@ -126,10 +155,7 @@ Deno.serve(async (req) => {
     // Generate client seed
     const clientSeed = crypto.randomUUID()
 
-    // Get nonce
-    const nonce = limits.total_spins + 1
-
-    console.log(`[spin-commit] Committed: hash=${serverSeedHashHex.substring(0, 16)}...`)
+    console.log(`[spin-commit] ✅ Committed: hash=${serverSeedHashHex.substring(0, 16)}...`)
 
     return new Response(
       JSON.stringify({
@@ -140,11 +166,12 @@ Deno.serve(async (req) => {
         betBsk,
         spinFee,
         isFree,
+        idempotencyKey, // Return for client tracking
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('[spin-commit] Error:', error)
+    console.error('[spin-commit] ❌ Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

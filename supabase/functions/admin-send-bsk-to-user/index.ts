@@ -84,107 +84,101 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Admin ${user.id} sending ${amount} BSK (${balance_type}) to user ${recipient_user_id}`);
+    console.log(`[admin-send-bsk] Admin ${user.id} sending ${amount} BSK (${balance_type}) to user ${recipient_user_id}`);
 
-    // Get current BSK balance
-    const { data: currentBalance, error: balanceError } = await supabaseClient
-      .from('user_bsk_balances')
-      .select('*')
-      .eq('user_id', recipient_user_id)
-      .single();
+    // Generate idempotency key
+    const idempotencyKey = `admin_credit_${user.id}_${recipient_user_id}_${Date.now()}_${Math.random().toString(36)}`;
 
-    const oldBalance = balance_type === 'withdrawable' 
-      ? (currentBalance?.withdrawable_balance || 0)
-      : (currentBalance?.holding_balance || 0);
+    console.log(`[admin-send-bsk] Idempotency key: ${idempotencyKey}`);
 
-    // Credit BSK balance
-    const balanceField = balance_type === 'withdrawable' ? 'withdrawable_balance' : 'holding_balance';
-    const totalEarnedField = balance_type === 'withdrawable' ? 'total_earned_withdrawable' : 'total_earned_holding';
-
-    const { error: updateError } = await supabaseClient
-      .from('user_bsk_balances')
-      .upsert({
-        user_id: recipient_user_id,
-        [balanceField]: oldBalance + amount,
-        [totalEarnedField]: (currentBalance?.[totalEarnedField] || 0) + amount,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      });
-
-    if (updateError) {
-      console.error('Balance update error:', updateError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to update balance', details: updateError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get new balance
-    const newBalance = oldBalance + amount;
-
-    // Create transaction record in insurance_bsk_ledger (which feeds unified_bsk_transactions view)
-    const { data: txData, error: txError } = await supabaseClient
-      .from('insurance_bsk_ledger')
-      .insert({
-        user_id: recipient_user_id,
-        type: 'admin_credit',
-        amount_bsk: amount,
-        balance_type: balance_type,
-        balance_before: oldBalance,
-        balance_after: newBalance,
-        rate_snapshot: 1,
-        created_by: user.id,
-        notes: reason,
-        metadata: {
-          admin_user_id: user.id,
-          reason: reason,
-          transfer_type: 'admin_credit'
+    // ATOMIC TRANSACTION: Credit BSK using record_bsk_transaction()
+    try {
+      const { data: creditResult, error: creditError } = await supabaseClient.rpc(
+        'record_bsk_transaction',
+        {
+          p_user_id: recipient_user_id,
+          p_idempotency_key: idempotencyKey,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'admin_credit',
+          p_balance_type: balance_type,
+          p_amount_bsk: amount,
+          p_notes: reason,
+          p_meta_json: {
+            admin_user_id: user.id,
+            reason: reason,
+            recipient_display_name: recipient.display_name,
+            timestamp: new Date().toISOString(),
+          },
         }
-      })
-      .select()
-      .single();
+      );
 
-    if (txError) {
-      console.error('Transaction record error:', txError);
-    }
+      if (creditError) {
+        console.error('[admin-send-bsk] Credit error:', creditError);
+        throw new Error(creditError.message || 'Failed to credit BSK');
+      }
 
-    // Create audit log
-    await supabaseClient
-      .from('audit_logs')
-      .insert({
-        user_id: user.id,
-        action: 'admin_bsk_transfer',
-        resource_type: 'bsk_transfer',
-        resource_id: recipient_user_id,
-        new_values: {
+      if (!creditResult) {
+        throw new Error('Failed to credit BSK');
+      }
+
+      console.log(`[admin-send-bsk] ✅ Atomically credited ${amount} BSK (tx: ${creditResult})`);
+
+      // Get updated balance from materialized view
+      const { data: balanceData } = await supabaseClient
+        .rpc('get_my_bsk_balance')
+        .single();
+
+      const newBalance = balance_type === 'withdrawable' 
+        ? balanceData?.withdrawable_balance || 0
+        : balanceData?.holding_balance || 0;
+
+      // Create audit log
+      await supabaseClient
+        .from('audit_logs')
+        .insert({
+          user_id: user.id,
+          action: 'admin_bsk_transfer',
+          resource_type: 'bsk_transfer',
+          resource_id: recipient_user_id,
+          new_values: {
+            recipient_user_id,
+            amount,
+            balance_type,
+            reason,
+            transaction_id: creditResult,
+            new_balance: newBalance,
+          }
+        });
+
+      console.log(`[admin-send-bsk] ✅ Successfully credited ${amount} BSK to user ${recipient_user_id}`);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          transaction_id: creditResult,
           recipient_user_id,
           amount,
           balance_type,
-          reason,
-          old_balance: oldBalance,
-          new_balance: newBalance
-        }
-      });
+          new_balance: newBalance,
+          timestamp: new Date().toISOString(),
+          idempotency_key: idempotencyKey,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
 
-    console.log(`Successfully credited ${amount} BSK to user ${recipient_user_id}. New balance: ${newBalance}`);
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        transaction_id: txData?.id,
-        recipient_user_id,
-        amount,
-        balance_type,
-        old_balance: oldBalance,
-        new_balance: newBalance,
-        timestamp: new Date().toISOString()
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    } catch (error: any) {
+      // Check if it's an idempotency error (already processed)
+      if (error.message?.includes('duplicate key') || error.message?.includes('idempotency')) {
+        return new Response(
+          JSON.stringify({ error: 'This transaction has already been processed' }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      throw error;
+    }
 
   } catch (error: any) {
-    console.error('Admin BSK transfer error:', error);
+    console.error('[admin-send-bsk] ❌ Error:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
