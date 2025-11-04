@@ -9213,6 +9213,57 @@ export type Database = {
           },
         ]
       }
+      unified_bsk_ledger: {
+        Row: {
+          amount_bsk: number
+          balance_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string
+          meta_json: Json | null
+          notes: string | null
+          processed_at: string
+          related_transaction_id: string | null
+          related_user_id: string | null
+          tx_subtype: string
+          tx_type: string
+          user_id: string
+        }
+        Insert: {
+          amount_bsk: number
+          balance_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key: string
+          meta_json?: Json | null
+          notes?: string | null
+          processed_at?: string
+          related_transaction_id?: string | null
+          related_user_id?: string | null
+          tx_subtype: string
+          tx_type: string
+          user_id: string
+        }
+        Update: {
+          amount_bsk?: number
+          balance_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string
+          meta_json?: Json | null
+          notes?: string | null
+          processed_at?: string
+          related_transaction_id?: string | null
+          related_user_id?: string | null
+          tx_subtype?: string
+          tx_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_achievements: {
         Row: {
           achievement_type: string
@@ -10618,6 +10669,21 @@ export type Database = {
       }
     }
     Views: {
+      mv_user_bsk_balances: {
+        Row: {
+          holding_balance: number | null
+          last_transaction_at: string | null
+          refreshed_at: string | null
+          today_earned: number | null
+          total_earned_holding: number | null
+          total_earned_withdrawable: number | null
+          total_transactions: number | null
+          user_id: string | null
+          week_earned: number | null
+          withdrawable_balance: number | null
+        }
+        Relationships: []
+      }
       referral_relationships: {
         Row: {
           first_touch_at: string | null
@@ -11110,6 +11176,34 @@ export type Database = {
         Returns: Json
       }
       reconcile_bsk_balance: { Args: { p_user_id: string }; Returns: Json }
+      reconcile_bsk_balances: {
+        Args: never
+        Returns: {
+          holding_diff: number
+          ledger_holding: number
+          ledger_withdrawable: number
+          old_holding: number
+          old_withdrawable: number
+          status: string
+          user_id: string
+          withdrawable_diff: number
+        }[]
+      }
+      record_bsk_transaction: {
+        Args: {
+          p_amount_bsk: number
+          p_balance_type: string
+          p_idempotency_key: string
+          p_meta_json?: Json
+          p_notes?: string
+          p_related_transaction_id?: string
+          p_related_user_id?: string
+          p_tx_subtype: string
+          p_tx_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       record_program_participation: {
         Args: {
           p_amount_earned?: number
@@ -11122,6 +11216,7 @@ export type Database = {
         }
         Returns: string
       }
+      refresh_bsk_balances_view: { Args: never; Returns: undefined }
       refund_failed_badge_purchases: {
         Args: never
         Returns: {
@@ -11167,6 +11262,7 @@ export type Database = {
           updated_count: number
         }[]
       }
+      sync_old_balances_from_ledger: { Args: never; Returns: undefined }
       system_update_bonus_balance: {
         Args: { p_asset_id: string; p_balance_delta: number; p_user_id: string }
         Returns: boolean
