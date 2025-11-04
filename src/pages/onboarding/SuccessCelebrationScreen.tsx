@@ -10,6 +10,16 @@ import { useAuthUser } from '@/hooks/useAuthUser';
 import { captureReferralAfterEmailVerify } from '@/utils/referralCapture';
 import { supabase } from '@/integrations/supabase/client';
 
+// Timeout utility to prevent hanging operations
+const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error('Operation timed out')), timeoutMs)
+    )
+  ]);
+};
+
 interface SuccessCelebrationScreenProps {
   hasBiometric: boolean;
   onComplete: () => Promise<void>;
@@ -61,16 +71,23 @@ const SuccessCelebrationScreen: React.FC<SuccessCelebrationScreenProps> = ({ has
       console.log('🔒 Ensuring referral is locked for user:', user.id);
       await captureReferralAfterEmailVerify(user.id);
       
-      // Build referral tree
-      console.log('🌳 Building referral tree for user:', user.id);
-      const { data: treeData, error: treeError } = await supabase.functions.invoke('build-referral-tree', {
-        body: { user_id: user.id }
-      });
-
-      if (treeError) {
-        console.error('❌ Failed to build referral tree:', treeError);
-      } else {
-        console.log('✅ Referral tree built successfully:', treeData);
+      // Build referral tree (non-blocking, with timeout)
+      try {
+        console.log('🌳 Building referral tree for user:', user.id);
+        const treePromise = supabase.functions.invoke('build-referral-tree', {
+          body: { user_id: user.id }
+        });
+        
+        const { data: treeData, error: treeError } = await withTimeout(treePromise, 5000);
+        
+        if (treeError) {
+          console.error('❌ Failed to build referral tree:', treeError);
+        } else {
+          console.log('✅ Referral tree built successfully:', treeData);
+        }
+      } catch (error) {
+        console.error('⚠️ Referral tree build timed out or failed (non-critical):', error);
+        // Continue anyway - tree can be rebuilt later
       }
       
       // Call parent onComplete (for navigation)
