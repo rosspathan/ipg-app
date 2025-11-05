@@ -13,6 +13,11 @@ interface ScrollingAnnouncementProps {
  * Fetches active announcements from database
  */
 export function ScrollingAnnouncement({ className }: ScrollingAnnouncementProps) {
+  // Check for reduced motion preference
+  const prefersReducedMotion = typeof window !== 'undefined' 
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
+    : false;
+
   const { data: announcement } = useQuery({
     queryKey: ['scrolling-announcement'],
     queryFn: async () => {
@@ -53,7 +58,13 @@ export function ScrollingAnnouncement({ className }: ScrollingAnnouncementProps)
       {/* Scrolling text container */}
       <div className="absolute inset-0 flex items-center">
         <div 
-          className="flex items-center whitespace-nowrap scrolling-announcement-text"
+          className={cn(
+            "flex items-center whitespace-nowrap",
+            !prefersReducedMotion && "scrolling-announcement-text"
+          )}
+          style={{
+            animationPlayState: prefersReducedMotion ? 'paused' : 'running'
+          }}
         >
           <span className="text-sm font-[Inter] font-semibold text-foreground/90 px-4">
             {displayText}

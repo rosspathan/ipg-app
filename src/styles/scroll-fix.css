@@ -72,16 +72,15 @@ img, svg, canvas, video {
 }
 
 /* ============================================
-   BASIC CLEAN MODE - Disable non-critical animations
+   PERFORMANCE OPTIMIZATION
    ============================================ */
-*, *::before, *::after {
-  animation: none !important;
-  transition: none !important;
-}
 
-/* Allow critical UI animations */
-.scrolling-announcement-text {
-  animation: scroll-left 30s linear infinite !important;
+/* GPU acceleration for smooth transforms */
+.scrolling-announcement-text,
+.embla__slide {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* ============================================

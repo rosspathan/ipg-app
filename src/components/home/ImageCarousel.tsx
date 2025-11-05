@@ -17,6 +17,11 @@ export function ImageCarousel() {
   const [images, setImages] = useState<CarouselImage[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Check for reduced motion preference
+  const prefersReducedMotion = typeof window !== 'undefined' 
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
+    : false;
+
   useEffect(() => {
     fetchCarouselImages();
 
@@ -83,11 +88,16 @@ export function ImageCarousel() {
           align: "start",
           loop: true,
         }}
-        plugins={[
-          Autoplay({
-            delay: 4000,
-          }),
-        ]}
+        plugins={
+          prefersReducedMotion 
+            ? [] 
+            : [
+                Autoplay({
+                  delay: 8000,
+                  stopOnInteraction: true,
+                }),
+              ]
+        }
         className="w-full"
       >
         <CarouselContent>

@@ -226,9 +226,6 @@ export function HomePageRebuilt() {
         {/* Scrolling Announcement */}
         <ScrollingAnnouncement />
 
-        {/* Announcement Carousel */}
-        <AnnouncementCarousel />
-
         {/* Image Carousel - Admin uploaded banners */}
         <ImageCarousel />
 
