@@ -446,14 +446,16 @@ function AppContent() {
                   <UserRoute>
                     <AppLockGuard>
                       <UnlockGate>
-                        <AstraLayout />
+                        <ReferralCaptureGuard>
+                          <AstraLayout />
+                        </ReferralCaptureGuard>
                       </UnlockGate>
                     </AppLockGuard>
                   </UserRoute>
                 </AuthProviderUser>
               }>
               <Route index element={<Navigate to="/app/home" replace />} />
-              <Route path="home" element={<ReferralCaptureGuard><HomePageRebuilt /></ReferralCaptureGuard>} />
+              <Route path="home" element={<HomePageRebuilt />} />
               <Route path="wallet" element={<WalletPage />} />
               <Route path="wallet/crypto" element={<CryptoWalletPage />} />
               <Route path="wallet/onchain" element={<OnchainWalletPage />} />

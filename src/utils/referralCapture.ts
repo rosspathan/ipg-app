@@ -210,6 +210,16 @@ export async function captureReferralAfterSignup(userId: string): Promise<void> 
       // Show success feedback
       toast.success('Welcome bonus activated! You\'re now connected to your sponsor.');
       
+      // Build referral tree immediately after locking
+      try {
+        await supabase.functions.invoke('build-referral-tree', {
+          body: { user_id: userId, include_unlocked: false }
+        });
+        console.log('[ReferralCapture] ✓ Tree built for user:', userId);
+      } catch (treeErr) {
+        console.warn('[ReferralCapture] Tree build failed (non-blocking):', treeErr);
+      }
+      
       // Clear BOTH storage locations
       clearPendingReferral();
       localStorage.removeItem('ismart_signup_ref');
@@ -238,7 +248,16 @@ export async function captureReferralAfterSignup(userId: string): Promise<void> 
     }
 
     console.log('[ReferralCapture] ✓ Successfully locked referral to sponsor:', sponsorId);
-    console.log('[ReferralCapture] ✓ Tree will be auto-built by database trigger');
+    
+    // Build referral tree immediately after locking
+    try {
+      await supabase.functions.invoke('build-referral-tree', {
+        body: { user_id: userId, include_unlocked: false }
+      });
+      console.log('[ReferralCapture] ✓ Tree built for user:', userId);
+    } catch (treeErr) {
+      console.warn('[ReferralCapture] Tree build failed (non-blocking):', treeErr);
+    }
     
     // Show success feedback
     toast.success('Referral connection established successfully!');

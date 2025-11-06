@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ProgramPageTemplate } from "@/components/programs-pro/ProgramPageTemplate"
 import { LevelSelector } from "@/components/referrals/LevelSelector"
 import { MemberCard } from "@/components/referrals/MemberCard"
@@ -38,6 +38,17 @@ export default function TeamTreeView() {
   const [showUsageTracker, setShowUsageTracker] = useState(false)
   const [isRebuilding, setIsRebuilding] = useState(false)
   const queryClient = useQueryClient()
+
+  // Safety net: ensure referral is captured when viewing team page
+  useEffect(() => {
+    if (user?.id) {
+      import('@/utils/referralCapture').then(({ ensureReferralCaptured }) => {
+        ensureReferralCaptured(user.id).catch(err => {
+          console.warn('[TeamTreeView] Safety net failed:', err);
+        });
+      });
+    }
+  }, [user?.id]);
 
   // Fetch user's badge and unlock levels
   const { data: userBadgeData } = useQuery({

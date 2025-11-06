@@ -129,6 +129,17 @@ const SignupScreen: React.FC = () => {
         if (data.session) {
           // Session exists - user is signed in, proceed to celebration
           console.log('✅ Account created with active session');
+          
+          // Capture referral immediately if we have an active session
+          try {
+            const { captureReferralAfterSignup } = await import('@/utils/referralCapture');
+            await captureReferralAfterSignup(data.user.id);
+            console.log('[SIGNUP] ✓ Referral captured immediately');
+          } catch (err) {
+            console.warn('[SIGNUP] Failed to capture referral immediately:', err);
+            // Non-blocking - safety net will catch it
+          }
+          
           navigate('/onboarding/account-created');
         } else {
           // No session - email confirmation required
