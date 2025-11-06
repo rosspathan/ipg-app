@@ -172,6 +172,30 @@ export async function captureReferralAfterSignup(userId: string): Promise<void> 
       return;
     }
 
+    // Attempt server-side locking via edge function first (handles RLS and race conditions)
+    try {
+      const { data: lockResult, error: lockError } = await supabase.functions.invoke('lock-referral', {
+        body: { sponsor_id: sponsorId, referral_code: sponsorProfile.referral_code, capture_stage: captureStage }
+      });
+      if (!lockError && (lockResult?.success || lockResult?.status === 'locked' || lockResult?.status === 'already_locked')) {
+        console.log('[ReferralCapture] ✓ Locked via edge function');
+        // Build referral tree immediately
+        try {
+          await supabase.functions.invoke('build-referral-tree', { body: { user_id: userId, include_unlocked: false } });
+          console.log('[ReferralCapture] ✓ Tree built for user:', userId);
+        } catch (e) { console.warn('[ReferralCapture] Tree build failed (non-blocking):', e); }
+        toast.success('Referral connection established successfully!');
+        clearPendingReferral();
+        localStorage.removeItem('ismart_signup_ref');
+        return;
+      }
+      if (lockError) {
+        console.warn('[ReferralCapture] Edge lock failed, falling back to client insert:', lockError);
+      }
+    } catch (e) {
+      console.warn('[ReferralCapture] Edge lock threw, falling back:', e);
+    }
+
     // Check if user already has a locked sponsor
     const { data: existingLink } = await supabase
       .from('referral_links_new')

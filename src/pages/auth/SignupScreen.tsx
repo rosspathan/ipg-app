@@ -39,11 +39,11 @@ const SignupScreen: React.FC = () => {
 
   // Optional: Pre-populate referral code from URL parameter (?ref=CODE) for convenience
   useEffect(() => {
-    const refFromUrl = searchParams.get('ref');
+    const refFromUrl = searchParams.get('ref') || searchParams.get('code') || searchParams.get('r') || undefined;
     if (refFromUrl && !referralCode) {
       const upperCode = refFromUrl.toUpperCase();
       setReferralCode(upperCode);
-      console.log('[SIGNUP] Pre-populated referral code from URL (optional):', upperCode);
+      console.log('[SIGNUP] Pre-populated referral code from URL:', upperCode);
     }
   }, [searchParams, referralCode]);
 

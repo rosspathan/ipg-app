@@ -253,7 +253,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
       
       // Store referral code if validated
       if (referralValidated && referralCode) {
-        storePendingReferral(referralCode, 'email_verification_screen');
+        localStorage.setItem('ismart_signup_ref', referralCode.trim().toUpperCase());
       }
 
       // Emit events for UI refresh
