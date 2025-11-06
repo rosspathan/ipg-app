@@ -93,7 +93,11 @@ const SignupScreen: React.FC = () => {
     // Create signup promise
     const signupPromise = async () => {
       const redirectUrl = `${window.location.origin}/`;
-      
+
+      // Save referral code before signUp to avoid race conditions
+      if (referralCode.trim()) {
+        localStorage.setItem('ismart_signup_ref', referralCode.toUpperCase());
+      }
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,

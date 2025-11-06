@@ -197,3 +197,6 @@ verify_jwt = true
 
 [functions.insurance-claim-process]
 verify_jwt = true
+
+[functions.lock-referral]
+verify_jwt = true
