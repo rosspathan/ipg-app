@@ -85,9 +85,9 @@ const SignupScreen: React.FC = () => {
 
     setLoading(true);
 
-    // Create timeout promise (10 seconds)
+    // Create timeout promise (30 seconds)
     const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Signup timeout - please try again')), 10000)
+      setTimeout(() => reject(new Error('Signup timeout - please try again')), 30000)
     );
 
     // Create signup promise
