@@ -166,29 +166,6 @@ Deno.serve(async (req) => {
       postPurchaseWarnings.push('Commission processing failed');
     }
 
-    // 50-level team income processor (non-blocking)
-    try {
-      console.log('[Badge Purchase] Triggering team income rewards...');
-      const { error: teamIncomeError } = await supabase.functions.invoke('process-team-income-rewards', {
-        body: {
-          payer_id: userId,
-          event_type: 'badge_purchase',
-          event_id: paymentRef,
-          badge_name: toBadge,
-          payment_amount: paidAmountBSK,
-        },
-      });
-      
-      if (teamIncomeError) {
-        console.warn('[Badge Purchase] Team income warning:', teamIncomeError);
-        postPurchaseWarnings.push('Team rewards processing delayed');
-      } else {
-        console.log('[Badge Purchase] Team income rewards completed ✅');
-      }
-    } catch (e) {
-      console.warn('[Badge Purchase] Team income processing failed:', (e as any)?.message || e);
-      postPurchaseWarnings.push('Team rewards processing failed');
-    }
 
     // VIP milestone rewards for sponsor (non-blocking)
     if (toBadge.toUpperCase() === 'VIP') {

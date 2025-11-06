@@ -394,6 +394,29 @@ serve(async (req) => {
           console.error('[complete-onboarding] Tree build error:', treeResponse.error);
         } else {
           console.log('[complete-onboarding] ✓ Referral tree built:', treeResponse.data);
+          
+          // Process team income rewards for upline
+          console.log('[complete-onboarding] Processing team income rewards for upline...');
+          
+          try {
+            const teamIncomeResponse = await supabaseAdmin.functions.invoke('process-team-income-rewards', {
+              body: {
+                payer_id: userId,
+                event_type: 'user_signup',
+                event_id: `signup_${userId}_${Date.now()}`,
+                badge_name: 'None',
+                payment_amount: 0
+              }
+            });
+            
+            if (teamIncomeResponse.error) {
+              console.error('[complete-onboarding] Team income error:', teamIncomeResponse.error);
+            } else {
+              console.log('[complete-onboarding] ✓ Team income distributed:', teamIncomeResponse.data);
+            }
+          } catch (err) {
+            console.error('[complete-onboarding] Team income failed:', err);
+          }
         }
       } catch (err) {
         console.error('[complete-onboarding] Error in referral processing:', err);

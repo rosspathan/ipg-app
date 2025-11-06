@@ -170,28 +170,6 @@ Deno.serve(async (req) => {
       console.error('❌ Direct commission processor error (non-critical):', commissionError);
     }
 
-    // 4.5 🌳 CRITICAL: Process 50-level team income rewards
-    try {
-      console.log('🌳 Processing 50-level team income...');
-      
-      const teamIncomeResponse = await supabaseClient.functions.invoke('process-team-income-rewards', {
-        body: {
-          payer_id: user_id,
-          event_type: 'badge_purchase',
-          event_id: `badge_${user_id}_${Date.now()}`,
-          badge_name: normalizedBadge,
-          payment_amount: bsk_amount
-        }
-      });
-
-      if (teamIncomeResponse.error) {
-        console.error('❌ Team income processing error:', teamIncomeResponse.error);
-      } else {
-        console.log('✅ Team income processed:', teamIncomeResponse.data);
-      }
-    } catch (teamIncomeError) {
-      console.error('❌ Team income processor error (non-critical):', teamIncomeError);
-    }
 
     // 5. Credit bonus holding balance for badge purchase
     let bonusCredited = false;
