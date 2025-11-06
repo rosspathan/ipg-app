@@ -134,14 +134,22 @@ const SignupScreen: React.FC = () => {
           // Session exists - user is signed in, proceed to celebration
           console.log('✅ Account created with active session');
           
-          // Capture referral immediately if we have an active session
+          // Capture referral in background (non-blocking)
           try {
             const { captureReferralAfterSignup } = await import('@/utils/referralCapture');
-            await captureReferralAfterSignup(data.user.id);
-            console.log('[SIGNUP] ✓ Referral captured immediately');
+            // Fire-and-forget with a 10s cap so it never blocks navigation
+            Promise.race([
+              captureReferralAfterSignup(data.user.id),
+              new Promise<void>((resolve) => setTimeout(resolve, 10000))
+            ])
+              .then(() => {
+                console.log('[SIGNUP] ✓ Referral capture triggered');
+              })
+              .catch((err) => {
+                console.warn('[SIGNUP] Referral capture error (non-blocking):', err);
+              });
           } catch (err) {
-            console.warn('[SIGNUP] Failed to capture referral immediately:', err);
-            // Non-blocking - safety net will catch it
+            console.warn('[SIGNUP] Failed to trigger referral capture:', err);
           }
           
           navigate('/onboarding/account-created');
