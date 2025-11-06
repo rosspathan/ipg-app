@@ -108,6 +108,7 @@ const AdminRoleManagement = React.lazy(() => import("./pages/admin/AdminRoleMana
 const AdminBadgeSystem = React.lazy(() => import("./pages/admin/AdminBadgeSystem"));
 const AdminBSKManagement = React.lazy(() => import("./pages/admin/AdminBSKManagement"));
 const VIPMilestoneMonitor = React.lazy(() => import("./pages/admin/VIPMilestoneMonitor"));
+const BSKLedgerViewer = React.lazy(() => import("./pages/admin/BSKLedgerViewer"));
 const AdminUserCleanup = React.lazy(() => import("./pages/admin/AdminUserCleanup"));
 const AdminTestUserGenerator = React.lazy(() => import("./pages/admin/AdminTestUserGenerator"));
 import ManualReferralAssignment from "./pages/admin/ManualReferralAssignment";
@@ -625,6 +626,7 @@ function AppContent() {
                 
                 {/* Phase 6: BSK Management */}
                 <Route path="bsk" element={<React.Suspense fallback={<LoadingFallback />}><AdminBSKManagement /></React.Suspense>} />
+                <Route path="bsk-ledger" element={<React.Suspense fallback={<LoadingFallback />}><BSKLedgerViewer /></React.Suspense>} />
                 <Route path="vip-milestones" element={<React.Suspense fallback={<LoadingFallback />}><VIPMilestoneMonitor /></React.Suspense>} />
                 
                 {/* Financial Management Routes - Phase 2-4 */}
