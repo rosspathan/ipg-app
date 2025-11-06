@@ -83,8 +83,8 @@ export function AuthProviderUser({ children }: { children: React.ReactNode }) {
               clearLegacyLocalStorage();
 
               // Import dynamically to avoid circular deps
-              const { captureReferralAfterEmailVerify } = await import('@/utils/referralCapture');
-              await captureReferralAfterEmailVerify(session.user.id);
+              const { captureReferralAfterSignup } = await import('@/utils/referralCapture');
+              await captureReferralAfterSignup(session.user.id);
               // Legacy system (keep for backward compatibility)
               handlePendingReferral(session.user.id);
             } catch (error) {

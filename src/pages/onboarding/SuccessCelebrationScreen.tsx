@@ -7,7 +7,7 @@ import { useWindowSize } from '@/hooks/useWindowSize';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useAuthUser } from '@/hooks/useAuthUser';
-import { captureReferralAfterEmailVerify } from '@/utils/referralCapture';
+import { captureReferralAfterSignup } from '@/utils/referralCapture';
 import { supabase } from '@/integrations/supabase/client';
 
 // Timeout utility to prevent hanging operations
@@ -69,7 +69,7 @@ const SuccessCelebrationScreen: React.FC<SuccessCelebrationScreenProps> = ({ has
       
       // Lock referral (if not already locked)
       console.log('🔒 Ensuring referral is locked for user:', user.id);
-      await captureReferralAfterEmailVerify(user.id);
+      await captureReferralAfterSignup(user.id);
       
       // Build referral tree (non-blocking, with timeout)
       try {

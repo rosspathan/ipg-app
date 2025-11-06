@@ -82,7 +82,7 @@ export async function ensureReferralCaptured(userId: string): Promise<void> {
     console.log('[ReferralSafetyNet] ⚠️ Found pending referral, attempting capture...');
     
     // Attempt full capture
-    await captureReferralAfterEmailVerify(userId);
+    await captureReferralAfterSignup(userId);
     
   } catch (error) {
     console.error('[ReferralSafetyNet] Error:', error);
@@ -90,10 +90,10 @@ export async function ensureReferralCaptured(userId: string): Promise<void> {
 }
 
 /**
- * Capture and lock referral at the configured stage
- * Called after email verification (default)
+ * Capture and lock referral after signup (works with or without email verification)
+ * Called after user signs in for the first time
  */
-export async function captureReferralAfterEmailVerify(userId: string): Promise<void> {
+export async function captureReferralAfterSignup(userId: string): Promise<void> {
   try {
     console.log('[ReferralCapture] ✓ Starting capture for userId:', userId);
     
@@ -148,17 +148,9 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       .limit(1)
       .maybeSingle();
 
-    if (!settings) {
-      console.error('[ReferralCapture] ✗ CRITICAL: No mobile_linking_settings found! Referral capture will not work.');
-      console.error('[ReferralCapture] ✗ Admin must create a mobile_linking_settings row with capture_stage = "after_email_verify"');
-      return;
-    }
-
-    // Check if capture stage matches
-    if (settings.capture_stage !== 'after_email_verify') {
-      console.log('[ReferralCapture] ℹ Skipping: capture_stage is', settings.capture_stage, '(need after_email_verify)');
-      return;
-    }
+    // Settings are optional - if none exist, proceed with capture
+    const captureStage = settings?.capture_stage || 'after_signup';
+    console.log('[ReferralCapture] ℹ Using capture stage:', captureStage);
 
     // Check for self-referral
     if (settings.self_referral_block && userId === sponsorId) {
@@ -204,7 +196,7 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
           sponsor_id: sponsorId,
           sponsor_code_used: sponsorProfile.referral_code,
           locked_at: new Date().toISOString(),
-          capture_stage: 'after_email_verify',
+          capture_stage: captureStage,
           first_touch_at: new Date().toISOString()
         });
       
@@ -231,7 +223,7 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
         sponsor_id: sponsorId,
         sponsor_code_used: sponsorProfile.referral_code || sponsorId,
         locked_at: new Date().toISOString(),
-        capture_stage: 'after_email_verify'
+        capture_stage: captureStage
       })
       .eq('user_id', userId)
       .is('locked_at', null);

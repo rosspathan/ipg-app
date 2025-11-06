@@ -224,8 +224,8 @@ export function useOnboarding() {
       // Capture referral if exists
       if (state.referralCode && state.sponsorId) {
         try {
-          const { captureReferralAfterEmailVerify } = await import('@/utils/referralCapture');
-          await captureReferralAfterEmailVerify(session.user.id);
+          const { captureReferralAfterSignup } = await import('@/utils/referralCapture');
+          await captureReferralAfterSignup(session.user.id);
         } catch (error) {
           console.error('[ONBOARDING] Failed to capture referral:', error);
           // Don't block onboarding completion for referral errors
