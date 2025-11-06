@@ -108,7 +108,7 @@ const SignupScreen: React.FC = () => {
 
       if (error) {
         // Handle "user already exists" error specifically
-        if (error.message?.toLowerCase().includes('already') || error.status === 400) {
+        if (error.message?.toLowerCase().includes('already') || error.status === 400 || error.status === 422) {
           toast({
             title: "Account Exists",
             description: "This email is already registered. Please sign in instead.",
