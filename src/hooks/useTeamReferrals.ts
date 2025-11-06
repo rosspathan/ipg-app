@@ -139,12 +139,15 @@ export const useTeamReferrals = () => {
       const { data, error } = await supabase
         .from('team_referral_settings')
         .select('*')
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       setSettings(data as TeamReferralSettings);
     } catch (error) {
       console.error('Error fetching team referral settings:', error);
+      setSettings(null);
     }
   };
 
