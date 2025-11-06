@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
 
     let totalCommissionsPaid = 0;
     const commissionRecords = [];
+    const skippedRecords = [];
 
     // Calculate commission based on level tiers
     const getCommissionAmount = (level: number): number => {
@@ -82,7 +83,44 @@ Deno.serve(async (req) => {
       
       if (commissionAmount === 0) continue;
 
-      console.log(`💰 Processing L${ancestor.level} commission for ${ancestor.ancestor_id}: ${commissionAmount} BSK`);
+      // Check if sponsor has unlocked this level through their badge
+      const { data: sponsorBadge } = await supabase
+        .from('user_badge_holdings')
+        .select('badge_id, badge_card_config!inner(tier_name, unlocked_levels)')
+        .eq('user_id', ancestor.ancestor_id)
+        .order('badge_card_config.unlocked_levels', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!sponsorBadge) {
+        console.log(`⏭️ Skipping L${ancestor.level} for ${ancestor.ancestor_id} - no badge purchased`);
+        skippedRecords.push({
+          level: ancestor.level,
+          sponsor_id: ancestor.ancestor_id,
+          reason: 'no_badge',
+          required_badge: 'Any badge to unlock Level 2+'
+        });
+        continue;
+      }
+
+      const unlockedLevels = sponsorBadge.badge_card_config.unlocked_levels || 1;
+      if (ancestor.level > unlockedLevels) {
+        console.log(`⏭️ Skipping L${ancestor.level} for ${ancestor.ancestor_id} - level locked (has ${sponsorBadge.badge_card_config.tier_name}, unlocked up to L${unlockedLevels})`);
+        skippedRecords.push({
+          level: ancestor.level,
+          sponsor_id: ancestor.ancestor_id,
+          reason: 'level_locked',
+          current_badge: sponsorBadge.badge_card_config.tier_name,
+          unlocked_up_to: unlockedLevels,
+          upgrade_needed: ancestor.level <= 10 ? 'Silver' : 
+                         ancestor.level <= 20 ? 'Gold' :
+                         ancestor.level <= 30 ? 'Platinum' :
+                         ancestor.level <= 40 ? 'Diamond' : 'i-Smart VIP'
+        });
+        continue;
+      }
+
+      console.log(`💰 Processing L${ancestor.level} commission for ${ancestor.ancestor_id}: ${commissionAmount} BSK (Badge: ${sponsorBadge.badge_card_config.tier_name}, Unlocked: L1-L${unlockedLevels})`);
 
       try {
         // Update sponsor's withdrawable balance
@@ -155,14 +193,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`🎉 Multi-level commission processing complete. Total paid: ${totalCommissionsPaid} BSK`);
+    console.log(`🎉 Multi-level commission processing complete. Total paid: ${totalCommissionsPaid} BSK across ${commissionRecords.length} levels`);
+    console.log(`⏭️ Skipped ${skippedRecords.length} levels due to badge restrictions`);
 
     return new Response(
       JSON.stringify({
         success: true,
         commissions_paid: totalCommissionsPaid,
         levels_processed: commissionRecords.length,
-        details: commissionRecords
+        levels_skipped: skippedRecords.length,
+        details: commissionRecords,
+        skipped_details: skippedRecords
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
