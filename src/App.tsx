@@ -255,6 +255,7 @@ import CryptoWalletPage from "@/pages/astra/CryptoWalletPage";
 
 import { AstraLayout } from "@/layouts/AstraLayout";
 import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
+import { ReferralCaptureGuard } from "@/components/ReferralCaptureGuard";
 import { ProgramsPageRebuilt } from "@/pages/astra/ProgramsPageRebuilt";
 import { ProgramsPagePro } from "@/pages/astra/ProgramsPagePro";
 import { TradingOverview } from "@/pages/astra/TradingOverview";
@@ -452,7 +453,7 @@ function AppContent() {
                 </AuthProviderUser>
               }>
               <Route index element={<Navigate to="/app/home" replace />} />
-              <Route path="home" element={<HomePageRebuilt />} />
+              <Route path="home" element={<ReferralCaptureGuard><HomePageRebuilt /></ReferralCaptureGuard>} />
               <Route path="wallet" element={<WalletPage />} />
               <Route path="wallet/crypto" element={<CryptoWalletPage />} />
               <Route path="wallet/onchain" element={<OnchainWalletPage />} />
@@ -599,6 +600,7 @@ function AppContent() {
                 <Route path="manual-referral-assignment" element={<ManualReferralAssignment />} />
                 <Route path="retroactive-commission-fix" element={<RetroactiveCommissionFix />} />
                 <Route path="tree-health" element={<TreeHealthDashboard />} />
+                <Route path="referral-debugger" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/ReferralDebugger')))}</React.Suspense>} />
                 <Route path="funding" element={<AdminFunding />} />
                 <Route path="funding/inr" element={<AdminINRFundingScreen />} />
                 <Route path="currency" element={<CurrencyControlCenter />} />

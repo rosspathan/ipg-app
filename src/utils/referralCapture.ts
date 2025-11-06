@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface PendingReferral {
   code: string;
@@ -47,6 +48,45 @@ export function getPendingReferral(): PendingReferral | null {
  */
 export function clearPendingReferral(): void {
   localStorage.removeItem('ismart_pending_ref');
+}
+
+/**
+ * Safety net: Ensure referral is captured even if initial capture failed
+ * Can be called multiple times safely - won't duplicate if already locked
+ */
+export async function ensureReferralCaptured(userId: string): Promise<void> {
+  try {
+    console.log('[ReferralSafetyNet] Checking referral status for user:', userId);
+
+    // Check if user already has a locked sponsor
+    const { data: existingLink } = await supabase
+      .from('referral_links_new')
+      .select('sponsor_id, locked_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (existingLink?.locked_at) {
+      console.log('[ReferralSafetyNet] ✓ User already has locked sponsor:', existingLink.sponsor_id);
+      return;
+    }
+
+    // Check if there's a pending referral code
+    const signupCode = localStorage.getItem('ismart_signup_ref');
+    const pending = getPendingReferral();
+
+    if (!signupCode && !pending) {
+      console.log('[ReferralSafetyNet] ℹ No pending referral code found');
+      return;
+    }
+
+    console.log('[ReferralSafetyNet] ⚠️ Found pending referral, attempting capture...');
+    
+    // Attempt full capture
+    await captureReferralAfterEmailVerify(userId);
+    
+  } catch (error) {
+    console.error('[ReferralSafetyNet] Error:', error);
+  }
 }
 
 /**
@@ -175,6 +215,9 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
       
     console.log('[ReferralCapture] ✓ Created and locked new referral link');
       
+      // Show success feedback
+      toast.success('Welcome bonus activated! You\'re now connected to your sponsor.');
+      
       // Clear BOTH storage locations
       clearPendingReferral();
       localStorage.removeItem('ismart_signup_ref');
@@ -204,6 +247,9 @@ export async function captureReferralAfterEmailVerify(userId: string): Promise<v
 
     console.log('[ReferralCapture] ✓ Successfully locked referral to sponsor:', sponsorId);
     console.log('[ReferralCapture] ✓ Tree will be auto-built by database trigger');
+    
+    // Show success feedback
+    toast.success('Referral connection established successfully!');
     
     // Clear BOTH storage locations
     clearPendingReferral();
