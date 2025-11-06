@@ -13,23 +13,29 @@ const TestUsers = () => {
       email: 'user1@test.com',
       password: 'testpass123',
       full_name: 'John Doe',
-      phone: '+1234567890'
+      phone: '+1234567890',
+      referralCode: '' // Will be the referrer
     },
     {
       email: 'user2@test.com', 
       password: 'testpass456',
       full_name: 'Jane Smith',
-      phone: '+1987654321'
+      phone: '+1987654321',
+      referralCode: '' // Will use user1's referral code
     }
   ]);
+  
+  const [referralCode, setReferralCode] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<string[]>([]);
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
 
-  const createTestUser = async (testUser: typeof testUsers[0]) => {
+  const createTestUser = async (testUser: typeof testUsers[0], useReferralCode?: string) => {
     try {
+      const referralToUse = useReferralCode || testUser.referralCode;
+      
       // Create user in auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: testUser.email,
@@ -38,7 +44,8 @@ const TestUsers = () => {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: testUser.full_name,
-            phone: testUser.phone
+            phone: testUser.phone,
+            ...(referralToUse && { referral_code: referralToUse })
           }
         }
       });
@@ -82,10 +89,108 @@ const TestUsers = () => {
         return `❌ Role creation failed for ${testUser.email}: ${roleError.message}`;
       }
 
-      return `✅ Successfully created user: ${testUser.email}`;
+      // Fetch the created user's referral code
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('referral_code')
+        .eq('user_id', authData.user.id)
+        .single();
+      
+      const userReferralCode = profileData?.referral_code || 'N/A';
+      
+      return `✅ Successfully created user: ${testUser.email} | Referral Code: ${userReferralCode}`;
     } catch (error: any) {
       return `❌ Unexpected error for ${testUser.email}: ${error.message}`;
     }
+  };
+  
+  const testReferralSignup = async () => {
+    setLoading(true);
+    setResults([]);
+    
+    const newResults: string[] = [];
+    
+    // Step 1: Create User A (referrer)
+    newResults.push('🔄 Step 1: Creating User A (referrer)...');
+    const resultA = await createTestUser(testUsers[0]);
+    newResults.push(resultA);
+    setResults([...newResults]);
+    
+    if (!resultA.includes('✅')) {
+      setLoading(false);
+      return;
+    }
+    
+    // Extract User A's referral code
+    const referralCodeMatch = resultA.match(/Referral Code: (\w+)/);
+    const userAReferralCode = referralCodeMatch ? referralCodeMatch[1] : null;
+    
+    if (!userAReferralCode) {
+      newResults.push('❌ Failed to get User A referral code');
+      setResults([...newResults]);
+      setLoading(false);
+      return;
+    }
+    
+    setReferralCode(userAReferralCode);
+    newResults.push(`✓ User A Referral Code: ${userAReferralCode}`);
+    setResults([...newResults]);
+    
+    // Wait 2 seconds
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Step 2: Create User B using User A's referral code
+    newResults.push('🔄 Step 2: Creating User B with User A\'s referral code...');
+    setResults([...newResults]);
+    
+    const resultB = await createTestUser(testUsers[1], userAReferralCode);
+    newResults.push(resultB);
+    setResults([...newResults]);
+    
+    // Wait 3 seconds for edge functions to process
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Step 3: Check User A's BSK holding balance
+    newResults.push('🔄 Step 3: Verifying User A received L1 reward (5 BSK holding)...');
+    setResults([...newResults]);
+    
+    const { data: userAProfile } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('email', testUsers[0].email)
+      .single();
+    
+    if (!userAProfile) {
+      newResults.push('❌ Could not find User A profile');
+      setResults([...newResults]);
+      setLoading(false);
+      return;
+    }
+    
+    const { data: bskBalance } = await supabase
+      .from('user_bsk_balances')
+      .select('holding_balance')
+      .eq('user_id', userAProfile.user_id)
+      .single();
+    
+    const holdingBalance = bskBalance?.holding_balance || 0;
+    
+    if (holdingBalance >= 5) {
+      newResults.push(`✅ SUCCESS! User A received ${holdingBalance} BSK holding reward`);
+    } else {
+      newResults.push(`❌ FAILED! User A only has ${holdingBalance} BSK holding (expected 5+)`);
+    }
+    
+    setResults(newResults);
+    setLoading(false);
+    
+    toast({
+      title: holdingBalance >= 5 ? "Test Passed! ✅" : "Test Failed ❌",
+      description: holdingBalance >= 5 
+        ? `User A received ${holdingBalance} BSK holding reward` 
+        : `Expected 5 BSK, got ${holdingBalance} BSK`,
+      variant: holdingBalance >= 5 ? "default" : "destructive"
+    });
   };
 
   const createAllTestUsers = async () => {
@@ -185,11 +290,19 @@ const TestUsers = () => {
           
           <div className="flex gap-3">
             <Button 
-              onClick={createAllTestUsers} 
+              onClick={testReferralSignup} 
               disabled={loading}
               className="flex-1"
+              variant="default"
             >
-              {loading ? 'Creating...' : 'Create All Test Users'}
+              {loading ? 'Testing...' : '🧪 Test Referral Signup & L1 Rewards'}
+            </Button>
+            <Button 
+              onClick={createAllTestUsers} 
+              disabled={loading}
+              variant="outline"
+            >
+              {loading ? 'Creating...' : 'Create Without Referral'}
             </Button>
             <Button 
               variant="destructive" 
@@ -199,6 +312,12 @@ const TestUsers = () => {
               Clear Test Data
             </Button>
           </div>
+          
+          {referralCode && (
+            <div className="p-3 bg-primary/10 rounded-lg">
+              <p className="text-sm font-medium">User A Referral Code: <span className="font-mono text-primary">{referralCode}</span></p>
+            </div>
+          )}
           
           {results.length > 0 && (
             <div className="space-y-2">
