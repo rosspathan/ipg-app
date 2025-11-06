@@ -79,6 +79,21 @@ export default function TeamTreeView() {
     enabled: !!user?.id
   })
 
+  // Fetch user's referral code
+  const { data: profileData } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('referral_code')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
   const handleRebuildTree = async () => {
     if (!user?.id) return;
     
@@ -128,21 +143,6 @@ export default function TeamTreeView() {
       </ProgramPageTemplate>
     )
   }
-
-  // Fetch user's referral code
-  const { data: profileData } = useQuery({
-    queryKey: ['user-profile', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data } = await supabase
-        .from('profiles')
-        .select('referral_code')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!user?.id
-  });
 
   if (!data || data.totalMembers === 0) {
     const referralCode = profileData?.referral_code || 'Loading...';
