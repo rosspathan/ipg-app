@@ -138,6 +138,7 @@ import RecoveryVerifyScreen from "./pages/RecoveryVerifyScreen";
 import LandingScreen from "./pages/LandingScreen";
 import SignupScreen from "./pages/auth/SignupScreen";
 import LoginScreen from "./pages/auth/LoginScreen";
+import CheckEmailScreen from "./pages/auth/CheckEmailScreen";
 import WalletUnlockedScreen from "./pages/auth/WalletUnlockedScreen";
 import RecoverWalletScreen from "./pages/auth/RecoverWalletScreen";
 import ForgotPasswordScreen from "./pages/auth/ForgotPasswordScreen";
@@ -360,6 +361,7 @@ function AppContent() {
           {/* Auth Routes - New Clean Flow */}
           <Route path="/auth/signup" element={<SignupScreen />} />
           <Route path="/auth/login" element={<LoginScreen />} />
+          <Route path="/auth/check-email" element={<CheckEmailScreen />} />
           <Route path="/auth/import-wallet" element={
             <AuthProviderUser>
               {React.createElement(React.lazy(() => import('./pages/auth/ImportWalletAuth')))}
@@ -432,7 +434,6 @@ function AppContent() {
           {/* Legacy Auth Routes - Redirect to new flow */}
           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
           <Route path="/auth/register" element={<Navigate to="/auth/signup" replace />} />
-          <Route path="/auth/check-email" element={<Navigate to="/auth/login" replace />} />
           <Route path="/auth/verify-code" element={<Navigate to="/auth/login" replace />} />
 
               {/* Legacy User App removed */}

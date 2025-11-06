@@ -85,24 +85,45 @@ const SignupScreen: React.FC = () => {
 
     setLoading(true);
 
-    try {
+    // Create timeout promise (10 seconds)
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Signup timeout - please try again')), 10000)
+    );
+
+    // Create signup promise
+    const signupPromise = async () => {
       const redirectUrl = `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
           emailRedirectTo: redirectUrl
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle "user already exists" error specifically
+        if (error.message?.toLowerCase().includes('already') || error.status === 400) {
+          toast({
+            title: "Account Exists",
+            description: "This email is already registered. Please sign in instead.",
+            variant: "destructive"
+          });
+          setTimeout(() => navigate('/auth/login'), 2000);
+          return;
+        }
+        throw error;
+      }
 
       if (data.user) {
-        // Store referral code for later processing
+        console.log('[SIGNUP] User created:', data.user.id);
+        
+        // Store referral code and email for later processing
         if (referralCode.trim()) {
           localStorage.setItem('ismart_signup_ref', referralCode.toUpperCase());
         }
+        sessionStorage.setItem('lastSignupEmail', email.trim());
 
         // Check if email confirmation is required
         if (data.session) {
@@ -112,25 +133,31 @@ const SignupScreen: React.FC = () => {
         } else {
           // No session - email confirmation required
           console.log('📧 Email confirmation required');
-          toast({
-            title: "Check Your Email",
-            description: "We've sent a confirmation link to your email address. Please verify your email to continue.",
-            duration: 6000
-          });
-          
-          // Navigate to login page after showing the message
-          setTimeout(() => {
-            navigate('/auth/login');
-          }, 2000);
+          navigate('/auth/check-email');
         }
       }
+    };
+
+    try {
+      // Race between signup and timeout
+      await Promise.race([signupPromise(), timeoutPromise]);
     } catch (error: any) {
       console.error('Signup error:', error);
-      toast({
-        title: "Signup Failed",
-        description: error.message || "Could not create account. Please try again.",
-        variant: "destructive"
-      });
+      
+      // Only show error toast if we haven't already handled it
+      if (!error.message?.includes('timeout')) {
+        toast({
+          title: "Signup Failed",
+          description: error.message || "Could not create account. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Request Timeout",
+          description: "The request took too long. Please check your connection and try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
