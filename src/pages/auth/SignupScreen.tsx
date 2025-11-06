@@ -103,7 +103,26 @@ const SignupScreen: React.FC = () => {
         if (referralCode.trim()) {
           localStorage.setItem('ismart_signup_ref', referralCode.toUpperCase());
         }
-        navigate('/onboarding/account-created');
+
+        // Check if email confirmation is required
+        if (data.session) {
+          // Session exists - user is signed in, proceed to celebration
+          console.log('✅ Account created with active session');
+          navigate('/onboarding/account-created');
+        } else {
+          // No session - email confirmation required
+          console.log('📧 Email confirmation required');
+          toast({
+            title: "Check Your Email",
+            description: "We've sent a confirmation link to your email address. Please verify your email to continue.",
+            duration: 6000
+          });
+          
+          // Navigate to login page after showing the message
+          setTimeout(() => {
+            navigate('/auth/login');
+          }, 2000);
+        }
       }
     } catch (error: any) {
       console.error('Signup error:', error);
