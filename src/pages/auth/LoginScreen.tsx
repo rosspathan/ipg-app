@@ -171,7 +171,7 @@ const LoginScreen: React.FC = () => {
         const { data: profile } = await supabase
           .from('profiles')
           .select('wallet_address')
-          .eq('user_id', data.user.id)
+          .eq('user_id', verifySession.user.id)
           .maybeSingle(); // ✅ Safe - returns null instead of throwing
         
         console.log('[LOGIN] Step 5: Profile fetched', { hasProfile: !!profile, hasWalletInDB: !!profile?.wallet_address });
