@@ -139,46 +139,29 @@ serve(async (req) => {
       console.error('[upgrade-tier] Badge assignment failed:', badgeError)
     }
 
-    // Get referrer
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('referred_by')
-      .eq('user_id', user.id)
-      .single()
-
-    let referrerBonus = null
-
-    if (profile?.referred_by) {
-      // Credit 10% of upgrade diff to referrer
-      const bonusAmount = upgradeDiff * 0.1
-      const bonusIdempotencyKey = `sub:upgrade:bonus:${user.id}:${currentTier.id}-${new_tier_id}:${payment_id}`
-
-      const { data: bonusResult, error: bonusError } = await supabaseClient.rpc(
-        'record_bsk_transaction',
+    // Process commission through centralized system
+    let commissionResult = null
+    try {
+      const { data: commissionData, error: commissionError } = await supabaseClient.functions.invoke(
+        'process-badge-subscription-commission',
         {
-          p_user_id: profile.referred_by,
-          p_idempotency_key: bonusIdempotencyKey,
-          p_tx_type: 'credit',
-          p_tx_subtype: 'subscription_bonus',
-          p_amount: bonusAmount,
-          p_balance_type: 'withdrawable',
-          p_description: `10% upgrade bonus (${currentTier.tier_name} → ${newTier.tier_name})`,
-          p_metadata: { 
-            subscriber_id: user.id,
-            from_tier: currentTier.tier_name,
-            to_tier: newTier.tier_name,
-            upgrade_amount: upgradeDiff,
-            payment_id 
+          body: {
+            user_id: user.id,
+            badge_name: newTier.tier_name,
+            bsk_amount: upgradeDiff,
+            previous_badge: currentTier.tier_name
           }
         }
       )
 
-      if (bonusError) {
-        console.error('[upgrade-tier] Referrer bonus failed:', bonusError)
+      if (commissionError) {
+        console.error('[upgrade-tier] Commission processing error:', commissionError)
       } else {
-        console.log('[upgrade-tier] Referrer upgrade bonus credited:', bonusResult)
-        referrerBonus = { referrer_id: profile.referred_by, bonus_amount: bonusAmount }
+        console.log('[upgrade-tier] Upgrade commission processed:', commissionData)
+        commissionResult = commissionData
       }
+    } catch (err) {
+      console.error('[upgrade-tier] Exception processing upgrade commission:', err)
     }
 
     return new Response(
@@ -191,7 +174,7 @@ serve(async (req) => {
           upgrade_cost: upgradeDiff,
           payment_id
         },
-        referrer_bonus: referrerBonus
+        commission: commissionResult
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
