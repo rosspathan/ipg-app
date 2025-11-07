@@ -123,9 +123,12 @@ Deno.serve(async (req) => {
 
       console.log(`[admin-send-bsk] ✅ Atomically credited ${amount} BSK (tx: ${creditResult})`);
 
-      // Get updated balance from materialized view
+      // Refresh materialized view so balance updates immediately
+      await supabaseClient.rpc('refresh_bsk_balances_view');
+
+      // Get updated balance for the recipient (not the admin)
       const { data: balanceData } = await supabaseClient
-        .rpc('get_my_bsk_balance')
+        .rpc('get_user_bsk_balance', { target_user_id: recipient_user_id })
         .single();
 
       const newBalance = balance_type === 'withdrawable' 

@@ -11166,6 +11166,19 @@ export type Database = {
           warning_count: number
         }[]
       }
+      get_user_bsk_balance: {
+        Args: { target_user_id: string }
+        Returns: {
+          holding_balance: number
+          last_transaction_at: string
+          today_earned: number
+          total_earned_holding: number
+          total_earned_withdrawable: number
+          total_transactions: number
+          week_earned: number
+          withdrawable_balance: number
+        }[]
+      }
       get_user_display_info: {
         Args: { p_user_id: string }
         Returns: {
