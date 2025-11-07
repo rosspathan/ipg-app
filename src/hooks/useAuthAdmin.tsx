@@ -65,9 +65,7 @@ export function AuthProviderAdmin({ children }: { children: React.ReactNode }) {
         // Always validate admin status server-side
         await checkAdminRole(session.user.id);
       } else {
-        // Clear admin status on logout (remove insecure localStorage)
-        localStorage.removeItem('cryptoflow_web3_admin');
-        localStorage.removeItem('cryptoflow_admin_wallet');
+        // Clear admin status on logout
         setIsAdmin(false);
       }
 
@@ -103,11 +101,8 @@ export function AuthProviderAdmin({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    // Clear Web3 admin status (legacy)
-    localStorage.removeItem('cryptoflow_web3_admin');
-    localStorage.removeItem('cryptoflow_admin_wallet');
+    // Clear admin status
     setIsAdmin(false);
-    
     await supabase.auth.signOut();
   };
 

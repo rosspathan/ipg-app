@@ -29,19 +29,7 @@ const AdminLoginScreen = () => {
   const [loginLoading, setLoginLoading] = useState(false);
   const [showEmailLogin, setShowEmailLogin] = useState(true);
 
-  // If already an admin, redirect to admin panel
-  useEffect(() => {
-    console.log('AdminLoginScreen: Checking stored admin state...');
-    const isAdminStored = localStorage.getItem('cryptoflow_web3_admin');
-    console.log('AdminLoginScreen: Stored admin state:', isAdminStored);
-    if (isAdminStored === 'true') {
-      console.log('AdminLoginScreen: Found stored admin, redirecting to /admin');
-      setIsAdmin(true);
-      navigate('/admin');
-    } else {
-      console.log('AdminLoginScreen: No stored admin state, showing login form');
-    }
-  }, [setIsAdmin, navigate]);
+  // Removed insecure localStorage bypass - admin status now validated server-side only
 
   // If already signed in and has admin role via email, redirect
   useEffect(() => {
@@ -133,9 +121,7 @@ const AdminLoginScreen = () => {
       const { success: isValid, isAdmin } = verifyResponse.data;
 
       if (isValid && isAdmin) {
-        // Store admin status in localStorage and auth context
-        localStorage.setItem('cryptoflow_web3_admin', 'true');
-        localStorage.setItem('cryptoflow_admin_wallet', wallet.address);
+        // Set admin status (server-side validated only)
         setIsAdmin(true);
         setWalletAuthorized(true);
         setSuccess(`Welcome Admin ${wallet.address}`);
@@ -241,8 +227,7 @@ const AdminLoginScreen = () => {
         }
 
         if (roleData) {
-          // User is admin, set admin state and redirect
-          localStorage.setItem('cryptoflow_admin_user', data.user.id);
+          // User is admin, set admin state and redirect (server-side validated)
           setIsAdmin(true);
           setSuccess(`Welcome Admin ${data.user.email}`);
           setTimeout(() => {

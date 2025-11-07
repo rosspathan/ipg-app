@@ -59,13 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Check for Web3 admin status on load
-    const web3AdminStatus = localStorage.getItem('cryptoflow_web3_admin');
-    if (web3AdminStatus === 'true') {
-      setIsAdmin(true);
-    }
-
-    // Set up auth state listener
+    // Set up auth state listener - server-side validation only
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
@@ -73,17 +67,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Always check admin role for authenticated users (unless already web3 admin)
-          const latestWeb3Admin = localStorage.getItem('cryptoflow_web3_admin');
-          if (latestWeb3Admin !== 'true') {
-            setTimeout(() => {
-              checkAdminRole(session.user!.id);
-            }, 0);
-          }
+          // Always check admin role via server-side validation
+          setTimeout(() => {
+            checkAdminRole(session.user!.id);
+          }, 0);
         } else {
           // Clear admin status on logout
-          localStorage.removeItem('cryptoflow_web3_admin');
-          localStorage.removeItem('cryptoflow_admin_wallet');
           setIsAdmin(false);
         }
         
@@ -97,8 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       
-      const latestWeb3Admin = localStorage.getItem('cryptoflow_web3_admin');
-      if (session?.user && latestWeb3Admin !== 'true') {
+      if (session?.user) {
         setTimeout(() => {
           checkAdminRole(session.user!.id);
         }, 0);
@@ -132,11 +120,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    // Clear Web3 admin status
-    localStorage.removeItem('cryptoflow_web3_admin');
-    localStorage.removeItem('cryptoflow_admin_wallet');
+    // Clear admin status
     setIsAdmin(false);
-    
     await supabase.auth.signOut();
   };
 

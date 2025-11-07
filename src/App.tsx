@@ -325,6 +325,10 @@ function AppContent() {
   // Initialize SessionManager once on app start
   React.useEffect(() => {
     const initSession = async () => {
+      // SECURITY: Remove insecure localStorage entries on app start
+      const { cleanupInsecureStorage } = await import('@/utils/securityCleanup');
+      cleanupInsecureStorage();
+      
       const { SessionManager } = await import('@/services/SessionManager');
       
       // Setup auth listener
