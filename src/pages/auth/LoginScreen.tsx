@@ -31,6 +31,22 @@ const LoginScreen: React.FC = () => {
   const mountedRef = useRef(true);
   const loadingRef = useRef(false);
   const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const navigationWatchdogRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ FIX 1: Redirect already authenticated users
+  useEffect(() => {
+    const checkAlreadyAuthenticated = async () => {
+      if (loading) return; // Don't check during login
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        console.log('[LOGIN] Already authenticated, redirecting to app');
+        navigate('/app/home', { replace: true });
+      }
+    };
+    
+    checkAlreadyAuthenticated();
+  }, []);
 
   // Cleanup on unmount - always reset loading state
   useEffect(() => {
@@ -39,12 +55,86 @@ const LoginScreen: React.FC = () => {
       if (watchdogTimerRef.current) {
         clearTimeout(watchdogTimerRef.current);
       }
+      if (navigationWatchdogRef.current) {
+        clearTimeout(navigationWatchdogRef.current);
+      }
       setLoading(false);
       loadingRef.current = false;
       isProcessingRef.current = false;
       sessionStorage.removeItem('login_in_progress');
     };
   }, []);
+
+  // ✅ FIX 2: Centralized route determination
+  const determinePostLoginRoute = async (userId: string): Promise<string> => {
+    const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('wallet_address')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    const hasWalletInDB = !!profile?.wallet_address;
+    const hasSecurity = hasAnySecurity();
+    
+    console.log('[LOGIN] Route decision:', { hasLocalWallet, hasWalletInDB, hasSecurity });
+    
+    // Decision tree
+    if (!hasLocalWallet && !hasWalletInDB) return '/auth/import-wallet';
+    if (!hasLocalWallet && hasWalletInDB) return '/auth/import-wallet';
+    if (!hasSecurity) return '/onboarding/security';
+    
+    // Check lock state
+    const lockStateRaw = localStorage.getItem('cryptoflow_lock_state');
+    let isUnlocked = false;
+    try {
+      if (lockStateRaw) {
+        const parsed = JSON.parse(lockStateRaw);
+        const sessionTimeout = (parsed.sessionLockMinutes || 30) * 60 * 1000;
+        const timeSinceUnlock = Date.now() - (parsed.lastUnlockAt || 0);
+        isUnlocked = parsed.isUnlocked === true && timeSinceUnlock < sessionTimeout;
+      }
+    } catch {
+      isUnlocked = false;
+    }
+    
+    return isUnlocked ? '/app/home' : '/auth/lock';
+  };
+
+  // ✅ FIX 3: Clear watchdog helper
+  const clearWatchdogs = () => {
+    if (watchdogTimerRef.current) {
+      clearTimeout(watchdogTimerRef.current);
+      watchdogTimerRef.current = null;
+    }
+    if (navigationWatchdogRef.current) {
+      clearTimeout(navigationWatchdogRef.current);
+      navigationWatchdogRef.current = null;
+    }
+  };
+
+  // ✅ FIX 4: Safe navigation with delay and watchdog
+  const safeNavigate = (path: string) => {
+    clearWatchdogs();
+    
+    console.log(`[LOGIN] Navigating to: ${path}`);
+    
+    // Set navigation watchdog - force redirect if navigation fails
+    navigationWatchdogRef.current = setTimeout(() => {
+      const currentPath = window.location.pathname;
+      if (currentPath === '/auth/login') {
+        console.error('[LOGIN] Navigation watchdog triggered - forcing redirect');
+        window.location.href = path;
+      }
+    }, 1000);
+    
+    // Small delay to let SessionManager process the login
+    setTimeout(() => {
+      if (mountedRef.current) {
+        navigate(path, { replace: true });
+      }
+    }, 100);
+  };
 
   const handleLogin = async () => {
     // Prevent double-clicks and multiple simultaneous login attempts
@@ -74,7 +164,8 @@ const LoginScreen: React.FC = () => {
     loadingRef.current = true;
     setLoading(true);
     
-    console.log('[LOGIN] Step 1: Starting authentication');
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] [LOGIN] Starting authentication flow`);
     
     // Set flag to prevent validation during login
     sessionStorage.setItem('login_in_progress', 'true');
@@ -206,66 +297,16 @@ const LoginScreen: React.FC = () => {
           }
         }
         
+        // ✅ FIX 5: Use centralized route determination
         console.log('[LOGIN] Step 7: Determining navigation path');
+        const targetRoute = await determinePostLoginRoute(verifySession.user.id);
         
-        // If no wallet anywhere, must import
-        if (!hasLocalWallet && !hasWalletInDB) {
-          console.log('[LOGIN] Step 8: No wallet found, navigating to import');
-          if (mountedRef.current) {
-            navigate('/auth/import-wallet');
-          }
-          return;
-        }
+        console.log('[LOGIN] Step 8: Target route determined:', targetRoute);
         
-        // If wallet in DB but not local, need to import
-        if (!hasLocalWallet && hasWalletInDB) {
-          console.log('[LOGIN] Step 8: Wallet in DB only, navigating to import');
-          if (mountedRef.current) {
-            navigate('/auth/import-wallet');
-          }
-          return;
-        }
-
-        console.log('[LOGIN] Step 8: Checking security status');
+        // ✅ FIX 6: Use safe navigation with watchdog
+        safeNavigate(targetRoute);
         
-        // Check if user has security setup (modern or legacy)
-        const hasSecurity = hasAnySecurity();
-        
-        if (!hasSecurity) {
-          console.log('[LOGIN] Step 9: No security, navigating to setup');
-          if (mountedRef.current) {
-            navigate('/onboarding/security');
-          }
-        } else {
-          console.log('[LOGIN] Step 9: Has security, checking lock state');
-          // Has security, check if session is still valid
-          const lockStateRaw = localStorage.getItem('cryptoflow_lock_state');
-          let isUnlocked = false;
-          try {
-            if (lockStateRaw) {
-              const parsed = JSON.parse(lockStateRaw);
-              const sessionTimeout = (parsed.sessionLockMinutes || 30) * 60 * 1000;
-              const timeSinceUnlock = Date.now() - (parsed.lastUnlockAt || 0);
-              isUnlocked = parsed.isUnlocked === true && timeSinceUnlock < sessionTimeout;
-            }
-          } catch {
-            isUnlocked = false;
-          }
-          
-          if (isUnlocked) {
-            console.log('[LOGIN] Step 10: Session valid, navigating to home');
-            if (mountedRef.current) {
-              navigate('/app/home');
-            }
-          } else {
-            console.log('[LOGIN] Step 10: Session expired, navigating to lock screen');
-            if (mountedRef.current) {
-              navigate('/auth/lock');
-            }
-          }
-        }
-
-        console.log('[LOGIN] Step 11: Login flow complete');
+        console.log('[LOGIN] Step 9: Login flow complete');
       } catch (error: any) {
         console.error('[LOGIN] Error during login flow:', error);
         
@@ -290,11 +331,8 @@ const LoginScreen: React.FC = () => {
         });
       }
     } finally {
-      // Clear watchdog
-      if (watchdogTimerRef.current) {
-        clearTimeout(watchdogTimerRef.current);
-        watchdogTimerRef.current = null;
-      }
+      // ✅ FIX 7: Clear all watchdogs
+      clearWatchdogs();
       
       // Always clean up, even if component unmounted
       sessionStorage.removeItem('login_in_progress');

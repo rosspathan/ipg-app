@@ -186,6 +186,19 @@ class SessionManagerClass {
       return { isValid: false, reason: 'Not initialized' };
     }
 
+    // ✅ FIX: Redirect authenticated users away from auth pages
+    if (this.state.isAuthenticated && 
+        (pathname === '/auth/login' || pathname === '/auth/signup')) {
+      console.log('[SessionManager] Redirecting authenticated user away from auth pages');
+      return {
+        isValid: false,
+        redirectTo: this.state.hasWallet 
+          ? (this.state.hasSecurity ? '/app/home' : '/onboarding/security')
+          : '/auth/import-wallet',
+        reason: 'Already authenticated'
+      };
+    }
+
     // Public routes - always allow
     const publicRoutes = [
       '/',
@@ -362,8 +375,29 @@ class SessionManagerClass {
           hasSecurity: false,
           isUnlocked: false,
         });
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await this.refresh();
+      } else if (event === 'SIGNED_IN') {
+        // ✅ FIX: Don't call refresh() during login - update state directly
+        // This prevents race conditions during navigation
+        console.log('[SessionManager] SIGNED_IN - lightweight state update');
+        this.updateState({
+          session,
+          user: session?.user ?? null,
+          isAuthenticated: !!session,
+        });
+        
+        // Defer full refresh to avoid blocking navigation
+        setTimeout(() => {
+          if (this.state.isAuthenticated) {
+            this.refresh();
+          }
+        }, 100);
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Token refresh can do lightweight update too
+        this.updateState({
+          session,
+          user: session?.user ?? null,
+          isAuthenticated: !!session,
+        });
       }
     });
 
