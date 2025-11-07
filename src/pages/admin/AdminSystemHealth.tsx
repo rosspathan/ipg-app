@@ -65,8 +65,14 @@ export default function AdminSystemHealth() {
     // 3. SMTP (check if email function exists)
     try {
       const { data, error } = await supabase.functions.invoke('send-verification-email', {
-        body: { test: true, dryRun: true }
+        body: { 
+          test: true, 
+          dryRun: true,
+          email: 'test@example.com'
+        }
       });
+      
+      if (error) throw error;
       
       results.push({
         name: 'SMTP (Email)',
