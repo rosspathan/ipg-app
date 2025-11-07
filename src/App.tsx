@@ -325,19 +325,33 @@ function AppContent() {
   // Initialize SessionManager once on app start
   React.useEffect(() => {
     const initSession = async () => {
-      // SECURITY: Remove insecure localStorage entries on app start
-      const { cleanupInsecureStorage } = await import('@/utils/securityCleanup');
-      cleanupInsecureStorage();
-      
-      const { SessionManager } = await import('@/services/SessionManager');
-      
-      // Setup auth listener
-      SessionManager.setupAuthListener();
-      
-      // Initialize session state
-      await SessionManager.initialize();
-      
-      setSessionInitialized(true);
+      try {
+        // SECURITY: Remove insecure localStorage entries on app start
+        const { cleanupInsecureStorage } = await import('@/utils/securityCleanup');
+        cleanupInsecureStorage();
+        
+        const { SessionManager } = await import('@/services/SessionManager');
+        
+        // Setup auth listener
+        SessionManager.setupAuthListener();
+        
+        // Initialize session state with timeout fallback to avoid infinite spinner
+        const initPromise = SessionManager.initialize();
+        const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 4000));
+        const result = await Promise.race([initPromise, timeoutPromise]);
+        if (result === undefined) {
+          // Race resolved by timeout - continue rendering, background init will finalize state
+          console.warn('[App] Session initialization timed out, proceeding with background init');
+        }
+      } catch (e) {
+        console.error('[App] Initialization error:', e);
+      } finally {
+        setSessionInitialized(true);
+        // Kick off a background ensure-init in case we timed out
+        import('@/services/SessionManager').then(({ SessionManager }) => {
+          setTimeout(() => SessionManager.initialize(), 0);
+        });
+      }
     };
 
     initSession();
