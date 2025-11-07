@@ -48,27 +48,30 @@ export function AdminNotificationCenter() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-10 w-10 text-[hsl(240_10%_70%)] hover:text-[hsl(0_0%_98%)] hover:bg-[hsl(235_28%_15%)] relative"
+        >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-              variant="destructive"
+              className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center p-0 text-[10px] font-bold bg-[hsl(0_70%_68%)] text-white ring-2 ring-[hsl(235_28%_13%)]"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold text-lg">Notifications</h3>
+      <PopoverContent className="w-96 p-0 bg-[hsl(235_28%_13%)] border-[hsl(235_20%_22%/0.2)]" align="end">
+        <div className="flex items-center justify-between p-4 border-b border-[hsl(235_20%_22%/0.2)]">
+          <h3 className="font-semibold text-lg text-[hsl(0_0%_98%)]">Notifications</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
               onClick={markAllAsRead}
-              className="h-8 text-xs"
+              className="h-8 text-xs text-[hsl(240_10%_70%)] hover:text-[hsl(0_0%_98%)]"
             >
               <Check className="w-3 h-3 mr-1" />
               Mark all read
@@ -82,18 +85,18 @@ export function AdminNotificationCenter() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center py-12 text-[hsl(240_10%_70%)]">
               <Bell className="w-12 h-12 mb-2 opacity-50" />
               <p className="text-sm">No notifications yet</p>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-[hsl(235_20%_22%/0.2)]">
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={cn(
-                    "p-4 hover:bg-muted/50 transition-colors cursor-pointer",
-                    !notification.is_read && "bg-accent/5"
+                    "p-4 hover:bg-[hsl(235_28%_15%)] transition-colors cursor-pointer",
+                    !notification.is_read && "bg-[hsl(235_28%_15%)/30"
                   )}
                   onClick={() => !notification.is_read && markAsRead(notification.id)}
                 >
@@ -104,20 +107,20 @@ export function AdminNotificationCenter() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <p className={cn(
-                          "text-sm font-medium truncate",
+                          "text-sm font-medium truncate text-[hsl(0_0%_98%)]",
                           !notification.is_read && "font-semibold"
                         )}>
                           {notification.title}
                         </p>
                         {!notification.is_read && (
-                          <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+                          <div className="w-2 h-2 rounded-full bg-[hsl(262_83%_58%)] flex-shrink-0 mt-1.5" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                      <p className="text-xs text-[hsl(240_10%_70%)] mb-2 line-clamp-2">
                         {notification.message}
                       </p>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-[hsl(240_10%_70%)]">
                           {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                         </span>
                         {notification.priority !== 'normal' && notification.priority !== 'low' && (
@@ -138,9 +141,9 @@ export function AdminNotificationCenter() {
 
         {notifications.length > 0 && (
           <>
-            <Separator />
+            <Separator className="bg-[hsl(235_20%_22%/0.2)]" />
             <div className="p-2">
-              <Button variant="ghost" className="w-full text-xs" size="sm">
+              <Button variant="ghost" className="w-full text-xs text-[hsl(240_10%_70%)] hover:text-[hsl(0_0%_98%)]" size="sm">
                 View all notifications
               </Button>
             </div>

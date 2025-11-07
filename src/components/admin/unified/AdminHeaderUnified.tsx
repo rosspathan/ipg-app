@@ -1,5 +1,5 @@
 import { BrandLogoBlink } from "@/components/admin/nova/BrandLogoBlink";
-import { Bell, Search, User, Menu } from "lucide-react";
+import { Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar, SidebarTrigger } from "@/components/ui/sidebar";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -11,7 +11,8 @@ import {
   BreadcrumbSeparator,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCenter";
 
 interface AdminHeaderUnifiedProps {
   onCommandOpen: () => void;
@@ -42,7 +43,6 @@ export function AdminHeaderUnified({ onCommandOpen }: AdminHeaderUnifiedProps) {
   const location = useLocation();
   const { state } = useSidebar();
   const breadcrumbs = getBreadcrumbs(location.pathname);
-  const [notificationCount, setNotificationCount] = useState(3);
 
   // Keyboard shortcut for command palette
   useEffect(() => {
@@ -118,20 +118,8 @@ export function AdminHeaderUnified({ onCommandOpen }: AdminHeaderUnifiedProps) {
             <Search className="h-5 w-5" />
           </Button>
 
-          {/* Notifications */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/admin/notifications")}
-            className="h-10 w-10 text-[hsl(240_10%_70%)] hover:text-[hsl(0_0%_98%)] hover:bg-[hsl(235_28%_15%)] relative"
-          >
-            <Bell className="h-5 w-5" />
-            {notificationCount > 0 && (
-              <span className="absolute top-2 right-2 w-5 h-5 bg-[hsl(0_70%_68%)] text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-[hsl(235_28%_13%)]">
-                {notificationCount}
-              </span>
-            )}
-          </Button>
+          {/* Notifications - Real-time */}
+          <AdminNotificationCenter />
 
           {/* Profile */}
           <Button
