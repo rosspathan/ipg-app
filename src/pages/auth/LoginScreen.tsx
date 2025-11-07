@@ -17,6 +17,20 @@ const loginSchema = z.object({
 
 const LOGIN_TIMEOUT = 15000; // 15 seconds timeout
 
+// Role check with timeout to prevent hangs
+async function checkAdminWithTimeout(userId: string, ms = 1200): Promise<boolean> {
+  const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), ms));
+  const rpc = (async () => {
+    try {
+      const { data } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' });
+      return !!data;
+    } catch {
+      return false;
+    }
+  })();
+  return Promise.race([rpc, timeout]);
+}
+
 const LoginScreen: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -41,14 +55,8 @@ const LoginScreen: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         console.log('[LOGIN] Already authenticated, checking role...');
-        
-        // Check if user is admin
-        const { data: roleData } = await supabase.rpc('has_role', {
-          _user_id: session.user.id,
-          _role: 'admin'
-        });
-        
-        if (roleData) {
+        const isAdmin = await checkAdminWithTimeout(session.user.id);
+        if (isAdmin) {
           console.log('[LOGIN] Admin user, redirecting to /admin');
           navigate('/admin', { replace: true });
         } else {
@@ -270,12 +278,9 @@ const LoginScreen: React.FC = () => {
         const { SessionIntegrityService } = await import('@/services/SessionIntegrityService');
         SessionIntegrityService.setLastKnownUser(verifySession.user.id);
 
-        // STEP 4: Check if user is admin
+        // STEP 4: Check if user is admin (with timeout)
         console.log('[LOGIN] Step 4: Checking admin role');
-        const { data: isAdminData } = await supabase.rpc('has_role', {
-          _user_id: verifySession.user.id,
-          _role: 'admin'
-        });
+        const isAdminData = await checkAdminWithTimeout(verifySession.user.id);
         
         if (isAdminData) {
           console.log('[LOGIN] Admin user detected, redirecting to admin panel');
