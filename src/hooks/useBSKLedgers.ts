@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
+import { useRealtimeBSKBalance } from '@/hooks/useRealtimeBSKBalance';
 
 export interface BSKLedgerEntry {
   id: string;
@@ -40,68 +41,7 @@ export const useBSKLedgers = () => {
   const [withdrawableHistory, setWithdrawableHistory] = useState<BSKLedgerEntry[]>([]);
   const [holdingHistory, setHoldingHistory] = useState<BSKLedgerEntry[]>([]);
 
-  useEffect(() => {
-    // If no authenticated user, wait for session restoration before showing zeros
-    if (!user?.id) {
-      setLoading(true);
-      
-      // Wait 3 seconds for session restoration before showing zeros
-      const timeout = setTimeout(() => {
-        if (!user?.id) {
-          console.log('[BSK] No session after 3s, showing zeros');
-          setBalances({
-            user_id: 'anonymous',
-            withdrawable_balance: 0,
-            holding_balance: 0,
-            lifetime_withdrawable_earned: 0,
-            lifetime_holding_earned: 0,
-            lifetime_withdrawn: 0,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as any);
-          setWithdrawableHistory([]);
-          setHoldingHistory([]);
-          setLoading(false);
-        }
-      }, 3000);
-      
-      return () => clearTimeout(timeout);
-    }
-
-    console.log('[BSK] User session detected, loading data for:', user.id);
-    loadData();
-  }, [user?.id]);
-
-  // Listen for session restoration events
-  useEffect(() => {
-    const handleSessionRestored = (event: any) => {
-      console.log('[BSK] Session restored event received, refreshing data');
-      loadData();
-    };
-
-    window.addEventListener('auth:session:restored', handleSessionRestored);
-    return () => window.removeEventListener('auth:session:restored', handleSessionRestored);
-  }, []);
-
-  const loadData = async () => {
-    if (!user?.id) return;
-    
-    setLoading(true);
-    try {
-      await Promise.all([
-        loadBalances(),
-        loadWithdrawableHistory(),
-        loadHoldingHistory()
-      ]);
-    } catch (error) {
-      console.error('Error loading BSK data:', error);
-      // Don't show toast, just log error and continue with default values
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadBalances = async () => {
+  const loadBalances = useCallback(async () => {
     if (!user?.id) return;
 
     console.log('[BSK] Fetching balance for user:', user.id);
@@ -175,6 +115,70 @@ export const useBSKLedgers = () => {
       
       console.log('[BSK] ✅ Loaded:', balanceData.withdrawable_balance, 'withdrawable,', balanceData.holding_balance, 'holding');
       setBalances(balanceData);
+    }
+  }, [user?.id]);
+
+  // Subscribe to real-time balance updates
+  useRealtimeBSKBalance(user?.id, loadBalances);
+
+  useEffect(() => {
+    // If no authenticated user, wait for session restoration before showing zeros
+    if (!user?.id) {
+      setLoading(true);
+      
+      // Wait 3 seconds for session restoration before showing zeros
+      const timeout = setTimeout(() => {
+        if (!user?.id) {
+          console.log('[BSK] No session after 3s, showing zeros');
+          setBalances({
+            user_id: 'anonymous',
+            withdrawable_balance: 0,
+            holding_balance: 0,
+            lifetime_withdrawable_earned: 0,
+            lifetime_holding_earned: 0,
+            lifetime_withdrawn: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as any);
+          setWithdrawableHistory([]);
+          setHoldingHistory([]);
+          setLoading(false);
+        }
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
+    }
+
+    console.log('[BSK] User session detected, loading data for:', user.id);
+    loadData();
+  }, [user?.id]);
+
+  // Listen for session restoration events
+  useEffect(() => {
+    const handleSessionRestored = (event: any) => {
+      console.log('[BSK] Session restored event received, refreshing data');
+      loadData();
+    };
+
+    window.addEventListener('auth:session:restored', handleSessionRestored);
+    return () => window.removeEventListener('auth:session:restored', handleSessionRestored);
+  }, []);
+
+  const loadData = async () => {
+    if (!user?.id) return;
+    
+    setLoading(true);
+    try {
+      await Promise.all([
+        loadBalances(),
+        loadWithdrawableHistory(),
+        loadHoldingHistory()
+      ]);
+    } catch (error) {
+      console.error('Error loading BSK data:', error);
+      // Don't show toast, just log error and continue with default values
+    } finally {
+      setLoading(false);
     }
   };
 
