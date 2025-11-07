@@ -170,6 +170,27 @@ Deno.serve(async (req) => {
       console.error('❌ Direct commission processor error (non-critical):', commissionError);
     }
 
+    // 4b. Process multi-level commissions (L2-50) - non-blocking
+    try {
+      console.log('🌳 Processing multi-level commissions (L2-50)...');
+      
+      const multiLevelResponse = await supabaseClient.functions.invoke('process-multi-level-commissions', {
+        body: {
+          user_id,
+          event_type: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
+          base_amount: bsk_amount
+        }
+      });
+
+      if (multiLevelResponse.error) {
+        console.error('❌ Multi-level commission error:', multiLevelResponse.error);
+      } else {
+        console.log('✅ Multi-level commissions processed:', multiLevelResponse.data);
+      }
+    } catch (mlCommissionError) {
+      console.error('❌ Multi-level commission processor error (non-critical):', mlCommissionError);
+    }
+
 
     // 5. Credit bonus holding balance for badge purchase
     let bonusCredited = false;

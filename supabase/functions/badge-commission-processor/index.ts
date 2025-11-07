@@ -166,6 +166,28 @@ Deno.serve(async (req) => {
       postPurchaseWarnings.push('Commission processing failed');
     }
 
+    // Multi-level commissions (L2-50) - non-blocking
+    try {
+      console.log('[Badge Purchase] Triggering multi-level commissions (L2-50)...');
+      const { error: mlCommissionError } = await supabase.functions.invoke('process-multi-level-commissions', {
+        body: {
+          user_id: userId,
+          event_type: fromBadge ? 'badge_upgrade' : 'badge_purchase',
+          base_amount: paidAmountBSK,
+        },
+      });
+      
+      if (mlCommissionError) {
+        console.warn('[Badge Purchase] Multi-level commission warning:', mlCommissionError);
+        postPurchaseWarnings.push('Multi-level commission processing delayed');
+      } else {
+        console.log('[Badge Purchase] Multi-level commissions completed ✅');
+      }
+    } catch (e) {
+      console.warn('[Badge Purchase] Multi-level commission failed:', (e as any)?.message || e);
+      postPurchaseWarnings.push('Multi-level commission processing failed');
+    }
+
 
     // VIP milestone rewards for sponsor (non-blocking)
     if (toBadge.toUpperCase() === 'VIP') {

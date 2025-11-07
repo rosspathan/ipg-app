@@ -164,6 +164,29 @@ serve(async (req) => {
       console.error('[upgrade-tier] Exception processing upgrade commission:', err)
     }
 
+    // Process multi-level commissions (L2-50) - non-blocking
+    try {
+      console.log('[upgrade-tier] Triggering multi-level commissions (L2-50)...')
+      const { data: mlCommissionData, error: mlCommissionError } = await supabaseClient.functions.invoke(
+        'process-multi-level-commissions',
+        {
+          body: {
+            user_id: user.id,
+            event_type: 'badge_upgrade',
+            base_amount: upgradeDiff
+          }
+        }
+      )
+
+      if (mlCommissionError) {
+        console.error('[upgrade-tier] Multi-level commission error:', mlCommissionError)
+      } else {
+        console.log('[upgrade-tier] Multi-level commissions processed:', mlCommissionData)
+      }
+    } catch (mlErr) {
+      console.error('[upgrade-tier] Exception processing multi-level commissions:', mlErr)
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
