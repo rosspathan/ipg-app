@@ -59,16 +59,18 @@ export function HeaderLogoFlipper({
   const currentLogo = logos[activeIndex]
   const logoLabel = activeIndex === 0 ? "primary" : "alt"
 
-  // Auto-flip interval
+  // Auto-flip interval (disabled when flipIntervalMs <= 0)
   React.useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      // Debug: trace flip
-      console.debug("[HeaderLogoFlipper] auto-flip", { next: (activeIndex + 1) % logos.length })
-      motion.triggerFlip()
-      setTimeout(() => {
-        setActiveIndex((prev) => (prev + 1) % logos.length)
-      }, motion.shouldReduceMotion ? 100 : 150)
-    }, motion.config.flipIntervalMs)
+    if (motion.config.flipIntervalMs && motion.config.flipIntervalMs > 0) {
+      intervalRef.current = setInterval(() => {
+        // Debug: trace flip
+        console.debug("[HeaderLogoFlipper] auto-flip", { next: (activeIndex + 1) % logos.length })
+        motion.triggerFlip()
+        setTimeout(() => {
+          setActiveIndex((prev) => (prev + 1) % logos.length)
+        }, motion.shouldReduceMotion ? 100 : 150)
+      }, motion.config.flipIntervalMs)
+    }
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)

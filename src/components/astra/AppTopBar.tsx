@@ -59,7 +59,7 @@ export function AppTopBar({ className }: AppTopBarProps) {
     >
       {/* Left: Logo */}
       <div className="flex items-center gap-3">
-        <HeaderLogoFlipper size="md" />
+        <HeaderLogoFlipper size="md" settings={{ flipIntervalMs: 0, reducedMotionForce: "on", idleGlowIntensity: "low", disableAboutModal: true }} />
       </div>
 
       {/* Right: Profile name + Notifications */}
@@ -76,8 +76,8 @@ export function AppTopBar({ className }: AppTopBarProps) {
           onClick={() => navigate("/app/profile")}
           data-testid="profile-button"
         >
-          {/* Animated gradient background on hover */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer" />
+          {/* Gradient background on hover (no animation) */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           
           {/* Sparkle icon with animation */}
           <Sparkles className="h-3.5 w-3.5 mr-2 text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:rotate-12" />
@@ -122,7 +122,7 @@ export function AppTopBar({ className }: AppTopBarProps) {
             <div className={cn(
               "absolute -top-1 -right-1 h-5 w-5 bg-danger rounded-full",
               "flex items-center justify-center",
-              "animate-pulse shadow-lg shadow-danger/50",
+              "shadow-lg shadow-danger/30",
               "border-2 border-background"
             )}>
               <span className="text-[10px] font-bold text-danger-foreground">
