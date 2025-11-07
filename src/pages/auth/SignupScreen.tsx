@@ -33,9 +33,25 @@ const SignupScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [referralCode, setReferralCode] = useState<string>('');
+  const [isAlreadyAuthenticated, setIsAlreadyAuthenticated] = useState(false);
   
   // Real-time referral code validation (ignore self-referral during signup)
   const { isValid, sponsorUsername, loading: validating, error: validationError } = useReferralCodeValidation(referralCode, { ignoreSelfReferral: true });
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkAuthenticated = async () => {
+      if (loading) return;
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        console.log('[SIGNUP] User already authenticated:', session.user.email);
+        setIsAlreadyAuthenticated(true);
+      }
+    };
+    
+    checkAuthenticated();
+  }, [loading]);
 
   // Optional: Pre-populate referral code from URL parameter (?ref=CODE) for convenience
   useEffect(() => {
@@ -59,6 +75,27 @@ const SignupScreen: React.FC = () => {
   const strength = passwordStrength(password);
   const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
   const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'];
+
+  const handleSignOut = async () => {
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      setIsAlreadyAuthenticated(false);
+      toast({
+        title: "Signed Out",
+        description: "You've been signed out successfully"
+      });
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      toast({
+        title: "Sign Out Failed",
+        description: error.message || "Could not sign out",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignup = async () => {
     setErrors({});
@@ -208,6 +245,30 @@ const SignupScreen: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="flex-1 space-y-6 max-w-md mx-auto w-full"
         >
+          {/* Already Authenticated Message */}
+          {isAlreadyAuthenticated && (
+            <div className="bg-white/10 border border-white/20 rounded-2xl p-6 space-y-4">
+              <div className="text-center space-y-2">
+                <p className="text-white font-semibold">You're already signed in</p>
+                <p className="text-white/70 text-sm">You need to sign out before creating a new account</p>
+              </div>
+              <Button
+                onClick={handleSignOut}
+                disabled={loading}
+                className="w-full bg-white text-primary hover:bg-white/90 font-semibold"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Signing Out...
+                  </>
+                ) : (
+                  'Sign Out'
+                )}
+              </Button>
+            </div>
+          )}
+
           {/* Referral Code Input - Made fully optional */}
           <div className="space-y-2">
             <Label htmlFor="referralCode" className="text-white/80 flex items-center gap-2 text-sm">
