@@ -34,6 +34,7 @@ export const useUserBSKBalance = () => {
     weekEarned: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Get current user
@@ -64,12 +65,18 @@ export const useUserBSKBalance = () => {
         todayEarned: 0,
         weekEarned: 0,
       });
-      setLoading(false);
+      if (initialLoad) {
+        setLoading(false);
+        setInitialLoad(false);
+      }
       return;
     }
 
     try {
-      setLoading(true);
+      // Only show loading state on initial load, not on refreshes
+      if (initialLoad) {
+        setLoading(true);
+      }
       setError(null);
       console.log('[BSK Balance] Fetching from user_bsk_balances for user:', user.id);
 
@@ -141,7 +148,10 @@ export const useUserBSKBalance = () => {
       console.error('Error fetching BSK balance:', err);
       setError(err.message || 'Failed to load balance');
     } finally {
-      setLoading(false);
+      if (initialLoad) {
+        setLoading(false);
+        setInitialLoad(false);
+      }
     }
   };
 
