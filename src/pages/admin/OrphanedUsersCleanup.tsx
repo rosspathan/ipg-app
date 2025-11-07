@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OrphanedUsersTable } from "@/components/admin/OrphanedUsersTable";
 import { OrphanedUsersCleanupDialog } from "@/components/admin/OrphanedUsersCleanupDialog";
+import { ForceDeleteByEmailDialog } from "@/components/admin/ForceDeleteByEmailDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, AlertTriangle, CheckCircle, Trash2, RefreshCw } from "lucide-react";
@@ -19,6 +20,7 @@ export default function OrphanedUsersCleanup() {
   const [loading, setLoading] = useState(true);
   const [orphanedUsers, setOrphanedUsers] = useState<OrphanedUser[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [forceDialogOpen, setForceDialogOpen] = useState(false);
   const [cleanupLoading, setCleanupLoading] = useState(false);
 
   useEffect(() => {
@@ -81,6 +83,35 @@ export default function OrphanedUsersCleanup() {
     }
   };
 
+  const handleForceDelete = async ({ emails, hardDelete, dryRun }: { emails: string[]; hardDelete: boolean; dryRun: boolean }) => {
+    try {
+      setCleanupLoading(true);
+      const { data, error } = await supabase.functions.invoke('admin-force-delete-users', {
+        method: 'POST',
+        body: {
+          emails,
+          dry_run: dryRun,
+          soft_delete: !hardDelete,
+          remove_profiles: true,
+        }
+      });
+      if (error) throw error;
+      const { deleted_count, neutralized_count, skipped_count, error_count, errors } = data;
+      if (error_count > 0) {
+        console.error('Force delete errors:', errors);
+        toast.error(`Force delete: ${error_count} error(s). Deleted ${deleted_count}, Neutralized ${neutralized_count}, Skipped ${skipped_count}.`);
+      } else {
+        toast.success(`Force delete done: ${deleted_count} deleted, ${neutralized_count} neutralized, ${skipped_count} skipped`);
+      }
+      await fetchOrphanedUsers();
+    } catch (err: any) {
+      console.error('Force delete failed:', err);
+      toast.error(`Force delete failed: ${err.message}`);
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[400px]">
@@ -124,28 +155,36 @@ export default function OrphanedUsersCleanup() {
                 Users in auth.users without corresponding profiles table records
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchOrphanedUsers}
-                disabled={loading}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-              {orphanedUsers.length > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setDialogOpen(true)}
-                  disabled={cleanupLoading}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clean Up ({orphanedUsers.length})
-                </Button>
-              )}
-            </div>
+             <div className="flex gap-2">
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={fetchOrphanedUsers}
+                 disabled={loading}
+               >
+                 <RefreshCw className="h-4 w-4 mr-2" />
+                 Refresh
+               </Button>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => setForceDialogOpen(true)}
+                 disabled={cleanupLoading}
+               >
+                 Force Delete by Email
+               </Button>
+               {orphanedUsers.length > 0 && (
+                 <Button
+                   variant="destructive"
+                   size="sm"
+                   onClick={() => setDialogOpen(true)}
+                   disabled={cleanupLoading}
+                 >
+                   <Trash2 className="h-4 w-4 mr-2" />
+                   Clean Up ({orphanedUsers.length})
+                 </Button>
+               )}
+             </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -186,6 +225,12 @@ export default function OrphanedUsersCleanup() {
         onOpenChange={setDialogOpen}
         orphanedCount={orphanedUsers.length}
         onConfirm={handleCleanup}
+      />
+
+      <ForceDeleteByEmailDialog
+        open={forceDialogOpen}
+        onOpenChange={setForceDialogOpen}
+        onConfirm={handleForceDelete}
       />
     </div>
   );
