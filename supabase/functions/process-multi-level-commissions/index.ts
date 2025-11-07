@@ -26,13 +26,21 @@ Deno.serve(async (req) => {
 
     console.log('🎯 Processing multi-level commissions:', { user_id, event_type, base_amount });
 
-    // Check if referral system is enabled
-    const { data: settings } = await supabase
+    // Check if referral system is enabled (robust: pick latest row, handle multiples)
+    const { data: settings, error: settingsError } = await supabase
       .from('team_referral_settings')
       .select('enabled')
-      .single();
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (!settings?.enabled) {
+    if (settingsError) {
+      console.warn('⚠️ Failed to fetch referral settings, defaulting to enabled=true', settingsError);
+    }
+
+    const systemEnabled = settings?.enabled ?? true;
+
+    if (!systemEnabled) {
       console.log('⚠️ Multi-level referral system is disabled');
       return new Response(
         JSON.stringify({ success: false, reason: 'system_disabled' }),
