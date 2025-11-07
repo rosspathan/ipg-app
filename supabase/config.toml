@@ -209,3 +209,6 @@ verify_jwt = true
 
 [functions.explain-ml-commission]
 verify_jwt = true
+
+[functions.admin-cleanup-orphaned-users]
+verify_jwt = true

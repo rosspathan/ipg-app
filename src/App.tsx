@@ -112,6 +112,7 @@ const BSKLedgerViewer = React.lazy(() => import("./pages/admin/BSKLedgerViewer")
 const BSKReconciliation = React.lazy(() => import("./pages/admin/BSKReconciliation"));
 const AdminBSKWalletAdjustment = React.lazy(() => import("./pages/admin/AdminBSKWalletAdjustment"));
 const AdminUserCleanup = React.lazy(() => import("./pages/admin/AdminUserCleanup"));
+const OrphanedUsersCleanup = React.lazy(() => import("./pages/admin/OrphanedUsersCleanup"));
 const AdminTestUserGenerator = React.lazy(() => import("./pages/admin/AdminTestUserGenerator"));
 import ManualReferralAssignment from "./pages/admin/ManualReferralAssignment";
 import RetroactiveCommissionFix from "./pages/admin/RetroactiveCommissionFix";
@@ -660,6 +661,7 @@ function AppContent() {
                 <Route path="database-reset" element={<React.Suspense fallback={<LoadingFallback />}><AdminDatabaseReset /></React.Suspense>} />
                 <Route path="database-cleanup" element={<React.Suspense fallback={<LoadingFallback />}><AdminDatabaseCleanup /></React.Suspense>} />
                 <Route path="user-cleanup" element={<React.Suspense fallback={<LoadingFallback />}><AdminUserCleanup /></React.Suspense>} />
+                <Route path="orphaned-users-cleanup" element={<React.Suspense fallback={<LoadingFallback />}><OrphanedUsersCleanup /></React.Suspense>} />
                 <Route path="test-user-generator" element={<React.Suspense fallback={<LoadingFallback />}><AdminTestUserGenerator /></React.Suspense>} />
                 <Route path="mobile-linking" element={<React.Suspense fallback={<LoadingFallback />}><AdminMobileLinking /></React.Suspense>} />
               </Route>

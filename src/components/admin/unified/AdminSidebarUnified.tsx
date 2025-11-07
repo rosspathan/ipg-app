@@ -14,6 +14,7 @@ import {
   Coins,
   Gift,
   Crown,
+  AlertTriangle,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -62,6 +63,7 @@ const systemNav: NavItem[] = [
   { title: "Announcements", url: "/admin/announcements", icon: Bell },
   { title: "System Health", url: "/admin/system-health", icon: Database },
   { title: "Audit Logs", url: "/admin/audit-logs", icon: FileText },
+  { title: "Orphaned Users", url: "/admin/orphaned-users-cleanup", icon: AlertTriangle },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
