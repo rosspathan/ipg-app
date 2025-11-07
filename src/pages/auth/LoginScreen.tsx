@@ -15,16 +15,17 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required')
 });
 
-const LOGIN_TIMEOUT = 15000; // 15 seconds timeout
+const LOGIN_TIMEOUT = 30000; // 30 seconds timeout
 
-// Role check with timeout to prevent hangs
-async function checkAdminWithTimeout(userId: string, ms = 1200): Promise<boolean> {
+// Role check with timeout to prevent hangs - increased timeout for better reliability
+async function checkAdminWithTimeout(userId: string, ms = 3000): Promise<boolean> {
   const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), ms));
   const rpc = (async () => {
     try {
       const { data } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' });
       return !!data;
-    } catch {
+    } catch (error) {
+      console.error('[LOGIN] Admin check error:', error);
       return false;
     }
   })();
@@ -191,9 +192,9 @@ const LoginScreen: React.FC = () => {
     // Set flag to prevent validation during login
     sessionStorage.setItem('login_in_progress', 'true');
 
-    // UI watchdog: force-reset after 20s if something hangs
+    // UI watchdog: force-reset after 35s if something hangs
     watchdogTimerRef.current = setTimeout(() => {
-      console.error('[LOGIN] WATCHDOG: Login hung for 20s, forcing reset');
+      console.error('[LOGIN] WATCHDOG: Login hung for 35s, forcing reset');
       sessionStorage.removeItem('login_in_progress');
       if (mountedRef.current) {
         setLoading(false);
@@ -207,7 +208,7 @@ const LoginScreen: React.FC = () => {
       loadingRef.current = false;
       isProcessingRef.current = false;
       watchdogTimerRef.current = null;
-    }, 20000);
+    }, 35000);
 
     // Create timeout promise
     const timeoutPromise = new Promise((_, reject) => 
@@ -250,12 +251,12 @@ const LoginScreen: React.FC = () => {
           throw new Error('No session returned');
         }
 
-        // STEP 3: Verify session matches the email we just logged in with
-        console.log('[LOGIN] Step 3.5: Verifying session integrity');
-        const { data: { session: verifySession } } = await supabase.auth.getSession();
+        // Use the session from the sign-in response directly (faster than getSession)
+        const verifySession = data.session;
         const sessionEmail = verifySession?.user?.email?.toLowerCase();
         const enteredEmail = email.trim().toLowerCase();
         
+        // Quick session integrity check
         if (!verifySession || sessionEmail !== enteredEmail) {
           console.error('[LOGIN] SESSION MISMATCH DETECTED', {
             enteredEmail,
@@ -263,10 +264,7 @@ const LoginScreen: React.FC = () => {
             sessionUserId: verifySession?.user?.id
           });
           
-          // Clear the wrong session
           await supabase.auth.signOut();
-          
-          // Import and use the cleanup utility
           const { clearAllUserData } = await import('@/utils/clearLegacyStorage');
           clearAllUserData();
           
@@ -274,13 +272,20 @@ const LoginScreen: React.FC = () => {
           throw new Error('Session verification failed');
         }
 
-        console.log('[LOGIN] Step 3.6: Session verified, updating integrity tracking');
+        // Update session integrity tracking (non-blocking)
         const { SessionIntegrityService } = await import('@/services/SessionIntegrityService');
         SessionIntegrityService.setLastKnownUser(verifySession.user.id);
 
-        // STEP 4: Check if user is admin (with timeout)
-        console.log('[LOGIN] Step 4: Checking admin role');
-        const isAdminData = await checkAdminWithTimeout(verifySession.user.id);
+        // STEP 4: Check if user is admin - run in parallel with profile check
+        console.log('[LOGIN] Step 4: Checking admin role and profile in parallel');
+        const [isAdminData, profile] = await Promise.all([
+          checkAdminWithTimeout(verifySession.user.id),
+          supabase
+            .from('profiles')
+            .select('wallet_address')
+            .eq('user_id', verifySession.user.id)
+            .maybeSingle()
+        ]);
         
         if (isAdminData) {
           console.log('[LOGIN] Admin user detected, redirecting to admin panel');
@@ -288,17 +293,9 @@ const LoginScreen: React.FC = () => {
           return;
         }
 
-        // Check for wallet existence - Use .maybeSingle() to prevent errors
+        console.log('[LOGIN] Step 5: Profile and wallet checks complete');
         const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('wallet_address')
-          .eq('user_id', verifySession.user.id)
-          .maybeSingle(); // ✅ Safe - returns null instead of throwing
-        
-        console.log('[LOGIN] Step 5: Profile fetched', { hasProfile: !!profile, hasWalletInDB: !!profile?.wallet_address });
-        
-        const hasWalletInDB = !!profile?.wallet_address;
+        const hasWalletInDB = !!profile?.data?.wallet_address;
         
         // Non-blocking session conflict check - runs in background
         if (hasLocalWallet) {
