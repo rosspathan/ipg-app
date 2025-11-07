@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useNavigate } from "react-router-dom"
 import { useReferralCode } from "@/hooks/useReferralCode"
 import { useDirectReferralCount } from "@/hooks/useDirectReferralCount"
+import { useDownlineTree } from "@/hooks/useDownlineTree"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Info } from "lucide-react"
@@ -15,6 +16,7 @@ export default function TeamReferralsNew() {
   const navigate = useNavigate()
   const { referralCode, stats, loading } = useReferralCode()
   const { data: directReferralCount = 0, isLoading: countLoading } = useDirectReferralCount()
+  const { data: downlineData } = useDownlineTree()
 
   if (loading) {
     return (
@@ -67,7 +69,7 @@ export default function TeamReferralsNew() {
           <StatCard
             icon={Target}
             label="Team Levels"
-            value={7}
+            value={downlineData?.deepestLevel || 0}
             sublabel="Network depth"
           />
         </div>
