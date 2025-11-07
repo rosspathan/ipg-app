@@ -26,10 +26,10 @@ Deno.serve(async (req) => {
 
     console.log('🎯 Processing multi-level commissions:', { user_id, event_type, base_amount });
 
-    // Check if referral system is enabled
+    // Check if referral system is enabled and get level percentages
     const { data: settings } = await supabase
       .from('team_referral_settings')
-      .select('enabled')
+      .select('enabled, level_percentages')
       .single();
 
     if (!settings?.enabled) {
@@ -67,14 +67,14 @@ Deno.serve(async (req) => {
     const commissionRecords = [];
     const skippedRecords = [];
 
-    // Calculate commission based on level tiers
+    // Get commission percentages from settings
+    const levelPercentages = settings?.level_percentages || {};
+    console.log('📊 Using level percentages:', levelPercentages);
+
+    // Calculate commission based on percentage from settings
     const getCommissionAmount = (level: number): number => {
-      if (level >= 2 && level <= 10) return 0.5;
-      if (level >= 11 && level <= 20) return 0.4;
-      if (level >= 21 && level <= 30) return 0.3;
-      if (level >= 31 && level <= 40) return 0.2;
-      if (level >= 41 && level <= 50) return 0.1;
-      return 0;
+      const percentage = levelPercentages[level.toString()] || 0;
+      return (base_amount * percentage) / 100;
     };
 
     // Process each level
@@ -153,11 +153,7 @@ Deno.serve(async (req) => {
             bsk_amount: commissionAmount,
             destination: 'withdrawable',
             status: 'settled',
-            metadata: {
-              base_amount: base_amount,
-              tier: Math.ceil(ancestor.level / 10),
-              commission_rate: commissionAmount
-            }
+            earner_badge_at_event: sponsorBadge.badge_card_config.tier_name
           })
           .select()
           .single();
