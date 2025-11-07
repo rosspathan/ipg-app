@@ -174,19 +174,25 @@ Deno.serve(async (req) => {
             console.log(`[DRY RUN] Would delete: ${orphanedUser.email} (${orphanedUser.id})`);
             deleted.push(orphanedUser.email);
           } else {
-            // Actually delete from auth.users (soft delete by default, with fallback)
-            const attempt = async (soft: boolean) => {
-              const { error } = await supabaseAdmin.auth.admin.deleteUser(
-                orphanedUser.id,
-                { shouldSoftDelete: soft }
-              );
-              return error as any | null;
+            // Delete from auth. Try multiple call signatures to avoid API schema mismatches.
+            const attemptVariants = async (soft: boolean) => {
+              // (1) No options
+              let { error } = await supabaseAdmin.auth.admin.deleteUser(orphanedUser.id);
+              if (!error) return null;
+
+              // (2) Boolean option (some runtimes expect raw bool for should_soft_delete)
+              const resBool = await supabaseAdmin.auth.admin.deleteUser(orphanedUser.id, soft as any);
+              if (!resBool.error) return null;
+
+              // (3) Object option (newer SDKs)
+              const resObj = await supabaseAdmin.auth.admin.deleteUser(orphanedUser.id, { shouldSoftDelete: soft } as any);
+              return resObj.error as any || null;
             };
 
-            let delErr = await attempt(soft_delete);
+            let delErr = await attemptVariants(soft_delete);
             if (delErr) {
               console.warn(`⚠️ Initial delete failed for ${orphanedUser.email} (soft_delete=${soft_delete}). Retrying with ${!soft_delete ? 'soft' : 'hard'} delete...`, delErr);
-              delErr = await attempt(!soft_delete);
+              delErr = await attemptVariants(!soft_delete);
             }
 
             if (delErr) {

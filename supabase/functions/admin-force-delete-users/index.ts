@@ -117,11 +117,18 @@ serve(async (req: Request) => {
         }
       }
 
-      const attemptDelete = async (shouldSoftDelete: boolean) => {
-        const { error } = await supabaseAdmin.auth.admin.deleteUser(user.id, {
-          shouldSoftDelete,
-        } as any);
-        return error || null;
+      const attemptDelete = async (soft: boolean) => {
+        // (1) No options
+        let { error } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+        if (!error) return null;
+
+        // (2) Boolean option
+        const resBool = await supabaseAdmin.auth.admin.deleteUser(user.id, soft as any);
+        if (!resBool.error) return null;
+
+        // (3) Object option
+        const resObj = await supabaseAdmin.auth.admin.deleteUser(user.id, { shouldSoftDelete: soft } as any);
+        return resObj.error || null;
       };
 
       let delErr = await attemptDelete(softDelete);
