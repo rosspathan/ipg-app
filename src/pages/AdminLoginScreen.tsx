@@ -31,12 +31,32 @@ const AdminLoginScreen = () => {
 
   // Removed insecure localStorage bypass - admin status now validated server-side only
 
-  // If already signed in and has admin role via email, redirect
+  // If already signed in and has admin role via email, check onboarding first
   useEffect(() => {
-    if (isAdmin && user) {
-      console.log('AdminLoginScreen: Admin role detected (email), redirecting to /admin');
-      navigate('/admin', { replace: true });
-    }
+    const checkAdminOnboarding = async () => {
+      if (isAdmin && user) {
+        console.log('AdminLoginScreen: Admin role detected (email), checking onboarding');
+        
+        // Check if onboarding is complete
+        const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('wallet_address')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        const hasWalletInDB = !!profile?.wallet_address;
+        
+        if (!hasLocalWallet && !hasWalletInDB) {
+          console.log('AdminLoginScreen: Admin needs wallet onboarding');
+          navigate('/onboarding/wallet', { replace: true });
+        } else {
+          console.log('AdminLoginScreen: Admin onboarding complete, redirecting to /admin');
+          navigate('/admin', { replace: true });
+        }
+      }
+    };
+    
+    checkAdminOnboarding();
   }, [isAdmin, user, navigate]);
 
   const handleConnectWallet = async () => {
@@ -227,12 +247,28 @@ const AdminLoginScreen = () => {
         }
 
         if (roleData) {
-          // User is admin, set admin state and redirect (server-side validated)
+          // User is admin, check onboarding status before redirect
           setIsAdmin(true);
-          setSuccess(`Welcome Admin ${data.user.email}`);
-          setTimeout(() => {
-            navigate('/admin');
-          }, 1500);
+          
+          const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('wallet_address')
+            .eq('user_id', data.user.id)
+            .maybeSingle();
+          const hasWalletInDB = !!profile?.wallet_address;
+          
+          if (!hasLocalWallet && !hasWalletInDB) {
+            setSuccess(`Welcome Admin ${data.user.email}. Please complete onboarding.`);
+            setTimeout(() => {
+              navigate('/onboarding/wallet');
+            }, 1500);
+          } else {
+            setSuccess(`Welcome Admin ${data.user.email}`);
+            setTimeout(() => {
+              navigate('/admin');
+            }, 1500);
+          }
         } else {
           setError("Your account does not have admin privileges.");
           await supabase.auth.signOut();

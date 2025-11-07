@@ -58,8 +58,27 @@ const LoginScreen: React.FC = () => {
         console.log('[LOGIN] Already authenticated, checking role...');
         const isAdmin = await checkAdminWithTimeout(session.user.id);
         if (isAdmin) {
-          console.log('[LOGIN] Admin user, redirecting to /admin');
-          navigate('/admin', { replace: true });
+          console.log('[LOGIN] Admin user, checking onboarding status');
+          // Check if onboarding is complete
+          const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('wallet_address')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          const hasWalletInDB = !!profile?.wallet_address;
+          const hasSecurity = hasAnySecurity();
+          
+          if (!hasLocalWallet && !hasWalletInDB) {
+            console.log('[LOGIN] Admin needs wallet onboarding');
+            navigate('/onboarding/wallet', { replace: true });
+          } else if (!hasSecurity) {
+            console.log('[LOGIN] Admin needs security onboarding');
+            navigate('/onboarding/security', { replace: true });
+          } else {
+            console.log('[LOGIN] Admin onboarding complete, redirecting to /admin');
+            navigate('/admin', { replace: true });
+          }
         } else {
           console.log('[LOGIN] Regular user, redirecting to /app/home');
           navigate('/app/home', { replace: true });
@@ -288,7 +307,25 @@ const LoginScreen: React.FC = () => {
         ]);
         
         if (isAdminData) {
-          console.log('[LOGIN] Admin user detected, redirecting to admin panel');
+          console.log('[LOGIN] Admin user detected, checking onboarding status');
+          // Check if onboarding is complete (wallet + security setup)
+          const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
+          const hasWalletInDB = !!profile?.data?.wallet_address;
+          const hasSecurity = hasAnySecurity();
+          
+          if (!hasLocalWallet && !hasWalletInDB) {
+            console.log('[LOGIN] Admin needs to complete wallet onboarding first');
+            safeNavigate('/onboarding/wallet');
+            return;
+          }
+          
+          if (!hasSecurity) {
+            console.log('[LOGIN] Admin needs to complete security onboarding first');
+            safeNavigate('/onboarding/security');
+            return;
+          }
+          
+          console.log('[LOGIN] Admin onboarding complete, redirecting to admin panel');
           safeNavigate('/admin');
           return;
         }
