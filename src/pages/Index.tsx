@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, loading } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -23,14 +23,26 @@ const Index = () => {
     }
   };
 
-  // Redirect authenticated users efficiently
+  // Redirect authenticated users after role resolution
   useEffect(() => {
-    if (user && !isAdmin) {
+    // Wait until loading is complete (both auth and role check)
+    if (loading) return;
+    
+    if (user && isAdmin) {
+      console.log('[INDEX] Admin user, redirecting to /admin');
+      navigate("/admin", { replace: true });
+    } else if (user && !isAdmin) {
+      console.log('[INDEX] Regular user, redirecting to /app/home');
       navigate("/app/home", { replace: true });
     }
-  }, [user, isAdmin, navigate]);
+  }, [user, isAdmin, loading, navigate]);
 
-  // Show admin dashboard for admins
+  // Don't show anything while loading
+  if (loading) {
+    return null;
+  }
+
+  // Show admin dashboard for admins (fallback, shouldn't render due to redirect)
   if (isAdmin && user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6">

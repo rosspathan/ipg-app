@@ -30,9 +30,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [authInitializing, setAuthInitializing] = useState(true);
+  const [roleChecking, setRoleChecking] = useState(false);
+
+  // Loading is true if either auth is initializing OR role is being checked
+  const loading = authInitializing || roleChecking;
 
   const checkAdminRole = async (userId: string) => {
+    setRoleChecking(true);
     try {
       console.log('Checking admin role for user:', userId);
       const { data, error } = await supabase
@@ -44,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error('Admin role check error:', error);
+        setIsAdmin(false);
         return false;
       }
       
@@ -55,6 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Admin role check failed:', error);
       setIsAdmin(false);
       return false;
+    } finally {
+      setRoleChecking(false);
     }
   };
 
@@ -67,32 +75,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Always check admin role via server-side validation
+          // Check admin role - loading won't be false until this completes
           setTimeout(() => {
             checkAdminRole(session.user!.id);
           }, 0);
         } else {
           // Clear admin status on logout
           setIsAdmin(false);
+          setRoleChecking(false);
         }
         
-        setLoading(false);
+        setAuthInitializing(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        setTimeout(() => {
-          checkAdminRole(session.user!.id);
-        }, 0);
+        await checkAdminRole(session.user.id);
       }
       
-      setLoading(false);
+      setAuthInitializing(false);
     });
 
     return () => subscription.unsubscribe();

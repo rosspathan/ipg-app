@@ -33,15 +33,28 @@ const LoginScreen: React.FC = () => {
   const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
   const navigationWatchdogRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ✅ FIX 1: Redirect already authenticated users
+  // ✅ FIX 1: Redirect already authenticated users (role-aware)
   useEffect(() => {
     const checkAlreadyAuthenticated = async () => {
       if (loading) return; // Don't check during login
       
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        console.log('[LOGIN] Already authenticated, redirecting to app');
-        navigate('/app/home', { replace: true });
+        console.log('[LOGIN] Already authenticated, checking role...');
+        
+        // Check if user is admin
+        const { data: roleData } = await supabase.rpc('has_role', {
+          _user_id: session.user.id,
+          _role: 'admin'
+        });
+        
+        if (roleData) {
+          console.log('[LOGIN] Admin user, redirecting to /admin');
+          navigate('/admin', { replace: true });
+        } else {
+          console.log('[LOGIN] Regular user, redirecting to /app/home');
+          navigate('/app/home', { replace: true });
+        }
       }
     };
     
@@ -256,6 +269,19 @@ const LoginScreen: React.FC = () => {
         console.log('[LOGIN] Step 3.6: Session verified, updating integrity tracking');
         const { SessionIntegrityService } = await import('@/services/SessionIntegrityService');
         SessionIntegrityService.setLastKnownUser(verifySession.user.id);
+
+        // STEP 4: Check if user is admin
+        console.log('[LOGIN] Step 4: Checking admin role');
+        const { data: isAdminData } = await supabase.rpc('has_role', {
+          _user_id: verifySession.user.id,
+          _role: 'admin'
+        });
+        
+        if (isAdminData) {
+          console.log('[LOGIN] Admin user detected, redirecting to admin panel');
+          safeNavigate('/admin');
+          return;
+        }
 
         // Check for wallet existence - Use .maybeSingle() to prevent errors
         const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
