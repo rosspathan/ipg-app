@@ -45,16 +45,23 @@ export const useProfile = () => {
   const { toast } = useToast();
   const [userApp, setUserApp] = useState<UserApp | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const fetchUserApp = useCallback(async () => {
     // Auth-first: Use user.id as single source of truth
     if (!user?.id) {
-      setLoading(false);
+      if (initialLoad) {
+        setLoading(false);
+        setInitialLoad(false);
+      }
       return;
     }
 
     try {
-      setLoading(true);
+      // Only show loading state on initial load, not on refreshes
+      if (initialLoad) {
+        setLoading(true);
+      }
       
       console.log('[PROFILE] Fetching profile by user_id:', user.id);
       const { data, error } = await supabase
@@ -95,9 +102,12 @@ export const useProfile = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (initialLoad) {
+        setLoading(false);
+        setInitialLoad(false);
+      }
     }
-  }, [user?.id, user?.email, toast]);
+  }, [user?.id, user?.email, toast, initialLoad]);
 
   const updateUserApp = async (updates: Partial<UserApp>) => {
     if (!user) return;
