@@ -59,22 +59,23 @@ Deno.serve(async (req) => {
       const tablesChecked: string[] = [];
       let sponsorBadgeError: string | null = null;
 
-      // 1) user_badge_holdings
+      // 1) user_badge_holdings (direct fields: current_badge, unlock_levels)
       try {
         tablesChecked.push('user_badge_holdings');
         const { data: sponsorHoldings, error: holdingsError } = await supabase
           .from('user_badge_holdings')
-          .select('badge_card_config!inner(tier_name, unlocked_levels)')
+          .select('current_badge, unlock_levels, purchased_at')
           .eq('user_id', ancestor.ancestor_id)
-          .order('badge_card_config.unlocked_levels', { ascending: false })
+          .order('unlock_levels', { ascending: false })
+          .order('purchased_at', { ascending: false })
           .limit(1)
           .maybeSingle();
         if (holdingsError) {
           sponsorBadgeError = `holdings_error: ${holdingsError.message}`;
         }
-        if (sponsorHoldings?.badge_card_config) {
-          sponsorTierName = sponsorHoldings.badge_card_config.tier_name;
-          unlockedLevels = sponsorHoldings.badge_card_config.unlocked_levels || 1;
+        if (sponsorHoldings?.current_badge) {
+          sponsorTierName = sponsorHoldings.current_badge;
+          unlockedLevels = sponsorHoldings.unlock_levels || 1;
           sourceUsed = 'holdings';
         }
       } catch (e: any) {
