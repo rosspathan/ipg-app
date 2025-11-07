@@ -80,6 +80,11 @@ Deno.serve(async (req) => {
       const orphanedUsers: OrphanedUser[] = [];
       
       for (const authUser of authUsers.users) {
+        const email = authUser.email || '';
+        // Skip already neutralized records (they no longer block signups)
+        const isNeutralized = email.startsWith('deleted+') && email.endsWith('@invalid.local');
+        if (isNeutralized) continue;
+
         const { data: profile } = await supabaseAdmin
           .from('profiles')
           .select('user_id')
