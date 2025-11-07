@@ -25,7 +25,7 @@ export const BSKBalanceCard: React.FC<BSKBalanceCardProps> = ({
 
   if (loading || !bskBalances) {
     return (
-      <Card className={cn("animate-pulse", className)}>
+      <Card className={cn(className)}>
         <CardContent className="p-6">
           <div className="h-20 bg-muted/30 rounded"></div>
         </CardContent>

@@ -165,8 +165,8 @@ const AppHomeScreen = () => {
         />
 
       <div className="p-3 space-y-4 md:p-4 md:space-y-6 pb-28">
-        {/* Premium Add Funds Button - World Class Design */}
-        <div className="relative group animate-fade-in-scale" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
+        {/* Premium Add Funds Button - simplified (no animations) */}
+        <div className="relative group">
           <Button
             onClick={handleAddFunds}
             size="lg"
@@ -177,47 +177,22 @@ const AppHomeScreen = () => {
               "font-bold text-base tracking-wide"
             )}
           >
-            
-            {/* Icon with animation */}
             <div className="relative z-10 flex items-center justify-center gap-3">
-              <div className="relative">
-                {/* glow removed to reduce flicker */}
-                <Plus className="relative h-6 w-6 group-hover:rotate-90 transition-transform duration-[400ms] ease-out" />
-              </div>
-              <span className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
-                Add Funds
-              </span>
-              <div className="ml-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-xs font-medium">
-                Instant
-              </div>
-            </div>
-
-            {/* Glow effect on hover */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-[400ms] pointer-events-none">
-              <div className="absolute inset-0 bg-gradient-radial from-white/10 via-transparent to-transparent" />
+              <Plus className="relative h-6 w-6" />
+              <span className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]">Add Funds</span>
+              <div className="ml-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-xs font-medium">Instant</div>
             </div>
           </Button>
-
-          {/* Decorative elements */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-[400ms] -z-10" />
         </div>
 
         {/* Balance Display - Now Connected to Real Data */}
-        <BalanceDisplay
-          onAddFunds={handleAddFunds}
-          className="animate-fade-in-scale"
-          style={{ animationDelay: "200ms", animationFillMode: "both" }}
-        />
+        <BalanceDisplay onAddFunds={handleAddFunds} />
 
         {/* Promotional Banner - 0% interest loan */}
         <div 
           onClick={() => navigate("/app-legacy/loans")}
-          className="relative rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 p-4 cursor-pointer hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-[220ms] overflow-hidden animate-fade-in-scale"
-          style={{ animationDelay: "215ms", animationFillMode: "both" }}
+          className="relative rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 p-4 cursor-pointer hover:border-primary/50 overflow-hidden"
         >
-          {/* Animated gradient border effect */}
-          <div className="absolute inset-0 rounded-2xl opacity-50 pointer-events-none bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-pulse" />
-          
           <div className="relative flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-foreground leading-snug">
@@ -238,8 +213,7 @@ const AppHomeScreen = () => {
           <h3 className="text-lg font-bold text-foreground tracking-tight">Insurance</h3>
           <InsuranceCard 
             variant="compact"
-            className="animate-fade-in-scale border-2 border-primary/30"
-            style={{ animationDelay: "230ms", animationFillMode: "both" }}
+            className="border-2 border-primary/30"
           />
         </div>
 
@@ -248,8 +222,6 @@ const AppHomeScreen = () => {
           <h3 className="text-lg font-bold text-foreground tracking-tight">BSK Loans</h3>
           <BSKLoanCard 
             variant="compact"
-            className="animate-fade-in-scale"
-            style={{ animationDelay: "260ms", animationFillMode: "both" }}
           />
         </div>
 
@@ -267,22 +239,18 @@ const AppHomeScreen = () => {
         </div>
 
         {/* Legacy Bonus Balance Card */}
-        <BonusBalanceCard 
-          className="animate-fade-in-scale"
-          style={{ animationDelay: "310ms", animationFillMode: "both" }}
-        />
+        <BonusBalanceCard />
 
         {/* Ad Banner */}
         <AdCarousel 
           placement="home_top" 
-          className="animate-fade-in-scale" 
         />
 
-        {/* Featured Programs - Enhanced Cyberpunk Cards */}
+        {/* Featured Programs */}
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-foreground tracking-tight">Featured Programs</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {featuredPrograms.map((program, index) => {
+            {featuredPrograms.map((program) => {
               const Icon = program.icon;
               return (
                 <CyberCard
@@ -291,18 +259,13 @@ const AppHomeScreen = () => {
                   className={cn(
                     "cursor-pointer group relative overflow-hidden",
                     "bg-gradient-to-br border-white/10 hover:border-primary/30",
-                    program.gradient,
-                    "animate-slide-up-stagger"
+                    program.gradient
                   )}
-                  style={{ 
-                    animationDelay: `${600 + index * 120}ms`,
-                    animationFillMode: "both"
-                  }}
                   onClick={program.action}
                 >
                   {program.badge && (
                     <div className="absolute top-3 right-3 z-10">
-                      <Badge className="bg-primary text-primary-foreground text-xs font-bold px-2 py-1 animate-neon-pulse">
+                      <Badge className="bg-primary text-primary-foreground text-xs font-bold px-2 py-1">
                         {program.badge}
                       </Badge>
                     </div>
@@ -312,14 +275,12 @@ const AppHomeScreen = () => {
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "relative p-3 rounded-xl bg-card-glass backdrop-blur-[14px]",
-                        "border border-white/20 group-hover:border-primary/40",
-                        "transition-all duration-normal"
+                        "border border-white/20"
                       )}>
                         <Icon className={cn("h-6 w-6", program.color)} />
-                        <div className="absolute inset-0 bg-gradient-ring rounded-xl opacity-0 group-hover:opacity-20 transition-opacity" />
                       </div>
                       <div className="flex-1">
-                        <CyberCardTitle className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                        <CyberCardTitle className="text-base font-bold text-foreground">
                           {program.title}
                         </CyberCardTitle>
                         <p className="text-sm text-muted-foreground leading-relaxed">

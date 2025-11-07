@@ -109,7 +109,7 @@ export const AnnouncementTicker: React.FC = () => {
   };
 
   return (
-    <div className="w-full animate-slide-down">
+    <div className="w-full">
       <Alert
         variant={getVariant()}
         className={cn(

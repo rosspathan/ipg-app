@@ -205,7 +205,7 @@ export const useAdMining = () => {
     
     setUserSubscriptions(mappedSubscriptions);
 
-    // Load BSK balances
+    // Load BSK balances (with robust fallback via edge function)
     const { data: balances, error: balError } = await supabase
       .from('user_bsk_balance_summary')
       .select('*')
@@ -216,18 +216,62 @@ export const useAdMining = () => {
       throw balError;
     }
 
-    if (!balances) {
-      const { data: newBalance, error: insertError } = await supabase
-        .from('user_bsk_balance_summary')
-        .insert({ user_id: user.id })
-        .select()
-        .single();
+    let resolvedBalances = balances || null;
 
-      if (insertError) throw insertError;
-      setBskBalances(newBalance);
-    } else {
-      setBskBalances(balances);
+    // Fallback: if no summary row or all zeros, fetch via edge function using identifier
+    const isAllZero = !resolvedBalances || (
+      Number(resolvedBalances.withdrawable_balance || 0) === 0 &&
+      Number(resolvedBalances.holding_balance || 0) === 0 &&
+      Number(resolvedBalances.lifetime_withdrawable_earned || 0) === 0 &&
+      Number(resolvedBalances.lifetime_holding_earned || 0) === 0
+    );
+
+    if (isAllZero) {
+      try {
+        const identifierBody: any = {};
+        if (user.email) identifierBody.email = user.email;
+        // Prefer email; username fallback requires extra query, so keep it simple
+        const { data: byIdentifier, error: idErr } = await supabase.functions.invoke('bsk-balance-by-identifier', {
+          body: identifierBody
+        });
+
+        if (!idErr && byIdentifier?.linked) {
+          resolvedBalances = {
+            user_id: user.id,
+            withdrawable_balance: Number(byIdentifier.withdrawable_balance || 0),
+            holding_balance: Number(byIdentifier.holding_balance || 0),
+            lifetime_withdrawable_earned: Number(byIdentifier.lifetime_withdrawable_earned || 0),
+            lifetime_holding_earned: Number(byIdentifier.lifetime_holding_earned || 0)
+          } as any;
+        }
+      } catch (e) {
+        console.warn('[useAdMining] Fallback via bsk-balance-by-identifier failed:', e);
+      }
     }
+
+    if (!balances && resolvedBalances) {
+      // Persist a summary row so subsequent loads are fast
+      try {
+        await supabase.from('user_bsk_balance_summary').insert({
+          user_id: user.id,
+          withdrawable_balance: resolvedBalances.withdrawable_balance,
+          holding_balance: resolvedBalances.holding_balance,
+          lifetime_withdrawable_earned: resolvedBalances.lifetime_withdrawable_earned,
+          lifetime_holding_earned: resolvedBalances.lifetime_holding_earned
+        });
+      } catch (e) {
+        // ignore uniqueness race
+      }
+    }
+
+    setBskBalances(
+      resolvedBalances || balances || { 
+        withdrawable_balance: 0, 
+        holding_balance: 0, 
+        lifetime_withdrawable_earned: 0, 
+        lifetime_holding_earned: 0 
+      }
+    );
 
     // Load today's views
     const today = new Date().toISOString().split('T')[0];
