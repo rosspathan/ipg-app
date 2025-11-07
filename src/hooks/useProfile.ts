@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useToast } from '@/hooks/use-toast';
@@ -143,15 +143,24 @@ export const useProfile = () => {
     fetchUserApp();
   }, [fetchUserApp]);
 
-  // Listen for profile update events
+  // Listen for profile update events (debounced to avoid loops)
   useEffect(() => {
+    let timer: number | null = null;
+
     const handleProfileUpdate = () => {
-      console.log('[useProfile] Profile update event received, refetching...');
-      fetchUserApp();
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        console.log('[useProfile] Profile update event received (debounced), refetching...');
+        fetchUserApp();
+        timer = null;
+      }, 300);
     };
 
     window.addEventListener('profile:updated', handleProfileUpdate);
-    return () => window.removeEventListener('profile:updated', handleProfileUpdate);
+    return () => {
+      if (timer) window.clearTimeout(timer);
+      window.removeEventListener('profile:updated', handleProfileUpdate);
+    };
   }, [fetchUserApp]);
 
   return {
