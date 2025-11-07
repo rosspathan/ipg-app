@@ -168,15 +168,25 @@ Deno.serve(async (req) => {
             console.log(`[DRY RUN] Would delete: ${orphanedUser.email} (${orphanedUser.id})`);
             deleted.push(orphanedUser.email);
           } else {
-            // Actually delete from auth.users (soft delete by default)
-            const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(
-              orphanedUser.id,
-              { shouldSoftDelete: soft_delete }
-            );
+            // Actually delete from auth.users (soft delete by default, with fallback)
+            const attempt = async (soft: boolean) => {
+              const { error } = await supabaseAdmin.auth.admin.deleteUser(
+                orphanedUser.id,
+                { shouldSoftDelete: soft }
+              );
+              return error as any | null;
+            };
 
-            if (deleteError) {
-              console.error(`❌ Failed to delete ${orphanedUser.email}:`, deleteError.message);
-              errors.push(`${orphanedUser.email}: ${deleteError.message}`);
+            let delErr = await attempt(soft_delete);
+            if (delErr) {
+              console.warn(`⚠️ Initial delete failed for ${orphanedUser.email} (soft_delete=${soft_delete}). Retrying with ${!soft_delete ? 'soft' : 'hard'} delete...`, delErr);
+              delErr = await attempt(!soft_delete);
+            }
+
+            if (delErr) {
+              const detail = delErr?.message || JSON.stringify(delErr);
+              console.error(`❌ Failed to delete ${orphanedUser.email}:`, detail);
+              errors.push(`${orphanedUser.email}: ${detail}`);
             } else {
               console.log(`✅ Deleted orphaned user: ${orphanedUser.email}`);
               deleted.push(orphanedUser.email);
