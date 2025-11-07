@@ -93,44 +93,146 @@ Deno.serve(async (req) => {
       
       if (commissionAmount === 0) continue;
 
-      // Check if sponsor has unlocked this level through their badge
-      const { data: sponsorBadge } = await supabase
-        .from('user_badge_holdings')
-        .select('badge_id, badge_card_config!inner(tier_name, unlocked_levels)')
-        .eq('user_id', ancestor.ancestor_id)
-        .order('badge_card_config.unlocked_levels', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Resolve sponsor badge and unlocked levels with fallbacks and logging
+      let sponsorTierName: string | null = null;
+      let unlockedLevels = 1;
+      let sourceUsed: 'holdings' | 'status' | 'assigned' | 'none' = 'none';
+      const tablesChecked: string[] = [];
+      let sponsorBadgeError: string | null = null;
 
-      if (!sponsorBadge) {
-        console.log(`⏭️ Skipping L${ancestor.level} for ${ancestor.ancestor_id} - no badge purchased`);
+      // 1) Try user_badge_holdings (joined with badge_card_config)
+      try {
+        tablesChecked.push('user_badge_holdings');
+        const { data: sponsorHoldings, error: holdingsError } = await supabase
+          .from('user_badge_holdings')
+          .select('badge_card_config!inner(tier_name, unlocked_levels)')
+          .eq('user_id', ancestor.ancestor_id)
+          .order('badge_card_config.unlocked_levels', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (holdingsError) {
+          sponsorBadgeError = `holdings_error: ${holdingsError.message}`;
+        }
+        if (sponsorHoldings?.badge_card_config) {
+          sponsorTierName = sponsorHoldings.badge_card_config.tier_name;
+          unlockedLevels = sponsorHoldings.badge_card_config.unlocked_levels || 1;
+          sourceUsed = 'holdings';
+        }
+      } catch (e: any) {
+        sponsorBadgeError = `holdings_exception: ${e?.message || e}`;
+      }
+
+      // 2) Fallback to user_badge_status -> badge_card_config
+      if (!sponsorTierName) {
+        try {
+          tablesChecked.push('user_badge_status');
+          const { data: statusRow, error: statusError } = await supabase
+            .from('user_badge_status')
+            .select('current_badge')
+            .eq('user_id', ancestor.ancestor_id)
+            .maybeSingle();
+          if (statusError) {
+            sponsorBadgeError = [sponsorBadgeError, `status_error: ${statusError.message}`].filter(Boolean).join('; ');
+          }
+          if (statusRow?.current_badge) {
+            const { data: cfgRow, error: cfgError } = await supabase
+              .from('badge_card_config')
+              .select('tier_name, unlocked_levels')
+              .eq('tier_name', statusRow.current_badge)
+              .maybeSingle();
+            if (cfgError) {
+              sponsorBadgeError = [sponsorBadgeError, `config_error: ${cfgError.message}`].filter(Boolean).join('; ');
+            }
+            if (cfgRow) {
+              sponsorTierName = cfgRow.tier_name;
+              unlockedLevels = cfgRow.unlocked_levels || 1;
+              sourceUsed = 'status';
+            }
+          }
+        } catch (e: any) {
+          sponsorBadgeError = [sponsorBadgeError, `status_exception: ${e?.message || e}`].filter(Boolean).join('; ');
+        }
+      }
+
+      // 3) Fallback to badge_cards_new (assigned cards)
+      if (!sponsorTierName) {
+        try {
+          tablesChecked.push('badge_cards_new');
+          const { data: assignedRow, error: assignedError } = await supabase
+            .from('badge_cards_new')
+            .select('badge_card_config!inner(tier_name, unlocked_levels)')
+            .eq('user_id', ancestor.ancestor_id)
+            .order('badge_card_config.unlocked_levels', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (assignedError) {
+            sponsorBadgeError = [sponsorBadgeError, `assigned_error: ${assignedError.message}`].filter(Boolean).join('; ');
+          }
+          if (assignedRow?.badge_card_config) {
+            sponsorTierName = assignedRow.badge_card_config.tier_name;
+            unlockedLevels = assignedRow.badge_card_config.unlocked_levels || 1;
+            sourceUsed = 'assigned';
+          }
+        } catch (e: any) {
+          sponsorBadgeError = [sponsorBadgeError, `assigned_exception: ${e?.message || e}`].filter(Boolean).join('; ');
+        }
+      }
+
+      if (!sponsorTierName) {
+        console.log(`⏭️ Skipping L${ancestor.level} for ${ancestor.ancestor_id} - no badge detected from any source`);
         skippedRecords.push({
           level: ancestor.level,
           sponsor_id: ancestor.ancestor_id,
           reason: 'no_badge',
-          required_badge: 'Any badge to unlock Level 2+'
+          required_badge: 'Any badge to unlock Level 2+',
+          debug: { source_used: sourceUsed, sponsorBadgeError, tables_checked: tablesChecked }
         });
         continue;
       }
 
-      const unlockedLevels = sponsorBadge.badge_card_config.unlocked_levels || 1;
       if (ancestor.level > unlockedLevels) {
-        console.log(`⏭️ Skipping L${ancestor.level} for ${ancestor.ancestor_id} - level locked (has ${sponsorBadge.badge_card_config.tier_name}, unlocked up to L${unlockedLevels})`);
+        console.log(`⏭️ Skipping L${ancestor.level} for ${ancestor.ancestor_id} - level locked (has ${sponsorTierName}, unlocked up to L${unlockedLevels})`);
         skippedRecords.push({
           level: ancestor.level,
           sponsor_id: ancestor.ancestor_id,
           reason: 'level_locked',
-          current_badge: sponsorBadge.badge_card_config.tier_name,
+          current_badge: sponsorTierName,
           unlocked_up_to: unlockedLevels,
           upgrade_needed: ancestor.level <= 10 ? 'Silver' : 
                          ancestor.level <= 20 ? 'Gold' :
                          ancestor.level <= 30 ? 'Platinum' :
-                         ancestor.level <= 40 ? 'Diamond' : 'i-Smart VIP'
+                         ancestor.level <= 40 ? 'Diamond' : 'i-Smart VIP',
+          debug: { source_used: sourceUsed, sponsorBadgeError, tables_checked: tablesChecked }
         });
         continue;
       }
 
-      console.log(`💰 Processing L${ancestor.level} commission for ${ancestor.ancestor_id}: ${commissionAmount} BSK (Badge: ${sponsorBadge.badge_card_config.tier_name}, Unlocked: L1-L${unlockedLevels})`);
+      // Duplicate protection: skip if a commission was already issued for this level/event
+      try {
+        const { data: existingCommission } = await supabase
+          .from('referral_commissions')
+          .select('id')
+          .eq('earner_id', ancestor.ancestor_id)
+          .eq('payer_id', user_id)
+          .eq('level', ancestor.level)
+          .eq('commission_type', 'multi_level')
+          .eq('event_type', event_type)
+          .maybeSingle();
+        if (existingCommission) {
+          console.log(`⏭️ Skipping L${ancestor.level} for ${ancestor.ancestor_id} - duplicate commission detected`);
+          skippedRecords.push({
+            level: ancestor.level,
+            sponsor_id: ancestor.ancestor_id,
+            reason: 'duplicate',
+            debug: { source_used: sourceUsed, sponsorBadgeError, tables_checked: tablesChecked }
+          });
+          continue;
+        }
+      } catch (_) {
+        // if duplicate check fails, continue processing
+      }
+
+      console.log(`💰 Processing L${ancestor.level} commission for ${ancestor.ancestor_id}: ${commissionAmount} BSK (Badge: ${sponsorTierName}, Unlocked: L1-L${unlockedLevels}, source=${sourceUsed})`);
 
       try {
         // Update sponsor's withdrawable balance
@@ -163,7 +265,7 @@ Deno.serve(async (req) => {
             bsk_amount: commissionAmount,
             destination: 'withdrawable',
             status: 'settled',
-            earner_badge_at_event: sponsorBadge.badge_card_config.tier_name
+            earner_badge_at_event: sponsorTierName
           })
           .select()
           .single();

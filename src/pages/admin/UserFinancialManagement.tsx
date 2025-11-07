@@ -12,12 +12,16 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function UserFinancialManagement() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserEmail, setSelectedUserEmail] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
+  const [explainOpen, setExplainOpen] = useState(false);
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [explainData, setExplainData] = useState<any | null>(null);
 
   useEffect(() => {
     if (selectedUserId) {
@@ -52,12 +56,30 @@ export default function UserFinancialManagement() {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteSuccess = () => {
-    toast.success("User deleted successfully");
-    setSelectedUserId(null);
-    setSelectedUserEmail("");
-    setDeleteDialogOpen(false);
-  };
+const handleDeleteSuccess = () => {
+  toast.success("User deleted successfully");
+  setSelectedUserId(null);
+  setSelectedUserEmail("");
+  setDeleteDialogOpen(false);
+};
+
+const handleExplain = async () => {
+  if (!selectedUserId) return;
+  try {
+    setExplainLoading(true);
+    setExplainOpen(true);
+    setExplainData(null);
+    const { data, error } = await supabase.functions.invoke('explain-ml-commission', {
+      body: { user_id: selectedUserId }
+    });
+    if (error) throw error;
+    setExplainData(data);
+  } catch (e: any) {
+    toast.error(`Failed to explain commissions: ${e?.message || e}`);
+  } finally {
+    setExplainLoading(false);
+  }
+};
 
   return (
     <div className="space-y-6 p-6">
@@ -72,7 +94,16 @@ export default function UserFinancialManagement() {
 
       {selectedUserId ? (
         <>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleExplain}
+              className="gap-2"
+              disabled={!selectedUserId}
+            >
+              Explain ML Commission
+            </Button>
             <Button
               variant="destructive"
               size="sm"
@@ -113,6 +144,24 @@ export default function UserFinancialManagement() {
             <FixBadgeBonus />
           </TabsContent>
         </Tabs>
+
+        <Dialog open={explainOpen} onOpenChange={setExplainOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Explain ML Commission</DialogTitle>
+              <DialogDescription>Debug view for multi-level commission decisions.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              {explainLoading ? (
+                <p className="text-muted-foreground">Loading...</p>
+              ) : (
+                <pre className="text-sm whitespace-pre-wrap">
+                  {JSON.stringify(explainData, null, 2)}
+                </pre>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <ForceDeleteDialog
           open={deleteDialogOpen}
