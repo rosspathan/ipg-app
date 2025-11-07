@@ -69,22 +69,26 @@ export function ForceDeleteDialog({
 
       if (error) throw error;
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to delete user');
+      // Handle partial success (some tables may fail)
+      if (data.deletedAuthUser && data.deletedProfile) {
+        toast({
+          title: data.success ? "User Deleted" : "User Partially Deleted",
+          description: data.success 
+            ? `Successfully deleted user ${userEmail} and all associated data`
+            : `User ${userEmail} deleted with ${data.errors?.length || 0} minor errors. Auth and profile removed.`,
+          variant: data.success ? "default" : "default",
+        });
+
+        // Close dialog and reset state
+        onOpenChange(false);
+        setConfirmText("");
+        setConfirmForce(false);
+
+        // Call success callback even on partial success
+        onSuccess?.();
+      } else {
+        throw new Error(data.message || data.error || 'Failed to delete user');
       }
-
-      toast({
-        title: "User Deleted",
-        description: `Successfully deleted user ${userEmail} and all associated data`,
-      });
-
-      // Close dialog and reset state
-      onOpenChange(false);
-      setConfirmText("");
-      setConfirmForce(false);
-
-      // Call success callback
-      onSuccess?.();
 
     } catch (error: any) {
       console.error('Error deleting user:', error);

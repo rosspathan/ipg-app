@@ -108,6 +108,11 @@ Deno.serve(async (req) => {
     // Delete from tables in order (respecting foreign keys)
     const tablesToClear = [
       'referral_tree',
+      'referral_commissions',
+      'referral_events',
+      'user_badge_holdings',
+      'badge_purchases',
+      'badge_purchase_events',
       'user_bsk_balances',
       'user_bsk_vesting',
       'bsk_vesting_releases',
@@ -123,10 +128,8 @@ Deno.serve(async (req) => {
       'user_achievements',
       'daily_rewards',
       'kyc_submissions',
-      'referral_links',
-      'referral_relationships',
+      'referral_links_new',
       'user_promotion_claims',
-      'lucky_draw_tickets',
       'fiat_bank_accounts',
       'fiat_upi_accounts',
       'fiat_deposits',
@@ -138,7 +141,6 @@ Deno.serve(async (req) => {
       'user_insurance_subscriptions',
       'support_tickets',
       'support_messages',
-      'audit_logs',
       'user_roles',
     ]
 
@@ -165,23 +167,44 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Handle referral_relationships (has referrer_id and referee_id)
-        if (table === 'referral_relationships') {
+        // Handle referral_commissions (has earner_id and payer_id)
+        if (table === 'referral_commissions') {
           const { error: e1 } = await supabaseAdmin
             .from(table)
             .delete()
-            .eq('referrer_id', targetUserId)
+            .eq('earner_id', targetUserId)
           
           const { error: e2 } = await supabaseAdmin
             .from(table)
             .delete()
-            .eq('referee_id', targetUserId)
+            .eq('payer_id', targetUserId)
 
           if (!e1 && !e2) {
             tablesCleared.push(table)
           } else {
-            if (e1) errors.push(`${table} (referrer_id): ${e1.message}`)
-            if (e2) errors.push(`${table} (referee_id): ${e2.message}`)
+            if (e1) errors.push(`${table} (earner_id): ${e1.message}`)
+            if (e2) errors.push(`${table} (payer_id): ${e2.message}`)
+          }
+          continue
+        }
+
+        // Handle referral_links_new (has sponsor_id)
+        if (table === 'referral_links_new') {
+          const { error: e1 } = await supabaseAdmin
+            .from(table)
+            .delete()
+            .eq('user_id', targetUserId)
+          
+          const { error: e2 } = await supabaseAdmin
+            .from(table)
+            .delete()
+            .eq('sponsor_id', targetUserId)
+
+          if (!e1 && !e2) {
+            tablesCleared.push(table)
+          } else {
+            if (e1) errors.push(`${table} (user_id): ${e1.message}`)
+            if (e2) errors.push(`${table} (sponsor_id): ${e2.message}`)
           }
           continue
         }
