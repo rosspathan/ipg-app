@@ -135,6 +135,25 @@ Deno.serve(async (req) => {
         ? balanceData?.withdrawable_balance || 0
         : balanceData?.holding_balance || 0;
 
+      // Ensure denormalized table has a row so admin UI reads non-zero balances
+      const { error: upsertError } = await supabaseClient
+        .from('user_bsk_balances')
+        .upsert(
+          {
+            user_id: recipient_user_id,
+            withdrawable_balance: balanceData?.withdrawable_balance || 0,
+            holding_balance: balanceData?.holding_balance || 0,
+            total_earned_withdrawable: balanceData?.total_earned_withdrawable || 0,
+            total_earned_holding: balanceData?.total_earned_holding || 0,
+          },
+          { onConflict: 'user_id' }
+        );
+      if (upsertError) {
+        console.error('[admin-send-bsk] Upsert user_bsk_balances error:', upsertError);
+      } else {
+        console.log('[admin-send-bsk] ✅ user_bsk_balances upserted for', recipient_user_id);
+      }
+
       // Create audit log
       await supabaseClient
         .from('audit_logs')
