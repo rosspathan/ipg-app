@@ -133,7 +133,7 @@ const AppHomeScreen = () => {
   };
 
   return (
-    <div className="min-h-screen w-full animate-slide-in-right">
+    <div className="min-h-screen w-full">
       {/* Announcement Ticker at Top */}
       <AnnouncementTicker />
 
@@ -155,7 +155,7 @@ const AppHomeScreen = () => {
                 onClick={() => navigate("/app/notifications")}
               >
                 <Bell className="h-5 w-5" />
-                <div className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full animate-neon-pulse" />
+                
               </Button>
               <Badge variant="secondary" className="bg-card-glass border-primary/20 text-primary font-bold px-3">
                 {user?.email?.split('@')[0]}
@@ -172,21 +172,16 @@ const AppHomeScreen = () => {
             size="lg"
             className={cn(
               "w-full h-16 relative overflow-hidden",
-              "bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%]",
-              "hover:bg-[position:100%_0] transition-all duration-[600ms] ease-out",
-              "border-2 border-primary/30 hover:border-primary/60",
-              "shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.6)]",
-              "group-hover:scale-[1.02] active:scale-[0.98]",
+              "bg-gradient-to-r from-primary via-accent to-primary",
+              "border-2 border-primary/30",
               "font-bold text-base tracking-wide"
             )}
           >
-            {/* Animated shimmer effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-[1200ms] ease-out" />
             
             {/* Icon with animation */}
             <div className="relative z-10 flex items-center justify-center gap-3">
               <div className="relative">
-                <div className="absolute inset-0 bg-white/30 blur-xl rounded-full animate-pulse" />
+                {/* glow removed to reduce flicker */}
                 <Plus className="relative h-6 w-6 group-hover:rotate-90 transition-transform duration-[400ms] ease-out" />
               </div>
               <span className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
@@ -264,13 +259,9 @@ const AppHomeScreen = () => {
           <div className="grid gap-4">
             <BSKBalanceCard 
               balanceType="withdrawable"
-              className="animate-fade-in-scale"
-              style={{ animationDelay: "250ms", animationFillMode: "both" }}
             />
             <BSKBalanceCard 
               balanceType="holding"
-              className="animate-fade-in-scale"
-              style={{ animationDelay: "280ms", animationFillMode: "both" }}
             />
           </div>
         </div>

@@ -17,6 +17,11 @@ export function ScrollingAnnouncement({ className }: ScrollingAnnouncementProps)
   const prefersReducedMotion = typeof window !== 'undefined' 
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
     : false;
+  // Disable scrolling on small screens to avoid flicker
+  const isMobile = typeof window !== 'undefined'
+    ? window.matchMedia('(max-width: 768px)').matches
+    : true;
+  const enableScroll = !prefersReducedMotion && !isMobile;
 
   const { data: announcement } = useQuery({
     queryKey: ['scrolling-announcement'],
@@ -60,10 +65,10 @@ export function ScrollingAnnouncement({ className }: ScrollingAnnouncementProps)
         <div 
           className={cn(
             "flex items-center whitespace-nowrap",
-            !prefersReducedMotion && "scrolling-announcement-text"
+            enableScroll && "scrolling-announcement-text"
           )}
           style={{
-            animationPlayState: prefersReducedMotion ? 'paused' : 'running'
+            animationPlayState: enableScroll ? 'running' : 'paused'
           }}
         >
           <span className="text-sm font-[Inter] font-semibold text-foreground/90 px-4">

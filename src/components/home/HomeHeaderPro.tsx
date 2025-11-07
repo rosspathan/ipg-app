@@ -24,15 +24,7 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
   const { navigate } = useNavigation()
   const displayName = useDisplayName()
   useUsernameBackfill()
-  const [isFlipped, setIsFlipped] = useState(false)
-
-  // Logo flip animation every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsFlipped(prev => !prev)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  // Static logo (animation disabled to prevent flicker)
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -58,41 +50,14 @@ export function HomeHeaderPro({ notificationCount = 2, className }: HomeHeaderPr
       {/* Left: Animated Brand Logo */}
       <button
         onClick={() => navigate("/app/home")}
-        className="relative h-14 w-14 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/50 hover:scale-105 transition-transform duration-300"
+        className="relative h-14 w-14 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/50"
         style={{ perspective: '1000px' }}
       >
-        <div
-          className={cn(
-            "relative w-full h-full transition-transform duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-            "preserve-3d"
-          )}
-          style={{
-            transformStyle: 'preserve-3d',
-            transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-          }}
-        >
-          {/* Front */}
           <img
             src={ipgLogo}
             alt="IPG I-SMART"
-            className="absolute inset-0 w-full h-full object-cover rounded-full backface-hidden"
-            style={{
-              backfaceVisibility: 'hidden',
-              boxShadow: '0 0 16px rgba(124, 77, 255, 0.3)'
-            }}
+            className="absolute inset-0 w-full h-full object-cover rounded-full"
           />
-          {/* Back */}
-          <img
-            src={logoAlt}
-            alt="IPG I-SMART Alt"
-            className="absolute inset-0 w-full h-full object-cover rounded-full backface-hidden"
-            style={{
-              backfaceVisibility: 'hidden',
-              transform: 'rotateY(180deg)',
-              boxShadow: '0 0 16px rgba(0, 229, 255, 0.3)'
-            }}
-          />
-        </div>
       </button>
 
       {/* Center: Username + Greeting */}

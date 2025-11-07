@@ -21,7 +21,7 @@ export function AnnouncementsBar({ items, className }: AnnouncementsBarProps) {
   return (
     <div
       className={cn(
-        "relative h-8 bg-card/40 backdrop-blur-lg border-y border-border/30 overflow-hidden",
+        "relative h-8 bg-card/40 backdrop-blur-lg border-y border-border/30 overflow-hidden will-change-auto",
         className
       )}
       data-testid="announcements-bar"
