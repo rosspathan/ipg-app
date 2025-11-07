@@ -380,6 +380,48 @@ serve(async (req) => {
       console.log('[complete-onboarding] ✓ Referral link initialized', { userId, sponsorId });
     }
 
+    // If we have a sponsor, award 5 BSK welcome bonus
+    if (sponsorId) {
+      console.log('[complete-onboarding] 🎁 Awarding 5 BSK referral signup bonus to:', userId);
+      
+      try {
+        // Credit 5 BSK to holding balance
+        const { error: bonusError } = await supabaseAdmin
+          .from('user_bsk_balances')
+          .upsert({
+            user_id: userId,
+            holding_balance: 5,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id'
+          });
+
+        if (bonusError) {
+          console.error('[complete-onboarding] Bonus balance error:', bonusError);
+        } else {
+          // Create bonus ledger entry
+          await supabaseAdmin
+            .from('bonus_ledger')
+            .insert({
+              user_id: userId,
+              type: 'referral_signup_bonus',
+              amount_bsk: 5,
+              asset: 'BSK',
+              meta_json: {
+                sponsor_id: sponsorId,
+                sponsor_code: sponsorCodeUsed,
+                timestamp: new Date().toISOString()
+              },
+              usd_value: 0
+            });
+
+          console.log('[complete-onboarding] ✅ 5 BSK referral signup bonus credited to holding balance');
+        }
+      } catch (err) {
+        console.error('[complete-onboarding] Failed to award bonus:', err);
+      }
+    }
+
     // If we have a sponsor, build tree and process commissions
     if (sponsorId) {
       console.log('[complete-onboarding] Building referral tree for:', userId);
