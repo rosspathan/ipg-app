@@ -275,6 +275,45 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_balance_adjustments: {
+        Row: {
+          admin_user_id: string
+          after_balance: number | null
+          amount: number
+          balance_type: string
+          before_balance: number | null
+          created_at: string | null
+          id: string
+          operation: string
+          reason: string
+          target_user_id: string
+        }
+        Insert: {
+          admin_user_id: string
+          after_balance?: number | null
+          amount: number
+          balance_type: string
+          before_balance?: number | null
+          created_at?: string | null
+          id?: string
+          operation: string
+          reason: string
+          target_user_id: string
+        }
+        Update: {
+          admin_user_id?: string
+          after_balance?: number | null
+          amount?: number
+          balance_type?: string
+          before_balance?: number | null
+          created_at?: string | null
+          id?: string
+          operation?: string
+          reason?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       admin_fees_ledger: {
         Row: {
           bsk_rate_snapshot: number
@@ -350,6 +389,45 @@ export type Database = {
           notify_inr_withdrawal?: boolean | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      admin_notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          priority: string | null
+          related_resource_id: string | null
+          related_user_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          priority?: string | null
+          related_resource_id?: string | null
+          related_user_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          priority?: string | null
+          related_resource_id?: string | null
+          related_user_id?: string | null
+          title?: string
+          type?: string
         }
         Relationships: []
       }
