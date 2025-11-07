@@ -60,14 +60,14 @@ export default function OrphanedUsersCleanup() {
 
       if (error) throw error;
 
-      const { deleted_count, error_count, errors } = data;
+      const { deleted_count, error_count, neutralized_count, errors } = data;
 
       if (error_count > 0) {
         console.error("Cleanup errors:", errors);
-        toast.error(`Cleanup completed with ${error_count} error(s). Check console for details.`);
+        toast.error(`Cleanup completed with ${error_count} error(s). Deleted: ${deleted_count}, Neutralized: ${neutralized_count}.`);
       } else {
-        toast.success(`Successfully cleaned up ${deleted_count} orphaned user${deleted_count !== 1 ? 's' : ''}`, {
-          description: "Users can now re-register with these email addresses"
+        toast.success(`Cleaned: ${deleted_count} deleted, ${neutralized_count} neutralized`, {
+          description: "Affected emails can now re-register"
         });
       }
 

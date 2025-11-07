@@ -130,6 +130,11 @@ Deno.serve(async (req) => {
       const orphanedUsers: OrphanedUser[] = [];
       
       for (const authUser of authUsers.users) {
+        const email = authUser.email || '';
+        // Skip already neutralized records (freed emails)
+        const isNeutralized = email.startsWith('deleted+') && email.endsWith('@invalid.local');
+        if (isNeutralized) continue;
+
         const { data: profile } = await supabaseAdmin
           .from('profiles')
           .select('user_id')
@@ -153,6 +158,7 @@ Deno.serve(async (req) => {
       
       const deleted: string[] = [];
       const skipped: string[] = [];
+      const neutralized: string[] = [];
       const errors: string[] = [];
 
       for (const orphanedUser of usersToProcess) {
@@ -184,9 +190,24 @@ Deno.serve(async (req) => {
             }
 
             if (delErr) {
-              const detail = delErr?.message || JSON.stringify(delErr);
-              console.error(`❌ Failed to delete ${orphanedUser.email}:`, detail);
-              errors.push(`${orphanedUser.email}: ${detail}`);
+              // As a last resort, neutralize the account by freeing the email (lets user re-register)
+              const placeholderEmail = `deleted+${Date.now()}+${orphanedUser.id}@invalid.local`;
+              const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(orphanedUser.id, {
+                email: placeholderEmail,
+                email_confirm: true,
+                app_metadata: { deleted: true, orphan_cleanup: true },
+                ban_duration: '438000h' // ~50 years
+              } as any);
+
+              if (updateErr) {
+                const detail = delErr?.message || JSON.stringify(delErr);
+                const updDetail = updateErr?.message || JSON.stringify(updateErr);
+                console.error(`❌ Failed to delete AND neutralize ${orphanedUser.email}:`, detail, updDetail);
+                errors.push(`${orphanedUser.email}: delete_fail=${detail}; update_fail=${updDetail}`);
+              } else {
+                console.log(`🟡 Neutralized auth record (freed email) for: ${orphanedUser.email}`);
+                neutralized.push(orphanedUser.email);
+              }
             } else {
               console.log(`✅ Deleted orphaned user: ${orphanedUser.email}`);
               deleted.push(orphanedUser.email);
@@ -205,6 +226,8 @@ Deno.serve(async (req) => {
         processed: usersToProcess.length,
         deleted: deleted,
         deleted_count: deleted.length,
+        neutralized,
+        neutralized_count: neutralized.length,
         skipped: skipped,
         skipped_count: skipped.length,
         errors: errors,
