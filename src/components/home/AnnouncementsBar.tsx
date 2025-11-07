@@ -28,7 +28,7 @@ export function AnnouncementsBar({ items, className }: AnnouncementsBarProps) {
     >
       <div className="absolute inset-0 flex items-center">
         <div
-          className="flex items-center gap-12 animate-[marquee_30s_linear_infinite] whitespace-nowrap"
+          className="flex items-center gap-12 animate-none md:animate-[marquee_30s_linear_infinite] whitespace-nowrap"
           style={{
             animationPlayState: 'running'
           }}
