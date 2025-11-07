@@ -54,17 +54,17 @@ export function ForceDeleteByEmailDialog({ open, onOpenChange, onConfirm }: Forc
     <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : handleClose())}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Force Delete Users by Email</DialogTitle>
+          <DialogTitle>Force Delete Users by Email or ID</DialogTitle>
           <DialogDescription>
-            Paste one or more email addresses. This will remove profiles and attempt a hard delete. If deletion fails, we neutralize the auth record to free the email.
+            Paste emails or user IDs (searches auth, identities, metadata, profiles). Removes profiles and attempts hard delete. If deletion fails, neutralizes the auth record to free the email.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="emails">Emails (one per line)</Label>
-            <Textarea id="emails" placeholder="user1@example.com\nuser2@example.com" value={emailsText} onChange={(e) => setEmailsText(e.target.value)} rows={8} />
-            <p className="text-sm text-muted-foreground">Parsed {emails.length} email{emails.length === 1 ? "" : "s"}.</p>
+            <Label htmlFor="emails">Emails or User IDs (one per line)</Label>
+            <Textarea id="emails" placeholder="user1@example.com&#10;user2@example.com&#10;550e8400-e29b-41d4-a716-446655440000" value={emailsText} onChange={(e) => setEmailsText(e.target.value)} rows={8} />
+            <p className="text-sm text-muted-foreground">Parsed {emails.length} identifier{emails.length === 1 ? "" : "s"}. Accepts emails or UUIDs.</p>
           </div>
 
           <div className="flex items-center gap-2">

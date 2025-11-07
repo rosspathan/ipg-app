@@ -63,31 +63,91 @@ serve(async (req: Request) => {
       });
     }
 
-    console.log(`🚨 Force delete requested for ${emails.length} email(s). dry_run=${dryRun}, soft_delete=${softDelete}`);
+    console.log(`🚨 Force delete requested for ${emails.length} identifier(s). dry_run=${dryRun}, soft_delete=${softDelete}`);
 
-    // Fetch users in pages and index by email
-    const emailSet = new Set(emails);
+    // Build a map of identifier -> user by searching multiple sources
+    const identifierSet = new Set(emails);
     const found: Record<string, any> = {};
+    
+    // Helper to check if string is a UUID
+    const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
+    // Step 1: Try direct UUID lookup for any UUID identifiers
+    for (const identifier of emails) {
+      if (isUUID(identifier)) {
+        const { data: user, error } = await supabaseAdmin.auth.admin.getUserById(identifier);
+        if (!error && user) {
+          console.log(`✓ Found user by UUID: ${identifier}`);
+          found[identifier] = user;
+        }
+      }
+    }
+
+    // Step 2: Page through all users and match by email, identities, metadata
     let page = 1;
     const perPage = 1000;
-    // Limit total pages to avoid infinite loops (adjust as needed)
     const maxPages = 50;
 
-    while (page <= maxPages && Object.keys(found).length < emailSet.size) {
+    while (page <= maxPages && Object.keys(found).length < identifierSet.size) {
       const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
       if (error) {
         console.error("listUsers failed:", error);
         break;
       }
+      
       for (const u of data.users) {
-        const email = (u.email || "").toLowerCase();
-        if (emailSet.has(email)) {
-          found[email] = u;
+        const candidates: string[] = [];
+        
+        // Add user ID
+        candidates.push(u.id);
+        
+        // Add primary email
+        if (u.email) candidates.push(u.email.toLowerCase());
+        
+        // Add user_metadata email
+        if (u.user_metadata?.email) candidates.push(String(u.user_metadata.email).toLowerCase());
+        
+        // Add identity emails
+        if (u.identities && Array.isArray(u.identities)) {
+          for (const identity of u.identities) {
+            if (identity.email) candidates.push(identity.email.toLowerCase());
+            if (identity.identity_data?.email) candidates.push(String(identity.identity_data.email).toLowerCase());
+            if (identity.identity_data?.email_address) candidates.push(String(identity.identity_data.email_address).toLowerCase());
+          }
+        }
+        
+        // Check if any candidate matches our search set
+        for (const candidate of candidates) {
+          if (identifierSet.has(candidate)) {
+            console.log(`✓ Found user ${u.id} via identifier: ${candidate}`);
+            found[candidate] = u;
+          }
         }
       }
-      if (data.users.length < perPage) break; // last page
+      
+      if (data.users.length < perPage) break;
       page += 1;
+    }
+
+    // Step 3: Fallback - check profiles table for any remaining identifiers
+    const stillMissing = emails.filter((e) => !found[e]);
+    for (const identifier of stillMissing) {
+      if (!isUUID(identifier)) {
+        // Try profiles table lookup by email
+        const { data: profile, error: profError } = await supabaseAdmin
+          .from("profiles")
+          .select("user_id")
+          .eq("email", identifier)
+          .single();
+        
+        if (!profError && profile?.user_id) {
+          const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
+          if (!userError && user) {
+            console.log(`✓ Found user ${user.id} via profiles table for: ${identifier}`);
+            found[identifier] = user;
+          }
+        }
+      }
     }
 
     const notFound = emails.filter((e) => !found[e]);

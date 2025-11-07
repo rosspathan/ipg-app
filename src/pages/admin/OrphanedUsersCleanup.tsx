@@ -96,12 +96,12 @@ export default function OrphanedUsersCleanup() {
         }
       });
       if (error) throw error;
-      const { deleted_count, neutralized_count, skipped_count, error_count, errors } = data;
+      const { deleted_count, neutralized_count, skipped_count, matched_count, error_count, errors } = data;
       if (error_count > 0) {
         console.error('Force delete errors:', errors);
-        toast.error(`Force delete: ${error_count} error(s). Deleted ${deleted_count}, Neutralized ${neutralized_count}, Skipped ${skipped_count}.`);
+        toast.error(`Force delete: ${error_count} error(s). Matched ${matched_count}, Deleted ${deleted_count}, Neutralized ${neutralized_count}, Skipped ${skipped_count}.`);
       } else {
-        toast.success(`Force delete done: ${deleted_count} deleted, ${neutralized_count} neutralized, ${skipped_count} skipped`);
+        toast.success(`Force delete: Matched ${matched_count}, Deleted ${deleted_count}, Neutralized ${neutralized_count}, Skipped ${skipped_count}`);
       }
       await fetchOrphanedUsers();
     } catch (err: any) {
