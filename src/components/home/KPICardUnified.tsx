@@ -69,12 +69,12 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
           "glass-card",
           "bg-gradient-to-br from-card/95 via-card/85 to-card/95",
           "backdrop-blur-xl border-2 border-primary/20",
-          "transition-all duration-300 ease-out",
-          "hover:border-primary/40 hover:shadow-glow-primary hover:scale-[1.01]",
-          "active:scale-[0.99]",
+          // Keep subtle color transitions only to avoid flicker
+          "transition-colors duration-200 ease-out",
+          // Removed hover scale/shadow to prevent blinking
+          "hover:border-primary/40",
           "focus:outline-none focus:ring-2 focus:ring-primary/30",
           "group cursor-pointer touch-manipulation",
-          "animate-fade-in-scale",
           className
         )}
         data-testid="kpi-card-unified"

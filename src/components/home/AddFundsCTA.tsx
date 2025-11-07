@@ -30,7 +30,7 @@ export function AddFundsCTA({ onPress, className }: AddFundsCTAProps) {
     >
       {/* Animated background glow */}
       <div 
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[600ms] animate-shimmer"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[600ms] animate-shimmer pointer-events-none"
       />
       
       {/* Bottom glow effect */}
