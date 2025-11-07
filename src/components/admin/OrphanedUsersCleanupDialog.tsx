@@ -5,12 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface OrphanedUsersCleanupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orphanedCount: number;
-  onConfirm: () => Promise<void>;
+  onConfirm: (opts: { hardDelete: boolean }) => Promise<void>;
 }
 
 export function OrphanedUsersCleanupDialog({
@@ -21,15 +22,17 @@ export function OrphanedUsersCleanupDialog({
 }: OrphanedUsersCleanupDialogProps) {
   const [confirmText, setConfirmText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [hardDelete, setHardDelete] = useState(false);
 
   const handleConfirm = async () => {
     if (confirmText !== "CLEANUP") return;
     
     try {
       setLoading(true);
-      await onConfirm();
+      await onConfirm({ hardDelete });
       onOpenChange(false);
       setConfirmText("");
+      setHardDelete(false);
     } catch (error) {
       console.error("Cleanup failed:", error);
     } finally {
@@ -86,6 +89,11 @@ export function OrphanedUsersCleanupDialog({
               <li>Admin emails are protected and will be skipped</li>
               <li>Action will be logged for audit</li>
             </ul>
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <Checkbox id="hard-delete" checked={hardDelete} onCheckedChange={(v) => setHardDelete(Boolean(v))} />
+            <Label htmlFor="hard-delete" className="text-sm">Force hard delete (use if soft delete fails)</Label>
           </div>
         </div>
 

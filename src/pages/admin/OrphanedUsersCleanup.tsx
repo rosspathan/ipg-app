@@ -44,7 +44,7 @@ export default function OrphanedUsersCleanup() {
     }
   };
 
-  const handleCleanup = async () => {
+  const handleCleanup = async ({ hardDelete }: { hardDelete: boolean }) => {
     try {
       setCleanupLoading(true);
 
@@ -53,6 +53,7 @@ export default function OrphanedUsersCleanup() {
         body: {
           dry_run: false,
           max_count: 200,
+          soft_delete: !hardDelete,
           whitelist: [] // Admin emails would be protected at the system level
         }
       });

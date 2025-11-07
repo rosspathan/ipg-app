@@ -114,10 +114,11 @@ Deno.serve(async (req) => {
       const { 
         dry_run = false, 
         max_count = 100,
-        whitelist = [] 
+        whitelist = [],
+        soft_delete = true 
       } = body;
 
-      console.log(`🧹 Starting cleanup (dry_run: ${dry_run}, max: ${max_count})`);
+      console.log(`🧹 Starting cleanup (dry_run: ${dry_run}, max: ${max_count}, soft_delete: ${soft_delete})`);
 
       // Query for users in auth.users with no matching profile
       const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
@@ -167,9 +168,10 @@ Deno.serve(async (req) => {
             console.log(`[DRY RUN] Would delete: ${orphanedUser.email} (${orphanedUser.id})`);
             deleted.push(orphanedUser.email);
           } else {
-            // Actually delete from auth.users
+            // Actually delete from auth.users (soft delete by default)
             const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(
-              orphanedUser.id
+              orphanedUser.id,
+              { shouldSoftDelete: soft_delete }
             );
 
             if (deleteError) {
