@@ -26,10 +26,10 @@ Deno.serve(async (req) => {
 
     console.log('🎯 Processing multi-level commissions:', { user_id, event_type, base_amount });
 
-    // Check if referral system is enabled and get level percentages
+    // Check if referral system is enabled
     const { data: settings } = await supabase
       .from('team_referral_settings')
-      .select('enabled, level_percentages')
+      .select('enabled')
       .single();
 
     if (!settings?.enabled) {
@@ -67,15 +67,17 @@ Deno.serve(async (req) => {
     const commissionRecords = [];
     const skippedRecords = [];
 
-    // Get commission percentages from settings
-    const levelPercentages = settings?.level_percentages || {};
-    console.log('📊 Using level percentages:', levelPercentages);
-
-    // Calculate commission based on percentage from settings
+    // Calculate commission based on fixed BSK amounts per level tier
     const getCommissionAmount = (level: number): number => {
-      const percentage = levelPercentages[level.toString()] || 0;
-      return (base_amount * percentage) / 100;
+      if (level >= 2 && level <= 10) return 0.5;
+      if (level >= 11 && level <= 20) return 0.4;
+      if (level >= 21 && level <= 30) return 0.3;
+      if (level >= 31 && level <= 40) return 0.2;
+      if (level >= 41 && level <= 50) return 0.1;
+      return 0;
     };
+
+    console.log('📊 Using fixed BSK amounts per level tier (L2-L10: 0.5, L11-L20: 0.4, L21-L30: 0.3, L31-L40: 0.2, L41-L50: 0.1)');
 
     // Process each level
     for (const ancestor of ancestors) {
