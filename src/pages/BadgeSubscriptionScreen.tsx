@@ -214,30 +214,7 @@ const BadgeSubscriptionScreen = () => {
             return;
           }
 
-          if (!validation.kycCompleted) {
-            toast({
-              title: "🔒 KYC Required",
-              description: (
-                <div className="space-y-3">
-                  <p>Complete KYC verification to purchase badges</p>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedBadge(null);
-                      window.location.href = '/app/kyc';
-                    }}
-                    className="w-full"
-                  >
-                    Complete KYC
-                  </Button>
-                </div>
-              ),
-              variant: "destructive",
-            });
-            setSelectedBadge(null);
-            return;
-          }
+          // KYC check removed - badge purchase no longer requires KYC
 
           // Generic validation error
           toast({
@@ -344,27 +321,6 @@ const BadgeSubscriptionScreen = () => {
         toast({
           title: 'Already Owned',
           description: 'You already own this badge',
-          variant: 'destructive',
-        });
-      } else if (errorMessage.includes('KYC_REQUIRED') || errorMessage.includes('KYC')) {
-        toast({
-          title: '🔒 KYC Required',
-          description: (
-            <div className="space-y-3">
-              <p>Complete KYC verification to purchase badges</p>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  setSelectedBadge(null);
-                  window.location.href = '/app/kyc';
-                }}
-                className="w-full"
-              >
-                Complete KYC
-              </Button>
-            </div>
-          ),
           variant: 'destructive',
         });
       } else {

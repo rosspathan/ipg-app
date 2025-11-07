@@ -121,24 +121,8 @@ Deno.serve(async (req) => {
       console.log(`Already owned: ${badgeName}`);
     }
 
-    // 3. Check KYC status
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_kyc_approved, kyc_status')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error('Error checking KYC:', profileError);
-      warnings.push('Unable to verify KYC status.');
-    } else {
-      // User is KYC completed if is_kyc_approved is true OR kyc_status is 'approved'
-      kycCompleted = (profileData?.is_kyc_approved === true) || (profileData?.kyc_status === 'approved');
-      
-      if (!kycCompleted) {
-        errors.push('KYC verification required. Please complete verification first.');
-      }
-    }
+    // 3. KYC check removed - badge purchase no longer requires KYC
+    kycCompleted = true; // Always set to true as KYC is not required
 
     const shortfall = Math.max(0, expectedAmount - totalAvailableBalance);
     const valid = errors.length === 0;
