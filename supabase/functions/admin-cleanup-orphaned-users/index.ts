@@ -123,7 +123,9 @@ Deno.serve(async (req) => {
         soft_delete = true 
       } = body;
 
-      console.log(`🧹 Starting cleanup (dry_run: ${dry_run}, max: ${max_count}, soft_delete: ${soft_delete})`);
+      // Enforce max_count limit to prevent timeouts
+      const safeMaxCount = Math.min(max_count, 1000);
+      console.log(`🧹 Starting cleanup (dry_run: ${dry_run}, max: ${safeMaxCount}, soft_delete: ${soft_delete})`);
 
       // Query for users in auth.users with no matching profile
       const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
@@ -159,7 +161,8 @@ Deno.serve(async (req) => {
       console.log(`📊 Found ${orphanedUsers.length} orphaned users total`);
 
       // Apply max_count limit
-      const usersToProcess = orphanedUsers.slice(0, max_count);
+      const usersToProcess = orphanedUsers.slice(0, safeMaxCount);
+      console.log(`📦 Processing ${usersToProcess.length} users (limit: ${safeMaxCount})`);
       
       const deleted: string[] = [];
       const skipped: string[] = [];

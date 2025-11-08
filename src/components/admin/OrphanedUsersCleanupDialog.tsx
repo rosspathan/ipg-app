@@ -11,7 +11,7 @@ interface OrphanedUsersCleanupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orphanedCount: number;
-  onConfirm: (opts: { hardDelete: boolean }) => Promise<void>;
+  onConfirm: (opts: { hardDelete: boolean; cleanAll?: boolean }) => Promise<void>;
 }
 
 export function OrphanedUsersCleanupDialog({

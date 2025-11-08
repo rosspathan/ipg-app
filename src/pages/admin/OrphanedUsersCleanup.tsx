@@ -46,15 +46,19 @@ export default function OrphanedUsersCleanup() {
     }
   };
 
-  const handleCleanup = async ({ hardDelete }: { hardDelete: boolean }) => {
+  const handleCleanup = async ({ hardDelete, cleanAll = false }: { hardDelete: boolean; cleanAll?: boolean }) => {
     try {
       setCleanupLoading(true);
+      
+      const maxCount = cleanAll ? 1000 : 200;
+      const toastMsg = cleanAll ? 'Cleaning all orphaned users...' : 'Cleaning orphaned users...';
+      toast.loading(toastMsg, { id: 'cleanup-progress' });
 
       const { data, error } = await supabase.functions.invoke('admin-cleanup-orphaned-users', {
         method: 'POST',
         body: {
           dry_run: false,
-          max_count: 200,
+          max_count: maxCount,
           soft_delete: !hardDelete,
           whitelist: [] // Admin emails would be protected at the system level
         }
@@ -63,6 +67,7 @@ export default function OrphanedUsersCleanup() {
       if (error) throw error;
 
       const { deleted_count, error_count, neutralized_count, errors } = data;
+      toast.dismiss('cleanup-progress');
 
       if (error_count > 0) {
         console.error("Cleanup errors:", errors);
@@ -77,6 +82,7 @@ export default function OrphanedUsersCleanup() {
       await fetchOrphanedUsers();
     } catch (error: any) {
       console.error("Cleanup failed:", error);
+      toast.dismiss('cleanup-progress');
       toast.error(`Cleanup failed: ${error.message}`);
     } finally {
       setCleanupLoading(false);
@@ -174,15 +180,32 @@ export default function OrphanedUsersCleanup() {
                  Force Delete by Email
                </Button>
                {orphanedUsers.length > 0 && (
-                 <Button
-                   variant="destructive"
-                   size="sm"
-                   onClick={() => setDialogOpen(true)}
-                   disabled={cleanupLoading}
-                 >
-                   <Trash2 className="h-4 w-4 mr-2" />
-                   Clean Up ({orphanedUsers.length})
-                 </Button>
+                 <>
+                   <Button
+                     variant="destructive"
+                     size="sm"
+                     onClick={() => setDialogOpen(true)}
+                     disabled={cleanupLoading}
+                   >
+                     <Trash2 className="h-4 w-4 mr-2" />
+                     Clean Up ({Math.min(orphanedUsers.length, 200)})
+                   </Button>
+                   {orphanedUsers.length > 200 && (
+                     <Button
+                       variant="destructive"
+                       size="sm"
+                       onClick={() => handleCleanup({ hardDelete: true, cleanAll: true })}
+                       disabled={cleanupLoading}
+                     >
+                       {cleanupLoading ? (
+                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                       ) : (
+                         <Trash2 className="h-4 w-4 mr-2" />
+                       )}
+                       Clean Up All ({orphanedUsers.length})
+                     </Button>
+                   )}
+                 </>
                )}
              </div>
           </div>

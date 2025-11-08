@@ -17,6 +17,7 @@ export function ForceDeleteByEmailDialog({ open, onOpenChange, onConfirm }: Forc
   const [hardDelete, setHardDelete] = useState(true);
   const [dryRun, setDryRun] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
   const emails = useMemo(() => {
     return Array.from(new Set(
@@ -43,10 +44,34 @@ export function ForceDeleteByEmailDialog({ open, onOpenChange, onConfirm }: Forc
   const handleConfirm = async () => {
     try {
       setSubmitting(true);
-      await onConfirm({ emails, hardDelete, dryRun });
+      
+      // If more than 100 emails, process in batches
+      if (emails.length > 100) {
+        const batchSize = 50;
+        const batches = Math.ceil(emails.length / batchSize);
+        
+        for (let i = 0; i < batches; i++) {
+          const start = i * batchSize;
+          const end = Math.min(start + batchSize, emails.length);
+          const batch = emails.slice(start, end);
+          
+          setProgress({ current: end, total: emails.length });
+          
+          await onConfirm({ emails: batch, hardDelete, dryRun });
+          
+          // Small delay between batches to avoid rate limiting
+          if (i < batches - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      } else {
+        await onConfirm({ emails, hardDelete, dryRun });
+      }
+      
       handleClose();
     } finally {
       setSubmitting(false);
+      setProgress(null);
     }
   };
 
@@ -89,10 +114,24 @@ export function ForceDeleteByEmailDialog({ open, onOpenChange, onConfirm }: Forc
           </div>
         </div>
 
+        {progress && (
+          <div className="space-y-2">
+            <div className="text-sm text-muted-foreground">
+              Processing: {progress.current} / {progress.total}
+            </div>
+            <div className="w-full bg-secondary rounded-full h-2">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${(progress.current / progress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={submitting}>Cancel</Button>
           <Button variant="destructive" onClick={handleConfirm} disabled={!canConfirm}>
-            {submitting ? "Deleting..." : "Force Delete"}
+            {submitting ? (progress ? `Deleting (${progress.current}/${progress.total})...` : "Deleting...") : "Force Delete"}
           </Button>
         </DialogFooter>
       </DialogContent>
