@@ -39,7 +39,30 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+
+    // Use a user-scoped client for token verification (more reliable than admin.getUser in some runtimes)
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { autoRefreshToken: false, persistSession: false }
+      }
+    );
+
+    let user = null as any;
+    let userError: any = null;
+    
+    const authRes = await supabaseAuth.auth.getUser();
+    user = authRes.data.user;
+    userError = authRes.error;
+
+    // Fallback to admin.getUser(token) if needed
+    if (!user) {
+      const adminRes = await supabaseAdmin.auth.getUser(token);
+      user = adminRes.data.user;
+      userError = adminRes.error;
+    }
     
     if (userError || !user) {
       console.error('Token verification failed:', userError?.message || 'No user found');
