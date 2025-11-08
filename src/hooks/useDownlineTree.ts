@@ -44,24 +44,9 @@ export function useDownlineTree() {
     queryFn: async () => {
       if (!user?.id) throw new Error('No user ID');
 
-      // First check if user has ANY direct referrals (level 1 only)
-      const { count: directCount } = await supabase
-        .from('referral_links_new')
-        .select('*', { count: 'exact', head: true })
-        .eq('sponsor_id', user.id)
-        .not('locked_at', 'is', null);
-
-      // If no direct referrals, return empty data immediately
-      if (!directCount || directCount === 0) {
-        return {
-          members: [],
-          levelStats: [],
-          totalMembers: 0,
-          activeMembers: 0,
-          totalGenerated: 0,
-          deepestLevel: 0,
-        };
-      }
+      // Note: Previously we short-circuited when there were no direct referrals with locked sponsors.
+      // That hid valid downlines (e.g., when trees were built including unlocked or via admin tools).
+      // We now always attempt to read from referral_tree for accurate visibility.
 
       // Fetch all descendants from referral_tree (only if user has direct referrals)
       const { data: treeData, error: treeError } = await supabase
