@@ -125,33 +125,36 @@ export default function OrphanedUsersCleanup() {
     
     try {
       setCleanupLoading(true);
-      const emails = orphanedUsers.map(u => u.email);
-      toast.loading(`Deleting ${emails.length} orphaned users...`, { id: 'quick-delete' });
+      toast.loading(`Deleting ${orphanedUsers.length} orphaned users...`, { id: 'quick-delete' });
 
-      const { data, error } = await supabase.functions.invoke('admin-force-delete-users', {
+      // Use the cleanup-by-ID function to avoid email mismatches
+      const { data, error } = await supabase.functions.invoke('admin-cleanup-orphaned-users', {
         method: 'POST',
         body: {
-          emails,
           dry_run: false,
+          max_count: 1000,
           soft_delete: false,
-          remove_profiles: true,
+          whitelist: []
         }
       });
 
       if (error) throw error;
 
-      const { deleted_count, neutralized_count, skipped_count, matched_count, error_count, errors } = data;
+      const { deleted_count, neutralized_count, error_count, errors } = data;
       toast.dismiss('quick-delete');
 
       if (error_count > 0) {
         console.error('Quick delete errors:', errors);
-        toast.error(`Quick delete completed with ${error_count} error(s). Deleted: ${deleted_count}, Neutralized: ${neutralized_count}, Skipped: ${skipped_count}`);
+        toast.error(`Quick delete completed with ${error_count} error(s). Deleted: ${deleted_count}, Neutralized: ${neutralized_count}`);
       } else {
         toast.success(`Successfully deleted ${deleted_count} orphaned users!`, {
-          description: "All emails are now available for re-registration"
+          description: 'All emails are now available for re-registration'
         });
       }
 
+      // Refresh twice with a short delay to avoid stale cache/results
+      await fetchOrphanedUsers();
+      await new Promise((res) => setTimeout(res, 800));
       await fetchOrphanedUsers();
     } catch (err: any) {
       console.error('Quick delete failed:', err);
@@ -161,7 +164,6 @@ export default function OrphanedUsersCleanup() {
       setCleanupLoading(false);
     }
   };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[400px]">
