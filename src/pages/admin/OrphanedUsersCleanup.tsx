@@ -118,6 +118,50 @@ export default function OrphanedUsersCleanup() {
     }
   };
 
+  const handleQuickDeleteAll = async () => {
+    if (!confirm(`Are you sure you want to FORCE DELETE all ${orphanedUsers.length} orphaned users? This action is IRREVERSIBLE and will permanently remove all their data.`)) {
+      return;
+    }
+    
+    try {
+      setCleanupLoading(true);
+      const emails = orphanedUsers.map(u => u.email);
+      toast.loading(`Deleting ${emails.length} orphaned users...`, { id: 'quick-delete' });
+
+      const { data, error } = await supabase.functions.invoke('admin-force-delete-users', {
+        method: 'POST',
+        body: {
+          emails,
+          dry_run: false,
+          soft_delete: false,
+          remove_profiles: true,
+        }
+      });
+
+      if (error) throw error;
+
+      const { deleted_count, neutralized_count, skipped_count, matched_count, error_count, errors } = data;
+      toast.dismiss('quick-delete');
+
+      if (error_count > 0) {
+        console.error('Quick delete errors:', errors);
+        toast.error(`Quick delete completed with ${error_count} error(s). Deleted: ${deleted_count}, Neutralized: ${neutralized_count}, Skipped: ${skipped_count}`);
+      } else {
+        toast.success(`Successfully deleted ${deleted_count} orphaned users!`, {
+          description: "All emails are now available for re-registration"
+        });
+      }
+
+      await fetchOrphanedUsers();
+    } catch (err: any) {
+      console.error('Quick delete failed:', err);
+      toast.dismiss('quick-delete');
+      toast.error(`Quick delete failed: ${err.message}`);
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[400px]">
@@ -181,6 +225,19 @@ export default function OrphanedUsersCleanup() {
                </Button>
                {orphanedUsers.length > 0 && (
                  <>
+                   <Button
+                     variant="destructive"
+                     size="sm"
+                     onClick={handleQuickDeleteAll}
+                     disabled={cleanupLoading}
+                   >
+                     {cleanupLoading ? (
+                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                     ) : (
+                       <Trash2 className="h-4 w-4 mr-2" />
+                     )}
+                     Quick Delete All ({orphanedUsers.length})
+                   </Button>
                    <Button
                      variant="destructive"
                      size="sm"
