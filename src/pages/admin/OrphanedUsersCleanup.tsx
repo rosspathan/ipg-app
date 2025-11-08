@@ -27,15 +27,19 @@ export default function OrphanedUsersCleanup() {
     fetchOrphanedUsers();
   }, []);
 
+  const ensureFreshSession = async () => {
+    // Force-refresh access token to avoid 401 in edge functions
+    await supabase.auth.refreshSession();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Session expired. Please sign in again.');
+    return session;
+  };
+
   const fetchOrphanedUsers = async () => {
     try {
       setLoading(true);
       
-      // Ensure we have a fresh session before making the request
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        throw new Error('Session expired. Please refresh the page and log in again.');
-      }
+      await ensureFreshSession();
 
       const { data, error } = await supabase.functions.invoke('admin-cleanup-orphaned-users', {
         method: 'GET'
@@ -61,11 +65,7 @@ export default function OrphanedUsersCleanup() {
     try {
       setCleanupLoading(true);
       
-      // Ensure we have a fresh session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        throw new Error('Session expired. Please refresh the page and log in again.');
-      }
+      await ensureFreshSession();
       
       const maxCount = cleanAll ? 1000 : 200;
       const toastMsg = cleanAll ? 'Cleaning all orphaned users...' : 'Cleaning orphaned users...';
@@ -110,11 +110,7 @@ export default function OrphanedUsersCleanup() {
     try {
       setCleanupLoading(true);
       
-      // Ensure we have a fresh session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        throw new Error('Session expired. Please refresh the page and log in again.');
-      }
+      await ensureFreshSession();
       
       const { data, error } = await supabase.functions.invoke('admin-force-delete-users', {
         method: 'POST',
