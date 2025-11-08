@@ -161,7 +161,7 @@ export default function OrphanedUsersCleanup() {
                 Users in auth.users without corresponding profiles table records
               </CardDescription>
             </div>
-             <div className="flex gap-2">
+             <div className="flex flex-wrap gap-2 w-full">
                <Button
                  variant="outline"
                  size="sm"
