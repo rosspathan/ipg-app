@@ -30,6 +30,13 @@ export default function OrphanedUsersCleanup() {
   const fetchOrphanedUsers = async () => {
     try {
       setLoading(true);
+      
+      // Ensure we have a fresh session before making the request
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error('Session expired. Please refresh the page and log in again.');
+      }
+
       const { data, error } = await supabase.functions.invoke('admin-cleanup-orphaned-users', {
         method: 'GET'
       });
@@ -40,7 +47,11 @@ export default function OrphanedUsersCleanup() {
       console.log(`Found ${data.count} orphaned users`);
     } catch (error: any) {
       console.error("Failed to fetch orphaned users:", error);
-      toast.error(`Failed to fetch orphaned users: ${error.message}`);
+      if (error.message?.includes('token') || error.message?.includes('Session expired')) {
+        toast.error('Your session has expired. Please refresh the page and try again.');
+      } else {
+        toast.error(`Failed to fetch orphaned users: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -49,6 +60,12 @@ export default function OrphanedUsersCleanup() {
   const handleCleanup = async ({ hardDelete, cleanAll = false }: { hardDelete: boolean; cleanAll?: boolean }) => {
     try {
       setCleanupLoading(true);
+      
+      // Ensure we have a fresh session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error('Session expired. Please refresh the page and log in again.');
+      }
       
       const maxCount = cleanAll ? 1000 : 200;
       const toastMsg = cleanAll ? 'Cleaning all orphaned users...' : 'Cleaning orphaned users...';
@@ -92,6 +109,13 @@ export default function OrphanedUsersCleanup() {
   const handleForceDelete = async ({ emails, hardDelete, dryRun }: { emails: string[]; hardDelete: boolean; dryRun: boolean }) => {
     try {
       setCleanupLoading(true);
+      
+      // Ensure we have a fresh session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error('Session expired. Please refresh the page and log in again.');
+      }
+      
       const { data, error } = await supabase.functions.invoke('admin-force-delete-users', {
         method: 'POST',
         body: {
@@ -125,6 +149,13 @@ export default function OrphanedUsersCleanup() {
     
     try {
       setCleanupLoading(true);
+      
+      // Ensure we have a fresh session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error('Session expired. Please refresh the page and log in again.');
+      }
+      
       toast.loading(`Deleting ${orphanedUsers.length} orphaned users...`, { id: 'quick-delete' });
 
       // Use the cleanup-by-ID function to avoid email mismatches
