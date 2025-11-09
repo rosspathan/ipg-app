@@ -8,14 +8,11 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react';
 import { z } from 'zod';
-import { hasAnySecurity } from '@/utils/localSecurityStorage';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required')
 });
-
-const LOGIN_TIMEOUT = 30000; // 30 seconds timeout
 
 // Role check with timeout to prevent hangs - increased timeout for better reliability
 async function checkAdminWithTimeout(userId: string, ms = 3000): Promise<boolean> {
@@ -45,21 +42,25 @@ const LoginScreen: React.FC = () => {
   const isProcessingRef = useRef(false);
   const mountedRef = useRef(true);
   const loadingRef = useRef(false);
-  const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const navigationWatchdogRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Don't auto-redirect - let user stay on login page
+  // Optional: Force logout on ?force=1 for testing
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('force') === '1') {
+      supabase.auth.signOut().catch(() => {});
+      // Clear legacy keys
+      localStorage.removeItem('cryptoflow_lock_state');
+      localStorage.removeItem('user_pin_hash');
+      localStorage.removeItem('user_pin_salt');
+      localStorage.removeItem('biometric_enabled');
+      localStorage.removeItem('biometric_cred_id');
+    }
+  }, []);
 
-  // Cleanup on unmount - always reset loading state
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       mountedRef.current = false;
-      if (watchdogTimerRef.current) {
-        clearTimeout(watchdogTimerRef.current);
-      }
-      if (navigationWatchdogRef.current) {
-        clearTimeout(navigationWatchdogRef.current);
-      }
       setLoading(false);
       loadingRef.current = false;
       isProcessingRef.current = false;
@@ -67,66 +68,10 @@ const LoginScreen: React.FC = () => {
     };
   }, []);
 
-  // Simplified route determination - always go to /app/home (no security redirects)
-  const determinePostLoginRoute = async (userId: string): Promise<string> => {
-    const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('wallet_address')
-      .eq('user_id', userId)
-      .maybeSingle();
-    
-    const hasWalletInDB = !!profile?.wallet_address;
-    
-    console.log('[LOGIN] Route decision:', { hasLocalWallet, hasWalletInDB });
-    
-    // Only check for wallet - no security/lock checks
-    if (!hasLocalWallet && !hasWalletInDB) return '/auth/import-wallet';
-    if (!hasLocalWallet && hasWalletInDB) return '/auth/import-wallet';
-    
-    // Always go directly to /app/home
-    return '/app/home';
-  };
-
-  // ✅ FIX 3: Clear watchdog helper
-  const clearWatchdogs = () => {
-    if (watchdogTimerRef.current) {
-      clearTimeout(watchdogTimerRef.current);
-      watchdogTimerRef.current = null;
-    }
-    if (navigationWatchdogRef.current) {
-      clearTimeout(navigationWatchdogRef.current);
-      navigationWatchdogRef.current = null;
-    }
-  };
-
-  // ✅ FIX 4: Safe navigation with delay and watchdog
-  const safeNavigate = (path: string) => {
-    clearWatchdogs();
-    
-    console.log(`[LOGIN] Navigating to: ${path}`);
-    
-    // Set navigation watchdog - force redirect if navigation fails
-    navigationWatchdogRef.current = setTimeout(() => {
-      const currentPath = window.location.pathname;
-      if (currentPath === '/auth/login') {
-        console.error('[LOGIN] Navigation watchdog triggered - forcing redirect');
-        window.location.href = path;
-      }
-    }, 1000);
-    
-    // Small delay to let SessionManager process the login
-    setTimeout(() => {
-      if (mountedRef.current) {
-        navigate(path, { replace: true });
-      }
-    }, 100);
-  };
 
   const handleLogin = async () => {
-    // Prevent double-clicks and multiple simultaneous login attempts
+    // Prevent double-clicks
     if (isProcessingRef.current || loadingRef.current) {
-      console.log('[LOGIN] Already processing, ignoring duplicate request');
       return;
     }
 
@@ -143,202 +88,75 @@ const LoginScreen: React.FC = () => {
       return;
     }
 
-    // Clear previous error
     setInlineError('');
-
-    // Set all loading guards
     isProcessingRef.current = true;
     loadingRef.current = true;
     setLoading(true);
-    
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] [LOGIN] Starting authentication flow`);
-    
-    // Set flag to prevent validation during login
     sessionStorage.setItem('login_in_progress', 'true');
 
-    // UI watchdog: force-reset after 35s if something hangs
-    watchdogTimerRef.current = setTimeout(() => {
-      console.error('[LOGIN] WATCHDOG: Login hung for 35s, forcing reset');
-      sessionStorage.removeItem('login_in_progress');
-      if (mountedRef.current) {
-        setLoading(false);
-        setInlineError('Login took too long. Please try again.');
-        toast({
-          title: "Login Timeout",
-          description: "The request took too long. Please check your connection and try again.",
-          variant: "destructive",
-        });
-      }
-      loadingRef.current = false;
-      isProcessingRef.current = false;
-      watchdogTimerRef.current = null;
-    }, 35000);
+    try {
+      // Clear legacy security keys
+      localStorage.removeItem('cryptoflow_lock_state');
+      localStorage.removeItem('user_pin_hash');
+      localStorage.removeItem('user_pin_salt');
+      localStorage.removeItem('biometric_enabled');
+      localStorage.removeItem('biometric_cred_id');
 
-    // Create timeout promise
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Login timeout - please try again')), LOGIN_TIMEOUT)
-    );
+      // Sign in
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      });
 
-    // Create login promise
-    const loginPromise = async () => {
-      try {
-        // STEP 1: Clear any existing session and legacy security keys
-        console.log('[LOGIN] Step 1: Clearing any existing session and legacy keys');
-        await supabase.auth.signOut().catch(() => {
-          // Ignore errors from signOut
-        });
-        
-        // Clear legacy lock/security keys
-        localStorage.removeItem('cryptoflow_lock_state');
-        localStorage.removeItem('user_pin_hash');
-        localStorage.removeItem('user_pin_salt');
-        localStorage.removeItem('biometric_enabled');
-        localStorage.removeItem('biometric_cred_id');
-        
-        // Clear user-scoped security keys
-        const allKeys = Object.keys(localStorage);
-        allKeys.forEach(key => {
-          if (key.includes('security_local') || key.includes('lock_state')) {
-            localStorage.removeItem(key);
-          }
-        });
-
-        console.log('[LOGIN] Step 2: Calling Supabase auth');
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password
-        });
-
-        if (error) {
-          console.error('[LOGIN] Auth error:', error);
-          
-          // Handle common auth errors with friendly messages
-          let userMessage = error.message || "Invalid email or password";
-          
-          if (error.status === 400 || error.message?.toLowerCase().includes('invalid') || error.message?.toLowerCase().includes('credentials')) {
-            userMessage = "Invalid email or password. Please check and try again.";
-          } else if (!navigator.onLine) {
-            userMessage = "You're offline. Please check your connection.";
-          }
-          
-          setInlineError(userMessage);
-          throw error;
+      if (error) {
+        let userMessage = "Invalid email or password";
+        if (error.status === 400 || error.message?.toLowerCase().includes('invalid')) {
+          userMessage = "Invalid email or password. Please check and try again.";
+        } else if (!navigator.onLine) {
+          userMessage = "You're offline. Please check your connection.";
         }
-        console.log('[LOGIN] Step 3: Auth successful');
-
-        if (!data.session) {
-          throw new Error('No session returned');
-        }
-
-        // Use the session from the sign-in response directly (faster than getSession)
-        const verifySession = data.session;
-        const sessionEmail = verifySession?.user?.email?.toLowerCase();
-        const enteredEmail = email.trim().toLowerCase();
-        
-        // Quick session integrity check
-        if (!verifySession || sessionEmail !== enteredEmail) {
-          console.error('[LOGIN] SESSION MISMATCH DETECTED', {
-            enteredEmail,
-            sessionEmail,
-            sessionUserId: verifySession?.user?.id
-          });
-          
-          await supabase.auth.signOut();
-          const { clearAllUserData } = await import('@/utils/clearLegacyStorage');
-          clearAllUserData();
-          
-          setInlineError('Account mismatch detected. Please try signing in again.');
-          throw new Error('Session verification failed');
-        }
-
-        // Update session integrity tracking (non-blocking)
-        const { SessionIntegrityService } = await import('@/services/SessionIntegrityService');
-        SessionIntegrityService.setLastKnownUser(verifySession.user.id);
-
-        // STEP 4: Check if user is admin - run in parallel with profile check
-        console.log('[LOGIN] Step 4: Checking admin role and profile in parallel');
-        const [isAdminData, profile] = await Promise.all([
-          checkAdminWithTimeout(verifySession.user.id),
-          supabase
-            .from('profiles')
-            .select('wallet_address')
-            .eq('user_id', verifySession.user.id)
-            .maybeSingle()
-        ]);
-        
-        if (isAdminData) {
-          console.log('[LOGIN] Admin user detected, checking wallet status');
-          const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
-          const hasWalletInDB = !!profile?.data?.wallet_address;
-          
-          if (!hasLocalWallet && !hasWalletInDB) {
-            console.log('[LOGIN] Admin needs to complete wallet onboarding first');
-            safeNavigate('/onboarding/wallet');
-            return;
-          }
-          
-          console.log('[LOGIN] Admin wallet setup complete, redirecting to admin panel');
-          safeNavigate('/admin');
-          return;
-        }
-
-        console.log('[LOGIN] Step 5: Profile and wallet checks complete');
-        const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
-        const hasWalletInDB = !!profile?.data?.wallet_address;
-        
-        // Non-blocking session conflict check - runs in background
-        if (hasLocalWallet) {
-          console.log('[LOGIN] Step 6: Checking wallet conflicts (non-blocking)');
-          const storedWallet = localStorage.getItem('cryptoflow_wallet');
-          if (storedWallet) {
-            // Run conflict check in background without blocking
-            setTimeout(async () => {
-              try {
-                const walletData = JSON.parse(storedWallet);
-                const { detectAndResolveSessionConflict } = await import('@/utils/sessionConflictDetector');
-                const conflictResult = await detectAndResolveSessionConflict(walletData.address);
-                
-                if (conflictResult.conflict && !conflictResult.resolved) {
-                  console.warn('[LOGIN] Wallet conflict detected, clearing local wallet');
-                  toast({
-                    title: "Wallet Mismatch",
-                    description: "Your wallet belongs to a different account. Please reconnect your wallet.",
-                    variant: "destructive"
-                  });
-                  localStorage.removeItem('cryptoflow_wallet');
-                }
-              } catch (conflictError) {
-                console.error('[LOGIN] Error checking session conflict:', conflictError);
-              }
-            }, 0);
-          }
-        }
-        
-        // ✅ FIX 5: Use centralized route determination
-        console.log('[LOGIN] Step 7: Determining navigation path');
-        const targetRoute = await determinePostLoginRoute(verifySession.user.id);
-        
-        console.log('[LOGIN] Step 8: Target route determined:', targetRoute);
-        
-        // ✅ FIX 6: Use safe navigation with watchdog
-        safeNavigate(targetRoute);
-        
-        console.log('[LOGIN] Step 9: Login flow complete');
-      } catch (error: any) {
-        console.error('[LOGIN] Error during login flow:', error);
-        
-        // Set inline error if not already set
-        if (!inlineError && mountedRef.current) {
-          setInlineError(error.message || "Invalid email or password");
-        }
+        setInlineError(userMessage);
         throw error;
       }
-    };
 
-    try {
-      // Race between login and timeout
-      await Promise.race([loginPromise(), timeoutPromise]);
+      if (!data.session) {
+        throw new Error('No session returned');
+      }
+
+      // Session integrity check
+      const sessionEmail = data.session.user.email?.toLowerCase();
+      const enteredEmail = email.trim().toLowerCase();
+      if (sessionEmail !== enteredEmail) {
+        await supabase.auth.signOut();
+        setInlineError('Account mismatch detected. Please try again.');
+        throw new Error('Session verification failed');
+      }
+
+      // ✅ Immediately stop loading and navigate to /app/home
+      setLoading(false);
+      loadingRef.current = false;
+      isProcessingRef.current = false;
+      sessionStorage.removeItem('login_in_progress');
+      
+      navigate('/app/home', { replace: true });
+      
+      toast({
+        title: "Signed in successfully",
+        description: "Welcome back!",
+      });
+
+      // ✅ Run admin check in background (non-blocking)
+      setTimeout(async () => {
+        try {
+          const isAdmin = await checkAdminWithTimeout(data.session.user.id, 2000);
+          if (isAdmin && mountedRef.current) {
+            navigate('/admin', { replace: true });
+          }
+        } catch (err) {
+          // Silent fail - user already at /app/home
+        }
+      }, 0);
+
     } catch (error: any) {
       console.error('[LOGIN] Login failed:', error);
       if (mountedRef.current) {
@@ -349,22 +167,12 @@ const LoginScreen: React.FC = () => {
         });
       }
     } finally {
-      // ✅ FIX 7: Clear all watchdogs
-      clearWatchdogs();
-      
-      // Always clean up, even if component unmounted
       sessionStorage.removeItem('login_in_progress');
-      
-      // Only update state if still mounted
       if (mountedRef.current) {
         setLoading(false);
       }
-      
-      // Always reset refs
       loadingRef.current = false;
       isProcessingRef.current = false;
-      
-      console.log('[LOGIN] Cleanup complete');
     }
   };
 
