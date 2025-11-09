@@ -13,15 +13,8 @@ interface ScrollingAnnouncementProps {
  * Fetches active announcements from database
  */
 export function ScrollingAnnouncement({ className }: ScrollingAnnouncementProps) {
-  // Check for reduced motion preference
-  const prefersReducedMotion = typeof window !== 'undefined' 
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
-    : false;
-  // Disable scrolling on small screens to avoid flicker
-  const isMobile = typeof window !== 'undefined'
-    ? window.matchMedia('(max-width: 768px)').matches
-    : true;
-  const enableScroll = !prefersReducedMotion && !isMobile;
+  // Disable scrolling animation to prevent flicker on all devices
+  const enableScroll = false;
 
   const { data: announcement } = useQuery({
     queryKey: ['scrolling-announcement'],
@@ -55,7 +48,6 @@ export function ScrollingAnnouncement({ className }: ScrollingAnnouncementProps)
         "border border-primary/30",
         "shadow-lg shadow-primary/10",
         "backdrop-blur-xl",
-        "animate-fade-in",
         className
       )}
       data-testid="scrolling-announcement"

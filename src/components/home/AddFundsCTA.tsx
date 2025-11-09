@@ -19,10 +19,9 @@ export function AddFundsCTA({ onPress, className }: AddFundsCTAProps) {
         "w-full h-16 rounded-2xl relative overflow-hidden",
         "bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%]",
         "text-white font-heading font-bold text-lg",
-        "transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-        "hover:bg-[position:100%_0] active:scale-[0.98]",
+        "transition-colors duration-200 ease-out",
+        "hover:bg-[position:100%_0]",
         "focus:outline-none focus:ring-2 focus:ring-primary/50",
-        "shadow-glow-primary",
         "group",
         className
       )}

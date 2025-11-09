@@ -39,13 +39,7 @@ export function HomePageRebuilt() {
 
   const BSK_TO_INR = 1; // 1 BSK = 1 INR
 
-  React.useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        console.info('USR_WALLET_LINK_V3', { user: data.user.id });
-      }
-    });
-  }, []);
+  // Removed extra getUser call to prevent redundant /user requests
 
   // Fetch real activity from ledger tables
   const { data: recentActivity, refetch: refetchActivity } = useQuery({
@@ -251,7 +245,7 @@ export function HomePageRebuilt() {
                 <button
                   key={prog.id}
                   onClick={() => navigate(prog.route)}
-                  className="p-4 rounded-xl bg-card border border-border hover:bg-accent hover:shadow-md transition-all active:scale-95 text-left"
+                  className="p-4 rounded-xl bg-card border border-border hover:bg-accent transition-colors text-left"
                 >
                   <div className="flex flex-col gap-3">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">

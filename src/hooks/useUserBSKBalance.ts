@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuthUser } from '@/hooks/useAuthUser';
 
 interface BSKBalance {
   withdrawable_balance: number;
@@ -23,7 +24,7 @@ interface BSKBalanceStats {
 
 export const useUserBSKBalance = () => {
   const queryClient = useQueryClient();
-  const [user, setUser] = useState<any>(null);
+  const { user } = useAuthUser();
   const [balance, setBalance] = useState<BSKBalanceStats>({
     withdrawable: 0,
     holding: 0,
@@ -37,20 +38,8 @@ export const useUserBSKBalance = () => {
   const [initialLoad, setInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get current user
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+  // Using useAuthUser() as the single source of truth for user
+  // Avoid direct supabase.auth calls here to prevent extra /user requests
 
   const fetchBalance = async () => {
     // Auth-first: Use user.id as single source of truth

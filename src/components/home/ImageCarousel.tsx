@@ -86,18 +86,9 @@ export function ImageCarousel() {
       <Carousel
         opts={{
           align: "start",
-          loop: true,
+          loop: false,
         }}
-        plugins={
-          prefersReducedMotion 
-            ? [] 
-            : [
-                Autoplay({
-                  delay: 8000,
-                  stopOnInteraction: true,
-                }),
-              ]
-        }
+        plugins={[]}
         className="w-full"
       >
         <CarouselContent>
