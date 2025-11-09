@@ -31,40 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authInitializing, setAuthInitializing] = useState(true);
-  const [roleChecking, setRoleChecking] = useState(false);
 
-  // Loading is true if either auth is initializing OR role is being checked
-  const loading = authInitializing || roleChecking;
+  // ✅ Loading is only auth initialization - admin check runs silently
+  const loading = authInitializing;
 
-  const checkAdminRole = async (userId: string) => {
-    setRoleChecking(true);
-    try {
-      console.log('Checking admin role for user:', userId);
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Admin role check error:', error);
-        setIsAdmin(false);
-        return false;
-      }
-      
-      const isUserAdmin = !!data;
-      console.log('Admin role check result:', isUserAdmin);
-      setIsAdmin(isUserAdmin);
-      return isUserAdmin;
-    } catch (error) {
-      console.error('Admin role check failed:', error);
-      setIsAdmin(false);
-      return false;
-    } finally {
-      setRoleChecking(false);
-    }
-  };
+  // ✅ Removed - admin check now runs inline without blocking
 
   useEffect(() => {
     // Set up auth state listener - server-side validation only
@@ -75,17 +46,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Check admin role - loading won't be false until this completes
-          setTimeout(() => {
-            checkAdminRole(session.user!.id);
+          // ✅ Set auth as ready immediately - don't block on admin check
+          setAuthInitializing(false);
+          
+          // ✅ Check admin role silently in background (non-blocking)
+          setTimeout(async () => {
+            try {
+              const { data } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', session.user!.id)
+                .eq('role', 'admin')
+                .maybeSingle();
+              setIsAdmin(!!data);
+            } catch {
+              setIsAdmin(false);
+            }
           }, 0);
         } else {
           // Clear admin status on logout
           setIsAdmin(false);
-          setRoleChecking(false);
+          setAuthInitializing(false);
         }
-        
-        setAuthInitializing(false);
       }
     );
 
@@ -96,10 +78,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        await checkAdminRole(session.user.id);
+        // ✅ Set auth as ready immediately
+        setAuthInitializing(false);
+        
+        // ✅ Check admin role silently in background
+        (async () => {
+          try {
+            const { data } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .eq('role', 'admin')
+              .maybeSingle();
+            setIsAdmin(!!data);
+          } catch {
+            setIsAdmin(false);
+          }
+        })();
+      } else {
+        setAuthInitializing(false);
       }
-      
-      setAuthInitializing(false);
     });
 
     return () => subscription.unsubscribe();

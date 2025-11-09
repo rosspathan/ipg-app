@@ -132,20 +132,29 @@ const LoginScreen: React.FC = () => {
         throw new Error('Session verification failed');
       }
 
-      // ✅ Immediately stop loading and navigate to /app/home
-      setLoading(false);
-      loadingRef.current = false;
-      isProcessingRef.current = false;
-      sessionStorage.removeItem('login_in_progress');
-      
-      navigate('/app/home', { replace: true });
+      // ✅ Navigate FIRST with state flag
+      navigate('/app/home', { 
+        replace: true,
+        state: { fromLogin: true }
+      });
       
       toast({
         title: "Signed in successfully",
         description: "Welcome back!",
       });
 
-      // ✅ Run admin check in background (non-blocking)
+      // ✅ Clear flag AFTER navigation (in next tick)
+      setTimeout(() => {
+        sessionStorage.removeItem('login_in_progress');
+      }, 100);
+
+      // ✅ Failsafe: clear login flag after 5s no matter what
+      setTimeout(() => {
+        sessionStorage.removeItem('login_in_progress');
+        console.log('[LOGIN] Failsafe: cleared login_in_progress flag');
+      }, 5000);
+
+      // ✅ Check admin role silently in background
       setTimeout(async () => {
         try {
           const isAdmin = await checkAdminWithTimeout(data.session.user.id, 2000);
@@ -156,6 +165,11 @@ const LoginScreen: React.FC = () => {
           // Silent fail - user already at /app/home
         }
       }, 0);
+      
+      // ✅ Clear loading states immediately after navigation
+      setLoading(false);
+      loadingRef.current = false;
+      isProcessingRef.current = false;
 
     } catch (error: any) {
       console.error('[LOGIN] Login failed:', error);

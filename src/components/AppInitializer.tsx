@@ -41,6 +41,15 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
 
     const initializeApp = async () => {
       try {
+        // ✅ Check if coming from login - skip all checks
+        const fromLogin = location.state?.fromLogin;
+        if (fromLogin) {
+          console.log('[AppInitializer] Coming from login - skipping checks');
+          sessionStorage.setItem('ipg_init_complete', Date.now().toString());
+          setIsChecking(false);
+          return;
+        }
+
         // Skip if login is in progress
         if (sessionStorage.getItem('login_in_progress')) {
           setIsChecking(false);
