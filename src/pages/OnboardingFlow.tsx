@@ -5,20 +5,17 @@ import { useAuthUser } from '@/hooks/useAuthUser';
 import WalletChoiceScreen from './onboarding/WalletChoiceScreen';
 import CreateWalletScreen from './onboarding/CreateWalletScreen';
 import ImportWalletScreen from './onboarding/ImportWalletScreen';
-import PinSetupScreen from './onboarding/PinSetupScreen';
-import BiometricSetupScreen from './onboarding/BiometricSetupScreen';
 import SuccessCelebrationScreen from './onboarding/SuccessCelebrationScreen';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
 
 /**
- * OnboardingFlow - Post-authentication wallet and security setup
+ * OnboardingFlow - Post-authentication wallet setup
  * 
  * New Flow (after user signs up/logs in):
  * 1. /onboarding/wallet -> Wallet creation/import
- * 2. /onboarding/security -> PIN + biometric setup
- * 3. Complete -> /app/home
+ * 2. Complete -> /app/home
  */
 const OnboardingFlow: React.FC = () => {
   const navigate = useNavigate();
@@ -28,8 +25,6 @@ const OnboardingFlow: React.FC = () => {
     setStep,
     setWalletInfo,
     setReferralCode,
-    setPinHash,
-    markBiometricSetup,
     completeOnboarding
   } = useOnboarding();
 
@@ -54,12 +49,8 @@ const OnboardingFlow: React.FC = () => {
       targetStep = 'create-wallet';
     } else if (path === '/onboarding/wallet/import') {
       targetStep = 'import-wallet';
-    } else if (path.includes('/onboarding/biometric')) {
-      targetStep = 'biometric-setup';
     } else if (path.includes('/onboarding/success')) {
       targetStep = 'success';
-    } else if (path.includes('/onboarding/security')) {
-      targetStep = 'pin-setup';
     } else {
       // Default to wallet choice
       targetStep = 'wallet-choice';
@@ -76,22 +67,14 @@ const OnboardingFlow: React.FC = () => {
 
   const handleWalletCreated = (wallet: any) => {
     setWalletInfo(wallet);
-    navigate('/onboarding/security');
+    // Skip PIN setup, go directly to success
+    setStep('success');
+    navigate('/onboarding/success');
   };
   
   const handleWalletImported = (wallet: any) => {
     setWalletInfo(wallet);
-    navigate('/onboarding/security');
-  };
-
-  const handlePinSetup = (pinHash: string) => {
-    setPinHash(pinHash);
-    setStep('biometric-setup');
-    navigate('/onboarding/biometric');
-  };
-
-  const handleBiometricSetup = (success: boolean) => {
-    markBiometricSetup(success);
+    // Skip PIN setup, go directly to success
     setStep('success');
     navigate('/onboarding/success');
   };
@@ -148,23 +131,6 @@ const OnboardingFlow: React.FC = () => {
         <ImportWalletScreen
           onWalletImported={handleWalletImported}
           onBack={() => { setStep('wallet-choice'); navigate('/onboarding/wallet'); }}
-        />
-      );
-    
-    case 'pin-setup':
-      return (
-        <PinSetupScreen
-          onPinSetup={handlePinSetup}
-          onBack={() => { setStep('wallet-choice'); navigate('/onboarding/wallet'); }}
-        />
-      );
-    
-    case 'biometric-setup':
-      return (
-        <BiometricSetupScreen
-          onBiometricSetup={handleBiometricSetup}
-          onSkip={() => handleBiometricSetup(false)}
-          onBack={() => setStep('pin-setup')}
         />
       );
     
