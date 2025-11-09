@@ -122,7 +122,7 @@ return (
               onClick={handleFABPress}
               className={cn(
                 "transition-all duration-300",
-                isSpeedDialOpen ? "scale-110 rotate-180" : "animate-glow-pulse"
+                isSpeedDialOpen ? "scale-110 rotate-180" : ""
               )}
             >
               <img 

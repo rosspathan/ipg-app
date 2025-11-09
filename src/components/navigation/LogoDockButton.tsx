@@ -32,24 +32,21 @@ export function LogoDockButton({ onClick, className }: LogoDockButtonProps) {
         "shadow-[0_0_32px_rgba(124,77,255,0.7),0_0_64px_rgba(124,77,255,0.5),0_-8px_24px_rgba(124,77,255,0.4)]",
         "border-4 border-background/80",
         "transition-all duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+        // Remove continuous breathing animation to prevent flicker
         "hover:scale-110 hover:shadow-[0_0_40px_rgba(124,77,255,0.9),0_0_80px_rgba(124,77,255,0.6),0_-12px_32px_rgba(124,77,255,0.5)]",
         "active:scale-95",
         "focus:outline-none focus:ring-4 focus:ring-primary/50 focus:ring-offset-4 focus:ring-offset-background",
-        "animate-[breathing_3s_ease-in-out_infinite]",
         className
       )}
       style={{
-        transform: 'translateY(-20px)' // Elevate above nav bar
+        transform: 'translateY(-20px)'
       }}
       aria-label="Quick Actions"
       data-testid="dock-logo-button"
     >
-      {/* Outer breathing glow - enhanced */}
+      {/* Outer glow (static, no animation) */}
       <div 
-        className="absolute -inset-4 rounded-full blur-2xl opacity-80 bg-gradient-to-br from-primary via-secondary to-accent animate-[breathing_3s_ease-in-out_infinite]"
-        style={{
-          animationDelay: '0.5s'
-        }}
+        className="absolute -inset-4 rounded-full blur-2xl opacity-60 bg-gradient-to-br from-primary via-secondary to-accent"
       />
 
       {/* Inner backdrop with stronger border */}
