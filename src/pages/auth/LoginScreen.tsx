@@ -140,7 +140,7 @@ const LoginScreen: React.FC = () => {
       isProcessingRef.current = false;
 
       // ✅ Navigate immediately
-      navigate('/app/home', { 
+      navigate('/dashboard', { 
         replace: true,
         state: { fromLogin: true }
       });
@@ -159,7 +159,7 @@ const LoginScreen: React.FC = () => {
           const isAdmin = await checkAdminWithTimeout(data.session.user.id, 2000);
           if (isAdmin && mountedRef.current) {
             console.log('[LOGIN] Admin detected, redirecting to admin...');
-            navigate('/admin', { replace: true });
+            navigate('/admin/dashboard', { replace: true });
           }
         } catch (err) {
           console.log('[LOGIN] Admin check failed, user stays at /app/home');
