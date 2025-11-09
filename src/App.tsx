@@ -379,7 +379,6 @@ function AppContent() {
           <Route path="/" element={<LandingScreen />} />
           <Route path="/splash" element={<SplashScreen />} />
           <Route path="/download" element={<DownloadPage />} />
-          <Route path="/dashboard" element={<Navigate to="/app/home" replace />} />
           <Route path="/deeplink/r/:code" element={<DeepLinkResolver />} />
 
           {/* Auth Routes - New Clean Flow */}
