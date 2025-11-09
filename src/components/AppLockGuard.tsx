@@ -24,6 +24,12 @@ export function AppLockGuard({ children }: AppLockGuardProps) {
       return;
     }
 
+    // Skip immediate check right after login to prevent home flicker
+    const fromLogin = (location.state as any)?.fromLogin;
+    if (fromLogin) {
+      return;
+    }
+
     // Only apply lock guard if user is authenticated and state is hydrated
     if (!user || !hydrated) {
       return;

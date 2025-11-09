@@ -139,6 +139,27 @@ const LoginScreen: React.FC = () => {
       loadingRef.current = false;
       isProcessingRef.current = false;
 
+      // ✅ Mark app as unlocked for this user (prevents immediate lock flicker on /app/home)
+      try {
+        const userId = data.session.user.id;
+        const storageKey = `cryptoflow_lock_state_${userId}`;
+        const existing = localStorage.getItem(storageKey);
+        const baseState = existing ? JSON.parse(existing) : {};
+        const unlockedState = {
+          ...baseState,
+          isUnlocked: true,
+          lastUnlockAt: Date.now(),
+          failedAttempts: 0,
+          lockedUntil: null,
+          // Provide a sane default if missing; use 30min to match hook default
+          sessionLockMinutes: baseState.sessionLockMinutes ?? 30,
+        };
+        localStorage.setItem(storageKey, JSON.stringify(unlockedState));
+        localStorage.setItem('cryptoflow_unlocked', 'true');
+      } catch (e) {
+        console.warn('[LOGIN] Failed to persist unlock state (non-blocking):', e);
+      }
+
       // ✅ Navigate immediately
       navigate('/app/home', { 
         replace: true,
