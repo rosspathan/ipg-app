@@ -76,10 +76,11 @@ export function BskCardCompact({
       className={cn(
         "p-4 rounded-2xl border-2 space-y-3",
         "glass-card",
-        "transition-all duration-300 ease-out",
+        "transition-colors duration-200 ease-out",
         "flex flex-col h-full",
-        "hover:shadow-elevated hover:scale-[1.02] active:scale-[0.99]",
-        "animate-fade-in-scale",
+        // Remove heavy transform/shadow animations to prevent flicker
+        // "hover:shadow-elevated hover:scale-[1.02] active:scale-[0.99]",
+        // "animate-fade-in-scale",
         "focus-within:ring-2 focus-within:ring-offset-2",
         isWithdrawable 
           ? "bg-gradient-to-br from-success/10 via-success/5 to-transparent border-success/30 hover:border-success/50 focus-within:ring-success/30" 
@@ -112,7 +113,7 @@ export function BskCardCompact({
           variant="ghost"
           size="sm"
           onClick={() => setIsPrivate(!isPrivate)}
-          className="h-8 w-8 p-0 hover:bg-muted/20 transition-all duration-200 hover:scale-110 flex-shrink-0 touch-manipulation"
+          className="h-8 w-8 p-0 hover:bg-muted/20 transition-colors duration-200 flex-shrink-0 touch-manipulation"
           aria-label={isPrivate ? "Show balance" : "Hide balance"}
           aria-pressed={isPrivate}
         >
@@ -141,7 +142,7 @@ export function BskCardCompact({
         </div>
         {/* Subtle glow behind amount */}
         <div className={cn(
-          "absolute -inset-4 blur-2xl opacity-20 pointer-events-none animate-pulse-slow",
+          "absolute -inset-4 blur-2xl opacity-10 pointer-events-none",
           isWithdrawable ? "bg-success" : "bg-primary"
         )} aria-hidden="true" />
       </div>
@@ -158,7 +159,7 @@ export function BskCardCompact({
               "border-success/40 hover:border-success/60 hover:bg-success/15",
               "text-success font-body font-semibold text-xs",
               "focus:ring-2 focus:ring-success/30",
-              "transition-all duration-200 hover:scale-105 active:scale-95",
+              "transition-colors duration-200",
               "touch-manipulation"
             )}
             aria-label="Withdraw BSK"
@@ -175,7 +176,7 @@ export function BskCardCompact({
               "border-primary/40 hover:border-primary/60 hover:bg-primary/15",
               "text-primary font-body font-semibold text-xs",
               "focus:ring-2 focus:ring-primary/30",
-              "transition-all duration-200 hover:scale-105 active:scale-95",
+              "transition-colors duration-200",
               "touch-manipulation"
             )}
             aria-label="Transfer BSK"
@@ -189,13 +190,13 @@ export function BskCardCompact({
           onClick={onViewSchedule}
           variant="outline"
           size="sm"
-          className={cn(
-            "w-full h-9",
-            "border-primary/40 hover:border-primary/60 hover:bg-primary/15",
-            "text-primary font-body font-semibold text-xs",
-            "focus:ring-2 focus:ring-primary/30",
-            "transition-all duration-200 active:scale-95"
-          )}
+            className={cn(
+              "w-full h-9",
+              "border-primary/40 hover:border-primary/60 hover:bg-primary/15",
+              "text-primary font-body font-semibold text-xs",
+              "focus:ring-2 focus:ring-primary/30",
+              "transition-colors duration-200"
+            )}
         >
           <Calendar className="h-3.5 w-3.5 mr-1.5" />
           View Schedule
