@@ -132,47 +132,51 @@ const LoginScreen: React.FC = () => {
         throw new Error('Session verification failed');
       }
 
-      // ✅ Navigate FIRST with state flag
+      // ✅ Auth successful - clear flags and navigate
+      console.log('[LOGIN] Auth successful, redirecting...');
+      sessionStorage.removeItem('login_in_progress');
+      setLoading(false);
+      loadingRef.current = false;
+      isProcessingRef.current = false;
+
+      // ✅ Navigate immediately
       navigate('/app/home', { 
         replace: true,
         state: { fromLogin: true }
       });
       
-      toast({
-        title: "Signed in successfully",
-        description: "Welcome back!",
-      });
-
-      // ✅ Clear flag AFTER navigation (in next tick)
+      // ✅ Show success toast (non-blocking)
       setTimeout(() => {
-        sessionStorage.removeItem('login_in_progress');
+        toast({
+          title: "Signed in successfully",
+          description: "Welcome back!",
+        });
       }, 100);
 
-      // ✅ Failsafe: clear login flag after 5s no matter what
-      setTimeout(() => {
-        sessionStorage.removeItem('login_in_progress');
-        console.log('[LOGIN] Failsafe: cleared login_in_progress flag');
-      }, 5000);
-
-      // ✅ Check admin role silently in background
+      // ✅ Check admin role silently in background (completely async)
       setTimeout(async () => {
         try {
           const isAdmin = await checkAdminWithTimeout(data.session.user.id, 2000);
           if (isAdmin && mountedRef.current) {
+            console.log('[LOGIN] Admin detected, redirecting to admin...');
             navigate('/admin', { replace: true });
           }
         } catch (err) {
-          // Silent fail - user already at /app/home
+          console.log('[LOGIN] Admin check failed, user stays at /app/home');
         }
       }, 0);
-      
-      // ✅ Clear loading states immediately after navigation
-      setLoading(false);
-      loadingRef.current = false;
-      isProcessingRef.current = false;
+
+      return; // Exit early to avoid finally block
 
     } catch (error: any) {
       console.error('[LOGIN] Login failed:', error);
+      
+      // ✅ Clear loading states on error
+      sessionStorage.removeItem('login_in_progress');
+      setLoading(false);
+      loadingRef.current = false;
+      isProcessingRef.current = false;
+      
       if (mountedRef.current) {
         toast({
           title: "Login Failed",
@@ -180,13 +184,6 @@ const LoginScreen: React.FC = () => {
           variant: "destructive"
         });
       }
-    } finally {
-      sessionStorage.removeItem('login_in_progress');
-      if (mountedRef.current) {
-        setLoading(false);
-      }
-      loadingRef.current = false;
-      isProcessingRef.current = false;
     }
   };
 
