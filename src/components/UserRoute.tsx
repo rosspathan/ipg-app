@@ -7,8 +7,13 @@ interface UserRouteProps {
 }
 
 const UserRoute = ({ children }: UserRouteProps) => {
-  const { session } = useAuthUser();
+  const { session, loading } = useAuthUser();
   const location = useLocation();
+
+  // Wait for auth to initialize to avoid false redirects after fresh sign-in
+  if (loading) {
+    return null;
+  }
 
   if (!session) {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
