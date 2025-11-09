@@ -552,45 +552,138 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
             {(compact ? transactions.slice(0, 5) : transactions).map(tx => {
               const displayInfo = getTransactionDisplay(tx);
               const IconComponent = displayInfo.icon;
+              const isIncoming = tx.amount > 0;
+              const senderName = tx.metadata?.sender_display_name || tx.metadata?.sender_username || '-';
+              const recipientName = tx.metadata?.recipient_display_name || tx.metadata?.recipient_username || '-';
+              const transactionRef = tx.metadata?.transaction_ref?.slice(0, 8) || tx.id.slice(0, 8);
               
               return (
-                <Card key={tx.id} className="p-4 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => handleViewDetails(tx)}>
-                  <div className="flex items-start gap-3">
-                    {/* Icon */}
-                    <div className={cn("w-12 h-12 rounded-full flex items-center justify-center shrink-0", displayInfo.bgColor)}>
-                      <IconComponent className={cn("w-6 h-6", displayInfo.color)} />
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start mb-1">
-                        <p className="font-semibold text-sm">{displayInfo.label}</p>
-                        <p className={cn("text-lg font-bold", tx.amount > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
-                          {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                        </p>
+                <Card 
+                  key={tx.id} 
+                  className="p-4 hover:bg-muted/50 transition-all cursor-pointer border-border/50 shadow-sm" 
+                  onClick={() => handleViewDetails(tx)}
+                >
+                  <div className="space-y-3">
+                    {/* Header: Icon + Type + Amount */}
+                    <div className="flex items-start gap-3">
+                      <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center shrink-0 shadow-sm", displayInfo.bgColor)}>
+                        <IconComponent className={cn("w-6 h-6", displayInfo.color)} />
                       </div>
                       
-                      <p className="text-xs text-muted-foreground truncate mb-2">{displayInfo.secondaryInfo}</p>
-                      
-                      {/* Memo if exists */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <div className="flex-1">
+                            <p className="font-bold text-sm leading-tight">{displayInfo.label}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {tx.transaction_type.replace(/_/g, ' ').toUpperCase()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className={cn(
+                              "text-xl font-bold tabular-nums",
+                              isIncoming ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                            )}>
+                              {isIncoming ? '+' : ''}{Math.abs(tx.amount).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            </p>
+                            <p className="text-xs text-muted-foreground font-medium">BSK</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Transaction Details */}
+                    <div className="space-y-2 bg-muted/30 rounded-lg p-3">
+                      {/* From → To */}
+                      {(tx.transaction_type === 'transfer_in' || tx.transaction_type === 'transfer_out') && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-muted-foreground w-12">From:</span>
+                            <span className="text-xs font-semibold truncate">
+                              {tx.transaction_type === 'transfer_out' ? 'You' : senderName}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-muted-foreground w-12">To:</span>
+                            <span className="text-xs font-semibold truncate">
+                              {tx.transaction_type === 'transfer_in' ? 'You' : recipientName}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <span className="text-[10px]">
+                              {capitalizeWallet(tx.metadata?.from_wallet_type || tx.balance_type)}
+                            </span>
+                            <span>→</span>
+                            <span className="text-[10px]">
+                              {capitalizeWallet(tx.metadata?.to_wallet_type || tx.balance_type)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Date & Time */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs">📅</span>
+                          <span className="text-xs font-medium">{format(new Date(tx.created_at), 'MMM dd, yyyy')}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs">🕐</span>
+                          <span className="text-xs text-muted-foreground">{format(new Date(tx.created_at), 'hh:mm:ss a')}</span>
+                        </div>
+                      </div>
+
+                      {/* Transaction ID */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">ID:</span>
+                        <code className="text-xs font-mono bg-background px-2 py-0.5 rounded">{transactionRef}</code>
+                      </div>
+
+                      {/* Memo */}
                       {(tx.metadata as any)?.memo && (
-                        <p className="text-xs italic text-muted-foreground mb-2">"{(tx.metadata as any).memo}"</p>
+                        <div className="pt-1 border-t border-border/50">
+                          <p className="text-xs italic text-muted-foreground">
+                            💬 "{(tx.metadata as any).memo}"
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer: Badges */}
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge 
+                        variant={tx.balance_type === 'withdrawable' ? 'default' : 'secondary'}
+                        className={cn(
+                          "text-xs",
+                          tx.balance_type === 'withdrawable' 
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
+                            : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                        )}
+                      >
+                        {tx.balance_type === 'withdrawable' ? '💰 Withdrawable' : '🔒 Holding'}
+                      </Badge>
+                      
+                      {tx.metadata?.status ? (
+                        getStatusBadge(tx.metadata.status)
+                      ) : (
+                        <Badge className="text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                          ✓ Completed
+                        </Badge>
                       )}
                       
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(tx.created_at), 'MMM dd, hh:mm a')}
-                        </span>
-                        <div className="flex gap-2 items-center">
-                          <Badge variant={tx.balance_type === 'withdrawable' ? 'default' : 'secondary'} className="text-xs">
-                            {tx.balance_type === 'withdrawable' ? '💰 Withdrawable' : '🔒 Holding'}
-                          </Badge>
-                          {isTransferTransaction(tx) && (
-                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); }}>
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
+                      <div className="flex gap-1 ml-auto" onClick={(e) => e.stopPropagation()}>
+                        {isTransferTransaction(tx) && (
+                          <TransferReceiptButton 
+                            transaction={{
+                              reference_id: tx.metadata?.transaction_ref || tx.id,
+                              created_at: tx.created_at,
+                              amount: tx.amount,
+                              transaction_type: tx.transaction_type,
+                              metadata: tx.metadata,
+                            }} 
+                            variant="ghost" 
+                            size="sm"
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -602,87 +695,205 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
           // Desktop Table View
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="w-14"></TableHead>
-                <TableHead>Type & Details</TableHead>
-                <TableHead>Date & Time</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">Status & Type</TableHead>
-                <TableHead className="w-24"></TableHead>
+              <TableRow className="bg-muted/30 border-b-2 border-border">
+                <TableHead className="w-12"></TableHead>
+                <TableHead className="font-bold">Transaction Type</TableHead>
+                <TableHead className="font-bold">From → To</TableHead>
+                <TableHead className="font-bold">Date & Time</TableHead>
+                <TableHead className="font-bold">Transaction ID</TableHead>
+                <TableHead className="text-right font-bold">Amount</TableHead>
+                <TableHead className="text-center font-bold">Balance Type</TableHead>
+                <TableHead className="text-center font-bold">Status</TableHead>
+                <TableHead className="w-20 text-center font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(compact ? transactions.slice(0, 5) : transactions).map((tx) => {
                 const displayInfo = getTransactionDisplay(tx);
                 const IconComponent = displayInfo.icon;
+                const isIncoming = tx.amount > 0;
+                
+                // Extract sender and recipient info
+                const senderName = tx.metadata?.sender_display_name || tx.metadata?.sender_username || tx.metadata?.sender_email || '-';
+                const recipientName = tx.metadata?.recipient_display_name || tx.metadata?.recipient_username || tx.metadata?.recipient_email || '-';
+                const transactionRef = tx.metadata?.transaction_ref?.slice(0, 8) || tx.id.slice(0, 8);
 
                 return (
-                  <TableRow key={tx.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => handleViewDetails(tx)}>
+                  <TableRow 
+                    key={tx.id} 
+                    className="hover:bg-muted/50 cursor-pointer border-b border-border/50 transition-colors"
+                    onClick={() => handleViewDetails(tx)}
+                  >
                     {/* Icon Column */}
-                    <TableCell className="w-14">
-                      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", displayInfo.bgColor)}>
+                    <TableCell className="w-12">
+                      <div className={cn(
+                        "w-10 h-10 rounded-lg flex items-center justify-center shadow-sm",
+                        displayInfo.bgColor
+                      )}>
                         <IconComponent className={cn("w-5 h-5", displayInfo.color)} />
                       </div>
                     </TableCell>
                     
-                    {/* Type & Details Column */}
+                    {/* Transaction Type Column */}
                     <TableCell>
-                      <div className="space-y-1">
-                        <p className="font-semibold text-sm">{displayInfo.label}</p>
-                        <p className="text-xs text-muted-foreground">{displayInfo.secondaryInfo}</p>
+                      <div className="space-y-1 max-w-[200px]">
+                        <p className="font-semibold text-sm leading-tight">{displayInfo.label}</p>
+                        <p className="text-xs text-muted-foreground leading-tight">
+                          {tx.transaction_type.replace(/_/g, ' ').toUpperCase()}
+                        </p>
                         {(tx.metadata as any)?.memo && (
-                          <p className="text-xs italic text-muted-foreground mt-1">"{(tx.metadata as any).memo}"</p>
+                          <p className="text-xs italic text-muted-foreground mt-1 line-clamp-2">
+                            💬 "{(tx.metadata as any).memo}"
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    {/* From → To Column */}
+                    <TableCell>
+                      <div className="space-y-1 min-w-[180px]">
+                        {tx.transaction_type === 'transfer_in' || tx.transaction_type === 'transfer_out' ? (
+                          <>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-medium text-muted-foreground">From:</span>
+                              <span className="text-xs font-semibold text-foreground truncate max-w-[140px]">
+                                {tx.transaction_type === 'transfer_out' ? 'You' : senderName}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-medium text-muted-foreground">To:</span>
+                              <span className="text-xs font-semibold text-foreground truncate max-w-[140px]">
+                                {tx.transaction_type === 'transfer_in' ? 'You' : recipientName}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <span className="text-[10px]">
+                                {capitalizeWallet(tx.metadata?.from_wallet_type || tx.balance_type)}
+                              </span>
+                              <span>→</span>
+                              <span className="text-[10px]">
+                                {capitalizeWallet(tx.metadata?.to_wallet_type || tx.balance_type)}
+                              </span>
+                            </div>
+                          </>
+                        ) : tx.transaction_type === 'withdrawal' ? (
+                          <>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-medium text-muted-foreground">From:</span>
+                              <span className="text-xs font-semibold">Your Account</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-medium text-muted-foreground">To:</span>
+                              <span className="text-xs font-semibold truncate max-w-[140px]">
+                                {tx.metadata?.bank_name || tx.metadata?.crypto_symbol || 'External'}
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-muted-foreground">
+                              {displayInfo.secondaryInfo}
+                            </span>
+                          </div>
                         )}
                       </div>
                     </TableCell>
                     
                     {/* Date & Time Column */}
                     <TableCell>
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-medium">{format(new Date(tx.created_at), 'MMM dd, yyyy')}</p>
-                        <p className="text-xs text-muted-foreground">{format(new Date(tx.created_at), 'hh:mm a')}</p>
+                      <div className="space-y-1 min-w-[120px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-muted-foreground">📅</span>
+                          <p className="text-sm font-medium">{format(new Date(tx.created_at), 'MMM dd, yyyy')}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-muted-foreground">🕐</span>
+                          <p className="text-xs text-muted-foreground">{format(new Date(tx.created_at), 'hh:mm:ss a')}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    {/* Transaction ID Column */}
+                    <TableCell>
+                      <div className="space-y-1">
+                        <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
+                          {transactionRef}
+                        </code>
+                        <p className="text-[10px] text-muted-foreground">
+                          {tx.metadata?.transaction_ref ? 'Ref: ' + tx.metadata.transaction_ref.slice(0, 8) : ''}
+                        </p>
                       </div>
                     </TableCell>
                     
                     {/* Amount Column */}
                     <TableCell className="text-right">
-                      <div className="space-y-0.5">
+                      <div className="space-y-1">
                         <p className={cn(
-                          "text-lg font-bold",
-                          tx.amount > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                          "text-xl font-bold tabular-nums",
+                          isIncoming 
+                            ? "text-green-600 dark:text-green-400" 
+                            : "text-red-600 dark:text-red-400"
                         )}>
-                          {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {isIncoming ? '+' : ''}{Math.abs(tx.amount).toLocaleString(undefined, { 
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2 
+                          })}
                         </p>
-                        <p className="text-xs text-muted-foreground">BSK</p>
+                        <p className="text-xs font-medium text-muted-foreground">BSK</p>
                       </div>
                     </TableCell>
                     
-                    {/* Status & Balance Type Column */}
-                    <TableCell className="text-right">
-                      <div className="flex flex-col items-end gap-1">
-                        <Badge variant={tx.balance_type === 'withdrawable' ? 'default' : 'secondary'} className="text-xs">
-                          {tx.balance_type === 'withdrawable' ? '💰 Withdrawable' : '🔒 Holding'}
+                    {/* Balance Type Column */}
+                    <TableCell className="text-center">
+                      <Badge 
+                        variant={tx.balance_type === 'withdrawable' ? 'default' : 'secondary'} 
+                        className={cn(
+                          "text-xs font-medium px-3 py-1",
+                          tx.balance_type === 'withdrawable' 
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
+                            : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                        )}
+                      >
+                        {tx.balance_type === 'withdrawable' ? '💰 Withdrawable' : '🔒 Holding'}
+                      </Badge>
+                    </TableCell>
+
+                    {/* Status Column */}
+                    <TableCell className="text-center">
+                      {tx.metadata?.status ? (
+                        getStatusBadge(tx.metadata.status)
+                      ) : (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                          ✓ Completed
                         </Badge>
-                      </div>
+                      )}
                     </TableCell>
 
                     {/* Actions Column */}
-                    <TableCell>
-                      {isTransferTransaction(tx) && (
-                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewDetails(tx)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {isTransferTransaction(tx) && (
                           <TransferReceiptButton 
                             transaction={{
-                              reference_id: tx.id,
+                              reference_id: tx.metadata?.transaction_ref || tx.id,
                               created_at: tx.created_at,
                               amount: tx.amount,
                               transaction_type: tx.transaction_type,
                               metadata: tx.metadata,
                             }} 
                             variant="ghost" 
-                            size="sm" 
+                            size="sm"
                           />
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
