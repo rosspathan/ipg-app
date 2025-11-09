@@ -151,7 +151,7 @@ const SignupScreen: React.FC = () => {
             description: "This email is already registered. Please sign in instead.",
             variant: "destructive"
           });
-          setTimeout(() => navigate('/auth/login'), 2000);
+          navigate('/auth/login', { replace: true });
           return;
         }
         throw error;
