@@ -68,89 +68,21 @@ export const AppStateManager = () => {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    // Check if unlock is needed on initial app load (when app is reopened from task switcher)
-    const checkInitialLockState = async () => {
-      // Skip if login in progress
-      if (sessionStorage.getItem('login_in_progress')) {
-        return;
-      }
-
-      const isAuthRoute = location.pathname.startsWith('/auth') || 
-                         location.pathname.startsWith('/onboarding');
-      
-      if (user && !isAuthRoute) {
-        // Check if onboarding is completed
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('onboarding_completed_at')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (!profile?.onboarding_completed_at) {
-          // User hasn't finished onboarding, don't lock
-          return;
-        }
-
-        const needsUnlock = await isUnlockRequired(false);
-        if (needsUnlock) {
-          console.log('App opened - lock required, redirecting to lock screen');
-          // Store the intended destination before locking
-          localStorage.setItem('ipg_return_path', location.pathname);
-          navigate('/auth/lock', { replace: true });
-        }
-      }
-    };
-
-    // Check lock state immediately on mount
-    checkInitialLockState();
+    // Security disabled - no lock checks
 
     let pauseListener: any;
     let resumeListener: any;
     let urlListener: any;
 
     const setupListeners = async () => {
-      // Handle app going to background - lock the app
+      // Handle app going to background - no locking
       pauseListener = await CapacitorApp.addListener('pause', () => {
-        console.log('App going to background - locking');
-        if (user) {
-          lock();
-        }
+        console.log('App going to background (lock disabled)');
       });
 
-      // Handle app coming to foreground - check if unlock needed
+      // Handle app coming to foreground - no lock checks
       resumeListener = await CapacitorApp.addListener('resume', async () => {
-        console.log('App resuming from background');
-        
-        // Skip if login in progress
-        if (sessionStorage.getItem('login_in_progress')) {
-          return;
-        }
-
-        // Don't lock if on auth/onboarding routes
-        const isAuthRoute = location.pathname.startsWith('/auth') || 
-                           location.pathname.startsWith('/onboarding');
-        
-        if (user && !isAuthRoute) {
-          // Check if onboarding is completed
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('onboarding_completed_at')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          
-          if (!profile?.onboarding_completed_at) {
-            // User hasn't finished onboarding, don't lock
-            return;
-          }
-
-          const needsUnlock = await isUnlockRequired(false);
-          if (needsUnlock) {
-            console.log('Redirecting to lock screen');
-            // Store the intended destination before locking
-            localStorage.setItem('ipg_return_path', location.pathname);
-            navigate('/auth/lock', { replace: true });
-          }
-        }
+        console.log('App resuming from background (lock disabled)');
       });
 
       // Handle deep links (referral links)

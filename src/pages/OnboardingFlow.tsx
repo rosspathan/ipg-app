@@ -41,6 +41,12 @@ const OnboardingFlow: React.FC = () => {
       return;
     }
 
+    // Redirect /onboarding/security to /app/home (security disabled)
+    if (path === '/onboarding/security' || path.startsWith('/onboarding/security')) {
+      navigate('/app/home', { replace: true });
+      return;
+    }
+
     // Map path to step, then only update when different to avoid loops
     let targetStep: typeof state.step | null = null;
     if (path === '/onboarding/wallet') {

@@ -201,12 +201,12 @@ const AdminLoginScreen = () => {
     try {
       const { data, error } = await supabase.functions.invoke('admin-password-reset', {
         body: { 
-          email: 'rosspathan@gmail.com',
+          email: 'admin@example.com',
           newPassword: adminPassword 
         }
       });
       if (error) throw error;
-      setSuccess(`Password set successfully for rosspathan@gmail.com. You can now login with this password.`);
+      setSuccess(`Password set successfully for admin@example.com. You can now login with this password.`);
       setAdminPassword(""); // Clear the password field
     } catch (e: any) {
       setError(e.message || 'Failed to set password');
@@ -322,7 +322,7 @@ const AdminLoginScreen = () => {
               <div className="space-y-3">
                 <Input
                   type="email"
-                  placeholder="rosspathan@gmail.com"
+                  placeholder="admin@example.com"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                 />
@@ -474,7 +474,7 @@ const AdminLoginScreen = () => {
               </p>
             </div>
             <div className="space-y-2">
-              <p className="text-sm font-medium">Set Password for rosspathan@gmail.com</p>
+              <p className="text-sm font-medium">Set Password for Admin Account</p>
               <div className="flex gap-2">
                 <Input
                   type="password"

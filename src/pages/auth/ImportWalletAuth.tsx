@@ -86,31 +86,8 @@ const ImportWalletAuth: React.FC = () => {
         description: "Wallet imported successfully",
       });
 
-      // Navigate based on security setup
-      const hasSecurity = hasAnySecurity();
-      
-      if (!hasSecurity) {
-        navigate('/onboarding/security');
-      } else {
-        const lockStateRaw = localStorage.getItem('cryptoflow_lock_state');
-        let isUnlocked = false;
-        try {
-          if (lockStateRaw) {
-            const parsed = JSON.parse(lockStateRaw);
-            const sessionTimeout = (parsed.sessionLockMinutes || 30) * 60 * 1000;
-            const timeSinceUnlock = Date.now() - (parsed.lastUnlockAt || 0);
-            isUnlocked = parsed.isUnlocked === true && timeSinceUnlock < sessionTimeout;
-          }
-        } catch {
-          isUnlocked = false;
-        }
-        
-        if (isUnlocked) {
-          navigate('/app/home');
-        } else {
-          navigate('/auth/lock');
-        }
-      }
+      // Security disabled - go directly to /app/home
+      navigate('/app/home');
     } catch (err: any) {
       console.error('Import error:', err);
       setError(err.message || 'Failed to import wallet. Please try again.');

@@ -80,36 +80,8 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        if (!hasSecurity) {
-          navigateSafely('/onboarding/security');
-          return;
-        }
-
-        // Fast fresh setup check
-        if (localStorage.getItem('ipg_fresh_setup') === 'true') {
-          localStorage.removeItem('ipg_fresh_setup');
-          navigateSafely('/app/home');
-          return;
-        }
-
-        // Optimized unlock check
-        const lockState = localStorage.getItem(`cryptoflow_lock_state_${userId}`) || 
-                         localStorage.getItem('cryptoflow_lock_state');
-        
-        if (lockState) {
-          try {
-            const parsed = JSON.parse(lockState);
-            const timeout = (parsed.sessionLockMinutes || 30) * 60 * 1000;
-            const isUnlocked = parsed.isUnlocked && (Date.now() - (parsed.lastUnlockAt || 0)) < timeout;
-            
-            navigateSafely(isUnlocked ? '/app/home' : '/auth/lock');
-            return;
-          } catch (e) {
-            // Invalid lock state - require unlock
-          }
-        }
-
-        navigateSafely('/auth/lock');
+        // Security disabled - go directly to /app/home
+        navigateSafely('/app/home');
         
       } catch (error) {
         console.error('[AppInitializer] Error:', error);

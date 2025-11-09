@@ -107,7 +107,7 @@ const AdminCredentialsTest = () => {
                 </div>
                 <div>
                   <p className="font-medium">Your Admin:</p>
-                  <code className="text-xs">rosspathan@gmail.com</code><br />
+                  <code className="text-xs">admin@example.com</code><br />
                   <span className="text-xs text-muted-foreground">Set password via Admin Login</span>
                 </div>
               </div>

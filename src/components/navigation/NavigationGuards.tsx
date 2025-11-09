@@ -135,13 +135,20 @@ export const VerificationGuard: React.FC<VerificationGuardProps> = ({
   return <>{children}</>;
 };
 
-// Lock Guard - CRITICAL: Enforces PIN/biometric on every app open
+// Lock Guard - DISABLED for now (security enforcement off)
 interface LockGuardProps {
   children: React.ReactNode;
   redirectTo?: string;
 }
 
+const SECURITY_ENFORCED = false; // Feature flag to disable security
+
 export const LockGuard: React.FC<LockGuardProps> = ({ children, redirectTo = '/auth/lock' }) => {
+  // Security disabled - return children immediately
+  if (!SECURITY_ENFORCED) {
+    return <>{children}</>;
+  }
+
   const { user, loading } = useAuth();
   const { isUnlockRequired, hydrated } = useAuthLock();
   const location = useLocation();

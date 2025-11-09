@@ -48,46 +48,7 @@ const LoginScreen: React.FC = () => {
   const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
   const navigationWatchdogRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ✅ FIX 1: Redirect already authenticated users (role-aware)
-  useEffect(() => {
-    const checkAlreadyAuthenticated = async () => {
-      if (loading) return; // Don't check during login
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        console.log('[LOGIN] Already authenticated, checking role...');
-        const isAdmin = await checkAdminWithTimeout(session.user.id);
-        if (isAdmin) {
-          console.log('[LOGIN] Admin user, checking onboarding status');
-          // Check if onboarding is complete
-          const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('wallet_address')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          const hasWalletInDB = !!profile?.wallet_address;
-          const hasSecurity = hasAnySecurity();
-          
-          if (!hasLocalWallet && !hasWalletInDB) {
-            console.log('[LOGIN] Admin needs wallet onboarding');
-            navigate('/onboarding/wallet', { replace: true });
-          } else if (!hasSecurity) {
-            console.log('[LOGIN] Admin needs security onboarding');
-            navigate('/onboarding/security', { replace: true });
-          } else {
-            console.log('[LOGIN] Admin onboarding complete, redirecting to /admin');
-            navigate('/admin', { replace: true });
-          }
-        } else {
-          console.log('[LOGIN] Regular user, redirecting to /app/home');
-          navigate('/app/home', { replace: true });
-        }
-      }
-    };
-    
-    checkAlreadyAuthenticated();
-  }, []);
+  // Don't auto-redirect - let user stay on login page
 
   // Cleanup on unmount - always reset loading state
   useEffect(() => {
@@ -106,7 +67,7 @@ const LoginScreen: React.FC = () => {
     };
   }, []);
 
-  // ✅ FIX 2: Centralized route determination
+  // Simplified route determination - always go to /app/home (no security redirects)
   const determinePostLoginRoute = async (userId: string): Promise<string> => {
     const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
     const { data: profile } = await supabase
@@ -116,30 +77,15 @@ const LoginScreen: React.FC = () => {
       .maybeSingle();
     
     const hasWalletInDB = !!profile?.wallet_address;
-    const hasSecurity = hasAnySecurity();
     
-    console.log('[LOGIN] Route decision:', { hasLocalWallet, hasWalletInDB, hasSecurity });
+    console.log('[LOGIN] Route decision:', { hasLocalWallet, hasWalletInDB });
     
-    // Decision tree
+    // Only check for wallet - no security/lock checks
     if (!hasLocalWallet && !hasWalletInDB) return '/auth/import-wallet';
     if (!hasLocalWallet && hasWalletInDB) return '/auth/import-wallet';
-    if (!hasSecurity) return '/onboarding/security';
     
-    // Check lock state
-    const lockStateRaw = localStorage.getItem('cryptoflow_lock_state');
-    let isUnlocked = false;
-    try {
-      if (lockStateRaw) {
-        const parsed = JSON.parse(lockStateRaw);
-        const sessionTimeout = (parsed.sessionLockMinutes || 30) * 60 * 1000;
-        const timeSinceUnlock = Date.now() - (parsed.lastUnlockAt || 0);
-        isUnlocked = parsed.isUnlocked === true && timeSinceUnlock < sessionTimeout;
-      }
-    } catch {
-      isUnlocked = false;
-    }
-    
-    return isUnlocked ? '/app/home' : '/auth/lock';
+    // Always go directly to /app/home
+    return '/app/home';
   };
 
   // ✅ FIX 3: Clear watchdog helper
@@ -237,10 +183,25 @@ const LoginScreen: React.FC = () => {
     // Create login promise
     const loginPromise = async () => {
       try {
-        // STEP 1: Clear any existing session before login
-        console.log('[LOGIN] Step 1: Clearing any existing session');
+        // STEP 1: Clear any existing session and legacy security keys
+        console.log('[LOGIN] Step 1: Clearing any existing session and legacy keys');
         await supabase.auth.signOut().catch(() => {
           // Ignore errors from signOut
+        });
+        
+        // Clear legacy lock/security keys
+        localStorage.removeItem('cryptoflow_lock_state');
+        localStorage.removeItem('user_pin_hash');
+        localStorage.removeItem('user_pin_salt');
+        localStorage.removeItem('biometric_enabled');
+        localStorage.removeItem('biometric_cred_id');
+        
+        // Clear user-scoped security keys
+        const allKeys = Object.keys(localStorage);
+        allKeys.forEach(key => {
+          if (key.includes('security_local') || key.includes('lock_state')) {
+            localStorage.removeItem(key);
+          }
         });
 
         console.log('[LOGIN] Step 2: Calling Supabase auth');
@@ -307,11 +268,9 @@ const LoginScreen: React.FC = () => {
         ]);
         
         if (isAdminData) {
-          console.log('[LOGIN] Admin user detected, checking onboarding status');
-          // Check if onboarding is complete (wallet + security setup)
+          console.log('[LOGIN] Admin user detected, checking wallet status');
           const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
           const hasWalletInDB = !!profile?.data?.wallet_address;
-          const hasSecurity = hasAnySecurity();
           
           if (!hasLocalWallet && !hasWalletInDB) {
             console.log('[LOGIN] Admin needs to complete wallet onboarding first');
@@ -319,13 +278,7 @@ const LoginScreen: React.FC = () => {
             return;
           }
           
-          if (!hasSecurity) {
-            console.log('[LOGIN] Admin needs to complete security onboarding first');
-            safeNavigate('/onboarding/security');
-            return;
-          }
-          
-          console.log('[LOGIN] Admin onboarding complete, redirecting to admin panel');
+          console.log('[LOGIN] Admin wallet setup complete, redirecting to admin panel');
           safeNavigate('/admin');
           return;
         }
