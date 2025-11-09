@@ -42,8 +42,9 @@ const defaultSources: Source[] = [
 
 /**
  * BskCardCompact - Compact BSK balance card for side-by-side layout
+ * Memoized to prevent unnecessary re-renders
  */
-export function BskCardCompact({
+const BskCardCompactComponent = ({
   variant,
   balance = variant === "withdrawable" ? 125000 : 89500,
   fiatValue = variant === "withdrawable" ? 12500 : 8950,
@@ -56,18 +57,12 @@ export function BskCardCompact({
   onViewBreakdown,
   onViewSchedule,
   className
-}: BskCardCompactProps) {
+}: BskCardCompactProps) => {
   const [isPrivate, setIsPrivate] = useState(false)
 
   const isWithdrawable = variant === "withdrawable"
 
-  if (isLoading) {
-    return (
-      <div className={cn("space-y-2", className)} data-testid="bsk-card">
-        <Skeleton className="h-64 rounded-2xl" />
-      </div>
-    )
-  }
+  // Removed skeleton loader - parent handles loading state to prevent layout shift
 
   return (
     <div
@@ -209,3 +204,6 @@ export function BskCardCompact({
     </div>
   )
 }
+
+export const BskCardCompact = React.memo(BskCardCompactComponent)
+

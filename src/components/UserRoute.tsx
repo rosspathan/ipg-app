@@ -10,13 +10,8 @@ const UserRoute = ({ children }: UserRouteProps) => {
   const { user, session, loading } = useAuthUser();
   const location = useLocation();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  // Removed redundant loading screen - AppInitializer handles this
+  // Just immediately check access without showing loader
 
   // Session-based access control: Users must be authenticated via Supabase
   // Wallet linking is optional and handled separately

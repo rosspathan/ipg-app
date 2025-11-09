@@ -18,13 +18,14 @@ interface ProgramsGridProps {
 
 /**
  * ProgramsGrid - PhonePe-style grid menu for programs
+ * Memoized to prevent unnecessary re-renders
  */
-export function ProgramsGrid({
+const ProgramsGridComponent = ({
   programs,
   title = "My Programs",
   onViewAll,
   className
-}: ProgramsGridProps) {
+}: ProgramsGridProps) => {
   return (
     <div className={cn("space-y-3", className)}>
       {/* Header */}
@@ -51,12 +52,12 @@ export function ProgramsGrid({
             onClick={program.onPress}
             className={cn(
               "flex flex-col items-center gap-2 p-2 rounded-xl",
-              "transition-all duration-300 ease-out",
+              "transition-opacity duration-200",
               "hover:bg-gradient-to-br hover:from-primary/5 hover:to-accent/5",
               "active:scale-95"
             )}
           >
-            {/* Icon Circle */}
+            {/* Icon Circle - Removed scale animations to prevent flicker */}
             <div
               className={cn(
                 "h-14 w-14 rounded-full",
@@ -65,10 +66,7 @@ export function ProgramsGrid({
                 "shadow-lg shadow-primary/10",
                 "backdrop-blur-xl",
                 "flex items-center justify-center",
-                "text-primary",
-                "transition-all duration-300 ease-out",
-                "hover:scale-110 hover:shadow-xl hover:shadow-primary/20",
-                "hover:border-primary/50"
+                "text-primary"
               )}
             >
               {program.icon}
@@ -84,3 +82,6 @@ export function ProgramsGrid({
     </div>
   )
 }
+
+export const ProgramsGrid = React.memo(ProgramsGridComponent)
+

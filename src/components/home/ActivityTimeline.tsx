@@ -31,16 +31,18 @@ const statusColors = {
 
 /**
  * ActivityTimeline - Recent user actions with icons
+ * Memoized to prevent unnecessary re-renders
  */
-export function ActivityTimeline({
+const ActivityTimelineComponent = ({
   activities = [],
   isLoading = false,
   onViewAll,
   className
-}: ActivityTimelineProps) {
+}: ActivityTimelineProps) => {
+  // Show skeleton rows when loading
   if (isLoading) {
     return (
-      <div className={cn("space-y-3", className)} data-testid="activity-timeline">
+      <div className={cn("space-y-3 px-4", className)} data-testid="activity-timeline">
         <Skeleton className="h-6 w-32" />
         {[1, 2, 3].map(i => (
           <Skeleton key={i} className="h-16 rounded-xl" />
@@ -51,7 +53,7 @@ export function ActivityTimeline({
 
   if (activities.length === 0) {
     return (
-      <div className={cn("space-y-3", className)} data-testid="activity-timeline">
+      <div className={cn("space-y-3 px-4", className)} data-testid="activity-timeline">
         <h2 className="font-[Space_Grotesk] font-bold text-base text-foreground">
           Recent Activity
         </h2>
@@ -63,7 +65,7 @@ export function ActivityTimeline({
   }
 
   return (
-    <div className={cn("space-y-3", className)} data-testid="activity-timeline">
+    <div className={cn("space-y-3 px-4", className)} data-testid="activity-timeline">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="font-[Space_Grotesk] font-bold text-sm text-foreground">
@@ -135,3 +137,6 @@ export function ActivityTimeline({
     </div>
   )
 }
+
+export const ActivityTimeline = React.memo(ActivityTimelineComponent)
+

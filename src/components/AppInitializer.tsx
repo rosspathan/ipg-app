@@ -46,6 +46,15 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
           setIsChecking(false);
           return;
         }
+
+        // Check cache - if already initialized and at /app/home, skip checks
+        const cacheKey = 'ipg_init_complete';
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached && location.pathname === '/app/home') {
+          console.log('[AppInitializer] Cache hit - skipping initialization');
+          setIsChecking(false);
+          return;
+        }
         
         // Check for active session (single call, no redundant checks)
         const { data: { session } } = await supabase.auth.getSession();
@@ -53,6 +62,7 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
         if (!session) {
           setCurrentUserId(null);
           setSecurityUserId(null);
+          sessionStorage.removeItem(cacheKey);
           setIsChecking(false);
           return;
         }
@@ -65,6 +75,7 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
         const validation = await validateSessionOwnership(session);
         if (validation.conflict) {
           await autoResolveIfSafe(session);
+          sessionStorage.removeItem(cacheKey);
           navigateSafely('/onboarding/security');
           return;
         }
@@ -76,11 +87,13 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
         ]);
 
         if (!walletResult.data) {
+          sessionStorage.removeItem(cacheKey);
           navigateSafely('/onboarding/wallet');
           return;
         }
 
         // Security disabled - go directly to /app/home
+        sessionStorage.setItem(cacheKey, Date.now().toString());
         navigateSafely('/app/home');
         
       } catch (error) {
@@ -93,8 +106,8 @@ export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
     initializeApp();
   }, [location.pathname]);
 
-  // Show loading screen while checking
-  if (isChecking) {
+  // Only show loader if actually redirecting (not for cached users at /app/home)
+  if (isChecking && location.pathname !== '/app/home') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-green-900 to-slate-900">
         <div className="text-center space-y-4">

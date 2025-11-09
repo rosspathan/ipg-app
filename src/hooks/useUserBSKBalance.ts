@@ -147,6 +147,9 @@ export const useUserBSKBalance = () => {
   useEffect(() => {
     fetchBalance();
 
+    // Debounced update handler to prevent rapid flickers
+    let updateTimeout: NodeJS.Timeout | null = null;
+    
     // Set up realtime subscription for balance updates
     let channel: ReturnType<typeof supabase.channel> | null = null;
     if (user?.id) {
@@ -158,42 +161,49 @@ export const useUserBSKBalance = () => {
             event: '*',
             schema: 'public',
             table: 'user_bsk_balances',
-            filter: `user_id=eq.${user.id}`, // Only listen to this user's balance changes
+            filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
             console.log('[BSK Balance] 🔔 Live update received:', payload);
             
-            // Show toast notification for balance updates
-            if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-              const newRecord = payload.new as any;
-              const oldRecord = payload.old as any;
-              
-              if (oldRecord && newRecord) {
-                const oldTotal = Number(oldRecord.withdrawable_balance || 0) + Number(oldRecord.holding_balance || 0);
-                const newTotal = Number(newRecord.withdrawable_balance || 0) + Number(newRecord.holding_balance || 0);
-                const diff = newTotal - oldTotal;
+            // Debounce updates to prevent flicker from rapid changes
+            if (updateTimeout) clearTimeout(updateTimeout);
+            
+            updateTimeout = setTimeout(() => {
+              // Show toast only for significant changes (> 1 BSK)
+              if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+                const newRecord = payload.new as any;
+                const oldRecord = payload.old as any;
                 
-                if (diff !== 0) {
-                  toast.info(
-                    `Balance ${diff > 0 ? 'increased' : 'decreased'} by ${Math.abs(diff).toFixed(2)} BSK`,
-                    {
-                      description: `New total: ${newTotal.toFixed(2)} BSK`,
-                      duration: 4000,
-                    }
-                  );
+                if (oldRecord && newRecord) {
+                  const oldTotal = Number(oldRecord.withdrawable_balance || 0) + Number(oldRecord.holding_balance || 0);
+                  const newTotal = Number(newRecord.withdrawable_balance || 0) + Number(newRecord.holding_balance || 0);
+                  const diff = newTotal - oldTotal;
+                  
+                  if (Math.abs(diff) >= 1) { // Only show toast for changes >= 1 BSK
+                    toast.info(
+                      `Balance ${diff > 0 ? 'increased' : 'decreased'} by ${Math.abs(diff).toFixed(2)} BSK`,
+                      {
+                        description: `New total: ${newTotal.toFixed(2)} BSK`,
+                        duration: 4000,
+                      }
+                    );
+                  }
                 }
               }
-            }
-            
-            // Invalidate queries and refetch
-            queryClient.invalidateQueries({ queryKey: ['bsk-balance'] });
-            fetchBalance();
+              
+              // Invalidate queries and refetch
+              queryClient.invalidateQueries({ queryKey: ['bsk-balance'] });
+              queryClient.invalidateQueries({ queryKey: ['home-page-data'] });
+              fetchBalance();
+            }, 500); // 500ms debounce
           }
         )
         .subscribe();
     }
 
     return () => {
+      if (updateTimeout) clearTimeout(updateTimeout);
       if (channel) {
         supabase.removeChannel(channel);
       }

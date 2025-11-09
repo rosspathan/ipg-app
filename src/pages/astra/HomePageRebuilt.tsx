@@ -1,29 +1,22 @@
 import * as React from "react"
 import { useState } from "react"
 import { Gift, Zap, Star, MessageCircle, History, ChevronRight } from "lucide-react"
-import { useQuery } from "@tanstack/react-query"
 import { useNavigation } from "@/hooks/useNavigation"
 import { KPICardUnified } from "@/components/home/KPICardUnified"
 import { AddFundsCTA } from "@/components/home/AddFundsCTA"
 import { BalanceDuoGrid } from "@/components/home/BalanceDuoGrid"
 import { BskCardCompact } from "@/components/home/BskCardCompact"
 import { RewardsBreakdown } from "@/components/home/RewardsBreakdown"
-import { AnnouncementsBar } from "@/components/home/AnnouncementsBar"
-import { HeroCarousel } from "@/components/home/HeroCarousel"
 import { ProgramsGrid } from "@/components/programs-pro/ProgramsGrid"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
 import { Button } from "@/components/ui/button"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
-import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ScrollingAnnouncement } from "@/components/home/ScrollingAnnouncement"
-import { AnnouncementCarousel } from "@/components/home/AnnouncementCarousel"
 import { ImageCarousel } from "@/components/home/ImageCarousel"
 import { RefreshControl } from "@/components/ui/refresh-control"
-import { useDisplayName } from "@/hooks/useDisplayName";
-import { supabase } from "@/integrations/supabase/client";
-import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms";
-import { useUserBSKBalance } from "@/hooks/useUserBSKBalance";
-import { useAuthUser } from "@/hooks/useAuthUser";
+import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms"
+import { useHomePageData } from "@/hooks/useHomePageData"
+import { HomePageSkeleton } from "@/components/home/HomePageSkeleton"
 /**
  * HomePageRebuilt - World-class mobile-first home screen
  * DO NOT MODIFY THE FOOTER - DockNav remains untouched
@@ -32,55 +25,34 @@ export function HomePageRebuilt() {
   const { navigate } = useNavigation()
   const [showRewardsBreakdown, setShowRewardsBreakdown] = useState(false)
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
-  const displayName = useDisplayName()
   const { programs: allPrograms } = useActivePrograms()
-  const { balance, loading: balanceLoading, refresh: refreshBalance } = useUserBSKBalance()
-  const { user } = useAuthUser()
+  
+  // Single batched data fetch for optimal performance
+  const { data, isLoading, refetch } = useHomePageData()
 
   const BSK_TO_INR = 1; // 1 BSK = 1 INR
 
-  // Removed extra getUser call to prevent redundant /user requests
+  // Show skeleton on initial load to prevent flicker
+  if (isLoading) {
+    return <HomePageSkeleton />
+  }
 
-  // Fetch real activity from ledger tables
-  const { data: recentActivity, refetch: refetchActivity } = useQuery({
-    queryKey: ['home-activity', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-
-      // Get recent withdrawable transactions
-      const { data: withdrawable } = await supabase
-        .from('bsk_withdrawable_ledger')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      // Get recent holding transactions
-      const { data: holding } = await supabase
-        .from('bsk_holding_ledger')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      // Combine and sort by date
-      const combined = [
-        ...(withdrawable || []).map(tx => ({ ...tx, source: 'withdrawable' })),
-        ...(holding || []).map(tx => ({ ...tx, source: 'holding' }))
-      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 10);
-
-      return combined;
-    },
-    enabled: !!user?.id
-  });
+  // Extract data with safe defaults
+  const balance = data?.balance || {
+    withdrawable: 0,
+    holding: 0,
+    total: 0,
+    earnedWithdrawable: 0,
+    earnedHolding: 0,
+    todayEarned: 0,
+    weekEarned: 0,
+  }
+  const recentActivity = data?.recentActivity || []
+  const displayName = data?.displayName || 'User'
 
   const handleRefresh = async () => {
-    await Promise.all([
-      refreshBalance(),
-      refetchActivity()
-    ]);
-  };
+    await refetch()
+  }
 
   const handleKPIPress = () => {
     console.log("KPI card pressed")
@@ -159,15 +131,15 @@ export function HomePageRebuilt() {
           data={[
             { 
               label: "Portfolio", 
-              value: balanceLoading ? "..." : `₹${(balance.total * BSK_TO_INR).toFixed(2)}`,
-              subValue: balanceLoading ? "" : `${balance.total.toFixed(2)} BSK`,
+              value: `₹${(balance.total * BSK_TO_INR).toFixed(2)}`,
+              subValue: `${balance.total.toFixed(2)} BSK`,
               trend: "up", 
               type: "portfolio" 
             },
             { 
               label: "Today's Earnings", 
-              value: balanceLoading ? "..." : `+₹${(balance.todayEarned * BSK_TO_INR).toFixed(2)}`,
-              subValue: balanceLoading ? "" : `+${balance.todayEarned.toFixed(2)} BSK`,
+              value: `+₹${(balance.todayEarned * BSK_TO_INR).toFixed(2)}`,
+              subValue: `+${balance.todayEarned.toFixed(2)} BSK`,
               trend: balance.todayEarned > 0 ? "up" : "neutral",
               type: "change" 
             },
@@ -183,12 +155,12 @@ export function HomePageRebuilt() {
         <BalanceDuoGrid>
           <BskCardCompact
             variant="withdrawable"
-            balance={balanceLoading ? 0 : balance.withdrawable}
-            fiatValue={balanceLoading ? 0 : balance.withdrawable * BSK_TO_INR}
+            balance={balance.withdrawable}
+            fiatValue={balance.withdrawable * BSK_TO_INR}
             bonusMetrics={{ 
-              today: balanceLoading ? 0 : balance.todayEarned, 
-              week: balanceLoading ? 0 : balance.weekEarned, 
-              lifetime: balanceLoading ? 0 : balance.earnedWithdrawable 
+              today: balance.todayEarned, 
+              week: balance.weekEarned, 
+              lifetime: balance.earnedWithdrawable 
             }}
             onWithdraw={() => navigate("/app/programs/bsk-withdraw")}
             onTransfer={() => navigate("/app/programs/bsk-transfer")}
@@ -198,8 +170,8 @@ export function HomePageRebuilt() {
           
           <BskCardCompact
             variant="holding"
-            balance={balanceLoading ? 0 : balance.holding}
-            fiatValue={balanceLoading ? 0 : balance.holding * BSK_TO_INR}
+            balance={balance.holding}
+            fiatValue={balance.holding * BSK_TO_INR}
             onViewSchedule={() => setShowRewardsBreakdown(true)}
           />
         </BalanceDuoGrid>
@@ -269,10 +241,8 @@ export function HomePageRebuilt() {
           onViewAll={() => navigate("/app/programs")}
         />
 
-        {/* Activity Timeline */}
-        {activities.length > 0 && (
-          <ActivityTimeline activities={activities} />
-        )}
+        {/* Activity Timeline - Always render to prevent layout shift */}
+        <ActivityTimeline activities={activities} isLoading={false} />
         </div>
       </RefreshControl>
 
