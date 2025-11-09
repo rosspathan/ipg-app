@@ -103,6 +103,21 @@ export function shouldLock(): boolean {
  */
 export function lockApp(): void {
   setLockState('locked');
+  // Sync with AppLockGuard/useAuthLock storage
+  try {
+    const key = currentUserId ? `cryptoflow_lock_state_${currentUserId}` : 'cryptoflow_lock_state';
+    const state = {
+      isUnlocked: false,
+      lastUnlockAt: 0,
+      failedAttempts: 0,
+      lockedUntil: null,
+      sessionLockMinutes: 30,
+    };
+    localStorage.setItem(key, JSON.stringify(state));
+    localStorage.setItem('cryptoflow_unlocked', 'false');
+  } catch (e) {
+    console.warn('[LockState] Failed to sync lock state for AppLockGuard:', e);
+  }
   console.log('🔒 App locked');
 }
 
@@ -111,6 +126,21 @@ export function lockApp(): void {
  */
 export function unlockApp(): void {
   setLockState('unlocked');
+  // Sync with AppLockGuard/useAuthLock storage
+  try {
+    const key = currentUserId ? `cryptoflow_lock_state_${currentUserId}` : 'cryptoflow_lock_state';
+    const state = {
+      isUnlocked: true,
+      lastUnlockAt: Date.now(),
+      failedAttempts: 0,
+      lockedUntil: null,
+      sessionLockMinutes: 30,
+    };
+    localStorage.setItem(key, JSON.stringify(state));
+    localStorage.setItem('cryptoflow_unlocked', 'true');
+  } catch (e) {
+    console.warn('[LockState] Failed to sync unlock state for AppLockGuard:', e);
+  }
   console.log('🔓 LOCK_UNLOCK_OK');
 }
 
