@@ -155,17 +155,7 @@ export function BSKTransferForm() {
         throw new Error(`Insufficient balance. You have ${availableBalance.toLocaleString()} BSK available`);
       }
 
-      if (amountBSK > 1000000) {
-        throw new Error("Maximum transfer amount is 1,000,000 BSK per transaction");
-      }
-
-      // Check transfer limits
-      if (limits) {
-        const limitCheck = limits.canTransfer(amountBSK);
-        if (!limitCheck.allowed) {
-          throw new Error(limitCheck.reason || 'Transfer limit exceeded');
-        }
-      }
+      // No transfer limits enforced
 
       // Use atomic edge function for secure transfer
       const { data, error } = await supabase.functions.invoke('process-bsk-transfer', {
@@ -310,33 +300,6 @@ export function BSKTransferForm() {
 
   return (
     <div className="space-y-6">
-      {/* Transfer Limits Card */}
-      {limits && (
-        <Card className="border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Daily Transfer Limit
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Used Today</span>
-                <span className="font-semibold">
-                  {limits.usedToday.toLocaleString()} / {limits.dailyLimit.toLocaleString()} BSK
-                </span>
-              </div>
-              <Progress value={limits.percentUsed} className="h-2" />
-            </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Remaining: {limits.remainingToday.toLocaleString()} BSK</span>
-              <span>{limits.percentUsed.toFixed(1)}% used</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle>Available Balance</CardTitle>

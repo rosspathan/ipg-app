@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-const DAILY_LIMIT = 100000; // 100,000 BSK per day
-const MAX_PER_TRANSACTION = 1000000; // 1,000,000 BSK per transaction
+const DAILY_LIMIT = Number.MAX_SAFE_INTEGER; // No limit
+const MAX_PER_TRANSACTION = Number.MAX_SAFE_INTEGER; // No limit
 
 export interface TransferLimits {
   dailyLimit: number;
