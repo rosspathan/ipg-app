@@ -1,27 +1,43 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { normalizeBadgeName } from '@/lib/badgeUtils';
+
+// Cache badge data to reduce API calls
+const badgeCache = new Map<string, { badge: string; timestamp: number }>();
+const CACHE_TTL = 30000; // 30 seconds
 
 export const useUserBadge = () => {
   const { user } = useAuthUser();
   const [badge, setBadge] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const fetchingRef = useRef(false);
 
   const fetchBadge = async () => {
     if (!user) {
-      console.log('🎖️ [useUserBadge] No user authenticated, setting badge to None');
       setBadge('None');
       setLoading(false);
       return;
     }
 
+    // Prevent duplicate fetches
+    if (fetchingRef.current) {
+      return;
+    }
+
+    // Check cache first
+    const cached = badgeCache.get(user.id);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      setBadge(cached.badge);
+      setLoading(false);
+      return;
+    }
+
     try {
+      fetchingRef.current = true;
       setLoading(true);
-      console.log('🎖️ [useUserBadge] Fetching badge for user:', user.id);
       
       // PRIORITY 1: Check user_badge_holdings (PURCHASED badges - highest priority)
-      console.log('🎖️ [useUserBadge] Step 1: Checking user_badge_holdings for purchased badge...');
       const { data: holdingData, error: holdingError } = await supabase
         .from('user_badge_holdings')
         .select('current_badge')
@@ -33,19 +49,13 @@ export const useUserBadge = () => {
       }
 
       if (holdingData?.current_badge) {
-        const rawBadge = holdingData.current_badge;
-        const normalizedBadge = normalizeBadgeName(rawBadge);
-        console.log('✅ [useUserBadge] PURCHASED badge found!');
-        console.log('   Raw badge from DB:', rawBadge);
-        console.log('   Normalized badge:', normalizedBadge);
+        const normalizedBadge = normalizeBadgeName(holdingData.current_badge);
+        badgeCache.set(user.id, { badge: normalizedBadge, timestamp: Date.now() });
         setBadge(normalizedBadge);
         return;
-      } else {
-        console.log('⚠️ [useUserBadge] No purchased badge in user_badge_holdings');
       }
 
       // PRIORITY 2: Check user_badge_status (QUALIFIED badges)
-      console.log('🎖️ [useUserBadge] Step 2: Checking user_badge_status for qualified badge...');
       const { data: statusData, error: statusError } = await supabase
         .from('user_badge_status')
         .select('current_badge')
@@ -57,27 +67,22 @@ export const useUserBadge = () => {
       }
 
       if (statusData?.current_badge) {
-        const rawBadge = statusData.current_badge;
-        const normalizedBadge = normalizeBadgeName(rawBadge);
-        console.log('⚠️ [useUserBadge] QUALIFIED badge found (not purchased)');
-        console.log('   Raw badge from DB:', rawBadge);
-        console.log('   Normalized badge:', normalizedBadge);
+        const normalizedBadge = normalizeBadgeName(statusData.current_badge);
+        badgeCache.set(user.id, { badge: normalizedBadge, timestamp: Date.now() });
         setBadge(normalizedBadge);
         return;
-      } else {
-        console.log('⚠️ [useUserBadge] No qualified badge in user_badge_status');
       }
 
       // PRIORITY 3: NO DEFAULT BADGE - User must purchase or qualify
-      console.log('🎖️ [useUserBadge] No purchased or qualified badge found');
-      console.log('✅ [useUserBadge] Setting badge to None (user must purchase)');
-      console.log('📌 [useUserBadge] Badge will only show if explicitly purchased or qualified');
-      setBadge('None');
+      const defaultBadge = 'None';
+      badgeCache.set(user.id, { badge: defaultBadge, timestamp: Date.now() });
+      setBadge(defaultBadge);
     } catch (error) {
       console.error('❌ [useUserBadge] Critical error in fetchBadge:', error);
       setBadge('None');
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   };
 

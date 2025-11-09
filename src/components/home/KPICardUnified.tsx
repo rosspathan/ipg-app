@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Wallet, TrendingUp, Award, Eye, EyeOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -22,8 +22,9 @@ interface KPICardUnifiedProps {
 
 /**
  * KPICardUnified - Compact mobile-optimized card showing portfolio metrics and user badge
+ * Optimized with React.memo to prevent unnecessary re-renders
  */
-export function KPICardUnified({ data, isLoading = false, onCardPress, className }: KPICardUnifiedProps) {
+const KPICardUnifiedComponent = ({ data, isLoading = false, onCardPress, className }: KPICardUnifiedProps) => {
   const { badge, loading: badgeLoading } = useUserBadge()
   const [showBalance, setShowBalance] = useState(true)
   
@@ -55,10 +56,11 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
     }
   ]
 
-  const kpiData = data || defaultData
-  const portfolioData = kpiData.find(k => k.type === "portfolio")
-  const changeData = kpiData.find(k => k.type === "change")
-  const userBadge = badge || "None"
+  // Memoize computed values to prevent re-calculations
+  const kpiData = useMemo(() => data || defaultData, [data])
+  const portfolioData = useMemo(() => kpiData.find(k => k.type === "portfolio"), [kpiData])
+  const changeData = useMemo(() => kpiData.find(k => k.type === "change"), [kpiData])
+  const userBadge = useMemo(() => badge || "None", [badge])
 
   return (
     <div className="relative">
@@ -187,3 +189,6 @@ export function KPICardUnified({ data, isLoading = false, onCardPress, className
     </div>
   )
 }
+
+// Export memoized version to prevent unnecessary re-renders
+export const KPICardUnified = React.memo(KPICardUnifiedComponent)

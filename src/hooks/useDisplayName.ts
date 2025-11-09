@@ -74,61 +74,33 @@ export function useDisplayName() {
   }, [user?.id, user?.email, storageEmail]);
 
   const displayName = useMemo(() => {
-    console.log('[DISPLAY_NAME] Computing display name:', {
-      'user?.email': user?.email,
-      'user?.id': user?.id,
-      'userApp?.username': userApp?.username
-    });
-
     // Auth-first: Always use user data when authenticated
     if (user?.id) {
       // Priority 1: Profile display_name or username
       if (userApp?.display_name) {
-        console.log('[DISPLAY_NAME] ✓ Using profile display_name:', userApp.display_name);
         return userApp.display_name;
       }
       
       if (userApp?.username) {
-        console.log('[DISPLAY_NAME] ✓ Using profile username:', userApp.username);
         return userApp.username;
       }
       
       // Priority 2: Extract from user email
       if (user.email) {
-        const name = extractUsernameFromEmail(user.email, user.id);
-        console.log('[DISPLAY_NAME] Using email-derived username:', name);
-        return name;
+        return extractUsernameFromEmail(user.email, user.id);
       }
       
       // Priority 3: Fallback with user ID
-      const fallback = `user${user.id.slice(0, 6)}`;
-      console.log('[DISPLAY_NAME] Using user ID fallback:', fallback);
-      return fallback;
+      return `user${user.id.slice(0, 6)}`;
     }
 
     // Only during onboarding (before auth complete)
     if (storageEmail) {
-      const name = extractUsernameFromEmail(storageEmail, undefined);
-      console.log('[DISPLAY_NAME] Using storageEmail (onboarding):', name);
-      return name;
+      return extractUsernameFromEmail(storageEmail, undefined);
     }
     
-    console.log('[DISPLAY_NAME] Using default: User');
     return "User";
   }, [user?.id, user?.email, userApp?.display_name, userApp?.username, storageEmail]);
-
-  useEffect(() => {
-    try {
-      console.info('[DISPLAY_NAME_RESOLVE]', {
-        result: displayName,
-        userId: user?.id,
-        userEmail: user?.email,
-        profileUsername: userApp?.username,
-        profileEmail: userApp?.email,
-        storageEmail
-      });
-    } catch {}
-  }, [displayName, user?.id, user?.email, userApp?.username, userApp?.email, storageEmail]);
 
   return displayName;
 }

@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, signOut, isAdmin, loading } = useAuth();
+  const hasRedirectedRef = useRef(false);
 
   const handleLogout = async () => {
     try {
@@ -23,19 +24,26 @@ const Index = () => {
     }
   };
 
-  // Redirect authenticated users after role resolution
+  // Redirect authenticated users ONCE after role resolution
   useEffect(() => {
     // Wait until loading is complete (both auth and role check)
     if (loading) return;
     
+    // Prevent multiple redirects
+    if (hasRedirectedRef.current) return;
+    
     if (user && isAdmin) {
       console.log('[INDEX] Admin user, redirecting to /admin');
+      hasRedirectedRef.current = true;
       navigate("/admin", { replace: true });
     } else if (user && !isAdmin) {
       console.log('[INDEX] Regular user, redirecting to /app/home');
+      hasRedirectedRef.current = true;
       navigate("/app/home", { replace: true });
     }
-  }, [user, isAdmin, loading, navigate]);
+    // Intentionally exclude navigate from deps to prevent re-running on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isAdmin, loading]);
 
   // Don't show anything while loading
   if (loading) {
