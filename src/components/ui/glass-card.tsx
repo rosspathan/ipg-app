@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 
 const glassCardVariants = cva(
-  "glass-card rounded-lg border shadow-card transition-all duration-normal",
+  "glass-card rounded-lg border shadow-card",
   {
     variants: {
       variant: {
@@ -15,8 +15,8 @@ const glassCardVariants = cva(
       },
       hover: {
         none: "",
-        glow: "glow-hover cursor-pointer",
-        scale: "hover:scale-105 transition-transform duration-normal cursor-pointer"
+        glow: "cursor-pointer",
+        scale: "cursor-pointer"
       },
       blur: {
         sm: "backdrop-blur-sm",

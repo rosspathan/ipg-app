@@ -6,17 +6,14 @@ const cyberCardVariants = cva(
   [
     "relative overflow-hidden rounded-xl",
     "bg-card-glass backdrop-blur-[18px] border border-white/10",
-    "shadow-card transition-all duration-normal ease-out",
-    "before:absolute before:inset-0 before:rounded-xl before:bg-gradient-ring",
-    "before:opacity-0 before:transition-opacity before:duration-normal before:-z-10",
-    "hover:before:opacity-20 hover:shadow-cyber hover:scale-[1.02]"
+    "shadow-card"
   ],
   {
     variants: {
       variant: {
         default: "",
-        glow: "animate-cyber-glow",
-        pulse: "animate-neon-pulse",
+        glow: "",
+        pulse: "",
         elevated: "shadow-elevated",
       },
       size: {

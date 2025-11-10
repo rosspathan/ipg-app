@@ -21,9 +21,9 @@ const BonusBalanceCard: React.FC<BonusBalanceCardProps> = ({ className, style })
 
   if (loading) {
     return (
-      <CyberCard className={className} style={style} variant="glow">
+      <CyberCard className={className} style={style}>
         <CyberCardContent className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="text-muted-foreground">Loading...</div>
         </CyberCardContent>
       </CyberCard>
     );
@@ -61,7 +61,7 @@ const BonusBalanceCard: React.FC<BonusBalanceCardProps> = ({ className, style })
               <>
                 {/* Value Block */}
                 <div className="text-center space-y-2">
-                  <div className="text-3xl font-bold text-foreground tabular-nums animate-fade-in">
+                  <div className="text-3xl font-bold text-foreground tabular-nums">
                     {bskAmount.toFixed(8)} BSK
                   </div>
                   <div className="text-sm text-muted-foreground">

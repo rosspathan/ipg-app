@@ -27,30 +27,6 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
   const balance = portfolio?.total_usd || 0;
   const change24h = portfolio?.change_24h_percent || 0;
 
-  // Animate balance counter
-  useEffect(() => {
-    if (showBalance && balance > 0) {
-      const duration = 1000;
-      const steps = 30;
-      const increment = balance / steps;
-      let current = 0;
-      
-      const timer = setInterval(() => {
-        current += increment;
-        if (current >= balance) {
-          setAnimatedBalance(balance);
-          clearInterval(timer);
-        } else {
-          setAnimatedBalance(current);
-        }
-      }, duration / steps);
-
-      return () => clearInterval(timer);
-    } else {
-      setAnimatedBalance(balance);
-    }
-  }, [balance, showBalance]);
-
   const formatBalance = (amount: number) => {
     // Handle crypto currencies separately as they're not valid ISO currency codes
     const cryptoCurrencies = ['BTC', 'USDT', 'ETH', 'BNB'];
@@ -84,7 +60,7 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
 
   if (loading) {
     return (
-      <GlassCard variant="accent" hover="glow" className={cn("overflow-hidden animate-pulse", className)} style={style}>
+      <GlassCard variant="accent" className={cn("overflow-hidden", className)} style={style}>
         <CardContent className="p-6">
           <div className="h-24 bg-muted/30 rounded"></div>
         </CardContent>
@@ -94,8 +70,7 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
 
   return (
     <GlassCard 
-      variant="accent" 
-      hover="glow"
+      variant="accent"
       className={cn("overflow-hidden", className)}
       style={style}
     >
@@ -135,8 +110,8 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
       <GlassCardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <div className="text-4xl font-bold bg-gradient-neon bg-clip-text text-transparent animate-count-up">
-              {showBalance ? formatBalance(animatedBalance) : "••••••"}
+            <div className="text-4xl font-bold bg-gradient-neon bg-clip-text text-transparent">
+              {showBalance ? formatBalance(balance) : "••••••"}
             </div>
             <div className={cn("flex items-center gap-1 text-sm", getChangeColor())}>
               {getChangeIcon()}
