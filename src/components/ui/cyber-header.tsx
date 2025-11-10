@@ -58,12 +58,10 @@ const CyberHeader: React.FC<CyberHeaderProps> = ({
                   <img 
                     src={logo}
                     alt="IPG I-SMART Logo" 
-                    className="w-14 h-14 object-contain filter drop-shadow-lg transition-all duration-300 group-hover:scale-105"
+                    className="w-14 h-14 object-contain filter drop-shadow-lg"
                   />
                 </div>
               </div>
-              <div className="absolute inset-0 bg-gradient-ring rounded-xl opacity-0 group-hover:opacity-40 transition-all duration-300 animate-glow-pulse" />
-              <div className="absolute -inset-1 bg-gradient-primary rounded-xl opacity-20 blur-sm animate-neon-pulse" />
             </div>
           )}
           <div>
@@ -98,9 +96,8 @@ const CyberHeader: React.FC<CyberHeaderProps> = ({
               value={kpi.value}
               label={kpi.label}
               delta={kpi.delta}
-              animate
               className="flex-shrink-0"
-              style={{ animationDelay: `${index * 40}ms` }}
+
             />
           ))}
         </div>

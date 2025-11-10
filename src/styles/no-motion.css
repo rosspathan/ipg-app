@@ -4,7 +4,7 @@
   animation: none !important;
   transition: none !important;
   -webkit-transition: none !important;
-  transform: none !important; /* prevent scale/translate flicker */
+  
 }
 
 /* Apply globally (affects portals/popovers) when added to body */
@@ -13,7 +13,7 @@ body.no-motion-global, body.no-motion-global * {
   animation: none !important;
   transition: none !important;
   -webkit-transition: none !important;
-  transform: none !important;
+  
   will-change: auto !important;
 }
 

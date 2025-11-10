@@ -7,8 +7,7 @@ const kpiChipVariants = cva(
   [
     "inline-flex items-center gap-2 rounded-lg px-3 py-1.5",
     "bg-card-glass backdrop-blur-[14px] border border-white/10",
-    "text-xs font-medium transition-all duration-normal",
-    "hover:scale-105 hover:shadow-glow-primary"
+    "text-xs font-medium"
   ],
   {
     variants: {
@@ -62,9 +61,8 @@ const KpiChip = React.forwardRef<HTMLDivElement, KpiChipProps>(
       <div
         ref={ref}
         className={cn(
-          kpiChipVariants({ variant, size }),
-          animate && "animate-slide-up-stagger",
           className
+
         )}
         {...props}
       >

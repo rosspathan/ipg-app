@@ -144,7 +144,7 @@ export const AnnouncementTicker: React.FC = () => {
         {announcements.length > 1 && (
           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-border/30">
             <div
-              className="h-full bg-primary transition-all duration-[5000ms] ease-linear"
+              className="h-full bg-primary"
               style={{ width: `${((currentIndex + 1) / announcements.length) * 100}%` }}
             />
           </div>

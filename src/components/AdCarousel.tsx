@@ -189,13 +189,13 @@ export const AdCarousel: React.FC<AdCarouselProps> = ({ placement, className }) 
             <>
               <button
                 onClick={prevAd}
-                className="absolute left-6 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                className="absolute left-6 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={nextAd}
-                className="absolute right-6 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                className="absolute right-6 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -207,7 +207,7 @@ export const AdCarousel: React.FC<AdCarouselProps> = ({ placement, className }) 
                     key={index}
                     onClick={() => setCurrentIndex(index)}
                     className={cn(
-                      "w-2 h-2 rounded-full transition-colors",
+                      "w-2 h-2 rounded-full",
                       index === currentIndex ? "bg-white" : "bg-white/40"
                     )}
                   />

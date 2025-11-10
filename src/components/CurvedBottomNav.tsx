@@ -92,7 +92,6 @@ return (
                     onClick={() => navigate(item.path)}
                     className={cn(
                       "ripple flex flex-col items-center gap-1 h-16 px-3 rounded-xl",
-                      "transition-all duration-normal",
                       isBeforeCenter && "mr-8",
                       isAfterCenter && index === 2 && "ml-8",
                       active 
@@ -100,12 +99,9 @@ return (
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
                     )}
                   >
-                    <Icon className={cn(
-                      "h-5 w-5 transition-all duration-normal",
-                      active ? "scale-110" : "scale-100"
-                    )} />
+                    <Icon className="h-5 w-5" />
                     <span className={cn(
-                      "text-xs font-medium transition-all duration-normal",
+                      "text-xs font-medium",
                       active ? "text-primary" : "text-muted-foreground"
                     )}>
                       {item.label}
@@ -120,10 +116,6 @@ return (
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-6">
             <FloatingActionButton
               onClick={handleFABPress}
-              className={cn(
-                "transition-all duration-300",
-                isSpeedDialOpen ? "scale-110 rotate-180" : ""
-              )}
             >
               <img 
                 src={ipgLogo}
