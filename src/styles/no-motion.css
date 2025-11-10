@@ -1,0 +1,13 @@
+/* Global hard stop for animations and transitions within a container */
+.no-motion, .no-motion * {
+  -webkit-animation: none !important;
+  animation: none !important;
+  transition: none !important;
+  -webkit-transition: none !important;
+  transform: none !important; /* prevent scale/translate flicker */
+}
+
+/* Prevent GPU thrash from will-change hints */
+.no-motion * {
+  will-change: auto !important;
+}

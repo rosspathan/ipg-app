@@ -184,7 +184,7 @@ export const UnifiedTransactionFeed: React.FC = () => {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="animate-pulse space-y-4">
+          <div className="space-y-4">
             {[1, 2, 3].map(i => (
               <div key={i} className="h-16 bg-muted/30 rounded" />
             ))}
@@ -208,7 +208,7 @@ export const UnifiedTransactionFeed: React.FC = () => {
             onClick={fetchTransactions}
             disabled={loading}
           >
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            <RefreshCw className={cn("h-4 w-4")} />
           </Button>
         </div>
         

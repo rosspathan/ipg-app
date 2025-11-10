@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import ipgLogo from "@/assets/ipg-logo.jpg";
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp";
 import CurvedBottomNav from "@/components/CurvedBottomNav";
+import "@/styles/no-motion.css";
 
 const AppHomeScreen = () => {
   console.log('AppHomeScreen: Component rendering...');
@@ -133,7 +134,8 @@ const AppHomeScreen = () => {
   };
 
   return (
-    <div className="min-h-screen w-full">
+    <div className="min-h-screen w-full no-motion">
+
       {/* Announcement Ticker at Top */}
       <AnnouncementTicker />
 

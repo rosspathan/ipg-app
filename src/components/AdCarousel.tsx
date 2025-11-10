@@ -135,7 +135,7 @@ export const AdCarousel: React.FC<AdCarouselProps> = ({ placement, className }) 
   if (loading) {
     return (
       <Card className="p-4 bg-card/50 backdrop-blur-sm">
-        <div className="animate-pulse space-y-3">
+        <div className="space-y-3">
           <div className="h-4 bg-muted rounded w-1/4"></div>
           <div className="aspect-[16/9] bg-muted rounded"></div>
         </div>

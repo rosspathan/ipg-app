@@ -118,7 +118,7 @@ const BSKLoanCard = ({ className, variant = "compact", style }: BSKLoanCardProps
 
   if (loading) {
     return (
-      <Card className={cn("animate-pulse", className)} style={style}>
+      <Card className={cn(className)} style={style}>
         <CardHeader>
           <div className="h-6 bg-muted rounded w-32"></div>
         </CardHeader>
