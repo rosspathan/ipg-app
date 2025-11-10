@@ -24,14 +24,22 @@ interface PurchaseRequest {
   withdrawable_amount: number;
   holding_bonus_amount: number;
   total_received: number;
-  bscscan_link: string;
-  transaction_hash: string;
+  payment_method: string;
+  bscscan_link: string | null;
+  transaction_hash: string | null;
+  utr_number: string | null;
+  payer_name: string | null;
+  payer_contact: string | null;
   screenshot_url: string | null;
-  admin_bep20_address: string;
+  admin_bep20_address: string | null;
   status: string;
   admin_notes: string | null;
+  rejected_reason: string | null;
   bsk_amount: number | null;
   created_at: string;
+  updated_at: string;
+  approved_at: string | null;
+  approved_by: string | null;
 }
 
 export default function AdminManualPurchases() {
@@ -50,11 +58,17 @@ export default function AdminManualPurchases() {
 
   const [settingsData, setSettingsData] = useState({
     admin_bep20_address: "",
+    admin_upi_id: "",
+    admin_bank_name: "",
+    admin_account_number: "",
+    admin_ifsc_code: "",
+    admin_account_holder: "",
     min_purchase_amount: "1000",
     max_purchase_amount: "100000",
     fee_percent: "0",
     fee_fixed: "0",
     instructions: "",
+    payment_methods_enabled: ["BEP20"] as string[],
   });
 
   useEffect(() => {
@@ -85,11 +99,17 @@ export default function AdminManualPurchases() {
       if (settingsRes.data) {
         setSettingsData({
           admin_bep20_address: settingsRes.data.admin_bep20_address,
+          admin_upi_id: settingsRes.data.admin_upi_id || "",
+          admin_bank_name: settingsRes.data.admin_bank_name || "",
+          admin_account_number: settingsRes.data.admin_account_number || "",
+          admin_ifsc_code: settingsRes.data.admin_ifsc_code || "",
+          admin_account_holder: settingsRes.data.admin_account_holder || "",
           min_purchase_amount: settingsRes.data.min_purchase_amount.toString(),
           max_purchase_amount: settingsRes.data.max_purchase_amount.toString(),
           fee_percent: settingsRes.data.fee_percent?.toString() || "0",
           fee_fixed: settingsRes.data.fee_fixed?.toString() || "0",
           instructions: settingsRes.data.instructions || "",
+          payment_methods_enabled: settingsRes.data.payment_methods_enabled || ["BEP20"],
         });
       }
     } catch (error: any) {
@@ -128,6 +148,22 @@ export default function AdminManualPurchases() {
 
       if (error) throw error;
 
+      // Log admin action
+      await supabase.from('admin_actions_log').insert({
+        admin_user_id: user.id,
+        action_type: 'bsk_purchase_approved',
+        target_table: 'bsk_manual_purchase_requests',
+        target_id: selectedRecord.id,
+        details: {
+          user_id: selectedRecord.user_id,
+          amount: totalAmount,
+          withdrawable: withdrawableAmount,
+          holding: holdingAmount,
+          payment_method: selectedRecord.payment_method,
+          admin_notes: reviewData.admin_notes
+        }
+      });
+
       // Credit both withdrawable and holding balances atomically (race-condition safe)
       const { data: balanceResult, error: balanceError } = await supabase.rpc(
         'admin_credit_manual_purchase',
@@ -162,7 +198,20 @@ export default function AdminManualPurchases() {
   const handleReject = async () => {
     if (!selectedRecord) return;
 
+    // ✅ ENFORCE MANDATORY REASON
+    if (!reviewData.admin_notes || reviewData.admin_notes.trim().length === 0) {
+      toast({
+        title: "Reason Required",
+        description: "You must provide a reason for rejecting this purchase",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const { error } = await supabase
         .from("bsk_manual_purchase_requests")
         .update({
@@ -173,6 +222,20 @@ export default function AdminManualPurchases() {
         .eq("id", selectedRecord.id);
 
       if (error) throw error;
+
+      // Log admin action
+      await supabase.from('admin_actions_log').insert({
+        admin_user_id: user.id,
+        action_type: 'bsk_purchase_rejected',
+        target_table: 'bsk_manual_purchase_requests',
+        target_id: selectedRecord.id,
+        details: {
+          user_id: selectedRecord.user_id,
+          amount: selectedRecord.purchase_amount,
+          reason: reviewData.admin_notes,
+          payment_method: selectedRecord.payment_method
+        }
+      });
 
       toast({
         title: "Rejected",
@@ -202,11 +265,17 @@ export default function AdminManualPurchases() {
           .from("bsk_purchase_settings")
           .update({
             admin_bep20_address: settingsData.admin_bep20_address,
+            admin_upi_id: settingsData.admin_upi_id || null,
+            admin_bank_name: settingsData.admin_bank_name || null,
+            admin_account_number: settingsData.admin_account_number || null,
+            admin_ifsc_code: settingsData.admin_ifsc_code || null,
+            admin_account_holder: settingsData.admin_account_holder || null,
             min_purchase_amount: parseFloat(settingsData.min_purchase_amount),
             max_purchase_amount: parseFloat(settingsData.max_purchase_amount),
             fee_percent: parseFloat(settingsData.fee_percent),
             fee_fixed: parseFloat(settingsData.fee_fixed),
             instructions: settingsData.instructions,
+            payment_methods_enabled: settingsData.payment_methods_enabled,
           })
           .eq("id", settings.id);
 
@@ -244,6 +313,47 @@ export default function AdminManualPurchases() {
     }
   };
 
+  const exportToCSV = () => {
+    const headers = [
+      'ID', 'User Email', 'Amount (BSK)', 'Payment Method', 'Transaction Ref',
+      'Status', 'Withdrawable', 'Holding Bonus', 'Total Received',
+      'Submitted At', 'Decided At', 'Admin Notes'
+    ];
+
+    const rows = requests.map(r => [
+      r.id,
+      r.email,
+      r.purchase_amount,
+      r.payment_method,
+      r.transaction_hash || r.utr_number || '',
+      r.status,
+      r.withdrawable_amount,
+      r.holding_bonus_amount,
+      r.total_received,
+      new Date(r.created_at).toISOString(),
+      r.approved_at || r.updated_at || '',
+      r.admin_notes || ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bsk-purchase-requests-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Exported",
+      description: `${requests.length} records exported to CSV`,
+    });
+  };
+
   const columns = [
     { key: "email", label: "Email" },
     {
@@ -251,6 +361,13 @@ export default function AdminManualPurchases() {
       label: "Amount",
       render: (row: PurchaseRequest) => (
         <span className="font-mono">{row.purchase_amount.toLocaleString()} BSK</span>
+      ),
+    },
+    {
+      key: "payment",
+      label: "Payment",
+      render: (row: PurchaseRequest) => (
+        <span className="text-xs">{row.payment_method}</span>
       ),
     },
     {
@@ -316,10 +433,15 @@ export default function AdminManualPurchases() {
       <div className="px-4 space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-heading font-bold">Manual BSK Purchase Requests</h1>
-          <Button size="sm" variant="outline" onClick={() => setSettingsDialog(true)}>
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={exportToCSV} disabled={requests.length === 0}>
+              Export CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setSettingsDialog(true)}>
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="pending">
@@ -411,17 +533,41 @@ export default function AdminManualPurchases() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg">
                   <div>
-                    <Label className="text-muted-foreground">Email</Label>
-                    <p className="font-semibold">{selectedRecord.email}</p>
+                    <Label className="text-muted-foreground">Payment Method</Label>
+                    <p className="font-semibold">{selectedRecord.payment_method}</p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Purchase Amount</Label>
                     <p className="font-semibold">{selectedRecord.purchase_amount.toLocaleString()} BSK</p>
                   </div>
-                  <div className="col-span-2">
-                    <Label className="text-muted-foreground">Transaction Hash</Label>
-                    <p className="font-mono text-sm">{selectedRecord.transaction_hash}</p>
-                  </div>
+                  
+                  {selectedRecord.payment_method === 'BEP20' && selectedRecord.transaction_hash && (
+                    <div className="col-span-2">
+                      <Label className="text-muted-foreground">Transaction Hash</Label>
+                      <p className="font-mono text-sm">{selectedRecord.transaction_hash}</p>
+                    </div>
+                  )}
+                  
+                  {(selectedRecord.payment_method === 'UPI' || selectedRecord.payment_method === 'IMPS') && selectedRecord.utr_number && (
+                    <div className="col-span-2">
+                      <Label className="text-muted-foreground">UTR Number</Label>
+                      <p className="font-mono text-sm">{selectedRecord.utr_number}</p>
+                    </div>
+                  )}
+                  
+                  {selectedRecord.payer_name && (
+                    <div>
+                      <Label className="text-muted-foreground">Payer Name</Label>
+                      <p className="font-semibold">{selectedRecord.payer_name}</p>
+                    </div>
+                  )}
+                  
+                  {selectedRecord.payer_contact && (
+                    <div>
+                      <Label className="text-muted-foreground">Payer Contact</Label>
+                      <p className="font-semibold">{selectedRecord.payer_contact}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Bonus Breakdown */}
@@ -450,17 +596,19 @@ export default function AdminManualPurchases() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <Label className="text-muted-foreground">BSCScan Link</Label>
-                    <a
-                      href={selectedRecord.bscscan_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline flex items-center gap-1"
-                    >
-                      View Transaction <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
+                  {selectedRecord.bscscan_link && (
+                    <div className="col-span-2">
+                      <Label className="text-muted-foreground">BSCScan Link</Label>
+                      <a
+                        href={selectedRecord.bscscan_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1"
+                      >
+                        View Transaction <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
                   {selectedRecord.screenshot_url && (
                     <div className="col-span-2">
                       <Label className="text-muted-foreground">Screenshot Proof</Label>
@@ -484,12 +632,27 @@ export default function AdminManualPurchases() {
                   />
                 </div>
                 <div>
-                  <Label>Admin Notes</Label>
+                  <Label className={cn(
+                    selectedRecord.status === 'pending' && "text-destructive"
+                  )}>
+                    Admin Notes {selectedRecord.status === 'pending' && "(Required for Rejection) *"}
+                  </Label>
                   <Textarea
                     value={reviewData.admin_notes}
                     onChange={(e) => setReviewData({ ...reviewData, admin_notes: e.target.value })}
-                    placeholder="Add any notes about this request..."
+                    placeholder="Add notes or rejection reason..."
+                    rows={3}
+                    className={cn(
+                      selectedRecord.status === 'pending' && 
+                      !reviewData.admin_notes && 
+                      "border-destructive/50"
+                    )}
                   />
+                  {selectedRecord.status === 'pending' && !reviewData.admin_notes && (
+                    <p className="text-xs text-destructive mt-1">
+                      Rejection requires a reason
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -498,6 +661,7 @@ export default function AdminManualPurchases() {
                   variant="destructive"
                   onClick={handleReject}
                   className="flex-1"
+                  disabled={!reviewData.admin_notes || reviewData.admin_notes.trim().length === 0}
                 >
                   <XCircle className="w-4 h-4 mr-2" />
                   Reject
@@ -523,7 +687,27 @@ export default function AdminManualPurchases() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Admin BEP20 Address *</Label>
+              <Label>Payment Methods Enabled</Label>
+              <div className="flex gap-2 mt-2">
+                {['BEP20', 'UPI', 'IMPS'].map(method => (
+                  <label key={method} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settingsData.payment_methods_enabled.includes(method)}
+                      onChange={(e) => {
+                        const methods = e.target.checked
+                          ? [...settingsData.payment_methods_enabled, method]
+                          : settingsData.payment_methods_enabled.filter(m => m !== method);
+                        setSettingsData({ ...settingsData, payment_methods_enabled: methods });
+                      }}
+                    />
+                    {method}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>Admin BEP20 Address</Label>
               <Input
                 value={settingsData.admin_bep20_address}
                 onChange={(e) =>
@@ -531,6 +715,46 @@ export default function AdminManualPurchases() {
                 }
                 placeholder="0x..."
               />
+            </div>
+            <div>
+              <Label>Admin UPI ID</Label>
+              <Input
+                value={settingsData.admin_upi_id}
+                onChange={(e) => setSettingsData({ ...settingsData, admin_upi_id: e.target.value })}
+                placeholder="yourname@upi"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Bank Name</Label>
+                <Input
+                  value={settingsData.admin_bank_name}
+                  onChange={(e) => setSettingsData({ ...settingsData, admin_bank_name: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Account Holder</Label>
+                <Input
+                  value={settingsData.admin_account_holder}
+                  onChange={(e) => setSettingsData({ ...settingsData, admin_account_holder: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Account Number</Label>
+                <Input
+                  value={settingsData.admin_account_number}
+                  onChange={(e) => setSettingsData({ ...settingsData, admin_account_number: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>IFSC Code</Label>
+                <Input
+                  value={settingsData.admin_ifsc_code}
+                  onChange={(e) => setSettingsData({ ...settingsData, admin_ifsc_code: e.target.value })}
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

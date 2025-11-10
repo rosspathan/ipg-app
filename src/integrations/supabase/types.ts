@@ -2586,6 +2586,10 @@ export type Database = {
           email: string
           holding_bonus_amount: number | null
           id: string
+          ip_address: unknown
+          payer_contact: string | null
+          payer_name: string | null
+          payment_method: string | null
           purchase_amount: number
           rejected_reason: string | null
           screenshot_url: string | null
@@ -2594,6 +2598,7 @@ export type Database = {
           transaction_hash: string | null
           updated_at: string
           user_id: string
+          utr_number: string | null
           withdrawable_amount: number | null
         }
         Insert: {
@@ -2607,6 +2612,10 @@ export type Database = {
           email: string
           holding_bonus_amount?: number | null
           id?: string
+          ip_address?: unknown
+          payer_contact?: string | null
+          payer_name?: string | null
+          payment_method?: string | null
           purchase_amount: number
           rejected_reason?: string | null
           screenshot_url?: string | null
@@ -2615,6 +2624,7 @@ export type Database = {
           transaction_hash?: string | null
           updated_at?: string
           user_id: string
+          utr_number?: string | null
           withdrawable_amount?: number | null
         }
         Update: {
@@ -2628,6 +2638,10 @@ export type Database = {
           email?: string
           holding_bonus_amount?: number | null
           id?: string
+          ip_address?: unknown
+          payer_contact?: string | null
+          payer_name?: string | null
+          payment_method?: string | null
           purchase_amount?: number
           rejected_reason?: string | null
           screenshot_url?: string | null
@@ -2636,13 +2650,19 @@ export type Database = {
           transaction_hash?: string | null
           updated_at?: string
           user_id?: string
+          utr_number?: string | null
           withdrawable_amount?: number | null
         }
         Relationships: []
       }
       bsk_purchase_settings: {
         Row: {
+          admin_account_holder: string | null
+          admin_account_number: string | null
+          admin_bank_name: string | null
           admin_bep20_address: string
+          admin_ifsc_code: string | null
+          admin_upi_id: string | null
           created_at: string
           created_by: string | null
           fee_fixed: number
@@ -2652,10 +2672,16 @@ export type Database = {
           is_active: boolean
           max_purchase_amount: number
           min_purchase_amount: number
+          payment_methods_enabled: string[] | null
           updated_at: string
         }
         Insert: {
+          admin_account_holder?: string | null
+          admin_account_number?: string | null
+          admin_bank_name?: string | null
           admin_bep20_address: string
+          admin_ifsc_code?: string | null
+          admin_upi_id?: string | null
           created_at?: string
           created_by?: string | null
           fee_fixed?: number
@@ -2665,10 +2691,16 @@ export type Database = {
           is_active?: boolean
           max_purchase_amount?: number
           min_purchase_amount?: number
+          payment_methods_enabled?: string[] | null
           updated_at?: string
         }
         Update: {
+          admin_account_holder?: string | null
+          admin_account_number?: string | null
+          admin_bank_name?: string | null
           admin_bep20_address?: string
+          admin_ifsc_code?: string | null
+          admin_upi_id?: string | null
           created_at?: string
           created_by?: string | null
           fee_fixed?: number
@@ -2678,6 +2710,7 @@ export type Database = {
           is_active?: boolean
           max_purchase_amount?: number
           min_purchase_amount?: number
+          payment_methods_enabled?: string[] | null
           updated_at?: string
         }
         Relationships: []

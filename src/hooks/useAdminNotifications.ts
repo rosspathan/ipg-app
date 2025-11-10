@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface AdminNotification {
   id: string;
-  type: 'bsk_transfer' | 'user_signup' | 'kyc_approval' | 'kyc_rejection' | 'system';
+  type: 'bsk_transfer' | 'user_signup' | 'kyc_approval' | 'kyc_rejection' | 'bsk_purchase_request' | 'system';
   title: string;
   message: string;
   metadata: any;

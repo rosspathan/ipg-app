@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Copy, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Upload, Copy, ExternalLink, CheckCircle2, CreditCard, Smartphone, Building2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { BigMath } from "@/lib/utils/bigmath";
 
 // Badge purchase limits by tier
 const BADGE_LIMITS = {
@@ -31,8 +33,12 @@ export function ManualBSKPurchaseForm() {
   const [formData, setFormData] = useState({
     email: "",
     purchase_amount: "",
+    payment_method: "BEP20" as "BEP20" | "UPI" | "IMPS",
     bscscan_link: "",
     transaction_hash: "",
+    utr_number: "",
+    payer_name: "",
+    payer_contact: "",
   });
 
   const calculateFee = () => {
@@ -51,11 +57,14 @@ export function ManualBSKPurchaseForm() {
 
   const calculateBonus = () => {
     if (!formData.purchase_amount) return { withdrawable: 0, holding: 0, total: 0 };
-    const amount = parseFloat(formData.purchase_amount);
+    const amount = formData.purchase_amount;
+    const holding = BigMath.multiply(amount, 0.5);
+    const total = BigMath.add(amount, holding);
+    
     return {
-      withdrawable: amount,
-      holding: amount * 0.5,
-      total: amount * 1.5,
+      withdrawable: BigMath.toNumber(amount),
+      holding: BigMath.toNumber(holding),
+      total: BigMath.toNumber(total),
     };
   };
 
@@ -185,6 +194,16 @@ export function ManualBSKPurchaseForm() {
         return;
       }
 
+      // Get user IP address (best effort)
+      let ipAddress = null;
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        ipAddress = ipData.ip;
+      } catch (e) {
+        console.warn('Could not fetch IP address:', e);
+      }
+
       // Upload screenshot
       const screenshotUrl = await uploadScreenshot(user.id);
 
@@ -200,10 +219,15 @@ export function ManualBSKPurchaseForm() {
           withdrawable_amount: bonus.withdrawable,
           holding_bonus_amount: bonus.holding,
           total_received: bonus.total,
-          bscscan_link: formData.bscscan_link,
-          transaction_hash: formData.transaction_hash,
+          payment_method: formData.payment_method,
+          bscscan_link: formData.payment_method === 'BEP20' ? formData.bscscan_link : null,
+          transaction_hash: formData.payment_method === 'BEP20' ? formData.transaction_hash : null,
+          utr_number: formData.payment_method !== 'BEP20' ? formData.utr_number : null,
+          payer_name: formData.payer_name || null,
+          payer_contact: formData.payer_contact || null,
           screenshot_url: screenshotUrl,
-          admin_bep20_address: settings.admin_bep20_address,
+          admin_bep20_address: formData.payment_method === 'BEP20' ? settings.admin_bep20_address : null,
+          ip_address: ipAddress,
           status: "pending",
         });
 
@@ -218,8 +242,12 @@ export function ManualBSKPurchaseForm() {
       setFormData({
         email: "",
         purchase_amount: "",
+        payment_method: "BEP20",
         bscscan_link: "",
         transaction_hash: "",
+        utr_number: "",
+        payer_name: "",
+        payer_contact: "",
       });
       setScreenshot(null);
     } catch (error: any) {
@@ -264,7 +292,7 @@ export function ManualBSKPurchaseForm() {
       <CardHeader>
         <CardTitle>Purchase BSK Manually</CardTitle>
         <CardDescription>
-          Send payment to our BEP20 address and submit proof for verification
+          Choose your payment method and complete the purchase verification
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -286,34 +314,124 @@ export function ManualBSKPurchaseForm() {
             </div>
           </AlertDescription>
         </Alert>
-        {/* Step 1: Payment Address */}
+        {/* Step 1: Choose Payment Method */}
         <div className="space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
           <div className="flex items-center gap-2">
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">
               1
             </div>
-            <h3 className="font-semibold text-lg">Send Payment</h3>
+            <h3 className="font-semibold text-lg">Choose Payment Method</h3>
           </div>
-          <div className="space-y-2 pl-10">
-            <Label>Admin BEP20 Address (BNB Smart Chain)</Label>
-            <div className="flex gap-2">
-              <Input
-                value={settings.admin_bep20_address}
-                readOnly
-                className="font-mono text-sm"
-              />
-              <Button size="icon" variant="outline" onClick={copyAddress}>
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="space-y-4 pl-10">
+            <RadioGroup
+              value={formData.payment_method}
+              onValueChange={(value) => setFormData({ ...formData, payment_method: value as any })}
+            >
+              {settings.payment_methods_enabled?.includes('BEP20') && (
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent/5 cursor-pointer">
+                  <RadioGroupItem value="BEP20" id="bep20" />
+                  <Label htmlFor="bep20" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <CreditCard className="h-4 w-4" />
+                    <div>
+                      <p className="font-medium">BEP20 (BNB Smart Chain)</p>
+                      <p className="text-xs text-muted-foreground">Send crypto directly</p>
+                    </div>
+                  </Label>
+                </div>
+              )}
+              {settings.payment_methods_enabled?.includes('UPI') && (
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent/5 cursor-pointer">
+                  <RadioGroupItem value="UPI" id="upi" />
+                  <Label htmlFor="upi" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Smartphone className="h-4 w-4" />
+                    <div>
+                      <p className="font-medium">UPI Payment</p>
+                      <p className="text-xs text-muted-foreground">Pay via UPI apps</p>
+                    </div>
+                  </Label>
+                </div>
+              )}
+              {settings.payment_methods_enabled?.includes('IMPS') && (
+                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent/5 cursor-pointer">
+                  <RadioGroupItem value="IMPS" id="imps" />
+                  <Label htmlFor="imps" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Building2 className="h-4 w-4" />
+                    <div>
+                      <p className="font-medium">IMPS Transfer</p>
+                      <p className="text-xs text-muted-foreground">Bank transfer</p>
+                    </div>
+                  </Label>
+                </div>
+              )}
+            </RadioGroup>
+
+            {/* Payment Details based on selected method */}
+            {formData.payment_method === 'BEP20' && (
+              <div className="space-y-2">
+                <Label>Admin BEP20 Address</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={settings.admin_bep20_address}
+                    readOnly
+                    className="font-mono text-sm"
+                  />
+                  <Button size="icon" variant="outline" onClick={copyAddress}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {formData.payment_method === 'UPI' && settings.admin_upi_id && (
+              <div className="space-y-2">
+                <Label>Admin UPI ID</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={settings.admin_upi_id}
+                    readOnly
+                    className="font-mono text-sm"
+                  />
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    onClick={() => {
+                      navigator.clipboard.writeText(settings.admin_upi_id);
+                      toast({ title: "Copied", description: "UPI ID copied to clipboard" });
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {formData.payment_method === 'IMPS' && settings.admin_bank_name && (
+              <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                <p className="text-sm font-semibold">Bank Details</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Bank Name</p>
+                    <p className="font-medium">{settings.admin_bank_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Account Holder</p>
+                    <p className="font-medium">{settings.admin_account_holder}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Account Number</p>
+                    <p className="font-mono text-xs">{settings.admin_account_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">IFSC Code</p>
+                    <p className="font-mono text-xs">{settings.admin_ifsc_code}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <p className="text-sm text-muted-foreground">
               Purchase Range: {settings.min_purchase_amount.toLocaleString()} - {settings.max_purchase_amount.toLocaleString()} BSK
             </p>
-            {settings.instructions && (
-              <p className="text-sm text-muted-foreground mt-2">
-                {settings.instructions}
-              </p>
-            )}
           </div>
         </div>
 
@@ -409,38 +527,76 @@ export function ManualBSKPurchaseForm() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tx_hash">Transaction Hash *</Label>
-              <Input
-                id="tx_hash"
-                value={formData.transaction_hash}
-                onChange={(e) => setFormData({ ...formData, transaction_hash: e.target.value })}
-                placeholder="0x..."
-                required
-              />
-            </div>
+            {formData.payment_method === 'BEP20' ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="tx_hash">Transaction Hash *</Label>
+                  <Input
+                    id="tx_hash"
+                    value={formData.transaction_hash}
+                    onChange={(e) => setFormData({ ...formData, transaction_hash: e.target.value })}
+                    placeholder="0x..."
+                    required
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bscscan">BSCScan Link *</Label>
-              <Input
-                id="bscscan"
-                type="url"
-                value={formData.bscscan_link}
-                onChange={(e) => setFormData({ ...formData, bscscan_link: e.target.value })}
-                placeholder="https://bscscan.com/tx/0x..."
-                required
-              />
-              {formData.bscscan_link && (
-                <a
-                  href={formData.bscscan_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  View on BSCScan <ExternalLink className="h-3 w-3" />
-                </a>
-              )}
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bscscan">BSCScan Link *</Label>
+                  <Input
+                    id="bscscan"
+                    type="url"
+                    value={formData.bscscan_link}
+                    onChange={(e) => setFormData({ ...formData, bscscan_link: e.target.value })}
+                    placeholder="https://bscscan.com/tx/0x..."
+                    required
+                  />
+                  {formData.bscscan_link && (
+                    <a
+                      href={formData.bscscan_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline flex items-center gap-1"
+                    >
+                      View on BSCScan <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="utr">UTR / Reference Number *</Label>
+                  <Input
+                    id="utr"
+                    value={formData.utr_number}
+                    onChange={(e) => setFormData({ ...formData, utr_number: e.target.value })}
+                    placeholder="Enter 12-digit UTR number"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="payer_name">Payer Name</Label>
+                    <Input
+                      id="payer_name"
+                      value={formData.payer_name}
+                      onChange={(e) => setFormData({ ...formData, payer_name: e.target.value })}
+                      placeholder="Full name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="payer_contact">Payer Contact</Label>
+                    <Input
+                      id="payer_contact"
+                      value={formData.payer_contact}
+                      onChange={(e) => setFormData({ ...formData, payer_contact: e.target.value })}
+                      placeholder="Phone or email"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="screenshot">Screenshot Proof *</Label>

@@ -16,6 +16,8 @@ const getNotificationIcon = (type: AdminNotification['type']) => {
   switch (type) {
     case 'bsk_transfer':
       return <DollarSign className="w-4 h-4 text-success" />;
+    case 'bsk_purchase_request':
+      return <DollarSign className="w-4 h-4 text-warning" />;
     case 'user_signup':
       return <User className="w-4 h-4 text-accent" />;
     case 'kyc_approval':
