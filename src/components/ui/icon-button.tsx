@@ -48,7 +48,7 @@ export const IconButton = React.forwardRef<HTMLElement, IconButtonProps>(
     const baseStyles = cn(
       // Base button styles
       "inline-flex items-center justify-center",
-      "rounded-full transition-all duration-200",
+      "rounded-full",
       "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
       "disabled:opacity-50 disabled:pointer-events-none",
       // Minimum hit target
@@ -77,10 +77,8 @@ export const IconButton = React.forwardRef<HTMLElement, IconButtonProps>(
         "bg-[#25D366] text-white",
         // Shadow
         "shadow-lg shadow-[#25D366]/35",
-        // Hover state - elevate and darken
-        "hover:bg-[#21B857] hover:shadow-xl hover:shadow-[#25D366]/40 hover:-translate-y-0.5",
-        // Active state
-        "active:translate-y-0",
+        // Hover state - darken only (no movement)
+        "hover:bg-[#21B857]",
         // Focus ring
         "focus-visible:ring-[#25D366]/45"
       ),

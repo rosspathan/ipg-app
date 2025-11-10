@@ -43,14 +43,7 @@ export const AnnouncementTicker: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (announcements.length <= 1) return;
-
-    // Auto-rotate announcements every 5 seconds
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % announcements.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
+    // Auto-rotation disabled to prevent flicker
   }, [announcements.length]);
 
   const fetchAnnouncements = async () => {

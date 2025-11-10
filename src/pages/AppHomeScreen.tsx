@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,11 @@ const AppHomeScreen = () => {
   const navigate = useNavigate();
   const { user } = useAuthUser();
 
-  console.log('AppHomeScreen: User authenticated:', !!user);
+  useEffect(() => {
+    document.body.classList.add('no-motion-global');
+    return () => document.body.classList.remove('no-motion-global');
+  }, []);
+
 
   // Mock data - in real app this would come from APIs
   const totalBalance = 15247.82;

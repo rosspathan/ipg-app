@@ -7,6 +7,16 @@
   transform: none !important; /* prevent scale/translate flicker */
 }
 
+/* Apply globally (affects portals/popovers) when added to body */
+body.no-motion-global, body.no-motion-global * {
+  -webkit-animation: none !important;
+  animation: none !important;
+  transition: none !important;
+  -webkit-transition: none !important;
+  transform: none !important;
+  will-change: auto !important;
+}
+
 /* Prevent GPU thrash from will-change hints */
 .no-motion * {
   will-change: auto !important;
