@@ -10914,11 +10914,29 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_credit_bsk_manual: {
+        Args: {
+          p_amount: number
+          p_balance_type?: string
+          p_notes?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_credit_manual_purchase: {
         Args: {
           p_holding_amount: number
           p_user_id: string
           p_withdrawable_amount: number
+        }
+        Returns: Json
+      }
+      admin_debit_bsk_manual: {
+        Args: {
+          p_amount: number
+          p_balance_type?: string
+          p_notes?: string
+          p_user_id: string
         }
         Returns: Json
       }
