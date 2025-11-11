@@ -46,7 +46,7 @@ export function useAdminBSKTransfers(
             avatar_url
           )
         `, { count: 'exact' })
-        .in('transaction_type', ['transfer_in', 'transfer_out', 'admin_credit', 'admin_debit'])
+        .in('transaction_type', ['transfer_in', 'transfer_out', 'admin_credit', 'admin_debit', 'manual_credit', 'manual_debit', 'purchase', 'purchase_bonus'])
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -103,7 +103,7 @@ export function useTransferStats(filters: TransferFilters = {}) {
       let query = supabase
         .from('unified_bsk_transactions')
         .select('transaction_type, amount, user_id')
-        .in('transaction_type', ['transfer_in', 'transfer_out', 'admin_credit', 'admin_debit']);
+        .in('transaction_type', ['transfer_in', 'transfer_out', 'admin_credit', 'admin_debit', 'manual_credit', 'manual_debit', 'purchase', 'purchase_bonus']);
 
       // Apply same filters
       if (filters.transferTypes?.length) {

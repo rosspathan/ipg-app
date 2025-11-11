@@ -146,7 +146,54 @@ const getTransactionDisplay = (tx: UnifiedBSKTransaction): TransactionDisplay =>
     };
   }
   
-  // Deposit/Credit
+  // Admin manual credit
+  if (tx.transaction_type === 'admin_credit' || tx.transaction_type === 'manual_credit') {
+    const adminNotes = tx.metadata?.admin_notes || 'Admin credit';
+    return {
+      label: 'Admin Credit',
+      secondaryInfo: adminNotes,
+      icon: CreditCard,
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
+    };
+  }
+  
+  // Admin manual debit
+  if (tx.transaction_type === 'admin_debit' || tx.transaction_type === 'manual_debit') {
+    const adminNotes = tx.metadata?.admin_notes || 'Admin debit';
+    return {
+      label: 'Admin Debit',
+      secondaryInfo: adminNotes,
+      icon: ArrowDownRight,
+      color: 'text-red-600 dark:text-red-400',
+      bgColor: 'bg-red-50 dark:bg-red-950/30',
+    };
+  }
+  
+  // Purchase transactions
+  if (tx.transaction_type === 'purchase') {
+    const paymentMethod = tx.metadata?.payment_method || 'purchase';
+    return {
+      label: 'BSK Purchase',
+      secondaryInfo: `Payment via ${paymentMethod}`,
+      icon: CreditCard,
+      color: 'text-blue-600 dark:text-blue-400',
+      bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+    };
+  }
+  
+  // Purchase bonus
+  if (tx.transaction_type === 'purchase_bonus') {
+    return {
+      label: 'Purchase Bonus',
+      secondaryInfo: '+50% Holding Bonus',
+      icon: Gift,
+      color: 'text-purple-600 dark:text-purple-400',
+      bgColor: 'bg-purple-50 dark:bg-purple-950/30',
+    };
+  }
+  
+  // Deposit/Credit (fallback)
   if (tx.transaction_type === 'deposit' || tx.transaction_type === 'credit') {
     return {
       label: 'Deposit',

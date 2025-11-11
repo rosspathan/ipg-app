@@ -124,17 +124,17 @@ const TransactionTable = ({ transactionType }: TransactionTableProps) => {
 
       if (transactionType === 'all' || transactionType === 'bsk') {
         // Load BSK withdrawals
-        let bskQuery = supabase
+        let bskWithdrawQuery = supabase
           .from('bsk_withdrawal_requests')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(50);
+          .limit(25);
 
         if (statusFilter !== 'all') {
-          bskQuery = bskQuery.eq('status', statusFilter);
+          bskWithdrawQuery = bskWithdrawQuery.eq('status', statusFilter);
         }
 
-        const { data: bskWithdrawals } = await bskQuery;
+        const { data: bskWithdrawals } = await bskWithdrawQuery;
 
         if (bskWithdrawals) {
           const bskWithProfiles = await Promise.all(
@@ -159,6 +159,76 @@ const TransactionTable = ({ transactionType }: TransactionTableProps) => {
             })
           );
           allTransactions.push(...bskWithProfiles);
+        }
+        
+        // Load BSK purchases (from manual purchase requests)
+        let purchasesQuery = supabase
+          .from('bsk_manual_purchase_requests')
+          .select('*')
+          .order('created_at', { ascending: false})
+          .limit(25);
+
+        if (statusFilter !== 'all') {
+          purchasesQuery = purchasesQuery.eq('status', statusFilter === 'approved' ? 'approved' : statusFilter);
+        }
+
+        const { data: purchases } = await purchasesQuery;
+
+        if (purchases) {
+          const purchasesWithProfiles = await Promise.all(
+            purchases.map(async (p) => {
+              return {
+                id: p.id,
+                user_id: p.user_id,
+                amount: Number(p.total_received),
+                status: p.status,
+                created_at: p.created_at,
+                type: 'BSK Purchase',
+                method: p.payment_method,
+                reference: p.transaction_hash || p.utr_number || '',
+                profiles: {
+                  email: p.email,
+                  full_name: '',
+                },
+              };
+            })
+          );
+          allTransactions.push(...purchasesWithProfiles);
+        }
+        
+        // Load admin manual operations (credits/debits)
+        let adminOpsQuery = supabase
+          .from('bonus_ledger')
+          .select('*')
+          .in('type', ['admin_credit', 'admin_debit', 'manual_credit', 'manual_debit'])
+          .order('created_at', { ascending: false })
+          .limit(25);
+
+        const { data: adminOps } = await adminOpsQuery;
+
+        if (adminOps) {
+          const adminOpsWithProfiles = await Promise.all(
+            adminOps.map(async (op) => {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('email, full_name')
+                .eq('user_id', op.user_id)
+                .maybeSingle();
+
+              return {
+                id: op.id,
+                user_id: op.user_id,
+                amount: Number(op.amount_bsk),
+                status: 'completed',
+                created_at: op.created_at,
+                type: op.type === 'admin_credit' || op.type === 'manual_credit' ? 'Admin Credit' : 'Admin Debit',
+                method: 'Manual',
+                reference: (op.meta_json as any)?.admin_notes || '',
+                profiles: profile,
+              };
+            })
+          );
+          allTransactions.push(...adminOpsWithProfiles);
         }
       }
 

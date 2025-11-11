@@ -76,18 +76,24 @@ export default function AdminBSKTransferSend() {
   const handleSendTransfer = async () => {
     setIsSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-send-bsk-to-user', {
-        body: {
-          recipient_user_id: recipientUserId,
-          amount: parseFloat(amount),
-          balance_type: balanceType,
-          reason: reason
-        }
+      const rpcFunction = balanceType === 'withdrawable' || balanceType === 'holding' 
+        ? 'admin_credit_bsk_manual' 
+        : 'admin_credit_bsk_manual';
+        
+      const { data, error } = await supabase.rpc(rpcFunction, {
+        p_user_id: recipientUserId,
+        p_amount: parseFloat(amount),
+        p_balance_type: balanceType,
+        p_notes: reason
       });
 
       if (error) throw error;
+      if (!(data as any)?.success) throw new Error((data as any)?.error || 'Transfer failed');
 
-      setTransferResult(data);
+      setTransferResult({
+        amount: amount,
+        balance_type: balanceType
+      });
       setTransferSuccess(true);
       toast({
         title: 'Transfer Successful',

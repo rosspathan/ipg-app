@@ -104,6 +104,8 @@ export default function AdminBSKTransferHistory() {
                   <SelectItem value="transfer_out">User Transfers (Out)</SelectItem>
                   <SelectItem value="admin_credit">Admin Credits</SelectItem>
                   <SelectItem value="admin_debit">Admin Debits</SelectItem>
+                  <SelectItem value="purchase">Purchases</SelectItem>
+                  <SelectItem value="purchase_bonus">Purchase Bonuses</SelectItem>
                 </SelectContent>
               </Select>
             </div>
