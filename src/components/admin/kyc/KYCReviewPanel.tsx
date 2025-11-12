@@ -22,6 +22,38 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'submitted':
+      case 'pending':
+        return 'default';
+      case 'approved':
+        return 'outline';
+      case 'rejected':
+        return 'destructive';
+      case 'needs_info':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'submitted':
+      case 'pending':
+        return 'Pending Review';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      case 'needs_info':
+        return 'Needs Info';
+      default:
+        return status;
+    }
+  };
+
   const handleApprove = async () => {
     setLoading(true);
     await onApprove(adminNotes);
@@ -35,28 +67,38 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
     setLoading(false);
   };
 
+  // Use flat data structure from data_json
   const dataJson = submission.data_json as any;
-  const personal = dataJson?.personal_details;
-  const address = dataJson?.address_details;
-  const idDoc = dataJson?.id_document;
+  const fullName = submission.full_name_computed || dataJson?.full_name;
+  const email = submission.profiles?.email || submission.email_computed || dataJson?.email;
+  const phone = submission.phone_computed || dataJson?.phone;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-bold">
-            {personal?.full_name || 'Unknown User'}
-          </h2>
-          <Badge>{submission.status}</Badge>
+      {/* Header with enhanced info */}
+      <div className="border-b pb-4">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h2 className="text-2xl font-bold">{fullName || 'Unknown User'}</h2>
+            <p className="text-muted-foreground">{email}</p>
+          </div>
+          <Badge variant={getStatusColor(submission.status)} className="text-base px-3 py-1">
+            {getStatusLabel(submission.status)}
+          </Badge>
         </div>
-        <p className="text-muted-foreground">{submission.profiles?.email}</p>
-        <p className="text-sm text-muted-foreground">
-          Submitted: {submission.submitted_at ? format(new Date(submission.submitted_at), 'PPpp') : 'N/A'}
-        </p>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span className="text-muted-foreground">Submission ID:</span>
+            <p className="font-mono text-xs">{submission.id.slice(0, 8)}...</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Submitted:</span>
+            <p>{submission.submitted_at ? format(new Date(submission.submitted_at), 'PPpp') : 'N/A'}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Personal Details */}
+      {/* Personal Details - Using flat structure */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -67,24 +109,32 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
         <CardContent className="grid grid-cols-2 gap-4">
           <div>
             <Label className="text-muted-foreground">Full Name</Label>
-            <p className="font-medium">{personal?.full_name || 'N/A'}</p>
+            <p className="font-medium">{fullName || 'N/A'}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">Date of Birth</Label>
-            <p className="font-medium">{personal?.date_of_birth || 'N/A'}</p>
+            <p className="font-medium">{dataJson?.date_of_birth || 'N/A'}</p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Nationality</Label>
-            <p className="font-medium">{personal?.nationality || 'N/A'}</p>
+            <Label className="text-muted-foreground">Email</Label>
+            <p className="font-medium">{email || 'N/A'}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">Phone</Label>
-            <p className="font-medium">{personal?.phone || 'N/A'}</p>
+            <p className="font-medium">{phone || 'N/A'}</p>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Nationality</Label>
+            <p className="font-medium">{dataJson?.nationality || 'N/A'}</p>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Gender</Label>
+            <p className="font-medium">{dataJson?.gender || 'N/A'}</p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Address Details */}
+      {/* Address Details - Using flat structure */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -94,29 +144,35 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
-            <Label className="text-muted-foreground">Street Address</Label>
-            <p className="font-medium">{address?.street_address || 'N/A'}</p>
+            <Label className="text-muted-foreground">Address Line 1</Label>
+            <p className="font-medium">{dataJson?.address_line1 || 'N/A'}</p>
           </div>
+          {dataJson?.address_line2 && (
+            <div className="col-span-2">
+              <Label className="text-muted-foreground">Address Line 2</Label>
+              <p className="font-medium">{dataJson.address_line2}</p>
+            </div>
+          )}
           <div>
             <Label className="text-muted-foreground">City</Label>
-            <p className="font-medium">{address?.city || 'N/A'}</p>
+            <p className="font-medium">{dataJson?.city || 'N/A'}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">State/Province</Label>
-            <p className="font-medium">{address?.state_province || 'N/A'}</p>
+            <p className="font-medium">{dataJson?.state || 'N/A'}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">Postal Code</Label>
-            <p className="font-medium">{address?.postal_code || 'N/A'}</p>
+            <p className="font-medium">{dataJson?.postal_code || 'N/A'}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">Country</Label>
-            <p className="font-medium">{address?.country || 'N/A'}</p>
+            <p className="font-medium">{dataJson?.country || 'N/A'}</p>
           </div>
         </CardContent>
       </Card>
 
-      {/* ID Document Details */}
+      {/* ID Document Details - Using flat structure */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -127,19 +183,19 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
         <CardContent className="grid grid-cols-2 gap-4">
           <div>
             <Label className="text-muted-foreground">Document Type</Label>
-            <p className="font-medium">{idDoc?.document_type || 'N/A'}</p>
+            <p className="font-medium">{dataJson?.id_type || dataJson?.document_type || 'N/A'}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">Document Number</Label>
-            <p className="font-medium">{idDoc?.document_number || 'N/A'}</p>
+            <p className="font-medium">{dataJson?.id_number || dataJson?.document_number || 'N/A'}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">Issue Date</Label>
-            <p className="font-medium">{idDoc?.issue_date || 'N/A'}</p>
+            <p className="font-medium">{dataJson?.issue_date || 'N/A'}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">Expiry Date</Label>
-            <p className="font-medium">{idDoc?.expiry_date || 'N/A'}</p>
+            <p className="font-medium">{dataJson?.expiry_date || 'N/A'}</p>
           </div>
         </CardContent>
       </Card>
@@ -157,9 +213,9 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
               <TabsTrigger value="selfie">Selfie</TabsTrigger>
             </TabsList>
             <TabsContent value="front" className="mt-4">
-              {dataJson?.documents?.id_front ? (
+              {(dataJson?.id_front_url || dataJson?.documents?.id_front) ? (
                 <ImageViewer
-                  imageUrl={dataJson.documents.id_front}
+                  imageUrl={dataJson?.id_front_url || dataJson?.documents?.id_front}
                   alt="ID Front"
                   className="h-[400px]"
                 />
@@ -168,9 +224,9 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
               )}
             </TabsContent>
             <TabsContent value="back" className="mt-4">
-              {dataJson?.documents?.id_back ? (
+              {(dataJson?.id_back_url || dataJson?.documents?.id_back) ? (
                 <ImageViewer
-                  imageUrl={dataJson.documents.id_back}
+                  imageUrl={dataJson?.id_back_url || dataJson?.documents?.id_back}
                   alt="ID Back"
                   className="h-[400px]"
                 />
@@ -179,9 +235,9 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
               )}
             </TabsContent>
             <TabsContent value="selfie" className="mt-4">
-              {dataJson?.documents?.selfie ? (
+              {(dataJson?.selfie_url || dataJson?.documents?.selfie) ? (
                 <ImageViewer
-                  imageUrl={dataJson.documents.selfie}
+                  imageUrl={dataJson?.selfie_url || dataJson?.documents?.selfie}
                   alt="Selfie"
                   className="h-[400px]"
                 />

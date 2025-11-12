@@ -5687,8 +5687,11 @@ export type Database = {
         Row: {
           created_at: string
           data_json: Json
+          email_computed: string | null
+          full_name_computed: string | null
           id: string
           level: string
+          phone_computed: string | null
           rejection_reason: string | null
           reviewed_at: string | null
           reviewer_id: string | null
@@ -5700,8 +5703,11 @@ export type Database = {
         Insert: {
           created_at?: string
           data_json?: Json
+          email_computed?: string | null
+          full_name_computed?: string | null
           id?: string
           level: string
+          phone_computed?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
@@ -5713,8 +5719,11 @@ export type Database = {
         Update: {
           created_at?: string
           data_json?: Json
+          email_computed?: string | null
+          full_name_computed?: string | null
           id?: string
           level?: string
+          phone_computed?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null

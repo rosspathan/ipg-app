@@ -55,38 +55,21 @@ export function useAdminKYC() {
     try {
       setLoading(true);
       
-      // First, fetch KYC submissions without JOIN to avoid RLS issues
+      // Fetch KYC submissions with computed columns and proper UUID join to profiles
       const { data, error } = await supabase
         .from('kyc_profiles_new')
-        .select('*')
-        .order('submitted_at', { ascending: false });
+        .select(`
+          *,
+          profiles:user_id (
+            user_id,
+            email
+          )
+        `)
+        .order('submitted_at', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
-
-      // Then, try to hydrate with user profiles (gracefully handle RLS restrictions)
-      let merged: KYCSubmissionWithUser[] = data || [];
-      try {
-        const userIds = Array.from(new Set(merged.map(r => r.user_id).filter(Boolean)));
-        if (userIds.length > 0) {
-          const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('user_id, email')
-            .in('user_id', userIds);
-          
-          if (!profilesError && profiles) {
-            const profileMap = new Map(profiles.map(p => [p.user_id, p]));
-            merged = merged.map(row => ({ 
-              ...row, 
-              profiles: profileMap.get(row.user_id) 
-            }));
-          }
-        }
-      } catch (profileError) {
-        console.warn('Profile hydration skipped due to permissions:', profileError);
-        // Continue with KYC data only - admin can still review
-      }
       
-      setSubmissions(merged);
+      setSubmissions(data as KYCSubmissionWithUser[]);
     } catch (error) {
       console.error('Error fetching KYC submissions:', error);
       toast({
@@ -247,7 +230,7 @@ export function useAdminKYC() {
     }
   };
 
-  // Filter and search logic
+  // Filter and search logic using computed columns for better performance
   const filteredSubmissions = submissions.filter((submission) => {
     // Status filter
     if (statusFilter === 'pending') {
@@ -259,13 +242,13 @@ export function useAdminKYC() {
       return false;
     }
 
-    // Search filter
+    // Search filter - use computed columns and flat structure
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const email = submission.profiles?.email?.toLowerCase() || '';
-      const dataJson = submission.data_json as any;
-      const fullName = dataJson?.personal_details?.full_name?.toLowerCase() || '';
-      return email.includes(query) || fullName.includes(query);
+      const fullName = (submission.full_name_computed || '').toLowerCase();
+      const phone = (submission.phone_computed || '').toLowerCase();
+      return email.includes(query) || fullName.includes(query) || phone.includes(query);
     }
 
     return true;
