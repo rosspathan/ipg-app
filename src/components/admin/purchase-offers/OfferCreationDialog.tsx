@@ -20,7 +20,6 @@ export const OfferCreationDialog = () => {
     start_at: new Date().toISOString().slice(0, 16),
     end_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     is_featured: false,
-    display_order: 0,
   });
 
   const createMutation = useCreatePurchaseOffer();
@@ -47,7 +46,6 @@ export const OfferCreationDialog = () => {
           start_at: new Date().toISOString().slice(0, 16),
           end_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
           is_featured: false,
-          display_order: 0,
         });
       },
     });
@@ -107,7 +105,7 @@ export const OfferCreationDialog = () => {
               onChange={(e) => setFormData({ ...formData, purchase_amount_bsk: Number(e.target.value) })}
             />
             <p className="text-xs text-muted-foreground">
-              ≈ ₹{(formData.purchase_amount_bsk * 85).toLocaleString('en-IN')}
+              ≈ ₹{formData.purchase_amount_bsk.toLocaleString('en-IN')}
             </p>
           </div>
 
@@ -199,18 +197,6 @@ export const OfferCreationDialog = () => {
                 checked={formData.is_featured}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="display_order">Display Order</Label>
-              <Input
-                id="display_order"
-                type="number"
-                min="0"
-                value={formData.display_order}
-                onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
-              />
-              <p className="text-xs text-muted-foreground">Lower numbers appear first</p>
             </div>
           </div>
         </div>
