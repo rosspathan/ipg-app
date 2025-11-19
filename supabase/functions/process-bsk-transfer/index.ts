@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Create client with user auth for user-specific operations
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -27,20 +28,32 @@ Deno.serve(async (req) => {
       }
     );
 
+    // Create admin client with service role for system settings (bypasses RLS)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       throw new Error('Unauthorized');
     }
 
-    // Check if BSK transfers are enabled
-    const { data: transferSetting } = await supabaseClient
+    // Check if BSK transfers are enabled using admin client to bypass RLS
+    const { data: transferSetting, error: settingError } = await supabaseAdmin
       .from('system_settings')
       .select('value')
       .eq('key', 'bsk_transfers_enabled')
       .single();
 
+    console.log('[BSK Transfer] Transfer setting check:', { 
+      value: transferSetting?.value, 
+      error: settingError,
+      enabled: transferSetting?.value === 'true' 
+    });
+
     if (transferSetting?.value !== 'true') {
-      console.log('BSK transfers are currently disabled');
+      console.log('[BSK Transfer] Transfers are currently disabled');
       return new Response(
         JSON.stringify({ 
           error: 'BSK transfers are currently disabled. Please check back later or visit the one-time offers page.',
