@@ -32,6 +32,24 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
+    // Check if BSK transfers are enabled
+    const { data: transferSetting } = await supabaseClient
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'bsk_transfers_enabled')
+      .single();
+
+    if (transferSetting?.value !== 'true') {
+      console.log('BSK transfers are currently disabled');
+      return new Response(
+        JSON.stringify({ 
+          error: 'BSK transfers are currently disabled. Please check back later or visit the one-time offers page.',
+          code: 'TRANSFERS_DISABLED'
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { recipient_id, amount, memo }: TransferRequest = await req.json();
 
     console.log('[BSK Transfer] Processing:', { sender_id: user.id, recipient_id, amount, memo });

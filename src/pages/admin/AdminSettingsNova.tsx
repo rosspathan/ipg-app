@@ -5,11 +5,14 @@ import { KPIStat } from "@/components/admin/nova/KPIStat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Settings, Save, Database, Shield, Mail, Bell, Palette } from "lucide-react";
+import { Settings, Save, Database, Shield, Mail, Bell, Palette, ArrowRightLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAdminTransferControl } from "@/hooks/useAdminTransferControl";
 
 export default function AdminSettingsNova() {
+  const { transfersEnabled, isLoading: transferLoading, toggleTransfers, isToggling } = useAdminTransferControl();
+  
   const [settings, setSettings] = useState({
     siteName: "I-SMART Platform",
     siteUrl: "https://ismart.app",
@@ -122,6 +125,18 @@ export default function AdminSettingsNova() {
               <Switch
                 checked={settings.registrationOpen}
                 onCheckedChange={(checked) => setSettings({ ...settings, registrationOpen: checked })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">BSK Transfers</p>
+                <p className="text-xs text-muted-foreground">Enable user-to-user BSK transfers</p>
+              </div>
+              <Switch
+                checked={transfersEnabled ?? true}
+                disabled={transferLoading || isToggling}
+                onCheckedChange={(checked) => toggleTransfers(checked)}
               />
             </div>
           </div>
