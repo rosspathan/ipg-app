@@ -12,7 +12,7 @@ import Confetti from 'react-confetti';
 export default function OneTimePurchasePage() {
   const navigate = useNavigate();
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
-  const [selectedOffer, setSelectedOffer] = useState<any>(null);
+  const [selectedOffer, setSelectedOffer] = useState<{offer: any; amount: number} | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
   const { data: offers, isLoading: offersLoading } = useActivePurchaseOffers();
@@ -23,15 +23,15 @@ export default function OneTimePurchasePage() {
   const userBalance = balance?.withdrawable || 0;
   const claimedOfferIds = new Set(claims?.map((c) => c.bonus_id) || []);
 
-  const handlePurchaseClick = (offer: any) => {
-    setSelectedOffer(offer);
+  const handlePurchaseClick = (offer: any, amount: number) => {
+    setSelectedOffer({ offer, amount });
   };
 
   const handleConfirmPurchase = () => {
     if (!selectedOffer) return;
 
     purchaseMutation.mutate(
-      { offerId: selectedOffer.id },
+      { offerId: selectedOffer.offer.id, purchaseAmount: selectedOffer.amount },
       {
         onSuccess: () => {
           setSelectedOffer(null);
@@ -106,7 +106,7 @@ export default function OneTimePurchasePage() {
               offer={offer}
               isUserClaimed={claimedOfferIds.has(offer.id)}
               userBalance={userBalance}
-              onPurchase={() => handlePurchaseClick(offer)}
+              onPurchase={(amount: number) => handlePurchaseClick(offer, amount)}
             />
           ))}
         </div>
@@ -114,7 +114,8 @@ export default function OneTimePurchasePage() {
 
       {/* Confirmation Dialog */}
       <PurchaseConfirmationDialog
-        offer={selectedOffer}
+        offer={selectedOffer?.offer || null}
+        selectedAmount={selectedOffer?.amount || 0}
         userBalance={userBalance}
         open={!!selectedOffer}
         onOpenChange={(open) => !open && setSelectedOffer(null)}

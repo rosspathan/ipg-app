@@ -2667,6 +2667,8 @@ export type Database = {
           id: string
           is_active: boolean
           is_featured: boolean
+          max_purchase_amount_bsk: number
+          min_purchase_amount_bsk: number
           purchase_amount_bsk: number
           start_at: string
           updated_at: string
@@ -2683,6 +2685,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_featured?: boolean
+          max_purchase_amount_bsk: number
+          min_purchase_amount_bsk: number
           purchase_amount_bsk: number
           start_at: string
           updated_at?: string
@@ -2699,6 +2703,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_featured?: boolean
+          max_purchase_amount_bsk?: number
+          min_purchase_amount_bsk?: number
           purchase_amount_bsk?: number
           start_at?: string
           updated_at?: string

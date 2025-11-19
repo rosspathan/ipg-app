@@ -15,6 +15,7 @@ import { TrendingUp, Lock, AlertTriangle } from 'lucide-react';
 
 interface PurchaseConfirmationDialogProps {
   offer: PurchaseOffer | null;
+  selectedAmount: number;
   userBalance: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -24,6 +25,7 @@ interface PurchaseConfirmationDialogProps {
 
 export const PurchaseConfirmationDialog = ({
   offer,
+  selectedAmount,
   userBalance,
   open,
   onOpenChange,
@@ -34,10 +36,10 @@ export const PurchaseConfirmationDialog = ({
 
   if (!offer) return null;
 
-  const withdrawableBonus = (offer.purchase_amount_bsk * offer.withdrawable_bonus_percent) / 100;
-  const holdingBonus = (offer.purchase_amount_bsk * offer.holding_bonus_percent) / 100;
+  const withdrawableBonus = (selectedAmount * offer.withdrawable_bonus_percent) / 100;
+  const holdingBonus = (selectedAmount * offer.holding_bonus_percent) / 100;
   const totalBonus = withdrawableBonus + holdingBonus;
-  const newBalance = userBalance - offer.purchase_amount_bsk;
+  const newBalance = userBalance - selectedAmount;
   const hasInsufficientBalance = newBalance < 0;
 
   return (
@@ -64,10 +66,10 @@ export const PurchaseConfirmationDialog = ({
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">You Pay</span>
               <span className="font-semibold">
-                {offer.purchase_amount_bsk.toLocaleString()} BSK
+                {selectedAmount.toLocaleString()} BSK
                 {bskRate && (
                   <span className="text-muted-foreground ml-1">
-                    ({formatBSKtoINR(offer.purchase_amount_bsk, bskRate)})
+                    ({formatBSKtoINR(selectedAmount, bskRate)})
                   </span>
                 )}
               </span>

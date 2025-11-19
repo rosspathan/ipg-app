@@ -23,7 +23,7 @@ serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    const { offer_id, order_id } = await req.json()
+    const { offer_id, order_id, purchase_amount_bsk } = await req.json()
 
     if (!offer_id || !order_id) {
       throw new Error('Invalid request: offer_id and order_id required')
@@ -63,7 +63,20 @@ serve(async (req) => {
       )
     }
 
-    const purchaseAmount = offer.purchase_amount_bsk
+    const purchaseAmount = purchase_amount_bsk || offer.min_purchase_amount_bsk
+
+    // Validate amount is within range
+    if (purchaseAmount < offer.min_purchase_amount_bsk || purchaseAmount > offer.max_purchase_amount_bsk) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'INVALID_AMOUNT', 
+          message: `Amount must be between ${offer.min_purchase_amount_bsk} and ${offer.max_purchase_amount_bsk} BSK` 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`[purchase-one-time-offer] Purchasing ${purchaseAmount} BSK`)
 
     // Check user balance
     const { data: userBalance } = await supabaseClient
