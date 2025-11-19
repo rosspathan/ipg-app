@@ -11,9 +11,17 @@ export function useTransferStatus() {
         .eq("key", "bsk_transfers_enabled")
         .single();
 
-      if (error) throw error;
-      return data?.value === "true";
+      if (error) {
+        console.error('[useTransferStatus] Error fetching transfer status:', error);
+        throw error;
+      }
+      
+      const isEnabled = data?.value === "true";
+      console.log('[useTransferStatus] Transfers enabled:', isEnabled);
+      return isEnabled;
     },
     refetchInterval: 30000, // Refetch every 30 seconds
+    retry: 3,
+    retryDelay: 1000,
   });
 }
