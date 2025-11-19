@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react"
 import { MoreVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { OfferCountdown } from "./OfferCountdown"
 
 export type TileBadgeType = "NEW" | "HOT" | "DAILY" | "LIVE"
 export type TileStatus = "available" | "disabled" | "locked"
@@ -31,6 +32,12 @@ interface ProgramTileUltraProps {
   onLongPress?: () => void
   onKebabPress?: () => void
   className?: string
+  config?: {
+    isDynamic?: boolean
+    timeRemaining?: number | null
+    isEndingSoon?: boolean
+    endTime?: string
+  }
 }
 
 const badgeStyles = {
@@ -60,12 +67,14 @@ export function ProgramTileUltra({
   onPress,
   onLongPress,
   onKebabPress,
-  className
+  className,
+  config
 }: ProgramTileUltraProps) {
   const [isPressed, setIsPressed] = useState(false)
   const [showGlow, setShowGlow] = useState(false)
   const longPressTimer = useRef<NodeJS.Timeout>()
   const isDisabled = status === "disabled" || status === "locked"
+  const isDynamic = config?.isDynamic || false
 
   // Breathing glow animation
   useEffect(() => {
@@ -128,14 +137,21 @@ export function ProgramTileUltra({
       <div
         className={cn(
           "relative h-full min-h-[180px] p-4 rounded-2xl",
-          "bg-gradient-to-br from-[#161A2C] to-[#1B2036]",
-          "border border-[#2A2F42]/30",
+          isDynamic 
+            ? "bg-gradient-to-br from-orange-500/20 via-red-500/15 to-pink-500/20"
+            : "bg-gradient-to-br from-[#161A2C] to-[#1B2036]",
+          isDynamic 
+            ? "border-2 border-orange-500/40"
+            : "border border-[#2A2F42]/30",
           "transition-all duration-[320ms]",
-          showGlow && !isPressed && "shadow-[0_0_24px_rgba(124,77,255,0.08)]"
+          showGlow && !isPressed && !isDynamic && "shadow-[0_0_24px_rgba(124,77,255,0.08)]",
+          isDynamic && "shadow-[0_0_32px_rgba(249,115,22,0.3)]"
         )}
         style={{
           boxShadow: isPressed
-            ? '0 8px 32px rgba(124, 77, 255, 0.3)'
+            ? isDynamic 
+              ? '0 8px 32px rgba(249, 115, 22, 0.5)'
+              : '0 8px 32px rgba(124, 77, 255, 0.3)'
             : undefined
         }}
       >
@@ -195,6 +211,10 @@ export function ProgramTileUltra({
           <p className="font-[Inter] text-[10px] text-muted-foreground leading-tight line-clamp-2">
             {subtitle}
           </p>
+          {/* Countdown timer for dynamic offers */}
+          {isDynamic && config?.endTime && (
+            <OfferCountdown endTime={config.endTime} className="mt-2" />
+          )}
         </div>
 
         {/* Footer: Sparkline / Progress / Streak / Text */}

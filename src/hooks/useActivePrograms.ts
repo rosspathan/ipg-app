@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import * as LucideIcons from "lucide-react";
+import { useActivePurchaseOffersStatus } from "./useActivePurchaseOffersStatus";
 
 export interface ActiveProgram {
   id: string;
@@ -23,6 +24,7 @@ export interface ActiveProgram {
  */
 export function useActivePrograms() {
   const queryClient = useQueryClient();
+  const offerStatus = useActivePurchaseOffersStatus();
   
   const { data: programs, isLoading, error } = useQuery({
     queryKey: ['active-programs'],
@@ -109,6 +111,14 @@ export function useActivePrograms() {
         { event: '*', schema: 'public', table: 'program_configs' },
         () => {
           console.log('Program configs changed, invalidating queries');
+          queryClient.invalidateQueries({ queryKey: ['active-programs'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bsk_purchase_bonuses' },
+        () => {
+          console.log('BSK purchase offers changed, invalidating queries');
           queryClient.invalidateQueries({ queryKey: ['active-programs'] });
         }
       )
@@ -223,9 +233,40 @@ export function useActivePrograms() {
     }
   ];
 
+  // Create dynamic BSK purchase tile if offers are active
+  let finalPrograms = programs || defaultPrograms;
+  
+  if (offerStatus.hasActiveOffers && offerStatus.bestOffer) {
+    const totalBonus = (offerStatus.bestOffer.withdrawable_bonus_percent || 0) + 
+                       (offerStatus.bestOffer.holding_bonus_percent || 0);
+    
+    const dynamicBSKProgram: ActiveProgram = {
+      id: 'bsk-purchase-dynamic',
+      key: 'bsk_purchase',
+      name: 'BSK Purchase',
+      description: `${totalBonus}% Bonus - Limited Time!`,
+      icon: 'Gift',
+      badge: 'HOT',
+      badgeColor: 'bg-danger/20 text-danger',
+      route: '/app/programs/bsk-bonus',
+      category: 'earn',
+      order_index: -1,
+      config: {
+        isDynamic: true,
+        offerCount: offerStatus.offerCount,
+        timeRemaining: offerStatus.timeRemaining,
+        isEndingSoon: offerStatus.isEndingSoon,
+        endTime: offerStatus.bestOffer.end_at
+      }
+    };
+    
+    // Insert at the top of the list
+    finalPrograms = [dynamicBSKProgram, ...finalPrograms];
+  }
+
   return {
-    programs: programs || defaultPrograms,
-    isLoading,
+    programs: finalPrograms,
+    isLoading: isLoading || offerStatus.isLoading,
     isUsingDefaults: !programs,
     error
   };
