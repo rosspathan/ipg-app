@@ -15,6 +15,8 @@ import { TransferReceiptButton } from "./TransferReceiptButton";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
+import { useTransferStatus } from "@/hooks/useTransferStatus";
+import { Link } from "react-router-dom";
 
 export function BSKTransferForm() {
   const { toast } = useToast();
@@ -28,6 +30,7 @@ export function BSKTransferForm() {
   
   const { data: recentRecipients } = useRecentRecipients();
   const { data: limits } = useTransferLimits();
+  const { data: transfersEnabled, isLoading: transferStatusLoading } = useTransferStatus();
 
   // Get user's BSK balance with proper error handling
   const { data: userBalance, isLoading: balanceLoading, error: balanceError, refetch: refetchBalance } = useQuery({
@@ -334,6 +337,20 @@ export function BSKTransferForm() {
           <CardTitle>Recipient Details</CardTitle>
           <CardDescription>Enter the email address of the i-smart user</CardDescription>
         </CardHeader>
+
+        {!transferStatusLoading && transfersEnabled === false && (
+          <div className="px-6 pb-4">
+            <Alert variant="destructive">
+              <AlertDescription>
+                BSK transfers are currently disabled due to an active one-time purchase offer. 
+                <Link to="/app/programs/bsk-bonus" className="underline ml-1">
+                  View offers here
+                </Link>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         <CardContent className="space-y-4">
           {/* Recent Recipients */}
           {recentRecipients && recentRecipients.length > 0 && !verifiedRecipient && (
@@ -492,7 +509,8 @@ export function BSKTransferForm() {
                 parseFloat(amount) > (userBalance || 0) ||
                 transferMutation.isPending ||
                 balanceLoading ||
-                userBalance === 0
+                userBalance === 0 ||
+                transfersEnabled === false
               }
             >
               {transferMutation.isPending ? (
@@ -500,6 +518,8 @@ export function BSKTransferForm() {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Processing...
                 </>
+              ) : transfersEnabled === false ? (
+                "Transfers Disabled"
               ) : (
                 <>
                   <ArrowRightLeft className="h-4 w-4 mr-2" />
