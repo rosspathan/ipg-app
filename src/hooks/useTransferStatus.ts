@@ -12,12 +12,20 @@ export function useTransferStatus() {
         .single();
 
       if (error) {
-        console.error('[useTransferStatus] Error fetching transfer status:', error);
-        throw error;
+        console.error('[useTransferStatus] Error fetching transfer status (assuming enabled):', error);
+        // IMPORTANT: Don't block transfers just because we can't read the setting
+        // The backend edge function will still enforce the real status
+        return true;
       }
       
-      const isEnabled = data?.value === "true";
-      console.log('[useTransferStatus] Transfers enabled:', isEnabled);
+      // If no data exists, assume enabled (our migrations seed this as 'true')
+      if (!data) {
+        console.log('[useTransferStatus] No setting found, assuming enabled');
+        return true;
+      }
+      
+      const isEnabled = data.value === "true";
+      console.log('[useTransferStatus] Transfers explicitly set to:', isEnabled);
       return isEnabled;
     },
     refetchInterval: 30000, // Refetch every 30 seconds
