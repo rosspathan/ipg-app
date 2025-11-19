@@ -11,7 +11,7 @@ import {
 import { PurchaseOffer } from '@/hooks/usePurchaseOffers';
 import { useBSKExchangeRate, formatBSKtoINR } from '@/hooks/useBSKExchangeRate';
 import { Separator } from '@/components/ui/separator';
-import { TrendingUp, Lock, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Lock, AlertTriangle, Gift } from 'lucide-react';
 
 interface PurchaseConfirmationDialogProps {
   offer: PurchaseOffer | null;
@@ -39,8 +39,8 @@ export const PurchaseConfirmationDialog = ({
   const withdrawableBonus = (selectedAmount * offer.withdrawable_bonus_percent) / 100;
   const holdingBonus = (selectedAmount * offer.holding_bonus_percent) / 100;
   const totalBonus = withdrawableBonus + holdingBonus;
-  const newBalance = userBalance - selectedAmount;
-  const hasInsufficientBalance = newBalance < 0;
+  const newWithdrawableBalance = userBalance + selectedAmount + withdrawableBonus;
+  const hasInsufficientBalance = userBalance < selectedAmount;
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -53,6 +53,19 @@ export const PurchaseConfirmationDialog = ({
         </AlertDialogHeader>
 
         <div className="space-y-4">
+          {/* FREE PROMOTIONAL OFFER Badge */}
+          <div className="bg-success/10 border border-success/20 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-success" />
+              <div>
+                <div className="font-semibold text-success">FREE PROMOTIONAL OFFER</div>
+                <div className="text-sm text-muted-foreground">
+                  Your {selectedAmount.toLocaleString()} BSK will be refunded + you'll receive bonus BSK
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Offer Details */}
           <div className="p-4 bg-muted/50 rounded-lg space-y-2">
             <h4 className="font-semibold text-sm">{offer.campaign_name}</h4>
@@ -103,6 +116,15 @@ export const PurchaseConfirmationDialog = ({
 
             <Separator />
 
+            <div className="flex justify-between text-sm text-success">
+              <span>Amount Refunded</span>
+              <span className="font-semibold">
+                +{selectedAmount.toLocaleString()} BSK
+              </span>
+            </div>
+
+            <Separator />
+
             <div className="flex justify-between text-sm font-semibold">
               <span>Total Bonus</span>
               <span className="text-accent-foreground">
@@ -114,14 +136,27 @@ export const PurchaseConfirmationDialog = ({
           {/* Balance Info */}
           <div className="p-3 bg-accent/10 rounded-lg space-y-1.5 text-sm border">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Current Balance</span>
+              <span className="text-muted-foreground">Current Withdrawable Balance</span>
               <span className="font-medium">{userBalance.toLocaleString()} BSK</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">After Purchase</span>
-              <span className={`font-medium ${hasInsufficientBalance ? 'text-destructive' : ''}`}>
-                {newBalance.toLocaleString()} BSK
+              <span className="text-muted-foreground">New Withdrawable Balance</span>
+              <span className="font-medium text-success">
+                {newWithdrawableBalance.toLocaleString()} BSK
               </span>
+            </div>
+            {holdingBonus > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Holding Balance Gain</span>
+                <span className="font-medium text-primary">
+                  +{holdingBonus.toLocaleString()} BSK
+                </span>
+              </div>
+            )}
+            <Separator />
+            <div className="flex justify-between font-semibold text-success">
+              <span>Net Cost</span>
+              <span>₹0 (FREE!)</span>
             </div>
           </div>
 
