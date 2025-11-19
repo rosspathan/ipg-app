@@ -39,10 +39,28 @@ export function useAdminTransferControl() {
     },
   });
 
+  const syncWithOffers = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("sync_transfer_status_with_offers");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-transfer-control"] });
+      queryClient.invalidateQueries({ queryKey: ["bsk-transfer-status"] });
+      toast.success("Transfer status synced with active offers");
+    },
+    onError: (error) => {
+      toast.error("Failed to sync transfer status");
+      console.error("Sync error:", error);
+    },
+  });
+
   return {
     transfersEnabled,
     isLoading,
     toggleTransfers: toggleTransfers.mutate,
     isToggling: toggleTransfers.isPending,
+    syncWithOffers: syncWithOffers.mutate,
+    isSyncing: syncWithOffers.isPending,
   };
 }
