@@ -11143,6 +11143,7 @@ export type Database = {
         Args: { profile_user_id: string; viewer_id: string }
         Returns: boolean
       }
+      check_active_offers: { Args: never; Returns: boolean }
       check_badge_eligibility: {
         Args: { required_badge: string; sponsor_badge: string }
         Returns: boolean
@@ -11591,6 +11592,7 @@ export type Database = {
         }[]
       }
       sync_old_balances_from_ledger: { Args: never; Returns: undefined }
+      sync_transfer_status_with_offers: { Args: never; Returns: Json }
       system_update_bonus_balance: {
         Args: { p_asset_id: string; p_balance_delta: number; p_user_id: string }
         Returns: boolean
