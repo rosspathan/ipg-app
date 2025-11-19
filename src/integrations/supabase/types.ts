@@ -2655,6 +2655,57 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_purchase_bonuses: {
+        Row: {
+          campaign_name: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number
+          end_at: string
+          holding_bonus_percent: number
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          purchase_amount_bsk: number
+          start_at: string
+          updated_at: string
+          withdrawable_bonus_percent: number
+        }
+        Insert: {
+          campaign_name: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          end_at: string
+          holding_bonus_percent: number
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          purchase_amount_bsk: number
+          start_at: string
+          updated_at?: string
+          withdrawable_bonus_percent: number
+        }
+        Update: {
+          campaign_name?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          end_at?: string
+          holding_bonus_percent?: number
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          purchase_amount_bsk?: number
+          start_at?: string
+          updated_at?: string
+          withdrawable_bonus_percent?: number
+        }
+        Relationships: []
+      }
       bsk_purchase_settings: {
         Row: {
           admin_account_holder: string | null
@@ -10250,6 +10301,47 @@ export type Database = {
           },
         ]
       }
+      user_purchase_bonus_claims: {
+        Row: {
+          bonus_id: string
+          claimed_at: string
+          holding_bonus_bsk: number
+          id: string
+          order_id: string
+          purchase_amount_bsk: number
+          user_id: string
+          withdrawable_bonus_bsk: number
+        }
+        Insert: {
+          bonus_id: string
+          claimed_at?: string
+          holding_bonus_bsk: number
+          id?: string
+          order_id: string
+          purchase_amount_bsk: number
+          user_id: string
+          withdrawable_bonus_bsk: number
+        }
+        Update: {
+          bonus_id?: string
+          claimed_at?: string
+          holding_bonus_bsk?: number
+          id?: string
+          order_id?: string
+          purchase_amount_bsk?: number
+          user_id?: string
+          withdrawable_bonus_bsk?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_purchase_bonus_claims_bonus_id_fkey"
+            columns: ["bonus_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_purchase_bonuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_role_audit: {
         Row: {
           action: string
@@ -10976,6 +11068,7 @@ export type Database = {
         }
         Returns: Json
       }
+      auto_disable_expired_offers: { Args: never; Returns: undefined }
       award_bsk_standard: {
         Args: {
           p_amount: number
