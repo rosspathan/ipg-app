@@ -127,6 +127,36 @@ serve(async (req) => {
 
     console.log('[purchase-one-time-offer] Payment debited:', debitResult)
 
+    // Credit back purchase amount (promotional refund)
+    const refundIdempotencyKey = `otp:refund:${user.id}:${order_id}`
+    
+    const { data: refundResult, error: refundError } = await supabaseClient.rpc(
+      'record_bsk_transaction',
+      {
+        p_user_id: user.id,
+        p_idempotency_key: refundIdempotencyKey,
+        p_tx_type: 'credit',
+        p_tx_subtype: 'one_time_purchase_refund',
+        p_amount: purchaseAmount,
+        p_balance_type: 'withdrawable',
+        p_description: `Promotional refund: ${offer.campaign_name}`,
+        p_metadata: { 
+          offer_id, 
+          order_id, 
+          campaign: offer.campaign_name,
+          type: 'promotional_refund',
+          original_amount: purchaseAmount
+        }
+      }
+    )
+
+    if (refundError) {
+      console.error('[purchase-one-time-offer] Refund failed:', refundError)
+      throw new Error(`Promotional refund failed: ${refundError.message}`)
+    }
+
+    console.log('[purchase-one-time-offer] Purchase amount refunded:', refundResult)
+
     // Credit withdrawable bonus if any
     if (withdrawableBonus > 0) {
       const creditWithdrawableKey = `otp:credit:withdrawable:${user.id}:${order_id}`
@@ -202,9 +232,11 @@ serve(async (req) => {
           offer_id,
           campaign: offer.campaign_name,
           amount_paid: purchaseAmount,
+          amount_refunded: purchaseAmount,
           withdrawable_bonus: withdrawableBonus,
           holding_bonus: holdingBonus,
-          total_received: withdrawableBonus + holdingBonus,
+          total_received: purchaseAmount + withdrawableBonus + holdingBonus,
+          net_cost: 0,
           order_id
         }
       }),

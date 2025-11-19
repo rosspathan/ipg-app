@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
-import { Trash2, TrendingUp, Lock, Users, Calendar } from 'lucide-react';
+import { Trash2, TrendingUp, Lock, Users, Calendar, Gift } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,8 +95,12 @@ export default function AdminOneTimeOffersPage() {
                   {/* Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-semibold text-lg">{offer.campaign_name}</h4>
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                          <Gift className="h-3 w-3 mr-1" />
+                          FREE PROMOTIONAL
+                        </Badge>
                         {offer.is_featured && (
                           <Badge variant="default">Featured</Badge>
                         )}
@@ -201,7 +205,13 @@ export default function AdminOneTimeOffersPage() {
                   {/* Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="font-semibold">{offer.campaign_name}</h4>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h4 className="font-semibold">{offer.campaign_name}</h4>
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20 opacity-60">
+                          <Gift className="h-3 w-3 mr-1" />
+                          FREE PROMOTIONAL
+                        </Badge>
+                      </div>
                       {offer.description && (
                         <p className="text-sm text-muted-foreground mt-1">{offer.description}</p>
                       )}

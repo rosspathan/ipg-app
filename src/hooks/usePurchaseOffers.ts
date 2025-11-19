@@ -92,8 +92,9 @@ export const usePurchaseOffer = () => {
       
       return data;
     },
-    onSuccess: () => {
-      toast.success('Purchase successful! Your bonuses have been credited.');
+    onSuccess: (data) => {
+      const totalBonus = (data.purchase?.withdrawable_bonus || 0) + (data.purchase?.holding_bonus || 0);
+      toast.success(`🎉 Free Offer Claimed! You received ${data.purchase?.amount_refunded || 0} BSK back + ${totalBonus} BSK in bonuses. This offer was completely FREE!`);
       queryClient.invalidateQueries({ queryKey: ['user-purchase-claims'] });
       queryClient.invalidateQueries({ queryKey: ['user_bsk_balances'] });
       queryClient.invalidateQueries({ queryKey: ['bsk-balance'] });
