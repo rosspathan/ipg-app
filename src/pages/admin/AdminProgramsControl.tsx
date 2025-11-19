@@ -173,6 +173,9 @@ export default function AdminProgramControl() {
           <Button onClick={() => navigate('/admin/programs/control/badges')} variant="outline" size="sm">
             Badges
           </Button>
+          <Button onClick={() => navigate('/admin/one-time-offers')} variant="outline" size="sm">
+            BSK Offers
+          </Button>
         </div>
       </div>
 
