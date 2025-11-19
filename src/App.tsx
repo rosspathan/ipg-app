@@ -73,6 +73,7 @@ const LuckyDrawControlPanel = React.lazy(() => import("./pages/admin/program-con
 const SpinWheelControlPanel = React.lazy(() => import("./pages/admin/program-controls/SpinWheelControlPanel"));
 const StakingControlPanel = React.lazy(() => import("./pages/admin/program-controls/StakingControlPanel"));
 const InsuranceControlPanel = React.lazy(() => import("./pages/admin/program-controls/InsuranceControlPanel"));
+const AdminOneTimeOffersPage = React.lazy(() => import("./pages/admin/AdminOneTimeOffersPage"));
 const LoansControlPanel = React.lazy(() => import("./pages/admin/program-controls/LoansControlPanel"));
 const TradingControlPanel = React.lazy(() => import("./pages/admin/program-controls/TradingControlPanel"));
 const BadgesControlPanel = React.lazy(() => import("./pages/admin/program-controls/BadgesControlPanel"));
@@ -207,6 +208,8 @@ import TeamTreeView from "./pages/programs/TeamTreeView";
 import CommissionHistory from "./pages/programs/CommissionHistory";
 const LoansPageNew = React.lazy(() => import("./pages/programs/LoansPage"));
 const PurchasePage = React.lazy(() => import("./pages/programs/PurchasePage"));
+const OneTimePurchasePage = React.lazy(() => import("./pages/programs/OneTimePurchasePage"));
+const PurchaseHistoryPage = React.lazy(() => import("./pages/programs/PurchaseHistoryPage"));
 
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -525,7 +528,8 @@ function AppContent() {
                 <Route path="programs/ads" element={<React.Suspense fallback={<LoadingFallback />}><AdvertisingPage /></React.Suspense>} />
                 <Route path="programs/referrals" element={<Navigate to="/app/programs/team-referrals" replace />} />
                 <Route path="programs/loans" element={<React.Suspense fallback={<LoadingFallback />}><LoansPageNew /></React.Suspense>} />
-                <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<LoadingFallback />}><PurchasePage /></React.Suspense>} />
+                <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<LoadingFallback />}><OneTimePurchasePage /></React.Suspense>} />
+                <Route path="programs/bsk-purchase-history" element={<React.Suspense fallback={<LoadingFallback />}><PurchaseHistoryPage /></React.Suspense>} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
                 <Route path="programs/staking/:poolId/submit" element={<StakingSubmissionScreen />} />
                 <Route path="programs/bsk" element={<BSKWalletPage />} />
@@ -617,6 +621,7 @@ function AppContent() {
                 <Route path="insurance" element={<AdminInsurance />} />
                 <Route path="lucky-draw" element={<AdminNewLuckyDraw />} />
                 <Route path="purchase-bonus" element={<AdminPurchaseBonusScreen />} />
+                <Route path="one-time-offers" element={<React.Suspense fallback={<LoadingFallback />}><AdminOneTimeOffersPage /></React.Suspense>} />
                 <Route path="audit-logs" element={<React.Suspense fallback={<LoadingFallback />}><AuditLogsPage /></React.Suspense>} />
                 <Route path="referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />

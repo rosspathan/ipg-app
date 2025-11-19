@@ -23,66 +23,72 @@ serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    const { offer_id, order_id, amount_bsk } = await req.json()
+    const { offer_id, order_id } = await req.json()
 
-    if (!offer_id || !order_id || !amount_bsk || amount_bsk <= 0) {
-      throw new Error('Invalid request: offer_id, order_id, and amount_bsk required')
+    if (!offer_id || !order_id) {
+      throw new Error('Invalid request: offer_id and order_id required')
     }
 
-    console.log(`[purchase-one-time-offer] User ${user.id} purchasing offer ${offer_id}, amount: ${amount_bsk} BSK`)
+    console.log(`[purchase-one-time-offer] User ${user.id} purchasing offer ${offer_id}`)
 
-    // Check if program is enabled
-    const { data: programFlag } = await supabaseClient
-      .from('program_flags')
-      .select('enabled')
-      .eq('program_code', 'one_time_purchase')
-      .single()
-
-    if (programFlag && !programFlag.enabled) {
-      return new Response(
-        JSON.stringify({ error: 'PROGRAM_DISABLED', message: 'One-time purchase program is currently disabled' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // TIER REQUIREMENT CHECK - Must have at least one active badge
-    const { data: userBadges, error: badgesError } = await supabaseClient
-      .from('user_badge_holdings')
-      .select('badge_id')
-      .eq('user_id', user.id)
-
-    if (badgesError || !userBadges || userBadges.length === 0) {
-      console.warn(`[purchase-one-time-offer] User ${user.id} has no active tier badge`)
-      return new Response(
-        JSON.stringify({ 
-          error: 'TIER_REQUIRED', 
-          message: 'You must purchase a tier badge before accessing one-time purchase offers. Please purchase a Silver, Gold, Platinum, Diamond, or VIP badge first.' 
-        }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    console.log(`[purchase-one-time-offer] User has ${userBadges.length} active tier(s), proceeding...`)
-
-    // Get offer details
+    // Get offer details with time validation
     const { data: offer, error: offerError } = await supabaseClient
       .from('bsk_purchase_bonuses')
       .select('*')
       .eq('id', offer_id)
       .eq('is_active', true)
+      .lte('start_at', new Date().toISOString())
+      .gte('end_at', new Date().toISOString())
       .single()
 
     if (offerError || !offer) {
-      throw new Error('Invalid or inactive offer')
+      return new Response(
+        JSON.stringify({ error: 'OFFER_NOT_AVAILABLE', message: 'This offer is not currently available' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // Validate amount
-    if (Math.abs(amount_bsk - offer.purchase_amount_bsk) > 0.01) {
-      throw new Error(`Amount mismatch: expected ${offer.purchase_amount_bsk} BSK, got ${amount_bsk} BSK`)
+    // Check if user already claimed this offer
+    const { data: existingClaim, error: claimCheckError } = await supabaseClient
+      .from('user_purchase_bonus_claims')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('bonus_id', offer_id)
+      .maybeSingle()
+
+    if (existingClaim) {
+      return new Response(
+        JSON.stringify({ error: 'ALREADY_CLAIMED', message: 'You have already claimed this offer' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    const baseAmount = amount_bsk
-    const bonusAmount = amount_bsk * 0.5 // +50% bonus to holding
+    const purchaseAmount = offer.purchase_amount_bsk
+
+    // Check user balance
+    const { data: userBalance } = await supabaseClient
+      .from('user_bsk_balances')
+      .select('withdrawable_balance')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!userBalance || userBalance.withdrawable_balance < purchaseAmount) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'INSUFFICIENT_BALANCE', 
+          message: 'Insufficient BSK balance',
+          required: purchaseAmount,
+          available: userBalance?.withdrawable_balance || 0
+        }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Calculate bonuses
+    const withdrawableBonus = (purchaseAmount * offer.withdrawable_bonus_percent) / 100
+    const holdingBonus = (purchaseAmount * offer.holding_bonus_percent) / 100
+
+    console.log(`[purchase-one-time-offer] Purchase: ${purchaseAmount} BSK, W: ${withdrawableBonus}, H: ${holdingBonus}`)
 
     // Debit payment from withdrawable
     const debitIdempotencyKey = `otp:debit:${user.id}:${order_id}`
@@ -94,7 +100,7 @@ serve(async (req) => {
         p_idempotency_key: debitIdempotencyKey,
         p_tx_type: 'debit',
         p_tx_subtype: 'one_time_purchase',
-        p_amount: amount_bsk,
+        p_amount: purchaseAmount,
         p_balance_type: 'withdrawable',
         p_description: `One-time purchase: ${offer.campaign_name}`,
         p_metadata: { offer_id, order_id, campaign: offer.campaign_name }
@@ -106,78 +112,86 @@ serve(async (req) => {
       throw new Error(`Payment failed: ${debitError.message}`)
     }
 
-    console.log('[purchase-one-time-offer] Payment processed:', debitResult)
+    console.log('[purchase-one-time-offer] Payment debited:', debitResult)
 
-    // Credit base amount to withdrawable
-    const creditWithdrawableKey = `otp:credit:withdrawable:${user.id}:${order_id}`
-    
-    const { data: creditWithdrawable, error: creditWithdrawableError } = await supabaseClient.rpc(
-      'record_bsk_transaction',
-      {
-        p_user_id: user.id,
-        p_idempotency_key: creditWithdrawableKey,
-        p_tx_type: 'credit',
-        p_tx_subtype: 'one_time_purchase',
-        p_amount: baseAmount,
-        p_balance_type: 'withdrawable',
-        p_description: `One-time purchase credited: ${offer.campaign_name}`,
-        p_metadata: { offer_id, order_id, type: 'base_amount' }
+    // Credit withdrawable bonus if any
+    if (withdrawableBonus > 0) {
+      const creditWithdrawableKey = `otp:credit:withdrawable:${user.id}:${order_id}`
+      
+      const { data: creditWithdrawable, error: creditWithdrawableError } = await supabaseClient.rpc(
+        'record_bsk_transaction',
+        {
+          p_user_id: user.id,
+          p_idempotency_key: creditWithdrawableKey,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'one_time_purchase_bonus',
+          p_amount: withdrawableBonus,
+          p_balance_type: 'withdrawable',
+          p_description: `${offer.withdrawable_bonus_percent}% withdrawable bonus: ${offer.campaign_name}`,
+          p_metadata: { offer_id, order_id, type: 'withdrawable_bonus', bonus_percent: offer.withdrawable_bonus_percent }
+        }
+      )
+
+      if (creditWithdrawableError) {
+        console.error('[purchase-one-time-offer] Withdrawable bonus failed:', creditWithdrawableError)
+      } else {
+        console.log('[purchase-one-time-offer] Withdrawable bonus credited:', creditWithdrawable)
       }
-    )
-
-    if (creditWithdrawableError) {
-      console.error('[purchase-one-time-offer] Withdrawable credit failed:', creditWithdrawableError)
-      throw new Error(`Failed to credit purchased amount: ${creditWithdrawableError.message}`)
     }
 
-    console.log('[purchase-one-time-offer] Withdrawable credited:', creditWithdrawable)
+    // Credit holding bonus if any
+    if (holdingBonus > 0) {
+      const creditHoldingKey = `otp:credit:holding:${user.id}:${order_id}`
+      
+      const { data: creditHolding, error: creditHoldingError } = await supabaseClient.rpc(
+        'record_bsk_transaction',
+        {
+          p_user_id: user.id,
+          p_idempotency_key: creditHoldingKey,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'one_time_purchase_bonus',
+          p_amount: holdingBonus,
+          p_balance_type: 'locked',
+          p_description: `${offer.holding_bonus_percent}% holding bonus: ${offer.campaign_name}`,
+          p_metadata: { offer_id, order_id, type: 'holding_bonus', bonus_percent: offer.holding_bonus_percent }
+        }
+      )
 
-    // Credit +50% bonus to holding
-    const creditHoldingKey = `otp:credit:holding:${user.id}:${order_id}`
-    
-    const { data: creditHolding, error: creditHoldingError } = await supabaseClient.rpc(
-      'record_bsk_transaction',
-      {
-        p_user_id: user.id,
-        p_idempotency_key: creditHoldingKey,
-        p_tx_type: 'credit',
-        p_tx_subtype: 'one_time_purchase',
-        p_amount: bonusAmount,
-        p_balance_type: 'locked',
-        p_description: `+50% holding bonus: ${offer.campaign_name}`,
-        p_metadata: { offer_id, order_id, type: 'holding_bonus', bonus_percent: 50 }
+      if (creditHoldingError) {
+        console.error('[purchase-one-time-offer] Holding bonus failed:', creditHoldingError)
+      } else {
+        console.log('[purchase-one-time-offer] Holding bonus credited:', creditHolding)
       }
-    )
-
-    if (creditHoldingError) {
-      console.error('[purchase-one-time-offer] Holding credit failed:', creditHoldingError)
-      // Don't fail, withdrawable was already credited
-    } else {
-      console.log('[purchase-one-time-offer] Holding bonus credited:', creditHolding)
     }
 
-    // Record purchase
-    await supabaseClient
+    // Record claim
+    const { error: claimError } = await supabaseClient
       .from('user_purchase_bonus_claims')
       .insert({
         user_id: user.id,
         bonus_id: offer_id,
         claimed_at: new Date().toISOString(),
-        purchase_amount_bsk: amount_bsk,
-        bonus_amount_bsk: bonusAmount,
+        purchase_amount_bsk: purchaseAmount,
+        withdrawable_bonus_bsk: withdrawableBonus,
+        holding_bonus_bsk: holdingBonus,
         order_id
       })
+
+    if (claimError) {
+      console.error('[purchase-one-time-offer] Failed to record claim:', claimError)
+      throw new Error('Failed to record purchase claim')
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         purchase: {
-          user_id: user.id,
           offer_id,
           campaign: offer.campaign_name,
-          amount_paid: amount_bsk,
-          credited_withdrawable: baseAmount,
-          credited_holding: bonusAmount,
+          amount_paid: purchaseAmount,
+          withdrawable_bonus: withdrawableBonus,
+          holding_bonus: holdingBonus,
+          total_received: withdrawableBonus + holdingBonus,
           order_id
         }
       }),
