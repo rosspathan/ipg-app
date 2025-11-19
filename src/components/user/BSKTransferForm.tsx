@@ -338,13 +338,13 @@ export function BSKTransferForm() {
           <CardDescription>Enter the email address of the i-smart user</CardDescription>
         </CardHeader>
 
-        {!transferStatusLoading && transfersEnabled === false && (
+        {!transferStatusLoading && transfersEnabled !== true && (
           <div className="px-6 pb-4">
             <Alert variant="destructive">
               <AlertDescription>
-                BSK transfers are currently disabled due to an active one-time purchase offer. 
+                BSK transfers are currently disabled. Please check back later or visit the one-time offers page.
                 <Link to="/app/programs/bsk-bonus" className="underline ml-1">
-                  View offers here
+                  View offers
                 </Link>
               </AlertDescription>
             </Alert>
@@ -510,7 +510,7 @@ export function BSKTransferForm() {
                 transferMutation.isPending ||
                 balanceLoading ||
                 userBalance === 0 ||
-                transfersEnabled === false
+                transfersEnabled !== true
               }
             >
               {transferMutation.isPending ? (
@@ -518,7 +518,12 @@ export function BSKTransferForm() {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Processing...
                 </>
-              ) : transfersEnabled === false ? (
+              ) : transferStatusLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Checking Status...
+                </>
+              ) : transfersEnabled !== true ? (
                 "Transfers Disabled"
               ) : (
                 <>
