@@ -6,7 +6,9 @@ export interface PurchaseOffer {
   id: string;
   campaign_name: string;
   description: string | null;
-  purchase_amount_bsk: number;
+  purchase_amount_bsk?: number; // Deprecated, kept for backwards compatibility
+  min_purchase_amount_bsk: number;
+  max_purchase_amount_bsk: number;
   withdrawable_bonus_percent: number;
   holding_bonus_percent: number;
   start_at: string;
@@ -78,11 +80,11 @@ export const usePurchaseOffer = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ offerId }: { offerId: string }) => {
+    mutationFn: async ({ offerId, purchaseAmount }: { offerId: string; purchaseAmount: number }) => {
       const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       const { data, error } = await supabase.functions.invoke('purchase-one-time-offer', {
-        body: { offer_id: offerId, order_id: orderId },
+        body: { offer_id: offerId, order_id: orderId, purchase_amount_bsk: purchaseAmount },
       });
 
       if (error) throw error;

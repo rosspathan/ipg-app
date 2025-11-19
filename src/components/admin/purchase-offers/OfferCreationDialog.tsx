@@ -14,7 +14,8 @@ export const OfferCreationDialog = () => {
   const [formData, setFormData] = useState<CreateOfferInput>({
     campaign_name: '',
     description: '',
-    purchase_amount_bsk: 1000,
+    min_purchase_amount_bsk: 500,
+    max_purchase_amount_bsk: 10000,
     withdrawable_bonus_percent: 50,
     holding_bonus_percent: 50,
     start_at: new Date().toISOString().slice(0, 16),
@@ -40,7 +41,8 @@ export const OfferCreationDialog = () => {
         setFormData({
           campaign_name: '',
           description: '',
-          purchase_amount_bsk: 1000,
+          min_purchase_amount_bsk: 500,
+          max_purchase_amount_bsk: 10000,
           withdrawable_bonus_percent: 50,
           holding_bonus_percent: 50,
           start_at: new Date().toISOString().slice(0, 16),
@@ -52,7 +54,6 @@ export const OfferCreationDialog = () => {
   };
 
   const totalBonus = formData.withdrawable_bonus_percent + formData.holding_bonus_percent;
-  const totalReceived = (formData.purchase_amount_bsk * totalBonus) / 100;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -71,7 +72,6 @@ export const OfferCreationDialog = () => {
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Campaign Name */}
           <div className="space-y-2">
             <Label htmlFor="campaign_name">Campaign Name *</Label>
             <Input
@@ -82,7 +82,6 @@ export const OfferCreationDialog = () => {
             />
           </div>
 
-          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -94,82 +93,64 @@ export const OfferCreationDialog = () => {
             />
           </div>
 
-          {/* Purchase Amount */}
-          <div className="space-y-2">
-            <Label htmlFor="purchase_amount_bsk">Purchase Amount (BSK) *</Label>
-            <Input
-              id="purchase_amount_bsk"
-              type="number"
-              min="1"
-              value={formData.purchase_amount_bsk}
-              onChange={(e) => setFormData({ ...formData, purchase_amount_bsk: Number(e.target.value) })}
-            />
-            <p className="text-xs text-muted-foreground">
-              ≈ ₹{formData.purchase_amount_bsk.toLocaleString('en-IN')}
-            </p>
-          </div>
-
-          {/* Bonus Split */}
-          <div className="space-y-4 p-4 bg-accent/10 rounded-lg border">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Bonus Split (must total 100%)</Label>
-                <span className={`text-sm font-medium ${totalBonus === 100 ? 'text-success' : 'text-destructive'}`}>
-                  Total: {totalBonus}%
-                </span>
-              </div>
-              
+          <div className="space-y-3">
+            <Label>Purchase Amount Range (BSK) *</Label>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Withdrawable Bonus</span>
-                  <span className="font-semibold text-success">{formData.withdrawable_bonus_percent}%</span>
-                </div>
-                <Slider
-                  value={[formData.withdrawable_bonus_percent]}
-                  onValueChange={handleWithdrawableChange}
-                  max={100}
-                  step={5}
-                  className="my-4"
+                <Label htmlFor="min_amount" className="text-xs text-muted-foreground">Minimum</Label>
+                <Input
+                  id="min_amount"
+                  type="number"
+                  min="1"
+                  value={formData.min_purchase_amount_bsk}
+                  onChange={(e) => setFormData({ ...formData, min_purchase_amount_bsk: Number(e.target.value) })}
                 />
-                <div className="flex items-center justify-between text-sm">
-                  <span>Holding Bonus</span>
-                  <span className="font-semibold text-primary">{formData.holding_bonus_percent}%</span>
-                </div>
+                <p className="text-xs text-muted-foreground">≈ ₹{formData.min_purchase_amount_bsk.toLocaleString('en-IN')}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max_amount" className="text-xs text-muted-foreground">Maximum</Label>
+                <Input
+                  id="max_amount"
+                  type="number"
+                  min={formData.min_purchase_amount_bsk}
+                  value={formData.max_purchase_amount_bsk}
+                  onChange={(e) => setFormData({ ...formData, max_purchase_amount_bsk: Number(e.target.value) })}
+                />
+                <p className="text-xs text-muted-foreground">≈ ₹{formData.max_purchase_amount_bsk.toLocaleString('en-IN')}</p>
               </div>
             </div>
+            {formData.max_purchase_amount_bsk < formData.min_purchase_amount_bsk && (
+              <p className="text-xs text-destructive">Maximum must be ≥ minimum</p>
+            )}
+          </div>
 
-            {/* Preview */}
-            <div className="pt-3 border-t space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">User pays:</span>
-                <span className="font-semibold">{formData.purchase_amount_bsk.toLocaleString()} BSK</span>
+          <div className="space-y-4 p-4 bg-accent/10 rounded-lg border">
+            <Label>Bonus Split {totalBonus !== 100 && <span className="text-xs text-destructive ml-2">Must total 100%</span>}</Label>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Withdrawable</span>
+                <span className="font-semibold">{formData.withdrawable_bonus_percent}%</span>
               </div>
-              <div className="flex justify-between text-success">
-                <span>Withdrawable bonus:</span>
-                <span className="font-semibold">
-                  +{((formData.purchase_amount_bsk * formData.withdrawable_bonus_percent) / 100).toLocaleString()} BSK
-                </span>
-              </div>
-              <div className="flex justify-between text-primary">
-                <span>Holding bonus:</span>
-                <span className="font-semibold">
-                  +{((formData.purchase_amount_bsk * formData.holding_bonus_percent) / 100).toLocaleString()} BSK
-                </span>
-              </div>
-              <div className="flex justify-between pt-2 border-t font-semibold">
-                <span>Total bonus:</span>
-                <span className="text-accent-foreground">+{totalReceived.toLocaleString()} BSK</span>
-              </div>
+              <Slider
+                value={[formData.withdrawable_bonus_percent]}
+                onValueChange={handleWithdrawableChange}
+                max={100}
+                step={5}
+              />
+            </div>
+            <div className="flex justify-between text-sm">
+              <span>Holding</span>
+              <span className="font-semibold">{formData.holding_bonus_percent}%</span>
             </div>
           </div>
 
-          {/* Date Range */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start_at">Start Date & Time *</Label>
               <Input
                 id="start_at"
                 type="datetime-local"
+                className="pointer-events-auto cursor-pointer"
                 value={formData.start_at}
                 onChange={(e) => setFormData({ ...formData, start_at: e.target.value })}
               />
@@ -179,35 +160,28 @@ export const OfferCreationDialog = () => {
               <Input
                 id="end_at"
                 type="datetime-local"
+                className="pointer-events-auto cursor-pointer"
                 value={formData.end_at}
                 onChange={(e) => setFormData({ ...formData, end_at: e.target.value })}
               />
             </div>
           </div>
 
-          {/* Display Options */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="is_featured">Featured Offer</Label>
-                <p className="text-xs text-muted-foreground">Highlight this offer at the top</p>
-              </div>
-              <Switch
-                id="is_featured"
-                checked={formData.is_featured}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
-              />
-            </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="is_featured">Featured Offer</Label>
+            <Switch
+              id="is_featured"
+              checked={formData.is_featured}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+            />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button 
             onClick={handleSubmit}
-            disabled={createMutation.isPending || totalBonus !== 100 || !formData.campaign_name}
+            disabled={createMutation.isPending || totalBonus !== 100 || !formData.campaign_name || formData.max_purchase_amount_bsk < formData.min_purchase_amount_bsk}
           >
             {createMutation.isPending ? 'Creating...' : 'Create Offer'}
           </Button>

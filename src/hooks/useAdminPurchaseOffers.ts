@@ -6,7 +6,9 @@ export interface AdminPurchaseOffer {
   id: string;
   campaign_name: string;
   description: string | null;
-  purchase_amount_bsk: number;
+  purchase_amount_bsk?: number; // Deprecated, kept for backwards compatibility
+  min_purchase_amount_bsk: number;
+  max_purchase_amount_bsk: number;
   withdrawable_bonus_percent: number;
   holding_bonus_percent: number;
   start_at: string;
@@ -22,13 +24,13 @@ export interface AdminPurchaseOffer {
 export interface CreateOfferInput {
   campaign_name: string;
   description?: string;
-  purchase_amount_bsk: number;
+  min_purchase_amount_bsk: number;
+  max_purchase_amount_bsk: number;
   withdrawable_bonus_percent: number;
   holding_bonus_percent: number;
   start_at: string;
   end_at: string;
   is_featured?: boolean;
-  display_order?: number;
 }
 
 export const useAdminPurchaseOffers = () => {
@@ -56,7 +58,16 @@ export const useCreatePurchaseOffer = () => {
       const { data, error } = await supabase
         .from('bsk_purchase_bonuses')
         .insert({
-          ...input,
+          campaign_name: input.campaign_name,
+          description: input.description,
+          min_purchase_amount_bsk: input.min_purchase_amount_bsk,
+          max_purchase_amount_bsk: input.max_purchase_amount_bsk,
+          purchase_amount_bsk: input.min_purchase_amount_bsk, // For backwards compatibility
+          withdrawable_bonus_percent: input.withdrawable_bonus_percent,
+          holding_bonus_percent: input.holding_bonus_percent,
+          start_at: input.start_at,
+          end_at: input.end_at,
+          is_featured: input.is_featured ?? false,
           created_by: user?.id,
         })
         .select()

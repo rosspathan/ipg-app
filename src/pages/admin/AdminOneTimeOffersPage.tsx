@@ -141,8 +141,8 @@ export default function AdminOneTimeOffersPage() {
                   {/* Details Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                     <div>
-                      <p className="text-muted-foreground mb-1">Purchase Amount</p>
-                      <p className="font-semibold">{offer.purchase_amount_bsk.toLocaleString()} BSK</p>
+                      <p className="text-muted-foreground mb-1">Amount Range</p>
+                      <p className="font-semibold">{offer.min_purchase_amount_bsk.toLocaleString()} - {offer.max_purchase_amount_bsk.toLocaleString()} BSK</p>
                     </div>
 
                     <div>
