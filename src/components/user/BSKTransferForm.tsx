@@ -338,7 +338,7 @@ export function BSKTransferForm() {
           <CardDescription>Enter the email address of the i-smart user</CardDescription>
         </CardHeader>
 
-        {!transferStatusLoading && transfersEnabled !== true && (
+        {!transferStatusLoading && transfersEnabled === false && (
           <div className="px-6 pb-4">
             <Alert variant="destructive">
               <AlertDescription>
@@ -510,7 +510,7 @@ export function BSKTransferForm() {
                 transferMutation.isPending ||
                 balanceLoading ||
                 userBalance === 0 ||
-                transfersEnabled !== true
+                transfersEnabled === false
               }
             >
               {transferMutation.isPending ? (
@@ -523,7 +523,7 @@ export function BSKTransferForm() {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Checking Status...
                 </>
-              ) : transfersEnabled !== true ? (
+              ) : transfersEnabled === false ? (
                 "Transfers Disabled"
               ) : (
                 <>
