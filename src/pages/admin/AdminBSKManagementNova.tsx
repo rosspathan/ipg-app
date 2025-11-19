@@ -13,6 +13,7 @@ import { KPIStat } from "@/components/admin/nova/KPIStat"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuthUser } from "@/hooks/useAuthUser"
+import { BSKTransferControl } from "@/components/admin/bsk/BSKTransferControl"
 
 /**
  * AdminBSKManagementNova - BSK system admin page
@@ -312,6 +313,9 @@ export default function AdminBSKManagementNova() {
           variant="success"
         />
       </div>
+
+      {/* BSK Transfer Control */}
+      <BSKTransferControl />
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="mint" className="w-full">
