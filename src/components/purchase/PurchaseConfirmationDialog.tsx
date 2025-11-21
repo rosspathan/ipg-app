@@ -39,7 +39,8 @@ export const PurchaseConfirmationDialog = ({
   const withdrawableBonus = (selectedAmount * offer.withdrawable_bonus_percent) / 100;
   const holdingBonus = (selectedAmount * offer.holding_bonus_percent) / 100;
   const totalBonus = withdrawableBonus + holdingBonus;
-  const newWithdrawableBalance = userBalance + selectedAmount + withdrawableBonus;
+  // Net effect: debit + refund = 0, so new balance = current + withdrawable bonus only
+  const newWithdrawableBalance = userBalance + withdrawableBonus;
   const hasInsufficientBalance = userBalance < selectedAmount;
 
   return (
@@ -181,7 +182,15 @@ export const PurchaseConfirmationDialog = ({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={() => {
+              console.log('[PurchaseConfirmationDialog] Confirm button clicked', {
+                selectedAmount,
+                userBalance,
+                hasInsufficientBalance,
+                isLoading
+              });
+              onConfirm();
+            }}
             disabled={hasInsufficientBalance || isLoading}
           >
             {isLoading ? 'Processing...' : 'Confirm Purchase'}
