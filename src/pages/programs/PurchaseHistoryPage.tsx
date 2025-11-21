@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Lock, Calendar } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Lock, Calendar, Gift, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function PurchaseHistoryPage() {
@@ -47,48 +47,77 @@ export default function PurchaseHistoryPage() {
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Spent</CardDescription>
-            <CardTitle className="text-2xl">{totalSpent.toLocaleString()} BSK</CardTitle>
-          </CardHeader>
-          {bskRate && (
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {formatBSKtoINR(totalSpent, bskRate)}
-              </p>
-            </CardContent>
-          )}
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Bonus Earned</CardDescription>
-            <CardTitle className="text-2xl text-success">{totalBonus.toLocaleString()} BSK</CardTitle>
-          </CardHeader>
-          {bskRate && (
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {formatBSKtoINR(totalBonus, bskRate)}
-              </p>
-            </CardContent>
-          )}
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Purchases</CardDescription>
-            <CardTitle className="text-2xl">{claims?.length || 0}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Claimed offers
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Offer Analytics Dashboard */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Offer Analytics
+          </CardTitle>
+          <CardDescription>
+            Comprehensive breakdown of your claimed offers and bonuses
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-accent/10 rounded-lg">
+                  <Gift className="h-4 w-4 text-accent" />
+                </div>
+                <p className="text-sm text-muted-foreground">Offers Claimed</p>
+              </div>
+              <h3 className="text-3xl font-bold">{claims?.length || 0}</h3>
+              <p className="text-xs text-muted-foreground">Total offers redeemed</p>
+            </div>
+            
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-success/10 rounded-lg">
+                  <TrendingUp className="h-4 w-4 text-success" />
+                </div>
+                <p className="text-sm text-muted-foreground">Withdrawable Bonus</p>
+              </div>
+              <h3 className="text-3xl font-bold text-success">{totalWithdrawableBonus.toLocaleString()} BSK</h3>
+              {bskRate && (
+                <p className="text-xs text-muted-foreground">
+                  {formatBSKtoINR(totalWithdrawableBonus, bskRate)}
+                </p>
+              )}
+            </div>
+            
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Lock className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-sm text-muted-foreground">Holding Bonus</p>
+              </div>
+              <h3 className="text-3xl font-bold text-primary">{totalHoldingBonus.toLocaleString()} BSK</h3>
+              {bskRate && (
+                <p className="text-xs text-muted-foreground">
+                  {formatBSKtoINR(totalHoldingBonus, bskRate)}
+                </p>
+              )}
+            </div>
+            
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-secondary/10 rounded-lg">
+                  <BarChart3 className="h-4 w-4 text-secondary-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">Total Bonuses</p>
+              </div>
+              <h3 className="text-3xl font-bold">{totalBonus.toLocaleString()} BSK</h3>
+              {bskRate && (
+                <p className="text-xs text-muted-foreground">
+                  {formatBSKtoINR(totalBonus, bskRate)}
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Claims List */}
       <Card>
