@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Gift, History } from 'lucide-react';
 import Confetti from 'react-confetti';
+import { toast } from 'sonner';
 
 export default function OneTimePurchasePage() {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ export default function OneTimePurchasePage() {
       userBalance 
     });
     setSelectedOffer({ offer, amount });
+    toast.info(`Preparing your free offer for ${amount.toLocaleString()} BSK...`);
     console.log('[OneTimePurchasePage] Confirmation dialog opened');
   };
 
@@ -104,6 +106,13 @@ export default function OneTimePurchasePage() {
           <p className="text-2xl font-bold">{userBalance.toLocaleString()} BSK</p>
         </div>
       </div>
+
+      {/* Debug indicator */}
+      {selectedOffer && (
+        <div className="p-2 bg-muted/50 rounded text-xs text-muted-foreground">
+          Debug: Confirmation dialog state = OPEN for "{selectedOffer.offer.campaign_name}" ({selectedOffer.amount.toLocaleString()} BSK)
+        </div>
+      )}
 
       {/* Offers Grid */}
       {!offers || offers.length === 0 ? (

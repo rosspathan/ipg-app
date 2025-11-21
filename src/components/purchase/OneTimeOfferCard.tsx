@@ -27,6 +27,9 @@ export const OneTimeOfferCard = ({ offer, isUserClaimed, userBalance, onPurchase
   const isDisabled = isUserClaimed || isProcessing;
 
   const handlePurchaseClick = () => {
+    // Set processing immediately for visual feedback
+    setIsProcessing(true);
+    
     console.log('[OneTimeOfferCard] Purchase button clicked', {
       offerId: offer.id,
       selectedAmount,
@@ -41,10 +44,10 @@ export const OneTimeOfferCard = ({ offer, isUserClaimed, userBalance, onPurchase
         isUserClaimed,
         isProcessing
       });
+      setIsProcessing(false);
       return;
     }
 
-    setIsProcessing(true);
     console.log('[OneTimeOfferCard] Calling onPurchase callback');
     onPurchase(selectedAmount);
     
@@ -103,7 +106,13 @@ export const OneTimeOfferCard = ({ offer, isUserClaimed, userBalance, onPurchase
         </div>
 
         <Button className="w-full" size="lg" onClick={handlePurchaseClick} disabled={isDisabled}>
-          {isProcessing ? 'Processing...' : isUserClaimed ? 'Already Claimed' : hasInsufficientBalance ? 'Insufficient Balance' : `Purchase ${selectedAmount.toLocaleString()} BSK`}
+          {isProcessing 
+            ? 'Opening...' 
+            : isUserClaimed 
+            ? 'Already Claimed' 
+            : hasInsufficientBalance 
+            ? 'Insufficient Balance' 
+            : `Purchase ${selectedAmount.toLocaleString()} BSK`}
         </Button>
       </CardContent>
     </Card>
