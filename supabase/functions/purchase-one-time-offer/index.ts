@@ -12,15 +12,47 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    console.log('[purchase-one-time-offer] Request received', {
+      hasAuthHeader: !!authHeader,
+      authHeaderPrefix: authHeader ? authHeader.substring(0, 20) + '...' : 'none',
+      contentType: req.headers.get('Content-Type')
+    });
+
+    if (!authHeader) {
+      console.error('[purchase-one-time-offer] No Authorization header found');
+      return new Response(
+        JSON.stringify({ error: 'UNAUTHORIZED', message: 'Authentication required. Please sign in.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      { global: { headers: { Authorization: authHeader } } }
     )
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-    if (userError || !user) {
-      throw new Error('Unauthorized')
+    
+    if (userError) {
+      console.error('[purchase-one-time-offer] Auth error:', userError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'UNAUTHORIZED', 
+          message: 'Invalid authentication token',
+          details: userError.message 
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!user) {
+      console.error('[purchase-one-time-offer] No user found from token');
+      return new Response(
+        JSON.stringify({ error: 'UNAUTHORIZED', message: 'User not found. Please sign in again.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const { offer_id, order_id, purchase_amount_bsk } = await req.json()

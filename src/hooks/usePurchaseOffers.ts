@@ -81,15 +81,41 @@ export const usePurchaseOffer = () => {
 
   return useMutation({
     mutationFn: async ({ offerId, purchaseAmount }: { offerId: string; purchaseAmount: number }) => {
-      const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('[usePurchaseOffer] Starting purchase mutation', { offerId, purchaseAmount });
+      
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[usePurchaseOffer] Auth session check:', { 
+        hasSession: !!session, 
+        userId: session?.user?.id,
+        accessToken: session?.access_token ? 'present' : 'missing'
+      });
 
+      if (!session) {
+        console.error('[usePurchaseOffer] No active session found');
+        throw new Error('Please sign in to make a purchase');
+      }
+
+      const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('[usePurchaseOffer] Generated order ID:', orderId);
+
+      console.log('[usePurchaseOffer] Invoking edge function...');
       const { data, error } = await supabase.functions.invoke('purchase-one-time-offer', {
         body: { offer_id: offerId, order_id: orderId, purchase_amount_bsk: purchaseAmount },
       });
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.message || data.error);
+      console.log('[usePurchaseOffer] Edge function response:', { data, error });
+
+      if (error) {
+        console.error('[usePurchaseOffer] Edge function error:', error);
+        throw error;
+      }
+      if (data.error) {
+        console.error('[usePurchaseOffer] Data error:', data);
+        throw new Error(data.message || data.error);
+      }
       
+      console.log('[usePurchaseOffer] Purchase successful:', data);
       return data;
     },
     onSuccess: (data) => {
