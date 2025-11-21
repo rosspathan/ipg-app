@@ -108,7 +108,16 @@ export const usePurchaseOffer = () => {
 
       if (error) {
         console.error('[usePurchaseOffer] Edge function error:', error);
-        throw error;
+        
+        // Extract real error message from edge function response
+        const responseError = (error as any)?.context?.error ?? (error as any)?.context ?? null;
+        const messageFromBody = 
+          (typeof responseError === 'object' && responseError !== null && 'message' in responseError)
+            ? (responseError as any).message
+            : null;
+        
+        const combinedMessage = messageFromBody || error.message || 'Purchase failed';
+        throw new Error(combinedMessage);
       }
       if (data.error) {
         console.error('[usePurchaseOffer] Data error:', data);
