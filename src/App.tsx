@@ -622,6 +622,7 @@ function AppContent() {
                 <Route path="lucky-draw" element={<AdminNewLuckyDraw />} />
                 <Route path="purchase-bonus" element={<AdminPurchaseBonusScreen />} />
                 <Route path="one-time-offers" element={<React.Suspense fallback={<LoadingFallback />}><AdminOneTimeOffersPage /></React.Suspense>} />
+                <Route path="offer-purchase-history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminOfferPurchaseHistory')))}</React.Suspense>} />
                 <Route path="audit-logs" element={<React.Suspense fallback={<LoadingFallback />}><AuditLogsPage /></React.Suspense>} />
                 <Route path="referrals" element={<AdminTeamReferralsScreen />} />
                 <Route path="team-referrals" element={<AdminTeamReferralsScreen />} />

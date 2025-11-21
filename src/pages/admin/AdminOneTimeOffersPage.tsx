@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
-import { Trash2, TrendingUp, Lock, Users, Calendar, Gift } from 'lucide-react';
+import { Trash2, TrendingUp, Lock, Users, Calendar, Gift, History } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function AdminOneTimeOffersPage() {
+  const navigate = useNavigate();
   const { data: offers, isLoading } = useAdminPurchaseOffers();
   const toggleMutation = useToggleOfferStatus();
   const deleteMutation = useDeletePurchaseOffer();
@@ -49,7 +51,13 @@ export default function AdminOneTimeOffersPage() {
             Manage promotional purchase offers with bonus rewards
           </p>
         </div>
-        <OfferCreationDialog />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/admin/offer-purchase-history')}>
+            <History className="w-4 h-4 mr-2" />
+            Purchase History
+          </Button>
+          <OfferCreationDialog />
+        </div>
       </div>
 
       {/* Stats */}
