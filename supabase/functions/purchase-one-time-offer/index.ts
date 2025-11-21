@@ -30,10 +30,19 @@ serve(async (req) => {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      {
+        global: {
+          headers: { Authorization: authHeader }
+        },
+        auth: {
+          persistSession: false
+        }
+      }
     )
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    // Extract JWT token and pass it explicitly to getUser
+    const token = authHeader.replace('Bearer ', '').trim();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token)
     
     if (userError) {
       console.error('[purchase-one-time-offer] Auth error:', userError);
