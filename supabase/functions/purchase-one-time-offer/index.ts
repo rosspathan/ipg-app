@@ -145,10 +145,10 @@ serve(async (req) => {
         p_idempotency_key: debitIdempotencyKey,
         p_tx_type: 'debit',
         p_tx_subtype: 'one_time_purchase',
-        p_amount: purchaseAmount,
+        p_amount_bsk: purchaseAmount,
         p_balance_type: 'withdrawable',
-        p_description: `One-time purchase: ${offer.campaign_name}`,
-        p_metadata: { offer_id, order_id, campaign: offer.campaign_name }
+        p_notes: `One-time purchase: ${offer.campaign_name}`,
+        p_meta_json: { offer_id, order_id, campaign: offer.campaign_name }
       }
     )
 
@@ -169,10 +169,10 @@ serve(async (req) => {
         p_idempotency_key: refundIdempotencyKey,
         p_tx_type: 'credit',
         p_tx_subtype: 'one_time_purchase_refund',
-        p_amount: purchaseAmount,
+        p_amount_bsk: purchaseAmount,
         p_balance_type: 'withdrawable',
-        p_description: `Promotional refund: ${offer.campaign_name}`,
-        p_metadata: { 
+        p_notes: `Promotional refund: ${offer.campaign_name}`,
+        p_meta_json: { 
           offer_id, 
           order_id, 
           campaign: offer.campaign_name,
@@ -200,10 +200,10 @@ serve(async (req) => {
           p_idempotency_key: creditWithdrawableKey,
           p_tx_type: 'credit',
           p_tx_subtype: 'one_time_purchase_bonus',
-          p_amount: withdrawableBonus,
+          p_amount_bsk: withdrawableBonus,
           p_balance_type: 'withdrawable',
-          p_description: `${offer.withdrawable_bonus_percent}% withdrawable bonus: ${offer.campaign_name}`,
-          p_metadata: { offer_id, order_id, type: 'withdrawable_bonus', bonus_percent: offer.withdrawable_bonus_percent }
+          p_notes: `${offer.withdrawable_bonus_percent}% withdrawable bonus: ${offer.campaign_name}`,
+          p_meta_json: { offer_id, order_id, type: 'withdrawable_bonus', bonus_percent: offer.withdrawable_bonus_percent }
         }
       )
 
@@ -225,10 +225,10 @@ serve(async (req) => {
           p_idempotency_key: creditHoldingKey,
           p_tx_type: 'credit',
           p_tx_subtype: 'one_time_purchase_bonus',
-          p_amount: holdingBonus,
-          p_balance_type: 'locked',
-          p_description: `${offer.holding_bonus_percent}% holding bonus: ${offer.campaign_name}`,
-          p_metadata: { offer_id, order_id, type: 'holding_bonus', bonus_percent: offer.holding_bonus_percent }
+          p_amount_bsk: holdingBonus,
+          p_balance_type: 'holding',
+          p_notes: `${offer.holding_bonus_percent}% holding bonus: ${offer.campaign_name}`,
+          p_meta_json: { offer_id, order_id, type: 'holding_bonus', bonus_percent: offer.holding_bonus_percent }
         }
       )
 
