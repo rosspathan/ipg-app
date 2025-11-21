@@ -128,8 +128,11 @@ export const usePurchaseOffer = () => {
     onError: (error: any) => {
       if (error.message.includes('ALREADY_CLAIMED')) {
         toast.error('You have already claimed this offer');
-      } else if (error.message.includes('INSUFFICIENT_BALANCE')) {
-        toast.error('Insufficient BSK balance');
+      } else if (
+        error.message.includes('INSUFFICIENT_BALANCE') ||
+        error.message.toLowerCase().includes('insufficient balance')
+      ) {
+        toast.error('Insufficient BSK balance for this offer');
       } else if (error.message.includes('OFFER_NOT_AVAILABLE')) {
         toast.error('This offer is no longer available');
       } else if (
@@ -137,7 +140,7 @@ export const usePurchaseOffer = () => {
         error.message.includes('Auth session missing') ||
         error.message.includes('Invalid authentication token')
       ) {
-        toast.error('Your session has expired. Please log in again to claim this offer.');
+        toast.error('Your session has expired. Please log in again to claim this offer');
       } else {
         toast.error(error.message || 'Purchase failed');
       }
