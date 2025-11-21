@@ -11,13 +11,16 @@ import { Plus } from 'lucide-react';
 
 export const OfferCreationDialog = () => {
   const [open, setOpen] = useState(false);
+  const [totalBonusPercent, setTotalBonusPercent] = useState(10);
+  const [withdrawableSplit, setWithdrawableSplit] = useState(100); // 0-100, represents % of total bonus going to withdrawable
+  
   const [formData, setFormData] = useState<CreateOfferInput>({
     campaign_name: '',
     description: '',
     min_purchase_amount_bsk: 500,
     max_purchase_amount_bsk: 10000,
-    withdrawable_bonus_percent: 50,
-    holding_bonus_percent: 50,
+    withdrawable_bonus_percent: 10,
+    holding_bonus_percent: 0,
     start_at: new Date().toISOString().slice(0, 16),
     end_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     is_featured: false,
@@ -25,12 +28,24 @@ export const OfferCreationDialog = () => {
 
   const createMutation = useCreatePurchaseOffer();
 
-  const handleWithdrawableChange = (value: number[]) => {
-    const withdrawable = value[0];
+  const handleTotalBonusChange = (value: number) => {
+    setTotalBonusPercent(value);
+    updateBonusAmounts(value, withdrawableSplit);
+  };
+
+  const handleSplitChange = (value: number[]) => {
+    const split = value[0];
+    setWithdrawableSplit(split);
+    updateBonusAmounts(totalBonusPercent, split);
+  };
+
+  const updateBonusAmounts = (total: number, split: number) => {
+    const withdrawable = (total * split) / 100;
+    const holding = (total * (100 - split)) / 100;
     setFormData(prev => ({
       ...prev,
-      withdrawable_bonus_percent: withdrawable,
-      holding_bonus_percent: 100 - withdrawable,
+      withdrawable_bonus_percent: Number(withdrawable.toFixed(2)),
+      holding_bonus_percent: Number(holding.toFixed(2)),
     }));
   };
 
@@ -38,13 +53,15 @@ export const OfferCreationDialog = () => {
     createMutation.mutate(formData, {
       onSuccess: () => {
         setOpen(false);
+        setTotalBonusPercent(10);
+        setWithdrawableSplit(100);
         setFormData({
           campaign_name: '',
           description: '',
           min_purchase_amount_bsk: 500,
           max_purchase_amount_bsk: 10000,
-          withdrawable_bonus_percent: 50,
-          holding_bonus_percent: 50,
+          withdrawable_bonus_percent: 10,
+          holding_bonus_percent: 0,
           start_at: new Date().toISOString().slice(0, 16),
           end_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
           is_featured: false,
@@ -53,7 +70,7 @@ export const OfferCreationDialog = () => {
     });
   };
 
-  const totalBonus = formData.withdrawable_bonus_percent + formData.holding_bonus_percent;
+  const calculatedTotal = formData.withdrawable_bonus_percent + formData.holding_bonus_percent;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -125,22 +142,38 @@ export const OfferCreationDialog = () => {
           </div>
 
           <div className="space-y-4 p-4 bg-accent/10 rounded-lg border">
-            <Label>Bonus Split {totalBonus !== 100 && <span className="text-xs text-destructive ml-2">Must total 100%</span>}</Label>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Withdrawable</span>
-                <span className="font-semibold">{formData.withdrawable_bonus_percent}%</span>
-              </div>
-              <Slider
-                value={[formData.withdrawable_bonus_percent]}
-                onValueChange={handleWithdrawableChange}
-                max={100}
-                step={5}
+              <Label htmlFor="total_bonus">Total Bonus %</Label>
+              <Input
+                id="total_bonus"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={totalBonusPercent}
+                onChange={(e) => handleTotalBonusChange(Number(e.target.value))}
               />
+              <p className="text-xs text-muted-foreground">Total bonus percentage applied to purchase amount</p>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>Holding</span>
-              <span className="font-semibold">{formData.holding_bonus_percent}%</span>
+
+            <div className="space-y-3 pt-2 border-t">
+              <Label>Bonus Split (of {totalBonusPercent}% total)</Label>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Withdrawable</span>
+                  <span className="font-semibold">{formData.withdrawable_bonus_percent}%</span>
+                </div>
+                <Slider
+                  value={[withdrawableSplit]}
+                  onValueChange={handleSplitChange}
+                  max={100}
+                  step={5}
+                />
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Holding</span>
+                <span className="font-semibold">{formData.holding_bonus_percent}%</span>
+              </div>
             </div>
           </div>
 
@@ -181,7 +214,7 @@ export const OfferCreationDialog = () => {
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
           <Button 
             onClick={handleSubmit}
-            disabled={createMutation.isPending || totalBonus !== 100 || !formData.campaign_name || formData.max_purchase_amount_bsk < formData.min_purchase_amount_bsk}
+            disabled={createMutation.isPending || !formData.campaign_name || formData.max_purchase_amount_bsk < formData.min_purchase_amount_bsk || totalBonusPercent <= 0}
           >
             {createMutation.isPending ? 'Creating...' : 'Create Offer'}
           </Button>
