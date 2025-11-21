@@ -4,15 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { useCreatePurchaseOffer, CreateOfferInput } from '@/hooks/useAdminPurchaseOffers';
 import { Plus } from 'lucide-react';
 
 export const OfferCreationDialog = () => {
   const [open, setOpen] = useState(false);
-  const [totalBonusPercent, setTotalBonusPercent] = useState(10);
-  const [withdrawableSplit, setWithdrawableSplit] = useState(100); // 0-100, represents % of total bonus going to withdrawable
+  const [bonusType, setBonusType] = useState<'withdrawable' | 'holding'>('withdrawable');
+  const [bonusPercent, setBonusPercent] = useState(10);
   
   const [formData, setFormData] = useState<CreateOfferInput>({
     campaign_name: '',
@@ -28,33 +28,48 @@ export const OfferCreationDialog = () => {
 
   const createMutation = useCreatePurchaseOffer();
 
-  const handleTotalBonusChange = (value: number) => {
-    setTotalBonusPercent(value);
-    updateBonusAmounts(value, withdrawableSplit);
+  const handleBonusPercentChange = (value: number) => {
+    setBonusPercent(value);
+    
+    if (bonusType === 'withdrawable') {
+      setFormData(prev => ({
+        ...prev,
+        withdrawable_bonus_percent: value,
+        holding_bonus_percent: 0,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        withdrawable_bonus_percent: 0,
+        holding_bonus_percent: value,
+      }));
+    }
   };
 
-  const handleSplitChange = (value: number[]) => {
-    const split = value[0];
-    setWithdrawableSplit(split);
-    updateBonusAmounts(totalBonusPercent, split);
-  };
-
-  const updateBonusAmounts = (total: number, split: number) => {
-    const withdrawable = (total * split) / 100;
-    const holding = (total * (100 - split)) / 100;
-    setFormData(prev => ({
-      ...prev,
-      withdrawable_bonus_percent: Number(withdrawable.toFixed(2)),
-      holding_bonus_percent: Number(holding.toFixed(2)),
-    }));
+  const handleBonusTypeChange = (type: 'withdrawable' | 'holding') => {
+    setBonusType(type);
+    
+    if (type === 'withdrawable') {
+      setFormData(prev => ({
+        ...prev,
+        withdrawable_bonus_percent: bonusPercent,
+        holding_bonus_percent: 0,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        withdrawable_bonus_percent: 0,
+        holding_bonus_percent: bonusPercent,
+      }));
+    }
   };
 
   const handleSubmit = () => {
     createMutation.mutate(formData, {
       onSuccess: () => {
         setOpen(false);
-        setTotalBonusPercent(10);
-        setWithdrawableSplit(100);
+        setBonusType('withdrawable');
+        setBonusPercent(10);
         setFormData({
           campaign_name: '',
           description: '',
@@ -69,8 +84,6 @@ export const OfferCreationDialog = () => {
       },
     });
   };
-
-  const calculatedTotal = formData.withdrawable_bonus_percent + formData.holding_bonus_percent;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -142,37 +155,52 @@ export const OfferCreationDialog = () => {
           </div>
 
           <div className="space-y-4 p-4 bg-accent/10 rounded-lg border">
+            <Label>Bonus Type *</Label>
+            
+            <RadioGroup value={bonusType} onValueChange={(value) => handleBonusTypeChange(value as 'withdrawable' | 'holding')}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="withdrawable" id="withdrawable" />
+                <Label htmlFor="withdrawable" className="cursor-pointer font-normal">
+                  Withdrawable Bonus (Users can withdraw immediately)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="holding" id="holding" />
+                <Label htmlFor="holding" className="cursor-pointer font-normal">
+                  Holding Bonus (Locked for future use)
+                </Label>
+              </div>
+            </RadioGroup>
+            
             <div className="space-y-2">
-              <Label htmlFor="total_bonus">Total Bonus %</Label>
+              <Label htmlFor="bonus_percent">Bonus Percentage *</Label>
               <Input
-                id="total_bonus"
+                id="bonus_percent"
                 type="number"
                 min="0"
                 max="100"
                 step="0.1"
-                value={totalBonusPercent}
-                onChange={(e) => handleTotalBonusChange(Number(e.target.value))}
+                value={bonusPercent}
+                onChange={(e) => handleBonusPercentChange(Number(e.target.value))}
               />
-              <p className="text-xs text-muted-foreground">Total bonus percentage applied to purchase amount</p>
+              <p className="text-xs text-muted-foreground">
+                {bonusType === 'withdrawable' 
+                  ? 'Users receive this % as immediately withdrawable bonus'
+                  : 'Users receive this % as locked holding bonus'}
+              </p>
             </div>
-
-            <div className="space-y-3 pt-2 border-t">
-              <Label>Bonus Split (of {totalBonusPercent}% total)</Label>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Withdrawable</span>
-                  <span className="font-semibold">{formData.withdrawable_bonus_percent}%</span>
+            
+            <div className="p-3 bg-background rounded border">
+              <p className="text-sm font-medium mb-2">Bonus Configuration Preview:</p>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>Withdrawable Bonus:</span>
+                  <span className="font-semibold">{bonusType === 'withdrawable' ? bonusPercent : 0}%</span>
                 </div>
-                <Slider
-                  value={[withdrawableSplit]}
-                  onValueChange={handleSplitChange}
-                  max={100}
-                  step={5}
-                />
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Holding</span>
-                <span className="font-semibold">{formData.holding_bonus_percent}%</span>
+                <div className="flex justify-between">
+                  <span>Holding Bonus:</span>
+                  <span className="font-semibold">{bonusType === 'holding' ? bonusPercent : 0}%</span>
+                </div>
               </div>
             </div>
           </div>
@@ -214,7 +242,7 @@ export const OfferCreationDialog = () => {
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
           <Button 
             onClick={handleSubmit}
-            disabled={createMutation.isPending || !formData.campaign_name || formData.max_purchase_amount_bsk < formData.min_purchase_amount_bsk || totalBonusPercent <= 0}
+            disabled={createMutation.isPending || !formData.campaign_name || formData.max_purchase_amount_bsk < formData.min_purchase_amount_bsk || bonusPercent <= 0 || bonusPercent > 100}
           >
             {createMutation.isPending ? 'Creating...' : 'Create Offer'}
           </Button>
