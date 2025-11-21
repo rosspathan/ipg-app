@@ -24,7 +24,7 @@ export const OneTimeOfferCard = ({ offer, isUserClaimed, userBalance, onPurchase
   const holdingBonus = (selectedAmount * offer.holding_bonus_percent) / 100;
   
   const hasInsufficientBalance = userBalance < selectedAmount;
-  const isDisabled = isUserClaimed || hasInsufficientBalance || isProcessing;
+  const isDisabled = isUserClaimed || isProcessing;
 
   const handlePurchaseClick = () => {
     console.log('[OneTimeOfferCard] Purchase button clicked', {
@@ -37,7 +37,10 @@ export const OneTimeOfferCard = ({ offer, isUserClaimed, userBalance, onPurchase
     });
     
     if (isDisabled) {
-      console.warn('[OneTimeOfferCard] Button click blocked - disabled');
+      console.warn('[OneTimeOfferCard] Button click blocked - disabled state', {
+        isUserClaimed,
+        isProcessing
+      });
       return;
     }
 
@@ -75,6 +78,8 @@ export const OneTimeOfferCard = ({ offer, isUserClaimed, userBalance, onPurchase
             onChange={(e) => setSelectedAmount(Number(e.target.value))}
             disabled={isDisabled}
           />
+          {bskRate && <p className="text-sm text-muted-foreground">≈ {formatBSKtoINR(selectedAmount, bskRate)}</p>}
+
           {bskRate && <p className="text-sm text-muted-foreground">≈ {formatBSKtoINR(selectedAmount, bskRate)}</p>}
         </div>
 
