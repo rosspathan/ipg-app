@@ -79,8 +79,6 @@ export const OneTimeOfferCard = ({ offer, isUserClaimed, userBalance, onPurchase
             disabled={isDisabled}
           />
           {bskRate && <p className="text-sm text-muted-foreground">≈ {formatBSKtoINR(selectedAmount, bskRate)}</p>}
-
-          {bskRate && <p className="text-sm text-muted-foreground">≈ {formatBSKtoINR(selectedAmount, bskRate)}</p>}
         </div>
 
         <div className="space-y-2">
