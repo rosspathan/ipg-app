@@ -18,12 +18,36 @@ interface OneTimeOfferCardProps {
 export const OneTimeOfferCard = ({ offer, isUserClaimed, userBalance, onPurchase }: OneTimeOfferCardProps) => {
   const { data: bskRate } = useBSKExchangeRate();
   const [selectedAmount, setSelectedAmount] = useState(offer.min_purchase_amount_bsk);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const withdrawableBonus = (selectedAmount * offer.withdrawable_bonus_percent) / 100;
   const holdingBonus = (selectedAmount * offer.holding_bonus_percent) / 100;
   
   const hasInsufficientBalance = userBalance < selectedAmount;
-  const isDisabled = isUserClaimed || hasInsufficientBalance;
+  const isDisabled = isUserClaimed || hasInsufficientBalance || isProcessing;
+
+  const handlePurchaseClick = () => {
+    console.log('[OneTimeOfferCard] Purchase button clicked', {
+      offerId: offer.id,
+      selectedAmount,
+      userBalance,
+      isUserClaimed,
+      hasInsufficientBalance,
+      isDisabled
+    });
+    
+    if (isDisabled) {
+      console.warn('[OneTimeOfferCard] Button click blocked - disabled');
+      return;
+    }
+
+    setIsProcessing(true);
+    console.log('[OneTimeOfferCard] Calling onPurchase callback');
+    onPurchase(selectedAmount);
+    
+    // Reset processing state after a delay (will be reset by parent component anyway)
+    setTimeout(() => setIsProcessing(false), 3000);
+  };
 
   return (
     <Card className={offer.is_featured ? 'border-primary shadow-lg' : ''}>
@@ -75,8 +99,8 @@ export const OneTimeOfferCard = ({ offer, isUserClaimed, userBalance, onPurchase
           )}
         </div>
 
-        <Button className="w-full" size="lg" onClick={() => onPurchase(selectedAmount)} disabled={isDisabled}>
-          {isUserClaimed ? 'Already Claimed' : hasInsufficientBalance ? 'Insufficient Balance' : `Purchase ${selectedAmount.toLocaleString()} BSK`}
+        <Button className="w-full" size="lg" onClick={handlePurchaseClick} disabled={isDisabled}>
+          {isProcessing ? 'Processing...' : isUserClaimed ? 'Already Claimed' : hasInsufficientBalance ? 'Insufficient Balance' : `Purchase ${selectedAmount.toLocaleString()} BSK`}
         </Button>
       </CardContent>
     </Card>

@@ -24,20 +24,36 @@ export default function OneTimePurchasePage() {
   const claimedOfferIds = new Set(claims?.map((c) => c.bonus_id) || []);
 
   const handlePurchaseClick = (offer: any, amount: number) => {
+    console.log('[OneTimePurchasePage] handlePurchaseClick called', { 
+      offerId: offer.id, 
+      offerName: offer.campaign_name,
+      amount,
+      userBalance 
+    });
     setSelectedOffer({ offer, amount });
+    console.log('[OneTimePurchasePage] Confirmation dialog opened');
   };
 
   const handleConfirmPurchase = () => {
-    if (!selectedOffer) return;
+    console.log('[OneTimePurchasePage] handleConfirmPurchase called', { selectedOffer });
+    if (!selectedOffer) {
+      console.warn('[OneTimePurchasePage] No offer selected');
+      return;
+    }
 
+    console.log('[OneTimePurchasePage] Starting purchase mutation');
     purchaseMutation.mutate(
       { offerId: selectedOffer.offer.id, purchaseAmount: selectedOffer.amount },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          console.log('[OneTimePurchasePage] Purchase successful:', data);
           setSelectedOffer(null);
           setShowConfetti(true);
           setTimeout(() => setShowConfetti(false), 5000);
         },
+        onError: (error) => {
+          console.error('[OneTimePurchasePage] Purchase failed:', error);
+        }
       }
     );
   };
