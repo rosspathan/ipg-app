@@ -220,24 +220,6 @@ Deno.serve(async (req) => {
             claimed_at: new Date().toISOString()
           });
 
-        // Insert ledger entry
-        await supabaseClient
-          .from('bonus_ledger')
-          .insert({
-            user_id: sponsor_id,
-            type: 'vip_milestone',
-            amount_bsk: rewardBSK,
-            asset: 'BSK',
-            meta_json: {
-              milestone_id: milestone.id,
-              vip_count: vipCount,
-              required_count: milestone.vip_count_threshold,
-              milestone_description: milestone.reward_description,
-              timestamp: new Date().toISOString()
-            },
-            usd_value: 0
-          });
-
         milestonesAchieved.push({
           vip_count_required: milestone.vip_count_threshold,
           bsk_rewarded: rewardBSK,

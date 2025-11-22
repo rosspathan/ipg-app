@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     // Get team referral settings for commission rate
     const { data: settings } = await supabaseClient
       .from('team_referral_settings')
-      .select('direct_commission_percent, enabled')
+      .select('direct_commission_percent, enabled, bsk_inr_rate')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
 
     const commissionRate = Number(settings.direct_commission_percent) / 100;
     const commissionAmount = bsk_amount * commissionRate;
+    const bskInrRate = Number(settings.bsk_inr_rate || 1.0);
 
     console.log(`📊 Commission rate: ${settings.direct_commission_percent}%, Amount: ${commissionAmount} BSK`);
 
@@ -94,30 +95,6 @@ Deno.serve(async (req) => {
     const sponsorId = referralTree.ancestor_id;
     console.log(`💰 Paying ${commissionAmount} BSK to sponsor:`, sponsorId);
 
-    // Get sponsor's current balance
-    const { data: currentBalance } = await supabaseClient
-      .from('user_bsk_balances')
-      .select('withdrawable_balance, total_earned_withdrawable')
-      .eq('user_id', sponsorId)
-      .maybeSingle();
-
-    // Update sponsor's withdrawable balance
-    const { error: balanceError } = await supabaseClient
-      .from('user_bsk_balances')
-      .upsert({
-        user_id: sponsorId,
-        withdrawable_balance: Number(currentBalance?.withdrawable_balance || 0) + commissionAmount,
-        total_earned_withdrawable: Number(currentBalance?.total_earned_withdrawable || 0) + commissionAmount,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      });
-
-    if (balanceError) {
-      console.error('Error updating balance:', balanceError);
-      throw balanceError;
-    }
-
     // Get sponsor's current badge for record
     const { data: sponsorBadge } = await supabaseClient
       .from('user_badge_holdings')
@@ -125,7 +102,32 @@ Deno.serve(async (req) => {
       .eq('user_id', sponsorId)
       .maybeSingle();
 
-    // Insert commission record
+    // Credit withdrawable balance using unified ledger (atomic operation)
+    const { error: ledgerError } = await supabaseClient.rpc('record_bsk_transaction', {
+      p_user_id: sponsorId,
+      p_idempotency_key: `badge_commission_${user_id}_${badge_name}_${Date.now()}`,
+      p_tx_type: 'credit',
+      p_tx_subtype: 'referral_commission_l1',
+      p_balance_type: 'withdrawable',
+      p_amount_bsk: commissionAmount,
+      p_amount_inr: commissionAmount * bskInrRate,
+      p_rate_snapshot: bskInrRate,
+      p_related_user_id: user_id,
+      p_meta_json: {
+        badge_purchased: badge_name,
+        previous_badge: previous_badge,
+        purchase_amount: bsk_amount,
+        commission_rate: settings.direct_commission_percent,
+        event_type: previous_badge ? 'badge_upgrade' : 'badge_purchase'
+      }
+    });
+
+    if (ledgerError) {
+      console.error('Error updating balance via ledger:', ledgerError);
+      throw ledgerError;
+    }
+
+    // Insert commission record for audit trail
     const { error: commissionError } = await supabaseClient
       .from('referral_commissions')
       .insert({
@@ -151,24 +153,6 @@ Deno.serve(async (req) => {
       console.error('Error inserting commission:', commissionError);
       throw commissionError;
     }
-
-    // Insert bonus ledger entry
-    await supabaseClient
-      .from('bonus_ledger')
-      .insert({
-        user_id: sponsorId,
-        type: previous_badge ? 'badge_upgrade_commission' : 'badge_purchase_commission',
-        amount_bsk: commissionAmount,
-        asset: 'BSK',
-        meta_json: {
-          referral_user_id: user_id,
-          badge_name: badge_name,
-          previous_badge: previous_badge,
-          purchase_amount: bsk_amount,
-          timestamp: new Date().toISOString()
-        },
-        usd_value: 0
-      });
 
     const processingTime = Date.now() - startTime;
     console.log(`✅ Successfully paid ${commissionAmount} BSK commission to sponsor ${sponsorId} (${processingTime}ms)`);
