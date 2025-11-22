@@ -89,19 +89,27 @@ serve(async (req) => {
 
     if (eventError) throw eventError;
 
-    // Credit sponsor's BSK balance (withdrawable destination)
-    const { error: balanceError } = await supabaseClient
-      .from('user_bsk_balances')
-      .upsert({
-        user_id: sponsor_id,
-        withdrawable_balance: commissionAmount,
-        total_earned_withdrawable: commissionAmount
-      }, {
-        onConflict: 'user_id',
-        ignoreDuplicates: false
-      });
+    // Credit sponsor's BSK balance using unified ledger (atomic operation)
+    const { error: ledgerError } = await supabaseClient.rpc('record_bsk_transaction', {
+      p_user_id: sponsor_id,
+      p_idempotency_key: `ref_commission_${referee_id}_${action}_${Date.now()}`,
+      p_tx_type: 'credit',
+      p_tx_subtype: 'referral_commission',
+      p_balance_type: 'withdrawable',
+      p_amount_bsk: commissionAmount,
+      p_amount_inr: commissionAmount * (settings.bsk_inr_rate || 1),
+      p_rate_snapshot: settings.bsk_inr_rate || 1.0,
+      p_related_user_id: referee_id,
+      p_meta_json: {
+        referee_id: referee_id,
+        action: action,
+        level: 1,
+        original_amount: amount,
+        commission_percent: commissionPercent
+      }
+    });
 
-    if (balanceError) throw balanceError;
+    if (ledgerError) throw ledgerError;
 
     // Create bonus ledger entry
     await supabaseClient

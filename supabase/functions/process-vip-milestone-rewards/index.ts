@@ -170,30 +170,26 @@ Deno.serve(async (req) => {
         const rewardBSK = rewardBSKBN.toNumber();
         console.log(`[VIP Milestone] 🎉 NEW! ${milestone.vip_count_threshold} VIPs → ${rewardBSK} BSK`);
 
-        // Get current balance
-        const { data: currentBalance } = await supabaseClient
-          .from('user_bsk_balances')
-          .select('withdrawable_balance, total_earned_withdrawable')
-          .eq('user_id', sponsor_id)
-          .maybeSingle();
+        // Credit withdrawable balance using unified ledger (atomic operation)
+        const { error: ledgerError } = await supabaseClient.rpc('record_bsk_transaction', {
+          p_user_id: sponsor_id,
+          p_idempotency_key: `vip_milestone_${milestone.id}_${sponsor_id}_${Date.now()}`,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'vip_milestone_reward',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: rewardBSK,
+          p_amount_inr: rewardBSK,
+          p_rate_snapshot: 1.0,
+          p_meta_json: {
+            milestone_id: milestone.id,
+            vip_count: vipCount,
+            required_count: milestone.vip_count_threshold,
+            description: milestone.reward_description
+          }
+        });
 
-        // Credit withdrawable balance with BigNumber precision
-        const newWithdrawable = new BigNumber(currentBalance?.withdrawable_balance || 0).plus(rewardBSK);
-        const newTotalEarned = new BigNumber(currentBalance?.total_earned_withdrawable || 0).plus(rewardBSK);
-
-        const { error: balanceUpdateError } = await supabaseClient
-          .from('user_bsk_balances')
-          .upsert({
-            user_id: sponsor_id,
-            withdrawable_balance: newWithdrawable.toNumber(),
-            total_earned_withdrawable: newTotalEarned.toNumber(),
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_id'
-          });
-
-        if (balanceUpdateError) {
-          console.error('[VIP Milestone] ❌ Balance update failed:', balanceUpdateError);
+        if (ledgerError) {
+          console.error('[VIP Milestone] ❌ Ledger update failed:', ledgerError);
           continue;
         }
 
