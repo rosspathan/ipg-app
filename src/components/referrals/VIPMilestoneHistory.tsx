@@ -131,8 +131,8 @@ export function VIPMilestoneHistory() {
                               <div className="text-2xl font-bold text-green-600 mb-1">
                                 +{milestone.bsk_rewarded.toFixed(0)} BSK
                               </div>
-                              <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                🔒 Holding
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                                💰 Withdrawable
                               </Badge>
                             </div>
                           </div>
