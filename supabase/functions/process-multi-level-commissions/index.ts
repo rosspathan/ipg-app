@@ -237,25 +237,33 @@ Deno.serve(async (req) => {
       console.log(`💰 Processing L${ancestor.level} commission for ${ancestor.ancestor_id}: ${commissionAmount} BSK (Badge: ${sponsorTierName}, Unlocked: L1-L${unlockedLevels}, source=${sourceUsed})`);
 
       try {
-        // Update sponsor's withdrawable balance
-        const { data: currentBalance } = await supabase
-          .from('user_bsk_balances')
-          .select('withdrawable_balance, total_earned_withdrawable')
-          .eq('user_id', ancestor.ancestor_id)
-          .maybeSingle();
+        // Credit withdrawable balance using unified ledger (atomic operation)
+        const { error: ledgerError } = await supabase.rpc('record_bsk_transaction', {
+          p_user_id: ancestor.ancestor_id,
+          p_idempotency_key: `multi_level_commission_${user_id}_${ancestor.level}_${Date.now()}`,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'referral_commission_multi',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: commissionAmount,
+          p_amount_inr: commissionAmount,
+          p_rate_snapshot: 1.0,
+          p_related_user_id: user_id,
+          p_meta_json: {
+            referral_user_id: user_id,
+            level: ancestor.level,
+            event_type: event_type,
+            base_amount: base_amount,
+            sponsor_badge: sponsorTierName,
+            unlocked_levels: unlockedLevels
+          }
+        });
 
-        await supabase
-          .from('user_bsk_balances')
-          .upsert({
-            user_id: ancestor.ancestor_id,
-            withdrawable_balance: Number(currentBalance?.withdrawable_balance || 0) + commissionAmount,
-            total_earned_withdrawable: Number(currentBalance?.total_earned_withdrawable || 0) + commissionAmount,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_id'
-          });
+        if (ledgerError) {
+          console.error(`❌ Ledger update failed for L${ancestor.level}:`, ledgerError);
+          continue;
+        }
 
-        // Create commission record
+        // Create commission record for audit trail
         const { data: commissionRecord } = await supabase
           .from('referral_commissions')
           .insert({
@@ -271,23 +279,6 @@ Deno.serve(async (req) => {
           })
           .select()
           .single();
-
-        // Create bonus ledger entry
-        await supabase
-          .from('bonus_ledger')
-          .insert({
-            user_id: ancestor.ancestor_id,
-            type: 'multi_level_commission',
-            amount_bsk: commissionAmount,
-            asset: 'BSK',
-            meta_json: {
-              referral_user_id: user_id,
-              level: ancestor.level,
-              event_type: event_type,
-              base_amount: base_amount
-            },
-            usd_value: 0
-          });
 
         totalCommissionsPaid += commissionAmount;
         commissionRecords.push({

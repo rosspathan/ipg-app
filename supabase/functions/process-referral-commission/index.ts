@@ -111,21 +111,6 @@ serve(async (req) => {
 
     if (ledgerError) throw ledgerError;
 
-    // Create bonus ledger entry
-    await supabaseClient
-      .from('bonus_ledger')
-      .insert({
-        user_id: sponsor_id,
-        type: 'referral_commission',
-        amount_bsk: commissionAmount,
-        meta_json: {
-          referee_id: referee_id,
-          action: action,
-          level: 1,
-          original_amount: amount
-        }
-      });
-
     console.log('✅ Referral commission processed:', { sponsor_id, commissionAmount });
 
     return new Response(
