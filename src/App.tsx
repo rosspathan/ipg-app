@@ -118,6 +118,7 @@ const AdminTestUserGenerator = React.lazy(() => import("./pages/admin/AdminTestU
 import ManualReferralAssignment from "./pages/admin/ManualReferralAssignment";
 import RetroactiveCommissionFix from "./pages/admin/RetroactiveCommissionFix";
 import TreeHealthDashboard from "./pages/admin/TreeHealthDashboard";
+import MissingReferralsManager from "./pages/admin/MissingReferralsManager";
 
 // Guards
 import UserRoute from "@/components/UserRoute";
@@ -630,6 +631,7 @@ function AppContent() {
                 <Route path="manual-referral-assignment" element={<ManualReferralAssignment />} />
                 <Route path="retroactive-commission-fix" element={<RetroactiveCommissionFix />} />
                 <Route path="tree-health" element={<TreeHealthDashboard />} />
+                <Route path="missing-referrals" element={<MissingReferralsManager />} />
                 <Route path="referral-debugger" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/ReferralDebugger')))}</React.Suspense>} />
                 <Route path="funding" element={<AdminFunding />} />
                 <Route path="funding/inr" element={<AdminINRFundingScreen />} />

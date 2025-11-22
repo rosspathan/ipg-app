@@ -11298,6 +11298,17 @@ export type Database = {
         }
         Returns: Json
       }
+      get_missing_referrals: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          phone: string
+          status: string
+          username: string
+        }[]
+      }
       get_my_bsk_balance: {
         Args: never
         Returns: {

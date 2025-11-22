@@ -44,9 +44,29 @@ export default function MissingReferralsManager() {
   const { data: missingReferrals, isLoading } = useQuery({
     queryKey: ["missing-referrals"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_missing_referrals");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, email, phone, created_at")
+        .gt("created_at", "2025-11-01")
+        .order("created_at", { ascending: false });
+      
       if (error) throw error;
-      return data as MissingReferral[];
+      
+      // Filter out users who already have referral links
+      const userIds = data.map((p) => p.id);
+      const { data: existingLinks } = await supabase
+        .from("referral_links_new")
+        .select("user_id")
+        .in("user_id", userIds);
+      
+      const linkedUserIds = new Set(existingLinks?.map((l) => l.user_id) || []);
+      
+      return data
+        .filter((user) => !linkedUserIds.has(user.id))
+        .map((user) => ({
+          ...user,
+          status: "MISSING_LINK" as const,
+        }));
     },
   });
 
