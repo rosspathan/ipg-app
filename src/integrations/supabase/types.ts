@@ -10935,6 +10935,34 @@ export type Database = {
       }
     }
     Views: {
+      badge_commission_health: {
+        Row: {
+          commission_paid: number | null
+          current_badge: string | null
+          expected_commission: number | null
+          price_bsk: number | null
+          purchased_at: string | null
+          sponsor_id: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_tree_ancestor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_tree_ancestor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "referral_relationships"
+            referencedColumns: ["referee_id"]
+          },
+        ]
+      }
       mv_user_bsk_balances: {
         Row: {
           holding_balance: number | null
@@ -11088,6 +11116,21 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      backfill_badge_commissions: {
+        Args: {
+          p_dry_run?: boolean
+          p_end_date?: string
+          p_start_date?: string
+        }
+        Returns: {
+          action_taken: string
+          badge_name: string
+          commission_amount: number
+          price_bsk: number
+          sponsor_id: string
+          user_id: string
+        }[]
       }
       build_user_referral_tree: { Args: { p_user_id: string }; Returns: number }
       bulk_update_program_status: {

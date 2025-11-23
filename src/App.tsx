@@ -591,6 +591,7 @@ function AppContent() {
                 <Route path="crypto-conversions" element={<AdminCryptoConversionsScreen />} />
                 <Route path="bsk-withdrawals" element={<AdminBSKWithdrawalsScreen />} />
                 <Route path="crypto-withdrawals" element={<AdminCryptoWithdrawalsScreen />} />
+                <Route path="badge-commissions" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/BadgeCommissions')))}</React.Suspense>} />
                 <Route path="announcements" element={<React.Suspense fallback={<LoadingFallback />}><AdminAnnouncementsManager /></React.Suspense>} />
                 
                 {/* Programs */}
