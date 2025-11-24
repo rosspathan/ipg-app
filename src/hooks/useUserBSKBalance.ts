@@ -210,8 +210,11 @@ export const useUserBSKBalance = () => {
     };
   }, [user?.id]);
 
-  const refresh = () => {
-    fetchBalance();
+  const refresh = async () => {
+    console.log('[BSK Balance] 🔄 Force refresh triggered by user');
+    setLoading(true);
+    await fetchBalance();
+    setLoading(false);
   };
 
   return {

@@ -166,6 +166,7 @@ export function HomePageRebuilt() {
             onTransfer={() => navigate("/app/programs/bsk-transfer")}
             onHistory={() => navigate("/app/wallet/history")}
             onViewBreakdown={() => setShowRewardsBreakdown(true)}
+            onRefresh={handleRefresh}
           />
           
           <BskCardCompact
@@ -173,6 +174,7 @@ export function HomePageRebuilt() {
             balance={balance.holding}
             fiatValue={balance.holding * BSK_TO_INR}
             onViewSchedule={() => setShowRewardsBreakdown(true)}
+            onRefresh={handleRefresh}
           />
         </BalanceDuoGrid>
 

@@ -6,6 +6,7 @@ import { useNavigation } from "@/hooks/useNavigation";
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useTeamReferrals } from '@/hooks/useTeamReferrals';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,7 @@ const BadgeSubscriptionScreen = () => {
   const { user } = useAuthUser();
   const { badgeThresholds, loading } = useTeamReferrals();
   const displayName = useDisplayName();
+  const queryClient = useQueryClient();
   
   const [currentBadge, setCurrentBadge] = useState<string>('NONE');
   const [bskBalance, setBskBalance] = useState<number>(0);
@@ -260,6 +262,16 @@ const BadgeSubscriptionScreen = () => {
         )
       });
 
+      // Invalidate all balance and badge related queries
+      console.log('🔄 Invalidating cache after badge purchase...');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['bsk-balance'] }),
+        queryClient.invalidateQueries({ queryKey: ['user-bsk-balances'] }),
+        queryClient.invalidateQueries({ queryKey: ['home-page-data'] }),
+        queryClient.invalidateQueries({ queryKey: ['user-badge'] }),
+        queryClient.invalidateQueries({ queryKey: ['badge-thresholds'] }),
+      ]);
+
       // Refresh data
       const { data: badgeData } = await supabase
         .from('user_badge_holdings')
@@ -286,6 +298,8 @@ const BadgeSubscriptionScreen = () => {
       }
       
       setSelectedBadge(null);
+      
+      console.log('✅ Badge purchase complete and cache invalidated');
       
     } catch (error: any) {
       console.error('Badge purchase error:', error);
