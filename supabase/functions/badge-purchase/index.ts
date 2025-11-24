@@ -85,37 +85,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Deduct BSK from user's balance (prioritize withdrawable first) with BigNumber precision
-    const remainingDeduction = new BigNumber(bsk_amount);
-    let withdrawableDeduction = new BigNumber(0);
-    let holdingDeduction = new BigNumber(0);
+    // 2. Deduct BSK from user's balance using atomic transaction
+    const { error: debitError } = await supabaseClient.rpc('record_bsk_transaction', {
+      p_user_id: user_id,
+      p_idempotency_key: `badge_purchase_debit_${user_id}_${normalizedBadge}_${Date.now()}`,
+      p_tx_type: 'debit',
+      p_tx_subtype: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
+      p_balance_type: 'withdrawable', // Try withdrawable first, ledger will handle overflow to holding
+      p_amount_bsk: bsk_amount,
+      p_meta_json: {
+        badge_name: normalizedBadge,
+        previous_badge: previous_badge,
+        is_upgrade: is_upgrade
+      }
+    });
 
-    const withdrawableBN = new BigNumber(balance.withdrawable_balance);
-    
-    if (withdrawableBN.gte(remainingDeduction)) {
-      withdrawableDeduction = remainingDeduction;
-    } else {
-      withdrawableDeduction = withdrawableBN;
-      holdingDeduction = remainingDeduction.minus(withdrawableDeduction);
+    if (debitError) {
+      console.error('Balance debit error:', debitError);
+      throw new Error('Failed to deduct balance');
     }
 
-    const newWithdrawable = new BigNumber(balance.withdrawable_balance).minus(withdrawableDeduction);
-    const newHolding = new BigNumber(balance.holding_balance).minus(holdingDeduction);
-
-    const { error: updateBalanceError } = await supabaseClient
-      .from('user_bsk_balances')
-      .update({
-        withdrawable_balance: newWithdrawable.toNumber(),
-        holding_balance: newHolding.toNumber(),
-      })
-      .eq('user_id', user_id);
-
-    if (updateBalanceError) {
-      console.error('Balance update error:', updateBalanceError);
-      throw new Error('Failed to update balance');
-    }
-
-    console.log(`💰 Balance deducted: ${withdrawableDeduction.toString()} from withdrawable, ${holdingDeduction.toString()} from holding`);
+    console.log(`💰 Balance deducted: ${bsk_amount} BSK for badge purchase`);
 
     // 3. Create or update badge holding (STORE NORMALIZED NAME)
     const { error: badgeError } = await supabaseClient
@@ -240,64 +230,31 @@ Deno.serve(async (req) => {
       if (bonusAmount > 0) {
         console.log(`💰 Crediting ${bonusAmount} BSK bonus for ${badge_name} (normalized: ${normalizedBadge})`);
         
-        // Get current balance - create if doesn't exist
-        const { data: currentBalance, error: balanceQueryError } = await supabaseClient
-          .from('user_bsk_balances')
-          .select('holding_balance, total_earned_holding')
-          .eq('user_id', user_id)
-          .maybeSingle();
-
-        if (balanceQueryError) {
-          console.error('Error fetching balance for bonus:', balanceQueryError);
-          throw balanceQueryError;
-        }
-        
-        // Credit bonus to holding balance with BigNumber precision
-        const newHoldingBalance = new BigNumber(currentBalance?.holding_balance || 0).plus(bonusAmount);
-        const newTotalEarnedHolding = new BigNumber(currentBalance?.total_earned_holding || 0).plus(bonusAmount);
-
-        const { error: bonusUpdateError } = await supabaseClient
-          .from('user_bsk_balances')
-          .upsert({
-            user_id,
-            holding_balance: newHoldingBalance.toNumber(),
-            total_earned_holding: newTotalEarnedHolding.toNumber(),
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id'
-          });
+        // Credit bonus to holding balance using atomic transaction
+        const { error: bonusUpdateError } = await supabaseClient.rpc('record_bsk_transaction', {
+          p_user_id: user_id,
+          p_idempotency_key: `badge_bonus_${user_id}_${normalizedBadge}`,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'badge_bonus',
+          p_balance_type: 'holding',
+          p_amount_bsk: bonusAmount,
+          p_meta_json: {
+            badge_name,
+            normalized_badge: normalizedBadge,
+            bonus_type: 'holding_balance',
+            source: 'badge_purchase',
+            timestamp: new Date().toISOString()
+          }
+        });
 
         if (bonusUpdateError) {
-          console.error('❌ Failed to update balance with bonus:', bonusUpdateError);
+          console.error('❌ Failed to credit bonus:', bonusUpdateError);
           throw bonusUpdateError;
         } else {
-          // Create ledger entry
-          const { error: ledgerError } = await supabaseClient
-            .from('bonus_ledger')
-            .insert({
-              user_id,
-              type: 'badge_bonus',
-              amount_bsk: bonusAmount,
-              asset: 'BSK',
-              meta_json: {
-                badge_name,
-                normalized_badge: normalizedBadge,
-                bonus_type: 'holding_balance',
-                source: 'badge_purchase',
-                timestamp: new Date().toISOString()
-              },
-              usd_value: 0,
-            });
-
-          if (ledgerError) {
-            console.error('❌ Failed to create bonus ledger entry:', ledgerError);
-            // Don't throw - balance was already credited
-          } else {
-            bonusCredited = true;
-            console.log(`✅ Successfully credited ${bonusAmount} BSK bonus to holding balance`);
-            console.log(`   User: ${user_id}`);
-            console.log(`   Badge: ${badge_name} (${normalizedBadge})`);
-          }
+          bonusCredited = true;
+          console.log(`✅ Successfully credited ${bonusAmount} BSK bonus to holding balance`);
+          console.log(`   User: ${user_id}`);
+          console.log(`   Badge: ${badge_name} (${normalizedBadge})`);
         }
       } else {
         console.log(`⚠️ No bonus configured for badge: ${badge_name} (${normalizedBadge})`);
