@@ -86,7 +86,9 @@ Deno.serve(async (req) => {
     }
 
     // 2. Deduct BSK from user's balance using atomic transaction
-    const { error: debitError } = await supabaseClient.rpc('record_bsk_transaction', {
+    console.log(`💰 Attempting to deduct ${bsk_amount} BSK for badge purchase...`);
+    
+    const { data: debitData, error: debitError } = await supabaseClient.rpc('record_bsk_transaction', {
       p_user_id: user_id,
       p_idempotency_key: `badge_purchase_debit_${user_id}_${normalizedBadge}_${Date.now()}`,
       p_tx_type: 'debit',
@@ -101,11 +103,28 @@ Deno.serve(async (req) => {
     });
 
     if (debitError) {
-      console.error('Balance debit error:', debitError);
-      throw new Error('Failed to deduct balance');
+      console.error('❌ Balance debit error:', debitError);
+      throw new Error(`Failed to deduct balance: ${debitError.message}`);
     }
 
-    console.log(`💰 Balance deducted: ${bsk_amount} BSK for badge purchase`);
+    console.log(`✅ Balance deducted successfully: ${bsk_amount} BSK for badge purchase`);
+    
+    // Verify the transaction was recorded
+    const { data: verifyTx, error: verifyError } = await supabaseClient
+      .from('unified_bsk_ledger')
+      .select('id, tx_type, amount_bsk, balance_after')
+      .eq('user_id', user_id)
+      .eq('tx_subtype', is_upgrade ? 'badge_upgrade' : 'badge_purchase')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (verifyError || !verifyTx) {
+      console.error('❌ CRITICAL: Debit transaction verification failed:', verifyError);
+      throw new Error('Badge purchase debit transaction was not recorded - aborting');
+    }
+
+    console.log(`✅ Debit transaction verified:`, verifyTx);
 
     // 3. Create or update badge holding (STORE NORMALIZED NAME)
     const { error: badgeError } = await supabaseClient
@@ -126,16 +145,25 @@ Deno.serve(async (req) => {
     });
 
     if (badgeError) {
-      console.error('Badge holding error:', badgeError);
-      // Rollback balance
-      await supabaseClient
-        .from('user_bsk_balances')
-        .update({
-          withdrawable_balance: Number(balance.withdrawable_balance),
-          holding_balance: Number(balance.holding_balance),
-        })
-        .eq('user_id', user_id);
-      throw new Error('Failed to update badge holding');
+      console.error('❌ CRITICAL: Badge holding error:', badgeError);
+      
+      // Rollback: Credit back the deducted amount
+      console.log('🔄 Rolling back balance deduction...');
+      await supabaseClient.rpc('record_bsk_transaction', {
+        p_user_id: user_id,
+        p_idempotency_key: `badge_purchase_rollback_${user_id}_${normalizedBadge}_${Date.now()}`,
+        p_tx_type: 'credit',
+        p_tx_subtype: 'rollback',
+        p_balance_type: 'withdrawable',
+        p_amount_bsk: bsk_amount,
+        p_meta_json: {
+          reason: 'badge_assignment_failed',
+          original_badge: normalizedBadge,
+          error: badgeError.message
+        }
+      });
+      
+      throw new Error(`Failed to update badge holding: ${badgeError.message}`);
     }
 
     // 4. Process 10% direct commission (L1 sponsor only)
@@ -328,13 +356,19 @@ Deno.serve(async (req) => {
         },
       });
 
-    console.log('Badge purchase completed successfully');
+    console.log('✅ Badge purchase completed successfully');
+    console.log(`   User: ${user_id}`);
+    console.log(`   Badge: ${badge_name} (${normalizedBadge})`);
+    console.log(`   Amount: ${bsk_amount} BSK`);
+    console.log(`   Bonus: ${bonusCredited ? `${bonusAmount} BSK` : 'None'}`);
 
     return new Response(
       JSON.stringify({ 
         success: true,
         bonus_credited: bonusCredited,
-        bonus_amount: bonusAmount
+        bonus_amount: bonusAmount,
+        badge_name: normalizedBadge,
+        amount_deducted: bsk_amount
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

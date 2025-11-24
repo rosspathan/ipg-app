@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Eye, EyeOff, Lock, Calendar } from "lucide-react"
+import { Eye, EyeOff, Lock, Calendar, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -17,6 +17,7 @@ interface BSKHoldingCardProps {
   sources?: BSKSource[]
   isLoading?: boolean
   onViewSchedule?: () => void
+  onRefresh?: () => void
   className?: string
 }
 
@@ -38,9 +39,19 @@ export function BSKHoldingCard({
   sources = defaultSources,
   isLoading = false,
   onViewSchedule,
+  onRefresh,
   className
 }: BSKHoldingCardProps) {
   const [isPrivate, setIsPrivate] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    if (onRefresh) {
+      setIsRefreshing(true)
+      await onRefresh()
+      setIsRefreshing(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -77,19 +88,31 @@ export function BSKHoldingCard({
             </p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsPrivate(!isPrivate)}
-          className="h-8 w-8 p-0 hover:bg-muted/20 transition-all duration-[120ms]"
-          aria-label={isPrivate ? "Show balance" : "Hide balance"}
-        >
-          {isPrivate ? (
-            <EyeOff className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <Eye className="h-4 w-4 text-muted-foreground" />
-          )}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="h-8 w-8 p-0 hover:bg-muted/20 transition-all duration-[120ms]"
+            aria-label="Refresh balance"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", isRefreshing && "animate-spin")} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsPrivate(!isPrivate)}
+            className="h-8 w-8 p-0 hover:bg-muted/20 transition-all duration-[120ms]"
+            aria-label={isPrivate ? "Show balance" : "Hide balance"}
+          >
+            {isPrivate ? (
+              <EyeOff className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <Eye className="h-4 w-4 text-muted-foreground" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Balance */}

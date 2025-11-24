@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Eye, EyeOff, ArrowUpRight, ArrowLeftRight, History, TrendingUp } from "lucide-react"
+import { Eye, EyeOff, ArrowUpRight, ArrowLeftRight, History, TrendingUp, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -20,6 +20,7 @@ interface BSKWithdrawCardProps {
   onTransfer?: () => void
   onHistory?: () => void
   onViewBreakdown?: () => void
+  onRefresh?: () => void
   className?: string
 }
 
@@ -35,9 +36,19 @@ export function BSKWithdrawCard({
   onTransfer,
   onHistory,
   onViewBreakdown,
+  onRefresh,
   className
 }: BSKWithdrawCardProps) {
   const [isPrivate, setIsPrivate] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    if (onRefresh) {
+      setIsRefreshing(true)
+      await onRefresh()
+      setIsRefreshing(false)
+    }
+  }
 
   const defaultBonusStrip: BonusStrip = bonusStrip || {
     today: 150,
@@ -77,19 +88,31 @@ export function BSKWithdrawCard({
             Tradable / Transferable
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsPrivate(!isPrivate)}
-          className="h-8 w-8 p-0 hover:bg-muted/20 transition-all duration-[120ms]"
-          aria-label={isPrivate ? "Show balance" : "Hide balance"}
-        >
-          {isPrivate ? (
-            <EyeOff className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <Eye className="h-4 w-4 text-muted-foreground" />
-          )}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="h-8 w-8 p-0 hover:bg-muted/20 transition-all duration-[120ms]"
+            aria-label="Refresh balance"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", isRefreshing && "animate-spin")} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsPrivate(!isPrivate)}
+            className="h-8 w-8 p-0 hover:bg-muted/20 transition-all duration-[120ms]"
+            aria-label={isPrivate ? "Show balance" : "Hide balance"}
+          >
+            {isPrivate ? (
+              <EyeOff className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <Eye className="h-4 w-4 text-muted-foreground" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Balance */}

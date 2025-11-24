@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Eye, EyeOff, Lock, ArrowDownToLine, ArrowRightLeft, History, Calendar, Info } from "lucide-react"
+import { Eye, EyeOff, Lock, ArrowDownToLine, ArrowRightLeft, History, Calendar, Info, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -28,6 +28,7 @@ interface BskCardCompactProps {
   onHistory?: () => void
   onViewBreakdown?: () => void
   onViewSchedule?: () => void
+  onRefresh?: () => void
   className?: string
 }
 
@@ -56,11 +57,21 @@ const BskCardCompactComponent = ({
   onHistory,
   onViewBreakdown,
   onViewSchedule,
+  onRefresh,
   className
 }: BskCardCompactProps) => {
   const [isPrivate, setIsPrivate] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const isWithdrawable = variant === "withdrawable"
+
+  const handleRefresh = async () => {
+    if (onRefresh) {
+      setIsRefreshing(true)
+      await onRefresh()
+      setIsRefreshing(false)
+    }
+  }
 
   // Removed skeleton loader - parent handles loading state to prevent layout shift
 
@@ -104,20 +115,32 @@ const BskCardCompactComponent = ({
             </p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsPrivate(!isPrivate)}
-          className="h-8 w-8 p-0 hover:bg-muted/20 transition-colors duration-200 flex-shrink-0 touch-manipulation"
-          aria-label={isPrivate ? "Show balance" : "Hide balance"}
-          aria-pressed={isPrivate}
-        >
-          {isPrivate ? (
-            <EyeOff className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          ) : (
-            <Eye className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          )}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="h-8 w-8 p-0 hover:bg-muted/20 transition-colors duration-200 flex-shrink-0 touch-manipulation"
+            aria-label="Refresh balance"
+          >
+            <RefreshCw className={cn("h-3 w-3 text-muted-foreground", isRefreshing && "animate-spin")} aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsPrivate(!isPrivate)}
+            className="h-8 w-8 p-0 hover:bg-muted/20 transition-colors duration-200 flex-shrink-0 touch-manipulation"
+            aria-label={isPrivate ? "Show balance" : "Hide balance"}
+            aria-pressed={isPrivate}
+          >
+            {isPrivate ? (
+              <EyeOff className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            ) : (
+              <Eye className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Amount Row */}
