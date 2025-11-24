@@ -247,11 +247,13 @@ Deno.serve(async (req) => {
       console.log(`🎁 Fetching bonus configuration for badge: ${normalizedBadge}`);
       
       // Fetch bonus from badge_thresholds (SERVER AUTHORITATIVE)
+      // Search by both normalized name (e.g., "VIP") and original name (e.g., "I-Smart VIP")
       const { data: badgeThreshold, error: thresholdError } = await supabaseClient
         .from('badge_thresholds')
         .select('bonus_bsk_holding, badge_name, bsk_threshold')
-        .eq('badge_name', normalizedBadge)
+        .in('badge_name', [normalizedBadge, badge_name])
         .eq('is_active', true)
+        .order('bsk_threshold', { ascending: true })
         .maybeSingle();
 
       if (thresholdError) {

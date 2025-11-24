@@ -229,21 +229,23 @@ const BadgeSubscriptionScreen = () => {
         }
       }
 
-      // Step 2: Process purchase
+      // Step 2: Process purchase using unified flow
       console.log('Validation passed, processing purchase...');
-      const { data, error } = await supabase.functions.invoke('badge-commission-processor', {
+      const { data, error } = await supabase.functions.invoke('verify-badge-purchase', {
         body: {
-          userId: user.id,
-          toBadge: selectedBadge.name,
-          fromBadge: currentBadge === 'NONE' ? undefined : currentBadge,
-          paidAmountBSK: costToPay,
-          paymentRef: `badge_${Date.now()}`,
-          paymentMethod: 'BSK'
+          user_id: user.id,
+          badge_name: selectedBadge.name,
+          cost: costToPay,
         }
       });
 
       if (error) {
+        console.error('❌ Purchase error:', error);
         throw error;
+      }
+
+      if (!data?.purchased) {
+        throw new Error(data?.error || 'Failed to purchase badge');
       }
 
       // Show celebration
