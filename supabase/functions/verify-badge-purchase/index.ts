@@ -34,10 +34,10 @@ serve(async (req) => {
 
     const { user_id, badge_name, cost }: BadgePurchaseRequest = await req.json();
 
-    console.log('🎖️ [Verify Badge Purchase] Request:', { user_id, badge_name, cost });
+    console.log('🎖️ [Verify Badge Purchase] Request:', { user_id, badge_name, cost_from_client: cost });
 
     // ==========================================
-    // STEP 1: Verify badge exists and is active
+    // STEP 1: Fetch badge configuration (SERVER IS AUTHORITATIVE)
     // ==========================================
     const { data: badgeConfig, error: badgeError } = await supabase
       .from('badge_thresholds')
@@ -57,8 +57,12 @@ serve(async (req) => {
       );
     }
 
+    // SERVER-AUTHORITATIVE: Use badge_thresholds.bsk_threshold as source of truth
+    const targetBadgeThreshold = new BigNumber(badgeConfig.bsk_threshold);
+    console.log('📊 Target badge threshold from DB:', targetBadgeThreshold.toString());
+
     // ==========================================
-    // STEP 2: Check if user already has this badge & calculate upgrade pricing
+    // STEP 2: Check if user already has a badge & calculate upgrade pricing
     // ==========================================
     const { data: existingBadge, error: existingError } = await supabase
       .from('user_badge_holdings')
@@ -81,15 +85,21 @@ serve(async (req) => {
       );
     }
 
-    // Calculate actual cost (differential for upgrades)
-    let actualCost = cost;
+    // SERVER-AUTHORITATIVE: Calculate actual cost based on DB thresholds
+    let actualCost: number;
     const isUpgrade = !!existingBadge?.current_badge;
     
     if (isUpgrade && existingBadge.price_bsk) {
-      // For upgrades, only charge the difference
-      const previousCost = new BigNumber(existingBadge.price_bsk);
-      const newCost = new BigNumber(cost);
-      const differential = newCost.minus(previousCost);
+      // For upgrades, fetch previous badge threshold
+      const { data: previousBadgeConfig } = await supabase
+        .from('badge_thresholds')
+        .select('bsk_threshold')
+        .eq('badge_name', existingBadge.current_badge)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      const previousThreshold = new BigNumber(previousBadgeConfig?.bsk_threshold || existingBadge.price_bsk);
+      const differential = targetBadgeThreshold.minus(previousThreshold);
       
       if (differential.lte(0)) {
         return new Response(
@@ -102,12 +112,21 @@ serve(async (req) => {
       }
       
       actualCost = differential.toNumber();
-      console.log(`🔄 Upgrade detected: ${existingBadge.current_badge} → ${badge_name}`);
-      console.log(`💰 Differential pricing: ${existingBadge.price_bsk} → ${cost} = ${actualCost} BSK to pay`);
+      console.log(`🔄 Upgrade: ${existingBadge.current_badge} → ${badge_name}`);
+      console.log(`💰 SERVER CALCULATED: ${previousThreshold.toString()} → ${targetBadgeThreshold.toString()} = ${actualCost} BSK`);
+    } else {
+      // New purchase: full threshold amount
+      actualCost = targetBadgeThreshold.toNumber();
+      console.log(`💰 New purchase: ${actualCost} BSK (from DB threshold)`);
+    }
+
+    // Sanity check: warn if client sent wrong cost
+    if (cost !== actualCost && cost !== targetBadgeThreshold.toNumber()) {
+      console.warn(`⚠️ Client cost mismatch: client=${cost}, server=${actualCost}`);
     }
 
     // ==========================================
-    // STEP 3: Verify user has sufficient BSK balance
+    // STEP 3: Verify WITHDRAWABLE balance only (Option A)
     // ==========================================
     const { data: balance, error: balanceError } = await supabase
       .from('user_bsk_balances')
@@ -126,23 +145,23 @@ serve(async (req) => {
       );
     }
 
-    // Check BOTH balance types with BigNumber precision
-    const holdingBalance = new BigNumber(balance.holding_balance || 0);
+    // CRITICAL: Only check withdrawable balance (holding cannot be used for purchases)
     const withdrawableBalance = new BigNumber(balance.withdrawable_balance || 0);
-    const totalAvailable = holdingBalance.plus(withdrawableBalance);
     
-    console.log('💰 Balance check:', { 
-      holding: holdingBalance.toString(), 
+    console.log('💰 Balance check (WITHDRAWABLE ONLY):', { 
       withdrawable: withdrawableBalance.toString(), 
-      total: totalAvailable.toString(), 
+      holding: balance.holding_balance || 0,
       required: actualCost 
     });
     
-    if (totalAvailable.lt(actualCost)) {
-      console.warn('⚠️ Insufficient BSK balance:', { available: totalAvailable.toString(), required: actualCost });
+    if (withdrawableBalance.lt(actualCost)) {
+      console.warn('⚠️ Insufficient withdrawable balance:', { 
+        available: withdrawableBalance.toString(), 
+        required: actualCost 
+      });
       return new Response(
         JSON.stringify({ 
-          error: `Insufficient BSK balance. You need ${actualCost} BSK but only have ${totalAvailable.toString()} BSK total.`,
+          error: `Insufficient withdrawable balance. You need ${actualCost} BSK but only have ${withdrawableBalance.toString()} BSK available for purchases.`,
           purchased: false 
         }), 
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -150,9 +169,16 @@ serve(async (req) => {
     }
 
     // ==========================================
-    // STEP 4: Delegate to improved badge-purchase function
+    // STEP 4: Delegate to badge-purchase function with SERVER-CALCULATED amount
     // ==========================================
     console.log('🎯 Delegating to badge-purchase function...');
+    console.log('📤 Sending:', {
+      user_id,
+      badge_name,
+      previous_badge: existingBadge?.current_badge || null,
+      bsk_amount: actualCost, // SERVER-CALCULATED (not client cost)
+      is_upgrade: isUpgrade
+    });
     
     try {
       const purchaseResponse = await supabase.functions.invoke('badge-purchase', {
@@ -160,7 +186,7 @@ serve(async (req) => {
           user_id,
           badge_name,
           previous_badge: existingBadge?.current_badge || null,
-          bsk_amount: actualCost,
+          bsk_amount: actualCost, // Use SERVER-CALCULATED amount
           is_upgrade: isUpgrade
         }
       });
