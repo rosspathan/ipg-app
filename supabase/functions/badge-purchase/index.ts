@@ -105,11 +105,14 @@ Deno.serve(async (req) => {
       p_tx_subtype: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
       p_balance_type: 'withdrawable', // ONLY withdrawable can be used for purchases
       p_amount_bsk: bsk_amount,
+      p_notes: null,
       p_meta_json: {
         badge_name: normalizedBadge,
         previous_badge: previous_badge,
         is_upgrade: is_upgrade
-      }
+      },
+      p_related_user_id: null,
+      p_related_transaction_id: null
     });
 
     if (debitError) {
@@ -176,11 +179,14 @@ Deno.serve(async (req) => {
           p_tx_subtype: 'rollback',
           p_balance_type: 'withdrawable',
           p_amount_bsk: bsk_amount,
+          p_notes: null,
           p_meta_json: {
             reason: 'badge_assignment_failed',
             original_badge: normalizedBadge,
             error: badgeError.message
-          }
+          },
+          p_related_user_id: null,
+          p_related_transaction_id: null
         });
         console.log('✅ [Rollback] Successfully credited back', bsk_amount, 'BSK');
       } catch (rollbackError) {
@@ -286,12 +292,15 @@ Deno.serve(async (req) => {
           p_tx_subtype: 'badge_bonus',
           p_balance_type: 'holding',
           p_amount_bsk: bonusAmount,
+          p_notes: null,
           p_meta_json: {
             badge_name: normalizedBadge,
             bonus_type: 'holding_balance',
             source: 'badge_purchase',
             timestamp: new Date().toISOString()
-          }
+          },
+          p_related_user_id: null,
+          p_related_transaction_id: null
         });
 
         if (bonusUpdateError) {
