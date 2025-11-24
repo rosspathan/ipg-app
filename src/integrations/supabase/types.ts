@@ -11118,10 +11118,10 @@ export type Database = {
       atomic_badge_purchase: {
         Args: {
           p_badge_name: string
-          p_paid_amount_bsk?: number
-          p_payment_method?: string
-          p_payment_ref?: string
-          p_previous_badge?: string
+          p_paid_amount_bsk: number
+          p_payment_method: string
+          p_payment_ref: string
+          p_previous_badge: string
           p_user_id: string
         }
         Returns: Json
