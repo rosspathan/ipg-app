@@ -105,20 +105,20 @@ Deno.serve(async (req) => {
     // Credit withdrawable balance using unified ledger (atomic operation)
     const { error: ledgerError } = await supabaseClient.rpc('record_bsk_transaction', {
       p_user_id: sponsorId,
-      p_idempotency_key: `badge_commission_${user_id}_${badge_name}_${Date.now()}`,
+      p_idempotency_key: `badge_commission_${user_id}_${badge_name}_1`,
       p_tx_type: 'credit',
       p_tx_subtype: 'referral_commission_l1',
       p_balance_type: 'withdrawable',
       p_amount_bsk: commissionAmount,
-      p_amount_inr: commissionAmount * bskInrRate,
-      p_rate_snapshot: bskInrRate,
       p_related_user_id: user_id,
       p_meta_json: {
         badge_purchased: badge_name,
         previous_badge: previous_badge,
         purchase_amount: bsk_amount,
         commission_rate: settings.direct_commission_percent,
-        event_type: previous_badge ? 'badge_upgrade' : 'badge_purchase'
+        event_type: previous_badge ? 'badge_upgrade' : 'badge_purchase',
+        amount_inr: commissionAmount * bskInrRate,
+        rate_snapshot: bskInrRate
       }
     });
 
