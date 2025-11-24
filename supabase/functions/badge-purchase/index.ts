@@ -53,16 +53,17 @@ Deno.serve(async (req) => {
     // Normalize badge name for consistent processing
     const normalizedBadge = normalizeBadgeName(badge_name);
 
-    console.log('Badge purchase request:', { 
+    console.log('🎖️ [Badge Purchase] Starting transaction:', { 
       user_id, 
       original_badge: badge_name, 
       normalized_badge: normalizedBadge,
       previous_badge, 
       bsk_amount, 
-      is_upgrade 
+      is_upgrade,
+      timestamp: new Date().toISOString()
     });
 
-    // 1. Verify user has sufficient BSK balance
+    // 1. Verify WITHDRAWABLE balance only
     const { data: balance, error: balanceError } = await supabaseClient
       .from('user_bsk_balances')
       .select('withdrawable_balance, holding_balance')
@@ -70,30 +71,39 @@ Deno.serve(async (req) => {
       .single();
 
     if (balanceError) {
-      console.error('Balance fetch error:', balanceError);
+      console.error('❌ Balance fetch error:', balanceError);
       throw new Error('Failed to fetch balance');
     }
 
-    const totalBalance = new BigNumber(balance.withdrawable_balance)
-      .plus(balance.holding_balance)
-      .toNumber();
+    console.log('💰 Starting balance:', {
+      withdrawable: balance.withdrawable_balance,
+      holding: balance.holding_balance,
+      required: bsk_amount
+    });
+
+    // CRITICAL: Only withdrawable can be used for purchases
+    const withdrawableBalance = new BigNumber(balance.withdrawable_balance || 0);
     
-    if (new BigNumber(totalBalance).lt(bsk_amount)) {
+    if (withdrawableBalance.lt(bsk_amount)) {
+      console.error('❌ Insufficient withdrawable balance:', {
+        available: withdrawableBalance.toString(),
+        required: bsk_amount
+      });
       return new Response(
-        JSON.stringify({ error: 'Insufficient BSK balance' }),
+        JSON.stringify({ error: `Insufficient withdrawable balance. Need ${bsk_amount} BSK, have ${withdrawableBalance.toString()} BSK` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 2. Deduct BSK from user's balance using atomic transaction
-    console.log(`💰 Attempting to deduct ${bsk_amount} BSK for badge purchase...`);
+    // 2. Deduct BSK from WITHDRAWABLE balance using atomic transaction
+    console.log(`💳 [Debit] Attempting to deduct ${bsk_amount} BSK from withdrawable balance...`);
     
     const { data: debitData, error: debitError } = await supabaseClient.rpc('record_bsk_transaction', {
       p_user_id: user_id,
       p_idempotency_key: `badge_purchase_debit_${user_id}_${normalizedBadge}_${Date.now()}`,
       p_tx_type: 'debit',
       p_tx_subtype: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
-      p_balance_type: 'withdrawable', // Try withdrawable first, ledger will handle overflow to holding
+      p_balance_type: 'withdrawable', // ONLY withdrawable can be used for purchases
       p_amount_bsk: bsk_amount,
       p_meta_json: {
         badge_name: normalizedBadge,
@@ -103,16 +113,16 @@ Deno.serve(async (req) => {
     });
 
     if (debitError) {
-      console.error('❌ Balance debit error:', debitError);
+      console.error('❌ [Debit] Balance debit error:', debitError);
       throw new Error(`Failed to deduct balance: ${debitError.message}`);
     }
 
-    console.log(`✅ Balance deducted successfully: ${bsk_amount} BSK for badge purchase`);
+    console.log(`✅ [Debit] Balance deducted successfully:`, debitData);
     
-    // Verify the transaction was recorded
+    // Verify the transaction was recorded in ledger
     const { data: verifyTx, error: verifyError } = await supabaseClient
       .from('unified_bsk_ledger')
-      .select('id, tx_type, amount_bsk, balance_after')
+      .select('id, tx_type, tx_subtype, amount_bsk, balance_after, balance_type')
       .eq('user_id', user_id)
       .eq('tx_subtype', is_upgrade ? 'badge_upgrade' : 'badge_purchase')
       .order('created_at', { ascending: false })
@@ -120,18 +130,32 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (verifyError || !verifyTx) {
-      console.error('❌ CRITICAL: Debit transaction verification failed:', verifyError);
-      throw new Error('Badge purchase debit transaction was not recorded - aborting');
+      console.error('❌ [Debit] CRITICAL: Transaction verification failed:', verifyError);
+      throw new Error('Badge purchase debit transaction was not recorded in ledger - aborting');
     }
 
-    console.log(`✅ Debit transaction verified:`, verifyTx);
+    if (verifyTx.tx_type !== 'debit') {
+      console.error('❌ [Debit] CRITICAL: Wrong transaction type in ledger:', verifyTx);
+      throw new Error('Ledger verification failed: expected debit transaction');
+    }
 
-    // 3. Create or update badge holding (STORE NORMALIZED NAME)
+    console.log(`✅ [Debit] Transaction verified in ledger:`, {
+      id: verifyTx.id,
+      type: verifyTx.tx_type,
+      subtype: verifyTx.tx_subtype,
+      amount: verifyTx.amount_bsk,
+      balance_after: verifyTx.balance_after,
+      balance_type: verifyTx.balance_type
+    });
+
+    // 3. Assign badge to user (ONLY after successful debit verification)
+    console.log(`🎖️ [Badge] Assigning badge to user...`);
+    
     const { error: badgeError } = await supabaseClient
       .from('user_badge_holdings')
       .upsert({
         user_id,
-        current_badge: normalizedBadge, // ✅ Store normalized name ("VIP" not "i-Smart VIP")
+        current_badge: normalizedBadge,
         previous_badge,
         price_bsk: bsk_amount,
         purchased_at: new Date().toISOString(),
@@ -139,32 +163,37 @@ Deno.serve(async (req) => {
         onConflict: 'user_id'
       });
     
-    console.log('✅ Badge holding created/updated:', { 
-      stored_badge: normalizedBadge, 
-      original_input: badge_name 
-    });
-
     if (badgeError) {
-      console.error('❌ CRITICAL: Badge holding error:', badgeError);
+      console.error('❌ [Badge] CRITICAL: Badge assignment failed:', badgeError);
       
-      // Rollback: Credit back the deducted amount
-      console.log('🔄 Rolling back balance deduction...');
-      await supabaseClient.rpc('record_bsk_transaction', {
-        p_user_id: user_id,
-        p_idempotency_key: `badge_purchase_rollback_${user_id}_${normalizedBadge}_${Date.now()}`,
-        p_tx_type: 'credit',
-        p_tx_subtype: 'rollback',
-        p_balance_type: 'withdrawable',
-        p_amount_bsk: bsk_amount,
-        p_meta_json: {
-          reason: 'badge_assignment_failed',
-          original_badge: normalizedBadge,
-          error: badgeError.message
-        }
-      });
+      // ROLLBACK: Credit back the deducted amount
+      console.log('🔄 [Rollback] Crediting back deducted amount...');
+      try {
+        await supabaseClient.rpc('record_bsk_transaction', {
+          p_user_id: user_id,
+          p_idempotency_key: `badge_purchase_rollback_${user_id}_${normalizedBadge}_${Date.now()}`,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'rollback',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: bsk_amount,
+          p_meta_json: {
+            reason: 'badge_assignment_failed',
+            original_badge: normalizedBadge,
+            error: badgeError.message
+          }
+        });
+        console.log('✅ [Rollback] Successfully credited back', bsk_amount, 'BSK');
+      } catch (rollbackError) {
+        console.error('❌ [Rollback] CRITICAL: Rollback failed:', rollbackError);
+      }
       
-      throw new Error(`Failed to update badge holding: ${badgeError.message}`);
+      throw new Error(`Failed to assign badge: ${badgeError.message}`);
     }
+
+    console.log(`✅ [Badge] Badge assigned successfully:`, { 
+      badge: normalizedBadge, 
+      previous: previous_badge 
+    });
 
     // 4. Process 10% direct commission (L1 sponsor only)
     try {
@@ -210,65 +239,53 @@ Deno.serve(async (req) => {
     }
 
 
-    // 5. Credit bonus holding balance for badge purchase
+    // 5. Credit bonus holding balance - DETERMINISTIC from badge_thresholds
     let bonusCredited = false;
     let bonusAmount = 0;
+    
     try {
-      // Get badge threshold - try multiple badge name variations
-      let badgeThreshold = null;
-      let thresholdError = null;
+      console.log(`🎁 Fetching bonus configuration for badge: ${normalizedBadge}`);
       
-      // Try exact match with original name first
-      const exactMatch = await supabaseClient
+      // Fetch bonus from badge_thresholds (SERVER AUTHORITATIVE)
+      const { data: badgeThreshold, error: thresholdError } = await supabaseClient
         .from('badge_thresholds')
-        .select('bonus_bsk_holding, badge_name')
-        .ilike('badge_name', badge_name)
+        .select('bonus_bsk_holding, badge_name, bsk_threshold')
+        .eq('badge_name', normalizedBadge)
         .eq('is_active', true)
         .maybeSingle();
-      
-      if (exactMatch.data) {
-        badgeThreshold = exactMatch.data;
-      } else {
-        // Try with normalized name
-        const normalizedMatch = await supabaseClient
-          .from('badge_thresholds')
-          .select('bonus_bsk_holding, badge_name')
-          .ilike('badge_name', `%${normalizedBadge}%`)
-          .eq('is_active', true)
-          .maybeSingle();
-        
-        badgeThreshold = normalizedMatch.data;
-        thresholdError = normalizedMatch.error;
-      }
-      
-      // VIP fallback: If no threshold found but it's a VIP badge, default to 10,000 bonus
-      if (!badgeThreshold && normalizedBadge === 'VIP') {
-        console.log('⚠️ No threshold found for VIP badge, using default 10,000 BSK bonus');
-        bonusAmount = 10000;
-      } else if (badgeThreshold && new BigNumber(badgeThreshold.bonus_bsk_holding || 0).gt(0)) {
-        bonusAmount = new BigNumber(badgeThreshold.bonus_bsk_holding).toNumber();
-      }
 
       if (thresholdError) {
-        console.error('Error fetching badge threshold:', thresholdError);
+        console.error('❌ Error fetching badge threshold:', thresholdError);
+        throw new Error(`Failed to fetch bonus configuration: ${thresholdError.message}`);
       }
 
-      // ALWAYS credit bonus for VIP badge purchases, even if already set
-      // This ensures VIP purchases are treated consistently
+      if (!badgeThreshold) {
+        console.error('❌ CRITICAL: No badge_thresholds entry found for:', normalizedBadge);
+        throw new Error(`Badge configuration not found for ${normalizedBadge}`);
+      }
+
+      // DETERMINISTIC: Use bonus_bsk_holding from DB
+      bonusAmount = new BigNumber(badgeThreshold.bonus_bsk_holding || 0).toNumber();
+      
+      console.log(`📊 Badge threshold config:`, {
+        badge: badgeThreshold.badge_name,
+        threshold: badgeThreshold.bsk_threshold,
+        bonus: bonusAmount
+      });
+
       if (bonusAmount > 0) {
-        console.log(`💰 Crediting ${bonusAmount} BSK bonus for ${badge_name} (normalized: ${normalizedBadge})`);
+        console.log(`💰 Crediting ${bonusAmount} BSK bonus to holding balance`);
         
         // Credit bonus to holding balance using atomic transaction
         const { error: bonusUpdateError } = await supabaseClient.rpc('record_bsk_transaction', {
           p_user_id: user_id,
-          p_idempotency_key: `badge_bonus_${user_id}_${normalizedBadge}`,
+          p_idempotency_key: `badge_bonus_${user_id}_${normalizedBadge}_${Date.now()}`,
           p_tx_type: 'credit',
           p_tx_subtype: 'badge_bonus',
           p_balance_type: 'holding',
           p_amount_bsk: bonusAmount,
           p_meta_json: {
-            badge_name,
-            normalized_badge: normalizedBadge,
+            badge_name: normalizedBadge,
             bonus_type: 'holding_balance',
             source: 'badge_purchase',
             timestamp: new Date().toISOString()
@@ -277,20 +294,17 @@ Deno.serve(async (req) => {
 
         if (bonusUpdateError) {
           console.error('❌ Failed to credit bonus:', bonusUpdateError);
-          throw bonusUpdateError;
-        } else {
-          bonusCredited = true;
-          console.log(`✅ Successfully credited ${bonusAmount} BSK bonus to holding balance`);
-          console.log(`   User: ${user_id}`);
-          console.log(`   Badge: ${badge_name} (${normalizedBadge})`);
+          throw new Error(`Bonus credit failed: ${bonusUpdateError.message}`);
         }
+        
+        bonusCredited = true;
+        console.log(`✅ Bonus credited: ${bonusAmount} BSK to holding balance`);
       } else {
-        console.log(`⚠️ No bonus configured for badge: ${badge_name} (${normalizedBadge})`);
+        console.log(`ℹ️ No bonus configured for ${normalizedBadge} (bonus_bsk_holding = 0)`);
       }
-    } catch (bonusError) {
-      console.error('❌ CRITICAL: Badge bonus crediting failed:', bonusError);
-      // Re-throw to make this visible in responses
-      throw new Error(`Failed to credit badge bonus: ${bonusError.message}`);
+    } catch (bonusError: any) {
+      console.error('❌ CRITICAL: Badge bonus processing failed:', bonusError);
+      throw new Error(`Failed to process badge bonus: ${bonusError.message}`);
     }
 
     // 6. If VIP badge, handle milestone tracker and check milestones
