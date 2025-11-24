@@ -94,49 +94,26 @@ serve(async (req) => {
       throw clickError;
     }
 
-    // Credit BSK balance
-    if (destination === 'withdrawable') {
-      const { error: balanceError } = await supabaseClient
-        .from('user_bsk_balances')
-        .upsert({
-          user_id: user.id,
-          withdrawable_balance: supabaseClient.rpc('increment', { x: reward_bsk }),
-          total_earned_withdrawable: supabaseClient.rpc('increment', { x: reward_bsk })
-        }, {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
-        });
+    // Credit BSK balance using atomic transaction
+    const { error: balanceError } = await supabaseClient.rpc('record_bsk_transaction', {
+      p_user_id: user.id,
+      p_idempotency_key: `ad_reward_${clickRecord.id}`,
+      p_tx_type: 'credit',
+      p_tx_subtype: 'ad_mining',
+      p_balance_type: destination,
+      p_amount_bsk: reward_bsk,
+      p_meta_json: {
+        ad_id: ad_id,
+        click_id: clickRecord.id,
+        subscription_tier: subscription_tier,
+        destination: destination
+      }
+    });
 
-      if (balanceError) throw balanceError;
-    } else {
-      const { error: balanceError } = await supabaseClient
-        .from('user_bsk_balances')
-        .upsert({
-          user_id: user.id,
-          holding_balance: supabaseClient.rpc('increment', { x: reward_bsk }),
-          total_earned_holding: supabaseClient.rpc('increment', { x: reward_bsk })
-        }, {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
-        });
-
-      if (balanceError) throw balanceError;
+    if (balanceError) {
+      console.error('Failed to credit ad reward:', balanceError);
+      throw balanceError;
     }
-
-    // Create bonus ledger entry
-    await supabaseClient
-      .from('bonus_ledger')
-      .insert({
-        user_id: user.id,
-        type: 'ad_mining',
-        amount_bsk: reward_bsk,
-        meta_json: {
-          ad_id: ad_id,
-          click_id: clickRecord.id,
-          subscription_tier: subscription_tier,
-          destination: destination
-        }
-      });
 
     console.log('✅ Ad reward processed:', { reward_bsk, destination });
 

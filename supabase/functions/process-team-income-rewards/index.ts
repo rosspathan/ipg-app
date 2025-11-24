@@ -219,40 +219,51 @@ Deno.serve(async (req) => {
       console.log(`✅ Inserted ${commissionsToInsert.length} commission records`);
     }
 
-    // 7. Batch update balances with BigNumber precision
+    // 7. Credit balances using atomic transactions
     for (const [userId, updates] of balanceUpdates.entries()) {
-      // Get current balance
-      const { data: currentBalance } = await supabaseClient
-        .from('user_bsk_balances')
-        .select('withdrawable_balance, holding_balance, total_earned_withdrawable, total_earned_holding')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      // Calculate new balances with BigNumber
-      const newWithdrawable = new BigNumber(currentBalance?.withdrawable_balance || 0).plus(updates.withdrawable);
-      const newHolding = new BigNumber(currentBalance?.holding_balance || 0).plus(updates.holding);
-      const newTotalWithdrawable = new BigNumber(currentBalance?.total_earned_withdrawable || 0).plus(updates.withdrawable);
-      const newTotalHolding = new BigNumber(currentBalance?.total_earned_holding || 0).plus(updates.holding);
-
-      // Update balance
-      const { error: balanceUpdateError } = await supabaseClient
-        .from('user_bsk_balances')
-        .upsert({
-          user_id: userId,
-          withdrawable_balance: newWithdrawable.toNumber(),
-          holding_balance: newHolding.toNumber(),
-          total_earned_withdrawable: newTotalWithdrawable.toNumber(),
-          total_earned_holding: newTotalHolding.toNumber(),
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
+      // Credit withdrawable if any
+      if (updates.withdrawable.gt(0)) {
+        const { error: withdrawError } = await supabaseClient.rpc('record_bsk_transaction', {
+          p_user_id: userId,
+          p_idempotency_key: `team_income_${event_id}_${userId}_withdrawable`,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'team_income',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: updates.withdrawable.toNumber(),
+          p_meta_json: {
+            payer_id: payer_id,
+            event_type: event_type,
+            event_id: event_id
+          }
         });
 
-      if (balanceUpdateError) {
-        console.error(`Error updating balance for ${userId}:`, balanceUpdateError);
+        if (withdrawError) {
+          console.error(`Error crediting withdrawable for ${userId}:`, withdrawError);
+        }
+      }
+
+      // Credit holding if any
+      if (updates.holding.gt(0)) {
+        const { error: holdingError } = await supabaseClient.rpc('record_bsk_transaction', {
+          p_user_id: userId,
+          p_idempotency_key: `team_income_${event_id}_${userId}_holding`,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'team_income',
+          p_balance_type: 'holding',
+          p_amount_bsk: updates.holding.toNumber(),
+          p_meta_json: {
+            payer_id: payer_id,
+            event_type: event_type,
+            event_id: event_id
+          }
+        });
+
+        if (holdingError) {
+          console.error(`Error crediting holding for ${userId}:`, holdingError);
+        }
       }
     }
-    console.log(`✅ Updated balances for ${balanceUpdates.size} users`);
+    console.log(`✅ Credited balances for ${balanceUpdates.size} users`);
 
     // 8. Batch insert ledger entries
     if (ledgerEntries.length > 0) {
