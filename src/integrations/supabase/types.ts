@@ -11187,6 +11187,7 @@ export type Database = {
         Returns: boolean
       }
       check_active_offers: { Args: never; Returns: boolean }
+      check_badge_commission_health: { Args: never; Returns: Json }
       check_badge_eligibility: {
         Args: { required_badge: string; sponsor_badge: string }
         Returns: boolean
