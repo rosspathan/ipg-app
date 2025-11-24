@@ -6719,6 +6719,30 @@ export type Database = {
           },
         ]
       }
+      program_milestone_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          milestones: Json
+          module_key: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          milestones: Json
+          module_key: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          milestones?: Json
+          module_key?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       program_modules: {
         Row: {
           category: string
@@ -11471,6 +11495,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      initialize_program_milestones: {
+        Args: { p_milestones: Json; p_module_id: string; p_user_id: string }
+        Returns: undefined
       }
       initialize_user_program_state: {
         Args: { p_module_id: string; p_user_id: string }
