@@ -110,11 +110,17 @@ const LoginScreen: React.FC = () => {
 
       if (error) {
         let userMessage = "Invalid email or password";
-        if (error.status === 400 || error.message?.toLowerCase().includes('invalid')) {
+        
+        // Check for network/fetch errors first
+        if (error.message?.toLowerCase().includes('fetch') || error.message?.toLowerCase().includes('network')) {
+          userMessage = "Connection failed. Please check:\n1. Your internet connection\n2. Supabase URL configuration";
+          console.error('[LOGIN] Network error - check Supabase URL configuration:', error);
+        } else if (error.status === 400 || error.message?.toLowerCase().includes('invalid')) {
           userMessage = "Invalid email or password. Please check and try again.";
         } else if (!navigator.onLine) {
           userMessage = "You're offline. Please check your connection.";
         }
+        
         setInlineError(userMessage);
         throw error;
       }
