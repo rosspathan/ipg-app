@@ -128,6 +128,8 @@ Deno.serve(async (req) => {
     }
 
     // Insert commission record for audit trail
+    // NOTE: event_id is required but we use a placeholder UUID since this is called
+    // from badge-purchase which doesn't have a badge_purchase_events entry yet
     const { error: commissionError } = await supabaseClient
       .from('referral_commissions')
       .insert({
@@ -135,23 +137,23 @@ Deno.serve(async (req) => {
         payer_id: user_id,
         level: 1,
         event_type: previous_badge ? 'badge_upgrade' : 'badge_purchase',
+        event_id: '00000000-0000-0000-0000-000000000000', // Placeholder since badge_purchase_events isn't used
         commission_type: 'badge_subscription',
         bsk_amount: commissionAmount,
         destination: 'withdrawable',
         status: 'settled',
-        earner_badge_at_event: sponsorBadge?.current_badge,
-        metadata: {
-          badge_purchased: badge_name,
-          previous_badge: previous_badge,
-          purchase_amount: bsk_amount,
-          commission_rate: settings.direct_commission_percent
-        },
+        earner_badge_at_event: sponsorBadge?.current_badge || 'None',
+        amount_inr: commissionAmount * bskInrRate,
+        idempotency_key: `badge_commission_${user_id}_${badge_name}_1`,
         created_at: new Date().toISOString()
       });
 
     if (commissionError) {
-      console.error('Error inserting commission:', commissionError);
-      throw commissionError;
+      console.error('❌ Error inserting commission audit record:', commissionError);
+      // Don't throw - audit trail failure shouldn't block the transaction
+      console.log('⚠️ Commission was credited successfully but audit trail insert failed');
+    } else {
+      console.log('✅ Commission audit record created');
     }
 
     const processingTime = Date.now() - startTime;
