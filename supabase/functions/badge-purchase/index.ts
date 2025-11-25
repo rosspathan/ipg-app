@@ -201,48 +201,71 @@ Deno.serve(async (req) => {
       previous: previous_badge 
     });
 
-    // 4. Process 10% direct commission (L1 sponsor only)
-    try {
-      console.log('💰 Processing 10% direct commission...');
-      
-      const commissionResponse = await supabaseClient.functions.invoke('process-badge-subscription-commission', {
-        body: {
-          user_id,
-          badge_name,
-          bsk_amount,
-          previous_badge
-        }
-      });
-
-      if (commissionResponse.error) {
-        console.error('❌ Direct commission processing error:', commissionResponse.error);
-      } else {
-        console.log('✅ Direct commission processed:', commissionResponse.data);
+    // 4. Process 10% direct commission (L1 sponsor only) - NOW BLOCKING
+    console.log('💰 [Commission L1] Starting direct commission processing...');
+    console.log('💰 [Commission L1] Request payload:', {
+      user_id,
+      badge_name,
+      bsk_amount,
+      previous_badge,
+      timestamp: new Date().toISOString()
+    });
+    
+    const startL1 = Date.now();
+    const commissionResponse = await supabaseClient.functions.invoke('process-badge-subscription-commission', {
+      body: {
+        user_id,
+        badge_name,
+        bsk_amount,
+        previous_badge
       }
-    } catch (commissionError) {
-      console.error('❌ Direct commission processor error (non-critical):', commissionError);
+    });
+    const l1Duration = Date.now() - startL1;
+
+    console.log(`💰 [Commission L1] Response received in ${l1Duration}ms:`, {
+      error: commissionResponse.error,
+      data: commissionResponse.data,
+      status: commissionResponse.status
+    });
+
+    if (commissionResponse.error) {
+      console.error('❌ [Commission L1] CRITICAL ERROR:', commissionResponse.error);
+      throw new Error(`L1 commission failed: ${JSON.stringify(commissionResponse.error)}`);
     }
 
-    // 4b. Process multi-level commissions (L2-50) - non-blocking
-    try {
-      console.log('🌳 Processing multi-level commissions (L2-50)...');
-      
-      const multiLevelResponse = await supabaseClient.functions.invoke('process-multi-level-commissions', {
-        body: {
-          user_id,
-          event_type: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
-          base_amount: bsk_amount
-        }
-      });
+    console.log('✅ [Commission L1] Direct commission processed successfully:', commissionResponse.data);
 
-      if (multiLevelResponse.error) {
-        console.error('❌ Multi-level commission error:', multiLevelResponse.error);
-      } else {
-        console.log('✅ Multi-level commissions processed:', multiLevelResponse.data);
+    // 4b. Process multi-level commissions (L2-50) - NOW BLOCKING
+    console.log('🌳 [Commission L2-L50] Starting multi-level commission processing...');
+    console.log('🌳 [Commission L2-L50] Request payload:', {
+      user_id,
+      event_type: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
+      base_amount: bsk_amount,
+      timestamp: new Date().toISOString()
+    });
+    
+    const startML = Date.now();
+    const multiLevelResponse = await supabaseClient.functions.invoke('process-multi-level-commissions', {
+      body: {
+        user_id,
+        event_type: is_upgrade ? 'badge_upgrade' : 'badge_purchase',
+        base_amount: bsk_amount
       }
-    } catch (mlCommissionError) {
-      console.error('❌ Multi-level commission processor error (non-critical):', mlCommissionError);
+    });
+    const mlDuration = Date.now() - startML;
+
+    console.log(`🌳 [Commission L2-L50] Response received in ${mlDuration}ms:`, {
+      error: multiLevelResponse.error,
+      data: multiLevelResponse.data,
+      status: multiLevelResponse.status
+    });
+
+    if (multiLevelResponse.error) {
+      console.error('❌ [Commission L2-L50] CRITICAL ERROR:', multiLevelResponse.error);
+      throw new Error(`Multi-level commission failed: ${JSON.stringify(multiLevelResponse.error)}`);
     }
+
+    console.log('✅ [Commission L2-L50] Multi-level commissions processed successfully:', multiLevelResponse.data);
 
 
     // 5. Credit bonus holding balance - DETERMINISTIC from badge_thresholds
