@@ -212,6 +212,11 @@ const PurchasePage = React.lazy(() => import("./pages/programs/PurchasePage"));
 const OneTimePurchasePage = React.lazy(() => import("./pages/programs/OneTimePurchasePage"));
 const PurchaseHistoryPage = React.lazy(() => import("./pages/programs/PurchaseHistoryPage"));
 
+// History Pages
+const InsuranceHistoryPage = React.lazy(() => import("./pages/programs/InsuranceHistoryPage"));
+const LoansHistoryPage = React.lazy(() => import("./pages/programs/LoansHistoryPage"));
+const AdMiningHistoryPage = React.lazy(() => import("./pages/programs/AdMiningHistoryPage"));
+
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
 const AdminDashboard = React.lazy(() => import("./pages/AdminDashboard"));
