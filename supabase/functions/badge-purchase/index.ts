@@ -121,37 +121,8 @@ Deno.serve(async (req) => {
     }
 
     console.log(`✅ [Debit] Balance deducted successfully:`, debitData);
-    
-    // Verify the transaction was recorded in ledger
-    const { data: verifyTx, error: verifyError } = await supabaseClient
-      .from('unified_bsk_ledger')
-      .select('id, tx_type, tx_subtype, amount_bsk, balance_after, balance_type')
-      .eq('user_id', user_id)
-      .eq('tx_subtype', is_upgrade ? 'badge_upgrade' : 'badge_purchase')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
 
-    if (verifyError || !verifyTx) {
-      console.error('❌ [Debit] CRITICAL: Transaction verification failed:', verifyError);
-      throw new Error('Badge purchase debit transaction was not recorded in ledger - aborting');
-    }
-
-    if (verifyTx.tx_type !== 'debit') {
-      console.error('❌ [Debit] CRITICAL: Wrong transaction type in ledger:', verifyTx);
-      throw new Error('Ledger verification failed: expected debit transaction');
-    }
-
-    console.log(`✅ [Debit] Transaction verified in ledger:`, {
-      id: verifyTx.id,
-      type: verifyTx.tx_type,
-      subtype: verifyTx.tx_subtype,
-      amount: verifyTx.amount_bsk,
-      balance_after: verifyTx.balance_after,
-      balance_type: verifyTx.balance_type
-    });
-
-    // 3. Assign badge to user (ONLY after successful debit verification)
+    // 3. Assign badge to user (record_bsk_transaction already verified atomically)
     console.log(`🎖️ [Badge] Assigning badge to user...`);
     
     const { error: badgeError } = await supabaseClient
