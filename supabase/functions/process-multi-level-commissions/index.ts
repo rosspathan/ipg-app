@@ -48,12 +48,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get all ancestors from L2 to L50
+    // Get all ancestors from L1 to L50 (includes direct sponsor for level reward)
     const { data: ancestors, error: ancestorsError } = await supabase
       .from('referral_tree')
       .select('ancestor_id, level')
       .eq('user_id', user_id)
-      .gte('level', 2)
+      .gte('level', 1)
       .lte('level', 50)
       .order('level', { ascending: true });
 
@@ -62,21 +62,21 @@ Deno.serve(async (req) => {
     }
 
     if (!ancestors || ancestors.length === 0) {
-      console.log('ℹ️ No multi-level sponsors found for user:', user_id);
+      console.log('ℹ️ No sponsors found for user:', user_id);
       return new Response(
-        JSON.stringify({ success: true, commissions_paid: 0, message: 'No multi-level sponsors' }),
+        JSON.stringify({ success: true, commissions_paid: 0, message: 'No sponsors' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`📊 Found ${ancestors.length} multi-level sponsors (L2-L50)`);
+    console.log(`📊 Found ${ancestors.length} sponsors (L1-L50)`);
 
-    // Fetch active reward levels from database
+    // Fetch active reward levels from database (L1-L50)
     const { data: rewardLevels, error: rewardLevelsError } = await supabase
       .from('team_income_levels')
       .select('level, bsk_reward, balance_type, is_active')
       .eq('is_active', true)
-      .gte('level', 2)
+      .gte('level', 1)
       .lte('level', 50)
       .order('level', { ascending: true });
 
@@ -245,27 +245,45 @@ Deno.serve(async (req) => {
       }
 
       // Duplicate protection: skip if a commission was already issued for this level/event
+      // For L1, also check if badge_subscription commission was already paid (different commission_type)
       try {
         const { data: existingCommission } = await supabase
           .from('referral_commissions')
-          .select('id')
+          .select('id, commission_type')
           .eq('earner_id', ancestor.ancestor_id)
           .eq('payer_id', user_id)
           .eq('level', ancestor.level)
-          .eq('commission_type', 'multi_level')
-          .eq('event_type', event_type)
-          .maybeSingle();
-        if (existingCommission) {
-          console.log(`⏭️ Skipping L${ancestor.level} for ${ancestor.ancestor_id} - duplicate commission detected`);
-          skippedRecords.push({
-            level: ancestor.level,
-            sponsor_id: ancestor.ancestor_id,
-            reason: 'duplicate',
-            debug: { source_used: sourceUsed, sponsorBadgeError, tables_checked: tablesChecked }
-          });
-          continue;
+          .in('commission_type', ancestor.level === 1 ? ['multi_level', 'badge_subscription'] : ['multi_level'])
+          .eq('event_type', event_type);
+        
+        if (existingCommission && existingCommission.length > 0) {
+          // For L1, only skip if multi_level commission exists (badge_subscription is separate 10% bonus)
+          if (ancestor.level === 1) {
+            const hasMultiLevelCommission = existingCommission.some(c => c.commission_type === 'multi_level');
+            if (hasMultiLevelCommission) {
+              console.log(`⏭️ Skipping L1 for ${ancestor.ancestor_id} - level reward already paid (subscription bonus is separate)`);
+              skippedRecords.push({
+                level: ancestor.level,
+                sponsor_id: ancestor.ancestor_id,
+                reason: 'duplicate_level_reward',
+                note: 'L1 level reward already paid (10% subscription bonus is separate)',
+                debug: { source_used: sourceUsed, sponsorBadgeError, tables_checked: tablesChecked }
+              });
+              continue;
+            }
+          } else {
+            console.log(`⏭️ Skipping L${ancestor.level} for ${ancestor.ancestor_id} - duplicate commission detected`);
+            skippedRecords.push({
+              level: ancestor.level,
+              sponsor_id: ancestor.ancestor_id,
+              reason: 'duplicate',
+              debug: { source_used: sourceUsed, sponsorBadgeError, tables_checked: tablesChecked }
+            });
+            continue;
+          }
         }
-      } catch (_) {
+      } catch (dupError) {
+        console.warn(`⚠️ Duplicate check failed for L${ancestor.level}:`, dupError);
         // if duplicate check fails, continue processing
       }
 

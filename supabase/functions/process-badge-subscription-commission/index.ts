@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
       .insert({
         earner_id: sponsorId,
         payer_id: user_id,
+        related_user_id: user_id,
         level: 1,
         event_type: previous_badge ? 'badge_upgrade' : 'badge_purchase',
         event_id: '00000000-0000-0000-0000-000000000000', // Placeholder since badge_purchase_events isn't used
