@@ -5,6 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { Admin50LevelEditor } from '@/components/referrals/Admin50LevelEditor';
 import { BadgeUnlockLevelsEditor } from '@/components/referrals/BadgeUnlockLevelsEditor';
 import { VIPMilestoneEditor } from '@/components/referrals/VIPMilestoneEditor';
+import { DirectCommissionControlPanel } from '@/components/referrals/DirectCommissionControlPanel';
+import { CommissionPreviewCalculator } from '@/components/referrals/CommissionPreviewCalculator';
+import { CommissionDashboard } from '@/components/referrals/CommissionDashboard';
 
 export default function Admin50LevelReferrals() {
   const navigate = useNavigate();
@@ -24,12 +27,27 @@ export default function Admin50LevelReferrals() {
         </div>
       </div>
 
-      <Tabs defaultValue="levels" className="space-y-6">
+      <Tabs defaultValue="dashboard" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="direct">Direct Commission</TabsTrigger>
+          <TabsTrigger value="calculator">Calculator</TabsTrigger>
           <TabsTrigger value="levels">50 Level Rewards</TabsTrigger>
           <TabsTrigger value="badges">Badge Unlock Levels</TabsTrigger>
           <TabsTrigger value="vip">VIP Milestones</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard">
+          <CommissionDashboard />
+        </TabsContent>
+
+        <TabsContent value="direct">
+          <DirectCommissionControlPanel />
+        </TabsContent>
+
+        <TabsContent value="calculator">
+          <CommissionPreviewCalculator />
+        </TabsContent>
 
         <TabsContent value="levels">
           <Admin50LevelEditor />
