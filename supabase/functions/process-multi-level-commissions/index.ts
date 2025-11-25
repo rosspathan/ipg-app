@@ -298,9 +298,7 @@ Deno.serve(async (req) => {
           p_tx_subtype: 'referral_commission_multi',
           p_balance_type: balanceType,
           p_amount_bsk: commissionAmount,
-          p_amount_inr: commissionAmount,
-          p_rate_snapshot: 1.0,
-          p_related_user_id: user_id,
+          p_notes: null,
           p_meta_json: {
             referral_user_id: user_id,
             level: ancestor.level,
@@ -309,7 +307,9 @@ Deno.serve(async (req) => {
             sponsor_badge: sponsorTierName,
             unlocked_levels: unlockedLevels,
             balance_type: balanceType
-          }
+          },
+          p_related_user_id: user_id,
+          p_related_transaction_id: null
         });
 
         if (ledgerError) {
