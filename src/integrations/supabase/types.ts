@@ -11601,35 +11601,21 @@ export type Database = {
           withdrawable_diff: number
         }[]
       }
-      record_bsk_transaction:
-        | {
-            Args: {
-              p_amount_bsk: number
-              p_balance_type: string
-              p_idempotency_key: string
-              p_meta_json?: Json
-              p_notes?: string
-              p_related_transaction_id?: string
-              p_related_user_id?: string
-              p_tx_subtype: string
-              p_tx_type: string
-              p_user_id: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_amount_bsk: number
-              p_balance_type: string
-              p_idempotency_key: string
-              p_meta_json?: Json
-              p_related_user_id?: string
-              p_tx_subtype: string
-              p_tx_type: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
+      record_bsk_transaction: {
+        Args: {
+          p_amount_bsk: number
+          p_balance_type: string
+          p_idempotency_key: string
+          p_meta_json?: Json
+          p_notes?: string
+          p_related_transaction_id?: string
+          p_related_user_id?: string
+          p_tx_subtype: string
+          p_tx_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       record_program_participation: {
         Args: {
           p_amount_earned?: number
