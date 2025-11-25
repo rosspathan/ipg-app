@@ -103,17 +103,19 @@ serve(async (req) => {
         p_idempotency_key: idempotencyKey,
         p_tx_type: 'debit',
         p_tx_subtype: 'subscription_upgrade',
-        p_amount: upgradeDiff,
         p_balance_type: 'withdrawable',
-        p_description: `Upgraded from ${currentTier.tier_name} to ${newTier.tier_name}`,
-        p_metadata: { 
+        p_amount_bsk: upgradeDiff,
+        p_notes: `Upgraded from ${currentTier.tier_name} to ${newTier.tier_name}`,
+        p_meta_json: { 
           from_tier_id: currentTier.id,
           from_tier_name: currentTier.tier_name,
           to_tier_id: new_tier_id, 
           to_tier_name: newTier.tier_name,
           upgrade_diff: upgradeDiff,
           payment_id 
-        }
+        },
+        p_related_user_id: null,
+        p_related_transaction_id: null
       }
     )
 

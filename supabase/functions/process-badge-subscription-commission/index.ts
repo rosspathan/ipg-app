@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       p_tx_subtype: 'referral_commission_l1',
       p_balance_type: 'withdrawable',
       p_amount_bsk: commissionAmount,
-      p_related_user_id: user_id,
+      p_notes: `L1 commission for ${badge_name} badge purchase`,
       p_meta_json: {
         badge_purchased: badge_name,
         previous_badge: previous_badge,
@@ -119,7 +119,9 @@ Deno.serve(async (req) => {
         event_type: previous_badge ? 'badge_upgrade' : 'badge_purchase',
         amount_inr: commissionAmount * bskInrRate,
         rate_snapshot: bskInrRate
-      }
+      },
+      p_related_user_id: user_id,
+      p_related_transaction_id: null
     });
 
     if (ledgerError) {
