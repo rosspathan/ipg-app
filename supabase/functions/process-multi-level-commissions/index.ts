@@ -71,27 +71,62 @@ Deno.serve(async (req) => {
 
     console.log(`📊 Found ${ancestors.length} multi-level sponsors (L2-L50)`);
 
+    // Fetch active reward levels from database
+    const { data: rewardLevels, error: rewardLevelsError } = await supabase
+      .from('team_income_levels')
+      .select('level, bsk_reward, balance_type, is_active')
+      .eq('is_active', true)
+      .gte('level', 2)
+      .lte('level', 50)
+      .order('level', { ascending: true });
+
+    if (rewardLevelsError) {
+      console.error('❌ Failed to fetch reward levels from database:', rewardLevelsError);
+      throw new Error(`Failed to fetch reward levels: ${rewardLevelsError.message}`);
+    }
+
+    if (!rewardLevels || rewardLevels.length === 0) {
+      console.log('⚠️ No active reward levels configured in team_income_levels table');
+      return new Response(
+        JSON.stringify({ success: false, reason: 'no_reward_levels_configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create lookup map for fast access: level -> {bsk_reward, balance_type}
+    const levelRewardsMap = new Map(
+      rewardLevels.map(l => [l.level, { bsk_reward: l.bsk_reward, balance_type: l.balance_type }])
+    );
+
+    console.log(`📊 Loaded ${rewardLevels.length} active reward levels from database (L${rewardLevels[0]?.level}-L${rewardLevels[rewardLevels.length - 1]?.level})`);
+
     let totalCommissionsPaid = 0;
     const commissionRecords = [];
     const skippedRecords = [];
 
-    // Calculate commission based on fixed BSK amounts per level tier
-    const getCommissionAmount = (level: number): number => {
-      if (level >= 2 && level <= 10) return 0.5;
-      if (level >= 11 && level <= 20) return 0.4;
-      if (level >= 21 && level <= 30) return 0.3;
-      if (level >= 31 && level <= 40) return 0.2;
-      if (level >= 41 && level <= 50) return 0.1;
-      return 0;
-    };
-
-    console.log('📊 Using fixed BSK amounts per level tier (L2-L10: 0.5, L11-L20: 0.4, L21-L30: 0.3, L31-L40: 0.2, L41-L50: 0.1)');
-
     // Process each level
     for (const ancestor of ancestors) {
-      const commissionAmount = getCommissionAmount(ancestor.level);
+      // Get commission config from database
+      const levelConfig = levelRewardsMap.get(ancestor.level);
       
-      if (commissionAmount === 0) continue;
+      if (!levelConfig) {
+        console.log(`⏭️ Skipping L${ancestor.level} - no reward configuration found in database`);
+        skippedRecords.push({
+          level: ancestor.level,
+          sponsor_id: ancestor.ancestor_id,
+          reason: 'no_reward_config',
+          message: 'Level not configured in team_income_levels table'
+        });
+        continue;
+      }
+
+      const commissionAmount = levelConfig.bsk_reward;
+      const balanceType = levelConfig.balance_type || 'withdrawable';
+      
+      if (commissionAmount === 0) {
+        console.log(`⏭️ Skipping L${ancestor.level} - reward amount is 0 BSK`);
+        continue;
+      }
 
       // Resolve sponsor badge and unlocked levels with fallbacks and logging
       let sponsorTierName: string | null = null;
@@ -234,16 +269,16 @@ Deno.serve(async (req) => {
         // if duplicate check fails, continue processing
       }
 
-      console.log(`💰 Processing L${ancestor.level} commission for ${ancestor.ancestor_id}: ${commissionAmount} BSK (Badge: ${sponsorTierName}, Unlocked: L1-L${unlockedLevels}, source=${sourceUsed})`);
+      console.log(`💰 Processing L${ancestor.level} commission for ${ancestor.ancestor_id}: ${commissionAmount} BSK to ${balanceType} (Badge: ${sponsorTierName}, Unlocked: L1-L${unlockedLevels}, source=${sourceUsed})`);
 
       try {
-        // Credit withdrawable balance using unified ledger (atomic operation)
+        // Credit balance using unified ledger (atomic operation) - balance type from database
         const { error: ledgerError } = await supabase.rpc('record_bsk_transaction', {
           p_user_id: ancestor.ancestor_id,
           p_idempotency_key: `multi_level_commission_${user_id}_${ancestor.level}_${Date.now()}`,
           p_tx_type: 'credit',
           p_tx_subtype: 'referral_commission_multi',
-          p_balance_type: 'withdrawable',
+          p_balance_type: balanceType,
           p_amount_bsk: commissionAmount,
           p_amount_inr: commissionAmount,
           p_rate_snapshot: 1.0,
@@ -254,7 +289,8 @@ Deno.serve(async (req) => {
             event_type: event_type,
             base_amount: base_amount,
             sponsor_badge: sponsorTierName,
-            unlocked_levels: unlockedLevels
+            unlocked_levels: unlockedLevels,
+            balance_type: balanceType
           }
         });
 
@@ -273,7 +309,7 @@ Deno.serve(async (req) => {
             event_type: event_type,
             commission_type: 'multi_level',
             bsk_amount: commissionAmount,
-            destination: 'withdrawable',
+            destination: balanceType,
             status: 'settled',
             earner_badge_at_event: sponsorTierName
           })
