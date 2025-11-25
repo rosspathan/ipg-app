@@ -167,24 +167,39 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 11. Credit BSK to user balance
-    if (balanceType === 'withdrawable') {
-      await supabase
-        .from('user_bsk_balances')
-        .upsert({
-          user_id: user.id,
-          withdrawable_balance: supabase.rpc('increment', { x: bskReward }),
-          total_earned_withdrawable: supabase.rpc('increment', { x: bskReward })
-        }, { onConflict: 'user_id' })
-    } else {
-      await supabase
-        .from('user_bsk_balances')
-        .upsert({
-          user_id: user.id,
-          holding_balance: supabase.rpc('increment', { x: bskReward }),
-          total_earned_holding: supabase.rpc('increment', { x: bskReward })
-        }, { onConflict: 'user_id' })
+    // 11. ATOMIC: Credit BSK to user balance using record_bsk_transaction
+    const idempotencyKey = `ad_reward_${user.id}_${adId}_${Date.now()}`
+    
+    const { data: creditResult, error: creditError } = await supabase.rpc(
+      'record_bsk_transaction',
+      {
+        p_user_id: user.id,
+        p_idempotency_key: idempotencyKey,
+        p_tx_type: 'credit',
+        p_tx_subtype: 'ad_mining',
+        p_balance_type: balanceType,
+        p_amount_bsk: bskReward,
+        p_notes: `Ad mining reward: ${tierName} tier`,
+        p_meta_json: {
+          ad_id: adId,
+          tier: tierName,
+          balance_type: balanceType,
+          viewing_time: viewingTimeSeconds,
+          multiplier: rewardMultiplier,
+          base_reward: baseReward
+        }
+      }
+    )
+
+    if (creditError) {
+      console.error('Error crediting BSK reward:', creditError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to credit reward' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
+
+    console.log(`✅ Atomically credited ${bskReward} BSK to user ${user.id} (tx: ${creditResult})`)
 
     // 12. Update daily views
     await supabase

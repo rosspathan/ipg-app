@@ -61,7 +61,7 @@ serve(async (req) => {
       throw new Error(`Amount mismatch: expected ${tier.purchase_price} BSK, got ${amount_bsk} BSK`)
     }
 
-    // Create subscription record (debit user balance)
+    // Create subscription record (debit user balance) - FIXED PARAMETER NAMES
     const idempotencyKey = `sub:purchase:${user.id}:${tier_id}:${payment_id}`
     
     const { data: debitResult, error: debitError } = await supabaseClient.rpc(
@@ -71,10 +71,10 @@ serve(async (req) => {
         p_idempotency_key: idempotencyKey,
         p_tx_type: 'debit',
         p_tx_subtype: 'subscription_purchase',
-        p_amount: amount_bsk,
+        p_amount_bsk: amount_bsk,  // FIXED: was p_amount
         p_balance_type: 'withdrawable',
-        p_description: `Purchased ${tier.tier_name} badge`,
-        p_metadata: { tier_id, tier_name: tier.tier_name, payment_id }
+        p_notes: `Purchased ${tier.tier_name} badge`,  // FIXED: was p_description
+        p_meta_json: { tier_id, tier_name: tier.tier_name, payment_id }  // FIXED: was p_metadata
       }
     )
 
@@ -121,10 +121,10 @@ serve(async (req) => {
           p_idempotency_key: bonusIdempotencyKey,
           p_tx_type: 'credit',
           p_tx_subtype: 'subscription_bonus',
-          p_amount: bonusAmount,
+          p_amount_bsk: bonusAmount,  // FIXED: was p_amount
           p_balance_type: 'withdrawable',
-          p_description: `10% subscription bonus from ${tier.tier_name} purchase`,
-          p_metadata: { 
+          p_notes: `10% subscription bonus from ${tier.tier_name} purchase`,  // FIXED: was p_description
+          p_meta_json: {   // FIXED: was p_metadata
             subscriber_id: user.id, 
             tier_id, 
             tier_name: tier.tier_name,

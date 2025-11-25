@@ -136,17 +136,39 @@ serve(async (req: Request) => {
       );
     }
 
-    // Debit user's BSK holding balance
-    const { error: balanceError } = await supabase
-      .from('user_bsk_balances')
-      .update({
-        holding_balance: availableBalance - paymentAmountBsk
-      })
-      .eq('user_id', user.id);
+    // ATOMIC: Debit user's BSK holding balance using record_bsk_transaction
+    const idempotencyKey = `loan_repayment_${installment_id}_${Date.now()}`
+    
+    const { data: debitResult, error: balanceError } = await supabase.rpc(
+      'record_bsk_transaction',
+      {
+        p_user_id: user.id,
+        p_idempotency_key: idempotencyKey,
+        p_tx_type: 'debit',
+        p_tx_subtype: payment_type === 'prepay_full' ? 'loan_prepayment' : 'loan_repayment',
+        p_balance_type: 'holding',
+        p_amount_bsk: paymentAmountBsk,
+        p_notes: payment_type === 'prepay_full' 
+          ? `Full loan prepayment - Loan #${loan.loan_number}` 
+          : `EMI payment #${installment.installment_number} - Loan #${loan.loan_number}`,
+        p_meta_json: {
+          loan_id: loan.id,
+          loan_number: loan.loan_number,
+          installment_id: payment_type === 'single_emi' ? installment_id : null,
+          installment_number: installment.installment_number,
+          payment_type: payment_type,
+          rate_snapshot: paymentRateSnapshot,
+          emi_inr: installment.emi_inr,
+          emi_bsk: installment.emi_bsk
+        }
+      }
+    )
 
     if (balanceError) {
-      throw new Error('Failed to debit user balance');
+      throw new Error(`Failed to debit user balance: ${balanceError.message}`);
     }
+
+    console.log(`✅ Atomically debited ${paymentAmountBsk} BSK for loan repayment (tx: ${debitResult})`)
 
     // Update loan paid amount and outstanding
     const isLoanFullyPaid = payment_type === 'prepay_full' || (loan.outstanding_bsk - paymentAmountBsk) <= 0.01;
@@ -164,32 +186,35 @@ serve(async (req: Request) => {
     // Transfer remaining holding balance to withdrawable when loan is fully paid
     if (isLoanFullyPaid && userBalance) {
       const remainingHolding = availableBalance - paymentAmountBsk;
-      await supabase
-        .from('user_bsk_balances')
-        .update({
-          holding_balance: 0,
-          withdrawable_balance: (userBalance.withdrawable_balance || 0) + remainingHolding
-        })
-        .eq('user_id', user.id);
+      
+      if (remainingHolding > 0) {
+        // ATOMIC: Transfer holding to withdrawable
+        const transferIdempotencyKey = `holding_to_withdrawable_${loan.id}_${Date.now()}`
+        
+        const { error: transferError } = await supabase.rpc(
+          'record_bsk_transaction',
+          {
+            p_user_id: user.id,
+            p_idempotency_key: transferIdempotencyKey,
+            p_tx_type: 'transfer',
+            p_tx_subtype: 'holding_to_withdrawable',
+            p_balance_type: 'withdrawable',
+            p_amount_bsk: remainingHolding,
+            p_notes: `Loan fully repaid - holding balance transferred to withdrawable`,
+            p_meta_json: {
+              loan_id: loan.id,
+              loan_number: loan.loan_number,
+              loan_closed: true
+            }
+          }
+        )
 
-      // Log the transfer in ledger
-      await supabase
-        .from('bsk_loan_ledger')
-        .insert({
-          user_id: user.id,
-          loan_id: loan.id,
-          transaction_type: 'holding_to_withdrawable',
-          amount_bsk: remainingHolding,
-          amount_inr: remainingHolding * currentRate,
-          rate_snapshot: currentRate,
-          balance_type: 'withdrawable',
-          direction: 'credit',
-          reference_id: loan.loan_number,
-          notes: 'Loan fully repaid - holding balance transferred to withdrawable',
-          processed_by: user.id,
-          idempotency_key: `transfer-${loan.id}-${Date.now()}`,
-          metadata: { loan_closed: true }
-        });
+        if (transferError) {
+          console.error('Failed to transfer holding to withdrawable:', transferError)
+        } else {
+          console.log(`✅ Transferred ${remainingHolding} BSK from holding to withdrawable (tx: ${transferError})`)
+        }
+      }
     }
 
     if (loanUpdateError) {
@@ -223,8 +248,6 @@ serve(async (req: Request) => {
     }
 
     // Create ledger entry
-    const idempotencyKey = `repayment-${installment_id}-${Date.now()}`;
-    
     await supabase
       .from('bsk_loan_ledger')
       .insert({
