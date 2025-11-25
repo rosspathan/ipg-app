@@ -124,46 +124,40 @@ Deno.serve(async (req) => {
 
     const netChangeBsk = netPayoutBsk - betBsk - spinFee
 
-    // ATOMIC TRANSACTION: Credit winnings using record_bsk_transaction() (if any)
+    // ATOMIC: Credit winnings using record_bsk_transaction (if any)
     if (netPayoutBsk > 0) {
       const payoutIdempotencyKey = `spin_payout_${user.id}_${nonce}_${Date.now()}`
       
-      try {
-        const { data: creditResult, error: creditError } = await supabaseAdmin.rpc(
-          'record_bsk_transaction',
-          {
-            p_user_id: user.id,
-            p_idempotency_key: payoutIdempotencyKey,
-            p_tx_type: 'credit',
-            p_tx_subtype: 'spin_win',
-            p_balance_type: 'withdrawable',
-            p_amount_bsk: netPayoutBsk,
-            p_notes: `Spin win: ${multiplier}x multiplier, payout ${netPayoutBsk} BSK`,
-            p_meta_json: {
-              bet_bsk: betBsk,
-              multiplier: multiplier,
-              payout_bsk: payoutBsk,
-              profit_fee_bsk: profitFeeBsk,
-              net_payout_bsk: netPayoutBsk,
-              segment_id: winningSegment.id,
-              segment_label: winningSegment.label,
-              nonce: nonce,
-              commit_idempotency_key: idempotencyKey,
-            },
-          }
-        )
-
-        if (creditError) {
-          console.error('[spin-reveal] Credit error:', creditError)
-          throw new Error(creditError.message || 'Failed to credit winnings')
+      const { data: creditResult, error: creditError } = await supabaseAdmin.rpc(
+        'record_bsk_transaction',
+        {
+          p_user_id: user.id,
+          p_idempotency_key: payoutIdempotencyKey,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'spin_win',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: netPayoutBsk,
+          p_notes: `Spin win: ${multiplier}x multiplier, payout ${netPayoutBsk} BSK`,
+          p_meta_json: {
+            bet_bsk: betBsk,
+            multiplier: multiplier,
+            payout_bsk: payoutBsk,
+            profit_fee_bsk: profitFeeBsk,
+            net_payout_bsk: netPayoutBsk,
+            segment_id: winningSegment.id,
+            segment_label: winningSegment.label,
+            nonce: nonce,
+            commit_idempotency_key: idempotencyKey,
+          },
         }
+      )
 
-        console.log(`[spin-reveal] ✅ Atomically credited ${netPayoutBsk} BSK (tx: ${creditResult})`)
-      } catch (error: any) {
-        // If credit fails, log but don't throw - user already lost their bet
-        console.error('[spin-reveal] ❌ Failed to credit winnings:', error)
-        throw new Error('Failed to process winnings - please contact support')
+      if (creditError) {
+        console.error('[spin-reveal] Credit error:', creditError)
+        throw new Error(`Failed to credit winnings: ${creditError.message}`)
       }
+
+      console.log(`[spin-reveal] ✅ Atomically credited ${netPayoutBsk} BSK (tx: ${creditResult})`)
     }
 
     // Update user limits

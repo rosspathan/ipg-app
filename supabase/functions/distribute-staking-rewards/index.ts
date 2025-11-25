@@ -80,19 +80,38 @@ Deno.serve(async (req) => {
         // Check if lock period has expired
         const lockExpired = stakeDays >= pool.lock_period_days
 
-        // Credit daily reward to holding balance
-        const { error: rewardError } = await supabase
-          .from('user_bsk_balances')
-          .upsert({
-            user_id: stake.user_id,
-            holding_balance: supabase.rpc('increment', { x: dailyReward }),
-            total_earned_holding: supabase.rpc('increment', { x: dailyReward })
-          }, { onConflict: 'user_id' })
+        // ATOMIC: Credit daily reward to holding balance using record_bsk_transaction
+        const idempotencyKey = `staking_reward_${stake.id}_${new Date().toISOString().split('T')[0]}`
+        
+        const { data: creditResult, error: rewardError } = await supabase.rpc(
+          'record_bsk_transaction',
+          {
+            p_user_id: stake.user_id,
+            p_idempotency_key: idempotencyKey,
+            p_tx_type: 'credit',
+            p_tx_subtype: 'staking_reward',
+            p_balance_type: 'holding',
+            p_amount_bsk: dailyReward,
+            p_notes: `Daily staking reward for pool: ${pool.name}`,
+            p_meta_json: {
+              pool_id: pool.id,
+              pool_name: pool.name,
+              stake_id: stake.id,
+              stake_amount: stake.amount,
+              apy: pool.apy,
+              stake_days: stakeDays,
+              lock_expired: lockExpired,
+              daily_rate: dailyRate
+            }
+          }
+        )
 
         if (rewardError) {
           console.error(`Error crediting reward to user ${stake.user_id}:`, rewardError)
           continue
         }
+
+        console.log(`✅ Atomically credited ${dailyReward} BSK to user ${stake.user_id} (tx: ${creditResult})`)
 
         // Update stake accumulated rewards
         const { error: updateError } = await supabase

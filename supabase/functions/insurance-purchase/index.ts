@@ -118,13 +118,28 @@ serve(async (req) => {
       });
     }
 
-    // Debit BSK from user's withdrawable balance
-    const { error: balanceError } = await supabase
-      .from('user_bsk_balances')
-      .update({
-        withdrawable_balance: balance.withdrawable_balance - premiumBsk
-      })
-      .eq('user_id', user.id);
+    // ATOMIC: Debit BSK from user's withdrawable balance using record_bsk_transaction
+    const idempotencyKey = `insurance_premium_${policy.id}_${Date.now()}`
+    
+    const { data: debitResult, error: balanceError } = await supabase.rpc(
+      'record_bsk_transaction',
+      {
+        p_user_id: user.id,
+        p_idempotency_key: idempotencyKey,
+        p_tx_type: 'debit',
+        p_tx_subtype: 'insurance_premium',
+        p_balance_type: 'withdrawable',
+        p_amount_bsk: premiumBsk,
+        p_notes: `Insurance premium: ${plan_type} plan - Policy #${policyNumber}`,
+        p_meta_json: {
+          policy_id: policy.id,
+          policy_number: policyNumber,
+          plan_type: plan_type,
+          premium_inr: planConfig.premium_inr,
+          rate_snapshot: currentRate
+        }
+      }
+    )
 
     if (balanceError) {
       console.error('Balance update error:', balanceError);
@@ -135,6 +150,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    console.log(`✅ Atomically debited ${premiumBsk} BSK for insurance premium (tx: ${debitResult})`)
 
     // Create ledger entry
     const { error: ledgerError } = await supabase

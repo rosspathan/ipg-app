@@ -15,7 +15,7 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
@@ -103,25 +103,38 @@ serve(async (req) => {
       .eq('status', 'active')
       .neq('id', winningTicket.id);
 
-    // Get winner's current balance
-    const { data: winnerBalance } = await supabaseClient
-      .from('user_bsk_balances')
-      .select('withdrawable_balance')
-      .eq('user_id', winnerId)
-      .single();
+    // ATOMIC: Credit winner's BSK balance using record_bsk_transaction
+    const idempotencyKey = `draw_win_${drawId}_${winnerId}_${Date.now()}`
+    
+    const { data: creditResult, error: creditError } = await supabaseClient.rpc(
+      'record_bsk_transaction',
+      {
+        p_user_id: winnerId,
+        p_idempotency_key: idempotencyKey,
+        p_tx_type: 'credit',
+        p_tx_subtype: 'lucky_draw_win',
+        p_balance_type: 'withdrawable',
+        p_amount_bsk: winnerPayout,
+        p_notes: `Lucky Draw Winner - Draw #${drawId}`,
+        p_meta_json: {
+          draw_id: drawId,
+          ticket_id: winningTicket.id,
+          ticket_number: winningTicket.ticket_number,
+          pool_bsk: poolBsk,
+          platform_fee_bsk: platformFeeBsk,
+          total_tickets: tickets.length,
+          server_seed: serverSeed,
+          client_seed: clientSeed
+        }
+      }
+    )
 
-    const currentBalance = winnerBalance?.withdrawable_balance || 0;
-    const newBalance = currentBalance + winnerPayout;
+    if (creditError) {
+      console.error('Failed to credit winner:', creditError)
+      throw new Error(`Failed to credit winner: ${creditError.message}`)
+    }
 
-    // Update winner's BSK balance
-    await supabaseClient
-      .from('user_bsk_balances')
-      .upsert({
-        user_id: winnerId,
-        withdrawable_balance: newBalance
-      }, {
-        onConflict: 'user_id'
-      });
+    console.log(`✅ Atomically credited ${winnerPayout} BSK to winner ${winnerId} (tx: ${creditResult})`)
 
     // Create winner ledger entry
     await supabaseClient
@@ -132,8 +145,8 @@ serve(async (req) => {
         tx_type: 'credit',
         tx_subtype: 'lucky_draw_win',
         reference_id: drawId,
-        balance_before: currentBalance,
-        balance_after: newBalance,
+        balance_before: 0, // Will be populated by RPC
+        balance_after: 0, // Will be populated by RPC
         notes: `Lucky Draw Winner - Draw #${drawId}`
       });
 

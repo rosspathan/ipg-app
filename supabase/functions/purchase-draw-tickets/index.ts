@@ -69,12 +69,33 @@ serve(async (req) => {
       throw new Error('Insufficient BSK balance');
     }
 
-    const { error: deductError } = await supabaseClient
-      .from('user_bsk_balances')
-      .update({ withdrawable_balance: balance.withdrawable_balance - totalCost })
-      .eq('user_id', user.id);
+    // ATOMIC: Debit BSK for ticket purchase using record_bsk_transaction
+    const idempotencyKey = `draw_tickets_${user.id}_${drawId}_${Date.now()}`
+    
+    const { data: debitResult, error: deductError } = await supabaseClient.rpc(
+      'record_bsk_transaction',
+      {
+        p_user_id: user.id,
+        p_idempotency_key: idempotencyKey,
+        p_tx_type: 'debit',
+        p_tx_subtype: 'lucky_draw_purchase',
+        p_balance_type: 'withdrawable',
+        p_amount_bsk: totalCost,
+        p_notes: `Purchased ${ticketCount} lucky draw tickets`,
+        p_meta_json: {
+          draw_id: drawId,
+          ticket_count: ticketCount,
+          ticket_price_bsk: draw.ticket_price_bsk,
+          total_cost_bsk: totalCost
+        }
+      }
+    )
 
-    if (deductError) throw deductError;
+    if (deductError) {
+      throw new Error(`Failed to deduct balance: ${deductError.message}`);
+    }
+
+    console.log(`✅ Atomically debited ${totalCost} BSK for draw tickets (tx: ${debitResult})`)
 
     const tickets = [];
     for (let i = 0; i < ticketCount; i++) {
@@ -93,10 +114,24 @@ serve(async (req) => {
       .select();
 
     if (ticketError) {
-      await supabaseClient
-        .from('user_bsk_balances')
-        .update({ withdrawable_balance: balance.withdrawable_balance })
-        .eq('user_id', user.id);
+      // Rollback: credit back the BSK (create reverse transaction)
+      const rollbackIdempotencyKey = `rollback_${idempotencyKey}`
+      await supabaseClient.rpc(
+        'record_bsk_transaction',
+        {
+          p_user_id: user.id,
+          p_idempotency_key: rollbackIdempotencyKey,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'lucky_draw_refund',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: totalCost,
+          p_notes: `Refund: Failed to create tickets`,
+          p_meta_json: {
+            original_idempotency_key: idempotencyKey,
+            reason: 'ticket_creation_failed'
+          }
+        }
+      )
       throw ticketError;
     }
 
