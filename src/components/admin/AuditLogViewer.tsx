@@ -6,24 +6,26 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, FileText, User, DollarSign, Shield, RefreshCw } from 'lucide-react';
+import { Search, FileText, User, DollarSign, Shield, RefreshCw, LogIn, ShoppingCart, Send, Key } from 'lucide-react';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 export function AuditLogViewer() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [eventTypeFilter, setEventTypeFilter] = useState<string | null>(null);
+  const [actionFilter, setActionFilter] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const { data: logs, isLoading, refetch } = useQuery({
-    queryKey: ['audit-logs', searchQuery, eventTypeFilter],
+    queryKey: ['audit-logs', searchQuery, actionFilter],
     queryFn: async () => {
       let query = supabase
-        .from('insurance_bsk_ledger')
+        .from('audit_logs')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (eventTypeFilter) {
-        query = query.eq('type', eventTypeFilter);
+      if (actionFilter) {
+        query = query.eq('action', actionFilter);
       }
 
       const { data, error } = await query;
@@ -32,32 +34,42 @@ export function AuditLogViewer() {
     },
   });
 
-  const eventTypes = [
-    { value: 'insurance_claim', label: 'Insurance Claims', icon: Shield },
-    { value: 'ad_subscription', label: 'Ad Subscriptions', icon: FileText },
-    { value: 'referral_commission', label: 'Referrals', icon: User },
-    { value: 'admin_adjustment', label: 'Admin Actions', icon: DollarSign },
+  const actionTypes = [
+    { value: 'login', label: 'User Logins', icon: LogIn },
+    { value: 'purchase', label: 'Purchases', icon: ShoppingCart },
+    { value: 'withdrawal', label: 'Withdrawals', icon: Send },
+    { value: 'transfer', label: 'Transfers', icon: User },
+    { value: 'admin_action', label: 'Admin Actions', icon: Shield },
+    { value: 'api_access', label: 'API Access', icon: Key },
   ];
 
-  const getEventTypeColor = (type: string) => {
-    switch (type) {
-      case 'insurance_claim': return 'bg-blue-500/10 text-blue-500';
-      case 'ad_subscription': return 'bg-green-500/10 text-green-500';
-      case 'referral_commission': return 'bg-purple-500/10 text-purple-500';
-      case 'admin_adjustment': return 'bg-orange-500/10 text-orange-500';
-      default: return 'bg-muted text-muted-foreground';
-    }
+  const getActionColor = (action: string) => {
+    if (action.includes('login') || action.includes('auth')) return 'bg-blue-500/10 text-blue-500';
+    if (action.includes('purchase') || action.includes('deposit')) return 'bg-green-500/10 text-green-500';
+    if (action.includes('withdrawal') || action.includes('withdraw')) return 'bg-orange-500/10 text-orange-500';
+    if (action.includes('transfer') || action.includes('send')) return 'bg-purple-500/10 text-purple-500';
+    if (action.includes('admin') || action.includes('update')) return 'bg-red-500/10 text-red-500';
+    return 'bg-muted text-muted-foreground';
   };
 
   const filteredLogs = logs?.filter(log => {
-      if (!searchQuery) return true;
+    if (!searchQuery) return true;
     const search = searchQuery.toLowerCase();
     return (
-      log.plan_type?.toLowerCase().includes(search) ||
-      log.type?.toLowerCase().includes(search) ||
-      log.id?.toLowerCase().includes(search)
+      log.action?.toLowerCase().includes(search) ||
+      log.resource_type?.toLowerCase().includes(search) ||
+      log.resource_id?.toLowerCase().includes(search) ||
+      log.user_id?.toLowerCase().includes(search)
     );
   });
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: `${label} copied to clipboard`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -66,7 +78,7 @@ export function AuditLogViewer() {
         <div>
           <h2 className="text-2xl font-bold">Audit Logs</h2>
           <p className="text-sm text-muted-foreground">
-            View all BSK transactions and system events
+            View all system activities and user actions
           </p>
         </div>
         <Button onClick={() => refetch()} variant="outline" size="sm">
@@ -82,7 +94,7 @@ export function AuditLogViewer() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search logs..."
+                placeholder="Search by action, resource, or user ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -90,20 +102,20 @@ export function AuditLogViewer() {
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button
-                variant={eventTypeFilter === null ? 'default' : 'outline'}
+                variant={actionFilter === null ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setEventTypeFilter(null)}
+                onClick={() => setActionFilter(null)}
               >
-                All Events
+                All Actions
               </Button>
-              {eventTypes.map((type) => {
+              {actionTypes.map((type) => {
                 const Icon = type.icon;
                 return (
                   <Button
                     key={type.value}
-                    variant={eventTypeFilter === type.value ? 'default' : 'outline'}
+                    variant={actionFilter === type.value ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setEventTypeFilter(type.value)}
+                    onClick={() => setActionFilter(type.value)}
                   >
                     <Icon className="w-4 h-4 mr-2" />
                     {type.label}
@@ -135,21 +147,74 @@ export function AuditLogViewer() {
                     key={log.id}
                     className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                   >
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge className={getEventTypeColor(log.type)}>
-                          {log.type.replace(/_/g, ' ')}
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={getActionColor(log.action)}>
+                          {log.action.replace(/_/g, ' ')}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {format(new Date(log.created_at), 'MMM dd, yyyy HH:mm:ss')}
                         </span>
                       </div>
-                      <p className="text-sm font-medium">{log.plan_type || 'Transaction'}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>ID: {log.id?.substring(0, 8)}...</span>
-                        <span className={log.bsk_amount >= 0 ? 'text-green-500' : 'text-red-500'}>
-                          {log.bsk_amount >= 0 ? '+' : ''}{log.bsk_amount} BSK
-                        </span>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">
+                          {log.resource_type}: {log.resource_id || 'N/A'}
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">User ID:</span>
+                            <code 
+                              className="bg-muted px-1.5 py-0.5 rounded cursor-pointer hover:bg-muted/70"
+                              onClick={() => copyToClipboard(log.user_id, 'User ID')}
+                            >
+                              {log.user_id.substring(0, 8)}...
+                            </code>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Log ID:</span>
+                            <code 
+                              className="bg-muted px-1.5 py-0.5 rounded cursor-pointer hover:bg-muted/70"
+                              onClick={() => copyToClipboard(log.id, 'Log ID')}
+                            >
+                              {log.id.substring(0, 8)}...
+                            </code>
+                          </div>
+                          
+                          {log.ip_address && (
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium">IP:</span>
+                              <span>{String(log.ip_address)}</span>
+                            </div>
+                          )}
+                          
+                          {log.user_agent && (
+                            <div className="flex items-center gap-1 col-span-2">
+                              <span className="font-medium">User Agent:</span>
+                              <span className="truncate">{log.user_agent}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Show old and new values if available */}
+                        {(log.old_values || log.new_values) && (
+                          <div className="mt-2 p-2 bg-muted/50 rounded space-y-1">
+                            {log.old_values && (
+                              <div className="text-xs">
+                                <span className="font-medium text-red-600 dark:text-red-400">Old: </span>
+                                <code className="text-muted-foreground">{JSON.stringify(log.old_values)}</code>
+                              </div>
+                            )}
+                            {log.new_values && (
+                              <div className="text-xs">
+                                <span className="font-medium text-green-600 dark:text-green-400">New: </span>
+                                <code className="text-muted-foreground">{JSON.stringify(log.new_values)}</code>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

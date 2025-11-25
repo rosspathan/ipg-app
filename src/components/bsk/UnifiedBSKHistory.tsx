@@ -38,6 +38,8 @@ import {
   Wallet,
   CreditCard,
   Eye,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useUnifiedBSKHistory, UnifiedBSKTransaction } from '@/hooks/useUnifiedBSKHistory';
 import { BSKHistoryEmptyState } from './BSKHistoryEmptyState';
@@ -45,6 +47,8 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { TransferDetailsModal } from './TransferDetailsModal';
 import { TransferReceiptButton } from '@/components/user/TransferReceiptButton';
+import { TransactionReceiptButton } from './TransactionReceiptButton';
+import { useToast } from '@/hooks/use-toast';
 
 interface UnifiedBSKHistoryProps {
   userId?: string;
@@ -307,6 +311,8 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
   const [isMobile, setIsMobile] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<UnifiedBSKTransaction | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const {
     transactions,
@@ -372,6 +378,16 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
 
   const isTransferTransaction = (tx: UnifiedBSKTransaction) => {
     return tx.transaction_type === 'transfer_in' || tx.transaction_type === 'transfer_out';
+  };
+
+  const copyTransactionId = (id: string) => {
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    toast({
+      title: "Copied!",
+      description: "Transaction ID copied to clipboard",
+    });
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // Show empty state if no transactions and not loading
@@ -683,6 +699,21 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium text-muted-foreground">ID:</span>
                         <code className="text-xs font-mono bg-background px-2 py-0.5 rounded">{transactionRef}</code>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyTransactionId(tx.id);
+                          }}
+                        >
+                          {copiedId === tx.id ? (
+                            <Check className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </Button>
                       </div>
 
                       {/* Memo */}
@@ -718,7 +749,7 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                       )}
                       
                       <div className="flex gap-1 ml-auto" onClick={(e) => e.stopPropagation()}>
-                        {isTransferTransaction(tx) && (
+                        {isTransferTransaction(tx) ? (
                           <TransferReceiptButton 
                             transaction={{
                               reference_id: tx.metadata?.transaction_ref || tx.id,
@@ -728,6 +759,20 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                               metadata: tx.metadata,
                             }} 
                             variant="ghost" 
+                            size="sm"
+                          />
+                        ) : (
+                          <TransactionReceiptButton
+                            transaction={{
+                              id: tx.id,
+                              created_at: tx.created_at,
+                              amount: tx.amount,
+                              transaction_type: tx.transaction_type,
+                              balance_type: tx.balance_type,
+                              description: tx.description,
+                              metadata: tx.metadata,
+                            }}
+                            variant="ghost"
                             size="sm"
                           />
                         )}
@@ -863,9 +908,26 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                     {/* Transaction ID Column */}
                     <TableCell>
                       <div className="space-y-1">
-                        <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                          {transactionRef}
-                        </code>
+                        <div className="flex items-center gap-1">
+                          <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
+                            {transactionRef}
+                          </code>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyTransactionId(tx.id);
+                            }}
+                          >
+                            {copiedId === tx.id ? (
+                              <Check className="h-3 w-3 text-green-500" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
                         <p className="text-[10px] text-muted-foreground">
                           {tx.metadata?.transaction_ref ? 'Ref: ' + tx.metadata.transaction_ref.slice(0, 8) : ''}
                         </p>
@@ -927,7 +989,7 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {isTransferTransaction(tx) && (
+                        {isTransferTransaction(tx) ? (
                           <TransferReceiptButton 
                             transaction={{
                               reference_id: tx.metadata?.transaction_ref || tx.id,
@@ -937,6 +999,20 @@ export function UnifiedBSKHistory({ userId, className, compact = false }: Unifie
                               metadata: tx.metadata,
                             }} 
                             variant="ghost" 
+                            size="sm"
+                          />
+                        ) : (
+                          <TransactionReceiptButton
+                            transaction={{
+                              id: tx.id,
+                              created_at: tx.created_at,
+                              amount: tx.amount,
+                              transaction_type: tx.transaction_type,
+                              balance_type: tx.balance_type,
+                              description: tx.description,
+                              metadata: tx.metadata,
+                            }}
+                            variant="ghost"
                             size="sm"
                           />
                         )}
