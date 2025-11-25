@@ -21,8 +21,17 @@ interface BadgePurchaseRequest {
 }
 
 serve(async (req) => {
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+  
+  console.log(`🚀 [${requestId}] ============= VERIFY-BADGE-PURCHASE INVOKED =============`);
+  console.log(`🚀 [${requestId}] Timestamp: ${new Date().toISOString()}`);
+  console.log(`🚀 [${requestId}] Method: ${req.method}`);
+  console.log(`🚀 [${requestId}] Headers:`, Object.fromEntries(req.headers.entries()));
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log(`🚀 [${requestId}] CORS preflight - returning immediately`);
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -32,9 +41,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { user_id, badge_name, cost }: BadgePurchaseRequest = await req.json();
+    const rawBody = await req.text();
+    console.log(`📥 [${requestId}] Raw request body:`, rawBody);
+    
+    const { user_id, badge_name, cost }: BadgePurchaseRequest = JSON.parse(rawBody);
 
-    console.log('🎖️ [Verify Badge Purchase] Request:', { user_id, badge_name, cost_from_client: cost });
+    console.log(`🎖️ [${requestId}] Parsed request:`, { user_id, badge_name, cost_from_client: cost });
+    console.log(`🎖️ [${requestId}] Request received at: ${Date.now() - startTime}ms`);
 
     // ==========================================
     // STEP 1: Fetch badge configuration (SERVER IS AUTHORITATIVE)
@@ -171,67 +184,91 @@ serve(async (req) => {
     // ==========================================
     // STEP 4: Delegate to badge-purchase function with SERVER-CALCULATED amount
     // ==========================================
-    console.log('🎯 Delegating to badge-purchase function...');
-    console.log('📤 Sending:', {
+    console.log(`🎯 [${requestId}] =============== INVOKING BADGE-PURCHASE EDGE FUNCTION ===============`);
+    console.log(`🎯 [${requestId}] Time elapsed: ${Date.now() - startTime}ms`);
+    console.log(`📤 [${requestId}] Payload being sent:`, JSON.stringify({
       user_id,
       badge_name,
       previous_badge: existingBadge?.current_badge || null,
-      bsk_amount: actualCost, // SERVER-CALCULATED (not client cost)
+      bsk_amount: actualCost,
       is_upgrade: isUpgrade
+    }, null, 2));
+    
+    const invokeStartTime = Date.now();
+    
+    const purchaseResponse = await supabase.functions.invoke('badge-purchase', {
+      body: {
+        user_id,
+        badge_name,
+        previous_badge: existingBadge?.current_badge || null,
+        bsk_amount: actualCost,
+        is_upgrade: isUpgrade
+      }
     });
     
-    try {
-      const purchaseResponse = await supabase.functions.invoke('badge-purchase', {
-        body: {
-          user_id,
-          badge_name,
-          previous_badge: existingBadge?.current_badge || null,
-          bsk_amount: actualCost, // Use SERVER-CALCULATED amount
-          is_upgrade: isUpgrade
-        }
-      });
+    const invokeDuration = Date.now() - invokeStartTime;
+    
+    console.log(`📬 [${requestId}] badge-purchase response received in ${invokeDuration}ms`);
+    console.log(`📬 [${requestId}] Response status:`, purchaseResponse.status);
+    console.log(`📬 [${requestId}] Response error:`, purchaseResponse.error);
+    console.log(`📬 [${requestId}] Response data:`, JSON.stringify(purchaseResponse.data, null, 2));
 
-      if (purchaseResponse.error) {
-        console.error('❌ Badge purchase failed:', purchaseResponse.error);
-        return new Response(
-          JSON.stringify({ 
-            error: purchaseResponse.error.message || 'Badge purchase failed',
-            purchased: false 
-          }), 
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      console.log('✅ Badge purchase completed:', purchaseResponse.data);
+    if (purchaseResponse.error) {
+      console.error(`❌ [${requestId}] Badge purchase FAILED:`, purchaseResponse.error);
+      console.error(`❌ [${requestId}] Full error object:`, JSON.stringify(purchaseResponse.error, null, 2));
       
       return new Response(
         JSON.stringify({ 
-          success: true,
-          purchased: true,
-          badge: badge_name,
-          cost_paid: actualCost,
-          is_upgrade: isUpgrade,
-          bonus_credited: purchaseResponse.data?.bonus_credited,
-          bonus_amount: purchaseResponse.data?.bonus_amount
-        }), 
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } catch (error: any) {
-      console.error('❌ Critical badge purchase error:', error);
-      return new Response(
-        JSON.stringify({ 
-          error: error?.message || 'Badge purchase failed',
-          purchased: false 
+          error: purchaseResponse.error.message || 'Badge purchase failed',
+          purchased: false,
+          debug: {
+            request_id: requestId,
+            duration_ms: Date.now() - startTime,
+            error_details: purchaseResponse.error
+          }
         }), 
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-  } catch (error) {
-    console.error('❌ Critical error:', error);
+
+    console.log(`✅ [${requestId}] Badge purchase SUCCEEDED`);
+    console.log(`✅ [${requestId}] Total duration: ${Date.now() - startTime}ms`);
+    console.log(`✅ [${requestId}] ============= VERIFY-BADGE-PURCHASE COMPLETE =============`);
+    
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        purchased: true,
+        badge: badge_name,
+        cost_paid: actualCost,
+        is_upgrade: isUpgrade,
+        bonus_credited: purchaseResponse.data?.bonus_credited,
+        bonus_amount: purchaseResponse.data?.bonus_amount,
+        debug: {
+          request_id: requestId,
+          duration_ms: Date.now() - startTime,
+          invoke_duration_ms: invokeDuration
+        }
+      }), 
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error: any) {
+    console.error(`❌ [${requestId}] CRITICAL EXCEPTION in verify-badge-purchase:`, error);
+    console.error(`❌ [${requestId}] Error stack:`, error?.stack);
+    console.error(`❌ [${requestId}] Error name:`, error?.name);
+    console.error(`❌ [${requestId}] Error message:`, error?.message);
+    console.error(`❌ [${requestId}] Duration before crash: ${Date.now() - startTime}ms`);
+    
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
-        purchased: false 
+        purchased: false,
+        debug: {
+          request_id: requestId,
+          error_message: error?.message,
+          error_name: error?.name,
+          duration_ms: Date.now() - startTime
+        }
       }), 
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
