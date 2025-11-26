@@ -72,13 +72,21 @@ export function TransferDetailsModal({ transaction, open, onOpenChange }: Transf
               <>
                 <div className="flex justify-between items-start pb-3 border-b">
                   <span className="text-sm text-muted-foreground">Recipient</span>
-                  <div className="text-right">
+                  <div className="text-right space-y-1">
                     <p className="text-sm font-semibold">
-                      {transaction.metadata?.recipient_display_name || 'Unknown User'}
+                      {transaction.metadata?.recipient_name || transaction.metadata?.recipient_display_name || 'Unknown User'}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {transaction.metadata?.recipient_email}
-                    </p>
+                    {transaction.metadata?.recipient_email && (
+                      <p className="text-xs text-muted-foreground">
+                        {transaction.metadata.recipient_email}
+                      </p>
+                    )}
+                    {transaction.metadata?.recipient_username && 
+                     transaction.metadata.recipient_username !== transaction.metadata?.recipient_name && (
+                      <p className="text-xs text-muted-foreground">
+                        @{transaction.metadata.recipient_username}
+                      </p>
+                    )}
                   </div>
                 </div>
               </>
@@ -88,13 +96,21 @@ export function TransferDetailsModal({ transaction, open, onOpenChange }: Transf
               <>
                 <div className="flex justify-between items-start pb-3 border-b">
                   <span className="text-sm text-muted-foreground">Sender</span>
-                  <div className="text-right">
+                  <div className="text-right space-y-1">
                     <p className="text-sm font-semibold">
-                      {transaction.metadata?.sender_display_name || 'Unknown User'}
+                      {transaction.metadata?.sender_name || transaction.metadata?.sender_display_name || 'Unknown User'}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {transaction.metadata?.sender_email}
-                    </p>
+                    {transaction.metadata?.sender_email && (
+                      <p className="text-xs text-muted-foreground">
+                        {transaction.metadata.sender_email}
+                      </p>
+                    )}
+                    {transaction.metadata?.sender_username && 
+                     transaction.metadata.sender_username !== transaction.metadata?.sender_name && (
+                      <p className="text-xs text-muted-foreground">
+                        @{transaction.metadata.sender_username}
+                      </p>
+                    )}
                   </div>
                 </div>
               </>
