@@ -58,6 +58,17 @@ export function TrustWalletHistoryItem({ transaction, onClick }: TrustWalletHist
   const colorClass = getTransactionColor(transaction.amount);
   const bgColorClass = getTransactionBgColor(transaction.amount);
 
+  // Get subtitle with recipient/sender email for transfers
+  const getSubtitle = () => {
+    if (transaction.transaction_type === 'transfer_out' && transaction.metadata?.recipient_email) {
+      return transaction.metadata.recipient_email;
+    }
+    if (transaction.transaction_type === 'transfer_in' && transaction.metadata?.sender_email) {
+      return transaction.metadata.sender_email;
+    }
+    return transaction.balance_type;
+  };
+
   return (
     <div
       onClick={onClick}
@@ -76,7 +87,7 @@ export function TrustWalletHistoryItem({ transaction, onClick }: TrustWalletHist
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="capitalize">{transaction.balance_type}</span>
+          <span className="truncate capitalize">{getSubtitle()}</span>
           <span>•</span>
           <span>{formatDistanceToNow(new Date(transaction.created_at), { addSuffix: true })}</span>
         </div>
