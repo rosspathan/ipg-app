@@ -1,16 +1,22 @@
-import { ArrowDownLeft, ArrowUpRight, Gift, Target, Trophy, Users, Wallet, Zap } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { ArrowDownLeft, ArrowUpRight, Users, Trophy, TrendingUp, ShoppingCart, Gift, Target, Zap, Wallet } from "lucide-react";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 export interface TrustWalletTransaction {
   id: string;
+  user_id: string;
   created_at: string;
   amount: number;
-  transaction_type: string;
+  balance_after: number;
   balance_type: 'withdrawable' | 'holding';
-  description: string;
-  metadata?: Record<string, any>;
-  balance_after?: number;
+  transaction_type: string;
+  transaction_subtype?: string;
+  description?: string;
+  sender_recipient?: string;
+  transaction_id?: string;
+  metadata?: any;
+  notes?: string;
+  is_credit: boolean;
 }
 
 interface TrustWalletHistoryItemProps {
@@ -18,87 +24,106 @@ interface TrustWalletHistoryItemProps {
   onClick: () => void;
 }
 
-const getTransactionIcon = (type: string, amount: number) => {
-  if (amount > 0) {
-    switch (type) {
-      case 'referral_commission':
-        return <Users className="w-5 h-5" />;
-      case 'staking_reward':
-        return <Zap className="w-5 h-5" />;
-      case 'program_reward':
-        return <Trophy className="w-5 h-5" />;
-      case 'bonus':
-        return <Gift className="w-5 h-5" />;
-      default:
-        return <ArrowDownLeft className="w-5 h-5" />;
-    }
-  } else {
-    return <ArrowUpRight className="w-5 h-5" />;
-  }
+const getTransactionIcon = (subtype: string | undefined, isCredit: boolean) => {
+  // Referral commissions (L1-L50)
+  if (subtype?.includes('_commission')) return Users;
+  
+  // VIP & Team rewards
+  if (subtype === 'vip_milestone_reward' || subtype === 'team_building_bonus') return Trophy;
+  
+  // Ad mining
+  if (subtype === 'ad_watch_reward' || subtype === 'subscription_daily_mining') return TrendingUp;
+  
+  // Purchases
+  if (subtype === 'purchase_bonus' || subtype === 'badge_purchase') return ShoppingCart;
+  
+  // Transfers
+  if (subtype === 'transfer_out') return ArrowUpRight;
+  if (subtype === 'transfer_in') return ArrowDownLeft;
+  
+  // Vesting
+  if (subtype === 'vesting_release') return Zap;
+  
+  // Generic bonuses
+  if (subtype?.includes('bonus')) return Gift;
+  
+  // Default based on credit/debit
+  return isCredit ? ArrowDownLeft : ArrowUpRight;
 };
 
-const getTransactionColor = (amount: number) => {
-  return amount > 0 ? 'text-green-500' : 'text-red-500';
+const getTransactionColor = (isCredit: boolean) => {
+  return isCredit ? 'text-success' : 'text-destructive';
 };
 
-const getTransactionBgColor = (amount: number) => {
-  return amount > 0 ? 'bg-green-500/10' : 'bg-red-500/10';
+const getTransactionBgColor = (isCredit: boolean) => {
+  return isCredit ? 'bg-success/10' : 'bg-destructive/10';
 };
 
-const formatTransactionType = (type: string): string => {
-  return type
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+const getBalanceTypeBadge = (balanceType: string) => {
+  return balanceType === 'withdrawable' ? (
+    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+      Withdrawable
+    </span>
+  ) : (
+    <span className="text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium">
+      Holding
+    </span>
+  );
 };
 
 export function TrustWalletHistoryItem({ transaction, onClick }: TrustWalletHistoryItemProps) {
-  const isCredit = transaction.amount > 0;
-  const icon = getTransactionIcon(transaction.transaction_type, transaction.amount);
-  const colorClass = getTransactionColor(transaction.amount);
-  const bgColorClass = getTransactionBgColor(transaction.amount);
-
-  // Get subtitle with recipient/sender email for transfers
-  const getSubtitle = () => {
-    if (transaction.transaction_type === 'transfer_out' && transaction.metadata?.recipient_email) {
-      return transaction.metadata.recipient_email;
-    }
-    if (transaction.transaction_type === 'transfer_in' && transaction.metadata?.sender_email) {
-      return transaction.metadata.sender_email;
-    }
-    return transaction.balance_type;
-  };
-
+  const Icon = getTransactionIcon(transaction.transaction_subtype, transaction.is_credit);
+  
   return (
-    <div
+    <div 
+      className="flex items-center justify-between p-4 hover:bg-accent/5 rounded-lg cursor-pointer transition-colors group"
       onClick={onClick}
-      className="flex items-center gap-3 p-4 hover:bg-accent/50 cursor-pointer transition-colors"
     >
-      {/* Icon */}
-      <div className={cn("p-2 rounded-full", bgColorClass, colorClass)}>
-        {icon}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="font-medium text-foreground truncate">
-            {transaction.description || formatTransactionType(transaction.transaction_type)}
-          </p>
+      <div className="flex items-start gap-3 flex-1 min-w-0">
+        <div className={cn(
+          "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110",
+          getTransactionBgColor(transaction.is_credit)
+        )}>
+          <Icon className={cn("w-5 h-5", getTransactionColor(transaction.is_credit))} />
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="truncate capitalize">{getSubtitle()}</span>
-          <span>•</span>
-          <span>{formatDistanceToNow(new Date(transaction.created_at), { addSuffix: true })}</span>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <p className="font-medium text-foreground truncate">
+              {transaction.description}
+            </p>
+            {getBalanceTypeBadge(transaction.balance_type)}
+          </div>
+          
+          {transaction.sender_recipient && (
+            <p className="text-sm text-muted-foreground truncate">
+              {transaction.is_credit ? 'From' : 'To'}: {transaction.sender_recipient}
+            </p>
+          )}
+          
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(transaction.created_at), 'MMM d, yyyy • h:mm a')}
+            </p>
+            {transaction.transaction_subtype && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground">
+                {transaction.transaction_subtype}
+              </span>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Amount */}
-      <div className="text-right">
-        <p className={cn("font-semibold", colorClass)}>
-          {isCredit ? '+' : ''}{transaction.amount.toFixed(2)}
+      
+      <div className="text-right flex-shrink-0 ml-4">
+        <p className={cn(
+          "font-semibold text-lg",
+          getTransactionColor(transaction.is_credit)
+        )}>
+          {transaction.is_credit ? '+' : '-'}{Math.abs(transaction.amount).toFixed(2)} BSK
         </p>
-        <p className="text-sm text-muted-foreground">BSK</p>
+        <p className="text-xs text-muted-foreground">
+          Balance: {transaction.balance_after.toFixed(2)}
+        </p>
       </div>
     </div>
   );
