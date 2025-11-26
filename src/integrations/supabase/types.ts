@@ -11054,9 +11054,46 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string | null
+          is_credit: boolean | null
           metadata: Json | null
+          notes: string | null
+          sender_recipient: string | null
+          transaction_id: string | null
+          transaction_subtype: string | null
           transaction_type: string | null
           user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          balance_after?: never
+          balance_type?: string | null
+          created_at?: string | null
+          description?: never
+          id?: string | null
+          is_credit?: never
+          metadata?: Json | null
+          notes?: string | null
+          sender_recipient?: never
+          transaction_id?: never
+          transaction_subtype?: string | null
+          transaction_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          balance_after?: never
+          balance_type?: string | null
+          created_at?: string | null
+          description?: never
+          id?: string | null
+          is_credit?: never
+          metadata?: Json | null
+          notes?: string | null
+          sender_recipient?: never
+          transaction_id?: never
+          transaction_subtype?: string | null
+          transaction_type?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
