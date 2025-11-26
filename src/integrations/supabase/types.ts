@@ -11738,6 +11738,7 @@ export type Database = {
         Returns: undefined
       }
       validate_referral_code: { Args: { code: string }; Returns: boolean }
+      verify_transfer_recipient: { Args: { p_email: string }; Returns: Json }
     }
     Enums: {
       announcement_type: "carousel" | "ticker"
