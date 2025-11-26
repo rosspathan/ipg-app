@@ -107,17 +107,18 @@ export function BSKTransferForm() {
         throw new Error("Cannot transfer to yourself");
       }
 
-      // Find user by email
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("user_id, email, full_name")
-        .eq("email", email)
-        .maybeSingle();
+      // Use secure RPC function that bypasses RLS
+      const { data, error } = await supabase.rpc('verify_transfer_recipient', {
+        p_email: email
+      });
 
       if (error) throw error;
-      if (!profile) throw new Error("User not found");
+      
+      const result = data as { found: boolean; error?: string; user_id?: string; email?: string; full_name?: string };
+      
+      if (!result.found) throw new Error(result.error || 'User not found');
 
-      return { id: profile.user_id, email: profile.email, full_name: profile.full_name };
+      return { id: result.user_id!, email: result.email!, full_name: result.full_name };
     },
     onSuccess: (data) => {
       setVerifiedRecipient(data);
