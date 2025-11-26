@@ -48,64 +48,60 @@ export function useReferralCommissionHistory() {
     queryFn: async () => {
       if (!user?.id) throw new Error('No user ID');
 
-      // Fetch all commissions earned by current user from referral_ledger
-      const { data: ledgerData, error } = await supabase
-        .from('referral_ledger')
-        .select(`
-          id,
-          source_user_id,
-          depth,
-          bsk_amount,
-          trigger_type,
-          badge_at_event,
-          created_at,
-          source:profiles!referral_ledger_source_user_id_fkey(
-            username,
-            display_name
-          )
-        `)
-        .eq('referrer_id', user.id)
-        .eq('ledger_type', 'referral')
+      // Fetch all commissions from unified_bsk_transactions VIEW
+      const { data: txData, error } = await supabase
+        .from('unified_bsk_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('transaction_subtype', [
+          'referral_commission_l1',
+          'referral_commission_multi',
+          'vip_milestone_reward'
+        ])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Fetch badge info for all source users
-      const sourceIds = [...new Set(ledgerData?.map(l => l.source_user_id) || [])];
-      const { data: badgeData } = await supabase
-        .from('user_badge_holdings')
-        .select('user_id, current_badge')
-        .in('user_id', sourceIds);
-
-      const badgeMap = new Map(badgeData?.map(b => [b.user_id, b.current_badge]) || []);
-
       // Transform data
-      const entries: CommissionHistoryEntry[] = (ledgerData || []).map((c: any) => {
-        const level = c.depth || 1;
+      const entries: CommissionHistoryEntry[] = (txData || []).map((tx: any) => {
+        // Extract metadata
+        const metadata = tx.metadata || {};
+        const level = metadata.referral_level || (tx.transaction_subtype === 'referral_commission_l1' ? 1 : 2);
         
-        // Determine commission type based on level and trigger
+        // Determine commission type
         let commissionType: 'direct_commission' | 'team_income' | 'vip_milestone' = 'team_income';
-        if (level === 1) {
+        if (tx.transaction_subtype === 'referral_commission_l1') {
           commissionType = 'direct_commission';
-        } else if (c.trigger_type === 'vip_milestone') {
+        } else if (tx.transaction_subtype === 'vip_milestone_reward') {
           commissionType = 'vip_milestone';
         }
 
+        // Extract event type from metadata or transaction name
+        let eventType = metadata.event_type || 'unknown';
+        if (tx.transaction_name?.includes('purchase')) {
+          eventType = 'badge_purchase';
+        } else if (tx.transaction_name?.includes('upgrade')) {
+          eventType = 'badge_upgrade';
+        } else if (tx.transaction_name?.includes('VIP')) {
+          eventType = 'vip_milestone';
+        }
+
         return {
-          id: c.id,
-          payer_id: c.source_user_id,
-          payer_username: c.source?.username || 'Unknown',
-          payer_display_name: c.source?.display_name || 'Unknown User',
-          payer_badge: badgeMap.get(c.source_user_id) || null,
+          id: tx.transaction_id,
+          payer_id: metadata.source_user_id || metadata.referee_id || '',
+          payer_username: tx.sender_name || metadata.source_username || 'Unknown',
+          payer_display_name: tx.sender_name || metadata.source_display_name || 'Unknown User',
+          payer_badge: metadata.badge_purchased || metadata.to_badge || null,
           level: level,
-          event_type: c.trigger_type || 'unknown',
+          event_type: eventType,
           commission_type: commissionType,
-          bsk_amount: Number(c.bsk_amount || 0),
-          destination: 'holding',
-          created_at: c.created_at,
-          my_badge_at_event: c.badge_at_event || null,
+          bsk_amount: Math.abs(Number(tx.bsk_amount || 0)),
+          destination: tx.balance_type === 'withdrawable' ? 'withdrawable' : 'holding',
+          created_at: tx.created_at,
+          my_badge_at_event: metadata.my_badge_at_event || null,
         };
       });
+
 
       // Calculate level summaries
       const levelMap = new Map<number, { total: number; people: Set<string>; latest: string | null }>();
