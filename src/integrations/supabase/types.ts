@@ -11518,6 +11518,7 @@ export type Database = {
           wallet_address: string
         }[]
       }
+      get_vip_referral_stats: { Args: { p_user_id: string }; Returns: Json }
       has_accepted_compliance: {
         Args: {
           p_compliance_type: string
