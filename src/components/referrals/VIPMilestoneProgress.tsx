@@ -3,23 +3,27 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useTeamReferrals } from '@/hooks/useTeamReferrals';
+import { useVIPMilestoneProgress } from '@/hooks/useVIPMilestoneProgress';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { Crown, Gift, Check, Lock, History } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { VIPMilestoneExplainer } from './VIPMilestoneExplainer';
 
 export function VIPMilestoneProgress() {
   const { user } = useAuthUser();
   const {
     vipMilestones,
-    userVipMilestones,
     vipMilestoneClaims,
     claimVipMilestone,
-    loading
+    loading: teamRefLoading
   } = useTeamReferrals();
+  const { data: vipProgress, isLoading: vipProgressLoading } = useVIPMilestoneProgress();
   const navigate = useNavigate();
 
   const [claiming, setClaiming] = useState<string | null>(null);
+
+  const loading = teamRefLoading || vipProgressLoading;
 
   if (loading) {
     return (
@@ -33,13 +37,12 @@ export function VIPMilestoneProgress() {
     );
   }
 
-  // Only show if user has VIP badge (would need to check user_badge_holdings table)
-  // For now, we'll show if user has any VIP milestone progress
-  if (!userVipMilestones) {
+  // Only show if user has VIP badge
+  if (!vipProgress?.isUserVIP) {
     return null;
   }
 
-  const currentVipCount = userVipMilestones.direct_vip_count || 0;
+  const currentVipCount = vipProgress.directVIPCount || 0;
   const claimedMilestoneIds = new Set(vipMilestoneClaims.map(c => c.milestone_id));
 
   const handleClaim = async (milestoneId: string) => {
@@ -76,17 +79,21 @@ export function VIPMilestoneProgress() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Explainer showing direct vs total VIP counts */}
+        <VIPMilestoneExplainer 
+          directVIPCount={vipProgress.directVIPCount}
+          totalTeamVIPCount={vipProgress.totalTeamVIPCount}
+        />
+        
         {/* Current Progress */}
         <div className="p-4 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950 dark:to-orange-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Direct VIP Referrals</span>
+            <span className="text-sm font-medium">Direct VIP Referrals (L1)</span>
             <span className="text-2xl font-bold text-yellow-600">{currentVipCount}</span>
           </div>
-          {userVipMilestones.last_vip_referral_at && (
-            <p className="text-xs text-muted-foreground">
-              Last VIP referral: {new Date(userVipMilestones.last_vip_referral_at).toLocaleDateString()}
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            Only direct (Level 1) VIP referrals count toward milestones
+          </p>
         </div>
 
         {/* Milestones */}
@@ -175,10 +182,10 @@ export function VIPMilestoneProgress() {
                     <div>
                       <p className="font-medium">{milestone?.reward_description || 'Reward'}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(claim.claimed_at).toLocaleDateString()} • {claim.status}
+                        {claim.claimed_at ? new Date(claim.claimed_at).toLocaleDateString() : 'Pending'}
                       </p>
                     </div>
-                    <Badge variant="secondary">{claim.status}</Badge>
+                    <Badge variant="secondary">{claim.bsk_rewarded} BSK</Badge>
                   </div>
                 );
               })}

@@ -112,13 +112,11 @@ export interface VIPMilestoneClaim {
   id: string;
   user_id: string;
   milestone_id: string;
-  claimed_at: string;
-  status: 'pending' | 'approved' | 'shipped' | 'completed' | 'rejected';
-  fulfillment_notes?: string;
-  kyc_verified: boolean;
-  shipping_info?: Record<string, any>;
-  created_at: string;
-  updated_at: string;
+  vip_count_at_claim: number;
+  bsk_rewarded: number;
+  claimed_at: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const useTeamReferrals = () => {
@@ -262,7 +260,7 @@ export const useTeamReferrals = () => {
   const fetchVipMilestoneClaims = async (userId?: string) => {
     try {
       let query = supabase
-        .from('vip_milestone_claims')
+        .from('user_vip_milestone_claims')
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -416,11 +414,12 @@ export const useTeamReferrals = () => {
       }
 
       const { data, error } = await supabase
-        .from('vip_milestone_claims')
+        .from('user_vip_milestone_claims')
         .insert({
           user_id: user.id,
           milestone_id: milestoneId,
-          status: 'pending'
+          vip_count_at_claim: 0, // Will be updated by edge function
+          bsk_rewarded: 0 // Will be updated by edge function
         })
         .select()
         .single();

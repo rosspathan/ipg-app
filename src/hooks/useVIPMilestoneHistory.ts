@@ -52,7 +52,7 @@ export function useVIPMilestoneHistory() {
         claimed_at: item.claimed_at,
         milestone: Array.isArray(item.vip_milestones) 
           ? item.vip_milestones[0] 
-          : item.vip_milestones
+          : item.vip_milestones as any
       })) as VIPMilestoneHistoryItem[];
     },
     enabled: !!user?.id,
