@@ -40,6 +40,29 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
+    // Rate limiting: Check recent reset requests (max 3 per hour)
+    const oneHourAgo = new Date();
+    oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+    const { data: recentResets, error: resetCheckError } = await supabaseAdmin
+      .from("password_reset_codes")
+      .select("id")
+      .eq("email", email.toLowerCase())
+      .gte("created_at", oneHourAgo.toISOString());
+
+    if (resetCheckError) {
+      console.error("Error checking reset attempts:", resetCheckError);
+    } else if (recentResets && recentResets.length >= 3) {
+      console.log(`Rate limit exceeded for email: ${email}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Too many reset attempts. Please try again in an hour.",
+          success: false 
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Check if user exists
     const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers();
     const user = users?.find(u => u.email?.toLowerCase() === email.toLowerCase());

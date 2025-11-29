@@ -6,12 +6,15 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { OTPInput } from '@/components/auth/OTPInput';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Mail, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Mail, RefreshCw, Clock } from 'lucide-react';
+import { PasswordResetProgress } from '@/components/auth/PasswordResetProgress';
 
 export default function VerifyResetCodeScreen() {
   const [code, setCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [email, setEmail] = useState('');
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(15 * 60); // 15 minutes in seconds
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -31,6 +34,45 @@ export default function VerifyResetCodeScreen() {
     setEmail(emailFromState);
     document.title = 'Verify Reset Code - IPG Exchange';
   }, [location, navigate, toast]);
+
+  // Countdown timer for resend button
+  useEffect(() => {
+    if (resendCountdown > 0) {
+      const timer = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCountdown]);
+
+  // Time remaining for code validity
+  useEffect(() => {
+    if (timeRemaining > 0) {
+      const timer = setTimeout(() => setTimeRemaining(timeRemaining - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [timeRemaining]);
+
+  // Auto-paste OTP from clipboard
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const pastedText = e.clipboardData?.getData('text');
+      if (pastedText && /^\d{6}$/.test(pastedText)) {
+        setCode(pastedText);
+        toast({
+          title: 'Code Pasted',
+          description: 'Verification code auto-filled from clipboard',
+        });
+      }
+    };
+    
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [toast]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleVerifyCode = async () => {
     if (code.length !== 6) {
@@ -89,6 +131,8 @@ export default function VerifyResetCodeScreen() {
         description: 'A new verification code has been sent to your email',
       });
       setCode('');
+      setResendCountdown(60); // Start 60 second countdown
+      setTimeRemaining(15 * 60); // Reset validity timer
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -113,6 +157,9 @@ export default function VerifyResetCodeScreen() {
         className="w-full max-w-md"
       >
         <Card className="p-8 space-y-6 border-border/50 backdrop-blur-xl bg-card/95">
+          {/* Progress Indicator */}
+          <PasswordResetProgress currentStep={2} />
+
           {/* Header */}
           <div className="text-center space-y-2">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
@@ -125,6 +172,16 @@ export default function VerifyResetCodeScreen() {
               We sent a 6-digit verification code to
             </p>
             <p className="text-sm font-medium text-foreground">{email}</p>
+            
+            {/* Time Remaining */}
+            {timeRemaining > 0 ? (
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-2">
+                <Clock className="w-4 h-4" />
+                <span>Code expires in {formatTime(timeRemaining)}</span>
+              </div>
+            ) : (
+              <p className="text-sm text-destructive mt-2">Code expired. Please request a new one.</p>
+            )}
           </div>
 
           {/* OTP Input */}
@@ -161,9 +218,10 @@ export default function VerifyResetCodeScreen() {
             <Button
               variant="ghost"
               onClick={handleResendCode}
+              disabled={resendCountdown > 0}
               className="text-primary hover:text-primary/80"
             >
-              Resend Code
+              {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : 'Resend Code'}
             </Button>
           </div>
 

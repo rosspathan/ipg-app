@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Loader2, Mail, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 import { z } from 'zod';
+import { PasswordResetProgress } from '@/components/auth/PasswordResetProgress';
 
 const emailSchema = z.object({
   email: z.string().email('Invalid email address')
@@ -86,6 +87,9 @@ const ForgotPasswordScreen: React.FC = () => {
             <h1 className="text-2xl font-bold text-white ml-4">Password Reset</h1>
           </div>
 
+          {/* Progress Indicator */}
+          <PasswordResetProgress currentStep={1} />
+
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -111,6 +115,19 @@ const ForgotPasswordScreen: React.FC = () => {
                 Enter the code to reset your password. 
                 The code will expire in 15 minutes.
               </p>
+              
+              {/* Spam Folder Hint */}
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mt-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="text-yellow-200 font-medium mb-1">Can't find the email?</p>
+                    <p className="text-yellow-200/80">
+                      Check your spam or junk folder. Sometimes verification emails end up there.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="w-full space-y-4 mt-8">
@@ -152,6 +169,9 @@ const ForgotPasswordScreen: React.FC = () => {
           </Button>
           <h1 className="text-2xl font-bold text-white ml-4">Forgot Password</h1>
         </div>
+
+        {/* Progress Indicator */}
+        <PasswordResetProgress currentStep={1} />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft, Check, X } from 'lucide-react';
 import { z } from 'zod';
+import Confetti from 'react-confetti';
+import { PasswordResetProgress } from '@/components/auth/PasswordResetProgress';
 
 const passwordSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -29,6 +31,7 @@ const ResetPasswordScreen: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     // Get email and code from location state
@@ -100,11 +103,15 @@ const ResetPasswordScreen: React.FC = () => {
 
       if (data?.success) {
         setSuccess(true);
+        setShowConfetti(true);
         toast({
           title: "Password Reset Successful!",
           description: "Your password has been updated. Redirecting to login...",
         });
 
+        // Stop confetti after 5 seconds
+        setTimeout(() => setShowConfetti(false), 5000);
+        
         // Redirect to login after 3 seconds
         setTimeout(() => navigate('/auth/login'), 3000);
       } else {
@@ -131,6 +138,7 @@ const ResetPasswordScreen: React.FC = () => {
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-background flex flex-col items-center justify-center px-6">
+        {showConfetti && <Confetti recycle={false} numberOfPieces={500} />}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -178,6 +186,9 @@ const ResetPasswordScreen: React.FC = () => {
           <h1 className="text-2xl font-bold text-white ml-4">Reset Password</h1>
         </div>
 
+        {/* Progress Indicator */}
+        <PasswordResetProgress currentStep={3} />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -191,6 +202,65 @@ const ResetPasswordScreen: React.FC = () => {
               Enter a strong password to secure your account
             </p>
           </div>
+
+          {/* Password Requirements Checklist */}
+          {password && (
+            <div className="bg-white/10 rounded-lg p-4 space-y-2 mb-4">
+              <p className="text-white/90 font-medium text-sm mb-2">Password Requirements:</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  {password.length >= 8 ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-400" />
+                  )}
+                  <span className={`text-sm ${password.length >= 8 ? 'text-green-300' : 'text-white/60'}`}>
+                    At least 8 characters
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/[A-Z]/.test(password) ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-400" />
+                  )}
+                  <span className={`text-sm ${/[A-Z]/.test(password) ? 'text-green-300' : 'text-white/60'}`}>
+                    One uppercase letter
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/[a-z]/.test(password) ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-400" />
+                  )}
+                  <span className={`text-sm ${/[a-z]/.test(password) ? 'text-green-300' : 'text-white/60'}`}>
+                    One lowercase letter
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/\d/.test(password) ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-400" />
+                  )}
+                  <span className={`text-sm ${/\d/.test(password) ? 'text-green-300' : 'text-white/60'}`}>
+                    One number
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {password === confirmPassword && password.length > 0 ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-400" />
+                  )}
+                  <span className={`text-sm ${password === confirmPassword && password.length > 0 ? 'text-green-300' : 'text-white/60'}`}>
+                    Passwords match
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* New Password */}
           <div className="space-y-2">
