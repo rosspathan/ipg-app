@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
             bsk_amount: rewardBSK,
             destination: 'withdrawable',
             status: 'settled',
-            my_badge_at_event: 'VIP',
+            earner_badge_at_event: 'VIP',
             created_at: new Date().toISOString()
           });
 
