@@ -5,7 +5,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Shield, ChevronLeft, Upload, CheckCircle2 } from "lucide-react";
+import { Shield, ChevronLeft } from "lucide-react";
+import { EnhancedDocumentUploader } from './EnhancedDocumentUploader';
 import { useState } from "react";
 
 const documentsSchema = z.object({
@@ -49,7 +50,7 @@ export const KYCStepDocuments = ({ initialData, onNext, onBack, onUpload, upload
           <Shield className="w-8 h-8 text-primary" />
         </div>
         <h2 className="text-2xl font-bold text-foreground mb-2">Identity Verification</h2>
-        <p className="text-muted-foreground">Upload clear photos of your documents</p>
+        <p className="text-muted-foreground">Upload clear, high-quality photos of your documents</p>
       </div>
 
       <Form {...form}>
@@ -96,30 +97,19 @@ export const KYCStepDocuments = ({ initialData, onNext, onBack, onUpload, upload
             )}
           />
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <FormField
               control={form.control}
               name="id_front_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ID Front Photo</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, 'id_front', field);
-                        }}
-                        className="h-12 text-base"
-                        disabled={uploading}
-                      />
-                      {uploadStatus.id_front && (
-                        <CheckCircle2 className="absolute right-3 top-3 w-5 h-5 text-green-500" />
-                      )}
-                    </div>
-                  </FormControl>
+                  <EnhancedDocumentUploader
+                    label="ID Front Photo"
+                    description="Upload clear photo of the front side of your ID"
+                    onUpload={async (file) => handleFileUpload(file, 'id_front', field)}
+                    currentUrl={field.value}
+                    maxSizeMB={5}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -130,24 +120,13 @@ export const KYCStepDocuments = ({ initialData, onNext, onBack, onUpload, upload
               name="id_back_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ID Back Photo</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, 'id_back', field);
-                        }}
-                        className="h-12 text-base"
-                        disabled={uploading}
-                      />
-                      {uploadStatus.id_back && (
-                        <CheckCircle2 className="absolute right-3 top-3 w-5 h-5 text-green-500" />
-                      )}
-                    </div>
-                  </FormControl>
+                  <EnhancedDocumentUploader
+                    label="ID Back Photo"
+                    description="Upload clear photo of the back side of your ID"
+                    onUpload={async (file) => handleFileUpload(file, 'id_back', field)}
+                    currentUrl={field.value}
+                    maxSizeMB={5}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -158,24 +137,13 @@ export const KYCStepDocuments = ({ initialData, onNext, onBack, onUpload, upload
               name="selfie_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Selfie Photo</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, 'selfie', field);
-                        }}
-                        className="h-12 text-base"
-                        disabled={uploading}
-                      />
-                      {uploadStatus.selfie && (
-                        <CheckCircle2 className="absolute right-3 top-3 w-5 h-5 text-green-500" />
-                      )}
-                    </div>
-                  </FormControl>
+                  <EnhancedDocumentUploader
+                    label="Selfie Photo"
+                    description="Take a clear selfie holding your ID next to your face"
+                    onUpload={async (file) => handleFileUpload(file, 'selfie', field)}
+                    currentUrl={field.value}
+                    maxSizeMB={5}
+                  />
                   <FormMessage />
                 </FormItem>
               )}

@@ -25,7 +25,17 @@ Deno.serve(async (req) => {
 
     console.log(`[KYC User Reward] Processing reward for user: ${user_id}, amount: ${reward_bsk} BSK`);
 
-    // Credit BSK to holding balance using atomic transaction
+    // Lookup sponsor from referral_relationships
+    const { data: referralData } = await supabase
+      .from('referral_relationships')
+      .select('referrer_id')
+      .eq('referee_id', user_id)
+      .maybeSingle();
+
+    const sponsor_id = referralData?.referrer_id;
+    console.log(`[KYC User Reward] Sponsor found: ${sponsor_id || 'none'}`);
+
+    // Credit BSK to holding balance for user using atomic transaction
     const { error: balanceError } = await supabase.rpc('record_bsk_transaction', {
       p_user_id: user_id,
       p_idempotency_key: `kyc_reward_${user_id}`,
@@ -44,7 +54,45 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to credit balance: ${balanceError.message}`);
     }
 
-    console.log(`[KYC User Reward] Successfully credited ${reward_bsk} BSK to holding balance`);
+    console.log(`[KYC User Reward] Successfully credited ${reward_bsk} BSK to user holding balance`);
+
+    // Credit sponsor if exists
+    if (sponsor_id) {
+      const { error: sponsorBalanceError } = await supabase.rpc('record_bsk_transaction', {
+        p_user_id: sponsor_id,
+        p_idempotency_key: `kyc_sponsor_reward_${user_id}`,
+        p_tx_type: 'credit',
+        p_tx_subtype: 'kyc_referral_bonus',
+        p_balance_type: 'holding',
+        p_amount_bsk: reward_bsk,
+        p_meta_json: {
+          reward_type: 'kyc_referral_bonus',
+          referee_id: user_id,
+          destination: 'holding'
+        }
+      });
+
+      if (sponsorBalanceError) {
+        console.error('[KYC User Reward] Failed to credit sponsor balance:', sponsorBalanceError);
+        // Don't throw - sponsor reward is secondary
+      } else {
+        console.log(`[KYC User Reward] Successfully credited ${reward_bsk} BSK to sponsor holding balance`);
+        
+        // Create sponsor ledger entry
+        await supabase
+          .from('bonus_ledger')
+          .insert({
+            user_id: sponsor_id,
+            type: 'kyc_referral_bonus',
+            amount_bsk: reward_bsk,
+            meta_json: {
+              reward_type: 'kyc_referral_bonus',
+              referee_id: user_id,
+              destination: 'holding'
+            }
+          });
+      }
+    }
 
     // Create bonus ledger entry for user
     const { error: ledgerError } = await supabase
@@ -75,13 +123,15 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to set KYC approval flag: ${profileError.message}`);
     }
 
-    console.log(`[KYC User Reward] SUCCESS: Credited ${reward_bsk} BSK and set is_kyc_approved = TRUE for user ${user_id}`);
+    console.log(`[KYC User Reward] SUCCESS: Credited ${reward_bsk} BSK to user and ${sponsor_id ? reward_bsk + ' BSK to sponsor' : 'no sponsor'} and set is_kyc_approved = TRUE for user ${user_id}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         user_id: user_id,
-        reward_bsk: reward_bsk
+        reward_bsk: reward_bsk,
+        sponsor_id: sponsor_id || null,
+        sponsor_reward_bsk: sponsor_id ? reward_bsk : 0
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );

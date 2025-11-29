@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminKYC, KYCStatusFilter, KYCSubmissionWithUser } from '@/hooks/useAdminKYC';
 import { KYCSubmissionList } from '@/components/admin/kyc/KYCSubmissionList';
 import { KYCReviewPanel } from '@/components/admin/kyc/KYCReviewPanel';
+import { KYCStatsDashboard } from '@/components/admin/kyc/KYCStatsDashboard';
 import { Search, FileText } from 'lucide-react';
 
 export default function KYCReviewNew() {
@@ -61,6 +61,9 @@ export default function KYCReviewNew() {
           Review and approve user identity verification submissions
         </p>
       </div>
+
+      {/* Stats Dashboard */}
+      <KYCStatsDashboard />
 
       {/* Filters - Sticky on mobile */}
       <div className="sticky top-0 z-10 bg-background pb-4 -mt-2 pt-2">
