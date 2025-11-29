@@ -233,11 +233,11 @@ Deno.serve(async (req) => {
     await supabaseClient
       .from('vip_milestone_tracker')
       .upsert({
-        sponsor_id: sponsor_id,
+        user_id: sponsor_id,
         direct_vip_count_after_vip: vipCount,
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'sponsor_id'
+        onConflict: 'user_id'
       });
 
     if (milestonesAchieved.length > 0) {
