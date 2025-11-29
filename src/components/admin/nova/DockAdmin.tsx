@@ -57,6 +57,14 @@ export function DockAdmin({ className }: DockAdminProps) {
 
   const quickActions: QuickAction[] = [
     {
+      label: "KYC Review",
+      icon: Shield,
+      onClick: () => {
+        navigate("/admin/kyc-review");
+        setShowQuickAdd(false);
+      },
+    },
+    {
       label: "New Program",
       icon: Package,
       onClick: () => {

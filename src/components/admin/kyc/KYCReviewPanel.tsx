@@ -257,12 +257,17 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
               🎁 BSK Reward Preview
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              ✅ <span className="font-semibold text-primary">5 BSK (holding)</span> will be credited directly to the user's account upon approval.
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              No rewards are distributed to sponsors for KYC approvals.
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5">
+              <span className="text-sm font-medium">User Reward</span>
+              <span className="font-semibold text-primary">5 BSK (holding)</span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/5">
+              <span className="text-sm font-medium">Sponsor Reward</span>
+              <span className="font-semibold text-accent">5 BSK (holding)</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              💡 Total of <strong>10 BSK</strong> will be distributed upon approval (5 to user + 5 to direct sponsor)
             </p>
           </CardContent>
         </Card>
@@ -294,7 +299,7 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
               size="lg"
             >
               <CheckCircle className="mr-2 h-5 w-5" />
-              Approve & Award 5 BSK
+              Approve & Award 10 BSK Total
             </Button>
             <Button
               onClick={() => setRejectModalOpen(true)}
