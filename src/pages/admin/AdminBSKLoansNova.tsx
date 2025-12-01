@@ -36,6 +36,7 @@ export default function AdminBSKLoansNova() {
     default_tenor_weeks: number;
     processing_fee_percent: number;
     late_fee_percent: number;
+    consecutive_missed_weeks_for_cancel: number;
   } | null>(null);
 
   // Fetch loan configuration
@@ -198,6 +199,8 @@ export default function AdminBSKLoansNova() {
                   ? "bg-warning/10 text-warning border-warning/20"
                   : row.status === 'closed'
                   ? "bg-muted/10 text-muted-foreground border-muted/20"
+                  : row.status === 'cancelled'
+                  ? "bg-destructive/10 text-destructive border-destructive/20"
                   : "bg-destructive/10 text-destructive border-destructive/20"
               )}
             >
@@ -431,6 +434,22 @@ export default function AdminBSKLoansNova() {
                       />
                       <p className="text-xs text-muted-foreground">
                         Charged on missed weekly payments
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Auto-Cancel After Missed Weeks</Label>
+                      <Input
+                        type="number"
+                        value={formValues.consecutive_missed_weeks_for_cancel}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          setFormValues({ ...formValues, consecutive_missed_weeks_for_cancel: value });
+                        }}
+                        min="1"
+                        max="16"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Loan will be cancelled if user misses this many consecutive weeks
                       </p>
                     </div>
                   </div>

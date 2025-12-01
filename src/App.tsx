@@ -615,7 +615,7 @@ function AppContent() {
                 <Route path="programs/control/spin-wheel/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><SpinWheelControlPanel /></React.Suspense>} />
                 <Route path="programs/control/staking/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><StakingControlPanel /></React.Suspense>} />
                 <Route path="programs/control/insurance/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><InsuranceControlPanel /></React.Suspense>} />
-                <Route path="programs/control/loans/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><LoansControlPanel /></React.Suspense>} />
+                <Route path="programs/control/loans/:moduleId?" element={<AdminBSKLoansNova />} />
                 <Route path="programs/control/trading/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><TradingControlPanel /></React.Suspense>} />
                 <Route path="programs/control/badges/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><BadgesControlPanel /></React.Suspense>} />
                 <Route path="programs/control/referrals/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><ReferralsControlPanel /></React.Suspense>} />

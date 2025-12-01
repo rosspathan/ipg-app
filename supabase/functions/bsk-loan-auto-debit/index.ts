@@ -283,6 +283,18 @@ Deno.serve(async (req) => {
       failed: result.failed,
     });
 
+    // Check for loans to cancel after processing installments
+    console.log('[AUTO-DEBIT] Triggering cancellation check...');
+    try {
+      await supabase.functions.invoke('bsk-loan-check-cancellation', {
+        body: { triggered_by: 'auto_debit' }
+      });
+      console.log('[AUTO-DEBIT] Cancellation check triggered successfully');
+    } catch (cancelError) {
+      console.error('[AUTO-DEBIT] Error triggering cancellation check:', cancelError);
+      // Don't fail the auto-debit if cancellation check fails
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
