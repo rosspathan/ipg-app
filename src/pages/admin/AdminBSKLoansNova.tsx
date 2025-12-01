@@ -15,7 +15,8 @@ import { CleanCard } from "@/components/admin/clean/CleanCard";
 import { CleanMetricCard } from "@/components/admin/clean/CleanMetricCard";
 import { CleanGrid } from "@/components/admin/clean/CleanGrid";
 import { EmptyState } from "@/components/admin/clean/EmptyState";
-import { CheckCircle, XCircle, Clock, DollarSign, Users, Wallet, RefreshCw, Settings, Shield, Percent, FileText, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, DollarSign, Users, Wallet, RefreshCw, Settings, Shield, Percent, FileText, AlertCircle, Gift } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,9 @@ export default function AdminBSKLoansNova() {
     processing_fee_percent: number;
     late_fee_percent: number;
     consecutive_missed_weeks_for_cancel: number;
+    completion_bonus_enabled: boolean;
+    completion_bonus_percent: number;
+    completion_bonus_destination: string;
   } | null>(null);
 
   // Fetch loan configuration
@@ -575,6 +579,78 @@ export default function AdminBSKLoansNova() {
                         Consecutive missed weeks before loan is auto-cancelled
                       </span>
                     </div>
+                  </div>
+                </CleanCard>
+
+                {/* Section 5: Completion Bonus */}
+                <CleanCard padding="lg">
+                  <h3 className="text-base font-semibold text-[hsl(0_0%_98%)] mb-4 flex items-center gap-2">
+                    <Gift className="w-5 h-5 text-[hsl(262_100%_65%)]" />
+                    Completion Bonus
+                  </h3>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Enable Completion Bonus</Label>
+                        <p className="text-sm text-[hsl(220_9%_65%)]">
+                          Reward users who repay their loans on time
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formValues.completion_bonus_enabled}
+                        onCheckedChange={(checked) => 
+                          setFormValues({ ...formValues, completion_bonus_enabled: checked })
+                        }
+                      />
+                    </div>
+                    
+                    {formValues.completion_bonus_enabled && (
+                      <>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Bonus Percentage</Label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={formValues.completion_bonus_percent}
+                              onChange={(e) => setFormValues({ 
+                                ...formValues, 
+                                completion_bonus_percent: parseFloat(e.target.value) 
+                              })}
+                              min="0"
+                              max="100"
+                              className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)] touch-manipulation"
+                            />
+                            <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
+                          </div>
+                          <span className="text-xs text-[hsl(220_9%_65%)]">
+                            Percentage of principal amount as bonus
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Bonus Destination</Label>
+                          <Select
+                            value={formValues.completion_bonus_destination}
+                            onValueChange={(value) => setFormValues({
+                              ...formValues,
+                              completion_bonus_destination: value
+                            })}
+                          >
+                            <SelectTrigger className="h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)] touch-manipulation">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="holding">Holding Balance</SelectItem>
+                              <SelectItem value="withdrawable">Withdrawable Balance</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <span className="text-xs text-[hsl(220_9%_65%)]">
+                            Where the bonus will be credited
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </CleanCard>
 

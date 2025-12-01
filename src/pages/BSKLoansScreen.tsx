@@ -14,8 +14,8 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { useToast } from "@/hooks/use-toast";
 
 interface LoanSettings {
-  min_amount_inr: number;
-  max_amount_inr: number;
+  min_amount_bsk: number;
+  max_amount_bsk: number;
   default_tenor_weeks: number;
   interest_type: string;
   default_interest_rate_weekly: number;
@@ -23,6 +23,9 @@ interface LoanSettings {
   kyc_required: boolean;
   schedule_denomination: string;
   system_enabled: boolean;
+  completion_bonus_enabled?: boolean;
+  completion_bonus_percent?: number;
+  completion_bonus_destination?: string;
 }
 
 interface Loan {
@@ -87,7 +90,7 @@ const BSKLoansScreen = () => {
       }
 
       setLoanSettings(settings);
-      setLoanAmount(Math.max(settings.min_amount_inr, Math.min(1000, settings.max_amount_inr)));
+      setLoanAmount(Math.max(settings.min_amount_bsk, Math.min(1000, settings.max_amount_bsk)));
 
       // Load BSK rate
       const { data: rate } = await supabase
@@ -156,7 +159,7 @@ const BSKLoansScreen = () => {
       console.log(`Applying for BSK loan: ₹${loanAmount}`);
 
       const { data, error } = await supabase.functions.invoke('bsk-loan-apply', {
-        body: { amount_inr: loanAmount, region: 'IN' }
+        body: { amount_bsk: loanAmount, region: 'IN' }
       });
 
       if (error) {
@@ -177,7 +180,7 @@ const BSKLoansScreen = () => {
 
       toast({
         title: "Application Submitted!",
-        description: `Loan application for ₹${loanAmount} (${data.loan.principal_bsk} BSK) submitted successfully`,
+        description: `Loan application for ${loanAmount} BSK submitted successfully`,
       });
 
       // Refresh data and switch tabs
@@ -198,21 +201,20 @@ const BSKLoansScreen = () => {
   const calculatePreview = () => {
     if (!loanSettings) return null;
 
-    const principalBsk = loanAmount / bskRate;
+    const principalBsk = loanAmount;
     const originationFeeBsk = (principalBsk * loanSettings.origination_fee_percent) / 100;
     const netDisbursedBsk = principalBsk - originationFeeBsk;
     
     // 0% interest by default
     const totalDueBsk = principalBsk;
-    const weeklyEmi = totalDueBsk / loanSettings.default_tenor_weeks;
+    const weeklyEmiBsk = totalDueBsk / loanSettings.default_tenor_weeks;
 
     return {
-      principalBsk: principalBsk.toFixed(4),
-      originationFeeBsk: originationFeeBsk.toFixed(4),
-      netDisbursedBsk: netDisbursedBsk.toFixed(4),
-      totalDueBsk: totalDueBsk.toFixed(4),
-      weeklyEmiBsk: weeklyEmi.toFixed(4),
-      weeklyEmiInr: (weeklyEmi * bskRate).toFixed(2)
+      principalBsk: principalBsk.toFixed(2),
+      originationFeeBsk: originationFeeBsk.toFixed(2),
+      netDisbursedBsk: netDisbursedBsk.toFixed(2),
+      totalDueBsk: totalDueBsk.toFixed(2),
+      weeklyEmiBsk: weeklyEmiBsk.toFixed(2),
     };
   };
 
@@ -291,20 +293,20 @@ const BSKLoansScreen = () => {
             <CardHeader>
               <CardTitle>Apply for BSK Loan</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Borrow ₹{loanSettings.min_amount_inr.toLocaleString()} - ₹{loanSettings.max_amount_inr.toLocaleString()} • 
-                16 weeks • 0% interest • No fees
+                Borrow {loanSettings.min_amount_bsk.toLocaleString()} - {loanSettings.max_amount_bsk.toLocaleString()} BSK • 
+                {loanSettings.default_tenor_weeks} weeks • 0% interest
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Amount Selector */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="loan-amount">Loan Amount (INR)</Label>
+                  <Label htmlFor="loan-amount">Loan Amount (BSK)</Label>
                   <Input
                     id="loan-amount"
                     type="number"
-                    min={loanSettings.min_amount_inr}
-                    max={loanSettings.max_amount_inr}
+                    min={loanSettings.min_amount_bsk}
+                    max={loanSettings.max_amount_bsk}
                     value={loanAmount}
                     onChange={(e) => setLoanAmount(Number(e.target.value))}
                     className="w-32 text-right"
@@ -314,15 +316,15 @@ const BSKLoansScreen = () => {
                 <Slider
                   value={[loanAmount]}
                   onValueChange={([value]) => setLoanAmount(value)}
-                  min={loanSettings.min_amount_inr}
-                  max={loanSettings.max_amount_inr}
+                  min={loanSettings.min_amount_bsk}
+                  max={loanSettings.max_amount_bsk}
                   step={100}
                   className="w-full"
                 />
                 
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>₹{loanSettings.min_amount_inr.toLocaleString()}</span>
-                  <span>₹{loanSettings.max_amount_inr.toLocaleString()}</span>
+                  <span>{loanSettings.min_amount_bsk.toLocaleString()} BSK</span>
+                  <span>{loanSettings.max_amount_bsk.toLocaleString()} BSK</span>
                 </div>
               </div>
 
@@ -339,8 +341,7 @@ const BSKLoansScreen = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground">Principal Amount</p>
-                        <p className="font-bold">₹{loanAmount.toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">{preview.principalBsk} BSK</p>
+                        <p className="font-bold">{preview.principalBsk} BSK</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">You'll Receive</p>
@@ -350,13 +351,21 @@ const BSKLoansScreen = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">Weekly EMI</p>
                         <p className="font-bold">{preview.weeklyEmiBsk} BSK</p>
-                        <p className="text-xs text-muted-foreground">≈ ₹{preview.weeklyEmiInr}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Total Repayment</p>
                         <p className="font-bold">{preview.totalDueBsk} BSK</p>
                         <p className="text-xs text-success">0% Interest</p>
                       </div>
+                      {loanSettings.completion_bonus_enabled && (
+                        <div className="col-span-2">
+                          <p className="text-sm text-muted-foreground">Completion Bonus</p>
+                          <p className="font-bold text-success">
+                            +{((loanAmount * (loanSettings.completion_bonus_percent || 5)) / 100).toFixed(2)} BSK
+                          </p>
+                          <p className="text-xs text-success">Earn on timely completion!</p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-3 border-t border-primary/10">
@@ -366,7 +375,7 @@ const BSKLoansScreen = () => {
                       </div>
                       <div className="flex items-center gap-2 text-sm mt-1">
                         <Clock className="h-4 w-4 text-primary" />
-                        <span>16 weekly payments starting 1 week after approval</span>
+                        <span>{loanSettings.default_tenor_weeks} weekly payments starting 1 week after approval</span>
                       </div>
                     </div>
                   </CardContent>
@@ -383,10 +392,19 @@ const BSKLoansScreen = () => {
                       <ul className="text-muted-foreground mt-1 space-y-1">
                         <li>• Loan settled in BSK using admin-set rates</li>
                         <li>• BSK is an in-app token valued by administrators</li>
-                        <li>• KYC verification required before disbursal</li>
+                        {loanSettings.kyc_required ? (
+                          <li>• KYC verification required before disbursal</li>
+                        ) : (
+                          <li className="text-success">• ✓ No KYC required - fast approval process</li>
+                        )}
                         <li>• One active loan per user maximum</li>
                         <li>• Manual admin approval required</li>
                         <li>• 3-day grace period for late payments</li>
+                        {loanSettings.completion_bonus_enabled && (
+                          <li className="text-success font-medium">
+                            • 🎁 Earn {loanSettings.completion_bonus_percent}% bonus ({((loanAmount * (loanSettings.completion_bonus_percent || 5)) / 100).toFixed(2)} BSK) on timely completion!
+                          </li>
+                        )}
                       </ul>
                     </div>
                   </div>
@@ -394,12 +412,12 @@ const BSKLoansScreen = () => {
 
                 <Button 
                   onClick={handleApplyLoan}
-                  disabled={accepting || !user || loanAmount < loanSettings.min_amount_inr}
+                  disabled={accepting || !user || loanAmount < loanSettings.min_amount_bsk || loanAmount > loanSettings.max_amount_bsk}
                   className="w-full bg-primary hover:bg-primary/90"
                   size="lg"
                 >
                   <CreditCard className="h-5 w-5 mr-2" />
-                  {accepting ? "Submitting..." : `Apply for ₹${loanAmount.toLocaleString()} Loan`}
+                  {accepting ? "Submitting..." : `Apply for ${loanAmount.toLocaleString()} BSK Loan`}
                 </Button>
               </div>
             </CardContent>

@@ -2359,6 +2359,9 @@ export type Database = {
         Row: {
           autopay_enabled: boolean
           badge_limits: Json
+          completion_bonus_destination: string | null
+          completion_bonus_enabled: boolean | null
+          completion_bonus_percent: number | null
           consecutive_missed_weeks_for_cancel: number | null
           created_at: string
           created_by: string | null
@@ -2391,6 +2394,9 @@ export type Database = {
         Insert: {
           autopay_enabled?: boolean
           badge_limits?: Json
+          completion_bonus_destination?: string | null
+          completion_bonus_enabled?: boolean | null
+          completion_bonus_percent?: number | null
           consecutive_missed_weeks_for_cancel?: number | null
           created_at?: string
           created_by?: string | null
@@ -2423,6 +2429,9 @@ export type Database = {
         Update: {
           autopay_enabled?: boolean
           badge_limits?: Json
+          completion_bonus_destination?: string | null
+          completion_bonus_enabled?: boolean | null
+          completion_bonus_percent?: number | null
           consecutive_missed_weeks_for_cancel?: number | null
           created_at?: string
           created_by?: string | null
