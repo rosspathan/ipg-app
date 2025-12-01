@@ -24,8 +24,8 @@ export function CleanMetricCard({
   const TrendIcon = isPositive ? TrendingUp : TrendingDown;
 
   return (
-    <CleanCard padding="lg" className={className}>
-      <div className="flex items-start justify-between mb-3">
+    <CleanCard padding="md" className={className}>
+      <div className="flex items-start justify-between mb-2">
         <p className="text-xs uppercase tracking-wide text-[hsl(220_9%_65%)] font-medium">
           {label}
         </p>
@@ -38,7 +38,7 @@ export function CleanMetricCard({
       
       <div className="flex items-end justify-between">
         <h3 
-          className="text-3xl font-bold text-[hsl(0_0%_98%)] tracking-tight"
+          className="text-2xl sm:text-3xl font-bold text-[hsl(0_0%_98%)] tracking-tight"
           style={{ fontFeatureSettings: "'tnum'" }}
         >
           {value}
