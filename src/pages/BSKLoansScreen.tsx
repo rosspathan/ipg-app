@@ -113,11 +113,11 @@ const BSKLoansScreen = () => {
         setUserLoans(loans || []);
 
         // Load user BSK balance
-        const { data: balance } = await supabase
-          .from('user_bsk_balance_summary')
-          .select('withdrawable_balance')
-          .eq('user_id', user.id)
-          .single();
+    const { data: balance } = await supabase
+      .from('user_bsk_balances')
+      .select('withdrawable_balance')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
         setUserBalance(balance?.withdrawable_balance || 0);
 
