@@ -1,4 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+/**
+ * @deprecated This function is deprecated. Use process-ad-click instead.
+ * Kept for backward compatibility only. Do not use in new code.
+ * 
+ * Migration Guide:
+ * - Use supabase.functions.invoke('process-ad-click', { body: { ad_id, view_time_seconds } })
+ * - The process-ad-click function has better video support, validation, and logging
+ */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
 
 const corsHeaders = {
