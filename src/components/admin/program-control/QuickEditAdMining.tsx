@@ -3,7 +3,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Save, DollarSign, Timer } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Save, DollarSign, Timer, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,12 +18,20 @@ export function QuickEditAdMining({ moduleKey, currentConfig }: QuickEditAdMinin
   const { toast } = useToast();
   const [rewardPerAd, setRewardPerAd] = useState(currentConfig?.rewardPerAd || 10);
   const [dailyLimit, setDailyLimit] = useState(currentConfig?.dailyLimit || 50);
+  const [completionBonusEnabled, setCompletionBonusEnabled] = useState(currentConfig?.completionBonusEnabled ?? true);
+  const [completionBonusPercent, setCompletionBonusPercent] = useState(currentConfig?.completionBonusPercent || 10);
+  const [completionBonusDestination, setCompletionBonusDestination] = useState<'holding' | 'withdrawable'>(
+    currentConfig?.completionBonusDestination || 'withdrawable'
+  );
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (currentConfig) {
       setRewardPerAd(currentConfig.rewardPerAd || 10);
       setDailyLimit(currentConfig.dailyLimit || 50);
+      setCompletionBonusEnabled(currentConfig.completionBonusEnabled ?? true);
+      setCompletionBonusPercent(currentConfig.completionBonusPercent || 10);
+      setCompletionBonusDestination(currentConfig.completionBonusDestination || 'withdrawable');
     }
   }, [currentConfig]);
 
@@ -56,6 +66,9 @@ export function QuickEditAdMining({ moduleKey, currentConfig }: QuickEditAdMinin
             ...currentConfig,
             rewardPerAd,
             dailyLimit,
+            completionBonusEnabled,
+            completionBonusPercent,
+            completionBonusDestination,
             updatedAt: new Date().toISOString()
           },
           status: 'published',
@@ -130,6 +143,75 @@ export function QuickEditAdMining({ moduleKey, currentConfig }: QuickEditAdMinin
           <span>10 ads</span>
           <span>200 ads</span>
         </div>
+      </div>
+
+      <div className="border-t pt-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Gift className="w-4 h-4 text-primary" />
+              Completion Bonus
+            </Label>
+            <p className="text-xs text-muted-foreground">Reward users who complete full 100 days</p>
+          </div>
+          <Switch
+            checked={completionBonusEnabled}
+            onCheckedChange={setCompletionBonusEnabled}
+            disabled={saving}
+          />
+        </div>
+
+        {completionBonusEnabled && (
+          <>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Bonus Percentage</Label>
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-lg">
+                  <span className="text-sm font-bold text-primary">{completionBonusPercent}%</span>
+                </div>
+              </div>
+              <Slider
+                value={[completionBonusPercent]}
+                onValueChange={([val]) => setCompletionBonusPercent(val)}
+                min={0}
+                max={100}
+                step={5}
+                className="w-full"
+                disabled={saving}
+                aria-label="Completion bonus percentage"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0%</span>
+                <span>100%</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Example: 500 BSK tier → {Math.round(500 * completionBonusPercent / 100)} BSK bonus
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Bonus Destination</Label>
+              <RadioGroup
+                value={completionBonusDestination}
+                onValueChange={(value) => setCompletionBonusDestination(value as 'holding' | 'withdrawable')}
+                disabled={saving}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="holding" id="holding" />
+                  <Label htmlFor="holding" className="text-sm font-normal cursor-pointer">
+                    Holding Balance
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="withdrawable" id="withdrawable" />
+                  <Label htmlFor="withdrawable" className="text-sm font-normal cursor-pointer">
+                    Withdrawable Balance
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </>
+        )}
       </div>
 
       <Button

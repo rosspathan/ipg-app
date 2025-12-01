@@ -183,6 +183,8 @@ export type Database = {
       ad_user_subscriptions: {
         Row: {
           active_until: string | null
+          completion_bonus_bsk: number | null
+          completion_bonus_credited_at: string | null
           created_at: string
           daily_bsk: number
           days_total: number
@@ -201,6 +203,8 @@ export type Database = {
         }
         Insert: {
           active_until?: string | null
+          completion_bonus_bsk?: number | null
+          completion_bonus_credited_at?: string | null
           created_at?: string
           daily_bsk: number
           days_total?: number
@@ -219,6 +223,8 @@ export type Database = {
         }
         Update: {
           active_until?: string | null
+          completion_bonus_bsk?: number | null
+          completion_bonus_credited_at?: string | null
           created_at?: string
           daily_bsk?: number
           days_total?: number
