@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, TrendingUp, Users, DollarSign, Activity } from "lucide-react";
+import { ArrowLeft, TrendingUp, Users, DollarSign, Activity, Gift } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { QuickEditAdMining } from "@/components/admin/program-control/QuickEditAdMining";
 import { AdInventoryManager } from "@/components/admin/ad-mining/AdInventoryManager";
@@ -55,12 +55,24 @@ export default function AdMiningControlPanel() {
         ? Math.round(((todayClicks?.length || 0) - yesterdayClicks.length) / yesterdayClicks.length * 100)
         : 0;
 
+      // Get completion bonus stats
+      const { data: completionBonuses } = await supabase
+        .from("ad_user_subscriptions")
+        .select("completion_bonus_bsk, completion_bonus_credited_at")
+        .not("completion_bonus_credited_at", "is", null);
+
+      const totalCompletionBonuses = completionBonuses?.reduce((sum, sub) => 
+        sum + (parseFloat(sub.completion_bonus_bsk as any) || 0), 0) || 0;
+      const completionBonusCount = completionBonuses?.length || 0;
+
       return {
         adsToday: todayClicks?.length || 0,
         activeUsers: uniqueUsers.size,
         bskPaid: Math.round(totalBskPaid),
         avgWatchTime: avgWatchTime,
         changePercent: changePercent,
+        completionBonusesPaid: Math.round(totalCompletionBonuses),
+        completionBonusesCount: completionBonusCount,
       };
     },
     refetchInterval: 30000, // Refetch every 30 seconds
@@ -89,9 +101,10 @@ export default function AdMiningControlPanel() {
       </div>
 
       {/* Quick Stats */}
-      <div className={`grid gap-4 mb-6 ${isMobile ? 'grid-cols-2' : 'grid-cols-4'}`}>
+      <div className={`grid gap-4 mb-6 ${isMobile ? 'grid-cols-2' : 'grid-cols-5'}`}>
         {statsLoading ? (
           <>
+            <Skeleton className="h-24 rounded-lg" />
             <Skeleton className="h-24 rounded-lg" />
             <Skeleton className="h-24 rounded-lg" />
             <Skeleton className="h-24 rounded-lg" />
@@ -149,6 +162,20 @@ export default function AdMiningControlPanel() {
                   <TrendingUp className="w-8 h-8 text-primary" />
                 </div>
                 <p className="text-xs text-success mt-2">Engagement metric</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Completion Bonuses</p>
+                    <p className="text-2xl font-bold">{stats?.completionBonusesPaid.toLocaleString() || 0}</p>
+                  </div>
+                  <Gift className="w-8 h-8 text-primary" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {stats?.completionBonusesCount || 0} users earned
+                </p>
               </CardContent>
             </Card>
           </>

@@ -11,6 +11,7 @@ interface ResetResults {
   subscriptions_expired: number;
   users_affected: string[];
   total_missed_earnings_bsk: number;
+  completion_bonuses_paid_bsk: number;
   errors: string[];
 }
 
@@ -56,14 +57,15 @@ async function resetDailyCounters(supabase: any): Promise<{ count: number; delet
 
 /**
  * Find and expire subscriptions where active_until < NOW()
+ * Also process completion bonuses for users who finished all 100 days
  */
-async function expireSubscriptions(supabase: any): Promise<{ count: number; userIds: string[]; missedEarnings: number }> {
+async function expireSubscriptions(supabase: any): Promise<{ count: number; userIds: string[]; missedEarnings: number; bonusesPaid: number }> {
   console.log('🔍 Finding expired subscriptions...');
   
   // Find active subscriptions that have expired
   const { data: expiredSubs, error: findError } = await supabase
     .from('ad_user_subscriptions')
-    .select('id, user_id, tier_id, end_date, active_until, total_earned_bsk, daily_bsk')
+    .select('id, user_id, tier_id, tier_bsk, purchased_bsk, end_date, start_date, active_until, total_earned_bsk, total_missed_days, daily_bsk, days_total')
     .eq('status', 'active')
     .lt('active_until', new Date().toISOString());
   
@@ -74,14 +76,32 @@ async function expireSubscriptions(supabase: any): Promise<{ count: number; user
   
   if (!expiredSubs || expiredSubs.length === 0) {
     console.log('✅ No subscriptions to expire');
-    return { count: 0, userIds: [], missedEarnings: 0 };
+    return { count: 0, userIds: [], missedEarnings: 0, bonusesPaid: 0 };
   }
   
   console.log(`📋 Found ${expiredSubs.length} expired subscriptions`);
   
-  // Calculate missed earnings for each subscription
+  // Fetch completion bonus config
+  const { data: configData } = await supabase
+    .from('program_configs')
+    .select('config_json')
+    .eq('module_id', (await supabase.from('program_modules').select('id').eq('key', 'ad_mining').maybeSingle())?.data?.id)
+    .eq('is_current', true)
+    .maybeSingle();
+  
+  const config = configData?.config_json || {};
+  const completionBonusEnabled = config.completionBonusEnabled ?? true;
+  const completionBonusPercent = config.completionBonusPercent || 10;
+  const completionBonusDestination = config.completionBonusDestination || 'withdrawable';
+  
+  console.log(`🎁 Completion bonus config: ${completionBonusEnabled ? 'enabled' : 'disabled'}, ${completionBonusPercent}%, destination: ${completionBonusDestination}`);
+  
+  // Calculate missed earnings and process completion bonuses
   let totalMissedEarnings = 0;
-  const subscriptionIds = expiredSubs.map(sub => {
+  let totalBonusesPaid = 0;
+  const subscriptionIds = expiredSubs.map(sub => sub.id);
+  
+  for (const sub of expiredSubs) {
     const activeUntil = new Date(sub.active_until);
     const endDate = new Date(sub.end_date);
     const missedDays = Math.max(0, Math.floor((endDate.getTime() - activeUntil.getTime()) / (1000 * 60 * 60 * 24)));
@@ -89,8 +109,69 @@ async function expireSubscriptions(supabase: any): Promise<{ count: number; user
     totalMissedEarnings += missedEarnings;
     
     console.log(`  - User ${sub.user_id}: ${missedDays} missed days, ${missedEarnings} BSK missed`);
-    return sub.id;
-  });
+    
+    // Check if user completed full subscription (no missed days)
+    const totalMissedDays = sub.total_missed_days || 0;
+    const hasCompletedFull = totalMissedDays === 0 && missedDays === 0;
+    
+    if (completionBonusEnabled && hasCompletedFull) {
+      const tierBsk = parseFloat(sub.purchased_bsk || sub.tier_bsk || 0);
+      const bonusAmount = Math.round(tierBsk * completionBonusPercent / 100);
+      
+      if (bonusAmount > 0) {
+        console.log(`  🎉 User ${sub.user_id} completed full ${sub.days_total} days! Bonus: ${bonusAmount} BSK`);
+        
+        try {
+          // Credit bonus using RPC
+          const { error: creditError } = await supabase.rpc('record_bsk_transaction', {
+            p_user_id: sub.user_id,
+            p_amount_bsk: bonusAmount,
+            p_amount_inr: 0,
+            p_rate_snapshot: 1,
+            p_tx_type: completionBonusDestination === 'holding' ? 'holding_credit' : 'credit',
+            p_tx_subtype: 'subscription_completion_bonus',
+            p_reference_id: sub.id,
+            p_notes: `Completion bonus for ${sub.days_total}-day subscription (${completionBonusPercent}% of ${tierBsk} BSK)`,
+            p_metadata: { subscription_id: sub.id, tier_bsk: tierBsk, bonus_percent: completionBonusPercent }
+          });
+          
+          if (creditError) {
+            console.error(`❌ Failed to credit completion bonus for user ${sub.user_id}:`, creditError);
+          } else {
+            // Update subscription with bonus info
+            await supabase
+              .from('ad_user_subscriptions')
+              .update({
+                completion_bonus_bsk: bonusAmount,
+                completion_bonus_credited_at: new Date().toISOString()
+              })
+              .eq('id', sub.id);
+            
+            // Log to bonus_ledger for audit
+            await supabase
+              .from('bonus_ledger')
+              .insert({
+                user_id: sub.user_id,
+                amount_bsk: bonusAmount,
+                type: 'subscription_completion_bonus',
+                asset: 'BSK',
+                meta_json: {
+                  subscription_id: sub.id,
+                  tier_bsk: tierBsk,
+                  bonus_percent: completionBonusPercent,
+                  days_completed: sub.days_total
+                }
+              });
+            
+            totalBonusesPaid += bonusAmount;
+            console.log(`  ✅ Completion bonus credited successfully`);
+          }
+        } catch (error) {
+          console.error(`❌ Error processing completion bonus:`, error);
+        }
+      }
+    }
+  }
   
   // Update subscriptions to expired status
   const { error: updateError } = await supabase
@@ -108,11 +189,13 @@ async function expireSubscriptions(supabase: any): Promise<{ count: number; user
   
   const userIds = [...new Set(expiredSubs.map(sub => sub.user_id))];
   console.log(`✅ Expired ${expiredSubs.length} subscriptions for ${userIds.length} users`);
+  console.log(`🎁 Paid ${totalBonusesPaid} BSK in completion bonuses`);
   
   return {
     count: expiredSubs.length,
     userIds,
-    missedEarnings: totalMissedEarnings
+    missedEarnings: totalMissedEarnings,
+    bonusesPaid: totalBonusesPaid
   };
 }
 
@@ -172,6 +255,7 @@ Deno.serve(async (req) => {
     subscriptions_expired: 0,
     users_affected: [],
     total_missed_earnings_bsk: 0,
+    completion_bonuses_paid_bsk: 0,
     errors: []
   };
   
@@ -187,12 +271,13 @@ Deno.serve(async (req) => {
       results.errors.push(errorMsg);
     }
     
-    // Step 2: Expire subscriptions
+    // Step 2: Expire subscriptions and process completion bonuses
     try {
       const expireResult = await expireSubscriptions(supabase);
       results.subscriptions_expired = expireResult.count;
       results.users_affected = expireResult.userIds;
       results.total_missed_earnings_bsk = expireResult.missedEarnings;
+      results.completion_bonuses_paid_bsk = expireResult.bonusesPaid;
     } catch (error) {
       const errorMsg = `Subscription expiration failed: ${error.message}`;
       console.error(`❌ ${errorMsg}`);
@@ -220,6 +305,7 @@ Deno.serve(async (req) => {
         subscriptions_expired: results.subscriptions_expired,
         users_affected_count: results.users_affected.length,
         total_missed_earnings_bsk: results.total_missed_earnings_bsk,
+        completion_bonuses_paid_bsk: results.completion_bonuses_paid_bsk,
         errors: results.errors
       },
       execution_time_ms: executionTime
