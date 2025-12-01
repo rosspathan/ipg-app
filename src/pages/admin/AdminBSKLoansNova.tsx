@@ -30,12 +30,11 @@ export default function AdminBSKLoansNova() {
   const [formValues, setFormValues] = useState<{
     id?: string;
     system_enabled: boolean;
+    kyc_required: boolean;
     min_amount_bsk: number;
     max_amount_bsk: number;
     default_tenor_weeks: number;
-    default_interest_rate_weekly: number;
     processing_fee_percent: number;
-    processing_fee_fixed_bsk: number;
     late_fee_percent: number;
   } | null>(null);
 
@@ -275,8 +274,8 @@ export default function AdminBSKLoansNova() {
                           <p className="font-medium">{loanConfig.default_tenor_weeks} weeks</p>
                         </div>
                         <div>
-                          <p className="text-muted-foreground">Interest Rate</p>
-                          <p className="font-medium">{(loanConfig.default_interest_rate_weekly * 52).toFixed(1)}% annually</p>
+                          <p className="text-muted-foreground">Processing Fee</p>
+                          <p className="font-medium">{loanConfig.processing_fee_percent}%</p>
                         </div>
                       </div>
                     </div>
@@ -349,6 +348,21 @@ export default function AdminBSKLoansNova() {
 
                   <Separator />
 
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>KYC Required</Label>
+                      <p className="text-sm text-muted-foreground">Require KYC verification before loan application</p>
+                    </div>
+                    <Switch
+                      checked={formValues.kyc_required}
+                      onCheckedChange={(checked) => {
+                        setFormValues({ ...formValues, kyc_required: checked });
+                      }}
+                    />
+                  </div>
+
+                  <Separator />
+
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label>Minimum Loan Amount (BSK)</Label>
@@ -387,60 +401,20 @@ export default function AdminBSKLoansNova() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Interest Rate (% annually)</Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={(formValues.default_interest_rate_weekly * 52).toFixed(2)}
-                        onChange={(e) => {
-                          const annualRate = parseFloat(e.target.value);
-                          const weeklyRate = annualRate / 52;
-                          setFormValues({ ...formValues, default_interest_rate_weekly: weeklyRate });
-                        }}
-                        min="0"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Weekly: {formValues.default_interest_rate_weekly.toFixed(3)}%
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Loan Processing Fee (%)</Label>
+                      <Label>Processing Fee (%)</Label>
                       <Input
                         type="number"
                         step="0.1"
                         value={formValues.processing_fee_percent}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
-                          setFormValues({ 
-                            ...formValues, 
-                            processing_fee_percent: value,
-                            processing_fee_fixed_bsk: 0 // Clear fixed fee when % is set
-                          });
+                          setFormValues({ ...formValues, processing_fee_percent: value });
                         }}
                         min="0"
+                        max="100"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Percentage of loan amount
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>OR Fixed Processing Fee (BSK)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={formValues.processing_fee_fixed_bsk}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          setFormValues({ 
-                            ...formValues, 
-                            processing_fee_fixed_bsk: value,
-                            processing_fee_percent: 0 // Clear % fee when fixed is set
-                          });
-                        }}
-                        min="0"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Fixed BSK amount (alternative to percentage)
+                        Percentage of loan amount (default: 3%)
                       </p>
                     </div>
                     <div className="space-y-2">

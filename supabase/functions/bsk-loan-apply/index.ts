@@ -116,21 +116,12 @@ serve(async (req: Request) => {
     const principalBsk = amount_bsk;
     const amountInr = 0; // Optional: Can calculate for display if BSK rate exists
 
-    // Calculate fees (either percentage or fixed)
-    const processingFeeBsk = settings.processing_fee_fixed_bsk > 0
-      ? settings.processing_fee_fixed_bsk
-      : (principalBsk * settings.processing_fee_percent) / 100;
+    // Calculate processing fee (percentage only, no fixed fee)
+    const processingFeeBsk = (principalBsk * settings.processing_fee_percent) / 100;
     const netDisbursedBsk = principalBsk - processingFeeBsk;
 
-    // Calculate total due
-    let totalDueBsk = principalBsk;
-    if (settings.default_interest_rate_weekly > 0) {
-      if (settings.interest_type === 'flat') {
-        const totalInterest = principalBsk * (settings.default_interest_rate_weekly / 100) * settings.default_tenor_weeks;
-        totalDueBsk = principalBsk + totalInterest;
-      }
-      // Reducing balance calculation would go here
-    }
+    // Calculate total due (0% interest - principal only)
+    const totalDueBsk = principalBsk;
 
     // Generate loan number
     const loanNumber = `BSK${Date.now().toString().slice(-8)}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
@@ -146,8 +137,8 @@ serve(async (req: Request) => {
         principal_bsk: principalBsk,
         tenor_weeks: settings.default_tenor_weeks,
         interest_type: settings.interest_type,
-        interest_rate_weekly: settings.default_interest_rate_weekly,
-        origination_fee_percent: settings.processing_fee_percent || settings.origination_fee_percent || 0,
+        interest_rate_weekly: 0,
+        origination_fee_percent: settings.processing_fee_percent || 0,
         origination_fee_bsk: processingFeeBsk,
         late_fee_percent: settings.late_fee_percent,
         grace_period_days: settings.grace_period_days,
