@@ -2359,6 +2359,7 @@ export type Database = {
         Row: {
           autopay_enabled: boolean
           badge_limits: Json
+          consecutive_missed_weeks_for_cancel: number | null
           created_at: string
           created_by: string | null
           daily_disbursal_cap_inr: number | null
@@ -2390,6 +2391,7 @@ export type Database = {
         Insert: {
           autopay_enabled?: boolean
           badge_limits?: Json
+          consecutive_missed_weeks_for_cancel?: number | null
           created_at?: string
           created_by?: string | null
           daily_disbursal_cap_inr?: number | null
@@ -2421,6 +2423,7 @@ export type Database = {
         Update: {
           autopay_enabled?: boolean
           badge_limits?: Json
+          consecutive_missed_weeks_for_cancel?: number | null
           created_at?: string
           created_by?: string | null
           daily_disbursal_cap_inr?: number | null
