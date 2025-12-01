@@ -2,20 +2,20 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { DataGridAdaptive } from "@/components/admin/nova/DataGridAdaptive";
 import { RecordCard } from "@/components/admin/nova/RecordCard";
 import { DetailSheet } from "@/components/admin/nova/DetailSheet";
-import { CardLane } from "@/components/admin/nova/CardLane";
-import { KPIStat } from "@/components/admin/nova/KPIStat";
-import { CheckCircle, XCircle, Clock, DollarSign, Users, TrendingUp, Wallet } from "lucide-react";
+import { CleanCard } from "@/components/admin/clean/CleanCard";
+import { CleanMetricCard } from "@/components/admin/clean/CleanMetricCard";
+import { CleanGrid } from "@/components/admin/clean/CleanGrid";
+import { EmptyState } from "@/components/admin/clean/EmptyState";
+import { CheckCircle, XCircle, Clock, DollarSign, Users, Wallet, RefreshCw, Settings, Shield, Percent, FileText, AlertCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -152,6 +152,7 @@ export default function AdminBSKLoansNova() {
   const pendingCount = applications?.filter(a => a.status === 'pending').length || 0;
   const approvedCount = applications?.filter(a => a.status === 'approved').length || 0;
   const activeCount = applications?.filter(a => a.status === 'active').length || 0;
+  const cancelledCount = applications?.filter(a => a.status === 'cancelled').length || 0;
   const totalDisbursed = applications
     ?.filter(a => ['approved', 'active', 'closed'].includes(a.status))
     .reduce((sum, a) => sum + Number(a.net_disbursed_bsk || a.principal_bsk), 0) || 0;
@@ -210,39 +211,86 @@ export default function AdminBSKLoansNova() {
     }
   ];
 
+  const testCancellation = async () => {
+    try {
+      toast({ title: "Testing cancellation check...", description: "Invoking edge function" });
+      const { data, error } = await supabase.functions.invoke('bsk-loan-check-cancellation', {
+        body: { triggered_by: 'admin_manual' }
+      });
+      if (error) throw error;
+      toast({ 
+        title: "Cancellation check complete", 
+        description: `Processed ${data?.processed || 0} loans, Cancelled: ${data?.cancelled || 0}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['bsk-loans'] });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
   return (
-    <div className="space-y-4 pb-6">
-      {/* KPI Lane */}
-      <CardLane title="Loan Metrics">
-        <KPIStat
-          label="Pending"
-          value={String(pendingCount)}
-          icon={<Clock className="w-4 h-4" />}
-          variant={pendingCount > 0 ? "warning" : undefined}
+    <div className="space-y-6 pb-6">
+      {/* Header Section */}
+      <div className="space-y-4 px-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[hsl(0_0%_98%)]">Loan Management</h1>
+            <p className="text-sm text-[hsl(220_9%_65%)] mt-1">Configure and manage BSK loans</p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['bsk-loans'] });
+                queryClient.invalidateQueries({ queryKey: ['bsk-loan-config'] });
+              }}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button size="sm" onClick={testCancellation}>
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Test Cancellation
+            </Button>
+          </div>
+        </div>
+        
+        {/* Status indicator */}
+        <div className="flex items-center gap-2 text-sm">
+          <div className={`w-2 h-2 rounded-full ${loanConfig?.system_enabled ? 'bg-[hsl(152_64%_48%)]' : 'bg-[hsl(0_84%_60%)]'}`} />
+          <span className="text-[hsl(220_9%_65%)]">
+            Loan program {loanConfig?.system_enabled ? 'active' : 'paused'}
+          </span>
+        </div>
+      </div>
+
+      {/* KPI Metrics */}
+      <CleanGrid cols={4} gap="md" className="px-4">
+        <CleanMetricCard
+          label="Pending Applications"
+          value={pendingCount}
+          icon={Clock}
+          delta={pendingCount > 0 ? { value: pendingCount, trend: "up" } : undefined}
         />
-        <KPIStat
-          label="Approved"
-          value={String(approvedCount)}
-          icon={<CheckCircle className="w-4 h-4" />}
-          variant="success"
-        />
-        <KPIStat
+        <CleanMetricCard
           label="Active Loans"
-          value={String(activeCount)}
-          icon={<Users className="w-4 h-4" />}
+          value={activeCount}
+          icon={Users}
         />
-        <KPIStat
+        <CleanMetricCard
           label="Total Disbursed"
-          value={`${totalDisbursed.toLocaleString()}`}
-          icon={<Wallet className="w-4 h-4" />}
-          variant="success"
+          value={`${totalDisbursed.toLocaleString()} BSK`}
+          icon={Wallet}
         />
-      </CardLane>
+        <CleanMetricCard
+          label="Cancelled Loans"
+          value={cancelledCount}
+          icon={XCircle}
+        />
+      </CleanGrid>
 
       <div className="px-4 space-y-4">
-        <h1 className="text-xl font-heading font-bold text-foreground">
-          BSK Loan Management
-        </h1>
 
         <Tabs defaultValue="applications" className="w-full">
           <TabsList>
@@ -251,77 +299,54 @@ export default function AdminBSKLoansNova() {
           </TabsList>
 
           <TabsContent value="applications" className="space-y-4 mt-4">
-            {/* Active Configuration Banner */}
+            {/* Configuration Summary */}
             {loanConfig && (
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">Active Loan Configuration</h3>
-                        <Badge variant={loanConfig.system_enabled ? "default" : "secondary"}>
-                          {loanConfig.system_enabled ? "Enabled" : "Disabled"}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Min Amount</p>
-                          <p className="font-mono font-medium">{loanConfig.min_amount_bsk} BSK</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Max Amount</p>
-                          <p className="font-mono font-medium">{loanConfig.max_amount_bsk} BSK</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Duration</p>
-                          <p className="font-medium">{loanConfig.default_tenor_weeks} weeks</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Processing Fee</p>
-                          <p className="font-medium">{loanConfig.processing_fee_percent}%</p>
-                        </div>
-                      </div>
+              <CleanCard padding="md" className="bg-[hsl(262_100%_65%/0.05)] border-[hsl(262_100%_65%/0.2)]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 rounded-lg bg-[hsl(262_100%_65%/0.1)]">
+                      <Settings className="w-5 h-5 text-[hsl(262_100%_65%)]" />
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            toast({ title: "Testing cancellation check...", description: "Invoking edge function" });
-                            const { data, error } = await supabase.functions.invoke('bsk-loan-check-cancellation', {
-                              body: { triggered_by: 'admin_manual' }
-                            });
-                            if (error) throw error;
-                            toast({ 
-                              title: "Cancellation check complete", 
-                              description: `Processed ${data?.processed || 0} loans, Cancelled: ${data?.cancelled || 0}`,
-                              variant: data?.cancelled > 0 ? "default" : "default"
-                            });
-                            queryClient.invalidateQueries({ queryKey: ['bsk-loans'] });
-                          } catch (error: any) {
-                            toast({ title: "Error", description: error.message, variant: "destructive" });
-                          }
-                        }}
-                      >
-                        Test Cancellation Check
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={loanConfig.system_enabled ? "outline" : "default"}
-                        onClick={() => {
-                          updateConfig.mutate({ system_enabled: !loanConfig.system_enabled });
-                        }}
-                      >
-                        {loanConfig.system_enabled ? "Pause Program" : "Activate Program"}
-                      </Button>
+                    <div className="flex gap-6 text-sm">
+                      <div>
+                        <span className="text-[hsl(220_9%_65%)]">Limit:</span>
+                        <span className="ml-2 font-mono font-semibold text-[hsl(0_0%_98%)]">
+                          {loanConfig.min_amount_bsk} - {loanConfig.max_amount_bsk} BSK
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[hsl(220_9%_65%)]">Duration:</span>
+                        <span className="ml-2 font-semibold text-[hsl(0_0%_98%)]">{loanConfig.default_tenor_weeks} weeks</span>
+                      </div>
+                      <div>
+                        <span className="text-[hsl(220_9%_65%)]">Fee:</span>
+                        <span className="ml-2 font-semibold text-[hsl(0_0%_98%)]">{loanConfig.processing_fee_percent}%</span>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const settingsTab = document.querySelector('[value="settings"]') as HTMLElement;
+                      settingsTab?.click();
+                    }}
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Edit Settings
+                  </Button>
+                </div>
+              </CleanCard>
             )}
 
-            <DataGridAdaptive
+            {applications?.length === 0 ? (
+              <EmptyState
+                icon={FileText}
+                title="No loan applications yet"
+                description="When users apply for loans, they'll appear here for review."
+              />
+            ) : (
+              <DataGridAdaptive
               data={applications || []}
               columns={columns}
               keyExtractor={(item) => item.id}
@@ -346,149 +371,228 @@ export default function AdminBSKLoansNova() {
               onRowClick={(row) => setSelectedApplication(row)}
               selectable
             />
+            )}
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-4 mt-4">
+          <TabsContent value="settings" className="space-y-6 mt-4">
             {configLoading ? (
-              <div>Loading...</div>
+              <div className="text-center py-8 text-[hsl(220_9%_65%)]">Loading...</div>
             ) : !loanConfig || !formValues ? (
-              <div>No configuration found</div>
+              <EmptyState
+                icon={Settings}
+                title="No configuration found"
+                description="Loan configuration is missing. Please contact support."
+              />
             ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Loan Configuration</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
+              <div className="space-y-6">
+                {/* Section 1: Program Status */}
+                <CleanCard padding="lg">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Enable Loan Program</Label>
-                      <p className="text-sm text-muted-foreground">Allow users to apply for loans</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-xl ${formValues.system_enabled ? 'bg-[hsl(152_64%_48%/0.1)]' : 'bg-[hsl(0_84%_60%/0.1)]'}`}>
+                        {formValues.system_enabled ? 
+                          <CheckCircle className="w-6 h-6 text-[hsl(152_64%_48%)]" /> : 
+                          <XCircle className="w-6 h-6 text-[hsl(0_84%_60%)]" />
+                        }
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-[hsl(0_0%_98%)]">Loan Program Status</h3>
+                        <p className="text-sm text-[hsl(220_9%_65%)]">
+                          {formValues.system_enabled ? 'Users can apply for loans' : 'Loan applications are paused'}
+                        </p>
+                      </div>
                     </div>
-                    <Switch
-                      checked={formValues.system_enabled}
+                    <Switch 
+                      checked={formValues.system_enabled} 
                       onCheckedChange={(checked) => {
                         setFormValues({ ...formValues, system_enabled: checked });
                       }}
                     />
                   </div>
+                </CleanCard>
 
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>KYC Required</Label>
-                      <p className="text-sm text-muted-foreground">Require KYC verification before loan application</p>
+                {/* Section 2: Loan Limits */}
+                <CleanCard padding="lg">
+                  <h3 className="text-base font-semibold text-[hsl(0_0%_98%)] mb-4 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-[hsl(262_100%_65%)]" />
+                    Loan Limits
+                  </h3>
+                  <CleanGrid cols={2} gap="md">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Minimum Amount</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={formValues.min_amount_bsk}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            setFormValues({ ...formValues, min_amount_bsk: value });
+                          }}
+                          min="0"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                        />
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
+                      </div>
+                      <span className="text-xs text-[hsl(220_9%_65%)]">In BSK tokens</span>
                     </div>
-                    <Switch
-                      checked={formValues.kyc_required}
-                      onCheckedChange={(checked) => {
-                        setFormValues({ ...formValues, kyc_required: checked });
-                      }}
-                    />
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Maximum Amount</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={formValues.max_amount_bsk}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            setFormValues({ ...formValues, max_amount_bsk: value });
+                          }}
+                          min="0"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                        />
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
+                      </div>
+                      <span className="text-xs text-[hsl(220_9%_65%)]">In BSK tokens</span>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Duration</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={formValues.default_tenor_weeks}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            setFormValues({ ...formValues, default_tenor_weeks: value });
+                          }}
+                          min="1"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                        />
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
+                      </div>
+                      <span className="text-xs text-[hsl(220_9%_65%)]">In weeks</span>
+                    </div>
+                  </CleanGrid>
+                </CleanCard>
+
+                {/* Section 3: Fee Structure */}
+                <CleanCard padding="lg">
+                  <h3 className="text-base font-semibold text-[hsl(0_0%_98%)] mb-4 flex items-center gap-2">
+                    <Percent className="w-5 h-5 text-[hsl(262_100%_65%)]" />
+                    Fee Structure
+                  </h3>
+                  <CleanGrid cols={2} gap="md">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Processing Fee</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={formValues.processing_fee_percent}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            setFormValues({ ...formValues, processing_fee_percent: value });
+                          }}
+                          min="0"
+                          max="100"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                        />
+                        <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
+                      </div>
+                      <span className="text-xs text-[hsl(220_9%_65%)]">Percentage of loan amount</span>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Late Payment Fee</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={formValues.late_fee_percent}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            setFormValues({ ...formValues, late_fee_percent: value });
+                          }}
+                          min="0"
+                          max="100"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                        />
+                        <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
+                      </div>
+                      <span className="text-xs text-[hsl(220_9%_65%)]">Additional fee per missed week</span>
+                    </div>
+                  </CleanGrid>
+                </CleanCard>
+
+                {/* Section 4: Risk Management */}
+                <CleanCard padding="lg">
+                  <h3 className="text-base font-semibold text-[hsl(0_0%_98%)] mb-4 flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-[hsl(262_100%_65%)]" />
+                    Risk Management
+                  </h3>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">KYC Required</Label>
+                        <p className="text-sm text-[hsl(220_9%_65%)]">Require KYC verification before loan application</p>
+                      </div>
+                      <Switch
+                        checked={formValues.kyc_required}
+                        onCheckedChange={(checked) => {
+                          setFormValues({ ...formValues, kyc_required: checked });
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Auto-cancel Threshold</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={formValues.consecutive_missed_weeks_for_cancel}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            setFormValues({ ...formValues, consecutive_missed_weeks_for_cancel: value });
+                          }}
+                          min="1"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                        />
+                        <AlertCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
+                      </div>
+                      <span className="text-xs text-[hsl(220_9%_65%)]">
+                        Consecutive missed weeks before loan is auto-cancelled
+                      </span>
+                    </div>
                   </div>
+                </CleanCard>
 
-                  <Separator />
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Minimum Loan Amount (BSK)</Label>
-                      <Input
-                        type="number"
-                        value={formValues.min_amount_bsk}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, min_amount_bsk: value });
-                        }}
-                        min="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Maximum Loan Amount (BSK)</Label>
-                      <Input
-                        type="number"
-                        value={formValues.max_amount_bsk}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, max_amount_bsk: value });
-                        }}
-                        min="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Duration (Weeks)</Label>
-                      <Input
-                        type="number"
-                        value={formValues.default_tenor_weeks}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          setFormValues({ ...formValues, default_tenor_weeks: value });
-                        }}
-                        min="1"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Processing Fee (%)</Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={formValues.processing_fee_percent}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, processing_fee_percent: value });
-                        }}
-                        min="0"
-                        max="100"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Percentage of loan amount (default: 3%)
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Late Payment Fee (% of weekly payment)</Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={formValues.late_fee_percent}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          setFormValues({ ...formValues, late_fee_percent: value });
-                        }}
-                        min="0"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Charged on missed weekly payments
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Auto-Cancel After Missed Weeks</Label>
-                      <Input
-                        type="number"
-                        value={formValues.consecutive_missed_weeks_for_cancel}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          setFormValues({ ...formValues, consecutive_missed_weeks_for_cancel: value });
-                        }}
-                        min="1"
-                        max="16"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Loan will be cancelled if user misses this many consecutive weeks
-                      </p>
-                    </div>
-                  </div>
-
-                   <Separator />
-
-                  <div className="flex justify-end">
+                {/* Sticky Save Button */}
+                <div className="sticky bottom-0 bg-[hsl(220_13%_7%)]/80 backdrop-blur-sm py-4 border-t border-[hsl(220_13%_14%/0.4)]">
+                  <div className="flex justify-end gap-3">
                     <Button 
-                      onClick={handleSaveConfig}
-                      disabled={updateConfig.isPending}
+                      variant="outline" 
+                      onClick={() => {
+                        if (loanConfig) setFormValues(loanConfig);
+                      }}
                     >
-                      {updateConfig.isPending ? "Saving..." : "Save Changes"}
+                      Reset Changes
+                    </Button>
+                    <Button 
+                      onClick={handleSaveConfig} 
+                      disabled={updateConfig.isPending}
+                      className="bg-[hsl(262_100%_65%)] hover:bg-[hsl(262_100%_70%)]"
+                    >
+                      {updateConfig.isPending ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Save Configuration
+                        </>
+                      )}
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
           </TabsContent>
         </Tabs>
@@ -555,8 +659,6 @@ export default function AdminBSKLoansNova() {
                 </div>
               </div>
 
-              <Separator />
-
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Applied</p>
                 <p className="text-sm font-medium">{new Date(selectedApplication.created_at).toLocaleString()}</p>
@@ -571,8 +673,7 @@ export default function AdminBSKLoansNova() {
 
               {selectedApplication.status === 'pending' && (
                 <>
-                  <Separator />
-                  <div className="space-y-4">
+                  <div className="space-y-4 pt-4 border-t border-border">
                     <div className="space-y-2">
                       <Label>Admin Notes (optional)</Label>
                       <Textarea
