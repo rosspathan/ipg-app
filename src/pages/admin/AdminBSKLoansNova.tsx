@@ -285,6 +285,29 @@ export default function AdminBSKLoansNova() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            toast({ title: "Testing cancellation check...", description: "Invoking edge function" });
+                            const { data, error } = await supabase.functions.invoke('bsk-loan-check-cancellation', {
+                              body: { triggered_by: 'admin_manual' }
+                            });
+                            if (error) throw error;
+                            toast({ 
+                              title: "Cancellation check complete", 
+                              description: `Processed ${data?.processed || 0} loans, Cancelled: ${data?.cancelled || 0}`,
+                              variant: data?.cancelled > 0 ? "default" : "default"
+                            });
+                            queryClient.invalidateQueries({ queryKey: ['bsk-loans'] });
+                          } catch (error: any) {
+                            toast({ title: "Error", description: error.message, variant: "destructive" });
+                          }
+                        }}
+                      >
+                        Test Cancellation Check
+                      </Button>
+                      <Button
+                        size="sm"
                         variant={loanConfig.system_enabled ? "outline" : "default"}
                         onClick={() => {
                           updateConfig.mutate({ system_enabled: !loanConfig.system_enabled });

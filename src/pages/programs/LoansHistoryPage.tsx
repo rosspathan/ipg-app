@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Wallet, Calendar, DollarSign, AlertCircle, CheckCircle, Clock, TrendingUp, Loader2 } from "lucide-react";
+import { Wallet, Calendar, DollarSign, AlertCircle, CheckCircle, Clock, TrendingUp, Loader2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -59,6 +59,9 @@ export default function LoansHistoryPage() {
       due: { variant: 'outline' as const, className: 'border-orange-500 text-orange-600', icon: Clock },
       paid: { variant: 'default' as const, className: 'bg-green-500 text-white', icon: CheckCircle },
       overdue: { variant: 'destructive' as const, className: '', icon: AlertCircle },
+      cancelled: { variant: 'destructive' as const, className: 'bg-red-500 text-white', icon: AlertCircle },
+      closed: { variant: 'secondary' as const, className: 'bg-blue-500 text-white', icon: CheckCircle },
+      written_off: { variant: 'destructive' as const, className: 'bg-red-500 text-white', icon: AlertCircle },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;

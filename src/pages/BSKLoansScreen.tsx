@@ -38,6 +38,7 @@ interface Loan {
   applied_at: string;
   disbursed_at?: string;
   closed_at?: string;
+  admin_notes?: string;
 }
 
 interface Installment {
@@ -141,6 +142,8 @@ const BSKLoansScreen = () => {
       case 'in_arrears': return 'bg-destructive/20 text-destructive border-destructive/20';
       case 'closed': return 'bg-muted/20 text-muted-foreground border-muted/20';
       case 'approved': return 'bg-primary/20 text-primary border-primary/20';
+      case 'cancelled': return 'bg-red-500/20 text-red-600 border-red-500/20';
+      case 'written_off': return 'bg-red-500/20 text-red-600 border-red-500/20';
       default: return 'bg-muted/20 text-muted-foreground border-muted/20';
     }
   };
@@ -423,11 +426,11 @@ const BSKLoansScreen = () => {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
-          {userLoans.filter(l => ['closed', 'written_off'].includes(l.status)).map((loan) => (
+          {userLoans.filter(l => ['closed', 'written_off', 'cancelled'].includes(l.status)).map((loan) => (
             <LoanCard key={loan.id} loan={loan} onUpdate={loadLoanData} getStatusColor={getStatusColor} showHistory />
           ))}
           
-          {userLoans.filter(l => ['closed', 'written_off'].includes(l.status)).length === 0 && (
+          {userLoans.filter(l => ['closed', 'written_off', 'cancelled'].includes(l.status)).length === 0 && (
             <Card>
               <CardContent className="text-center py-8">
                 <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -567,7 +570,19 @@ const LoanCard = ({
           </div>
         )}
 
-        <Button 
+        {loan.status === 'cancelled' && loan.admin_notes && (
+          <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-red-900 dark:text-red-100 mb-1">Loan Cancelled</p>
+                <p className="text-sm text-red-700 dark:text-red-300">{loan.admin_notes}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <Button
           variant="ghost" 
           onClick={() => navigate(`/app/loans/details?id=${loan.id}`)}
           className="w-full"
