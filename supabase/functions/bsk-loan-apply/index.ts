@@ -114,7 +114,7 @@ serve(async (req: Request) => {
 
     // No need to get BSK rate since loan is directly in BSK
     const principalBsk = amount_bsk;
-    const amountInr = 0; // Optional: Can calculate for display if BSK rate exists
+    const amountInr = amount_bsk; // 1 BSK = 1 INR
 
     // Calculate processing fee (percentage only, no fixed fee)
     const processingFeeBsk = (principalBsk * settings.processing_fee_percent) / 100;
