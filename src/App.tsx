@@ -202,7 +202,6 @@ const LuckyDrawTicketsPage = React.lazy(() => import("./pages/programs/LuckyDraw
 const StakingPage = React.lazy(() => import("./pages/programs/StakingPage"));
 
 const InsurancePage = React.lazy(() => import("./pages/programs/InsurancePage"));
-const BSKLoansPage = React.lazy(() => import("./pages/programs/BSKLoansPage"));
 const BSKPromotionsPage = React.lazy(() => import("./pages/programs/BSKPromotionsPage"));
 import TeamReferralsNew from "./pages/programs/TeamReferralsNew";
 import TeamTreeView from "./pages/programs/TeamTreeView";
@@ -527,7 +526,7 @@ function AppContent() {
                 <Route path="programs/staking" element={<React.Suspense fallback={<LoadingFallback />}><StakingPage /></React.Suspense>} />
                 <Route path="programs/trading" element={<React.Suspense fallback={<LoadingFallback />}><TradingPageNew /></React.Suspense>} />
                 <Route path="programs/insurance" element={<React.Suspense fallback={<LoadingFallback />}><InsurancePage /></React.Suspense>} />
-                <Route path="programs/bsk-loans" element={<React.Suspense fallback={<LoadingFallback />}><BSKLoansPage /></React.Suspense>} />
+                <Route path="programs/bsk-loans" element={<Navigate to="/app/loans" replace />} />
                 <Route path="programs/bsk-promotions" element={<React.Suspense fallback={<LoadingFallback />}><BSKPromotionsPage /></React.Suspense>} />
                 
                 {/* Legacy program routes */}
