@@ -229,64 +229,73 @@ export default function AdminBSKLoansNova() {
   };
 
   return (
-    <div className="space-y-6 pb-6">
-      {/* Header Section */}
-      <div className="space-y-4 px-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[hsl(0_0%_98%)]">Loan Management</h1>
-            <p className="text-sm text-[hsl(220_9%_65%)] mt-1">Configure and manage BSK loans</p>
+    <div className="space-y-4 pb-6">
+      {/* Header - Mobile-First Stack Layout */}
+      <div className="space-y-3 px-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-[hsl(0_0%_98%)]">Loan Management</h1>
+            <p className="text-sm text-[hsl(220_9%_65%)]">Configure and manage BSK loans</p>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                queryClient.invalidateQueries({ queryKey: ['bsk-loans'] });
-                queryClient.invalidateQueries({ queryKey: ['bsk-loan-config'] });
-              }}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-            <Button size="sm" onClick={testCancellation}>
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Test Cancellation
-            </Button>
+          {/* Status indicator - Inline on mobile */}
+          <div className="flex items-center gap-2 text-sm">
+            <div className={`w-2 h-2 rounded-full ${loanConfig?.system_enabled ? 'bg-[hsl(152_64%_48%)]' : 'bg-[hsl(0_84%_60%)]'}`} />
+            <span className="text-[hsl(220_9%_65%)]">
+              Program {loanConfig?.system_enabled ? 'active' : 'paused'}
+            </span>
           </div>
         </div>
         
-        {/* Status indicator */}
-        <div className="flex items-center gap-2 text-sm">
-          <div className={`w-2 h-2 rounded-full ${loanConfig?.system_enabled ? 'bg-[hsl(152_64%_48%)]' : 'bg-[hsl(0_84%_60%)]'}`} />
-          <span className="text-[hsl(220_9%_65%)]">
-            Loan program {loanConfig?.system_enabled ? 'active' : 'paused'}
-          </span>
+        {/* Action Buttons - Full width on mobile */}
+        <div className="flex gap-2 w-full">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ['bsk-loans'] });
+              queryClient.invalidateQueries({ queryKey: ['bsk-loan-config'] });
+            }}
+            className="flex-1 sm:flex-none min-h-[44px] touch-manipulation"
+          >
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={testCancellation}
+            className="flex-1 sm:flex-none min-h-[44px] touch-manipulation"
+          >
+            <AlertCircle className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Test</span>
+          </Button>
         </div>
       </div>
 
-      {/* KPI Metrics */}
-      <CleanGrid cols={4} gap="md" className="px-4">
+      {/* KPI Metrics - 2x2 Grid on Mobile */}
+      <CleanGrid cols={2} gap="sm" className="px-4">
         <CleanMetricCard
-          label="Pending Applications"
-          value={pendingCount}
+          label="Pending"
+          value={String(pendingCount)}
           icon={Clock}
-          delta={pendingCount > 0 ? { value: pendingCount, trend: "up" } : undefined}
+          className="min-h-[100px]"
         />
         <CleanMetricCard
-          label="Active Loans"
-          value={activeCount}
+          label="Active"
+          value={String(activeCount)}
           icon={Users}
+          className="min-h-[100px]"
         />
         <CleanMetricCard
-          label="Total Disbursed"
-          value={`${totalDisbursed.toLocaleString()} BSK`}
+          label="Disbursed"
+          value={`${totalDisbursed.toLocaleString()}`}
           icon={Wallet}
+          className="min-h-[100px]"
         />
         <CleanMetricCard
-          label="Cancelled Loans"
-          value={cancelledCount}
+          label="Cancelled"
+          value={String(cancelledCount)}
           icon={XCircle}
+          className="min-h-[100px]"
         />
       </CleanGrid>
 
@@ -299,42 +308,49 @@ export default function AdminBSKLoansNova() {
           </TabsList>
 
           <TabsContent value="applications" className="space-y-4 mt-4">
-            {/* Configuration Summary */}
+            {/* Configuration Summary - Mobile-Friendly Stack Layout */}
             {loanConfig && (
               <CleanCard padding="md" className="bg-[hsl(262_100%_65%/0.05)] border-[hsl(262_100%_65%/0.2)]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 rounded-lg bg-[hsl(262_100%_65%/0.1)]">
-                      <Settings className="w-5 h-5 text-[hsl(262_100%_65%)]" />
+                <div className="flex flex-col gap-3">
+                  {/* Header row with icon and Edit button */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-lg bg-[hsl(262_100%_65%/0.1)]">
+                        <Settings className="w-4 h-4 text-[hsl(262_100%_65%)]" />
+                      </div>
+                      <span className="text-sm font-medium">Current Settings</span>
                     </div>
-                    <div className="flex gap-6 text-sm">
-                      <div>
-                        <span className="text-[hsl(220_9%_65%)]">Limit:</span>
-                        <span className="ml-2 font-mono font-semibold text-[hsl(0_0%_98%)]">
-                          {loanConfig.min_amount_bsk} - {loanConfig.max_amount_bsk} BSK
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[hsl(220_9%_65%)]">Duration:</span>
-                        <span className="ml-2 font-semibold text-[hsl(0_0%_98%)]">{loanConfig.default_tenor_weeks} weeks</span>
-                      </div>
-                      <div>
-                        <span className="text-[hsl(220_9%_65%)]">Fee:</span>
-                        <span className="ml-2 font-semibold text-[hsl(0_0%_98%)]">{loanConfig.processing_fee_percent}%</span>
-                      </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const settingsTab = document.querySelector('[value="settings"]') as HTMLElement;
+                        settingsTab?.click();
+                      }}
+                      className="min-h-[44px] touch-manipulation"
+                    >
+                      <Settings className="w-3 h-3 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+                  
+                  {/* Stats in a wrap-friendly grid */}
+                  <div className="grid grid-cols-3 gap-3 text-xs sm:text-sm">
+                    <div>
+                      <span className="text-[hsl(220_9%_65%)] block mb-1">Limit</span>
+                      <span className="font-mono font-semibold block text-[hsl(0_0%_98%)]">
+                        {loanConfig.min_amount_bsk}-{loanConfig.max_amount_bsk}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[hsl(220_9%_65%)] block mb-1">Duration</span>
+                      <span className="font-semibold block text-[hsl(0_0%_98%)]">{loanConfig.default_tenor_weeks}w</span>
+                    </div>
+                    <div>
+                      <span className="text-[hsl(220_9%_65%)] block mb-1">Fee</span>
+                      <span className="font-semibold block text-[hsl(0_0%_98%)]">{loanConfig.processing_fee_percent}%</span>
                     </div>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      const settingsTab = document.querySelector('[value="settings"]') as HTMLElement;
-                      settingsTab?.click();
-                    }}
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Edit Settings
-                  </Button>
                 </div>
               </CleanCard>
             )}
@@ -417,7 +433,7 @@ export default function AdminBSKLoansNova() {
                     <DollarSign className="w-5 h-5 text-[hsl(262_100%_65%)]" />
                     Loan Limits
                   </h3>
-                  <CleanGrid cols={2} gap="md">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Minimum Amount</Label>
                       <div className="relative">
@@ -429,13 +445,13 @@ export default function AdminBSKLoansNova() {
                             setFormValues({ ...formValues, min_amount_bsk: value });
                           }}
                           min="0"
-                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)] touch-manipulation"
                         />
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
                       </div>
                       <span className="text-xs text-[hsl(220_9%_65%)]">In BSK tokens</span>
                     </div>
-                    <div className="space-y-2">
+                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Maximum Amount</Label>
                       <div className="relative">
                         <Input
@@ -446,7 +462,7 @@ export default function AdminBSKLoansNova() {
                             setFormValues({ ...formValues, max_amount_bsk: value });
                           }}
                           min="0"
-                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)] touch-manipulation"
                         />
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
                       </div>
@@ -463,13 +479,13 @@ export default function AdminBSKLoansNova() {
                             setFormValues({ ...formValues, default_tenor_weeks: value });
                           }}
                           min="1"
-                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)] touch-manipulation"
                         />
                         <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
                       </div>
                       <span className="text-xs text-[hsl(220_9%_65%)]">In weeks</span>
                     </div>
-                  </CleanGrid>
+                  </div>
                 </CleanCard>
 
                 {/* Section 3: Fee Structure */}
@@ -478,7 +494,7 @@ export default function AdminBSKLoansNova() {
                     <Percent className="w-5 h-5 text-[hsl(262_100%_65%)]" />
                     Fee Structure
                   </h3>
-                  <CleanGrid cols={2} gap="md">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-[hsl(0_0%_98%)]">Processing Fee</Label>
                       <div className="relative">
@@ -492,7 +508,7 @@ export default function AdminBSKLoansNova() {
                           }}
                           min="0"
                           max="100"
-                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)] touch-manipulation"
                         />
                         <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
                       </div>
@@ -511,13 +527,13 @@ export default function AdminBSKLoansNova() {
                           }}
                           min="0"
                           max="100"
-                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)] touch-manipulation"
                         />
                         <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
                       </div>
                       <span className="text-xs text-[hsl(220_9%_65%)]">Additional fee per missed week</span>
                     </div>
-                  </CleanGrid>
+                  </div>
                 </CleanCard>
 
                 {/* Section 4: Risk Management */}
@@ -551,7 +567,7 @@ export default function AdminBSKLoansNova() {
                             setFormValues({ ...formValues, consecutive_missed_weeks_for_cancel: value });
                           }}
                           min="1"
-                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)]"
+                          className="pl-10 h-12 bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] text-[hsl(0_0%_98%)] touch-manipulation"
                         />
                         <AlertCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(262_100%_65%)]" />
                       </div>
@@ -562,21 +578,22 @@ export default function AdminBSKLoansNova() {
                   </div>
                 </CleanCard>
 
-                {/* Sticky Save Button */}
-                <div className="sticky bottom-0 bg-[hsl(220_13%_7%)]/80 backdrop-blur-sm py-4 border-t border-[hsl(220_13%_14%/0.4)]">
-                  <div className="flex justify-end gap-3">
+                {/* Sticky Save Footer - Mobile Safe Area */}
+                <div className="sticky bottom-0 bg-[hsl(220_13%_7%)]/95 backdrop-blur-sm py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-[hsl(220_13%_14%/0.4)]">
+                  <div className="flex gap-3">
                     <Button 
                       variant="outline" 
                       onClick={() => {
                         if (loanConfig) setFormValues(loanConfig);
                       }}
+                      className="flex-1 sm:flex-none min-h-[44px] touch-manipulation"
                     >
-                      Reset Changes
+                      Reset
                     </Button>
                     <Button 
                       onClick={handleSaveConfig} 
                       disabled={updateConfig.isPending}
-                      className="bg-[hsl(262_100%_65%)] hover:bg-[hsl(262_100%_70%)]"
+                      className="flex-1 sm:flex-none min-h-[44px] bg-[hsl(262_100%_65%)] hover:bg-[hsl(262_100%_70%)] touch-manipulation"
                     >
                       {updateConfig.isPending ? (
                         <>
@@ -586,7 +603,7 @@ export default function AdminBSKLoansNova() {
                       ) : (
                         <>
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          Save Configuration
+                          Save
                         </>
                       )}
                     </Button>
