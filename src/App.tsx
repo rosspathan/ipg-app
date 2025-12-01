@@ -534,6 +534,12 @@ function AppContent() {
                 <Route path="programs/ads" element={<React.Suspense fallback={<LoadingFallback />}><AdvertisingPage /></React.Suspense>} />
                 <Route path="programs/referrals" element={<Navigate to="/app/programs/team-referrals" replace />} />
                 <Route path="programs/loans" element={<React.Suspense fallback={<LoadingFallback />}><LoansPageNew /></React.Suspense>} />
+                
+                {/* Loan Management Routes */}
+                <Route path="loans" element={<React.Suspense fallback={<LoadingFallback />}><BSKLoansScreen /></React.Suspense>} />
+                <Route path="loans/details" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/programs/LoanDetailsPage')))}</React.Suspense>} />
+                <Route path="loans/history" element={<React.Suspense fallback={<LoadingFallback />}><LoansHistoryPage /></React.Suspense>} />
+                
                 <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<LoadingFallback />}><OneTimePurchasePage /></React.Suspense>} />
                 <Route path="programs/bsk-purchase-history" element={<React.Suspense fallback={<LoadingFallback />}><PurchaseHistoryPage /></React.Suspense>} />
                 <Route path="programs/staking/:id" element={<StakingDetailScreen />} />
