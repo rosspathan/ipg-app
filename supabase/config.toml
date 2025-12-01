@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.process-ad-click]
 verify_jwt = true
 
+[functions.purchase-ad-subscription]
+verify_jwt = true
+
 [functions.calculate-referral-commissions]
 verify_jwt = true
 

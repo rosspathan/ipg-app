@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Monitor, Clock, Gift, Play, Check, Lock } from "lucide-react";
+import { Monitor, Clock, Gift, Zap, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { useProgramConfig } from "@/hooks/useProgramConfig";
+import { AdPlayer } from "@/components/ads/AdPlayer";
+import { AdCard } from "@/components/ads/AdCard";
+import { SubscriptionTierCard } from "@/components/ads/SubscriptionTierCard";
 
 export default function AdMiningPageNew() {
   return (
@@ -25,6 +28,8 @@ function AdMiningContent() {
   const queryClient = useQueryClient();
   const programConfig = useProgramConfig("ad-mining");
   const config = programConfig.data?.config as any;
+  const [selectedAd, setSelectedAd] = useState<any>(null);
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
 
   // Fetch available ads
   const { data: ads, isLoading: adsLoading } = useQuery({
@@ -42,7 +47,96 @@ function AdMiningContent() {
     },
   });
 
-  // Fetch user's ad viewing history today
+  // Fetch subscription tiers
+  const { data: subscriptionTiers, isLoading: tiersLoading } = useQuery({
+    queryKey: ["ad-subscription-tiers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ad_subscription_tiers")
+        .select("*")
+        .eq("is_active", true)
+        .order("tier_bsk", { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch user's active subscriptions
+  const { data: userSubscriptions } = useQuery({
+    queryKey: ["user-ad-subscriptions", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ad_user_subscriptions")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("status", "active")
+        .gte("end_date", new Date().toISOString());
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Watch ad handler - opens ad player
+  const handleWatchAd = (ad: any) => {
+    setSelectedAd(ad);
+    setIsPlayerOpen(true);
+  };
+
+  // Process ad completion
+  const handleAdComplete = async (adId: string, viewTimeSeconds: number) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("process-ad-click", {
+        body: {
+          adId,
+          viewingTimeSeconds: viewTimeSeconds,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Failed to process ad click");
+
+      toast.success(`Earned ${data.reward_bsk} BSK!`, {
+        description: `Credited to your ${data.balance_type} balance`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["ad-views-today"] });
+      queryClient.invalidateQueries({ queryKey: ["user-bsk-balance"] });
+    } catch (error: any) {
+      toast.error("Failed to claim reward", {
+        description: error.message,
+      });
+      throw error;
+    }
+  };
+
+  // Purchase subscription
+  const purchaseSubscriptionMutation = useMutation({
+    mutationFn: async (tierId: string) => {
+      const { data, error } = await supabase.functions.invoke("purchase-ad-subscription", {
+        body: { tier_id: tierId },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Failed to purchase subscription");
+
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success("Subscription activated!", {
+        description: data.message,
+      });
+      queryClient.invalidateQueries({ queryKey: ["user-ad-subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["user-bsk-balance"] });
+    },
+    onError: (error: any) => {
+      toast.error("Purchase failed", {
+        description: error.message,
+      });
+    },
+  });
   const { data: todayViews } = useQuery({
     queryKey: ["ad-views-today", user?.id],
     enabled: !!user,
@@ -62,54 +156,12 @@ function AdMiningContent() {
     },
   });
 
-  // Watch ad mutation - uses secure edge function
-  const watchAdMutation = useMutation({
-    mutationFn: async (adId: string) => {
-      const ad = ads?.find((a) => a.id === adId);
-      if (!ad) throw new Error("Ad not found");
-
-      // Simulate watching the ad (track viewing time)
-      const startTime = Date.now();
-      await new Promise((resolve) => setTimeout(resolve, ad.required_view_time_seconds * 1000));
-      const viewingTimeSeconds = Math.floor((Date.now() - startTime) / 1000);
-
-      // Call secure edge function to process ad click
-      const { data, error } = await supabase.functions.invoke("process-ad-click", {
-        body: {
-          adId,
-          viewingTimeSeconds,
-        },
-      });
-
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || "Failed to process ad click");
-
-      return { 
-        adId, 
-        reward: data.reward_bsk,
-        balanceType: data.balance_type,
-        viewsRemaining: data.views_remaining
-      };
-    },
-    onSuccess: (data) => {
-      toast.success(`Earned ${data.reward} BSK!`, {
-        description: "Reward has been credited to your balance",
-      });
-      queryClient.invalidateQueries({ queryKey: ["ad-views-today"] });
-      queryClient.invalidateQueries({ queryKey: ["user-bsk-balance"] });
-    },
-    onError: (error: any) => {
-      toast.error("Failed to watch ad", {
-        description: error.message,
-      });
-    },
-  });
-
   const dailyLimit = config?.limits?.adsPerDay || 5;
   const viewsToday = todayViews?.length || 0;
   const remainingViews = Math.max(0, dailyLimit - viewsToday);
+  const hasActiveSubscription = (userSubscriptions?.length || 0) > 0;
 
-  if (programConfig.isLoading || adsLoading) {
+  if (programConfig.isLoading || adsLoading || tiersLoading) {
     return (
       <div className="min-h-screen bg-background pb-20 p-4 space-y-4">
         <Skeleton className="h-24 w-full rounded-xl" />
@@ -121,12 +173,25 @@ function AdMiningContent() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <div className="p-4 space-y-4">
+      {/* Ad Player Modal */}
+      {selectedAd && (
+        <AdPlayer
+          ad={selectedAd}
+          isOpen={isPlayerOpen}
+          onClose={() => {
+            setIsPlayerOpen(false);
+            setSelectedAd(null);
+          }}
+          onComplete={handleAdComplete}
+        />
+      )}
+
+      <div className="p-4 space-y-6">
         {/* Header Stats */}
-        <Card className="p-6">
+        <Card className="p-6 glass-card">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold">Ad Mining</h1>
+              <h1 className="text-2xl font-heading font-bold">Ad Mining</h1>
               <p className="text-sm text-muted-foreground">Watch ads and earn BSK rewards</p>
             </div>
             <Monitor className="h-8 w-8 text-primary" />
@@ -135,15 +200,22 @@ function AdMiningContent() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Today's Views</p>
-              <p className="text-2xl font-bold">{viewsToday}/{dailyLimit}</p>
+              <p className="text-2xl font-heading font-bold">{viewsToday}/{dailyLimit}</p>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Remaining</p>
-              <p className="text-2xl font-bold text-primary">{remainingViews}</p>
+              <p className="text-2xl font-heading font-bold text-primary">{remainingViews}</p>
             </div>
           </div>
 
           <Progress value={(viewsToday / dailyLimit) * 100} className="mt-4" />
+
+          {hasActiveSubscription && (
+            <div className="mt-4 p-3 bg-success/10 border border-success/20 rounded-lg flex items-center gap-2">
+              <Zap className="w-4 h-4 text-success" />
+              <span className="text-sm text-success font-medium">Premium Active</span>
+            </div>
+          )}
         </Card>
 
         {/* Daily Limit Info */}
@@ -154,7 +226,9 @@ function AdMiningContent() {
               <div>
                 <p className="font-medium text-sm">Daily limit reached</p>
                 <p className="text-xs text-muted-foreground">
-                  Come back tomorrow for more earning opportunities
+                  {hasActiveSubscription 
+                    ? "You've watched all available ads today"
+                    : "Upgrade to premium for higher daily limits"}
                 </p>
               </div>
             </div>
@@ -163,7 +237,10 @@ function AdMiningContent() {
 
         {/* Available Ads */}
         <div className="space-y-3">
-          <h2 className="font-semibold">Available Ads</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading font-semibold text-lg">Available Ads</h2>
+            <Badge variant="secondary">{ads?.length || 0} ads</Badge>
+          </div>
 
           {!ads || ads.length === 0 ? (
             <Card className="p-8 text-center">
@@ -172,84 +249,57 @@ function AdMiningContent() {
               <p className="text-xs text-muted-foreground mt-1">Check back later</p>
             </Card>
           ) : (
-            ads.map((ad) => {
-              const alreadyWatched = todayViews?.some((v) => v.ad_id === ad.id);
-              const canWatch = remainingViews > 0 && !alreadyWatched;
+            <div className="grid gap-3">
+              {ads.map((ad) => {
+                const alreadyWatched = todayViews?.some((v) => v.ad_id === ad.id);
 
-              return (
-                <Card key={ad.id} className="p-4">
-                  <div className="flex items-start gap-4">
-                    {ad.square_image_url ? (
-                      <img
-                        src={ad.square_image_url}
-                        alt={ad.title}
-                        className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0">
-                        <Monitor className="h-8 w-8 text-primary" />
-                      </div>
-                    )}
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-sm truncate">{ad.title}</h3>
-                        {alreadyWatched && (
-                          <Badge variant="outline" className="text-xs">
-                            <Check className="h-3 w-3 mr-1" />
-                            Watched
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {ad.required_view_time_seconds}s
-                        </span>
-                        <span className="flex items-center gap-1 text-primary font-medium">
-                          <Gift className="h-3 w-3" />
-                          {ad.reward_bsk} BSK
-                        </span>
-                      </div>
-                    </div>
-
-                    <Button
-                      size="sm"
-                      disabled={!canWatch || watchAdMutation.isPending}
-                      onClick={() => watchAdMutation.mutate(ad.id)}
-                      className="min-h-[44px] min-w-[44px]"
-                    >
-                      {alreadyWatched ? (
-                        <Check className="h-4 w-4" />
-                      ) : !canWatch ? (
-                        <Lock className="h-4 w-4" />
-                      ) : (
-                        <>
-                          <Play className="h-4 w-4 mr-1" />
-                          Watch
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </Card>
-              );
-            })
+                return (
+                  <AdCard
+                    key={ad.id}
+                    ad={ad}
+                    isWatched={alreadyWatched}
+                    onWatch={handleWatchAd}
+                  />
+                );
+              })}
+            </div>
           )}
         </div>
 
-        {/* Subscription Tiers (Coming Soon) */}
-        <Card className="p-6 bg-muted/50">
-          <div className="text-center">
-            <Gift className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-            <h3 className="font-semibold mb-1">Premium Subscriptions</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Unlock higher daily limits and better rewards
+        {/* Subscription Tiers */}
+        <div className="space-y-4">
+          <div>
+            <h2 className="font-heading font-semibold text-lg mb-1">Premium Subscriptions</h2>
+            <p className="text-sm text-muted-foreground">
+              Unlock higher daily limits and withdrawable rewards
             </p>
-            <Button variant="outline" disabled>
-              Coming Soon
-            </Button>
           </div>
-        </Card>
+
+          {tiersLoading ? (
+            <div className="grid gap-4">
+              <Skeleton className="h-64 rounded-xl" />
+              <Skeleton className="h-64 rounded-xl" />
+            </div>
+          ) : !subscriptionTiers || subscriptionTiers.length === 0 ? (
+            <Card className="p-8 text-center bg-muted/50">
+              <TrendingUp className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-muted-foreground">No subscription tiers available</p>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {subscriptionTiers.map((tier, index) => (
+                <SubscriptionTierCard
+                  key={tier.id}
+                  tier={tier}
+                  isPopular={index === 1} // Mark the second tier as popular
+                  isPremium={index === subscriptionTiers.length - 1} // Mark last tier as premium
+                  onPurchase={(tierId) => purchaseSubscriptionMutation.mutate(tierId)}
+                  isPurchasing={purchaseSubscriptionMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
