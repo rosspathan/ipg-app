@@ -115,14 +115,14 @@ serve(async (req: Request) => {
       }
     }
 
-    // Check user's BSK balance (holding balance for loan repayment)
+    // Check user's BSK balance (withdrawable balance for loan repayment)
     const { data: userBalance } = await supabase
       .from('user_bsk_balances')
-      .select('holding_balance, withdrawable_balance')
+      .select('withdrawable_balance')
       .eq('user_id', user.id)
       .single();
 
-    const availableBalance = userBalance?.holding_balance || 0;
+    const availableBalance = userBalance?.withdrawable_balance || 0;
     
     if (availableBalance < paymentAmountBsk) {
       return new Response(
@@ -146,7 +146,7 @@ serve(async (req: Request) => {
         p_idempotency_key: idempotencyKey,
         p_tx_type: 'debit',
         p_tx_subtype: payment_type === 'prepay_full' ? 'loan_prepayment' : 'loan_repayment',
-        p_balance_type: 'holding',
+        p_balance_type: 'withdrawable',
         p_amount_bsk: paymentAmountBsk,
         p_notes: payment_type === 'prepay_full' 
           ? `Full loan prepayment - Loan #${loan.loan_number}` 
@@ -258,7 +258,7 @@ serve(async (req: Request) => {
         amount_bsk: paymentAmountBsk,
         amount_inr: paymentAmountBsk * paymentRateSnapshot,
         rate_snapshot: paymentRateSnapshot,
-        balance_type: 'holding',
+        balance_type: 'withdrawable',
         direction: 'debit',
         reference_id: loan.loan_number,
         notes: payment_type === 'prepay_full' ? 'Full loan prepayment' : `EMI payment #${installment.installment_number}`,

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoanTimeline } from "@/components/loans/LoanTimeline";
 import { 
   ChevronLeft, 
@@ -15,7 +16,8 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle,
-  DollarSign
+  DollarSign,
+  AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -55,6 +57,23 @@ export default function LoanDetailsPage() {
       return data || [];
     },
     enabled: !!loanId
+  });
+
+  // Fetch user's current withdrawable balance
+  const { data: userBalance } = useQuery({
+    queryKey: ["user-balance", loan?.user_id],
+    queryFn: async () => {
+      if (!loan?.user_id) return null;
+      const { data, error } = await supabase
+        .from("user_bsk_balances")
+        .select("withdrawable_balance")
+        .eq("user_id", loan.user_id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!loan?.user_id,
   });
 
   if (!user) {
@@ -124,6 +143,20 @@ export default function LoanDetailsPage() {
   const totalInstallments = installments?.length || 0;
   const progress = loan.principal_bsk > 0 ? (loan.paid_bsk / loan.principal_bsk) * 100 : 0;
 
+  // Calculate weekly EMI
+  const weeklyEmi = loan && totalInstallments > 0 
+    ? Number(loan.total_due_bsk) / totalInstallments 
+    : 0;
+
+  // Find next due installment
+  const nextDueInstallment = installments
+    ?.filter(i => i.status === "due")
+    .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
+
+  // Check if balance is low
+  const currentBalance = userBalance?.withdrawable_balance || 0;
+  const hasLowBalance = nextDueInstallment && currentBalance < weeklyEmi;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
@@ -143,6 +176,17 @@ export default function LoanDetailsPage() {
           </div>
           {getStatusBadge(loan.status)}
         </div>
+
+        {/* Low Balance Warning */}
+        {hasLowBalance && loan.status === "active" && (
+          <Alert className="border-warning/50 bg-warning/5">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <AlertDescription className="text-warning">
+              <span className="font-semibold">Low Balance Warning:</span> Your withdrawable balance ({currentBalance.toFixed(2)} BSK) is less than your next EMI ({weeklyEmi.toFixed(2)} BSK) due on {nextDueInstallment && format(new Date(nextDueInstallment.due_date), "MMM dd, yyyy")}. 
+              Please add funds to avoid missed payment and potential loan cancellation after 4 consecutive missed weeks.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Summary Card */}
         <Card>
@@ -207,14 +251,44 @@ export default function LoanDetailsPage() {
                   <span className="font-bold">{(loan.principal_bsk - loan.origination_fee_bsk).toFixed(2)} BSK</span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-muted-foreground">Weekly EMI</span>
-                  <span className="font-bold">{(loan.total_due_bsk / loan.tenor_weeks).toFixed(2)} BSK</span>
+                  <span className="text-muted-foreground">Weekly EMI (from Withdrawable)</span>
+                  <span className="font-bold">{weeklyEmi.toFixed(2)} BSK</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Repayment ({loan.tenor_weeks} weeks)</span>
                   <span className="font-bold">{loan.total_due_bsk.toFixed(2)} BSK</span>
                 </div>
+                {nextDueInstallment && loan.status === 'active' && (
+                  <>
+                    <Separator className="my-2" />
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Next Payment Due</span>
+                      <span className="font-bold text-orange-600 dark:text-orange-400">
+                        {format(new Date(nextDueInstallment.due_date), "MMM dd, yyyy")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Your Current Balance</span>
+                      <span className={cn(
+                        "font-bold",
+                        hasLowBalance ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                      )}>
+                        {currentBalance.toFixed(2)} BSK
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
+              
+              {loan.status === "active" && (
+                <Alert className="mt-3 bg-muted/30 border-primary/20">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    <strong>Auto-Debit Info:</strong> Maintain at least {weeklyEmi.toFixed(2)} BSK in your withdrawable balance. 
+                    Missing 4 consecutive weeks will result in automatic loan cancellation.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             <Separator />
