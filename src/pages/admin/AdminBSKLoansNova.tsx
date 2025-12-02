@@ -116,6 +116,7 @@ export default function AdminBSKLoansNova() {
         }
       });
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to approve loan');
       return data;
     },
     onSuccess: () => {
@@ -140,6 +141,7 @@ export default function AdminBSKLoansNova() {
         }
       });
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to reject loan');
       return data;
     },
     onSuccess: () => {
@@ -202,11 +204,11 @@ export default function AdminBSKLoansNova() {
                   ? "bg-success/10 text-success border-success/20"
                   : row.status === 'pending'
                   ? "bg-warning/10 text-warning border-warning/20"
-                  : row.status === 'closed'
-                  ? "bg-muted/10 text-muted-foreground border-muted/20"
-                  : row.status === 'cancelled'
-                  ? "bg-destructive/10 text-destructive border-destructive/20"
-                  : "bg-destructive/10 text-destructive border-destructive/20"
+                   : row.status === 'closed'
+                   ? "bg-muted/10 text-muted-foreground border-muted/20"
+                   : row.status === 'cancelled' || row.status === 'rejected'
+                   ? "bg-destructive/10 text-destructive border-destructive/20"
+                   : "bg-destructive/10 text-destructive border-destructive/20"
               )}
             >
               {row.status}
@@ -776,6 +778,21 @@ export default function AdminBSKLoansNova() {
                         rows={3}
                       />
                     </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-destructive">
+                        Rejection Reason <span className="text-destructive">*</span>
+                      </Label>
+                      <Textarea
+                        placeholder="Required if rejecting - explain why the loan is being rejected..."
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        rows={2}
+                        className={!rejectionReason.trim() ? 'border-muted-foreground' : ''}
+                      />
+                      <p className="text-xs text-muted-foreground">This field is required to reject the loan</p>
+                    </div>
+                    
                     <div className="flex gap-2">
                       <Button
                         className="flex-1"
@@ -783,6 +800,7 @@ export default function AdminBSKLoansNova() {
                           applicationId: selectedApplication.id,
                           notes: adminNotes 
                         })}
+                        disabled={approveLoan.isPending}
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Approve Loan
@@ -794,6 +812,7 @@ export default function AdminBSKLoansNova() {
                           if (!rejectionReason.trim()) {
                             toast({ 
                               title: "Rejection reason required", 
+                              description: "Please provide a reason for rejecting this loan",
                               variant: "destructive" 
                             });
                             return;
@@ -803,19 +822,11 @@ export default function AdminBSKLoansNova() {
                             reason: rejectionReason 
                           });
                         }}
+                        disabled={rejectLoan.isPending}
                       >
                         <XCircle className="w-4 h-4 mr-2" />
                         Reject
                       </Button>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Rejection Reason (if rejecting)</Label>
-                      <Textarea
-                        placeholder="Explain why the loan is being rejected..."
-                        value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
-                        rows={2}
-                      />
                     </div>
                   </div>
                 </>
