@@ -98,10 +98,10 @@ Deno.serve(async (req) => {
       console.log(`[AUTO-DEBIT] Processing installment ${installment.id} for user ${userId}`);
 
       try {
-        // Check user's holding balance
+        // Check user's withdrawable balance (user must maintain balance for auto-debit)
         const { data: balanceData, error: balanceError } = await supabase
           .from('user_bsk_balances')
-          .select('holding_balance')
+          .select('withdrawable_balance')
           .eq('user_id', userId)
           .single();
 
@@ -142,11 +142,11 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const holdingBalance = parseFloat(balanceData.holding_balance);
+        const withdrawableBalance = parseFloat(balanceData.withdrawable_balance);
 
         // Check if sufficient balance
-        if (holdingBalance < amountBsk) {
-          console.log(`[AUTO-DEBIT] Insufficient balance for user ${userId}: ${holdingBalance} < ${amountBsk}`);
+        if (withdrawableBalance < amountBsk) {
+          console.log(`[AUTO-DEBIT] Insufficient balance for user ${userId}: ${withdrawableBalance} < ${amountBsk}`);
 
           // Mark installment as overdue
           await supabase
@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
             .update({
               status: 'overdue',
               auto_debit_attempted_at: new Date().toISOString(),
-              auto_debit_failed_reason: 'Insufficient holding balance',
+              auto_debit_failed_reason: 'Insufficient withdrawable balance',
               retry_count: installment.retry_count ? installment.retry_count + 1 : 1,
             })
             .eq('id', installment.id);
@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
             scheduled_date: targetDate,
             amount_bsk: amountBsk,
             status: 'insufficient_balance',
-            error_message: `Required: ${amountBsk} BSK, Available: ${holdingBalance} BSK`,
+            error_message: `Required: ${amountBsk} BSK, Available: ${withdrawableBalance} BSK`,
           });
 
           result.insufficient_balance++;
@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
             loan_id: loanId,
             status: 'insufficient_balance',
             amount_bsk: amountBsk,
-            error: `Insufficient balance: ${holdingBalance} BSK`,
+            error: `Insufficient balance: ${withdrawableBalance} BSK`,
           });
           continue;
         }

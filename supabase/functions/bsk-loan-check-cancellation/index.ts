@@ -142,7 +142,28 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Create ledger entry for cancellation
+        // Create unified ledger entry for cancellation
+        const cancellationIdempotencyKey = `loan_cancelled_${loan.id}_${Date.now()}`;
+        
+        await supabase.rpc('record_bsk_transaction', {
+          p_user_id: loan.user_id,
+          p_idempotency_key: cancellationIdempotencyKey,
+          p_tx_type: 'system',
+          p_tx_subtype: 'loan_cancelled',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: 0,
+          p_notes: cancellationReason,
+          p_meta_json: {
+            loan_id: loan.id,
+            loan_number: loan.loan_number,
+            consecutive_overdue_weeks: consecutiveOverdue,
+            threshold_weeks: threshold,
+            cancellation_reason: 'auto_cancelled_non_payment',
+            cancelled_installments: installments.filter(i => i.status === 'overdue').length
+          }
+        });
+
+        // Legacy: Also create entry in bsk_loan_ledger for backward compatibility
         await supabase.from('bsk_loan_ledger').insert({
           loan_id: loan.id,
           user_id: loan.user_id,
