@@ -334,48 +334,74 @@ const BSKLoansScreen = () => {
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Calculator className="h-5 w-5" />
-                      Loan Preview
+                      Loan Breakdown
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Principal Amount</p>
-                        <p className="font-bold">{preview.principalBsk} BSK</p>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-3 bg-background/50 rounded-lg">
+                        <span className="text-sm text-muted-foreground">Principal Amount</span>
+                        <span className="font-bold text-lg">{preview.principalBsk} BSK</span>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">You'll Receive</p>
-                        <p className="font-bold text-success">{preview.netDisbursedBsk} BSK</p>
-                        <p className="text-xs text-muted-foreground">To Withdrawable Balance</p>
+                      
+                      <div className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+                        <div>
+                          <span className="text-sm font-medium text-red-600 dark:text-red-400">Processing Fee (3%)</span>
+                          <p className="text-xs text-muted-foreground">Deducted immediately</p>
+                        </div>
+                        <span className="font-bold text-lg text-red-600 dark:text-red-400">-{preview.originationFeeBsk} BSK</span>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Weekly EMI</p>
-                        <p className="font-bold">{preview.weeklyEmiBsk} BSK</p>
+
+                      <div className="my-2 border-t border-border" />
+
+                      <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                        <div>
+                          <span className="text-sm font-medium text-green-600 dark:text-green-400">You'll Receive</span>
+                          <p className="text-xs text-muted-foreground">To Holding Balance</p>
+                        </div>
+                        <span className="font-bold text-xl text-green-600 dark:text-green-400">{preview.netDisbursedBsk} BSK</span>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Total Repayment</p>
-                        <p className="font-bold">{preview.totalDueBsk} BSK</p>
-                        <p className="text-xs text-success">0% Interest</p>
+
+                      <div className="grid grid-cols-2 gap-3 mt-4">
+                        <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                          <p className="text-xs text-muted-foreground mb-1">Weekly EMI</p>
+                          <p className="font-bold text-lg">{preview.weeklyEmiBsk} BSK</p>
+                          <p className="text-xs text-muted-foreground">for {loanSettings.default_tenor_weeks} weeks</p>
+                        </div>
+                        <div className="p-3 bg-background/50 rounded-lg border">
+                          <p className="text-xs text-muted-foreground mb-1">Total Repayment</p>
+                          <p className="font-bold text-lg">{preview.totalDueBsk} BSK</p>
+                          <p className="text-xs text-success">0% Interest</p>
+                        </div>
                       </div>
+
                       {loanSettings.completion_bonus_enabled && (
-                        <div className="col-span-2">
-                          <p className="text-sm text-muted-foreground">Completion Bonus</p>
-                          <p className="font-bold text-success">
-                            +{((loanAmount * (loanSettings.completion_bonus_percent || 5)) / 100).toFixed(2)} BSK
-                          </p>
-                          <p className="text-xs text-success">Earn on timely completion!</p>
+                        <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-primary">🎁 Completion Bonus</p>
+                              <p className="text-xs text-muted-foreground">Earn on timely completion</p>
+                            </div>
+                            <span className="font-bold text-lg text-success">
+                              +{((loanAmount * (loanSettings.completion_bonus_percent || 5)) / 100).toFixed(2)} BSK
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-primary/10">
+                    <div className="pt-3 border-t border-border space-y-2">
                       <div className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-success" />
-                        <span>Fixed BSK schedule - EMI amounts won't change</span>
+                        <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
+                        <span>Fixed BSK schedule - amounts won't change</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm mt-1">
-                        <Clock className="h-4 w-4 text-primary" />
-                        <span>{loanSettings.default_tenor_weeks} weekly payments starting 1 week after approval</span>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>First payment due 1 week after approval</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <AlertCircle className="h-4 w-4 text-orange flex-shrink-0" />
+                        <span className="font-medium">{preview.originationFeeBsk} BSK will be deducted immediately when you apply</span>
                       </div>
                     </div>
                   </CardContent>

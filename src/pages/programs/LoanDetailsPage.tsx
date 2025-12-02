@@ -14,7 +14,8 @@ import {
   Calendar, 
   TrendingUp,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  DollarSign
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -182,6 +183,39 @@ export default function LoanDetailsPage() {
                 <Progress value={progress} className="h-3" />
               </div>
             )}
+
+            <Separator />
+
+            {/* Fee Breakdown */}
+            <div className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Loan Breakdown
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Principal Amount</span>
+                  <span className="font-bold">{loan.principal_bsk} BSK</span>
+                </div>
+                <div className="flex justify-between text-red-600 dark:text-red-400">
+                  <span>Processing Fee (3%)</span>
+                  <span className="font-bold">-{loan.origination_fee_bsk.toFixed(2)} BSK</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-green-600 dark:text-green-400">
+                  <span className="font-medium">Net Disbursed</span>
+                  <span className="font-bold">{(loan.principal_bsk - loan.origination_fee_bsk).toFixed(2)} BSK</span>
+                </div>
+                <div className="flex justify-between mt-2">
+                  <span className="text-muted-foreground">Weekly EMI</span>
+                  <span className="font-bold">{(loan.total_due_bsk / loan.tenor_weeks).toFixed(2)} BSK</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Repayment ({loan.tenor_weeks} weeks)</span>
+                  <span className="font-bold">{loan.total_due_bsk.toFixed(2)} BSK</span>
+                </div>
+              </div>
+            </div>
 
             <Separator />
 
