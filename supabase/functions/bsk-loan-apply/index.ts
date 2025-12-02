@@ -123,8 +123,44 @@ serve(async (req: Request) => {
     // Calculate total due (0% interest - principal only)
     const totalDueBsk = principalBsk;
 
-    // Generate loan number
+    // Generate loan number BEFORE deducting fee (needed for metadata)
     const loanNumber = `BSK${Date.now().toString().slice(-8)}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+
+    // Instantly deduct processing fee from withdrawable balance
+    if (processingFeeBsk > 0) {
+      const idempotencyKey = `loan_processing_fee_${user.id}_${loanNumber}`;
+      
+      const { error: debitError } = await supabase.rpc('record_bsk_transaction', {
+        p_user_id: user.id,
+        p_idempotency_key: idempotencyKey,
+        p_tx_type: 'debit',
+        p_tx_subtype: 'loan_processing_fee',
+        p_balance_type: 'withdrawable',
+        p_amount_bsk: processingFeeBsk,
+        p_rate_snapshot: 1,
+        p_notes: `Processing fee for loan ${loanNumber}`,
+        p_meta_json: {
+          loan_number: loanNumber,
+          principal_bsk: principalBsk,
+          fee_percent: settings.processing_fee_percent
+        }
+      });
+
+      if (debitError) {
+        console.error('Processing fee deduction failed:', debitError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Insufficient balance for processing fee',
+            required_fee_bsk: processingFeeBsk,
+            details: debitError.message
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders }}
+        );
+      }
+      
+      console.log(`Processing fee ${processingFeeBsk} BSK deducted instantly from user ${user.id}`);
+    }
 
     // Create loan application
     const { data: loan, error: loanError } = await supabase
@@ -155,6 +191,22 @@ serve(async (req: Request) => {
 
     if (loanError) {
       console.error('Loan creation error:', loanError);
+      
+      // Rollback: Refund processing fee if loan creation failed
+      if (processingFeeBsk > 0) {
+        await supabase.rpc('record_bsk_transaction', {
+          p_user_id: user.id,
+          p_idempotency_key: `loan_fee_rollback_${loanNumber}_${Date.now()}`,
+          p_tx_type: 'credit',
+          p_tx_subtype: 'loan_processing_fee_refund',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: processingFeeBsk,
+          p_rate_snapshot: 1,
+          p_notes: `Refund: Loan creation failed for ${loanNumber}`
+        });
+        console.log(`Processing fee ${processingFeeBsk} BSK refunded due to loan creation failure`);
+      }
+      
       throw new Error('Failed to create loan application');
     }
 
