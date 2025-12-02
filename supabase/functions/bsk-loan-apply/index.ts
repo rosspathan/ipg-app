@@ -137,12 +137,12 @@ serve(async (req: Request) => {
         p_tx_subtype: 'loan_processing_fee',
         p_balance_type: 'withdrawable',
         p_amount_bsk: processingFeeBsk,
-        p_rate_snapshot: 1,
-        p_notes: `Processing fee for loan ${loanNumber}`,
         p_meta_json: {
           loan_number: loanNumber,
           principal_bsk: principalBsk,
-          fee_percent: settings.processing_fee_percent
+          fee_percent: settings.processing_fee_percent,
+          notes: `Processing fee for loan ${loanNumber}`,
+          rate_snapshot: 1
         }
       });
 
@@ -201,8 +201,11 @@ serve(async (req: Request) => {
           p_tx_subtype: 'loan_processing_fee_refund',
           p_balance_type: 'withdrawable',
           p_amount_bsk: processingFeeBsk,
-          p_rate_snapshot: 1,
-          p_notes: `Refund: Loan creation failed for ${loanNumber}`
+          p_meta_json: {
+            loan_number: loanNumber,
+            notes: `Refund: Loan creation failed for ${loanNumber}`,
+            rate_snapshot: 1
+          }
         });
         console.log(`Processing fee ${processingFeeBsk} BSK refunded due to loan creation failure`);
       }
