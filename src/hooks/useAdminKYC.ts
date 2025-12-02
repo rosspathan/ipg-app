@@ -70,7 +70,7 @@ export function useAdminKYC() {
       if (userIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('user_id, email, display_name, avatar_url, username')
+          .select('user_id, email, display_name, username')
           .in('user_id', userIds);
         
         if (profilesError) {
@@ -154,22 +154,7 @@ export function useAdminKYC() {
         }
       }
 
-      // Send email notification
-      if (userId) {
-        try {
-          await supabase.functions.invoke('send-admin-action-notification', {
-            body: {
-              userId,
-              actionType: 'kyc_approved',
-              details: {
-                status: 'Approved',
-              },
-            },
-          });
-        } catch (emailError) {
-          console.error('Error sending notification email:', emailError);
-        }
-      }
+      // Email notifications disabled (domain not verified in Resend)
 
       toast({
         title: 'Success',
@@ -212,23 +197,7 @@ export function useAdminKYC() {
         notes: reason,
       });
 
-      // Send email notification
-      if (userId) {
-        try {
-          await supabase.functions.invoke('send-admin-action-notification', {
-            body: {
-              userId,
-              actionType: 'kyc_rejected',
-              details: {
-                status: 'Rejected',
-                reason: reason,
-              },
-            },
-          });
-        } catch (emailError) {
-          console.error('Error sending notification email:', emailError);
-        }
-      }
+      // Email notifications disabled (domain not verified in Resend)
 
       toast({
         title: 'Submission Rejected',

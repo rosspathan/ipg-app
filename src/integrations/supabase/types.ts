@@ -5669,7 +5669,7 @@ export type Database = {
             foreignKeyName: "kyc_audit_log_submission_id_fkey"
             columns: ["submission_id"]
             isOneToOne: false
-            referencedRelation: "kyc_submissions"
+            referencedRelation: "kyc_profiles_new"
             referencedColumns: ["id"]
           },
         ]
