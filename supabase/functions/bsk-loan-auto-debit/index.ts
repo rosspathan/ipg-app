@@ -259,6 +259,31 @@ Deno.serve(async (req) => {
           status: 'success',
           amount_bsk: amountBsk,
         });
+
+        // Check if all installments for this loan are now paid
+        const { data: allInstallments } = await supabase
+          .from('bsk_loan_installments')
+          .select('status')
+          .eq('loan_id', loanId);
+
+        const allPaid = allInstallments?.every(inst => inst.status === 'paid');
+        
+        if (allPaid) {
+          console.log(`[AUTO-DEBIT] All installments paid for loan ${loanId}. Triggering completion...`);
+          
+          try {
+            await supabase.functions.invoke('bsk-loan-complete', {
+              body: { 
+                loan_id: loanId,
+                triggered_by: 'auto_debit'
+              }
+            });
+            console.log(`[AUTO-DEBIT] Loan completion triggered successfully for ${loanId}`);
+          } catch (completeError) {
+            console.error(`[AUTO-DEBIT] Error triggering loan completion for ${loanId}:`, completeError);
+            // Don't fail the auto-debit if completion fails
+          }
+        }
       } catch (error) {
         console.error(`[AUTO-DEBIT] Unexpected error processing installment ${installment.id}:`, error);
         result.errors++;

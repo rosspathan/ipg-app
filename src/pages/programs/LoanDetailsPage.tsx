@@ -231,14 +231,14 @@ export default function LoanDetailsPage() {
             <Separator />
 
             {/* Fee Breakdown */}
-            <div className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
               <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
-                Loan Breakdown
+                Savings Plan Breakdown
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Principal Amount</span>
+                  <span className="text-muted-foreground">Maturity Amount</span>
                   <span className="font-bold">{loan.principal_bsk} BSK</span>
                 </div>
                 <div className="flex justify-between text-red-600 dark:text-red-400">
@@ -246,17 +246,22 @@ export default function LoanDetailsPage() {
                   <span className="font-bold">-{loan.origination_fee_bsk.toFixed(2)} BSK</span>
                 </div>
                 <Separator />
-                <div className="flex justify-between text-green-600 dark:text-green-400">
-                  <span className="font-medium">Net Disbursed</span>
-                  <span className="font-bold">{(loan.principal_bsk - loan.origination_fee_bsk).toFixed(2)} BSK</span>
-                </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-muted-foreground">Weekly EMI (from Withdrawable)</span>
-                  <span className="font-bold">{weeklyEmi.toFixed(2)} BSK</span>
+                  <span className="text-muted-foreground">Weekly Savings (from Withdrawable)</span>
+                  <span className="font-bold text-primary">{weeklyEmi.toFixed(2)} BSK</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Repayment ({loan.tenor_weeks} weeks)</span>
+                  <span className="text-muted-foreground">Total Payments ({loan.tenor_weeks} weeks)</span>
                   <span className="font-bold">{loan.total_due_bsk.toFixed(2)} BSK</span>
+                </div>
+                <Separator className="my-2" />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Progress</span>
+                  <span className="font-bold">{paidInstallments} of {totalInstallments} completed</span>
+                </div>
+                <div className="flex justify-between text-green-600 dark:text-green-400">
+                  <span className="font-medium">You'll Receive</span>
+                  <span className="font-bold">{loan.principal_bsk} BSK to Withdrawable</span>
                 </div>
                 {nextDueInstallment && loan.status === 'active' && (
                   <>
@@ -281,11 +286,11 @@ export default function LoanDetailsPage() {
               </div>
               
               {loan.status === "active" && (
-                <Alert className="mt-3 bg-muted/30 border-primary/20">
+                <Alert className="mt-3 bg-primary/10 border-primary/20">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-xs">
-                    <strong>Auto-Debit Info:</strong> Maintain at least {weeklyEmi.toFixed(2)} BSK in your withdrawable balance. 
-                    Missing 4 consecutive weeks will result in automatic loan cancellation.
+                    <strong>Pay-First Model:</strong> {totalInstallments - paidInstallments} more payment{totalInstallments - paidInstallments !== 1 ? 's' : ''} until you receive {loan.principal_bsk} BSK to your Withdrawable Balance. 
+                    Missing 4 consecutive weeks will cancel the plan (all paid amounts forfeited).
                   </AlertDescription>
                 </Alert>
               )}

@@ -179,8 +179,8 @@ const BSKLoansScreen = () => {
       }
 
       toast({
-        title: "Application Submitted!",
-        description: `Loan application for ${loanAmount} BSK submitted successfully`,
+        title: "Savings Plan Started!",
+        description: `Your ${loanAmount} BSK savings plan has been submitted for approval. You'll receive the full amount after completing all payments.`,
       });
 
       // Refresh data and switch tabs
@@ -291,17 +291,17 @@ const BSKLoansScreen = () => {
         <TabsContent value="apply" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Apply for BSK Loan</CardTitle>
+              <CardTitle>Commitment Savings Plan</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Borrow {loanSettings.min_amount_bsk.toLocaleString()} - {loanSettings.max_amount_bsk.toLocaleString()} BSK • 
-                {loanSettings.default_tenor_weeks} weeks • 0% interest
+                Save {loanSettings.min_amount_bsk.toLocaleString()} - {loanSettings.max_amount_bsk.toLocaleString()} BSK over {loanSettings.default_tenor_weeks} weeks • 
+                Receive full amount after completion • 0% interest
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Amount Selector */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="loan-amount">Loan Amount (BSK)</Label>
+                  <Label htmlFor="loan-amount">Maturity Amount (BSK)</Label>
                   <Input
                     id="loan-amount"
                     type="number"
@@ -340,7 +340,7 @@ const BSKLoansScreen = () => {
                   <CardContent className="space-y-4">
                     <div className="space-y-3">
                       <div className="flex justify-between items-center p-3 bg-background/50 rounded-lg">
-                        <span className="text-sm text-muted-foreground">Principal Amount</span>
+                        <span className="text-sm text-muted-foreground">Maturity Amount</span>
                         <span className="font-bold text-lg">{preview.principalBsk} BSK</span>
                       </div>
                       
@@ -354,24 +354,24 @@ const BSKLoansScreen = () => {
 
                       <div className="my-2 border-t border-border" />
 
-                      <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg border border-primary/20">
                         <div>
-                          <span className="text-sm font-medium text-green-600 dark:text-green-400">You'll Receive</span>
-                          <p className="text-xs text-muted-foreground">To Holding Balance</p>
+                          <span className="text-sm font-medium text-primary">Weekly Savings</span>
+                          <p className="text-xs text-muted-foreground">Deducted from Withdrawable</p>
                         </div>
-                        <span className="font-bold text-xl text-green-600 dark:text-green-400">{preview.netDisbursedBsk} BSK</span>
+                        <span className="font-bold text-xl text-primary">{preview.weeklyEmiBsk} BSK</span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 mt-4">
                         <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                          <p className="text-xs text-muted-foreground mb-1">Weekly EMI</p>
-                          <p className="font-bold text-lg">{preview.weeklyEmiBsk} BSK</p>
-                          <p className="text-xs text-muted-foreground">for {loanSettings.default_tenor_weeks} weeks</p>
-                        </div>
-                        <div className="p-3 bg-background/50 rounded-lg border">
-                          <p className="text-xs text-muted-foreground mb-1">Total Repayment</p>
+                          <p className="text-xs text-muted-foreground mb-1">Total Savings</p>
                           <p className="font-bold text-lg">{preview.totalDueBsk} BSK</p>
-                          <p className="text-xs text-success">0% Interest</p>
+                          <p className="text-xs text-muted-foreground">over {loanSettings.default_tenor_weeks} weeks</p>
+                        </div>
+                        <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                          <p className="text-xs text-muted-foreground mb-1">You'll Receive</p>
+                          <p className="font-bold text-lg text-green-600 dark:text-green-400">{preview.principalBsk} BSK</p>
+                          <p className="text-xs text-success">To Withdrawable</p>
                         </div>
                       </div>
 
@@ -393,15 +393,15 @@ const BSKLoansScreen = () => {
                     <div className="pt-3 border-t border-border space-y-2">
                       <div className="flex items-center gap-2 text-sm">
                         <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
-                        <span>Fixed BSK schedule - amounts won't change</span>
+                        <span>Save weekly, receive full amount at completion</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>First payment due 1 week after approval</span>
+                        <span>First deduction 1 week after approval</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <AlertCircle className="h-4 w-4 text-orange flex-shrink-0" />
-                        <span className="font-medium">{preview.originationFeeBsk} BSK will be deducted immediately when you apply</span>
+                        <AlertCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span className="font-medium">Complete all {loanSettings.default_tenor_weeks} payments to receive {preview.principalBsk} BSK to your Withdrawable Balance</span>
                       </div>
                     </div>
                   </CardContent>
@@ -412,20 +412,22 @@ const BSKLoansScreen = () => {
               <div className="space-y-4">
                 <div className="p-4 bg-muted/30 rounded-lg">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="h-5 w-5 text-orange flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                     <div className="text-sm">
-                      <p className="font-medium">BSK Loan Terms</p>
+                      <p className="font-medium">Commitment Savings Terms</p>
                       <ul className="text-muted-foreground mt-1 space-y-1">
-                        <li>• Loan settled in BSK using admin-set rates</li>
+                        <li>• Pay-first model: Save weekly, receive funds after completion</li>
+                        <li>• Weekly deductions from your Withdrawable Balance</li>
+                        <li>• Full maturity amount credited to Withdrawable Balance upon completion</li>
                         <li>• BSK is an in-app token valued by administrators</li>
                         {loanSettings.kyc_required ? (
-                          <li>• KYC verification required before disbursal</li>
+                          <li>• KYC verification required before approval</li>
                         ) : (
                           <li className="text-success">• ✓ No KYC required - fast approval process</li>
                         )}
-                        <li>• One active loan per user maximum</li>
+                        <li>• One active plan per user maximum</li>
                         <li>• Manual admin approval required</li>
-                        <li>• 3-day grace period for late payments</li>
+                        <li>• Missing 4 consecutive weeks cancels the plan (funds forfeited)</li>
                         {loanSettings.completion_bonus_enabled && (
                           <li className="text-success font-medium">
                             • 🎁 Earn {loanSettings.completion_bonus_percent}% bonus ({((loanAmount * (loanSettings.completion_bonus_percent || 5)) / 100).toFixed(2)} BSK) on timely completion!
@@ -443,7 +445,7 @@ const BSKLoansScreen = () => {
                   size="lg"
                 >
                   <CreditCard className="h-5 w-5 mr-2" />
-                  {accepting ? "Submitting..." : `Apply for ${loanAmount.toLocaleString()} BSK Loan`}
+                  {accepting ? "Submitting..." : `Start ${loanAmount.toLocaleString()} BSK Savings Plan`}
                 </Button>
               </div>
             </CardContent>
