@@ -64,7 +64,7 @@ serve(async (req: Request) => {
       await supabase
         .from('bsk_loans')
         .update({ 
-          status: 'written_off',
+          status: 'rejected',
           admin_notes,
           approved_by: user.id,
           approved_at: new Date().toISOString()
