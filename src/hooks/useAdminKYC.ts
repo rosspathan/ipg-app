@@ -15,7 +15,7 @@ export type KYCStatusFilter = 'all' | 'pending' | 'approved' | 'rejected' | 'nee
 export function useAdminKYC() {
   const [submissions, setSubmissions] = useState<KYCSubmissionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<KYCStatusFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<KYCStatusFilter>('submitted');
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
