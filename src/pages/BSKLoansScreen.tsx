@@ -232,7 +232,7 @@ const BSKLoansScreen = () => {
     return (
       <div className="min-h-screen bg-background px-6 py-8">
         <div className="flex items-center mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/app/programs')} className="mr-2">
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-2xl font-bold">BSK Loans</h1>
@@ -252,7 +252,7 @@ const BSKLoansScreen = () => {
   return (
     <div className="min-h-screen bg-background px-6 py-8">
       <div className="flex items-center mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/app/programs')} className="mr-2">
           <ChevronLeft className="w-5 h-5" />
         </Button>
         <h1 className="text-2xl font-bold flex items-center gap-2">
