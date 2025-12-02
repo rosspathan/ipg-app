@@ -109,8 +109,7 @@ export function useAdminKYC() {
         .update({
           status: 'approved',
           reviewed_at: new Date().toISOString(),
-          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
-          admin_notes: adminNotes,
+          reviewer_id: (await supabase.auth.getUser()).data.user?.id,
         })
         .eq('id', submissionId);
 
@@ -198,8 +197,8 @@ export function useAdminKYC() {
         .update({
           status: 'rejected',
           reviewed_at: new Date().toISOString(),
-          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
-          admin_notes: reason,
+          reviewer_id: (await supabase.auth.getUser()).data.user?.id,
+          rejection_reason: reason,
         })
         .eq('id', submissionId);
 
