@@ -28,11 +28,11 @@ Deno.serve(async (req) => {
     // Lookup sponsor from referral_relationships
     const { data: referralData } = await supabase
       .from('referral_relationships')
-      .select('referrer_id')
+      .select('sponsor_id')
       .eq('referee_id', user_id)
       .maybeSingle();
 
-    const sponsor_id = referralData?.referrer_id;
+    const sponsor_id = referralData?.sponsor_id;
     console.log(`[KYC User Reward] Sponsor found: ${sponsor_id || 'none'}`);
 
     // Credit BSK to holding balance for user using atomic transaction
