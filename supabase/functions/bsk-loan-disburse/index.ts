@@ -77,20 +77,18 @@ serve(async (req: Request) => {
       );
     }
 
-    // APPROVE AND DISBURSE LOAN
-    const disbursalTime = new Date();
+    // APPROVE LOAN - Pay-First Model
+    const approvalTime = new Date();
     
-    // Update loan status to active
+    // Update loan status to approved (no immediate disbursal)
     const { error: updateError } = await supabase
       .from('bsk_loans')
       .update({
         status: 'approved',
-        approved_at: disbursalTime.toISOString(),
-        disbursed_at: disbursalTime.toISOString(),
+        approved_at: approvalTime.toISOString(),
         approved_by: user.id,
-        disbursed_by: user.id,
         admin_notes,
-        next_due_date: new Date(disbursalTime.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 1 week from now
+        next_due_date: new Date(approvalTime.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 1 week from now
       })
       .eq('id', loan_id);
 
@@ -105,7 +103,7 @@ serve(async (req: Request) => {
       : loan.amount_inr / loan.tenor_weeks;
 
     for (let i = 1; i <= loan.tenor_weeks; i++) {
-      const dueDate = new Date(disbursalTime.getTime() + i * 7 * 24 * 60 * 60 * 1000);
+      const dueDate = new Date(approvalTime.getTime() + i * 7 * 24 * 60 * 60 * 1000);
       const isLastInstallment = i === loan.tenor_weeks;
       
       // Adjust last installment for any rounding differences
@@ -136,64 +134,13 @@ serve(async (req: Request) => {
       throw new Error('Failed to create installment schedule');
     }
 
-    // Credit user's BSK HOLDING balance using record_bsk_transaction for unified ledger
-    const { error: disbursalError } = await supabase.rpc('record_bsk_transaction', {
-      p_user_id: loan.user_id,
-      p_tx_type: 'credit',
-      p_tx_subtype: 'loan_disbursal',
-      p_balance_type: 'holding',
-      p_amount_bsk: loan.net_disbursed_bsk,
-      p_idempotency_key: `disbursal-${loan.id}-${Date.now()}`,
-      p_meta_json: {
-        loan_id: loan.id,
-        loan_number: loan.loan_number,
-        principal_bsk: loan.principal_bsk,
-        net_disbursed_bsk: loan.net_disbursed_bsk,
-        tenor_weeks: loan.tenor_weeks,
-        interest_rate: loan.interest_rate_weekly,
-        admin_action: 'approve_and_disburse',
-        approved_by: user.id,
-        notes: `Loan disbursal: ${loan.loan_number}`,
-        rate_snapshot: loan.disbursal_rate_snapshot
-      }
-    });
-
-    if (disbursalError) {
-      console.error('Disbursal transaction error:', disbursalError);
-      throw new Error('Failed to disburse loan funds');
-    }
-
-    // Create legacy ledger entry for backward compatibility
-    await supabase
-      .from('bsk_loan_ledger')
-      .insert({
-        user_id: loan.user_id,
-        loan_id: loan.id,
-        transaction_type: 'loan_disbursal',
-        amount_bsk: loan.net_disbursed_bsk,
-        amount_inr: loan.amount_inr,
-        rate_snapshot: loan.disbursal_rate_snapshot,
-        balance_type: 'holding',
-        direction: 'credit',
-        reference_id: loan.loan_number,
-        notes: `Loan disbursal: ${loan.loan_number}`,
-        processed_by: user.id,
-        idempotency_key: `legacy-disbursal-${loan.id}-${Date.now()}`,
-        metadata: {
-          loan_number: loan.loan_number,
-          tenor_weeks: loan.tenor_weeks,
-          interest_rate: loan.interest_rate_weekly,
-          admin_action: 'approve_and_disburse'
-        }
-      });
-
-    // Update loan to active status
+    // Update loan to active status (no disbursal yet)
     await supabase
       .from('bsk_loans')
       .update({ status: 'active' })
       .eq('id', loan_id);
 
-    console.log(`BSK Loan Disbursed: ${loan.loan_number} - ${loan.net_disbursed_bsk} BSK credited to user ${loan.user_id}`);
+    console.log(`BSK Loan Approved: ${loan.loan_number} - User will receive ${loan.principal_bsk} BSK after completing all ${loan.tenor_weeks} payments`);
 
     return new Response(
       JSON.stringify({
@@ -202,13 +149,14 @@ serve(async (req: Request) => {
           id: loan.id,
           loan_number: loan.loan_number,
           amount_inr: loan.amount_inr,
-          net_disbursed_bsk: loan.net_disbursed_bsk,
+          principal_bsk: loan.principal_bsk,
+          maturity_amount_bsk: loan.principal_bsk,
           installments_created: installments.length,
           next_due_date: installments[0]?.due_date,
           weekly_emi_bsk: loan.schedule_denomination === 'fixed_bsk' ? emiAmount : null,
           weekly_emi_inr: loan.schedule_denomination === 'inr_pegged' ? emiAmount : null
         },
-        message: 'Loan approved and disbursed successfully'
+        message: 'Loan approved successfully. User will receive funds after completing all payments.'
       }),
       {
         status: 200,
