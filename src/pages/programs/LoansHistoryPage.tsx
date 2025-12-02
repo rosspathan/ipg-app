@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { Wallet, Calendar, DollarSign, AlertCircle, CheckCircle, Clock, TrendingUp, Loader2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -93,24 +94,13 @@ export default function LoansHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <Wallet className="w-8 h-8 text-primary" />
-              Loans History
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Track all your BSK loans and payments
-            </p>
-          </div>
-          <Button variant="outline" onClick={() => navigate('/app/programs/loans')}>
-            <Wallet className="w-4 h-4 mr-2" />
-            Apply for Loan
-          </Button>
-        </div>
+    <div className="min-h-screen bg-background pb-20">
+      <BacklinkBar 
+        programName="Savings History"
+        parentRoute="/app/loans"
+        parentLabel="Savings Plans"
+      />
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
 
         <Tabs defaultValue="loans" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -218,7 +208,7 @@ export default function LoansHistoryPage() {
                 <Wallet className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">No Loans Found</h3>
                 <p className="text-muted-foreground mb-4">You haven't applied for any loans yet.</p>
-                <Button onClick={() => navigate('/app/programs/loans')}>
+                <Button onClick={() => navigate('/app/loans')}>
                   <Wallet className="w-4 h-4 mr-2" />
                   Apply for Loan
                 </Button>

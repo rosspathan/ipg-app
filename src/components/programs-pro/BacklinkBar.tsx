@@ -1,7 +1,7 @@
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 interface BacklinkBarProps {
   programName: string
@@ -16,6 +16,14 @@ export function BacklinkBar({
   parentRoute = "/app/programs",
   parentLabel = "Programs"
 }: BacklinkBarProps) {
+  const navigate = useNavigate()
+
+  const handleBack = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (onBack) onBack()
+    navigate(parentRoute)
+  }
+
   return (
     <div 
       data-testid="backlink-bar"
@@ -29,7 +37,7 @@ export function BacklinkBar({
           className="h-9 w-9 -ml-2"
           aria-label={`Back to ${parentLabel}`}
         >
-          <Link to={onBack ? "#" : parentRoute} onClick={onBack}>
+          <Link to={parentRoute} onClick={handleBack}>
             <ChevronLeft className="h-5 w-5" />
           </Link>
         </Button>

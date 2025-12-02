@@ -110,7 +110,7 @@ export default function LoanDetailsPage() {
             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-xl font-semibold mb-2">Loan Not Found</h2>
             <p className="text-muted-foreground mb-4">The requested loan could not be found.</p>
-            <Button onClick={() => navigate(-1)}>Go Back</Button>
+            <Button onClick={() => navigate('/app/loans')}>Go Back</Button>
           </Card>
         </div>
       </div>
@@ -162,7 +162,7 @@ export default function LoanDetailsPage() {
       <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/app/loans')}>
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">

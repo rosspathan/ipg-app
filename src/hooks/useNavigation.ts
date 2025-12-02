@@ -147,6 +147,22 @@ export const useNavigation = (): NavigationHelpers => {
         return;
       }
     }
+
+    // Define explicit parent routes for specific pages
+    const currentPath = location.pathname;
+    const explicitParentRoutes: Record<string, string> = {
+      '/app/loans/': '/app/loans', // Loan details pages
+      '/app/programs/': '/app/programs', // Program subpages
+      '/admin/': '/admin', // Admin subpages
+    };
+
+    // Check if current path matches any explicit parent route pattern
+    for (const [pattern, parentRoute] of Object.entries(explicitParentRoutes)) {
+      if (currentPath.startsWith(pattern) && currentPath !== pattern) {
+        navigate(parentRoute);
+        return;
+      }
+    }
     
     // Default back behavior based on current stack
     switch (currentStack) {
@@ -162,7 +178,7 @@ export const useNavigation = (): NavigationHelpers => {
       default:
         replaceWithOptions(ROUTES.HOME);
     }
-  }, [getCurrentStack, navigate, replaceWithOptions]);
+  }, [getCurrentStack, navigate, replaceWithOptions, location.pathname]);
 
   // Reset to stack root
   const resetTo = useCallback((route: string, params?: Record<string, any>) => {
