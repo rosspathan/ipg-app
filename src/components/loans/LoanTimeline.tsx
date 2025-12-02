@@ -46,16 +46,26 @@ export function LoanTimeline({ loanId }: LoanTimelineProps) {
   });
 
   const { data: ledgerEntries, isLoading: ledgerLoading } = useQuery({
-    queryKey: ['loan-ledger', loanId],
+    queryKey: ['loan-transactions', loanId],
     queryFn: async () => {
+      if (!loan?.user_id) return [];
       const { data, error } = await supabase
-        .from('bsk_loan_ledger')
+        .from('unified_bsk_transactions')
         .select('*')
-        .eq('loan_id', loanId)
-        .order('processed_at', { ascending: false });
+        .eq('user_id', loan.user_id)
+        .in('transaction_type', [
+          'loan_processing_fee',
+          'loan_processing_fee_refund',
+          'loan_disbursal',
+          'loan_repayment',
+          'loan_prepayment',
+          'late_fee'
+        ])
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!loan?.user_id
   });
 
   const { data: installments } = useQuery({
@@ -135,27 +145,40 @@ export function LoanTimeline({ loanId }: LoanTimelineProps) {
     });
   }
 
-  // Payments and late fees from ledger
+  // Processing fee and other transactions from unified ledger
   ledgerEntries?.forEach((entry) => {
-    if (entry.transaction_type === 'payment') {
+    if (entry.transaction_type === 'loan_processing_fee') {
       events.push({
         id: entry.id,
-        date: entry.processed_at,
+        date: entry.created_at,
+        type: 'payment',
+        title: 'Processing Fee Deducted',
+        description: `Processing fee: ${Math.abs(entry.amount)} BSK`,
+        amount: Math.abs(entry.amount),
+        icon: <DollarSign className="w-4 h-4" />,
+        variant: 'warning'
+      });
+    } else if (entry.transaction_type === 'loan_disbursal') {
+      // Skip - already handled above
+    } else if (entry.transaction_type === 'loan_repayment') {
+      events.push({
+        id: entry.id,
+        date: entry.created_at,
         type: 'payment',
         title: 'EMI Payment',
-        description: `Paid ${Math.abs(entry.amount_bsk)} BSK`,
-        amount: Math.abs(entry.amount_bsk),
+        description: `Paid ${Math.abs(entry.amount)} BSK`,
+        amount: Math.abs(entry.amount),
         icon: <CheckCircle className="w-4 h-4" />,
         variant: 'success'
       });
     } else if (entry.transaction_type === 'late_fee') {
       events.push({
         id: entry.id,
-        date: entry.processed_at,
+        date: entry.created_at,
         type: 'late_fee',
         title: 'Late Fee Applied',
-        description: `Late fee: ${Math.abs(entry.amount_bsk)} BSK`,
-        amount: Math.abs(entry.amount_bsk),
+        description: `Late fee: ${Math.abs(entry.amount)} BSK`,
+        amount: Math.abs(entry.amount),
         icon: <AlertCircle className="w-4 h-4" />,
         variant: 'warning'
       });

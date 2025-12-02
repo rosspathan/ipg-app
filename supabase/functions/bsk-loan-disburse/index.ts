@@ -136,32 +136,34 @@ serve(async (req: Request) => {
       throw new Error('Failed to create installment schedule');
     }
 
-    // Credit user's BSK HOLDING balance (not withdrawable until loan is repaid)
-    const { data: currentBalance } = await supabase
-      .from('user_bsk_balances')
-      .select('holding_balance')
-      .eq('user_id', loan.user_id)
-      .single();
+    // Credit user's BSK HOLDING balance using record_bsk_transaction for unified ledger
+    const { error: disbursalError } = await supabase.rpc('record_bsk_transaction', {
+      p_user_id: loan.user_id,
+      p_tx_type: 'credit',
+      p_tx_subtype: 'loan_disbursal',
+      p_balance_type: 'holding',
+      p_amount_bsk: loan.net_disbursed_bsk,
+      p_idempotency_key: `disbursal-${loan.id}-${Date.now()}`,
+      p_meta_json: {
+        loan_id: loan.id,
+        loan_number: loan.loan_number,
+        principal_bsk: loan.principal_bsk,
+        net_disbursed_bsk: loan.net_disbursed_bsk,
+        tenor_weeks: loan.tenor_weeks,
+        interest_rate: loan.interest_rate_weekly,
+        admin_action: 'approve_and_disburse',
+        approved_by: user.id,
+        notes: `Loan disbursal: ${loan.loan_number}`,
+        rate_snapshot: loan.disbursal_rate_snapshot
+      }
+    });
 
-    const { error: balanceError } = await supabase
-      .from('user_bsk_balances')
-      .upsert({
-        user_id: loan.user_id,
-        holding_balance: (currentBalance?.holding_balance || 0) + loan.net_disbursed_bsk
-      }, {
-        onConflict: 'user_id',
-        ignoreDuplicates: false
-      });
-
-    if (balanceError) {
-      console.error('Balance update error:', balanceError);
-      // Continue - we'll log this in ledger for manual reconciliation
+    if (disbursalError) {
+      console.error('Disbursal transaction error:', disbursalError);
+      throw new Error('Failed to disburse loan funds');
     }
 
-    // Create ledger entries
-    const idempotencyKey = `disbursal-${loan.id}-${Date.now()}`;
-    
-    // Disbursal credit entry
+    // Create legacy ledger entry for backward compatibility
     await supabase
       .from('bsk_loan_ledger')
       .insert({
@@ -176,7 +178,7 @@ serve(async (req: Request) => {
         reference_id: loan.loan_number,
         notes: `Loan disbursal: ${loan.loan_number}`,
         processed_by: user.id,
-        idempotency_key: idempotencyKey,
+        idempotency_key: `legacy-disbursal-${loan.id}-${Date.now()}`,
         metadata: {
           loan_number: loan.loan_number,
           tenor_weeks: loan.tenor_weeks,
@@ -184,27 +186,6 @@ serve(async (req: Request) => {
           admin_action: 'approve_and_disburse'
         }
       });
-
-    // Origination fee debit entry (if applicable)
-    if (loan.origination_fee_bsk > 0) {
-      await supabase
-        .from('bsk_loan_ledger')
-        .insert({
-          user_id: loan.user_id,
-          loan_id: loan.id,
-          transaction_type: 'origination_fee',
-          amount_bsk: loan.origination_fee_bsk,
-          amount_inr: loan.origination_fee_bsk * loan.disbursal_rate_snapshot,
-          rate_snapshot: loan.disbursal_rate_snapshot,
-          balance_type: 'holding',
-          direction: 'debit',
-          reference_id: loan.loan_number,
-          notes: `Origination fee: ${loan.origination_fee_percent}%`,
-          processed_by: user.id,
-          idempotency_key: `origination-${loan.id}-${Date.now()}`,
-          metadata: { fee_percent: loan.origination_fee_percent }
-        });
-    }
 
     // Update loan to active status
     await supabase
