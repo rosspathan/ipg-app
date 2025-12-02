@@ -72,31 +72,77 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
   const fullName = submission.full_name_computed || dataJson?.full_name;
   const email = submission.profiles?.email || submission.email_computed || dataJson?.email;
   const phone = submission.phone_computed || dataJson?.phone;
+  const username = (submission.profiles && 'username' in submission.profiles) ? submission.profiles.username : '';
+  const displayName = (submission.profiles && 'display_name' in submission.profiles) ? submission.profiles.display_name : fullName;
+  const avatarUrl = (submission.profiles && 'avatar_url' in submission.profiles) ? submission.profiles.avatar_url : dataJson?.selfie_url || dataJson?.documents?.selfie;
 
   return (
     <div className="space-y-6">
-      {/* Header with enhanced info */}
-      <div className="border-b pb-4">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h2 className="text-2xl font-bold">{fullName || 'Unknown User'}</h2>
-            <p className="text-muted-foreground">{email}</p>
+      {/* Enhanced Header with Avatar */}
+      <Card className="border-l-4 border-l-primary">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="relative">
+              <img
+                src={avatarUrl || ''}
+                alt={fullName || 'User'}
+                className="h-20 w-20 rounded-full object-cover border-4 border-border"
+                onError={(e) => {
+                  e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Cpath d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"%3E%3C/path%3E%3Ccircle cx="12" cy="7" r="4"%3E%3C/circle%3E%3C/svg%3E';
+                }}
+              />
+              <Badge 
+                variant={getStatusColor(submission.status)} 
+                className="absolute -bottom-1 -right-1 text-xs"
+              >
+                {getStatusLabel(submission.status)}
+              </Badge>
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <h2 className="text-2xl font-bold mb-1">{displayName || 'Unknown User'}</h2>
+              <div className="space-y-1 text-sm">
+                <p className="text-muted-foreground flex items-center gap-2">
+                  📧 {email || 'No email'}
+                </p>
+                {phone && (
+                  <p className="text-muted-foreground flex items-center gap-2">
+                    📱 {phone}
+                  </p>
+                )}
+                {username && username !== displayName && (
+                  <p className="text-muted-foreground flex items-center gap-2">
+                    👤 @{username}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
-          <Badge variant={getStatusColor(submission.status)} className="text-base px-3 py-1">
-            {getStatusLabel(submission.status)}
-          </Badge>
-        </div>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <span className="text-muted-foreground">Submission ID:</span>
-            <p className="font-mono text-xs">{submission.id.slice(0, 8)}...</p>
+          
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+            <div>
+              <Label className="text-xs text-muted-foreground">Submission ID</Label>
+              <p className="font-mono text-xs mt-1">{submission.id.slice(0, 13)}...</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Submitted</Label>
+              <p className="text-sm mt-1">
+                {submission.submitted_at ? format(new Date(submission.submitted_at), 'PPpp') : 'N/A'}
+              </p>
+            </div>
+            {submission.reviewed_at && (
+              <>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Reviewed</Label>
+                  <p className="text-sm mt-1">
+                    {format(new Date(submission.reviewed_at), 'PPpp')}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
-          <div>
-            <span className="text-muted-foreground">Submitted:</span>
-            <p>{submission.submitted_at ? format(new Date(submission.submitted_at), 'PPpp') : 'N/A'}</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Personal Details - Using flat structure */}
       <Card>
@@ -250,25 +296,37 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
       </Card>
 
       {/* BSK Reward Info */}
-      {submission.status === 'pending' && (
-        <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              🎁 BSK Reward Preview
+      {(submission.status === 'pending' || submission.status === 'submitted') && (
+        <Card className="bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 border-primary/30 shadow-lg">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              🎁 BSK Reward Distribution
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5">
-              <span className="text-sm font-medium">User Reward</span>
-              <span className="font-semibold text-primary">5 BSK (holding)</span>
+            <div className="flex items-center justify-between p-4 rounded-lg bg-background/80 backdrop-blur border border-primary/20">
+              <div>
+                <span className="text-sm font-medium block">User Reward</span>
+                <span className="text-xs text-muted-foreground">Credited to holding balance</span>
+              </div>
+              <span className="font-bold text-xl text-primary">5 BSK</span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/5">
-              <span className="text-sm font-medium">Sponsor Reward</span>
-              <span className="font-semibold text-accent">5 BSK (holding)</span>
+            <div className="flex items-center justify-between p-4 rounded-lg bg-background/80 backdrop-blur border border-accent/20">
+              <div>
+                <span className="text-sm font-medium block">Sponsor Reward</span>
+                <span className="text-xs text-muted-foreground">Credited to direct sponsor</span>
+              </div>
+              <span className="font-bold text-xl text-accent">5 BSK</span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              💡 Total of <strong>10 BSK</strong> will be distributed upon approval (5 to user + 5 to direct sponsor)
-            </p>
+            <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <span className="text-2xl">💰</span>
+                Total Distribution: <strong className="text-primary">10 BSK</strong>
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Rewards are automatically distributed upon approval
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -289,27 +347,27 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
       </Card>
 
       {/* Action Buttons - Sticky on mobile */}
-      {submission.status === 'pending' && (
-        <div className="sticky bottom-0 left-0 right-0 bg-background pt-4 pb-2 -mb-2 border-t lg:border-t-0 lg:static lg:pb-0">
+      {(submission.status === 'pending' || submission.status === 'submitted') && (
+        <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm pt-6 pb-4 -mb-2 border-t-2 border-border lg:border-t-0 lg:static lg:pb-0 lg:bg-transparent">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <Button
               onClick={handleApprove}
               disabled={loading}
-              className="flex-1"
+              className="flex-1 h-12 sm:h-14 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
               size="lg"
             >
               <CheckCircle className="mr-2 h-5 w-5" />
-              Approve & Award 10 BSK Total
+              ✅ Approve & Award 10 BSK
             </Button>
             <Button
               onClick={() => setRejectModalOpen(true)}
               disabled={loading}
               variant="destructive"
-              className="flex-1"
+              className="flex-1 h-12 sm:h-14 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
               size="lg"
             >
               <XCircle className="mr-2 h-5 w-5" />
-              Reject
+              ❌ Reject Submission
             </Button>
           </div>
         </div>

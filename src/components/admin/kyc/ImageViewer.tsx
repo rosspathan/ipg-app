@@ -62,23 +62,47 @@ export function ImageViewer({ imageUrl, alt, className }: ImageViewerProps) {
         </div>
       </div>
 
-      {/* Fullscreen Modal */}
+      {/* Enhanced Fullscreen Modal */}
       {fullscreen && (
-        <div className="fixed inset-0 z-50 bg-background/98 flex items-center justify-center p-2 sm:p-4">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 h-10 w-10"
-            onClick={() => setFullscreen(false)}
-          >
-            <X className="h-6 w-6" />
-          </Button>
-          <img
-            src={imageUrl}
-            alt={alt}
-            className="max-w-full max-h-[90vh] object-contain select-none"
-            draggable={false}
-          />
+        <div className="fixed inset-0 z-50 bg-background/98 backdrop-blur-sm flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h3 className="text-lg font-semibold">{alt}</h3>
+            <div className="flex items-center gap-2">
+              <Button size="icon" variant="secondary" onClick={zoomOut}>
+                <ZoomOut className="h-5 w-5" />
+              </Button>
+              <Button size="icon" variant="secondary" onClick={zoomIn}>
+                <ZoomIn className="h-5 w-5" />
+              </Button>
+              <Button size="icon" variant="secondary" onClick={handleDownload}>
+                <Download className="h-5 w-5" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setFullscreen(false)}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Image Container */}
+          <div className="flex-1 overflow-auto flex items-center justify-center p-4">
+            <img
+              src={imageUrl}
+              alt={alt}
+              style={{ transform: `scale(${zoom})` }}
+              className="transition-transform duration-200 max-w-full object-contain select-none"
+              draggable={false}
+            />
+          </div>
+          
+          {/* Footer */}
+          <div className="p-4 border-t border-border text-center text-sm text-muted-foreground">
+            <p>Use zoom controls to inspect document details • Pinch to zoom on touch devices</p>
+          </div>
         </div>
       )}
     </>

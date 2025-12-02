@@ -17,17 +17,15 @@ export function KYCSubmissionList({ submissions, selectedId, onSelect }: KYCSubm
     switch (status) {
       case 'submitted':
       case 'pending':
-        return 'default';
+        return 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20';
       case 'approved':
-        return 'outline';
+        return 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20';
       case 'rejected':
-        return 'destructive';
+        return 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
       case 'needs_info':
-        return 'secondary';
-      case 'draft':
-        return 'secondary';
+        return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
       default:
-        return 'default';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -35,15 +33,13 @@ export function KYCSubmissionList({ submissions, selectedId, onSelect }: KYCSubm
     switch (status) {
       case 'submitted':
       case 'pending':
-        return 'Pending Review';
+        return 'Pending';
       case 'approved':
         return 'Approved';
       case 'rejected':
         return 'Rejected';
       case 'needs_info':
         return 'Needs Info';
-      case 'draft':
-        return 'Draft';
       default:
         return status;
     }
@@ -51,69 +47,75 @@ export function KYCSubmissionList({ submissions, selectedId, onSelect }: KYCSubm
 
   if (submissions.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
+      <div className="text-center py-8 text-muted-foreground">
         No submissions found
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {submissions.map((submission) => {
         const dataJson = submission.data_json as any;
         const fullName = submission.full_name_computed || dataJson?.full_name || 'Unknown User';
-        const email = submission.profiles?.email || submission.email_computed || dataJson?.email;
-        const phone = submission.phone_computed || dataJson?.phone;
-        const selfieUrl = dataJson?.selfie_url || dataJson?.documents?.selfie;
+        const email = submission.profiles?.email || submission.email_computed || dataJson?.email || '';
+        const phone = submission.phone_computed || dataJson?.phone || '';
+        
+        // Get avatar from selfie or profile
+        const avatarUrl = (submission.profiles && 'avatar_url' in submission.profiles) 
+          ? submission.profiles.avatar_url 
+          : dataJson?.selfie_url || dataJson?.documents?.selfie;
         
         return (
           <Card
             key={submission.id}
-            className={cn(
-              'p-4 cursor-pointer hover:border-primary/50',
-              selectedId === submission.id && 'border-primary bg-accent/30'
-            )}
             onClick={() => onSelect(submission)}
+            className={cn(
+              'p-4 cursor-pointer transition-all hover:shadow-md border-l-4',
+              selectedId === submission.id
+                ? 'bg-accent/50 border-l-primary shadow-md'
+                : 'border-l-transparent hover:border-l-primary/30'
+            )}
           >
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-3">
               {/* Avatar */}
               <Avatar className="h-12 w-12 border-2 border-border">
-                <AvatarImage src={selfieUrl} alt={fullName} />
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  <User className="h-5 w-5" />
+                <AvatarImage src={avatarUrl || ''} alt={fullName} />
+                <AvatarFallback className="bg-primary/10">
+                  <User className="h-5 w-5 text-primary" />
                 </AvatarFallback>
               </Avatar>
-              
+
               {/* Content */}
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className="font-semibold text-base truncate">{fullName}</h4>
-                  <Badge variant={getStatusColor(submission.status)} className="shrink-0">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold truncate">{fullName}</h3>
+                    <p className="text-sm text-muted-foreground truncate">{email}</p>
+                  </div>
+                  <Badge 
+                    variant="outline" 
+                    className={cn('text-xs shrink-0', getStatusColor(submission.status))}
+                  >
                     {getStatusLabel(submission.status)}
                   </Badge>
                 </div>
-                
-                {email && (
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Mail className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{email}</span>
-                  </div>
-                )}
-                
+
                 {phone && (
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Phone className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{phone}</span>
-                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">📱 {phone}</p>
                 )}
-                
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
-                  <Calendar className="h-3 w-3 shrink-0" />
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
                     {submission.submitted_at
-                      ? `Submitted ${format(new Date(submission.submitted_at), 'MMM dd, yyyy HH:mm')}`
-                      : 'Not submitted yet'}
+                      ? format(new Date(submission.submitted_at), 'MMM d, yyyy')
+                      : 'Not submitted'}
                   </span>
+                  {submission.reviewed_at && (
+                    <span className="text-[10px]">
+                      Reviewed {format(new Date(submission.reviewed_at), 'MMM d')}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
