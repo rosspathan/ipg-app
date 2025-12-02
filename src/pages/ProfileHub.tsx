@@ -84,6 +84,42 @@ export function ProfileHub() {
   const username = useUsername();
   const [showQuickSwitch, setShowQuickSwitch] = useState(false);
   const [canClaimReferral, setCanClaimReferral] = useState(false);
+  const [kycStatus, setKycStatus] = useState<'draft' | 'submitted' | 'approved' | 'rejected' | null>(null);
+  
+  // Fetch KYC status
+  useEffect(() => {
+    const fetchKYCStatus = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('kyc_profiles_new')
+        .select('status')
+        .eq('user_id', user.id)
+        .maybeSingle();
+        
+      if (!error && data) {
+        setKycStatus(data.status as any);
+      }
+    };
+    
+    fetchKYCStatus();
+  }, [user]);
+  
+  // Get dynamic KYC badge based on status
+  const getKYCBadge = () => {
+    if (kycStatus === 'approved') {
+      return { text: "Approved", className: "bg-green-500/10 text-green-600 border-green-500/30" };
+    }
+    if (kycStatus === 'submitted') {
+      return { text: "Pending", className: "bg-amber-500/10 text-amber-600 border-amber-500/30" };
+    }
+    if (kycStatus === 'rejected') {
+      return { text: "Rejected", className: "bg-red-500/10 text-red-600 border-red-500/30" };
+    }
+    return { text: "Required", className: "" }; // Default for draft/not started
+  };
+  
+  const kycBadgeConfig = getKYCBadge();
   
   // Check if user can claim referral code
   useEffect(() => {
@@ -251,7 +287,11 @@ export function ProfileHub() {
                     <div className="text-left">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-foreground">{section.title}</span>
-                        {section.badge && (
+                        {section.id === 'kyc' ? (
+                          <Badge variant="outline" className={`text-xs px-2 py-0 h-5 ${kycBadgeConfig.className}`}>
+                            {kycBadgeConfig.text}
+                          </Badge>
+                        ) : section.badge && (
                           <Badge variant="outline" className="text-xs px-2 py-0 h-5">
                             {section.badge}
                           </Badge>
