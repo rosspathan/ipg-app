@@ -55,21 +55,38 @@ export function useAdminKYC() {
     try {
       setLoading(true);
       
-      // Fetch KYC submissions with computed columns and proper UUID join to profiles
-      const { data, error } = await supabase
+      // Fetch KYC submissions directly
+      const { data: kycData, error: kycError } = await supabase
         .from('kyc_profiles_new')
-        .select(`
-          *,
-          profiles:user_id (
-            user_id,
-            email
-          )
-        `)
+        .select('*')
         .order('submitted_at', { ascending: false, nullsFirst: false });
 
-      if (error) throw error;
+      if (kycError) throw kycError;
       
-      setSubmissions(data as KYCSubmissionWithUser[]);
+      // Fetch profiles separately for email/avatar lookup
+      const userIds = kycData?.map(s => s.user_id).filter(Boolean) || [];
+      
+      let profiles: any[] = [];
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, email, display_name, avatar_url, username')
+          .in('user_id', userIds);
+        
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+        } else {
+          profiles = profilesData || [];
+        }
+      }
+      
+      // Merge KYC data with profiles in JavaScript
+      const merged = kycData?.map(kyc => ({
+        ...kyc,
+        profiles: profiles.find(p => p.user_id === kyc.user_id) || null
+      })) || [];
+      
+      setSubmissions(merged as KYCSubmissionWithUser[]);
     } catch (error) {
       console.error('Error fetching KYC submissions:', error);
       toast({
