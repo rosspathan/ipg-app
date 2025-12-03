@@ -519,6 +519,7 @@ function AppContent() {
                 <Route path="programs/lucky-draw" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawPage /></React.Suspense>} />
                 <Route path="programs/lucky-draw/tickets" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawTicketsPage /></React.Suspense>} />
                 <Route path="programs/spin" element={<React.Suspense fallback={<LoadingFallback />}><ISmartSpinScreen /></React.Suspense>} />
+                <Route path="spin/history" element={<React.Suspense fallback={<LoadingFallback />}><SpinHistoryScreen /></React.Suspense>} />
                 <Route path="programs/team-referrals" element={<React.Suspense fallback={<LoadingFallback />}><TeamReferralsNew /></React.Suspense>} />
                 <Route path="programs/team-referrals/team" element={<React.Suspense fallback={<LoadingFallback />}><TeamTreeView /></React.Suspense>} />
                 <Route path="programs/team-referrals/earnings" element={<React.Suspense fallback={<LoadingFallback />}><CommissionHistory /></React.Suspense>} />
