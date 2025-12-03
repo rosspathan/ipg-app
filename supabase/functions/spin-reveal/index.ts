@@ -214,13 +214,14 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         segment: winningSegment,
+        segment_label: winningSegment.label,
         multiplier,
-        payoutBsk,
-        profitFeeBsk,
-        netPayoutBsk,
-        netChangeBsk,
-        serverSeed,
-        resultValue,
+        payout_bsk: payoutBsk,
+        profit_fee_bsk: profitFeeBsk,
+        net_payout_bsk: netPayoutBsk,
+        net_change_bsk: netChangeBsk,
+        server_seed: serverSeed,
+        result_value: resultValue,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
