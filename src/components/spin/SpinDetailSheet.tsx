@@ -54,25 +54,22 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
         <div className="overflow-y-auto h-[calc(90vh-65px)] pb-8">
           {/* Amount Display */}
           <div className="text-center py-8 px-4">
-            <p className="text-sm text-slate-400 mb-2">Amount</p>
-            <p className={`text-4xl font-bold ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
-              {isWin ? `+${Number(spin.payout_bsk || 0).toFixed(2)}` : `-${Number(spin.bet_bsk || 0).toFixed(2)}`}
+            <p className="text-sm text-slate-400 mb-2">Net Payout</p>
+            <p className={`text-4xl font-bold ${netChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {netChange >= 0 ? '+' : ''}{netChange.toFixed(2)}
             </p>
             <p className="text-slate-400 text-sm mt-1">BSK</p>
             
-            {/* Balance Type Badges */}
-            <div className="flex items-center justify-center gap-2 mt-4">
+            {/* Free/Paid Spin Badge */}
+            <div className="flex items-center justify-center mt-4">
               <Badge 
                 variant="outline" 
-                className="bg-primary/10 border-primary/30 text-primary px-3 py-1"
+                className={spin.was_free_spin 
+                  ? "bg-amber-500/20 border-amber-500/40 text-amber-400 px-4 py-1.5 text-sm" 
+                  : "bg-slate-500/20 border-slate-500/40 text-slate-300 px-4 py-1.5 text-sm"
+                }
               >
-                Withdrawable
-              </Badge>
-              <Badge 
-                variant="outline" 
-                className="bg-muted/30 border-muted-foreground/20 text-muted-foreground px-3 py-1"
-              >
-                Credit
+                {spin.was_free_spin ? '🎁 Free Spin' : '💰 Paid Spin'}
               </Badge>
             </div>
           </div>
@@ -95,8 +92,8 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
               <DetailRow 
                 label="Notes" 
                 value={isWin 
-                  ? `Spin win: ${spin.multiplier}x multiplier, payout ${Number(spin.payout_bsk).toFixed(0)} BSK`
-                  : `Spin loss: Bet ${Number(spin.bet_bsk).toFixed(0)} BSK`
+                  ? `${Number(spin.bet_bsk).toFixed(0)} BSK × ${spin.multiplier}x = ${Number(spin.payout_bsk).toFixed(0)} BSK − ${Number(spin.profit_fee_bsk || 0).toFixed(0)} fee = ${netChange.toFixed(0)} BSK`
+                  : `Lost bet of ${Number(spin.bet_bsk).toFixed(0)} BSK`
                 } 
               />
               <div className="flex items-center justify-between px-4 py-3">
@@ -124,36 +121,41 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
             
             <div className="bg-[hsl(220_13%_11%)] rounded-xl divide-y divide-[hsl(220_13%_18%)]">
               <DetailRow 
+                label="Spin Type" 
+                value={spin.was_free_spin ? '🎁 Free Spin' : '💰 Paid Spin'} 
+              />
+              <DetailRow 
+                label="Bet Amount" 
+                value={`${Number(spin.bet_bsk).toFixed(2)} BSK`} 
+              />
+              <DetailRow 
+                label="Multiplier" 
+                value={`${spin.multiplier}x`} 
+              />
+              <DetailRow 
+                label="Gross Payout" 
+                value={`${Number(spin.payout_bsk).toFixed(2)} BSK`} 
+              />
+              <DetailRow 
+                label="Winner Fee (10%)" 
+                value={`−${Number(spin.profit_fee_bsk || 0).toFixed(2)} BSK`} 
+              />
+              <DetailRow 
+                label="Spin Fee" 
+                value={spin.was_free_spin ? '0.00 BSK (Free)' : `−${Number(spin.spin_fee_bsk || 0).toFixed(2)} BSK`} 
+              />
+              <DetailRow 
+                label="Net Payout" 
+                value={`${netChange >= 0 ? '+' : ''}${netChange.toFixed(2)} BSK`}
+                highlight={netChange >= 0}
+              />
+              <DetailRow 
                 label="Nonce" 
                 value={String(spin.nonce)} 
               />
               <DetailRow 
-                label="Bet Bsk" 
-                value={Number(spin.bet_bsk).toFixed(2)} 
-              />
-              <DetailRow 
-                label="Multiplier" 
-                value={String(spin.multiplier)} 
-              />
-              <DetailRow 
-                label="Payout Bsk" 
-                value={Number(spin.payout_bsk).toFixed(2)} 
-              />
-              {spin.was_free_spin && (
-                <DetailRow 
-                  label="Free Spin" 
-                  value="Yes" 
-                />
-              )}
-              {(spin.profit_fee_bsk || 0) > 0 && (
-                <DetailRow 
-                  label="Winner Fee" 
-                  value={`${Number(spin.profit_fee_bsk).toFixed(2)} BSK`} 
-                />
-              )}
-              <DetailRow 
-                label="Spin Fee" 
-                value={spin.was_free_spin ? '0.00' : Number(spin.spin_fee_bsk || 0).toFixed(2)} 
+                label="Segment" 
+                value={spin.segment?.label || (isWin ? `WIN ${spin.multiplier}x` : 'LOSE')} 
               />
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-slate-400">Segment Id</span>
@@ -171,15 +173,6 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
                   )}
                 </div>
               </div>
-              <DetailRow 
-                label="Segment Label" 
-                value={spin.segment?.label || (isWin ? `WIN ${spin.multiplier}x` : 'LOSE')} 
-              />
-              <DetailRow 
-                label="Net Payout Bsk" 
-                value={netChange.toFixed(2)}
-                highlight={isWin}
-              />
             </div>
           </div>
 
