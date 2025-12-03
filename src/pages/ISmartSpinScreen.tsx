@@ -95,8 +95,25 @@ export default function ISmartSpinScreen() {
   const handleSpinComplete = () => {
     console.info('SPIN_ANIM_COMPLETE', { outcomeIndex: winningSegmentIndex, spinId: spinMachine.spinId })
     spinMachine.send({ type: 'SPIN_ANIM_DONE' })
+    
     // Show result modal
     setShowResultModal(true)
+    
+    // Show toast AFTER wheel animation completes
+    if (lastResult) {
+      if ((lastResult.multiplier ?? 0) > 0) {
+        toast({
+          title: "🎉 You Won!",
+          description: `${lastResult.segment?.label || 'WIN'} - Won ${Number(lastResult.net_payout_bsk ?? 0).toFixed(2)} BSK`,
+        })
+      } else {
+        toast({
+          title: "Better luck next time!",
+          description: `${lastResult.segment?.label || 'LOSE'}`,
+        })
+      }
+    }
+    
     // Auto-handle result after modal shows
     setTimeout(() => {
       spinMachine.send({ type: 'RESULT_HANDLED' })
