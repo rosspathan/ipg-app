@@ -7,13 +7,13 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { SpinWheel3D } from '@/components/spin/SpinWheel3D'
 import { BetCardPro } from '@/components/spin/BetCardPro'
 import { ProvablyFairPanel } from '@/components/spin/ProvablyFairPanel'
-import { HistorySheet } from '@/components/spin/HistorySheet'
 import { SpinResultModal } from '@/components/spin/SpinResultModal'
 import { History, Sparkles } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { useSpinMachine } from '@/hooks/useSpinMachine'
 import { useAuthUser } from '@/hooks/useAuthUser'
+import { setBalanceNotificationSuppression } from '@/lib/balanceNotificationControl'
 
 export default function ISmartSpinScreen() {
   const navigate = useNavigate()
@@ -21,7 +21,6 @@ export default function ISmartSpinScreen() {
   const { user } = useAuthUser()
   const [betAmount, setBetAmount] = useState(100)
   const [winningSegmentIndex, setWinningSegmentIndex] = useState<number>()
-  const [showHistory, setShowHistory] = useState(false)
   const [showResultModal, setShowResultModal] = useState(false)
   const [spinHistory, setSpinHistory] = useState<any[]>([])
 
@@ -76,6 +75,9 @@ export default function ISmartSpinScreen() {
       return
     }
 
+    // Suppress balance notifications during spin animation
+    setBalanceNotificationSuppression(true)
+
     // Clear previous winning segment BEFORE starting new spin
     setWinningSegmentIndex(undefined)
     spinMachine.send({ type: 'SPIN_CLICK' })
@@ -95,6 +97,9 @@ export default function ISmartSpinScreen() {
   const handleSpinComplete = () => {
     console.info('SPIN_ANIM_COMPLETE', { outcomeIndex: winningSegmentIndex, spinId: spinMachine.spinId })
     spinMachine.send({ type: 'SPIN_ANIM_DONE' })
+    
+    // Re-enable balance notifications after wheel animation completes
+    setBalanceNotificationSuppression(false)
     
     // Show result modal
     setShowResultModal(true)
@@ -201,7 +206,7 @@ export default function ISmartSpinScreen() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowHistory(true)}
+              onClick={() => navigate('/app/spin/history')}
               className="text-xs h-8 px-3 hover:bg-primary/10 transition-all"
             >
               <History className="w-3.5 h-3.5 mr-1.5" />
@@ -321,14 +326,6 @@ export default function ISmartSpinScreen() {
         isSpinning={isSpinning || !spinMachine.isIdle}
         canAfford={costs?.canAfford || false}
         onSpin={handleSpin}
-      />
-
-      {/* History Sheet */}
-      <HistorySheet
-        isOpen={showHistory}
-        onClose={() => setShowHistory(false)}
-        history={spinHistory}
-        onViewAll={() => navigate('/app/spin/history')}
       />
 
       {/* Result Modal */}
