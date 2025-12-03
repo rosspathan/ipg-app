@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { isBalanceNotificationSuppressed } from '@/lib/balanceNotificationControl';
 
 interface BSKBalance {
   withdrawable_balance: number;
@@ -180,7 +181,8 @@ export const useUserBSKBalance = () => {
                   const newTotal = Number(newRecord.withdrawable_balance || 0) + Number(newRecord.holding_balance || 0);
                   const diff = newTotal - oldTotal;
                   
-                  if (Math.abs(diff) >= 1) { // Only show toast for changes >= 1 BSK
+                  // Only show toast if not suppressed (e.g., during spin animation) and change >= 1 BSK
+                  if (Math.abs(diff) >= 1 && !isBalanceNotificationSuppressed()) {
                     toast.info(
                       `Balance ${diff > 0 ? 'increased' : 'decreased'} by ${Math.abs(diff).toFixed(2)} BSK`,
                       {
