@@ -42,8 +42,8 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="text-center flex-1">
-            <h2 className="text-base font-semibold text-foreground">Transaction Details</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <h2 className="text-base font-semibold text-white">Transaction Details</h2>
+            <p className="text-sm text-slate-400 mt-0.5">
               {isWin ? 'Spin Win' : 'Spin Loss'}
             </p>
           </div>
@@ -54,11 +54,11 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
         <div className="overflow-y-auto h-[calc(90vh-65px)] pb-8">
           {/* Amount Display */}
           <div className="text-center py-8 px-4">
-            <p className="text-sm text-muted-foreground mb-2">Amount</p>
+            <p className="text-sm text-slate-400 mb-2">Amount</p>
             <p className={`text-4xl font-bold ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
-              {netChange >= 0 ? '+' : ''}{netChange.toFixed(2)}
+              {isWin ? `+${Number(spin.payout_bsk || 0).toFixed(2)}` : `-${Number(spin.bet_bsk || 0).toFixed(2)}`}
             </p>
-            <p className="text-muted-foreground text-sm mt-1">BSK</p>
+            <p className="text-slate-400 text-sm mt-1">BSK</p>
             
             {/* Balance Type Badges */}
             <div className="flex items-center justify-center gap-2 mt-4">
@@ -79,7 +79,7 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
 
           {/* TRANSACTION INFORMATION Section */}
           <div className="px-4 mt-2">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
               Transaction Information
             </h3>
             
@@ -100,9 +100,9 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
                 } 
               />
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm text-muted-foreground">Transaction ID</span>
+                <span className="text-sm text-slate-400">Transaction ID</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono text-foreground">
+                  <span className="text-sm font-mono text-white">
                     {truncateId(spin.id)}
                   </span>
                   <button 
@@ -118,7 +118,7 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
 
           {/* ADDITIONAL DETAILS Section */}
           <div className="px-4 mt-6">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
               Additional Details
             </h3>
             
@@ -156,9 +156,9 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
                 value={spin.was_free_spin ? '0.00' : Number(spin.spin_fee_bsk || 0).toFixed(2)} 
               />
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm text-muted-foreground">Segment Id</span>
+                <span className="text-sm text-slate-400">Segment Id</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono text-foreground">
+                  <span className="text-sm font-mono text-white">
                     {truncateId(spin.segment_id || '')}
                   </span>
                   {spin.segment_id && (
@@ -185,15 +185,15 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
 
           {/* Server Seed Section */}
           <div className="px-4 mt-6">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
               Provably Fair
             </h3>
             
             <div className="bg-[hsl(220_13%_11%)] rounded-xl divide-y divide-[hsl(220_13%_18%)]">
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm text-muted-foreground">Server Seed Hash</span>
+                <span className="text-sm text-slate-400">Server Seed Hash</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono text-foreground">
+                  <span className="text-sm font-mono text-white">
                     {truncateId(spin.server_seed_hash || '')}
                   </span>
                   {spin.server_seed_hash && (
@@ -229,8 +229,8 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center justify-between px-4 py-3">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`text-sm ${highlight ? 'text-emerald-400 font-semibold' : 'text-foreground'}`}>
+      <span className="text-sm text-slate-400">{label}</span>
+      <span className={`text-sm ${highlight ? 'text-emerald-400 font-semibold' : 'text-white'}`}>
         {value}
       </span>
     </div>
