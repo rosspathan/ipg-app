@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Card } from '@/components/ui/card'
 
 interface Segment {
   id: string
@@ -27,6 +26,7 @@ export function ISmartSpinWheel({ segments, isSpinning, winningSegmentIndex, onS
 
   useEffect(() => {
     if (isSpinning) {
+      console.info('WHEEL_START')
       startSpinAnimation()
     } else if (winningSegmentIndex !== undefined) {
       stopAtWinningSegment(winningSegmentIndex)
@@ -42,33 +42,70 @@ export function ISmartSpinWheel({ segments, isSpinning, winningSegmentIndex, onS
 
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2
-    const radius = Math.min(centerX, centerY) - 10
+    const outerRadius = Math.min(centerX, centerY) - 10
+    const innerRadius = outerRadius - 8 // Golden ring width
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // Draw segments
-    const totalWeight = segments.reduce((sum, segment) => sum + segment.weight, 0)
-    let currentAngle = -Math.PI / 2 // Start from top (12 o'clock) to align with pointer
+    // Draw outer golden ring
+    ctx.beginPath()
+    ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI)
+    const goldGradient = ctx.createRadialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius)
+    goldGradient.addColorStop(0, '#d4af37')
+    goldGradient.addColorStop(0.5, '#f4d03f')
+    goldGradient.addColorStop(1, '#b8860b')
+    ctx.fillStyle = goldGradient
+    ctx.fill()
+
+    // Draw decorative dots on rim
+    const dotCount = 24
+    for (let i = 0; i < dotCount; i++) {
+      const dotAngle = (i / dotCount) * 2 * Math.PI - Math.PI / 2
+      const dotX = centerX + Math.cos(dotAngle) * (outerRadius - 4)
+      const dotY = centerY + Math.sin(dotAngle) * (outerRadius - 4)
+      
+      ctx.beginPath()
+      ctx.arc(dotX, dotY, 3, 0, 2 * Math.PI)
+      ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#1a1a1a'
+      ctx.fill()
+    }
+
+    // Draw segments with EQUAL visual size (not based on weight)
+    const segmentAngle = (2 * Math.PI) / segments.length // Equal angle for each segment
+    let currentAngle = -Math.PI / 2 // Start from top (12 o'clock)
 
     segments.forEach((segment, index) => {
-      const segmentAngle = (segment.weight / totalWeight) * 2 * Math.PI
-      
       // Draw segment
       ctx.beginPath()
       ctx.moveTo(centerX, centerY)
-      ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + segmentAngle)
+      ctx.arc(centerX, centerY, innerRadius, currentAngle, currentAngle + segmentAngle)
       ctx.closePath()
+      
+      // Create gradient for segment
+      const midAngle = currentAngle + segmentAngle / 2
+      const gradientX1 = centerX + Math.cos(midAngle) * innerRadius * 0.3
+      const gradientY1 = centerY + Math.sin(midAngle) * innerRadius * 0.3
+      const gradientX2 = centerX + Math.cos(midAngle) * innerRadius * 0.9
+      const gradientY2 = centerY + Math.sin(midAngle) * innerRadius * 0.9
+      
+      const segmentGradient = ctx.createLinearGradient(gradientX1, gradientY1, gradientX2, gradientY2)
       
       // Highlight winning segment
       if (winningSegmentIndex === index) {
-        ctx.fillStyle = '#ffffff'
+        segmentGradient.addColorStop(0, '#ffffff')
+        segmentGradient.addColorStop(1, '#f0f0f0')
+        ctx.fillStyle = segmentGradient
         ctx.fill()
         ctx.strokeStyle = segment.color_hex
         ctx.lineWidth = 4
         ctx.stroke()
       } else {
-        ctx.fillStyle = segment.color_hex
+        // Add slight gradient to segments for depth
+        const baseColor = segment.color_hex
+        segmentGradient.addColorStop(0, baseColor)
+        segmentGradient.addColorStop(1, adjustColor(baseColor, -20))
+        ctx.fillStyle = segmentGradient
         ctx.fill()
         ctx.strokeStyle = '#ffffff'
         ctx.lineWidth = 2
@@ -77,54 +114,98 @@ export function ISmartSpinWheel({ segments, isSpinning, winningSegmentIndex, onS
 
       // Draw text
       const textAngle = currentAngle + segmentAngle / 2
-      const textRadius = radius * 0.7
+      const textRadius = innerRadius * 0.65
       const textX = centerX + Math.cos(textAngle) * textRadius
       const textY = centerY + Math.sin(textAngle) * textRadius
 
       ctx.save()
       ctx.translate(textX, textY)
-      ctx.rotate(textAngle > Math.PI / 2 && textAngle < (3 * Math.PI) / 2 ? textAngle + Math.PI : textAngle)
+      
+      // Rotate text to be readable
+      let textRotation = textAngle
+      if (textAngle > Math.PI / 2 && textAngle < (3 * Math.PI) / 2) {
+        textRotation += Math.PI
+      }
+      ctx.rotate(textRotation)
       
       ctx.fillStyle = winningSegmentIndex === index ? segment.color_hex : '#ffffff'
-      ctx.font = 'bold 14px Arial'
+      ctx.font = 'bold 16px Arial'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
+      
+      // Add text shadow for better readability
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'
+      ctx.shadowBlur = 3
+      ctx.shadowOffsetX = 1
+      ctx.shadowOffsetY = 1
       ctx.fillText(segment.label, 0, 0)
+      ctx.shadowColor = 'transparent'
       
       ctx.restore()
 
       currentAngle += segmentAngle
     })
 
-    // Draw center circle
+    // Draw center circle with gradient
+    const centerGradient = ctx.createRadialGradient(centerX - 5, centerY - 5, 0, centerX, centerY, 35)
+    centerGradient.addColorStop(0, '#3a3a3a')
+    centerGradient.addColorStop(0.7, '#1a1a1a')
+    centerGradient.addColorStop(1, '#000000')
+    
     ctx.beginPath()
-    ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI)
-    ctx.fillStyle = '#1a1a1a'
+    ctx.arc(centerX, centerY, 32, 0, 2 * Math.PI)
+    ctx.fillStyle = centerGradient
     ctx.fill()
-    ctx.strokeStyle = '#ffffff'
+    
+    // Gold ring around center
+    ctx.strokeStyle = '#d4af37'
     ctx.lineWidth = 3
     ctx.stroke()
 
     // Draw center text
     ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 12px Arial'
+    ctx.font = 'bold 13px Arial'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText('SPIN', centerX, centerY)
 
     // Draw pointer
-    drawPointer(ctx, centerX, centerY - radius + 5)
+    drawPointer(ctx, centerX, centerY - outerRadius + 5)
+  }
+
+  // Helper to darken/lighten colors
+  const adjustColor = (hex: string, amount: number): string => {
+    const num = parseInt(hex.replace('#', ''), 16)
+    const r = Math.min(255, Math.max(0, (num >> 16) + amount))
+    const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount))
+    const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount))
+    return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`
   }
 
   const drawPointer = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
+    // Draw pointer shadow
+    ctx.beginPath()
+    ctx.moveTo(x + 2, y + 2)
+    ctx.lineTo(x - 12, y - 22)
+    ctx.lineTo(x + 14, y - 22)
+    ctx.closePath()
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'
+    ctx.fill()
+    
+    // Draw pointer
     ctx.beginPath()
     ctx.moveTo(x, y)
-    ctx.lineTo(x - 10, y - 20)
-    ctx.lineTo(x + 10, y - 20)
+    ctx.lineTo(x - 12, y - 24)
+    ctx.lineTo(x + 12, y - 24)
     ctx.closePath()
-    ctx.fillStyle = '#ffffff'
+    
+    const pointerGradient = ctx.createLinearGradient(x, y, x, y - 24)
+    pointerGradient.addColorStop(0, '#f4d03f')
+    pointerGradient.addColorStop(1, '#d4af37')
+    ctx.fillStyle = pointerGradient
     ctx.fill()
-    ctx.strokeStyle = '#000000'
+    
+    ctx.strokeStyle = '#b8860b'
     ctx.lineWidth = 2
     ctx.stroke()
   }
@@ -147,43 +228,38 @@ export function ISmartSpinWheel({ segments, isSpinning, winningSegmentIndex, onS
       cancelAnimationFrame(animationRef.current)
     }
 
-    const totalWeight = segments.reduce((sum, segment) => sum + segment.weight, 0)
-    let cumulativeAngle = 0
+    // Use EQUAL visual angles (not weight-based)
+    const equalAngle = 360 / segments.length // 90° per segment for 4 segments
     
     // Calculate the cumulative angle up to the winning segment
-    for (let i = 0; i < segmentIndex; i++) {
-      cumulativeAngle += (segments[i].weight / totalWeight) * 360
-    }
+    const cumulativeAngle = segmentIndex * equalAngle
     
-    // Add half of the winning segment's angle to center the pointer on it
-    const winningSegmentHalfAngle = (segments[segmentIndex].weight / totalWeight) * 360 / 2
+    // Add half of the segment's angle to center the pointer on it
+    const winningSegmentHalfAngle = equalAngle / 2
     const targetAngle = cumulativeAngle + winningSegmentHalfAngle
     
-    // Since we draw from -90 degrees (top), we need to rotate to align the winning segment with top (0 degrees)
-    // We want the winning segment center to be at the top, so we rotate to put it there
-    const finalAngle = 1440 - targetAngle + 90 // 4 full rotations + positioning to align with arrow
+    // Rotate to align the winning segment with top (where pointer is)
+    const finalAngle = 1440 - targetAngle + 90 // 4 full rotations + positioning
     
     setRotation(finalAngle)
     
     setTimeout(() => {
+      console.info('WHEEL_DONE')
       drawWheel() // Redraw to highlight winning segment
       onSpinComplete?.()
     }, 2000)
   }
 
-  const getTotalWeight = () => segments.reduce((sum, segment) => sum + segment.weight, 0)
-  const getSegmentProbability = (weight: number) => ((weight / getTotalWeight()) * 100).toFixed(1)
-
   if (!segments.length) {
     return (
-      <Card className="p-6 text-center">
+      <div className="p-6 text-center rounded-lg border bg-card">
         <p className="text-muted-foreground">No segments configured</p>
-      </Card>
+      </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Wheel */}
       <div className="relative flex justify-center">
         <div className="relative">
@@ -199,7 +275,7 @@ export function ISmartSpinWheel({ segments, isSpinning, winningSegmentIndex, onS
         </div>
       </div>
 
-      {/* Segments Info */}
+      {/* Segments Info - Without probability display */}
       <div className="grid grid-cols-2 gap-2">
         {segments.map((segment, index) => (
           <div
@@ -211,7 +287,7 @@ export function ISmartSpinWheel({ segments, isSpinning, winningSegmentIndex, onS
             }`}
           >
             <div
-              className="w-4 h-4 rounded-full border-2 border-white"
+              className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
               style={{ backgroundColor: segment.color_hex }}
             />
             <div className="flex-1 min-w-0">
@@ -219,7 +295,7 @@ export function ISmartSpinWheel({ segments, isSpinning, winningSegmentIndex, onS
                 {segment.label}
               </p>
               <p className="text-xs text-muted-foreground">
-                {getSegmentProbability(segment.weight)}% chance
+                {segment.multiplier > 0 ? `${segment.multiplier}x payout` : 'No payout'}
               </p>
             </div>
           </div>
