@@ -44,8 +44,11 @@ export function SpinResultModal({ isOpen, onClose, result }: SpinResultModalProp
 
   if (!result) return null
 
-  const isWin = result.multiplier > 0
-  const isBigWin = result.multiplier >= 1.5
+  const multiplier = result.multiplier ?? 0
+  const netChangeBsk = result.net_change_bsk ?? 0
+  const payoutBsk = result.payout_bsk ?? 0
+  const isWin = multiplier > 0
+  const isBigWin = multiplier >= 1.5
   const segmentLabel = result.segment_label || result.segment?.label || 'LOSE'
 
   return (
@@ -108,20 +111,20 @@ export function SpinResultModal({ isOpen, onClose, result }: SpinResultModalProp
               <div className={`text-6xl font-bold ${
                 isWin ? 'text-emerald-500' : 'text-red-500'
               } animate-scale-in`}>
-                {result.multiplier}x
+                {multiplier}x
               </div>
 
               <div className={`text-3xl font-bold ${
-                result.net_change_bsk > 0 ? 'text-emerald-500' : 'text-red-500'
+                netChangeBsk > 0 ? 'text-emerald-500' : 'text-red-500'
               }`}>
-                {result.net_change_bsk > 0 ? '+' : ''}
-                {result.net_change_bsk.toFixed(2)} BSK
+                {netChangeBsk > 0 ? '+' : ''}
+                {netChangeBsk.toFixed(2)} BSK
               </div>
             </div>
 
             {/* Payout details */}
             <div className="text-sm text-muted-foreground">
-              Payout: {result.payout_bsk.toFixed(2)} BSK
+              Payout: {payoutBsk.toFixed(2)} BSK
             </div>
 
             {isBigWin && (
