@@ -51,11 +51,9 @@ export function SpinWheel3D({
     // Reset base rotation so each spin animates from 0 → target
     setRotation(0)
 
-    const totalWeight = segments.reduce((sum, s) => sum + s.weight, 0)
-    const prevWeight = segments.slice(0, targetIndex).reduce((sum, s) => sum + s.weight, 0)
-    const targetWeight = segments[targetIndex].weight
-
-    const offsetFromTop = ((prevWeight + targetWeight / 2) / totalWeight) * 360
+    // Use equal visual angles for stopping position (hides house edge)
+    const equalAngle = 360 / segments.length
+    const offsetFromTop = targetIndex * equalAngle + equalAngle / 2
     const fullSpins = 5 // Premium feel – deterministic
     const targetRotation = 360 * fullSpins - offsetFromTop
 
@@ -196,12 +194,11 @@ export function SpinWheel3D({
     ctx.fillStyle = darkRing
     ctx.fill('evenodd')
 
-    // === SEGMENTS (Dynamic count based on admin configuration) ===
-    const totalWeight = renderSegments.reduce((sum, s) => sum + s.weight, 0)
+    // === SEGMENTS (Equal visual size - house edge hidden via backend weights) ===
+    const segmentAngle = (2 * Math.PI) / renderSegments.length
     let currentAngle = -Math.PI / 2
 
     renderSegments.forEach((segment, index) => {
-      const segmentAngle = (segment.weight / totalWeight) * 2 * Math.PI
 
       ctx.save()
       ctx.beginPath()
