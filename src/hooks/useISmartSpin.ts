@@ -190,19 +190,7 @@ export function useISmartSpin() {
       // Update local state
       await loadSpinData()
 
-      // Show result toast
-      if (result.multiplier > 0) {
-        toast({
-          title: "🎉 You Won!",
-          description: `${result.segment.label} - Won ${Number(result.net_payout_bsk ?? 0).toFixed(2)} BSK`,
-          variant: "default"
-        })
-      } else {
-        toast({
-          title: "Better luck next time!",
-          description: `${result.segment.label}`,
-        })
-      }
+      // Toast is shown AFTER wheel animation completes in ISmartSpinScreen.tsx
 
       return result
 
