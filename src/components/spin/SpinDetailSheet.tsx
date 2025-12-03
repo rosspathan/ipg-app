@@ -1,8 +1,6 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { Copy, ExternalLink, Target, X, Gift } from 'lucide-react';
+import { Copy, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { SpinHistoryItem } from '@/hooks/useSpinHistory';
@@ -24,149 +22,195 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
     toast.success(`${label} copied`);
   };
 
-  const openVerifyPage = () => {
-    window.open(`/app/spin/verify?hash=${spin.server_seed_hash}`, '_blank');
+  const truncateId = (id: string) => {
+    if (id.length <= 24) return id;
+    return `${id.slice(0, 20)}...`;
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <div className={`p-2 rounded-full ${isWin ? 'bg-emerald-500/15' : 'bg-red-500/15'}`}>
-              {isWin ? (
-                <Target className={`h-5 w-5 text-emerald-500`} />
-              ) : (
-                <X className={`h-5 w-5 text-red-500`} />
-              )}
-            </div>
-            Spin Details
-          </SheetTitle>
-          <SheetDescription>
-            {format(new Date(spin.created_at), 'PPpp')}
-          </SheetDescription>
-        </SheetHeader>
+      <SheetContent 
+        side="bottom" 
+        className="h-[90vh] bg-[hsl(220_13%_8%)] border-t border-[hsl(220_13%_18%)] rounded-t-3xl p-0 overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-[hsl(220_13%_15%)]">
+          <button 
+            onClick={() => onOpenChange(false)}
+            className="p-2 -ml-2 text-primary hover:text-primary/80"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="text-center flex-1">
+            <h2 className="text-base font-semibold text-foreground">Transaction Details</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {isWin ? 'Spin Win' : 'Spin Loss'}
+            </p>
+          </div>
+          <div className="w-9" /> {/* Spacer for centering */}
+        </div>
 
-        <div className="mt-6 space-y-6">
-          {/* Result & Amount Section */}
-          <div className="text-center py-8 border rounded-lg bg-gradient-to-br from-background to-muted/20">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Badge variant={isWin ? 'default' : 'destructive'} className="text-base px-4 py-1">
-                {isWin ? `WIN ${spin.multiplier}x` : 'LOSE'}
-              </Badge>
-              {spin.was_free_spin && (
-                <Badge variant="secondary" className="gap-1">
-                  <Gift className="h-3 w-3" />
-                  Free Spin
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground mb-2">Net Change</p>
-            <p className={`text-5xl font-bold ${netChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+        {/* Scrollable Content */}
+        <div className="overflow-y-auto h-[calc(90vh-65px)] pb-8">
+          {/* Amount Display */}
+          <div className="text-center py-8 px-4">
+            <p className="text-sm text-muted-foreground mb-2">Amount</p>
+            <p className={`text-4xl font-bold ${isWin ? 'text-emerald-400' : 'text-red-400'}`}>
               {netChange >= 0 ? '+' : ''}{netChange.toFixed(2)}
             </p>
             <p className="text-muted-foreground text-sm mt-1">BSK</p>
-          </div>
-
-          <Separator />
-
-          {/* Breakdown Section */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-              Breakdown
-            </h3>
             
-            <DetailRow label="Bet Amount" value={`${Number(spin.bet_bsk).toFixed(2)} BSK`} />
-            <DetailRow 
-              label="Spin Fee" 
-              value={spin.was_free_spin ? 'Free' : `${Number(spin.spin_fee_bsk || 0).toFixed(2)} BSK`} 
-            />
-            <DetailRow 
-              label="Payout" 
-              value={`${Number(spin.payout_bsk).toFixed(2)} BSK`}
-              valueColor={isWin ? 'text-emerald-500' : undefined}
-            />
-            {(spin.profit_fee_bsk || 0) > 0 && (
-              <DetailRow 
-                label="Winner Fee (10%)" 
-                value={`-${Number(spin.profit_fee_bsk).toFixed(2)} BSK`}
-                valueColor="text-orange-500"
-              />
-            )}
-            
-            <Separator />
-            
-            <DetailRow 
-              label="Net Change" 
-              value={`${netChange >= 0 ? '+' : ''}${netChange.toFixed(2)} BSK`}
-              valueColor={netChange >= 0 ? 'text-emerald-500' : 'text-red-500'}
-              bold
-            />
-          </div>
-
-          <Separator />
-
-          {/* Provably Fair Section */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-              Provably Fair
-            </h3>
-            
-            <div className="p-4 bg-muted/30 rounded-lg space-y-3">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Server Seed Hash</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs font-mono bg-background/50 px-2 py-1 rounded truncate">
-                    {spin.server_seed_hash}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 flex-shrink-0"
-                    onClick={() => copyToClipboard(spin.server_seed_hash, 'Seed hash')}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Client Seed</p>
-                  <code className="text-xs font-mono bg-background/50 px-2 py-1 rounded block truncate">
-                    {spin.client_seed}
-                  </code>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Nonce</p>
-                  <code className="text-xs font-mono bg-background/50 px-2 py-1 rounded block">
-                    {spin.nonce}
-                  </code>
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-2"
-                onClick={openVerifyPage}
+            {/* Balance Type Badges */}
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <Badge 
+                variant="outline" 
+                className="bg-primary/10 border-primary/30 text-primary px-3 py-1"
               >
-                <ExternalLink className="h-4 w-4" />
-                Verify Fairness
-              </Button>
+                Withdrawable
+              </Badge>
+              <Badge 
+                variant="outline" 
+                className="bg-muted/30 border-muted-foreground/20 text-muted-foreground px-3 py-1"
+              >
+                Credit
+              </Badge>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-2 pt-4">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => copyToClipboard(spin.id, 'Spin ID')}
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              Copy ID
-            </Button>
+          {/* TRANSACTION INFORMATION Section */}
+          <div className="px-4 mt-2">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Transaction Information
+            </h3>
+            
+            <div className="bg-[hsl(220_13%_11%)] rounded-xl divide-y divide-[hsl(220_13%_18%)]">
+              <DetailRow 
+                label="Date & Time" 
+                value={format(new Date(spin.created_at), 'MMM d, yyyy, h:mm:ss a')} 
+              />
+              <DetailRow 
+                label="Transaction Subtype" 
+                value={isWin ? 'spin_win' : 'spin_loss'}
+              />
+              <DetailRow 
+                label="Notes" 
+                value={isWin 
+                  ? `Spin win: ${spin.multiplier}x multiplier, payout ${Number(spin.payout_bsk).toFixed(0)} BSK`
+                  : `Spin loss: Bet ${Number(spin.bet_bsk).toFixed(0)} BSK`
+                } 
+              />
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-muted-foreground">Transaction ID</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-mono text-foreground">
+                    {truncateId(spin.id)}
+                  </span>
+                  <button 
+                    onClick={() => copyToClipboard(spin.id, 'Transaction ID')}
+                    className="p-1.5 text-primary hover:text-primary/80"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ADDITIONAL DETAILS Section */}
+          <div className="px-4 mt-6">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Additional Details
+            </h3>
+            
+            <div className="bg-[hsl(220_13%_11%)] rounded-xl divide-y divide-[hsl(220_13%_18%)]">
+              <DetailRow 
+                label="Nonce" 
+                value={String(spin.nonce)} 
+              />
+              <DetailRow 
+                label="Bet Bsk" 
+                value={Number(spin.bet_bsk).toFixed(2)} 
+              />
+              <DetailRow 
+                label="Multiplier" 
+                value={String(spin.multiplier)} 
+              />
+              <DetailRow 
+                label="Payout Bsk" 
+                value={Number(spin.payout_bsk).toFixed(2)} 
+              />
+              {spin.was_free_spin && (
+                <DetailRow 
+                  label="Free Spin" 
+                  value="Yes" 
+                />
+              )}
+              {(spin.profit_fee_bsk || 0) > 0 && (
+                <DetailRow 
+                  label="Winner Fee" 
+                  value={`${Number(spin.profit_fee_bsk).toFixed(2)} BSK`} 
+                />
+              )}
+              <DetailRow 
+                label="Spin Fee" 
+                value={spin.was_free_spin ? '0.00' : Number(spin.spin_fee_bsk || 0).toFixed(2)} 
+              />
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-muted-foreground">Segment Id</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-mono text-foreground">
+                    {truncateId(spin.segment_id || '')}
+                  </span>
+                  {spin.segment_id && (
+                    <button 
+                      onClick={() => copyToClipboard(spin.segment_id!, 'Segment ID')}
+                      className="p-1.5 text-primary hover:text-primary/80"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <DetailRow 
+                label="Segment Label" 
+                value={spin.segment?.label || (isWin ? `WIN ${spin.multiplier}x` : 'LOSE')} 
+              />
+              <DetailRow 
+                label="Net Payout Bsk" 
+                value={netChange.toFixed(2)}
+                highlight={isWin}
+              />
+            </div>
+          </div>
+
+          {/* Server Seed Section */}
+          <div className="px-4 mt-6">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Provably Fair
+            </h3>
+            
+            <div className="bg-[hsl(220_13%_11%)] rounded-xl divide-y divide-[hsl(220_13%_18%)]">
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-muted-foreground">Server Seed Hash</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-mono text-foreground">
+                    {truncateId(spin.server_seed_hash || '')}
+                  </span>
+                  {spin.server_seed_hash && (
+                    <button 
+                      onClick={() => copyToClipboard(spin.server_seed_hash, 'Server Seed Hash')}
+                      className="p-1.5 text-primary hover:text-primary/80"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <DetailRow 
+                label="Client Seed" 
+                value={spin.client_seed || 'N/A'} 
+              />
+            </div>
           </div>
         </div>
       </SheetContent>
@@ -177,18 +221,16 @@ export function SpinDetailSheet({ spin, open, onOpenChange }: SpinDetailSheetPro
 function DetailRow({ 
   label, 
   value, 
-  valueColor,
-  bold 
+  highlight
 }: { 
   label: string; 
   value: string; 
-  valueColor?: string;
-  bold?: boolean;
+  highlight?: boolean;
 }) {
   return (
-    <div className="flex justify-between items-center">
+    <div className="flex items-center justify-between px-4 py-3">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`text-sm ${bold ? 'font-bold' : 'font-medium'} ${valueColor || ''}`}>
+      <span className={`text-sm ${highlight ? 'text-emerald-400 font-semibold' : 'text-foreground'}`}>
         {value}
       </span>
     </div>
