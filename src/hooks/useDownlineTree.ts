@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from './useAuthUser';
 
+const BATCH_SIZE = 200; // Safe batch size for URL length limits
+
 export interface DownlineMember {
   level: number;
   user_id: string;
@@ -88,13 +90,17 @@ export function useDownlineTree() {
 
       const userIds = treeData.map(t => t.user_id);
 
-      // Fetch user profiles
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_id, username, display_name, email')
-        .in('user_id', userIds);
-
-      if (profileError) throw profileError;
+      // Fetch user profiles in batches (URL length limit ~8KB, ~200 UUIDs per batch)
+      let profiles: { user_id: string; username: string; display_name: string; email: string }[] = [];
+      for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+        const batchIds = userIds.slice(i, i + BATCH_SIZE);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id, username, display_name, email')
+          .in('user_id', batchIds);
+        if (error) throw error;
+        if (data) profiles.push(...data);
+      }
 
       // Fetch badge holdings using secure RPC function (bypasses RLS)
       const { data: badges, error: badgeError } = await supabase
@@ -104,39 +110,53 @@ export function useDownlineTree() {
       
       console.log('📛 Badge data via RPC:', badges?.length || 0, 'badges', badges?.slice(0, 3));
 
-      // Fetch referral links for join dates
-      const { data: links, error: linkError } = await supabase
-        .from('referral_links_new')
-        .select('user_id, locked_at')
-        .in('user_id', userIds);
+      // Fetch referral links for join dates in batches
+      let links: { user_id: string; locked_at: string | null }[] = [];
+      for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+        const batchIds = userIds.slice(i, i + BATCH_SIZE);
+        const { data, error } = await supabase
+          .from('referral_links_new')
+          .select('user_id, locked_at')
+          .in('user_id', batchIds);
+        if (error) throw error;
+        if (data) links.push(...data);
+      }
 
-      if (linkError) throw linkError;
+      // Fetch commissions generated for current user in batches
+      let commissions: { payer_id: string; bsk_amount: number }[] = [];
+      for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+        const batchIds = userIds.slice(i, i + BATCH_SIZE);
+        const { data, error } = await supabase
+          .from('referral_commissions')
+          .select('payer_id, bsk_amount')
+          .eq('earner_id', user.id)
+          .in('payer_id', batchIds)
+          .eq('status', 'settled');
+        if (error) throw error;
+        if (data) commissions.push(...data);
+      }
 
-      // Fetch commissions generated for current user
-      const { data: commissions, error: commError } = await supabase
-        .from('referral_commissions')
-        .select('payer_id, bsk_amount')
-        .eq('earner_id', user.id)
-        .in('payer_id', userIds)
-        .eq('status', 'settled');
-
-      if (commError) throw commError;
-
-      // Fetch sponsor usernames for display
-      const sponsorIds = [...new Set(treeData.map(t => t.direct_sponsor_id).filter(Boolean))];
-      const { data: sponsorProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, username')
-        .in('user_id', sponsorIds);
+      // Fetch sponsor usernames for display in batches
+      const sponsorIds = [...new Set(treeData.map(t => t.direct_sponsor_id).filter(Boolean))] as string[];
+      let sponsorProfiles: { user_id: string; username: string }[] = [];
+      for (let i = 0; i < sponsorIds.length; i += BATCH_SIZE) {
+        const batchIds = sponsorIds.slice(i, i + BATCH_SIZE);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id, username')
+          .in('user_id', batchIds);
+        if (error) throw error;
+        if (data) sponsorProfiles.push(...data);
+      }
 
       // Create lookup maps
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      const profileMap = new Map(profiles.map(p => [p.user_id, p]));
       const badgeMap = new Map(badges?.map(b => [b.user_id, b]) || []);
-      const linkMap = new Map(links?.map(l => [l.user_id, l]) || []);
-      const sponsorMap = new Map(sponsorProfiles?.map(s => [s.user_id, s.username]) || []);
+      const linkMap = new Map(links.map(l => [l.user_id, l]));
+      const sponsorMap = new Map(sponsorProfiles.map(s => [s.user_id, s.username]));
       const commissionMap = new Map<string, number>();
       
-      commissions?.forEach(c => {
+      commissions.forEach(c => {
         commissionMap.set(c.payer_id, (commissionMap.get(c.payer_id) || 0) + c.bsk_amount);
       });
 
