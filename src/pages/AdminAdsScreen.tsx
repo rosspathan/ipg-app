@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MediaUploader } from '@/components/admin/MediaUploader';
 import { 
   Plus, 
   Edit, 
@@ -85,6 +86,8 @@ export const AdminAdsScreen: React.FC = () => {
   const [bannerPreview, setBannerPreview] = useState<string>('');
   const [squarePreview, setSquarePreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [detectedDuration, setDetectedDuration] = useState<number | null>(null);
 
   useEffect(() => {
     loadAds();
@@ -211,6 +214,8 @@ export const AdminAdsScreen: React.FC = () => {
     setSquareFile(null);
     setBannerPreview('');
     setSquarePreview('');
+    setUploadProgress(0);
+    setDetectedDuration(null);
   };
 
   const handleEdit = (ad: AdData & { id: string }) => {
@@ -232,47 +237,46 @@ export const AdminAdsScreen: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const uploadFile = async (file: File, path: string): Promise<string> => {
+  const uploadFile = async (file: File, path: string, onProgress?: (progress: number) => void): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = `${path}/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('ad-media')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (uploadError) throw uploadError;
-    return filePath;
+    // Use XMLHttpRequest for progress tracking
+    return new Promise((resolve, reject) => {
+      const { data: { publicUrl } } = supabase.storage.from('ad-media').getPublicUrl('');
+      const uploadUrl = publicUrl.replace('/object/public/ad-media/', '/object/ad-media/') + filePath;
+      
+      // Fall back to standard upload (Supabase SDK doesn't support progress)
+      supabase.storage
+        .from('ad-media')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+        .then(({ error }) => {
+          if (error) reject(error);
+          else {
+            onProgress?.(100);
+            resolve(filePath);
+          }
+        });
+      
+      // Simulate progress for UX (Supabase SDK limitation)
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress < 90) {
+          onProgress?.(Math.min(progress, 90));
+        }
+      }, 200);
+      
+      // Clear interval after upload completes
+      setTimeout(() => clearInterval(interval), 10000);
+    });
   };
 
-  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime'];
-    if (!validTypes.includes(file.type)) {
-      toast({
-        title: 'Invalid file type',
-        description: 'Please upload an image (JPG, PNG, WEBP, GIF) or video (MP4, WEBM, MOV)',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Validate file size (50MB)
-    if (file.size > 52428800) {
-      toast({
-        title: 'File too large',
-        description: 'Please upload a file smaller than 50MB',
-        variant: 'destructive'
-      });
-      return;
-    }
-
+  const handleBannerFileChange = (file: File) => {
     setBannerFile(file);
     setFormData({
       ...formData,
@@ -287,29 +291,7 @@ export const AdminAdsScreen: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSquareFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime'];
-    if (!validTypes.includes(file.type)) {
-      toast({
-        title: 'Invalid file type',
-        description: 'Please upload an image (JPG, PNG, WEBP, GIF) or video (MP4, WEBM, MOV)',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (file.size > 52428800) {
-      toast({
-        title: 'File too large',
-        description: 'Please upload a file smaller than 50MB',
-        variant: 'destructive'
-      });
-      return;
-    }
-
+  const handleSquareFileChange = (file: File) => {
     setSquareFile(file);
 
     const reader = new FileReader();
@@ -319,21 +301,33 @@ export const AdminAdsScreen: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleDurationDetected = (duration: number) => {
+    setDetectedDuration(duration);
+    // Auto-suggest required view time based on video duration (rounded up)
+    if (!formData.required_view_time || formData.required_view_time === 10) {
+      setFormData(prev => ({
+        ...prev,
+        required_view_time: Math.min(Math.ceil(duration), 120) // Cap at 120 seconds
+      }));
+    }
+  };
+
   const handleSave = async () => {
     try {
       setUploading(true);
+      setUploadProgress(0);
       
       let bannerPath = formData.image_url;
       let squarePath = formData.square_image_url;
 
       // Upload banner file if new file selected
       if (bannerFile) {
-        bannerPath = await uploadFile(bannerFile, 'banners');
+        bannerPath = await uploadFile(bannerFile, 'banners', (progress) => setUploadProgress(progress));
       }
 
       // Upload square file if new file selected
       if (squareFile) {
-        squarePath = await uploadFile(squareFile, 'squares');
+        squarePath = await uploadFile(squareFile, 'squares', (progress) => setUploadProgress(progress));
       }
 
       const adData = {
@@ -372,6 +366,7 @@ export const AdminAdsScreen: React.FC = () => {
       });
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -562,93 +557,50 @@ export const AdminAdsScreen: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Banner Media (16:9) *</Label>
-                  <div className="space-y-3">
-                    <Input
-                      type="file"
-                      accept="image/*,video/*"
-                      onChange={handleBannerFileChange}
-                      className="cursor-pointer"
-                    />
-                    {bannerPreview && (
-                      <div className="relative border border-border rounded-lg overflow-hidden bg-muted/30">
-                        {formData.media_type === 'video' ? (
-                          <video 
-                            src={bannerPreview} 
-                            className="w-full h-32 object-cover"
-                            controls
-                          />
-                        ) : (
-                          <img 
-                            src={bannerPreview} 
-                            alt="Banner preview" 
-                            className="w-full h-32 object-cover"
-                          />
-                        )}
-                        <Button
-                          size="icon"
-                          variant="destructive"
-                          className="absolute top-2 right-2 h-6 w-6"
-                          onClick={() => {
-                            setBannerFile(null);
-                            setBannerPreview('');
-                            setFormData({...formData, image_url: ''});
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {formData.media_type === 'video' ? <VideoIcon className="inline w-3 h-3 mr-1" /> : <ImageIcon className="inline w-3 h-3 mr-1" />}
-                      {formData.media_type === 'video' ? 'Video' : 'Image'} • Max 50MB
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <Label>Square Media (1:1)</Label>
-                  <div className="space-y-3">
-                    <Input
-                      type="file"
-                      accept="image/*,video/*"
-                      onChange={handleSquareFileChange}
-                      className="cursor-pointer"
-                    />
-                    {squarePreview && (
-                      <div className="relative border border-border rounded-lg overflow-hidden bg-muted/30">
-                        {formData.media_type === 'video' ? (
-                          <video 
-                            src={squarePreview} 
-                            className="w-full h-32 object-cover"
-                            controls
-                          />
-                        ) : (
-                          <img 
-                            src={squarePreview} 
-                            alt="Square preview" 
-                            className="w-full h-32 object-cover"
-                          />
-                        )}
-                        <Button
-                          size="icon"
-                          variant="destructive"
-                          className="absolute top-2 right-2 h-6 w-6"
-                          onClick={() => {
-                            setSquareFile(null);
-                            setSquarePreview('');
-                            setFormData({...formData, square_image_url: ''});
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground">Optional • Max 50MB</p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <MediaUploader
+                  label="Banner Media (16:9)"
+                  required
+                  aspectRatio="16:9"
+                  preview={bannerPreview}
+                  mediaType={formData.media_type as 'image' | 'video'}
+                  onFileSelect={handleBannerFileChange}
+                  onRemove={() => {
+                    setBannerFile(null);
+                    setBannerPreview('');
+                    setFormData({...formData, image_url: ''});
+                    setDetectedDuration(null);
+                  }}
+                  onDurationDetected={handleDurationDetected}
+                  uploading={uploading}
+                  uploadProgress={uploadProgress}
+                />
+                <MediaUploader
+                  label="Square Media (1:1)"
+                  aspectRatio="1:1"
+                  preview={squarePreview}
+                  mediaType={formData.media_type as 'image' | 'video'}
+                  onFileSelect={handleSquareFileChange}
+                  onRemove={() => {
+                    setSquareFile(null);
+                    setSquarePreview('');
+                    setFormData({...formData, square_image_url: ''});
+                  }}
+                  uploading={uploading}
+                  uploadProgress={uploadProgress}
+                />
               </div>
+
+              {/* Duration hint for videos */}
+              {detectedDuration && (
+                <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg flex items-center gap-2">
+                  <Clock className="w-3 h-3" />
+                  Video duration: {Math.floor(detectedDuration / 60)}:{Math.floor(detectedDuration % 60).toString().padStart(2, '0')}
+                  {formData.required_view_time && formData.required_view_time > detectedDuration && (
+                    <span className="text-warning ml-2">⚠️ Required view time exceeds video duration</span>
+                  )}
+                </div>
+              )}
 
               <div>
                 <Label>Target URL (Optional)</Label>
@@ -747,7 +699,7 @@ export const AdminAdsScreen: React.FC = () => {
                   {uploading ? (
                     <>
                       <Upload className="w-4 h-4 mr-2 animate-spin" />
-                      Uploading...
+                      Uploading {uploadProgress > 0 ? `${uploadProgress}%` : '...'}
                     </>
                   ) : (
                     <>{editingAd ? 'Update' : 'Create'} Ad</>
