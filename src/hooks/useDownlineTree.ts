@@ -48,14 +48,33 @@ export function useDownlineTree() {
       // That hid valid downlines (e.g., when trees were built including unlocked or via admin tools).
       // We now always attempt to read from referral_tree for accurate visibility.
 
-      // Fetch all descendants from referral_tree (only if user has direct referrals)
-      const { data: treeData, error: treeError } = await supabase
-        .from('referral_tree')
-        .select('level, user_id, direct_sponsor_id')
-        .eq('ancestor_id', user.id)
-        .order('level', { ascending: true });
+      // Fetch all descendants from referral_tree with pagination to handle large teams (1000+ members)
+      // Supabase default limit is 1000, so we need to fetch in batches
+      const BATCH_SIZE = 1000;
+      let allTreeData: { level: number; user_id: string; direct_sponsor_id: string | null }[] = [];
+      let offset = 0;
+      let hasMore = true;
 
-      if (treeError) throw treeError;
+      while (hasMore) {
+        const { data: batchData, error: treeError } = await supabase
+          .from('referral_tree')
+          .select('level, user_id, direct_sponsor_id')
+          .eq('ancestor_id', user.id)
+          .order('level', { ascending: true })
+          .range(offset, offset + BATCH_SIZE - 1);
+
+        if (treeError) throw treeError;
+
+        if (batchData && batchData.length > 0) {
+          allTreeData = [...allTreeData, ...batchData];
+          offset += BATCH_SIZE;
+          hasMore = batchData.length === BATCH_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const treeData = allTreeData;
       if (!treeData || treeData.length === 0) {
         return {
           members: [],
