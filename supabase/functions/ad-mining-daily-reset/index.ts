@@ -91,7 +91,7 @@ async function expireSubscriptions(supabase: any): Promise<{ count: number; user
   
   const config = configData?.config_json || {};
   const completionBonusEnabled = config.completionBonusEnabled ?? true;
-  const completionBonusPercent = config.completionBonusPercent || 10;
+  const completionBonusPercent = config.completionBonusPercent || 5;
   const completionBonusDestination = config.completionBonusDestination || 'withdrawable';
   
   console.log(`🎁 Completion bonus config: ${completionBonusEnabled ? 'enabled' : 'disabled'}, ${completionBonusPercent}%, destination: ${completionBonusDestination}`);
