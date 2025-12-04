@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Save, DollarSign, Timer, Gift } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Save, DollarSign, Timer, Gift, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,68 +15,98 @@ interface QuickEditAdMiningProps {
 
 export function QuickEditAdMining({ moduleKey, currentConfig }: QuickEditAdMiningProps) {
   const { toast } = useToast();
-  const [rewardPerAd, setRewardPerAd] = useState(currentConfig?.rewardPerAd || 10);
-  const [dailyLimit, setDailyLimit] = useState(currentConfig?.dailyLimit || 50);
-  const [completionBonusEnabled, setCompletionBonusEnabled] = useState(currentConfig?.completionBonusEnabled ?? true);
-  const [completionBonusPercent, setCompletionBonusPercent] = useState(currentConfig?.completionBonusPercent || 5);
-  const [completionBonusDestination, setCompletionBonusDestination] = useState<'holding' | 'withdrawable'>(
-    currentConfig?.completionBonusDestination || 'withdrawable'
-  );
+  const [rewardPerAd, setRewardPerAd] = useState(10);
+  const [dailyLimit, setDailyLimit] = useState(50);
+  const [completionBonusEnabled, setCompletionBonusEnabled] = useState(true);
+  const [completionBonusPercent, setCompletionBonusPercent] = useState(5);
+  const [completionBonusDestination, setCompletionBonusDestination] = useState<'holding' | 'withdrawable'>('withdrawable');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [settingsId, setSettingsId] = useState<string | null>(null);
 
+  // Load settings from ad_mining_settings table (the actual source of truth)
   useEffect(() => {
-    if (currentConfig) {
-      setRewardPerAd(currentConfig.rewardPerAd || 10);
-      setDailyLimit(currentConfig.dailyLimit || 50);
-      setCompletionBonusEnabled(currentConfig.completionBonusEnabled ?? true);
-      setCompletionBonusPercent(currentConfig.completionBonusPercent || 5);
-      setCompletionBonusDestination(currentConfig.completionBonusDestination || 'withdrawable');
-    }
-  }, [currentConfig]);
+    const loadSettings = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('ad_mining_settings')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          setSettingsId(data.id);
+          setRewardPerAd(data.free_daily_reward_bsk || 10);
+          setDailyLimit(data.max_free_per_day || 50);
+          // Note: completion bonus settings are not in ad_mining_settings yet
+          // They would need to be added as columns or stored elsewhere
+        }
+      } catch (error) {
+        console.error('Failed to load ad mining settings:', error);
+        toast({
+          title: "Failed to load settings",
+          description: "Using default values",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
     
-    // Show optimistic update
-    toast({
-      title: "Saving...",
-      description: "Updating configuration"
-    });
-    
     try {
-      // Get module ID from key
-      const { data: module, error: moduleError } = await supabase
+      if (!settingsId) {
+        throw new Error('Settings not found');
+      }
+
+      // Save to ad_mining_settings table (the actual backend source)
+      const { error } = await supabase
+        .from('ad_mining_settings')
+        .update({
+          free_daily_reward_bsk: rewardPerAd,
+          max_free_per_day: dailyLimit,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', settingsId);
+
+      if (error) throw error;
+
+      // Also save completion bonus settings to program_configs for UI consistency
+      const { data: module } = await supabase
         .from('program_modules')
         .select('id')
         .eq('key', moduleKey)
         .maybeSingle();
 
-      if (moduleError) throw moduleError;
-      if (!module) {
-        throw new Error('Program module not found');
+      if (module) {
+        await supabase
+          .from('program_configs')
+          .upsert({
+            module_id: module.id,
+            config_json: {
+              ...currentConfig,
+              rewardPerAd,
+              dailyLimit,
+              completionBonusEnabled,
+              completionBonusPercent,
+              completionBonusDestination,
+              updatedAt: new Date().toISOString()
+            },
+            status: 'published',
+            is_current: true
+          }, {
+            onConflict: 'module_id,is_current'
+          });
       }
-
-      // Upsert config (update if exists, insert if not)
-      const { error } = await supabase
-        .from('program_configs')
-        .upsert({
-          module_id: module.id,
-          config_json: {
-            ...currentConfig,
-            rewardPerAd,
-            dailyLimit,
-            completionBonusEnabled,
-            completionBonusPercent,
-            completionBonusDestination,
-            updatedAt: new Date().toISOString()
-          },
-          status: 'published',
-          is_current: true
-        }, {
-          onConflict: 'module_id,is_current'
-        });
-
-      if (error) throw error;
 
       toast({
         title: "✓ Settings saved",
@@ -94,6 +123,14 @@ export function QuickEditAdMining({ moduleKey, currentConfig }: QuickEditAdMinin
       setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -132,15 +169,15 @@ export function QuickEditAdMining({ moduleKey, currentConfig }: QuickEditAdMinin
         <Slider
           value={[dailyLimit]}
           onValueChange={([val]) => setDailyLimit(val)}
-          min={10}
+          min={1}
           max={200}
-          step={10}
+          step={1}
           className="w-full"
           disabled={saving}
           aria-label="Daily limit per user"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>10 ads</span>
+          <span>1 ad</span>
           <span>200 ads</span>
         </div>
       </div>
