@@ -19,7 +19,7 @@ export function QuickEditAdMining({ moduleKey, currentConfig }: QuickEditAdMinin
   const [rewardPerAd, setRewardPerAd] = useState(currentConfig?.rewardPerAd || 10);
   const [dailyLimit, setDailyLimit] = useState(currentConfig?.dailyLimit || 50);
   const [completionBonusEnabled, setCompletionBonusEnabled] = useState(currentConfig?.completionBonusEnabled ?? true);
-  const [completionBonusPercent, setCompletionBonusPercent] = useState(currentConfig?.completionBonusPercent || 10);
+  const [completionBonusPercent, setCompletionBonusPercent] = useState(currentConfig?.completionBonusPercent || 5);
   const [completionBonusDestination, setCompletionBonusDestination] = useState<'holding' | 'withdrawable'>(
     currentConfig?.completionBonusDestination || 'withdrawable'
   );
@@ -30,7 +30,7 @@ export function QuickEditAdMining({ moduleKey, currentConfig }: QuickEditAdMinin
       setRewardPerAd(currentConfig.rewardPerAd || 10);
       setDailyLimit(currentConfig.dailyLimit || 50);
       setCompletionBonusEnabled(currentConfig.completionBonusEnabled ?? true);
-      setCompletionBonusPercent(currentConfig.completionBonusPercent || 10);
+      setCompletionBonusPercent(currentConfig.completionBonusPercent || 5);
       setCompletionBonusDestination(currentConfig.completionBonusDestination || 'withdrawable');
     }
   }, [currentConfig]);
