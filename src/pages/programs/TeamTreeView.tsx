@@ -32,7 +32,7 @@ import { useQueryClient } from "@tanstack/react-query"
 
 export default function TeamTreeView() {
   const { user } = useAuthUser()
-  const { data, isLoading } = useDownlineTree()
+  const { data, isLoading, error, isError } = useDownlineTree()
   const [selectedLevel, setSelectedLevel] = useState(1)
   const [selectedMember, setSelectedMember] = useState<DownlineMember | null>(null)
   const [showUsageTracker, setShowUsageTracker] = useState(false)
@@ -149,6 +149,31 @@ export default function TeamTreeView() {
             {[1, 2, 3, 4].map(i => (
               <Skeleton key={i} className="h-32" />
             ))}
+          </div>
+        </div>
+      </ProgramPageTemplate>
+    )
+  }
+
+  // Show error state with details
+  if (isError) {
+    return (
+      <ProgramPageTemplate title="Your Team" subtitle="Network overview">
+        <div className="pb-24 space-y-6">
+          <Alert variant="destructive">
+            <AlertDescription className="space-y-2">
+              <p className="font-medium">Failed to load team members</p>
+              <p className="text-sm opacity-90">{error?.message || 'Unknown error occurred'}</p>
+            </AlertDescription>
+          </Alert>
+          <div className="flex items-center justify-center gap-3">
+            <Button onClick={handleRefresh} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+            <Button onClick={handleRebuildTree} variant="secondary" disabled={isRebuilding}>
+              {isRebuilding ? 'Rebuilding...' : 'Force Rebuild Tree'}
+            </Button>
           </div>
         </div>
       </ProgramPageTemplate>
