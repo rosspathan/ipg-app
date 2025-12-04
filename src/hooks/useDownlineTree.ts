@@ -52,7 +52,7 @@ export function useDownlineTree() {
 
       // Fetch all descendants from referral_tree with pagination to handle large teams (1000+ members)
       // Supabase default limit is 1000, so we need to fetch in batches
-      const BATCH_SIZE = 1000;
+      const TREE_PAGE_SIZE = 1000; // For referral_tree row pagination (different from BATCH_SIZE for .in() queries)
       let allTreeData: { level: number; user_id: string; direct_sponsor_id: string | null }[] = [];
       let offset = 0;
       let hasMore = true;
@@ -63,14 +63,14 @@ export function useDownlineTree() {
           .select('level, user_id, direct_sponsor_id')
           .eq('ancestor_id', user.id)
           .order('level', { ascending: true })
-          .range(offset, offset + BATCH_SIZE - 1);
+          .range(offset, offset + TREE_PAGE_SIZE - 1);
 
         if (treeError) throw treeError;
 
         if (batchData && batchData.length > 0) {
           allTreeData = [...allTreeData, ...batchData];
-          offset += BATCH_SIZE;
-          hasMore = batchData.length === BATCH_SIZE;
+          offset += TREE_PAGE_SIZE;
+          hasMore = batchData.length === TREE_PAGE_SIZE;
         } else {
           hasMore = false;
         }
