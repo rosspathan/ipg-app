@@ -141,10 +141,23 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 8. Calculate BSK reward
-    const baseReward = ad.reward_bsk || settings?.free_tier_reward_bsk || 1
-    const rewardMultiplier = isSubscriber ? (subscription.ad_subscription_tiers.reward_multiplier || 1) : 1
-    const bskReward = baseReward * rewardMultiplier
+    // 8. Calculate BSK reward - subscribers get daily_bsk (tier_bsk / 100 days), free users get free_daily_reward_bsk
+    let bskReward: number
+    
+    if (isSubscriber) {
+      // Subscribed users: daily_bsk = tier_bsk / 100 (pre-calculated in tier table)
+      bskReward = subscription.ad_subscription_tiers.daily_bsk || 1
+    } else {
+      // Free users: use settings free_daily_reward_bsk (default 1 BSK)
+      bskReward = settings?.free_daily_reward_bsk || 1
+    }
+
+    console.log('Reward calculation:', { 
+      isSubscriber, 
+      tierDailyBsk: subscription?.ad_subscription_tiers?.daily_bsk,
+      freeReward: settings?.free_daily_reward_bsk,
+      finalReward: bskReward 
+    })
 
     // 9. Determine destination balance (subscribers get withdrawable, free users get holding)
     const balanceType = isSubscriber ? 'withdrawable' : 'holding'
@@ -183,10 +196,10 @@ Deno.serve(async (req) => {
         p_meta_json: {
           ad_id: adId,
           tier: tierName,
+          tier_bsk: subscription?.ad_subscription_tiers?.tier_bsk || 0,
+          daily_bsk: bskReward,
           balance_type: balanceType,
-          viewing_time: viewingTimeSeconds,
-          multiplier: rewardMultiplier,
-          base_reward: baseReward
+          viewing_time: viewingTimeSeconds
         }
       }
     )
