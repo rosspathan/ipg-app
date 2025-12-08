@@ -295,6 +295,7 @@ const LuckyDrawPageNew = React.lazy(() => import("./pages/programs/LuckyDrawPage
 const TeamReferralsPageNew = React.lazy(() => import("./pages/programs/TeamReferralsPageNew"));
 const StakingPageNewV2 = React.lazy(() => import("./pages/programs/StakingPageNew"));
 const TradingPageNew = React.lazy(() => import("./pages/programs/TradingPageNew"));
+const TradingPro = React.lazy(() => import("./pages/TradingPro"));
 const InsurancePageNewV2 = React.lazy(() => import("./pages/programs/InsurancePageNew"));
 const BSKLoansPageNew = React.lazy(() => import("./pages/programs/BSKLoansPageNew"));
 const BSKPromotionsPageNew = React.lazy(() => import("./pages/programs/BSKPromotionsPageNew"));
@@ -498,6 +499,7 @@ function AppContent() {
               <Route path="programs/:programKey" element={<ProgramDetailPage />} />
               <Route path="trade" element={<TradingOverview />} />
               <Route path="trade/:symbol" element={<TradingPairPage />} />
+              <Route path="trade-pro" element={<React.Suspense fallback={<LoadingFallback />}><TradingPro /></React.Suspense>} />
               <Route path="trading" element={<Navigate to="/app/trade" replace />} />
               <Route path="swap" element={<SwapScreen />} />
               
