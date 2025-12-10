@@ -63,11 +63,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if user exists
-    const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-    const user = users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    // Check if user exists - use getUserByEmail instead of listUsers to handle large user bases
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id, email')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
 
-    if (!user) {
+    if (!profile) {
       console.log(`Password reset requested for non-existent email: ${email}`);
       // Return success even if user doesn't exist (security best practice)
       return new Response(
@@ -75,6 +78,8 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const userId = profile.user_id;
 
     // Generate 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -87,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { error: insertError } = await supabaseAdmin
       .from("password_reset_codes")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         email: email.toLowerCase(),
         code: code,
         expires_at: expiresAt.toISOString(),
