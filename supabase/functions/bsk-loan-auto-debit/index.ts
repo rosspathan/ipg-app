@@ -48,11 +48,10 @@ Deno.serve(async (req) => {
         emi_bsk,
         due_date,
         status,
-        bsk_loans!inner (
+      bsk_loans!inner (
           id,
           user_id,
-          status,
-          peg_currency
+          status
         )
       `)
       .eq('due_date', targetDate)
