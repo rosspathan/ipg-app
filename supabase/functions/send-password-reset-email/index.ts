@@ -108,6 +108,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send branded email via Resend
+    console.log(`Attempting to send password reset email to: ${email}`);
+    
     const emailResponse = await resend.emails.send({
       from: "IPG Exchange <noreply@i-smartapp.com>",
       to: [email],
@@ -162,13 +164,32 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log(`Password reset code sent to: ${email}, Code: ${code}`);
+    // Check for Resend errors
+    if (emailResponse.error) {
+      console.error("Resend email error:", emailResponse.error);
+      
+      // Delete the stored code since email failed
+      await supabaseAdmin
+        .from("password_reset_codes")
+        .delete()
+        .eq("code", code)
+        .eq("email", email.toLowerCase());
+      
+      return new Response(
+        JSON.stringify({ 
+          error: "Failed to send reset email. Please try again later.",
+          success: false 
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Password reset email sent successfully to: ${email}`, emailResponse.data);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Reset code has been sent to your email",
-        debug: { emailResponse } 
+        message: "Reset code has been sent to your email"
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
