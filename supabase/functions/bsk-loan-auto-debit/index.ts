@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Process payment by calling repayment logic
+        // Process payment by calling repayment logic with user_id for auto-debit mode
         const { data: repaymentResult, error: repaymentError } = await supabase.functions.invoke(
           'bsk-loan-repay',
           {
@@ -190,6 +190,7 @@ Deno.serve(async (req) => {
               installment_id: installment.id,
               payment_type: 'emi',
               auto_debit: true,
+              user_id: userId, // Pass user_id for auto-debit mode
             },
           }
         );

@@ -215,3 +215,15 @@ verify_jwt = true
 
 [functions.admin-cleanup-orphaned-users]
 verify_jwt = true
+
+[functions.bsk-loan-auto-debit]
+verify_jwt = false
+
+[functions.bsk-loan-repay]
+verify_jwt = false
+
+[functions.bsk-loan-check-cancellation]
+verify_jwt = false
+
+[functions.bsk-loan-complete]
+verify_jwt = false

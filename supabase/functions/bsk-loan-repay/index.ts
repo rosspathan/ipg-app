@@ -8,7 +8,9 @@ const corsHeaders = {
 
 interface RepaymentRequest {
   installment_id: string;
-  payment_type?: 'single_emi' | 'prepay_full';
+  payment_type?: 'single_emi' | 'prepay_full' | 'emi';
+  auto_debit?: boolean;
+  user_id?: string; // Required when auto_debit is true
 }
 
 serve(async (req: Request) => {
@@ -22,19 +24,31 @@ serve(async (req: Request) => {
   );
 
   try {
-    const { installment_id, payment_type = 'single_emi' }: RepaymentRequest = await req.json();
+    const { installment_id, payment_type = 'single_emi', auto_debit = false, user_id: providedUserId }: RepaymentRequest = await req.json();
     
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
+    let userId: string;
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
+    // Handle auto-debit mode (called by cron job with service role)
+    if (auto_debit) {
+      if (!providedUserId) {
+        throw new Error('user_id is required for auto_debit mode');
+      }
+      userId = providedUserId;
+      console.log(`BSK Loan Repayment (AUTO-DEBIT): Processing for user ${userId}, installment ${installment_id}`);
+    } else {
+      // Normal user-initiated payment - require auth
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        throw new Error('No authorization header');
+      }
 
-    console.log(`BSK Loan Repayment: User ${user.id} paying installment ${installment_id}`);
+      const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (authError || !user) {
+        throw new Error('Unauthorized');
+      }
+      userId = user.id;
+      console.log(`BSK Loan Repayment: User ${userId} paying installment ${installment_id}`);
+    }
 
     // Get installment and loan details
     const { data: installment, error: installmentError } = await supabase
@@ -53,12 +67,15 @@ serve(async (req: Request) => {
     const loan = installment.loan as any;
     
     // Verify user owns this loan
-    if (loan.user_id !== user.id) {
+    if (loan.user_id !== userId) {
       throw new Error('Unauthorized - not your loan');
     }
 
     if (installment.status === 'paid') {
-      throw new Error('Installment already paid');
+      return new Response(
+        JSON.stringify({ success: true, message: 'Installment already paid' }),
+        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders }}
+      );
     }
 
     // Get current BSK rate for INR-pegged schedules
@@ -69,13 +86,16 @@ serve(async (req: Request) => {
       .limit(1)
       .single();
 
-    const currentRate = bskRate?.rate_inr_per_bsk || loan.disbursal_rate_snapshot;
+    const currentRate = bskRate?.rate_inr_per_bsk || loan.disbursal_rate_snapshot || 1;
 
     // Calculate payment amount
     let paymentAmountBsk = 0;
     let paymentRateSnapshot = currentRate;
 
-    if (payment_type === 'prepay_full') {
+    // Normalize payment_type (handle both 'emi' and 'single_emi')
+    const normalizedPaymentType = payment_type === 'emi' ? 'single_emi' : payment_type;
+
+    if (normalizedPaymentType === 'prepay_full') {
       // Calculate remaining balance for full prepayment
       const { data: remainingInstallments } = await supabase
         .from('bsk_loan_installments')
@@ -88,30 +108,32 @@ serve(async (req: Request) => {
       // Single EMI payment
       if (loan.schedule_denomination === 'fixed_bsk') {
         paymentAmountBsk = installment.emi_bsk || installment.total_due_bsk;
-        paymentRateSnapshot = loan.disbursal_rate_snapshot; // Use original rate
+        paymentRateSnapshot = loan.disbursal_rate_snapshot || 1; // Use original rate
       } else {
         // INR-pegged: convert INR EMI to BSK using current rate
         paymentAmountBsk = (installment.emi_inr || 0) / currentRate;
         paymentRateSnapshot = currentRate;
       }
 
-      // Check for late fees
-      const today = new Date();
-      const dueDate = new Date(installment.due_date);
-      const daysPastDue = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000)));
-      
-      if (daysPastDue > loan.grace_period_days && loan.late_fee_percent > 0) {
-        const lateFee = paymentAmountBsk * (loan.late_fee_percent / 100);
-        paymentAmountBsk += lateFee;
+      // Check for late fees (only if not auto-debit to avoid double-charging)
+      if (!auto_debit) {
+        const today = new Date();
+        const dueDate = new Date(installment.due_date);
+        const daysPastDue = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000)));
         
-        // Update installment with late fee
-        await supabase
-          .from('bsk_loan_installments')
-          .update({ 
-            late_fee_bsk: lateFee,
-            total_due_bsk: installment.total_due_bsk + lateFee
-          })
-          .eq('id', installment_id);
+        if (daysPastDue > (loan.grace_period_days || 0) && loan.late_fee_percent > 0) {
+          const lateFee = paymentAmountBsk * (loan.late_fee_percent / 100);
+          paymentAmountBsk += lateFee;
+          
+          // Update installment with late fee
+          await supabase
+            .from('bsk_loan_installments')
+            .update({ 
+              late_fee_bsk: lateFee,
+              total_due_bsk: installment.total_due_bsk + lateFee
+            })
+            .eq('id', installment_id);
+        }
       }
     }
 
@@ -119,7 +141,7 @@ serve(async (req: Request) => {
     const { data: userBalance } = await supabase
       .from('user_bsk_balances')
       .select('withdrawable_balance')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     const availableBalance = userBalance?.withdrawable_balance || 0;
@@ -142,24 +164,25 @@ serve(async (req: Request) => {
     const { data: debitResult, error: balanceError } = await supabase.rpc(
       'record_bsk_transaction',
       {
-        p_user_id: user.id,
+        p_user_id: userId,
         p_idempotency_key: idempotencyKey,
         p_tx_type: 'debit',
-        p_tx_subtype: payment_type === 'prepay_full' ? 'loan_prepayment' : 'loan_repayment',
+        p_tx_subtype: normalizedPaymentType === 'prepay_full' ? 'loan_prepayment' : 'loan_repayment',
         p_balance_type: 'withdrawable',
         p_amount_bsk: paymentAmountBsk,
-        p_notes: payment_type === 'prepay_full' 
+        p_notes: normalizedPaymentType === 'prepay_full' 
           ? `Full loan prepayment - Loan #${loan.loan_number}` 
-          : `EMI payment #${installment.installment_number} - Loan #${loan.loan_number}`,
+          : `EMI payment #${installment.installment_number} - Loan #${loan.loan_number}${auto_debit ? ' (Auto-debit)' : ''}`,
         p_meta_json: {
           loan_id: loan.id,
           loan_number: loan.loan_number,
-          installment_id: payment_type === 'single_emi' ? installment_id : null,
+          installment_id: normalizedPaymentType === 'single_emi' ? installment_id : null,
           installment_number: installment.installment_number,
-          payment_type: payment_type,
+          payment_type: normalizedPaymentType,
           rate_snapshot: paymentRateSnapshot,
           emi_inr: installment.emi_inr,
-          emi_bsk: installment.emi_bsk
+          emi_bsk: installment.emi_bsk,
+          auto_debit: auto_debit
         }
       }
     )
@@ -171,7 +194,7 @@ serve(async (req: Request) => {
     console.log(`✅ Atomically debited ${paymentAmountBsk} BSK for loan repayment (tx: ${debitResult})`)
 
     // Update loan paid amount and outstanding
-    const isLoanFullyPaid = payment_type === 'prepay_full' || (loan.outstanding_bsk - paymentAmountBsk) <= 0.01;
+    const isLoanFullyPaid = normalizedPaymentType === 'prepay_full' || (loan.outstanding_bsk - paymentAmountBsk) <= 0.01;
     
     const { error: loanUpdateError } = await supabase
       .from('bsk_loans')
@@ -194,7 +217,7 @@ serve(async (req: Request) => {
         const { error: transferError } = await supabase.rpc(
           'record_bsk_transaction',
           {
-            p_user_id: user.id,
+            p_user_id: userId,
             p_idempotency_key: transferIdempotencyKey,
             p_tx_type: 'transfer',
             p_tx_subtype: 'holding_to_withdrawable',
@@ -212,7 +235,7 @@ serve(async (req: Request) => {
         if (transferError) {
           console.error('Failed to transfer holding to withdrawable:', transferError)
         } else {
-          console.log(`✅ Transferred ${remainingHolding} BSK from holding to withdrawable (tx: ${transferError})`)
+          console.log(`✅ Transferred ${remainingHolding} BSK from holding to withdrawable`)
         }
       }
     }
@@ -222,7 +245,7 @@ serve(async (req: Request) => {
     }
 
     // Update installment(s)
-    if (payment_type === 'prepay_full') {
+    if (normalizedPaymentType === 'prepay_full') {
       // Mark all remaining installments as paid
       await supabase
         .from('bsk_loan_installments')
@@ -251,27 +274,28 @@ serve(async (req: Request) => {
     await supabase
       .from('bsk_loan_ledger')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         loan_id: loan.id,
-        installment_id: payment_type === 'single_emi' ? installment_id : null,
-        transaction_type: payment_type === 'prepay_full' ? 'prepayment' : 'loan_repayment',
+        installment_id: normalizedPaymentType === 'single_emi' ? installment_id : null,
+        transaction_type: normalizedPaymentType === 'prepay_full' ? 'prepayment' : 'loan_repayment',
         amount_bsk: paymentAmountBsk,
         amount_inr: paymentAmountBsk * paymentRateSnapshot,
         rate_snapshot: paymentRateSnapshot,
         balance_type: 'withdrawable',
         direction: 'debit',
         reference_id: loan.loan_number,
-        notes: payment_type === 'prepay_full' ? 'Full loan prepayment' : `EMI payment #${installment.installment_number}`,
-        processed_by: user.id,
+        notes: normalizedPaymentType === 'prepay_full' ? 'Full loan prepayment' : `EMI payment #${installment.installment_number}${auto_debit ? ' (Auto-debit)' : ''}`,
+        processed_by: auto_debit ? 'system_auto_debit' : userId,
         idempotency_key: idempotencyKey,
         metadata: {
-          payment_type,
+          payment_type: normalizedPaymentType,
           installment_number: installment.installment_number,
-          rate_used: paymentRateSnapshot
+          rate_used: paymentRateSnapshot,
+          auto_debit: auto_debit
         }
       });
 
-    console.log(`BSK Loan Payment: ${paymentAmountBsk.toFixed(4)} BSK debited for loan ${loan.loan_number}`);
+    console.log(`BSK Loan Payment: ${paymentAmountBsk.toFixed(4)} BSK debited for loan ${loan.loan_number}${auto_debit ? ' (Auto-debit)' : ''}`);
 
     return new Response(
       JSON.stringify({
@@ -280,10 +304,10 @@ serve(async (req: Request) => {
           amount_bsk: paymentAmountBsk.toFixed(4),
           amount_inr: (paymentAmountBsk * paymentRateSnapshot).toFixed(2),
           rate_snapshot: paymentRateSnapshot,
-          payment_type,
+          payment_type: normalizedPaymentType,
           remaining_balance_bsk: (loan.outstanding_bsk - paymentAmountBsk).toFixed(4)
         },
-        message: payment_type === 'prepay_full' ? 'Loan paid in full!' : 'EMI payment successful'
+        message: normalizedPaymentType === 'prepay_full' ? 'Loan paid in full!' : 'EMI payment successful'
       }),
       {
         status: 200,
