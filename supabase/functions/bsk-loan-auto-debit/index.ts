@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     console.log(`[AUTO-DEBIT] Starting batch ${batchId} for date: ${targetDate}`);
 
-    // Query all installments due today with status 'due'
+    // Query all installments due today OR earlier with status 'due' (catches missed days)
     const { data: dueInstallments, error: fetchError } = await supabase
       .from('bsk_loan_installments')
       .select(`
@@ -48,15 +48,17 @@ Deno.serve(async (req) => {
         emi_bsk,
         due_date,
         status,
+        retry_count,
       bsk_loans!inner (
           id,
           user_id,
           status
         )
       `)
-      .eq('due_date', targetDate)
+      .lte('due_date', targetDate)
       .eq('status', 'due')
-      .eq('bsk_loans.status', 'active');
+      .eq('bsk_loans.status', 'active')
+      .order('due_date', { ascending: true });
 
     if (fetchError) {
       console.error('[AUTO-DEBIT] Error fetching due installments:', fetchError);
