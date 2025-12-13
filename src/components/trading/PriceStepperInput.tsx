@@ -45,7 +45,7 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
           type="button"
           onClick={handleDecrement}
           disabled={disabled || numValue <= min}
-          className="p-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-50"
+          className="m-1.5 p-2 bg-muted rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 disabled:opacity-50"
         >
           <Minus className="h-4 w-4" />
         </button>
@@ -63,7 +63,7 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
           type="button"
           onClick={handleIncrement}
           disabled={disabled || (max !== undefined && numValue >= max)}
-          className="p-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-50"
+          className="m-1.5 p-2 bg-muted rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
         </button>
