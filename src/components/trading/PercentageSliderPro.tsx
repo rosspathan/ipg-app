@@ -24,7 +24,7 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
         
         {/* Active track */}
         <div 
-          className="absolute left-0 h-0.5 bg-primary rounded-full"
+          className="absolute left-0 h-0.5 bg-amber-500 rounded-full"
           style={{ width: `${value}%` }}
         />
         
@@ -36,10 +36,10 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
             disabled={disabled}
             onClick={() => onChange(marker)}
             className={cn(
-              "absolute w-3 h-3 rotate-45 border-2 -translate-x-1/2",
+              "absolute w-3 h-3 rotate-45 border-2 -translate-x-1/2 transition-transform",
               marker <= value
-                ? "bg-primary border-primary"
-                : "bg-card border-border",
+                ? "bg-amber-500 border-amber-500"
+                : "bg-card border-muted-foreground/50",
               !disabled && "hover:scale-125 cursor-pointer"
             )}
             style={{ left: `${marker}%` }}
@@ -54,7 +54,7 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
             key={marker} 
             className={cn(
               "text-xs",
-              marker <= value ? "text-primary" : "text-muted-foreground"
+              marker <= value ? "text-amber-500" : "text-muted-foreground"
             )}
           >
             {marker}%

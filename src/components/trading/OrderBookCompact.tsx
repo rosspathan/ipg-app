@@ -66,15 +66,18 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
       </div>
 
       {/* Current Price */}
-      <div className="px-3 py-2 border-y border-border bg-muted/30">
+      <div className="px-3 py-3 border-y border-border bg-muted/30">
         <div className="flex items-center justify-between">
           <span className={cn(
-            "text-lg font-bold font-mono",
+            "text-2xl font-bold font-mono",
             priceChange >= 0 ? "text-emerald-400" : "text-destructive"
           )}>
             {formatPrice(currentPrice)}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className={cn(
+            "text-sm font-medium",
+            priceChange >= 0 ? "text-emerald-400" : "text-destructive"
+          )}>
             ≈ ₹{(currentPrice * 83).toFixed(2)}
           </span>
         </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Share2 } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -40,9 +40,9 @@ export const OpenOrderCard: React.FC<OpenOrderCardProps> = ({ order, index, onCa
         </div>
         <button
           onClick={() => onCancel(order.id)}
-          className="text-destructive hover:text-destructive/80 p-1"
+          className="text-destructive hover:text-destructive/80 text-xs font-medium px-2 py-1 border border-destructive/50 rounded"
         >
-          <X className="h-4 w-4" />
+          Cancel
         </button>
       </div>
 
