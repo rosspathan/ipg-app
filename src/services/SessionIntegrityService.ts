@@ -43,6 +43,15 @@ export class SessionIntegrityService {
         return true;
       }
 
+      // Add cooldown to prevent rapid checks causing race conditions
+      const lastCheck = sessionStorage.getItem('session_integrity_last_check');
+      const now = Date.now();
+      if (lastCheck && (now - parseInt(lastCheck)) < 2000) {
+        console.log('[SESSION_INTEGRITY] Skipping - checked recently');
+        return true;
+      }
+      sessionStorage.setItem('session_integrity_last_check', now.toString());
+
       const { data: { session } } = await supabase.auth.getSession();
       const lastKnownUserId = localStorage.getItem(LAST_KNOWN_USER_KEY);
 
