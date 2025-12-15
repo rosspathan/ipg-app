@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookCompact } from "@/components/trading/OrderBookCompact";
 import { OpenOrderCard } from "@/components/trading/OpenOrderCard";
+import { FundsTab } from "@/components/trading/FundsTab";
 import { useTradingPairs } from "@/hooks/useTradingPairs";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
@@ -27,8 +28,12 @@ export function TradingPairPage() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { data: pairs } = useTradingPairs();
-  const { data: balances } = useUserBalance();
+  const { data: balances, isLoading: balancesLoading } = useUserBalance();
   const { placeOrder } = useTradingAPI();
+
+  // Tab state for Open Orders / Funds
+  type BottomTab = 'orders' | 'funds';
+  const [activeTab, setActiveTab] = useState<BottomTab>('orders');
 
   // Pair picker state
   const [pairSearch, setPairSearch] = useState("");
@@ -255,6 +260,8 @@ export function TradingPairPage() {
                 quoteCurrency={pair.quoteAsset}
                 availableBase={baseBalance?.available || 0}
                 availableQuote={quoteBalance?.available || 0}
+                availableBaseUsd={baseBalance?.usd_value || 0}
+                availableQuoteUsd={quoteBalance?.usd_value || 0}
                 currentPrice={pair.price}
                 onPlaceOrder={handlePlaceOrder}
               />
@@ -273,47 +280,70 @@ export function TradingPairPage() {
             </div>
           </div>
 
-          {/* Open Orders Section */}
+          {/* Open Orders / Funds Section */}
           <div className="mt-4">
             <div className="flex items-center justify-between border-b border-border pb-2 mb-3">
               <div className="flex items-center gap-4">
-                <button className="text-foreground text-sm font-medium border-b-2 border-amber-500 pb-2">
+                <button 
+                  onClick={() => setActiveTab('orders')}
+                  className={cn(
+                    "text-sm pb-2 border-b-2",
+                    activeTab === 'orders' 
+                      ? "text-foreground font-medium border-amber-500" 
+                      : "text-muted-foreground border-transparent"
+                  )}
+                >
                   Open Orders ({openOrders.length})
                 </button>
-                <button className="text-muted-foreground text-sm pb-2">
+                <button 
+                  onClick={() => setActiveTab('funds')}
+                  className={cn(
+                    "text-sm pb-2 border-b-2",
+                    activeTab === 'funds' 
+                      ? "text-foreground font-medium border-amber-500" 
+                      : "text-muted-foreground border-transparent"
+                  )}
+                >
                   Funds
                 </button>
               </div>
-              <button className="text-amber-500 text-xs font-medium">
+              <button 
+                onClick={() => navigate(activeTab === 'orders' ? '/app/orders' : '/app/wallet')}
+                className="text-amber-500 text-xs font-medium"
+              >
                 View All
               </button>
             </div>
             
-            {openOrders.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">
-                No open orders
-              </div>
+            {activeTab === 'orders' ? (
+              openOrders.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  No open orders
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {openOrders.map((order, idx) => (
+                    <OpenOrderCard
+                      key={order.id}
+                      order={{
+                        id: order.id,
+                        symbol: order.symbol,
+                        side: order.side as 'buy' | 'sell',
+                        order_type: order.order_type,
+                        price: order.price || 0,
+                        amount: order.amount,
+                        filled_amount: order.filled_amount || 0,
+                        created_at: order.created_at,
+                        status: order.status,
+                      }}
+                      index={idx}
+                      onCancel={handleCancelOrder}
+                    />
+                  ))}
+                </div>
+              )
             ) : (
-              <div className="space-y-2">
-                {openOrders.map((order, idx) => (
-                  <OpenOrderCard
-                    key={order.id}
-                    order={{
-                      id: order.id,
-                      symbol: order.symbol,
-                      side: order.side as 'buy' | 'sell',
-                      order_type: order.order_type,
-                      price: order.price || 0,
-                      amount: order.amount,
-                      filled_amount: order.filled_amount || 0,
-                      created_at: order.created_at,
-                      status: order.status,
-                    }}
-                    index={idx}
-                    onCancel={handleCancelOrder}
-                  />
-                ))}
-              </div>
+              <FundsTab balances={balances || []} loading={balancesLoading} />
             )}
           </div>
         </div>

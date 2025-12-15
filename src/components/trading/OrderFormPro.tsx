@@ -17,6 +17,8 @@ interface OrderFormProProps {
   quoteCurrency: string;
   availableBase: number;
   availableQuote: number;
+  availableBaseUsd?: number;
+  availableQuoteUsd?: number;
   currentPrice: number;
   tickSize?: number;
   lotSize?: number;
@@ -37,6 +39,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   quoteCurrency,
   availableBase,
   availableQuote,
+  availableBaseUsd = 0,
+  availableQuoteUsd = 0,
   currentPrice,
   tickSize = 0.00000001,
   lotSize = 0.0001,
@@ -51,6 +55,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
   const isBuy = side === 'buy';
   const availableBalance = isBuy ? availableQuote : availableBase;
+  const availableBalanceUsd = isBuy ? availableQuoteUsd : availableBaseUsd;
   const balanceCurrency = isBuy ? quoteCurrency : baseCurrency;
 
   const numPrice = parseFloat(price) || 0;
@@ -63,7 +68,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
     return numAmount * numPrice;
   }, [numAmount, numPrice, currentPrice, orderType]);
 
-  const estimatedFee = total * 0.001; // 0.1% fee
+  // Fee is always in USDT (0.1% of order value in USD terms)
+  const estimatedFeeUsdt = total * 0.001;
 
   const handlePercentageChange = (pct: number) => {
     setPercentage(pct);
@@ -127,16 +133,23 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </button>
       </div>
 
-      {/* Available Balance */}
+      {/* Available Balance - Shows both crypto amount and USD value */}
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">Available</span>
         <div className="flex items-center gap-2">
-          <span className={cn(
-            "text-sm font-mono",
-            hasInsufficientBalance ? "text-destructive" : "text-foreground"
-          )}>
-            {availableBalance.toFixed(4)} {balanceCurrency}
-          </span>
+          <div className="text-right">
+            <span className={cn(
+              "text-sm font-mono block",
+              hasInsufficientBalance ? "text-destructive" : "text-foreground"
+            )}>
+              {availableBalance.toFixed(4)} {balanceCurrency}
+            </span>
+            {availableBalanceUsd > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ≈ ${availableBalanceUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            )}
+          </div>
           <button className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center">
             <Plus className="h-3 w-3" />
           </button>
@@ -210,11 +223,11 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </div>
       </div>
 
-      {/* Estimated Fee */}
+      {/* Estimated Fee - Always in USDT */}
       <div className="flex items-center justify-between text-xs py-1">
         <span className="text-muted-foreground">Est. Fee</span>
         <span className="text-foreground font-mono">
-          {estimatedFee.toFixed(4)} {baseCurrency}
+          {estimatedFeeUsdt.toFixed(4)} USDT
         </span>
       </div>
 
