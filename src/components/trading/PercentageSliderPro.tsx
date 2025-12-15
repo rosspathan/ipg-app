@@ -20,7 +20,7 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
     <div className={cn("py-4", className)}>
       <div className="relative h-8 flex items-center">
         {/* Track background */}
-        <div className="absolute left-0 right-0 h-0.5 bg-[#3a3a50]" />
+        <div className="absolute left-0 right-0 h-0.5 bg-muted" />
         
         {/* Active track - gold/amber color */}
         <div 
@@ -44,7 +44,7 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
                   ? "bg-amber-500 border-0" // First diamond always gold filled
                   : marker <= value
                     ? "bg-amber-500 border-0"
-                    : "bg-transparent border-2 border-[#4a4a60]",
+                    : "bg-transparent border-2 border-muted-foreground/40",
                 !disabled && "hover:scale-110 cursor-pointer"
               )}
               style={{ left: `${marker}%` }}
@@ -58,7 +58,7 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
         {markers.map((marker) => (
           <span 
             key={marker} 
-            className="text-xs text-gray-400"
+            className="text-xs text-muted-foreground"
           >
             {marker}%
           </span>

@@ -126,15 +126,15 @@ export function TradingPairPage() {
     >
       <div className="flex flex-col h-screen bg-background">
         {/* Clean Header */}
-        <div className="sticky top-0 z-10 bg-[#0d0d1a] border-b border-gray-800 px-4 py-3">
+        <div className="sticky top-0 z-10 bg-background border-b border-border px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button onClick={() => navigate("/app/trade")} className="p-1">
-                <ArrowLeft className="h-5 w-5 text-white" />
+                <ArrowLeft className="h-5 w-5 text-foreground" />
               </button>
               <div className="flex items-center gap-2">
-                <span className="text-white font-semibold text-lg">{pair.symbol}</span>
-                <ChevronDown className="h-4 w-4 text-gray-400" />
+                <span className="text-foreground font-semibold text-lg">{pair.symbol}</span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </div>
               <span className={cn("text-sm font-medium", priceChangeColor)}>
                 {pair.change24h >= 0 ? "+" : ""}{pair.change24h.toFixed(2)}%
@@ -182,12 +182,12 @@ export function TradingPairPage() {
 
           {/* Open Orders Section */}
           <div className="mt-4">
-            <div className="flex items-center justify-between border-b border-gray-800 pb-2 mb-3">
+            <div className="flex items-center justify-between border-b border-border pb-2 mb-3">
               <div className="flex items-center gap-4">
-                <button className="text-white text-sm font-medium border-b-2 border-amber-500 pb-2">
+                <button className="text-foreground text-sm font-medium border-b-2 border-amber-500 pb-2">
                   Open Orders ({openOrders.length})
                 </button>
-                <button className="text-gray-500 text-sm pb-2">
+                <button className="text-muted-foreground text-sm pb-2">
                   Funds
                 </button>
               </div>
@@ -197,7 +197,7 @@ export function TradingPairPage() {
             </div>
             
             {openOrders.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 text-sm">
+              <div className="text-center py-8 text-muted-foreground text-sm">
                 No open orders
               </div>
             ) : (
