@@ -154,9 +154,9 @@ export function TradingPairPage() {
 
         {/* Main Content - KBC Style 2 Column Layout */}
         <div className="flex-1 overflow-y-auto p-3">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Left Column: Order Form */}
-            <div>
+            <div className="relative overflow-hidden isolate">
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
                 quoteCurrency={pair.quoteAsset}
@@ -168,7 +168,7 @@ export function TradingPairPage() {
             </div>
 
             {/* Right Column: Compact Order Book */}
-            <div className="h-[500px]">
+            <div className="h-[500px] relative overflow-hidden isolate">
               <OrderBookCompact
                 asks={orderBook?.asks.slice(0, 8).map(a => ({ price: a.price, quantity: a.quantity })) || []}
                 bids={orderBook?.bids.slice(0, 8).map(b => ({ price: b.price, quantity: b.quantity })) || []}

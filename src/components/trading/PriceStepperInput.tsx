@@ -38,8 +38,8 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
   };
 
   return (
-    <div className={cn("", className)}>
-      <div className="bg-[#1e1e2d] border border-gray-700 rounded-lg px-3 py-2">
+    <div className={cn("relative", className)}>
+      <div className="bg-[#1e1e2d] border border-gray-700 rounded-lg px-3 py-2 relative z-0">
         <label className="block text-xs text-gray-400 mb-1">{label}</label>
         <div className="flex items-center">
           <input
@@ -47,9 +47,9 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             disabled={disabled}
-            className="flex-1 bg-transparent text-white font-mono text-base py-1 outline-none"
+            className="flex-1 bg-transparent text-white font-mono text-base py-1 outline-none min-w-0"
           />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               type="button"
               onClick={handleDecrement}
