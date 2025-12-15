@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookCompact } from "@/components/trading/OrderBookCompact";
@@ -13,6 +13,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useMarketOrderBook, useMarketStore } from "@/hooks/useMarketStore";
 import { cn } from "@/lib/utils";
 import { ComplianceGate } from "@/components/compliance/ComplianceGate";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 
 export function TradingPairPage() {
   const params = useParams<{ symbol: string }>();
@@ -22,6 +29,10 @@ export function TradingPairPage() {
   const { data: pairs } = useTradingPairs();
   const { data: balances } = useUserBalance();
   const { placeOrder } = useTradingAPI();
+
+  // Pair picker state
+  const [pairSearch, setPairSearch] = useState("");
+  const [pairPickerOpen, setPairPickerOpen] = useState(false);
 
   // Convert URL format (ETH-USDT) back to API format (ETH/USDT)
   const urlSymbol = params.symbol || "";
@@ -64,6 +75,29 @@ export function TradingPairPage() {
       navigate("/app/trade");
     }
   }, [pair, pairs, navigate, toast]);
+
+  // Filter pairs for picker dropdown
+  const filteredPairs = pairs?.filter(p => 
+    p.symbol.toLowerCase().includes(pairSearch.toLowerCase())
+  ).slice(0, 20) || [];
+
+  // Popular pairs first
+  const popularSymbols = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'XRP/USDT'];
+  const sortedPairs = [...filteredPairs].sort((a, b) => {
+    const aPopular = popularSymbols.indexOf(a.symbol);
+    const bPopular = popularSymbols.indexOf(b.symbol);
+    if (aPopular !== -1 && bPopular !== -1) return aPopular - bPopular;
+    if (aPopular !== -1) return -1;
+    if (bPopular !== -1) return 1;
+    return b.volume24h - a.volume24h;
+  });
+
+  const handlePairSelect = (pairSymbol: string) => {
+    const urlFormat = pairSymbol.replace('/', '-');
+    navigate(`/app/trade/${urlFormat}`);
+    setPairPickerOpen(false);
+    setPairSearch("");
+  };
 
   if (!pair) {
     return (
@@ -132,10 +166,59 @@ export function TradingPairPage() {
               <button onClick={() => navigate("/app/trade")} className="p-1">
                 <ArrowLeft className="h-5 w-5 text-foreground" />
               </button>
-              <div className="flex items-center gap-2">
-                <span className="text-foreground font-semibold text-lg">{pair.symbol}</span>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              </div>
+              
+              {/* Functional Pair Picker Dropdown */}
+              <DropdownMenu open={pairPickerOpen} onOpenChange={setPairPickerOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 hover:bg-muted/50 rounded-lg px-2 py-1">
+                    <span className="text-foreground font-semibold text-lg">{pair.symbol}</span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-72 bg-card border-border p-2">
+                  {/* Search Input */}
+                  <div className="relative mb-2">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search pairs..."
+                      value={pairSearch}
+                      onChange={(e) => setPairSearch(e.target.value)}
+                      className="pl-8 h-9 bg-muted border-border text-foreground"
+                      autoFocus
+                    />
+                  </div>
+                  
+                  {/* Pairs List */}
+                  <div className="max-h-64 overflow-y-auto space-y-0.5">
+                    {sortedPairs.map((p) => (
+                      <DropdownMenuItem
+                        key={p.symbol}
+                        onClick={() => handlePairSelect(p.symbol)}
+                        className={cn(
+                          "flex items-center justify-between px-2 py-2 rounded cursor-pointer",
+                          p.symbol === pair.symbol && "bg-muted"
+                        )}
+                      >
+                        <span className="font-medium text-foreground">{p.symbol}</span>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-muted-foreground font-mono">
+                            ${p.price >= 1 ? p.price.toFixed(2) : p.price.toFixed(6)}
+                          </span>
+                          <span className={p.change24h >= 0 ? "text-emerald-400" : "text-destructive"}>
+                            {p.change24h >= 0 ? "+" : ""}{p.change24h.toFixed(2)}%
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                    {sortedPairs.length === 0 && (
+                      <div className="text-center py-4 text-muted-foreground text-sm">
+                        No pairs found
+                      </div>
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <span className={cn("text-sm font-medium", priceChangeColor)}>
                 {pair.change24h >= 0 ? "+" : ""}{pair.change24h.toFixed(2)}%
               </span>
