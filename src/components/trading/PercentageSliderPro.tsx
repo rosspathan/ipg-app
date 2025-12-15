@@ -20,41 +20,47 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
     <div className={cn("py-4", className)}>
       <div className="relative h-8 flex items-center">
         {/* Track background */}
-        <div className="absolute left-0 right-0 h-0.5 bg-border rounded-full" />
+        <div className="absolute left-0 right-0 h-0.5 bg-[#3a3a50]" />
         
-        {/* Active track */}
+        {/* Active track - gold/amber color */}
         <div 
-          className="absolute left-0 h-0.5 bg-amber-500 rounded-full"
+          className="absolute left-0 h-0.5 bg-amber-500"
           style={{ width: `${value}%` }}
         />
         
-        {/* Markers */}
-        {markers.map((marker) => (
-          <button
-            key={marker}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(marker)}
-            className={cn(
-              "absolute w-3 h-3 rotate-45 border-2 -translate-x-1/2 transition-transform",
-              marker <= value
-                ? "bg-amber-500 border-amber-500"
-                : "bg-card border-muted-foreground/50",
-              !disabled && "hover:scale-125 cursor-pointer"
-            )}
-            style={{ left: `${marker}%` }}
-          />
-        ))}
+        {/* Diamond Markers */}
+        {markers.map((marker, index) => {
+          // First marker (0%) is always filled gold as per screenshot
+          const isActive = marker <= value || index === 0;
+          return (
+            <button
+              key={marker}
+              type="button"
+              disabled={disabled}
+              onClick={() => onChange(marker)}
+              className={cn(
+                "absolute w-3 h-3 rotate-45 -translate-x-1/2",
+                index === 0 
+                  ? "bg-amber-500 border-0" // First diamond always gold filled
+                  : marker <= value
+                    ? "bg-amber-500 border-0"
+                    : "bg-transparent border-2 border-[#4a4a60]",
+                !disabled && "hover:scale-110 cursor-pointer"
+              )}
+              style={{ left: `${marker}%` }}
+            />
+          );
+        })}
       </div>
       
       {/* Labels */}
-      <div className="relative flex justify-between mt-1">
-        {markers.map((marker) => (
+      <div className="relative flex justify-between mt-2">
+        {markers.map((marker, index) => (
           <span 
             key={marker} 
             className={cn(
               "text-xs",
-              marker <= value ? "text-amber-500" : "text-muted-foreground"
+              index === 0 || marker <= value ? "text-muted-foreground" : "text-muted-foreground"
             )}
           >
             {marker}%

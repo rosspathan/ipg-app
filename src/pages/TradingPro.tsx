@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Menu, Settings, ChevronDown, BarChart3 } from 'lucide-react';
+import { Menu, Settings, ChevronDown, BarChart3, MoreVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TradingTabs } from '@/components/trading/TradingTabs';
 import { OrderFormPro } from '@/components/trading/OrderFormPro';
@@ -95,58 +95,70 @@ const TradingPro: React.FC = () => {
   const [priceFromOrderBook, setPriceFromOrderBook] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[#0d0d1a] flex flex-col">
+      {/* Subtle radial pattern background */}
+      <div 
+        className="fixed inset-0 pointer-events-none opacity-30"
+        style={{
+          backgroundImage: `radial-gradient(circle at 50% 0%, rgba(100, 50, 150, 0.15) 0%, transparent 50%)`,
+        }}
+      />
+      
       {/* Top Navigation */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border">
+      <header className="relative flex items-center justify-between px-4 py-3 border-b border-[#1a1a2e]">
         <button onClick={() => navigate(-1)} className="p-2 text-muted-foreground">
           <Menu className="h-5 w-5" />
         </button>
         <TradingTabs activeTab={activeTab} onTabChange={setActiveTab} />
         <button className="p-2 text-muted-foreground">
-          <Settings className="h-5 w-5" />
+          <Menu className="h-5 w-5" />
         </button>
       </header>
 
       {/* Pair Selector */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 text-lg font-bold text-foreground">
-              {selectedPair}
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="max-h-64 overflow-auto">
-            {tradingPairs?.map((pair: any) => (
-              <DropdownMenuItem
-                key={pair.symbol}
-                onClick={() => setSelectedPair(pair.symbol)}
-              >
-                {pair.symbol}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div className="flex items-center gap-3">
+      <div className="relative flex items-center justify-between px-4 py-3 border-b border-[#1a1a2e]">
+        <div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 text-lg font-bold text-foreground">
+                {selectedPair}
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="max-h-64 overflow-auto">
+              {tradingPairs?.map((pair: any) => (
+                <DropdownMenuItem
+                  key={pair.symbol}
+                  onClick={() => setSelectedPair(pair.symbol)}
+                >
+                  {pair.symbol}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {/* Price change below pair name */}
           <span className={cn(
-            "text-sm font-medium px-2 py-1 rounded",
-            priceChange >= 0 
-              ? "bg-emerald-500/20 text-emerald-400" 
-              : "bg-destructive/20 text-destructive"
+            "text-sm font-medium",
+            priceChange >= 0 ? "text-emerald-400" : "text-destructive"
           )}>
             {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
           </span>
+        </div>
+
+        <div className="flex items-center gap-2">
           <button className="p-2 text-muted-foreground">
             <BarChart3 className="h-5 w-5" />
+          </button>
+          <button className="p-2 text-muted-foreground">
+            <MoreVertical className="h-5 w-5" />
           </button>
         </div>
       </div>
 
       {/* Main Content - Two Column Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
+      <div className="relative flex-1 flex flex-col lg:flex-row gap-2 p-3 overflow-hidden">
         {/* Left Column - Order Form */}
-        <div className="lg:w-[55%] flex-shrink-0">
+        <div className="lg:w-[50%] flex-shrink-0">
           <OrderFormPro
             baseCurrency={base}
             quoteCurrency={quote}
@@ -159,7 +171,7 @@ const TradingPro: React.FC = () => {
         </div>
 
         {/* Right Column - Order Book */}
-        <div className="lg:w-[45%] flex-1 min-h-[400px]">
+        <div className="lg:w-[50%] flex-1 min-h-[400px]">
           <OrderBookCompact
             asks={formattedAsks}
             bids={formattedBids}
