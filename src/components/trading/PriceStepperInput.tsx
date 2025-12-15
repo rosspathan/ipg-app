@@ -38,35 +38,37 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
   };
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <label className="text-xs text-muted-foreground">{label}</label>
-      <div className="flex items-center bg-card border border-border rounded-lg overflow-hidden">
-        <button
-          type="button"
-          onClick={handleDecrement}
-          disabled={disabled || numValue <= min}
-          className="m-1.5 p-2 bg-muted rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 disabled:opacity-50"
-        >
-          <Minus className="h-4 w-4" />
-        </button>
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
-          className="flex-1 bg-transparent text-center text-foreground font-mono text-sm py-3 outline-none"
-        />
-        {suffix && (
-          <span className="text-xs text-muted-foreground pr-2">{suffix}</span>
-        )}
-        <button
-          type="button"
-          onClick={handleIncrement}
-          disabled={disabled || (max !== undefined && numValue >= max)}
-          className="m-1.5 p-2 bg-muted rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+    <div className={cn("", className)}>
+      {/* Label above input like in screenshot */}
+      <div className="bg-[#1a1a2e] border border-[#2a2a40] rounded-lg px-3 py-2">
+        <label className="block text-xs text-muted-foreground mb-1">{label}</label>
+        <div className="flex items-center">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            className="flex-1 bg-transparent text-foreground font-mono text-base py-1 outline-none"
+          />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDecrement}
+              disabled={disabled || numValue <= min}
+              className="w-8 h-8 flex items-center justify-center bg-[#3a3a50] rounded-full text-muted-foreground hover:text-foreground hover:bg-[#4a4a60] disabled:opacity-50"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleIncrement}
+              disabled={disabled || (max !== undefined && numValue >= max)}
+              className="w-8 h-8 flex items-center justify-center bg-[#3a3a50] rounded-full text-muted-foreground hover:text-foreground hover:bg-[#4a4a60] disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
