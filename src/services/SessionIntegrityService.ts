@@ -82,28 +82,14 @@ export class SessionIntegrityService {
           console.log('[SESSION_INTEGRITY] ✓ Session matches last known user');
           return true;
         } else {
-          console.error('[SESSION_INTEGRITY] ⚠️ SESSION MISMATCH DETECTED', {
-            currentSession: session.user.id,
-            lastKnownUser: lastKnownUserId,
-            sessionEmail: session.user.email
+          // User ID changed - just update the stored ID instead of signing out
+          // This handles legitimate account switches without aggressive logout
+          console.log('[SESSION_INTEGRITY] ℹ️ User ID changed - updating stored ID', {
+            previousUserId: lastKnownUserId,
+            newUserId: session.user.id
           });
-
-          // Critical: Session belongs to a different user
-          // Sign out and clear everything
-          await supabase.auth.signOut();
-          this.clearLastKnownUser();
-          clearAllUserData();
-
-          // Dispatch event for UI to handle
-          window.dispatchEvent(new CustomEvent('auth:session_integrity_violation', {
-            detail: {
-              message: 'Session belonged to a different account. Signed out for security.',
-              previousUserId: lastKnownUserId,
-              attemptedUserId: session.user.id
-            }
-          }));
-
-          return false;
+          this.setLastKnownUser(session.user.id);
+          return true;
         }
       }
 
