@@ -49,6 +49,17 @@ export function clearAllUserData() {
     }
   });
   
+  // Preserve critical session storage keys before clearing
+  const preserveKeys = ['session_integrity_last_check', 'login_in_progress'];
+  const preserved: Record<string, string> = {};
+  preserveKeys.forEach(key => {
+    const val = sessionStorage.getItem(key);
+    if (val) preserved[key] = val;
+  });
+  
   // Clear session storage
   sessionStorage.clear();
+  
+  // Restore preserved keys
+  Object.entries(preserved).forEach(([k, v]) => sessionStorage.setItem(k, v));
 }

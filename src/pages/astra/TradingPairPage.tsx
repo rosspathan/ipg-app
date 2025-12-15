@@ -24,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 export function TradingPairPage() {
-  const { session, loading: authLoading } = useAuthUser();
+  const { session, loading: authLoading, user } = useAuthUser();
   
   // Auth loading guard - wait for auth to initialize
   if (authLoading) {
@@ -35,8 +35,8 @@ export function TradingPairPage() {
     );
   }
   
-  // Redirect to login if no session after auth initialized
-  if (!session) {
+  // Redirect to login if no session OR no user after auth initialized
+  if (!session || !user) {
     return <Navigate to="/auth/login" replace />;
   }
 
