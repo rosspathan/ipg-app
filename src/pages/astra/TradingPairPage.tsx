@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ChevronDown, Search } from "lucide-react";
+import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-dom";
+import { ArrowLeft, ChevronDown, Search, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookCompact } from "@/components/trading/OrderBookCompact";
@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMarketOrderBook, useMarketStore } from "@/hooks/useMarketStore";
 import { cn } from "@/lib/utils";
 import { ComplianceGate } from "@/components/compliance/ComplianceGate";
+import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,26 @@ import {
 import { Input } from "@/components/ui/input";
 
 export function TradingPairPage() {
+  const { session, loading: authLoading } = useAuth();
+  
+  // Auth loading guard - wait for auth to initialize
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  
+  // Redirect to login if no session after auth initialized
+  if (!session) {
+    return <Navigate to="/auth/login" replace />;
+  }
+
+  return <TradingPairPageContent />;
+}
+
+function TradingPairPageContent() {
   const params = useParams<{ symbol: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

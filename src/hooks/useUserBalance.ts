@@ -31,7 +31,12 @@ export const useUserBalance = (assetSymbol?: string, showAllAssets = false) => {
     queryKey: ['user-balance', assetSymbol, showAllAssets],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      
+      // Return empty array instead of throwing - prevents logout on auth race conditions
+      if (!user) {
+        console.log('[useUserBalance] No user session - returning empty');
+        return [];
+      }
 
       // Fetch crypto prices for USD value calculation
       const prices = await fetchCryptoPrices();
