@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Info, ChevronDown } from 'lucide-react';
+import { Plus, Info, ChevronDown, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PriceStepperInput } from './PriceStepperInput';
 import { PercentageSliderPro } from './PercentageSliderPro';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,8 +76,20 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
     }
   };
 
+  // Calculate if user has sufficient balance
+  const requiredAmount = isBuy ? total : numAmount;
+  const hasInsufficientBalance = numAmount > 0 && requiredAmount > availableBalance;
+
   const handleSubmit = () => {
     if (numAmount <= 0) return;
+    
+    // Validate balance before submitting
+    if (hasInsufficientBalance) {
+      toast.error('Insufficient balance', {
+        description: `You need ${requiredAmount.toFixed(4)} ${balanceCurrency} but only have ${availableBalance.toFixed(4)}`,
+      });
+      return;
+    }
     
     onPlaceOrder({
       side,
@@ -118,7 +131,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">Available</span>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-mono text-foreground">
+          <span className={cn(
+            "text-sm font-mono",
+            hasInsufficientBalance ? "text-destructive" : "text-foreground"
+          )}>
             {availableBalance.toFixed(4)} {balanceCurrency}
           </span>
           <button className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center">
@@ -126,6 +142,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Insufficient Balance Warning */}
+      {hasInsufficientBalance && (
+        <div className="flex items-center gap-2 text-destructive text-xs bg-destructive/10 rounded-lg px-3 py-2">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>Insufficient {balanceCurrency} balance</span>
+        </div>
+      )}
 
       {/* Order Type Selector */}
       <DropdownMenu>
@@ -197,15 +221,21 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* Submit Button */}
       <Button
         onClick={handleSubmit}
-        disabled={isPlacingOrder || numAmount <= 0}
+        disabled={isPlacingOrder || numAmount <= 0 || hasInsufficientBalance}
         className={cn(
           "w-full py-5 text-base font-semibold rounded-lg",
-          isBuy
-            ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-            : "bg-red-500 hover:bg-red-600 text-white"
+          hasInsufficientBalance
+            ? "bg-muted text-muted-foreground"
+            : isBuy
+              ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+              : "bg-red-500 hover:bg-red-600 text-white"
         )}
       >
-        {isPlacingOrder ? 'Placing...' : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
+        {isPlacingOrder 
+          ? 'Placing...' 
+          : hasInsufficientBalance 
+            ? 'Insufficient Balance'
+            : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
       </Button>
     </div>
   );
