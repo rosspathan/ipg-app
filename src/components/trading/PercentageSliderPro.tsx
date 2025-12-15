@@ -55,13 +55,10 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
       
       {/* Labels */}
       <div className="relative flex justify-between mt-2">
-        {markers.map((marker, index) => (
+        {markers.map((marker) => (
           <span 
             key={marker} 
-            className={cn(
-              "text-xs",
-              index === 0 || marker <= value ? "text-muted-foreground" : "text-muted-foreground"
-            )}
+            className="text-xs text-gray-400"
           >
             {marker}%
           </span>

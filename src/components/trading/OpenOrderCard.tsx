@@ -28,19 +28,19 @@ export const OpenOrderCard: React.FC<OpenOrderCardProps> = ({ order, index, onCa
   const isBuy = order.side === 'buy';
 
   return (
-    <div className="bg-card border border-border rounded-lg p-3 space-y-2">
+    <div className="bg-[#1e1e2d] border border-gray-700 rounded-lg p-3 space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded">
+          <span className="bg-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded">
             #{index + 1}
           </span>
-          <span className="font-medium text-foreground">{order.symbol}</span>
-          <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="font-medium text-white">{order.symbol}</span>
+          <Share2 className="h-3.5 w-3.5 text-gray-500" />
         </div>
         <button
           onClick={() => onCancel(order.id)}
-          className="text-destructive hover:text-destructive/80 text-xs font-medium px-2 py-1 border border-destructive/50 rounded"
+          className="text-red-400 hover:text-red-300 text-xs font-medium"
         >
           Cancel
         </button>
@@ -56,7 +56,7 @@ export const OpenOrderCard: React.FC<OpenOrderCardProps> = ({ order, index, onCa
         )}>
           {order.order_type}/{order.side}
         </span>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-gray-400">
           {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm:ss')}
         </span>
       </div>
@@ -65,22 +65,22 @@ export const OpenOrderCard: React.FC<OpenOrderCardProps> = ({ order, index, onCa
       <div className="flex items-center justify-between">
         <span className={cn(
           "text-xs px-2 py-0.5 rounded",
-          filledPercent > 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+          filledPercent > 0 ? "bg-amber-500/20 text-amber-400" : "bg-gray-700 text-gray-400"
         )}>
           {filledPercent}%
         </span>
         <div className="text-right">
-          <div className="text-xs text-muted-foreground">Filled / Amount</div>
-          <div className="text-sm font-mono text-foreground">
+          <div className="text-xs text-gray-400">Filled / Amount</div>
+          <div className="text-sm font-mono text-white">
             {order.filled_amount.toFixed(2)} / {order.amount.toFixed(2)}
           </div>
         </div>
       </div>
 
       {/* Price */}
-      <div className="flex items-center justify-between pt-1 border-t border-border">
-        <span className="text-xs text-muted-foreground">Price</span>
-        <span className="font-mono text-foreground">{order.price?.toFixed(8) || 'Market'}</span>
+      <div className="flex items-center justify-between pt-1 border-t border-gray-700">
+        <span className="text-xs text-gray-400">Price</span>
+        <span className="font-mono text-white">{order.price?.toFixed(4) || 'Market'}</span>
       </div>
     </div>
   );

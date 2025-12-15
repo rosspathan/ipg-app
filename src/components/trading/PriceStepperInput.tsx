@@ -39,23 +39,22 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
 
   return (
     <div className={cn("", className)}>
-      {/* Label above input like in screenshot */}
-      <div className="bg-[#1a1a2e] border border-[#2a2a40] rounded-lg px-3 py-2">
-        <label className="block text-xs text-muted-foreground mb-1">{label}</label>
+      <div className="bg-[#1e1e2d] border border-gray-700 rounded-lg px-3 py-2">
+        <label className="block text-xs text-gray-400 mb-1">{label}</label>
         <div className="flex items-center">
           <input
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             disabled={disabled}
-            className="flex-1 bg-transparent text-foreground font-mono text-base py-1 outline-none"
+            className="flex-1 bg-transparent text-white font-mono text-base py-1 outline-none"
           />
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleDecrement}
               disabled={disabled || numValue <= min}
-              className="w-8 h-8 flex items-center justify-center bg-[#3a3a50] rounded-full text-muted-foreground hover:text-foreground hover:bg-[#4a4a60] disabled:opacity-50"
+              className="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-600 disabled:opacity-50"
             >
               <Minus className="h-4 w-4" />
             </button>
@@ -63,7 +62,7 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
               type="button"
               onClick={handleIncrement}
               disabled={disabled || (max !== undefined && numValue >= max)}
-              className="w-8 h-8 flex items-center justify-center bg-[#3a3a50] rounded-full text-muted-foreground hover:text-foreground hover:bg-[#4a4a60] disabled:opacity-50"
+              className="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-full text-gray-300 hover:text-white hover:bg-gray-600 disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
             </button>

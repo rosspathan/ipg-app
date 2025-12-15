@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ChevronDown, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookCompact } from "@/components/trading/OrderBookCompact";
 import { OpenOrderCard } from "@/components/trading/OpenOrderCard";
@@ -126,48 +125,20 @@ export function TradingPairPage() {
       requireRiskDisclosure
     >
       <div className="flex flex-col h-screen bg-background">
-        {/* Compact Header */}
-        <div className="sticky top-0 z-10 bg-card border-b border-border px-4 py-3">
+        {/* Clean Header */}
+        <div className="sticky top-0 z-10 bg-[#0d0d1a] border-b border-gray-800 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button onClick={() => navigate("/app/trade")} className="p-1">
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft className="h-5 w-5 text-white" />
               </button>
-              <div>
-                <div className="font-semibold">{pair.symbol}</div>
-                <div className={cn("text-xs font-medium flex items-center gap-1", priceChangeColor)}>
-                  {pair.change24h >= 0 ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3" />
-                  )}
-                  {Math.abs(pair.change24h).toFixed(2)}%
-                </div>
+              <div className="flex items-center gap-2">
+                <span className="text-white font-semibold text-lg">{pair.symbol}</span>
+                <ChevronDown className="h-4 w-4 text-gray-400" />
               </div>
-            </div>
-
-            <button
-              onClick={() => setShowChart(!showChart)}
-              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-            >
-              {showChart ? "Hide" : "Show"} Chart
-              <ChevronDown className={cn("h-3 w-3", showChart && "rotate-180")} />
-            </button>
-          </div>
-
-          {/* 24h Stats Row */}
-          <div className="flex items-center gap-4 mt-2 text-xs">
-            <div>
-              <span className="text-muted-foreground">H: </span>
-              <span className="font-mono">${pair.high24h.toFixed(2)}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">L: </span>
-              <span className="font-mono">${pair.low24h.toFixed(2)}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Vol: </span>
-              <span className="font-mono">${(pair.volume24h / 1000000).toFixed(2)}M</span>
+              <span className={cn("text-sm font-medium", priceChangeColor)}>
+                {pair.change24h >= 0 ? "+" : ""}{pair.change24h.toFixed(2)}%
+              </span>
             </div>
           </div>
         </div>
@@ -211,62 +182,46 @@ export function TradingPairPage() {
 
           {/* Open Orders Section */}
           <div className="mt-4">
-            <Tabs defaultValue="orders" className="w-full">
-              <TabsList className="bg-muted/30 w-full justify-start">
-                <TabsTrigger value="orders" className="text-xs">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-2 mb-3">
+              <div className="flex items-center gap-4">
+                <button className="text-white text-sm font-medium border-b-2 border-amber-500 pb-2">
                   Open Orders ({openOrders.length})
-                </TabsTrigger>
-                <TabsTrigger value="funds" className="text-xs">
+                </button>
+                <button className="text-gray-500 text-sm pb-2">
                   Funds
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="orders" className="mt-3">
-                {openOrders.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    No open orders
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {openOrders.map((order, idx) => (
-                      <OpenOrderCard
-                        key={order.id}
-                        order={{
-                          id: order.id,
-                          symbol: order.symbol,
-                          side: order.side as 'buy' | 'sell',
-                          order_type: order.order_type,
-                          price: order.price || 0,
-                          amount: order.amount,
-                          filled_amount: order.filled_amount || 0,
-                          created_at: order.created_at,
-                          status: order.status,
-                        }}
-                        index={idx}
-                        onCancel={handleCancelOrder}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="funds" className="mt-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-card border border-border rounded-lg p-3">
-                    <div className="text-xs text-muted-foreground">{pair.quoteAsset}</div>
-                    <div className="font-mono font-medium">
-                      {quoteBalance?.available.toFixed(2) || "0.00"}
-                    </div>
-                  </div>
-                  <div className="bg-card border border-border rounded-lg p-3">
-                    <div className="text-xs text-muted-foreground">{pair.baseAsset}</div>
-                    <div className="font-mono font-medium">
-                      {baseBalance?.available.toFixed(4) || "0.0000"}
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+                </button>
+              </div>
+              <button className="text-amber-500 text-xs font-medium">
+                View All
+              </button>
+            </div>
+            
+            {openOrders.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 text-sm">
+                No open orders
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {openOrders.map((order, idx) => (
+                  <OpenOrderCard
+                    key={order.id}
+                    order={{
+                      id: order.id,
+                      symbol: order.symbol,
+                      side: order.side as 'buy' | 'sell',
+                      order_type: order.order_type,
+                      price: order.price || 0,
+                      amount: order.amount,
+                      filled_amount: order.filled_amount || 0,
+                      created_at: order.created_at,
+                      status: order.status,
+                    }}
+                    index={idx}
+                    onCancel={handleCancelOrder}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

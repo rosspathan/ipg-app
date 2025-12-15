@@ -30,15 +30,15 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
   const maxAskTotal = Math.max(...displayAsks.map(a => a.quantity), 1);
   const maxBidTotal = Math.max(...displayBids.map(b => b.quantity), 1);
 
-  const formatPrice = (price: number) => price.toFixed(8);
-  const formatQuantity = (qty: number) => qty.toFixed(4);
+  const formatPrice = (price: number) => price.toFixed(4);
+  const formatQuantity = (qty: number) => qty.toFixed(2);
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden h-full flex flex-col">
+    <div className="bg-[#0d0d1a] border border-gray-800 rounded-lg overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground px-3 py-2 border-b border-border">
-        <span>Price ({quoteCurrency})</span>
-        <span>Amount</span>
+      <div className="flex items-center justify-between text-xs px-3 py-2 border-b border-gray-800">
+        <span className="text-gray-400">Price ({quoteCurrency})</span>
+        <span className="text-gray-400">Amount</span>
       </div>
 
       {/* Asks (Sell orders) */}
@@ -48,16 +48,16 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
             <div
               key={`ask-${idx}`}
               onClick={() => onPriceClick?.(ask.price)}
-              className="relative flex items-center justify-between px-3 py-1 cursor-pointer hover:bg-muted/30"
+              className="relative flex items-center justify-between px-3 py-1.5 cursor-pointer hover:bg-white/5"
             >
               <div
-                className="absolute right-0 top-0 bottom-0 bg-destructive/10"
+                className="absolute right-0 top-0 bottom-0 bg-red-500/10"
                 style={{ width: `${(ask.quantity / maxAskTotal) * 100}%` }}
               />
-              <span className="relative text-xs font-mono text-destructive">
+              <span className="relative text-xs font-mono text-red-400">
                 {formatPrice(ask.price)}
               </span>
-              <span className="relative text-xs font-mono text-muted-foreground">
+              <span className="relative text-xs font-mono text-gray-400">
                 {formatQuantity(ask.quantity)}
               </span>
             </div>
@@ -66,18 +66,15 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
       </div>
 
       {/* Current Price */}
-      <div className="px-3 py-3 border-y border-border bg-muted/30">
+      <div className="px-3 py-3 border-y border-gray-800 bg-[#1e1e2d]">
         <div className="flex items-center justify-between">
           <span className={cn(
-            "text-2xl font-bold font-mono",
-            priceChange >= 0 ? "text-emerald-400" : "text-destructive"
+            "text-xl font-bold font-mono",
+            priceChange >= 0 ? "text-emerald-400" : "text-red-400"
           )}>
-            {formatPrice(currentPrice)}
+            {currentPrice.toFixed(8)}
           </span>
-          <span className={cn(
-            "text-sm font-medium",
-            priceChange >= 0 ? "text-emerald-400" : "text-destructive"
-          )}>
+          <span className="text-sm text-gray-400">
             ≈ ₹{(currentPrice * 83).toFixed(2)}
           </span>
         </div>
@@ -90,7 +87,7 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
             <div
               key={`bid-${idx}`}
               onClick={() => onPriceClick?.(bid.price)}
-              className="relative flex items-center justify-between px-3 py-1 cursor-pointer hover:bg-muted/30"
+              className="relative flex items-center justify-between px-3 py-1.5 cursor-pointer hover:bg-white/5"
             >
               <div
                 className="absolute right-0 top-0 bottom-0 bg-emerald-500/10"
@@ -99,7 +96,7 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
               <span className="relative text-xs font-mono text-emerald-400">
                 {formatPrice(bid.price)}
               </span>
-              <span className="relative text-xs font-mono text-muted-foreground">
+              <span className="relative text-xs font-mono text-gray-400">
                 {formatQuantity(bid.quantity)}
               </span>
             </div>
