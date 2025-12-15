@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ChevronDown, TrendingUp, TrendingDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { OrderTicketPro } from "@/components/trading/OrderTicketPro";
-import { OrderBookPro } from "@/components/trading/OrderBookPro";
-import { MarketDepthChart } from "@/components/trading/MarketDepthChart";
-import { OrderBookStats } from "@/components/trading/OrderBookStats";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OrderFormPro } from "@/components/trading/OrderFormPro";
+import { OrderBookCompact } from "@/components/trading/OrderBookCompact";
+import { OpenOrderCard } from "@/components/trading/OpenOrderCard";
 import { useTradingPairs } from "@/hooks/useTradingPairs";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
+import { useUserOrders } from "@/hooks/useUserOrders";
 import { useToast } from "@/hooks/use-toast";
 import { useMarketOrderBook, useMarketStore } from "@/hooks/useMarketStore";
 import { cn } from "@/lib/utils";
@@ -29,10 +29,12 @@ export function TradingPairPage() {
   const symbol = urlSymbol.replace('-', '/');
 
   const pair = pairs?.find((p) => p.symbol === symbol);
-  const initialSide = searchParams.get("side") === "sell" ? "sell" : "buy";
 
   const [showChart, setShowChart] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
+
+  // Get user orders
+  const { orders, cancelOrder } = useUserOrders(symbol);
 
   // Subscribe to real-time market data
   const subscribe = useMarketStore((state) => state.subscribe);
@@ -79,24 +81,20 @@ export function TradingPairPage() {
     setSelectedPrice(price);
   };
 
-  const handlePlaceOrder = async (orderData: any) => {
+  const handlePlaceOrder = async (params: { side: 'buy' | 'sell'; type: 'market' | 'limit'; price?: number; quantity: number }) => {
     try {
       await placeOrder({
         symbol: pair.symbol,
-        side: orderData.side,
-        type: orderData.type,
-        quantity: orderData.amount,
-        price: orderData.price,
+        side: params.side,
+        type: params.type,
+        quantity: params.quantity,
+        price: params.price,
       });
 
       toast({
         title: "Order placed",
-        description: `${orderData.side.toUpperCase()} order for ${orderData.amount} ${
-          pair.baseAsset
-        } placed successfully`,
+        description: `${params.side.toUpperCase()} order for ${params.quantity} ${pair.baseAsset} placed successfully`,
       });
-
-      // Optional: Navigate to order history or stay on page
     } catch (error: any) {
       toast({
         title: "Order failed",
@@ -106,7 +104,20 @@ export function TradingPairPage() {
     }
   };
 
-  const priceChangeColor = pair.change24h >= 0 ? "text-success" : "text-destructive";
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      await cancelOrder(orderId);
+    } catch (error: any) {
+      toast({
+        title: "Cancel failed",
+        description: error.message || "Failed to cancel order",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openOrders = orders?.filter(o => o.status === 'pending' || o.status === 'open') || [];
+  const priceChangeColor = pair.change24h >= 0 ? "text-emerald-400" : "text-destructive";
 
   return (
     <ComplianceGate
@@ -115,136 +126,150 @@ export function TradingPairPage() {
       requireRiskDisclosure
     >
       <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/app/trade")}>
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <div className="font-semibold text-lg">{pair.symbol}</div>
-              <div className="text-xs text-muted-foreground">
-                {pair.baseAsset} / {pair.quoteAsset}
+        {/* Compact Header */}
+        <div className="sticky top-0 z-10 bg-card border-b border-border px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate("/app/trade")} className="p-1">
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <div>
+                <div className="font-semibold">{pair.symbol}</div>
+                <div className={cn("text-xs font-medium flex items-center gap-1", priceChangeColor)}>
+                  {pair.change24h >= 0 ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3" />
+                  )}
+                  {Math.abs(pair.change24h).toFixed(2)}%
+                </div>
               </div>
             </div>
+
+            <button
+              onClick={() => setShowChart(!showChart)}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+            >
+              {showChart ? "Hide" : "Show"} Chart
+              <ChevronDown className={cn("h-3 w-3", showChart && "rotate-180")} />
+            </button>
           </div>
 
-          <button
-            onClick={() => setShowChart(!showChart)}
-            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            {showChart ? "Hide" : "Show"} Chart
-            <ChevronDown className={cn("h-4 w-4 transition-transform", showChart && "rotate-180")} />
-          </button>
-        </div>
-
-        {/* Price Info */}
-        <div className="flex items-baseline gap-3">
-          <div className="text-2xl font-bold font-mono">${pair.price.toFixed(2)}</div>
-          <div className={cn("flex items-center gap-1 text-sm font-medium", priceChangeColor)}>
-            {pair.change24h >= 0 ? (
-              <TrendingUp className="h-3.5 w-3.5" />
-            ) : (
-              <TrendingDown className="h-3.5 w-3.5" />
-            )}
-            {Math.abs(pair.change24h).toFixed(2)}%
-          </div>
-        </div>
-
-        {/* 24h Stats */}
-        <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-          <div>
-            <div className="text-muted-foreground">24h High</div>
-            <div className="font-mono">${pair.high24h.toFixed(2)}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">24h Low</div>
-            <div className="font-mono">${pair.low24h.toFixed(2)}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">24h Volume</div>
-            <div className="font-mono">${(pair.volume24h / 1000000).toFixed(2)}M</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Chart Section (Optional) */}
-      {showChart && (
-        <Card className="mx-4 mt-3 p-4 bg-muted/20">
-          <div className="h-48 flex items-center justify-center text-muted-foreground">
-            Chart coming soon...
-          </div>
-        </Card>
-      )}
-
-      {/* Order Book & Stats Section */}
-      <div className="px-4 py-4 space-y-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Order Book - Takes up 2 columns on desktop */}
-          <div className="lg:col-span-2">
-            <OrderBookPro
-              bids={orderBook?.bids || []}
-              asks={orderBook?.asks || []}
-              currentPrice={pair.price}
-              onPriceClick={handlePriceClick}
-            />
-          </div>
-
-          {/* Stats Panel - Takes up 1 column on desktop */}
-          <div className="space-y-4">
-            <OrderBookStats
-              bids={orderBook?.bids || []}
-              asks={orderBook?.asks || []}
-              currentPrice={pair.price}
-            />
-            
-            {/* Market Depth Chart */}
-            <MarketDepthChart
-              bids={orderBook?.bids || []}
-              asks={orderBook?.asks || []}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Order Form */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-        <OrderTicketPro
-          pair={pair.symbol}
-          currentPrice={pair.price}
-          availableBalance={{
-            base: baseBalance?.available || 0,
-            quote: quoteBalance?.available || 0,
-          }}
-          takerFee={0.1}
-          makerFee={0.1}
-          bestBid={pair.price * 0.999}
-          bestAsk={pair.price * 1.001}
-          onSubmit={handlePlaceOrder}
-          defaultSide={initialSide}
-          autoFillPrice={selectedPrice}
-        />
-      </div>
-
-      {/* Quick Stats Footer */}
-      <div className="border-t border-border px-4 py-3 bg-background/95 backdrop-blur">
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <div className="text-muted-foreground text-xs">Available {pair.quoteAsset}</div>
-            <div className="font-mono font-medium">
-              {quoteBalance?.available.toFixed(2) || "0.00"}
+          {/* 24h Stats Row */}
+          <div className="flex items-center gap-4 mt-2 text-xs">
+            <div>
+              <span className="text-muted-foreground">H: </span>
+              <span className="font-mono">${pair.high24h.toFixed(2)}</span>
             </div>
-          </div>
-          <div>
-            <div className="text-muted-foreground text-xs">Available {pair.baseAsset}</div>
-            <div className="font-mono font-medium">
-              {baseBalance?.available.toFixed(4) || "0.0000"}
+            <div>
+              <span className="text-muted-foreground">L: </span>
+              <span className="font-mono">${pair.low24h.toFixed(2)}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Vol: </span>
+              <span className="font-mono">${(pair.volume24h / 1000000).toFixed(2)}M</span>
             </div>
           </div>
         </div>
+
+        {/* Chart Section (Optional) */}
+        {showChart && (
+          <Card className="mx-3 mt-3 p-4 bg-muted/20">
+            <div className="h-48 flex items-center justify-center text-muted-foreground">
+              Chart coming soon...
+            </div>
+          </Card>
+        )}
+
+        {/* Main Content - KBC Style 2 Column Layout */}
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Left Column: Order Form */}
+            <div>
+              <OrderFormPro
+                baseCurrency={pair.baseAsset}
+                quoteCurrency={pair.quoteAsset}
+                availableBase={baseBalance?.available || 0}
+                availableQuote={quoteBalance?.available || 0}
+                currentPrice={pair.price}
+                onPlaceOrder={handlePlaceOrder}
+              />
+            </div>
+
+            {/* Right Column: Compact Order Book */}
+            <div className="h-[500px]">
+              <OrderBookCompact
+                asks={orderBook?.asks.slice(0, 8).map(a => ({ price: a.price, quantity: a.quantity })) || []}
+                bids={orderBook?.bids.slice(0, 8).map(b => ({ price: b.price, quantity: b.quantity })) || []}
+                currentPrice={pair.price}
+                priceChange={pair.change24h}
+                quoteCurrency={pair.quoteAsset}
+                onPriceClick={handlePriceClick}
+              />
+            </div>
+          </div>
+
+          {/* Open Orders Section */}
+          <div className="mt-4">
+            <Tabs defaultValue="orders" className="w-full">
+              <TabsList className="bg-muted/30 w-full justify-start">
+                <TabsTrigger value="orders" className="text-xs">
+                  Open Orders ({openOrders.length})
+                </TabsTrigger>
+                <TabsTrigger value="funds" className="text-xs">
+                  Funds
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="orders" className="mt-3">
+                {openOrders.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    No open orders
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {openOrders.map((order, idx) => (
+                      <OpenOrderCard
+                        key={order.id}
+                        order={{
+                          id: order.id,
+                          symbol: order.symbol,
+                          side: order.side as 'buy' | 'sell',
+                          order_type: order.order_type,
+                          price: order.price || 0,
+                          amount: order.amount,
+                          filled_amount: order.filled_amount || 0,
+                          created_at: order.created_at,
+                          status: order.status,
+                        }}
+                        index={idx}
+                        onCancel={handleCancelOrder}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="funds" className="mt-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-card border border-border rounded-lg p-3">
+                    <div className="text-xs text-muted-foreground">{pair.quoteAsset}</div>
+                    <div className="font-mono font-medium">
+                      {quoteBalance?.available.toFixed(2) || "0.00"}
+                    </div>
+                  </div>
+                  <div className="bg-card border border-border rounded-lg p-3">
+                    <div className="text-xs text-muted-foreground">{pair.baseAsset}</div>
+                    <div className="font-mono font-medium">
+                      {baseBalance?.available.toFixed(4) || "0.0000"}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </div>
-    </div>
     </ComplianceGate>
   );
 }
