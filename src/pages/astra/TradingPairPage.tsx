@@ -116,13 +116,23 @@ export function TradingPairPage() {
 
   const handlePlaceOrder = async (params: { side: 'buy' | 'sell'; type: 'market' | 'limit'; price?: number; quantity: number }) => {
     try {
-      await placeOrder({
+      const result = await placeOrder({
         symbol: pair.symbol,
         side: params.side,
         type: params.type,
         quantity: params.quantity,
         price: params.price,
       });
+
+      // Check the actual result - don't assume success
+      if (!result || !result.success) {
+        toast({
+          title: "Order failed",
+          description: result?.error || "Failed to place order",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Order placed",

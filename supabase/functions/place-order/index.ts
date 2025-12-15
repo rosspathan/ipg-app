@@ -18,18 +18,29 @@ serve(async (req) => {
   }
 
   try {
+    // Extract JWT token explicitly for proper auth
+    const authHeader = req.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '').trim();
+    
+    if (!token) {
+      throw new Error('Unauthorized: No token provided');
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader! },
         },
+        auth: { persistSession: false }
       }
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    // Pass token explicitly to getUser
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
+      console.error('[place-order] Auth error:', userError);
       throw new Error('Unauthorized');
     }
 
