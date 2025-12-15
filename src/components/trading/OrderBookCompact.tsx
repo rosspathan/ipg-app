@@ -66,7 +66,7 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
       </div>
 
       {/* Current Price */}
-      <div className="px-3 py-3 border-y border-gray-800 bg-[#1e1e2d]">
+      <div className="px-3 py-3 border-y border-gray-800 bg-[#1e1e2d] relative z-10">
         <div className="flex items-center justify-between">
           <span className={cn(
             "text-xl font-bold font-mono",
