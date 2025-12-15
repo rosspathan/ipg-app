@@ -106,13 +106,13 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 sm:space-y-3">
       {/* Buy/Sell Toggle */}
-      <div className="flex bg-muted rounded-full p-1">
+      <div className="flex bg-muted rounded-full p-0.5 sm:p-1">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 py-2.5 rounded-full font-semibold text-sm",
+            "flex-1 py-1.5 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm",
             isBuy
               ? "bg-emerald-500 text-white"
               : "text-muted-foreground"
@@ -123,7 +123,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 py-2.5 rounded-full font-semibold text-sm",
+            "flex-1 py-1.5 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm",
             !isBuy
               ? "bg-red-500 text-white"
               : "text-muted-foreground"
@@ -135,23 +135,23 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* Available Balance - Shows both crypto amount and USD value */}
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Available</span>
-        <div className="flex items-center gap-2">
+        <span className="text-[10px] sm:text-xs text-muted-foreground">Avail</span>
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="text-right">
             <span className={cn(
-              "text-sm font-mono block",
+              "text-xs sm:text-sm font-mono block",
               hasInsufficientBalance ? "text-destructive" : "text-foreground"
             )}>
-              {availableBalance.toFixed(4)} {balanceCurrency}
+              {availableBalance.toFixed(2)} {balanceCurrency}
             </span>
             {availableBalanceUsd > 0 && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
                 ≈ ${availableBalanceUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             )}
           </div>
-          <button className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-            <Plus className="h-3 w-3" />
+          <button className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+            <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
           </button>
         </div>
       </div>
@@ -167,15 +167,15 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* Order Type Selector */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="w-full flex items-center justify-between bg-card border border-border rounded-lg px-3 py-3 text-sm">
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
+          <button className="w-full flex items-center justify-between bg-card border border-border rounded-lg px-2 sm:px-3 py-2 sm:py-3 text-xs sm:text-sm">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Info className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
               <span className="text-foreground capitalize">{orderType.replace('-', ' ')}</span>
             </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-40">
+        <DropdownMenuContent align="start" className="w-32 sm:w-40">
           <DropdownMenuItem onClick={() => setOrderType('limit')}>
             Limit
           </DropdownMenuItem>
@@ -216,18 +216,18 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       />
 
       {/* Total */}
-      <div className="bg-card border border-border rounded-lg px-3 py-2">
-        <label className="block text-xs text-muted-foreground mb-1">Total ({quoteCurrency})</label>
-        <div className="font-mono text-foreground text-base">
-          {total.toFixed(4)}
+      <div className="bg-card border border-border rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
+        <label className="block text-[10px] sm:text-xs text-muted-foreground mb-0.5">Total ({quoteCurrency})</label>
+        <div className="font-mono text-foreground text-xs sm:text-base">
+          {total.toFixed(2)}
         </div>
       </div>
 
       {/* Estimated Fee - Always in USDT */}
-      <div className="flex items-center justify-between text-xs py-1">
-        <span className="text-muted-foreground">Est. Fee</span>
+      <div className="flex items-center justify-between text-[10px] sm:text-xs py-0.5 sm:py-1">
+        <span className="text-muted-foreground">Fee</span>
         <span className="text-foreground font-mono">
-          {estimatedFeeUsdt.toFixed(4)} USDT
+          {estimatedFeeUsdt.toFixed(2)} USDT
         </span>
       </div>
 
@@ -236,7 +236,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0 || hasInsufficientBalance}
         className={cn(
-          "w-full py-5 text-base font-semibold rounded-lg",
+          "w-full py-2 sm:py-5 text-xs sm:text-base font-semibold rounded-lg",
           hasInsufficientBalance
             ? "bg-muted text-muted-foreground"
             : isBuy
@@ -247,7 +247,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         {isPlacingOrder 
           ? 'Placing...' 
           : hasInsufficientBalance 
-            ? 'Insufficient Balance'
+            ? 'Insufficient'
             : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
       </Button>
     </div>
