@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMarketOrderBook, useMarketStore } from "@/hooks/useMarketStore";
 import { cn } from "@/lib/utils";
 import { ComplianceGate } from "@/components/compliance/ComplianceGate";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 export function TradingPairPage() {
-  const { session, loading: authLoading } = useAuth();
+  const { session, loading: authLoading } = useAuthUser();
   
   // Auth loading guard - wait for auth to initialize
   if (authLoading) {
