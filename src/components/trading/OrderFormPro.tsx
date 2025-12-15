@@ -89,14 +89,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   return (
     <div className="space-y-3">
       {/* Buy/Sell Toggle */}
-      <div className="flex bg-[#1e1e2d] rounded-full p-1">
+      <div className="flex bg-muted rounded-full p-1">
         <button
           onClick={() => setSide('buy')}
           className={cn(
             "flex-1 py-2.5 rounded-full font-semibold text-sm",
             isBuy
               ? "bg-emerald-500 text-white"
-              : "text-gray-400"
+              : "text-muted-foreground"
           )}
         >
           Buy
@@ -107,7 +107,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             "flex-1 py-2.5 rounded-full font-semibold text-sm",
             !isBuy
               ? "bg-red-500 text-white"
-              : "text-gray-400"
+              : "text-muted-foreground"
           )}
         >
           Sell
@@ -116,9 +116,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* Available Balance */}
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-400">Available</span>
+        <span className="text-xs text-muted-foreground">Available</span>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-mono text-white">
+          <span className="text-sm font-mono text-foreground">
             {availableBalance.toFixed(4)} {balanceCurrency}
           </span>
           <button className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center">
@@ -130,12 +130,12 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* Order Type Selector */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="w-full flex items-center justify-between bg-[#1e1e2d] border border-gray-700 rounded-lg px-3 py-3 text-sm">
+          <button className="w-full flex items-center justify-between bg-card border border-border rounded-lg px-3 py-3 text-sm">
             <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-gray-400" />
-              <span className="text-white capitalize">{orderType.replace('-', ' ')}</span>
+              <Info className="h-4 w-4 text-muted-foreground" />
+              <span className="text-foreground capitalize">{orderType.replace('-', ' ')}</span>
             </div>
-            <ChevronDown className="h-4 w-4 text-gray-400" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-40">
@@ -179,17 +179,17 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       />
 
       {/* Total */}
-      <div className="bg-[#1e1e2d] border border-gray-700 rounded-lg px-3 py-2">
-        <label className="block text-xs text-gray-400 mb-1">Total ({quoteCurrency})</label>
-        <div className="font-mono text-white text-base">
+      <div className="bg-card border border-border rounded-lg px-3 py-2">
+        <label className="block text-xs text-muted-foreground mb-1">Total ({quoteCurrency})</label>
+        <div className="font-mono text-foreground text-base">
           {total.toFixed(4)}
         </div>
       </div>
 
       {/* Estimated Fee */}
       <div className="flex items-center justify-between text-xs py-1">
-        <span className="text-gray-400">Est. Fee</span>
-        <span className="text-white font-mono">
+        <span className="text-muted-foreground">Est. Fee</span>
+        <span className="text-foreground font-mono">
           {estimatedFee.toFixed(4)} {baseCurrency}
         </span>
       </div>
