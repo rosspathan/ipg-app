@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, QrCode, ExternalLink, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Copy, QrCode, ExternalLink, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -18,6 +18,8 @@ import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, form
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
 import { useDisplayName } from "@/hooks/useDisplayName";
 import { supabase } from "@/integrations/supabase/client";
+import { RecentDeposits } from "@/components/wallet/RecentDeposits";
+import { motion, AnimatePresence } from "framer-motion";
 
 const DepositScreen = () => {
   const navigate = useNavigate();
@@ -117,10 +119,14 @@ const DepositScreen = () => {
             <h1 className="text-2xl font-bold text-foreground">Deposit</h1>
           </div>
           <div className="flex justify-center items-center min-h-[200px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center"
+            >
+              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
               <p className="text-muted-foreground">Loading assets...</p>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
@@ -261,7 +267,11 @@ const DepositScreen = () => {
     <div className="min-h-screen bg-background px-6 py-8">
       <div className="max-w-sm mx-auto w-full space-y-6">
         {/* Header */}
-        <div className="flex items-center space-x-4">
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center space-x-4"
+        >
           <Button
             variant="ghost"
             size="sm"
@@ -271,7 +281,7 @@ const DepositScreen = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-2xl font-bold text-foreground">Deposit</h1>
-        </div>
+        </motion.div>
 
         {/* Tabs for Crypto and INR */}
         <Tabs defaultValue="crypto" className="w-full">
@@ -437,28 +447,42 @@ const DepositScreen = () => {
           </CardContent>
         </Card>
 
-        {/* Transaction Hash Tracking */}
-        <Card className="bg-gradient-card shadow-card border-0">
+        {/* Auto-discover button */}
+        <Card className="bg-card shadow-lg border border-border">
           <CardHeader>
-            <CardTitle className="text-lg">Track Your Deposit</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Track Your Deposit
+            </CardTitle>
             <p className="text-sm text-muted-foreground">
               Enter your transaction details or let us find it automatically
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Auto-discover button */}
-            <Button 
-              onClick={handleDiscoverDeposits}
-              disabled={discovering || !walletAddress}
-              variant="outline"
-              className="w-full"
-            >
-              {discovering ? "Searching blockchain..." : "🔍 Find my deposit automatically"}
-            </Button>
+            <motion.div whileTap={{ scale: 0.98 }}>
+              <Button 
+                onClick={handleDiscoverDeposits}
+                disabled={discovering || !walletAddress}
+                variant="outline"
+                className="w-full group"
+              >
+                {discovering ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Searching blockchain...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2 group-hover:text-primary transition-colors" />
+                    Find my deposit automatically
+                  </>
+                )}
+              </Button>
+            </motion.div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
+                <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">Or enter manually</span>
