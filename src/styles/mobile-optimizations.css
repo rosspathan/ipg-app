@@ -15,6 +15,18 @@
   .lucide {
     padding: 4px;
   }
+  
+  /* Override for dense trading UI - allow smaller buttons */
+  .trade-density button,
+  .trade-density a,
+  .trade-density [role="button"] {
+    min-height: unset;
+    min-width: unset;
+  }
+  
+  .trade-density .lucide {
+    padding: 0;
+  }
 }
 
 /* Smooth scrolling */
