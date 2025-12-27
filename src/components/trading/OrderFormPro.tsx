@@ -106,13 +106,13 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   };
 
   return (
-    <div className="space-y-3 sm:space-y-3">
-      {/* Buy/Sell Toggle - Large touch targets */}
-      <div className="flex bg-muted rounded-full p-1">
+    <div className="space-y-2 sm:space-y-3">
+      {/* Buy/Sell Toggle - Compact */}
+      <div className="flex bg-muted rounded-full p-0.5">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 py-3 sm:py-2.5 rounded-full font-semibold text-sm",
+            "flex-1 py-2 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm",
             isBuy
               ? "bg-emerald-500 text-white"
               : "text-muted-foreground"
@@ -123,7 +123,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 py-3 sm:py-2.5 rounded-full font-semibold text-sm",
+            "flex-1 py-2 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm",
             !isBuy
               ? "bg-red-500 text-white"
               : "text-muted-foreground"
@@ -133,56 +133,51 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </button>
       </div>
 
-      {/* Available Balance */}
-      <div className="flex items-center justify-between py-1">
-        <span className="text-xs text-muted-foreground">Available</span>
-        <div className="flex items-center gap-2">
+      {/* Available Balance - Compact */}
+      <div className="flex items-center justify-between py-0.5">
+        <span className="text-[10px] sm:text-xs text-muted-foreground">Avail</span>
+        <div className="flex items-center gap-1.5">
           <div className="text-right">
             <span className={cn(
-              "text-sm font-mono block",
+              "text-xs sm:text-sm font-mono block",
               hasInsufficientBalance ? "text-destructive" : "text-foreground"
             )}>
               {availableBalance.toFixed(2)} {balanceCurrency}
             </span>
-            {availableBalanceUsd > 0 && (
-              <span className="text-xs text-muted-foreground">
-                ≈ ${availableBalanceUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            )}
           </div>
-          <button className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-            <Plus className="h-3.5 w-3.5" />
+          <button className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+            <Plus className="h-3 w-3" />
           </button>
         </div>
       </div>
 
-      {/* Insufficient Balance Warning */}
+      {/* Insufficient Balance Warning - Compact */}
       {hasInsufficientBalance && (
-        <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-lg px-3 py-2.5">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          <span>Insufficient {balanceCurrency} balance</span>
+        <div className="flex items-center gap-1.5 text-destructive text-[10px] sm:text-xs bg-destructive/10 rounded px-2 py-1.5">
+          <AlertCircle className="h-3 w-3 flex-shrink-0" />
+          <span>Insufficient balance</span>
         </div>
       )}
 
-      {/* Order Type Selector - Larger touch target */}
+      {/* Order Type Selector - Compact */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="w-full flex items-center justify-between bg-card border border-border rounded-lg px-3 py-3 text-sm min-h-[44px]">
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
+          <button className="w-full flex items-center justify-between bg-card border border-border rounded-lg px-2 py-2 sm:py-2.5 text-xs sm:text-sm">
+            <div className="flex items-center gap-1.5">
+              <Info className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
               <span className="text-foreground capitalize">{orderType.replace('-', ' ')}</span>
             </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-40">
-          <DropdownMenuItem onClick={() => setOrderType('limit')} className="py-2.5">
+        <DropdownMenuContent align="start" className="w-32 sm:w-40">
+          <DropdownMenuItem onClick={() => setOrderType('limit')} className="py-2 text-xs sm:text-sm">
             Limit
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOrderType('market')} className="py-2.5">
+          <DropdownMenuItem onClick={() => setOrderType('market')} className="py-2 text-xs sm:text-sm">
             Market
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOrderType('stop-limit')} className="py-2.5">
+          <DropdownMenuItem onClick={() => setOrderType('stop-limit')} className="py-2 text-xs sm:text-sm">
             Stop-Limit
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -215,28 +210,28 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         onChange={handlePercentageChange}
       />
 
-      {/* Total */}
-      <div className="bg-card border border-border rounded-lg px-3 py-2.5">
-        <label className="block text-xs text-muted-foreground mb-1">Total ({quoteCurrency})</label>
-        <div className="font-mono text-foreground text-base">
+      {/* Total - Compact */}
+      <div className="bg-card border border-border rounded-lg px-2 py-1.5 sm:py-2">
+        <label className="block text-[10px] sm:text-xs text-muted-foreground mb-0.5">Total ({quoteCurrency})</label>
+        <div className="font-mono text-foreground text-xs sm:text-sm">
           {total.toFixed(2)}
         </div>
       </div>
 
-      {/* Estimated Fee */}
-      <div className="flex items-center justify-between text-xs py-1">
+      {/* Estimated Fee - Compact */}
+      <div className="flex items-center justify-between text-[10px] sm:text-xs py-0.5">
         <span className="text-muted-foreground">Est. Fee</span>
         <span className="text-foreground font-mono">
           {estimatedFeeUsdt.toFixed(2)} USDT
         </span>
       </div>
 
-      {/* Submit Button - Large touch target */}
+      {/* Submit Button - Compact but usable */}
       <Button
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0 || hasInsufficientBalance}
         className={cn(
-          "w-full h-12 sm:h-11 text-base font-semibold rounded-lg",
+          "w-full h-9 sm:h-10 text-xs sm:text-sm font-semibold rounded-lg",
           hasInsufficientBalance
             ? "bg-muted text-muted-foreground"
             : isBuy
@@ -247,7 +242,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         {isPlacingOrder 
           ? 'Placing...' 
           : hasInsufficientBalance 
-            ? 'Insufficient Balance'
+            ? 'Insufficient'
             : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
       </Button>
     </div>
