@@ -271,10 +271,10 @@ function TradingPairPageContent() {
           </Card>
         )}
 
-        {/* Main Content - Stacked on mobile, side-by-side on tablet+ */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-4">
-            {/* Order Form - Full width on mobile */}
+        {/* Main Content - Always side-by-side on all devices */}
+        <div className="flex-1 overflow-y-auto p-2 sm:p-3 lg:p-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
+            {/* Order Form */}
             <div className="relative overflow-hidden isolate">
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
@@ -288,8 +288,8 @@ function TradingPairPageContent() {
               />
             </div>
 
-            {/* Order Book - Full width on mobile */}
-            <div className="h-[320px] sm:h-[450px] lg:h-[500px] relative overflow-hidden isolate">
+            {/* Order Book */}
+            <div className="h-[380px] sm:h-[450px] lg:h-[500px] relative overflow-hidden isolate">
               <OrderBookCompact
                 asks={orderBook?.asks.slice(0, 8).map(a => ({ price: a.price, quantity: a.quantity })) || []}
                 bids={orderBook?.bids.slice(0, 8).map(b => ({ price: b.price, quantity: b.quantity })) || []}
