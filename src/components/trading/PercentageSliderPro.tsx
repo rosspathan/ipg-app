@@ -17,8 +17,8 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
   className,
 }) => {
   return (
-    <div className={cn("py-2", className)}>
-      <div className="relative h-5 flex items-center">
+    <div className={cn("py-1.5", className)}>
+      <div className="relative h-6 flex items-center">
         {/* Track background */}
         <div className="absolute left-0 right-0 h-px bg-muted" />
         
@@ -28,7 +28,7 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
           style={{ width: `${value}%` }}
         />
         
-        {/* Diamond Markers */}
+        {/* Diamond Markers with larger tap targets */}
         {markers.map((marker, index) => {
           const isActive = marker <= value || index === 0;
           return (
@@ -38,26 +38,34 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
               disabled={disabled}
               onClick={() => onChange(marker)}
               className={cn(
-                "absolute w-2 h-2 rotate-45 -translate-x-1/2",
-                index === 0 
-                  ? "bg-amber-500 border-0"
-                  : marker <= value
-                    ? "bg-amber-500 border-0"
-                    : "bg-transparent border border-muted-foreground/40",
-                !disabled && "hover:scale-110 cursor-pointer"
+                "absolute w-6 h-6 -translate-x-1/2 flex items-center justify-center",
+                !disabled && "cursor-pointer"
               )}
               style={{ left: `${marker}%` }}
-            />
+            >
+              <span
+                className={cn(
+                  "w-2 h-2 rotate-45 transition-transform",
+                  index === 0 
+                    ? "bg-amber-500"
+                    : isActive
+                      ? "bg-amber-500"
+                      : "bg-transparent border border-muted-foreground/40",
+                  !disabled && "hover:scale-125"
+                )}
+              />
+            </button>
           );
         })}
       </div>
       
-      {/* Labels */}
-      <div className="relative flex justify-between mt-1">
+      {/* Labels - positioned precisely under each marker */}
+      <div className="relative h-3">
         {markers.map((marker) => (
           <span 
             key={marker} 
-            className="text-[10px] text-muted-foreground"
+            className="absolute text-[10px] text-muted-foreground -translate-x-1/2"
+            style={{ left: `${marker}%` }}
           >
             {marker}%
           </span>
