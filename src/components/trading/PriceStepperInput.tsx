@@ -121,7 +121,7 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
               onTouchStart={() => startLongPress(handleDecrement)}
               onTouchEnd={stopLongPress}
               disabled={disabled || numValue <= min}
-              className="w-7 h-7 flex items-center justify-center border border-border rounded-full text-muted-foreground hover:text-foreground hover:border-muted-foreground active:scale-95 disabled:opacity-50 select-none touch-manipulation"
+              className="w-7 h-7 min-h-0 min-w-0 flex items-center justify-center border border-border rounded-full text-muted-foreground hover:text-foreground hover:border-muted-foreground active:scale-95 disabled:opacity-50 select-none touch-manipulation"
             >
               <Minus className="h-4 w-4" />
             </button>
@@ -133,7 +133,7 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
               onTouchStart={() => startLongPress(handleIncrement)}
               onTouchEnd={stopLongPress}
               disabled={disabled || (max !== undefined && numValue >= max)}
-              className="w-7 h-7 flex items-center justify-center border border-border rounded-full text-muted-foreground hover:text-foreground hover:border-muted-foreground active:scale-95 disabled:opacity-50 select-none touch-manipulation"
+              className="w-7 h-7 min-h-0 min-w-0 flex items-center justify-center border border-border rounded-full text-muted-foreground hover:text-foreground hover:border-muted-foreground active:scale-95 disabled:opacity-50 select-none touch-manipulation"
             >
               <Plus className="h-4 w-4" />
             </button>

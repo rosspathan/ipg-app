@@ -145,7 +145,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
               {availableBalance.toFixed(2)} {balanceCurrency}
             </span>
           </div>
-          <button className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+          <button className="w-5 h-5 sm:w-6 sm:h-6 min-h-0 min-w-0 rounded-full bg-emerald-500 text-white flex items-center justify-center">
             <Plus className="h-3 w-3" />
           </button>
         </div>
