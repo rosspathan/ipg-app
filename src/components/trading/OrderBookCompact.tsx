@@ -36,9 +36,9 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
   return (
     <div className="bg-background border border-border rounded-lg overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-2 border-b border-border">
+      <div className="flex items-center justify-between text-xs px-3 py-2 border-b border-border">
         <span className="text-muted-foreground">Price</span>
-        <span className="text-muted-foreground">Amt</span>
+        <span className="text-muted-foreground">Amount</span>
       </div>
 
       {/* Asks (Sell orders) */}
@@ -48,16 +48,16 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
             <div
               key={`ask-${idx}`}
               onClick={() => onPriceClick?.(ask.price)}
-              className="relative flex items-center justify-between px-2 sm:px-3 py-0.5 sm:py-1 cursor-pointer hover:bg-muted/50"
+              className="relative flex items-center justify-between px-3 py-1.5 cursor-pointer hover:bg-muted/50 min-h-[32px]"
             >
               <div
                 className="absolute right-0 top-0 bottom-0 bg-red-500/10"
                 style={{ width: `${(ask.quantity / maxAskTotal) * 100}%` }}
               />
-              <span className="relative text-[10px] sm:text-xs font-mono text-red-400">
+              <span className="relative text-xs font-mono text-red-400">
                 {formatPrice(ask.price)}
               </span>
-              <span className="relative text-[10px] sm:text-xs font-mono text-muted-foreground">
+              <span className="relative text-xs font-mono text-muted-foreground">
                 {formatQuantity(ask.quantity)}
               </span>
             </div>
@@ -65,16 +65,16 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
         </div>
       </div>
 
-      {/* Current Price */}
-      <div className="px-2 sm:px-3 py-1 sm:py-2 border-y border-border bg-card relative z-10">
+      {/* Current Price - Prominent */}
+      <div className="px-3 py-2.5 border-y border-border bg-card relative z-10">
         <div className="flex flex-col">
           <span className={cn(
-            "text-sm sm:text-lg font-bold font-mono",
+            "text-lg font-bold font-mono",
             priceChange >= 0 ? "text-emerald-400" : "text-red-400"
           )}>
             {currentPrice.toFixed(2)}
           </span>
-          <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
+          <span className="text-xs text-muted-foreground">
             ≈ ₹{(currentPrice * 83).toFixed(2)}
           </span>
         </div>
@@ -87,16 +87,16 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
             <div
               key={`bid-${idx}`}
               onClick={() => onPriceClick?.(bid.price)}
-              className="relative flex items-center justify-between px-2 sm:px-3 py-0.5 sm:py-1 cursor-pointer hover:bg-muted/50"
+              className="relative flex items-center justify-between px-3 py-1.5 cursor-pointer hover:bg-muted/50 min-h-[32px]"
             >
               <div
                 className="absolute right-0 top-0 bottom-0 bg-emerald-500/10"
                 style={{ width: `${(bid.quantity / maxBidTotal) * 100}%` }}
               />
-              <span className="relative text-[10px] sm:text-xs font-mono text-emerald-400">
+              <span className="relative text-xs font-mono text-emerald-400">
                 {formatPrice(bid.price)}
               </span>
-              <span className="relative text-[10px] sm:text-xs font-mono text-muted-foreground">
+              <span className="relative text-xs font-mono text-muted-foreground">
                 {formatQuantity(bid.quantity)}
               </span>
             </div>
