@@ -17,20 +17,19 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
   className,
 }) => {
   return (
-    <div className={cn("py-4", className)}>
-      <div className="relative h-8 flex items-center">
+    <div className={cn("py-2", className)}>
+      <div className="relative h-5 flex items-center">
         {/* Track background */}
-        <div className="absolute left-0 right-0 h-0.5 bg-muted" />
+        <div className="absolute left-0 right-0 h-px bg-muted" />
         
         {/* Active track - gold/amber color */}
         <div 
-          className="absolute left-0 h-0.5 bg-amber-500"
+          className="absolute left-0 h-px bg-amber-500"
           style={{ width: `${value}%` }}
         />
         
         {/* Diamond Markers */}
         {markers.map((marker, index) => {
-          // First marker (0%) is always filled gold as per screenshot
           const isActive = marker <= value || index === 0;
           return (
             <button
@@ -39,12 +38,12 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
               disabled={disabled}
               onClick={() => onChange(marker)}
               className={cn(
-                "absolute w-3 h-3 rotate-45 -translate-x-1/2",
+                "absolute w-2 h-2 rotate-45 -translate-x-1/2",
                 index === 0 
-                  ? "bg-amber-500 border-0" // First diamond always gold filled
+                  ? "bg-amber-500 border-0"
                   : marker <= value
                     ? "bg-amber-500 border-0"
-                    : "bg-transparent border-2 border-muted-foreground/40",
+                    : "bg-transparent border border-muted-foreground/40",
                 !disabled && "hover:scale-110 cursor-pointer"
               )}
               style={{ left: `${marker}%` }}
@@ -54,11 +53,11 @@ export const PercentageSliderPro: React.FC<PercentageSliderProProps> = ({
       </div>
       
       {/* Labels */}
-      <div className="relative flex justify-between mt-2">
+      <div className="relative flex justify-between mt-1">
         {markers.map((marker) => (
           <span 
             key={marker} 
-            className="text-xs text-muted-foreground"
+            className="text-[10px] text-muted-foreground"
           >
             {marker}%
           </span>
