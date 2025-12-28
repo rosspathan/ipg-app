@@ -148,6 +148,7 @@ serve(async (req) => {
     }
 
     // Insert order (use 'amount' column, not 'quantity')
+    // Note: remaining_amount is a generated column, filled_amount has default 0
     const { data: order, error: insertError } = await supabaseClient
       .from('orders')
       .insert({
@@ -157,8 +158,6 @@ serve(async (req) => {
         order_type: type,
         amount: quantity,
         price: price || null,
-        remaining_amount: quantity,
-        filled_amount: 0,
         status: 'pending',
         trading_type: trading_type || 'spot',
       })
