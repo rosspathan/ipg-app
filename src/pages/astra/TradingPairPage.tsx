@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-dom";
 import { ArrowLeft, ChevronDown, Search, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -12,10 +12,13 @@ import { useOnchainBalances } from "@/hooks/useOnchainBalances";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useUserOrders } from "@/hooks/useUserOrders";
 import { useToast } from "@/hooks/use-toast";
-import { useMarketOrderBook, useMarketStore } from "@/hooks/useMarketStore";
+import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
+import { useMarketStore } from "@/hooks/useMarketStore";
 import { cn } from "@/lib/utils";
 import { ComplianceGate } from "@/components/compliance/ComplianceGate";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,9 +52,11 @@ function TradingPairPageContent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { data: pairs } = useTradingPairs();
-  const { balances: onchainBalances, isLoading: balancesLoading } = useOnchainBalances();
+  const { data: pairs, refetch: refetchPairs } = useTradingPairs();
+  const { balances: onchainBalances, isLoading: balancesLoading, refetch: refetchBalances } = useOnchainBalances();
   const { placeOrder } = useTradingAPI();
+  const queryClient = useQueryClient();
+  const { user } = useAuthUser();
 
   // Tab state for Open Orders / Funds / History
   type BottomTab = 'orders' | 'funds' | 'history';
@@ -71,16 +76,42 @@ function TradingPairPageContent() {
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
 
   // Get user orders
-  const { orders, cancelOrder } = useUserOrders(symbol);
+  const { orders, cancelOrder, refetch: refetchOrders } = useUserOrders(symbol);
 
-  // Subscribe to real-time market data
+  // Subscribe to internal trading WebSocket for order book and trades
+  const { 
+    orderBook: internalOrderBook, 
+    trades: internalTrades,
+    isConnected: wsConnected,
+    subscribeToSymbol,
+    unsubscribeFromSymbol,
+    subscribeToUserUpdates
+  } = useTradingWebSocket();
+
+  // Subscribe to market data for reference prices
   const subscribe = useMarketStore((state) => state.subscribe);
   const unsubscribe = useMarketStore((state) => state.unsubscribe);
-  
-  // Get real-time order book from Binance WebSocket
-  const orderBook = useMarketOrderBook(symbol);
+  const marketPrice = useMarketStore((state) => state.tickers[symbol]?.lastPrice);
 
-  // Subscribe to market data when component mounts
+  // Get the internal order book for this symbol
+  const orderBook = internalOrderBook[symbol];
+
+  // Subscribe to internal WebSocket for order book
+  useEffect(() => {
+    if (symbol && wsConnected) {
+      subscribeToSymbol(symbol);
+      if (user?.id) {
+        subscribeToUserUpdates(user.id);
+      }
+    }
+    return () => {
+      if (symbol) {
+        unsubscribeFromSymbol(symbol);
+      }
+    };
+  }, [symbol, wsConnected, user?.id, subscribeToSymbol, unsubscribeFromSymbol, subscribeToUserUpdates]);
+
+  // Subscribe to market data for reference prices
   useEffect(() => {
     if (symbol) {
       subscribe(symbol);
@@ -91,6 +122,68 @@ function TradingPairPageContent() {
       }
     };
   }, [symbol, subscribe, unsubscribe]);
+
+  // Real-time subscription for orders
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('user-orders-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('[Realtime] Order update:', payload);
+          refetchOrders();
+          refetchBalances();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, refetchOrders, refetchBalances]);
+
+  // Real-time subscription for trades (when user's orders are matched)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('user-trades-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'trades'
+        },
+        (payload) => {
+          const trade = payload.new as any;
+          // Check if this trade involves the current user
+          if (trade.buyer_id === user.id || trade.seller_id === user.id) {
+            console.log('[Realtime] Trade executed:', trade);
+            toast({
+              title: "Trade Executed",
+              description: `${trade.quantity} @ ${trade.price}`,
+            });
+            refetchOrders();
+            refetchBalances();
+            queryClient.invalidateQueries({ queryKey: ['trade-history'] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, refetchOrders, refetchBalances, queryClient, toast]);
 
   useEffect(() => {
     if (!pair && pairs && pairs.length > 0) {
@@ -293,8 +386,14 @@ function TradingPairPageContent() {
             {/* Order Book */}
             <div className="h-[380px] sm:h-[450px] lg:h-[500px] relative overflow-hidden isolate">
               <OrderBookCompact
-                asks={orderBook?.asks.slice(0, 8).map(a => ({ price: a.price, quantity: a.quantity })) || []}
-                bids={orderBook?.bids.slice(0, 8).map(b => ({ price: b.price, quantity: b.quantity })) || []}
+                asks={orderBook?.asks?.slice(0, 8).map((a: any) => ({ 
+                  price: typeof a === 'object' ? a.price : a[0], 
+                  quantity: typeof a === 'object' ? a.quantity : a[1] 
+                })) || []}
+                bids={orderBook?.bids?.slice(0, 8).map((b: any) => ({ 
+                  price: typeof b === 'object' ? b.price : b[0], 
+                  quantity: typeof b === 'object' ? b.quantity : b[1] 
+                })) || []}
                 currentPrice={pair.price}
                 priceChange={pair.change24h}
                 quoteCurrency={pair.quoteAsset}

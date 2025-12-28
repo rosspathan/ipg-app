@@ -11061,6 +11061,16 @@ export type Database = {
         }
         Relationships: []
       }
+      order_book: {
+        Row: {
+          order_count: number | null
+          price: number | null
+          side: string | null
+          symbol: string | null
+          total_quantity: number | null
+        }
+        Relationships: []
+      }
       referral_relationships: {
         Row: {
           first_touch_at: string | null
