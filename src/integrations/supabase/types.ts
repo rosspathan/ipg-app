@@ -9383,6 +9383,7 @@ export type Database = {
       }
       trading_engine_settings: {
         Row: {
+          admin_fee_wallet: string | null
           auto_matching_enabled: boolean
           circuit_breaker_active: boolean
           created_at: string
@@ -9394,6 +9395,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_fee_wallet?: string | null
           auto_matching_enabled?: boolean
           circuit_breaker_active?: boolean
           created_at?: string
@@ -9405,6 +9407,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_fee_wallet?: string | null
           auto_matching_enabled?: boolean
           circuit_breaker_active?: boolean
           created_at?: string
@@ -9454,6 +9457,56 @@ export type Database = {
             columns: ["market_id"]
             isOneToOne: false
             referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trading_fees_collected: {
+        Row: {
+          admin_wallet: string
+          created_at: string | null
+          fee_amount: number
+          fee_asset: string
+          fee_percent: number
+          id: string
+          side: string
+          status: string | null
+          symbol: string
+          trade_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_wallet?: string
+          created_at?: string | null
+          fee_amount?: number
+          fee_asset: string
+          fee_percent?: number
+          id?: string
+          side: string
+          status?: string | null
+          symbol: string
+          trade_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_wallet?: string
+          created_at?: string | null
+          fee_amount?: number
+          fee_asset?: string
+          fee_percent?: number
+          id?: string
+          side?: string
+          status?: string | null
+          symbol?: string
+          trade_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trading_fees_collected_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
             referencedColumns: ["id"]
           },
         ]

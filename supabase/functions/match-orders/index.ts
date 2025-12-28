@@ -17,7 +17,11 @@ interface EngineSettings {
   circuit_breaker_active: boolean;
   maker_fee_percent: number;
   taker_fee_percent: number;
+  admin_fee_wallet: string;
 }
+
+const ADMIN_FEE_PERCENT = 0.5; // 0.5% fee on each side (buy and sell)
+const ADMIN_FEE_WALLET = '0x97E07a738600A6F13527fAe0Cacb0A592FbEAfB1';
 
 const MAX_PRICE_DEVIATION = 0.10; // 10% price deviation triggers circuit breaker
 
@@ -176,18 +180,20 @@ Deno.serve(async (req) => {
 
             console.log(`[Matching Engine] Matching ${matchedQuantity} ${symbol} at ${executionPrice}`);
 
-            // PHASE 2.2 FIX: Calculate fees in correct assets
-            // Buyer pays fee in quote asset (e.g., USDT when buying BTC/USDT)
-            // Seller pays fee in base asset (e.g., BTC when selling BTC/USDT)
+            // ADMIN FEE: 0.5% on each side (buyer and seller)
+            // Both fees calculated in quote asset for simplicity
             const totalValueQuote = matchedQuantity * executionPrice;
-            const buyerFeeQuote = totalValueQuote * (engineSettings.taker_fee_percent / 100);
-            const sellerFeeBase = matchedQuantity * (engineSettings.maker_fee_percent / 100);
+            const buyerFee = totalValueQuote * (ADMIN_FEE_PERCENT / 100);
+            const sellerFee = totalValueQuote * (ADMIN_FEE_PERCENT / 100);
+            const adminWallet = engineSettings.admin_fee_wallet || ADMIN_FEE_WALLET;
 
             // Parse symbol (e.g., BTC/USDT -> base: BTC, quote: USDT)
             const [baseSymbol, quoteSymbol] = symbol.split('/');
 
+            console.log(`[Matching Engine] Fee calculation: Buyer fee=${buyerFee} ${quoteSymbol}, Seller fee=${sellerFee} ${quoteSymbol}, Admin wallet=${adminWallet}`);
+
             try {
-              // Settle trade (update balances) with corrected fee parameters
+              // Settle trade (update balances) with 0.5% fee for each party
               const { error: settleError } = await supabase.rpc('settle_trade', {
                 p_buyer_id: buyOrder.user_id,
                 p_seller_id: sellOrder.user_id,
@@ -195,8 +201,8 @@ Deno.serve(async (req) => {
                 p_quote_symbol: quoteSymbol,
                 p_quantity: matchedQuantity,
                 p_price: executionPrice,
-                p_buyer_fee: buyerFeeQuote,  // Fee in quote asset
-                p_seller_fee: sellerFeeBase   // Fee in base asset (but converted to quote for ledger)
+                p_buyer_fee: buyerFee,
+                p_seller_fee: sellerFee
               });
 
               if (settleError) {
@@ -205,7 +211,7 @@ Deno.serve(async (req) => {
               }
 
               // Create trade record
-              const { error: tradeError } = await supabase
+              const { data: tradeData, error: tradeError } = await supabase
                 .from('trades')
                 .insert({
                   symbol,
@@ -216,14 +222,53 @@ Deno.serve(async (req) => {
                   quantity: matchedQuantity,
                   price: executionPrice,
                   total_value: totalValueQuote,
-                  buyer_fee: buyerFeeQuote,
-                  seller_fee: sellerFeeBase * executionPrice, // Convert to quote asset for display
+                  buyer_fee: buyerFee,
+                  seller_fee: sellerFee,
                   trading_type: buyOrder.trading_type || 'spot'
-                });
+                })
+                .select('id')
+                .single();
+
+              const tradeId = tradeData?.id;
 
               if (tradeError) {
                 console.error('[Matching Engine] Trade creation error:', tradeError);
                 continue;
+              }
+
+              // Record fees in trading_fees_collected ledger
+              if (tradeId) {
+                // Buyer fee
+                await supabase
+                  .from('trading_fees_collected')
+                  .insert({
+                    trade_id: tradeId,
+                    symbol,
+                    fee_asset: quoteSymbol,
+                    fee_amount: buyerFee,
+                    fee_percent: ADMIN_FEE_PERCENT,
+                    user_id: buyOrder.user_id,
+                    side: 'buy',
+                    admin_wallet: adminWallet,
+                    status: 'collected'
+                  });
+
+                // Seller fee
+                await supabase
+                  .from('trading_fees_collected')
+                  .insert({
+                    trade_id: tradeId,
+                    symbol,
+                    fee_asset: quoteSymbol,
+                    fee_amount: sellerFee,
+                    fee_percent: ADMIN_FEE_PERCENT,
+                    user_id: sellOrder.user_id,
+                    side: 'sell',
+                    admin_wallet: adminWallet,
+                    status: 'collected'
+                  });
+
+                console.log(`[Matching Engine] ✓ Fees recorded: Buyer=${buyerFee}, Seller=${sellerFee} -> ${adminWallet}`);
               }
 
               // Update buy order
