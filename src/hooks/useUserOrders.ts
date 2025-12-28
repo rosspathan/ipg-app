@@ -181,6 +181,7 @@ export const useUserOrders = (symbol?: string) => {
   return {
     orders: ordersQuery.data || [],
     isLoading: ordersQuery.isLoading,
+    refetch: ordersQuery.refetch,
     placeOrder: placeOrderMutation.mutateAsync,
     cancelOrder: cancelOrderMutation.mutateAsync,
     isPlacingOrder: placeOrderMutation.isPending,

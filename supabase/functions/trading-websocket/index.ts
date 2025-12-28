@@ -42,35 +42,50 @@ function broadcast(channel: string, data: any) {
   });
 }
 
-// Get order book data
+// Get order book data from the order_book view
 async function getOrderBook(symbol: string) {
+  console.log(`[OrderBook] Fetching order book for ${symbol}`);
+  
   const { data, error } = await supabase
     .from('order_book')
     .select('*')
     .eq('symbol', symbol);
 
   if (error) {
-    console.error('Error fetching order book:', error);
+    console.error('[OrderBook] Error fetching order book:', error);
     return { bids: [], asks: [] };
   }
 
-  const bids = data
+  console.log(`[OrderBook] Got ${data?.length || 0} price levels for ${symbol}`);
+
+  const bids = (data || [])
     .filter((order: any) => order.side === 'buy')
-    .map((order: any) => [order.price, order.total_quantity])
-    .sort((a: any, b: any) => b[0] - a[0])
+    .map((order: any) => ({
+      price: parseFloat(order.price),
+      quantity: parseFloat(order.total_quantity),
+      orderCount: parseInt(order.order_count)
+    }))
+    .sort((a: any, b: any) => b.price - a.price)
     .slice(0, 20);
 
-  const asks = data
+  const asks = (data || [])
     .filter((order: any) => order.side === 'sell')
-    .map((order: any) => [order.price, order.total_quantity])
-    .sort((a: any, b: any) => a[0] - b[0])
+    .map((order: any) => ({
+      price: parseFloat(order.price),
+      quantity: parseFloat(order.total_quantity),
+      orderCount: parseInt(order.order_count)
+    }))
+    .sort((a: any, b: any) => a.price - b.price)
     .slice(0, 20);
 
+  console.log(`[OrderBook] ${symbol}: ${bids.length} bids, ${asks.length} asks`);
   return { bids, asks };
 }
 
 // Get recent trades
 async function getRecentTrades(symbol: string, limit = 50) {
+  console.log(`[Trades] Fetching recent trades for ${symbol}`);
+  
   const { data, error } = await supabase
     .from('trades')
     .select('*')
@@ -79,16 +94,18 @@ async function getRecentTrades(symbol: string, limit = 50) {
     .limit(limit);
 
   if (error) {
-    console.error('Error fetching trades:', error);
+    console.error('[Trades] Error fetching trades:', error);
     return [];
   }
 
-  return data.map((trade: any) => ({
+  console.log(`[Trades] Got ${data?.length || 0} trades for ${symbol}`);
+
+  return (data || []).map((trade: any) => ({
     id: trade.id,
     price: parseFloat(trade.price),
     quantity: parseFloat(trade.quantity),
     time: trade.trade_time,
-    side: trade.buyer_id ? 'buy' : 'sell' // Infer side from buyer presence
+    side: trade.taker_side || (trade.buyer_id ? 'buy' : 'sell')
   }));
 }
 
