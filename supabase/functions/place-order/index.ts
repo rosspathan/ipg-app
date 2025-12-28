@@ -174,6 +174,48 @@ serve(async (req) => {
 
     console.log('[place-order] Order created:', order.id);
 
+    // Trigger matching engine after order creation
+    const matchingAdminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+
+    try {
+      // Check if auto-matching is enabled
+      const { data: settings } = await matchingAdminClient
+        .from('trading_engine_settings')
+        .select('auto_matching_enabled, circuit_breaker_active')
+        .single();
+      
+      if (settings?.auto_matching_enabled && !settings?.circuit_breaker_active) {
+        console.log('[place-order] Triggering matching engine...');
+        
+        // Call match-orders function internally using service role
+        const matchResponse = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/match-orders`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+            },
+            body: JSON.stringify({})
+          }
+        );
+        
+        if (matchResponse.ok) {
+          const matchResult = await matchResponse.json();
+          console.log('[place-order] Matching result:', matchResult);
+        } else {
+          console.warn('[place-order] Matching engine returned error');
+        }
+      }
+    } catch (matchErr) {
+      console.warn('[place-order] Matching engine call failed:', matchErr);
+      // Don't fail the order - matching can happen asynchronously
+    }
+
     const responseData = {
       success: true,
       order: {
