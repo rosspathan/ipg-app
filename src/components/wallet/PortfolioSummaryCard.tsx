@@ -58,7 +58,7 @@ export function PortfolioSummaryCard({
         <p className="text-xs text-muted-foreground mb-1.5">Total Value</p>
         <div className="flex items-baseline gap-3">
           <p 
-            className="text-xl md:text-2xl font-bold text-foreground tabular-nums truncate"
+            className="text-2xl md:text-3xl font-bold text-foreground dark:text-white tabular-nums truncate"
             title={formatCurrency(totalUsd)}
           >
             {isMobile ? formatCurrency(totalUsd, { abbreviated: true }) : formatCurrency(totalUsd)}

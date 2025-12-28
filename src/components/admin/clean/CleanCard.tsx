@@ -24,8 +24,8 @@ export function CleanCard({
   };
 
   const variantClasses = {
-    default: "bg-[hsl(220_13%_7%)] border-[hsl(220_13%_14%/0.4)]",
-    elevated: "bg-[hsl(220_13%_10%)] border-[hsl(220_13%_14%/0.4)] shadow-[0_4px_6px_-1px_rgb(0_0_0/0.1)]",
+    default: "bg-card/90 dark:bg-[hsl(220_13%_7%)] border-border/40",
+    elevated: "bg-card dark:bg-[hsl(220_13%_10%)] border-border/40 shadow-lg",
   };
 
   return (
