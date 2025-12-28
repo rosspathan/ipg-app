@@ -243,6 +243,7 @@ function TradingPairPageContent() {
         type: params.type,
         quantity: params.quantity,
         price: params.price,
+        trading_mode: 'onchain', // Skip internal balance validation for on-chain trading
       });
 
       // Check the actual result - don't assume success
