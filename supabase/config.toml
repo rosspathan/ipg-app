@@ -227,3 +227,6 @@ verify_jwt = false
 
 [functions.bsk-loan-complete]
 verify_jwt = false
+
+[functions.match-orders]
+verify_jwt = false

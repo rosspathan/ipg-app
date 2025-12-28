@@ -94,6 +94,20 @@ export const useUserOrders = (symbol?: string) => {
         throw error;
       }
 
+      // Trigger the matching engine after order placement
+      try {
+        const { error: matchError } = await supabase.functions.invoke('match-orders', {
+          body: {}
+        });
+        
+        if (matchError) {
+          console.warn('[useUserOrders] Matching engine call failed:', matchError);
+          // Don't fail the order - matching can happen asynchronously
+        }
+      } catch (matchErr) {
+        console.warn('[useUserOrders] Matching engine error:', matchErr);
+      }
+
       return order;
     },
     onSuccess: (order, params) => {

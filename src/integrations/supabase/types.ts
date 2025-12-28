@@ -9417,6 +9417,47 @@ export type Database = {
         }
         Relationships: []
       }
+      trading_fees: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          maker_fee: number | null
+          market_id: string | null
+          symbol: string
+          taker_fee: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          maker_fee?: number | null
+          market_id?: string | null
+          symbol: string
+          taker_fee?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          maker_fee?: number | null
+          market_id?: string | null
+          symbol?: string
+          taker_fee?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trading_fees_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trading_pairs: {
         Row: {
           active: boolean | null
