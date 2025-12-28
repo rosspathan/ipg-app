@@ -4,7 +4,7 @@ import { ExternalLink, RefreshCw, ChevronDown, ChevronUp, AlertCircle } from "lu
 import { Button } from "@/components/ui/button"
 import { toast } from "@/hooks/use-toast"
 import { useAuthUser } from "@/hooks/useAuthUser"
-import { getStoredEvmAddress, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress"
+import { getStoredEvmAddress, getExplorerUrl, formatAddress, storeEvmAddress } from "@/lib/wallet/evmAddress"
 import { useErc20OnchainBalance } from "@/hooks/useErc20OnchainBalance"
 import { supabase } from "@/integrations/supabase/client"
 import { Badge } from "@/components/ui/badge"
@@ -23,7 +23,7 @@ export function OnchainWalletPage() {
   // Fetch on-chain USDT balance
   const { balance: onchainBalance, isLoading: balanceLoading, error: balanceError, refetch: refetchBalance } = useErc20OnchainBalance('USDT', 'bsc')
 
-  // Fetch wallet address
+  // Fetch wallet address (DB -> user_wallets -> local) and persist to profile so edge functions can use it
   useEffect(() => {
     const fetchWalletAddress = async () => {
       if (!user?.id) return
@@ -32,6 +32,13 @@ export function OnchainWalletPage() {
         if (addr) {
           setWalletAddress(addr)
           setDebugInfo((prev: any) => ({ ...prev, address: addr }))
+
+          // Best-effort: persist into profiles for deposit discovery
+          try {
+            await storeEvmAddress(user.id, addr)
+          } catch (persistErr) {
+            console.warn('[OnchainWalletPage] Failed to persist wallet address:', persistErr)
+          }
         }
       } catch (error) {
         console.error('Error fetching wallet address:', error)
@@ -141,6 +148,15 @@ export function OnchainWalletPage() {
 
     setDiscovering(true)
     try {
+      // Ensure the wallet address is persisted in profiles before calling edge discovery
+      if (walletAddress) {
+        try {
+          await storeEvmAddress(user.id, walletAddress)
+        } catch (persistErr) {
+          console.warn('[OnchainWalletPage] Persist-before-discover failed:', persistErr)
+        }
+      }
+
       const { data: discoverData, error: discoverError } = await supabase.functions.invoke('discover-deposits', {
         body: {
           symbol: 'USDT',
@@ -264,7 +280,7 @@ export function OnchainWalletPage() {
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">App Balance</p>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-2xl font-bold text-success">
               {appBalance.toFixed(4)}
             </p>
           </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
+import { getStoredEvmAddress } from '@/lib/wallet/evmAddress'
 
 interface OnchainBalanceResult {
   balance: string
@@ -64,24 +65,14 @@ export function useErc20OnchainBalance(
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [assetInfo, setAssetInfo] = useState<{ contract: string; decimals: number; isNative?: boolean } | null>(null)
 
-  // Fetch user's wallet address
+  // Fetch user's wallet address (DB -> user_wallets -> local fallbacks)
   useEffect(() => {
     const fetchWalletAddress = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('wallet_address, wallet_addresses')
-        .eq('user_id', user.id)
-        .single()
-
-      if (profile) {
-        const address = profile.wallet_addresses?.['bsc-mainnet'] ||
-                       profile.wallet_addresses?.['evm-mainnet'] ||
-                       profile.wallet_address
-        setWalletAddress(address)
-      }
+      const address = await getStoredEvmAddress(user.id)
+      if (address) setWalletAddress(address)
     }
 
     fetchWalletAddress()

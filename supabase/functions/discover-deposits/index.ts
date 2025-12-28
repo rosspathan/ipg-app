@@ -60,16 +60,59 @@ serve(async (req: Request) => {
       throw new Error('Profile not found. Please complete wallet setup.');
     }
 
-    // Check multiple possible locations for BSC wallet address
-    const evmAddress = profile.bsc_wallet_address ||
-                       profile.wallet_addresses?.['bsc-mainnet'] || 
-                       profile.wallet_addresses?.['bsc'] ||
-                       profile.wallet_addresses?.['evm-mainnet'] ||
-                       profile.wallet_addresses?.evm?.mainnet ||
-                       profile.wallet_addresses?.evm?.bsc ||
-                       profile.wallet_address;
+    const isAddress = (val: unknown) => typeof val === 'string' && val.startsWith('0x') && val.length >= 42;
 
-    if (!evmAddress) {
+    // Check multiple possible locations for BSC wallet address (profiles)
+    let evmAddress: string | null = (
+      profile.bsc_wallet_address ||
+      profile.wallet_addresses?.['bsc-mainnet'] ||
+      profile.wallet_addresses?.['bsc'] ||
+      profile.wallet_addresses?.['evm-mainnet'] ||
+      profile.wallet_addresses?.evm?.mainnet ||
+      profile.wallet_addresses?.evm?.bsc ||
+      profile.wallet_address
+    ) ?? null;
+
+    // Fallback: user_wallets table
+    if (!isAddress(evmAddress)) {
+      const { data: uw } = await supabaseClient
+        .from('user_wallets')
+        .select('wallet_address')
+        .eq('user_id', user.id)
+        .order('last_used_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (isAddress(uw?.wallet_address)) {
+        evmAddress = uw!.wallet_address;
+        console.log('[discover-deposits] Using user_wallets.wallet_address');
+      }
+    }
+
+    // Fallback: wallets_user table (primary wallet)
+    if (!isAddress(evmAddress)) {
+      const { data: wu } = await supabaseClient
+        .from('wallets_user')
+        .select('address, chain, is_primary')
+        .eq('user_id', user.id)
+        .order('is_primary', { ascending: false })
+        .limit(10);
+
+      const preferred = (wu || []).find((w: any) => {
+        const chain = String(w?.chain || '').toLowerCase();
+        return isAddress(w?.address) && (chain.includes('bsc') || chain.includes('bep20') || chain.includes('evm'));
+      });
+
+      const anyWallet = (wu || []).find((w: any) => isAddress(w?.address));
+      const chosen = preferred?.address || anyWallet?.address;
+
+      if (isAddress(chosen)) {
+        evmAddress = chosen;
+        console.log('[discover-deposits] Using wallets_user.address');
+      }
+    }
+
+    if (!isAddress(evmAddress)) {
       throw new Error('No EVM wallet address found. Please set up your wallet.');
     }
 
