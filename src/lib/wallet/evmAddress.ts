@@ -197,18 +197,25 @@ export async function storeEvmAddress(userId: string, address: string): Promise<
     throw new Error('Invalid EVM address format');
   }
 
+  // Store in both nested and flat key formats for maximum compatibility
   const walletAddresses = {
+    // Nested format (legacy)
     evm: {
       mainnet: address,
-      bsc: address // Same address for both networks
-    }
+      bsc: address
+    },
+    // Flat keys (used by edge functions)
+    'bsc-mainnet': address,
+    'evm-mainnet': address,
+    'bsc': address
   };
 
   const { error } = await supabase
     .from('profiles')
     .update({ 
       wallet_addresses: walletAddresses,
-      wallet_address: address, // Also update legacy column
+      wallet_address: address,
+      bsc_wallet_address: address, // Critical for edge functions
       updated_at: new Date().toISOString()
     })
     .eq('user_id', userId);
@@ -218,6 +225,8 @@ export async function storeEvmAddress(userId: string, address: string): Promise<
     throw error;
   }
 
+  console.info('[EVM] Stored wallet address:', address.slice(0, 10) + '...');
+  
   // Dispatch event to notify components
   window.dispatchEvent(new CustomEvent('evm:address:updated', { detail: { address } }));
 }

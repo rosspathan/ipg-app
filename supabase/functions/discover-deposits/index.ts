@@ -52,7 +52,7 @@ serve(async (req: Request) => {
     // Fetch user's EVM address
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('wallet_address, wallet_addresses')
+      .select('wallet_address, wallet_addresses, bsc_wallet_address')
       .eq('user_id', user.id)
       .single();
 
@@ -60,8 +60,13 @@ serve(async (req: Request) => {
       throw new Error('Profile not found. Please complete wallet setup.');
     }
 
-    const evmAddress = profile.wallet_addresses?.['bsc-mainnet'] || 
-                       profile.wallet_addresses?.['bsc'] || 
+    // Check multiple possible locations for BSC wallet address
+    const evmAddress = profile.bsc_wallet_address ||
+                       profile.wallet_addresses?.['bsc-mainnet'] || 
+                       profile.wallet_addresses?.['bsc'] ||
+                       profile.wallet_addresses?.['evm-mainnet'] ||
+                       profile.wallet_addresses?.evm?.mainnet ||
+                       profile.wallet_addresses?.evm?.bsc ||
                        profile.wallet_address;
 
     if (!evmAddress) {

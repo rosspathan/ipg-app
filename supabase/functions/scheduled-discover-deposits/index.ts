@@ -50,11 +50,11 @@ serve(async (req) => {
 
     console.log(`[scheduled-discover-deposits] Found ${assets?.length || 0} active BSC assets`)
 
-    // Get all profiles with BSC wallet addresses
+    // Get all profiles with BSC wallet addresses - check multiple address fields
     const { data: profiles, error: profilesError } = await supabaseClient
       .from('profiles')
-      .select('user_id, wallet_address, wallet_addresses')
-      .not('wallet_address', 'is', null)
+      .select('user_id, wallet_address, wallet_addresses, bsc_wallet_address')
+      .or('wallet_address.not.is.null,bsc_wallet_address.not.is.null')
 
     if (profilesError) throw profilesError
 
@@ -72,8 +72,11 @@ serve(async (req) => {
 
       // Process each profile
       for (const profile of profiles || []) {
-        const evmAddress = profile.wallet_addresses?.['bsc-mainnet'] ||
+        const evmAddress = profile.bsc_wallet_address ||
+                          profile.wallet_addresses?.['bsc-mainnet'] ||
                           profile.wallet_addresses?.['evm-mainnet'] ||
+                          profile.wallet_addresses?.evm?.mainnet ||
+                          profile.wallet_addresses?.evm?.bsc ||
                           profile.wallet_address
 
         if (!evmAddress) continue
