@@ -54,6 +54,26 @@ const symbolToCoinGeckoId: Record<string, string> = {
   'SAND': 'the-sandbox',
 };
 
+// Fallback prices when CoinGecko is rate limited (approximate USD prices)
+const fallbackPrices: Record<string, number> = {
+  'bitcoin': 95000,
+  'ethereum': 3300,
+  'binancecoin': 700,
+  'tether': 1,
+  'solana': 180,
+  'cardano': 0.85,
+  'polkadot': 6.5,
+  'matic-network': 0.45,
+  'avalanche-2': 35,
+  'chainlink': 22,
+  'uniswap': 13,
+  'cosmos': 9,
+  'ripple': 2.1,
+  'dogecoin': 0.32,
+  'litecoin': 105,
+  'tron': 0.25,
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -101,7 +121,7 @@ Deno.serve(async (req) => {
       clearTimeout(timeoutId);
 
       if (response.status === 429) {
-        console.log('Rate limited by CoinGecko, returning cached data if available');
+        console.log('Rate limited by CoinGecko, using fallback prices');
         if (priceCache) {
           return new Response(
             JSON.stringify({
@@ -117,15 +137,25 @@ Deno.serve(async (req) => {
             }
           );
         }
-        throw new Error('CoinGecko API rate limit exceeded and no cache available');
-      }
-
-      if (!response.ok) {
+        // Use fallback prices instead of throwing error
+        prices = Object.entries(fallbackPrices).map(([id, price]) => ({
+          id,
+          symbol: id,
+          current_price: price,
+          price_change_24h: 0,
+          price_change_percentage_24h: 0,
+          high_24h: price * 1.02,
+          low_24h: price * 0.98,
+          total_volume: 0,
+          market_cap: 0,
+        }));
+        console.log(`Using ${prices.length} fallback prices due to rate limit`);
+      } else if (!response.ok) {
         throw new Error(`CoinGecko API error: ${response.status} ${response.statusText}`);
+      } else {
+        prices = await response.json();
+        console.log(`Fetched ${prices.length} cryptocurrency prices`);
       }
-
-      prices = await response.json();
-      console.log(`Fetched ${prices.length} cryptocurrency prices`);
     } catch (error) {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
