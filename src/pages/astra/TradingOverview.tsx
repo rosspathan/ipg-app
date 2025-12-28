@@ -76,14 +76,14 @@ export function TradingOverview() {
                 navigate(`/app/trade/${urlSymbol}`);
               }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleFavorite(pair.symbol);
                     }}
-                    className="text-muted-foreground hover:text-primary transition-colors"
+                    className="text-muted-foreground hover:text-primary transition-colors shrink-0"
                   >
                     <Star
                       className={cn(
@@ -93,19 +93,19 @@ export function TradingOverview() {
                     />
                   </button>
 
-                  <div className="flex-1">
-                    <div className="font-semibold">{pair.symbol}</div>
-                    <div className="text-xs text-muted-foreground">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold truncate">{pair.symbol}</div>
+                    <div className="text-xs text-muted-foreground truncate">
                       Vol ${(pair.volume24h / 1000000).toFixed(2)}M
                     </div>
                   </div>
                 </div>
 
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <div className="font-mono text-base">${pair.price.toFixed(2)}</div>
                   <div
                     className={cn(
-                      "flex items-center gap-1 text-sm font-medium",
+                      "flex items-center justify-end gap-1 text-sm font-medium",
                       pair.change24h >= 0 ? "text-success" : "text-destructive"
                     )}
                   >
@@ -118,11 +118,11 @@ export function TradingOverview() {
                   </div>
                 </div>
 
-                <div className="ml-4 space-y-1">
+                <div className="ml-2 space-y-1 shrink-0">
                   <Button
                     size="sm"
                     variant="default"
-                    className="w-16 h-8"
+                    className="w-14 h-7 text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       const urlSymbol = pair.symbol.replace('/', '-');
@@ -134,7 +134,7 @@ export function TradingOverview() {
                   <Button
                     size="sm"
                     variant="destructive"
-                    className="w-16 h-8"
+                    className="w-14 h-7 text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       const urlSymbol = pair.symbol.replace('/', '-');
