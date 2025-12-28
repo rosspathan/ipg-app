@@ -30,7 +30,7 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
   try {
     const { data, error } = await (supabase as any)
       .from('profiles' as any)
-      .select('wallet_addresses, wallet_address' as any)
+      .select('wallet_addresses, wallet_address, bsc_wallet_address' as any)
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -41,19 +41,29 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
     if (data) {
       const wa = (data as any).wallet_addresses;
       const legacy = (data as any).wallet_address;
+      const bscAddr = (data as any).bsc_wallet_address;
 
       // Handle many possible shapes
       const candidates: any[] = [
-        // Known structures
+        // Preferred dedicated column
+        bscAddr,
+
+        // Flat keys
+        wa?.['bsc-mainnet'],
+        wa?.['evm-mainnet'],
+        wa?.bsc,
+
+        // Nested structures
         wa?.evm?.bsc,
         wa?.evm?.mainnet,
         wa?.evm,
-        wa?.bsc,
         wa?.ethereum,
         wa?.BEP20,
         wa?.ERC20,
+
         // If wallet_addresses itself is a string
         wa,
+
         // Legacy column
         legacy,
       ];
