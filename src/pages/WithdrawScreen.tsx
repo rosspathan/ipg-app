@@ -58,7 +58,14 @@ const WithdrawScreen = () => {
       withdraw_fee: asset.withdraw_fee,
       // Use actual network from database, fallback to array for compatibility
       networks: asset.network ? [asset.network] : ['BEP20'],
-    }));
+    }))
+    // Sort: assets with balance first (highest first), then alphabetically for zero balances
+    .sort((a, b) => {
+      if (a.available > 0 && b.available <= 0) return -1;
+      if (a.available <= 0 && b.available > 0) return 1;
+      if (a.available > 0 && b.available > 0) return b.available - a.available;
+      return a.symbol.localeCompare(b.symbol);
+    });
 
   // Set initial selected asset when balances load
   useEffect(() => {
