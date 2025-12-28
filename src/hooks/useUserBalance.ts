@@ -96,7 +96,7 @@ export const useUserBalance = (assetSymbol?: string, showAllAssets = false) => {
         .from('wallet_balances')
         .select(`
           *,
-          assets:asset_id (symbol, name, logo_url, network, withdraw_fee)
+          assets:asset_id (symbol, name, logo_url, network, withdraw_fee, asset_type)
         `)
         .eq('user_id', user.id);
 
@@ -117,23 +117,30 @@ export const useUserBalance = (assetSymbol?: string, showAllAssets = false) => {
       if (error) throw error;
 
       // Transform data to match expected format with USD values
-      return (data || []).map((balance: any) => {
-        const totalBalance = parseFloat(balance.total);
-        const priceUsd = prices[balance.assets.symbol] || 0;
-        
-        return {
-          symbol: balance.assets.symbol,
-          name: balance.assets.name,
-          balance: totalBalance,
-          available: parseFloat(balance.available),
-          locked: parseFloat(balance.locked),
-          logo_url: balance.assets.logo_url,
-          network: balance.assets?.network,
-          withdraw_fee: balance.assets?.withdraw_fee,
-          price_usd: priceUsd,
-          usd_value: totalBalance * priceUsd,
-        };
-      });
+      // Filter out fiat assets - only show crypto
+      return (data || [])
+        .filter((balance: any) => {
+          const network = balance.assets?.network?.toLowerCase();
+          const assetType = balance.assets?.asset_type?.toLowerCase();
+          return network !== 'fiat' && assetType !== 'fiat' && assetType !== 'bonus';
+        })
+        .map((balance: any) => {
+          const totalBalance = parseFloat(balance.total);
+          const priceUsd = prices[balance.assets.symbol] || 0;
+          
+          return {
+            symbol: balance.assets.symbol,
+            name: balance.assets.name,
+            balance: totalBalance,
+            available: parseFloat(balance.available),
+            locked: parseFloat(balance.locked),
+            logo_url: balance.assets.logo_url,
+            network: balance.assets?.network,
+            withdraw_fee: balance.assets?.withdraw_fee,
+            price_usd: priceUsd,
+            usd_value: totalBalance * priceUsd,
+          };
+        });
     },
   });
 };

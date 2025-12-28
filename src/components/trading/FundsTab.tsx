@@ -22,8 +22,11 @@ interface FundsTabProps {
 export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
   const navigate = useNavigate();
 
-  // Filter to only show assets with balance > 0
-  const assetsWithBalance = balances?.filter(b => b.balance > 0) || [];
+  // Filter to only show crypto assets with balance > 0 (defensive filter)
+  const assetsWithBalance = balances?.filter(b => {
+    const network = (b as any).network?.toLowerCase();
+    return b.balance > 0 && network !== 'fiat';
+  }) || [];
   
   // Calculate total portfolio USD value
   const totalUsdValue = assetsWithBalance.reduce((sum, b) => sum + (b.usd_value || 0), 0);

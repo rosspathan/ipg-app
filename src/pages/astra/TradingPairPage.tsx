@@ -6,6 +6,7 @@ import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookCompact } from "@/components/trading/OrderBookCompact";
 import { OpenOrderCard } from "@/components/trading/OpenOrderCard";
 import { FundsTab } from "@/components/trading/FundsTab";
+import { TradeHistoryTab } from "@/components/trading/TradeHistoryTab";
 import { useTradingPairs } from "@/hooks/useTradingPairs";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
@@ -52,8 +53,8 @@ function TradingPairPageContent() {
   const { data: balances, isLoading: balancesLoading } = useUserBalance();
   const { placeOrder } = useTradingAPI();
 
-  // Tab state for Open Orders / Funds
-  type BottomTab = 'orders' | 'funds';
+  // Tab state for Open Orders / Funds / History
+  type BottomTab = 'orders' | 'funds' | 'history';
   const [activeTab, setActiveTab] = useState<BottomTab>('orders');
 
   // Pair picker state
@@ -317,6 +318,17 @@ function TradingPairPageContent() {
                   Open Orders ({openOrders.length})
                 </button>
                 <button 
+                  onClick={() => setActiveTab('history')}
+                  className={cn(
+                    "text-sm pb-2 border-b-2",
+                    activeTab === 'history' 
+                      ? "text-foreground font-medium border-amber-500" 
+                      : "text-muted-foreground border-transparent"
+                  )}
+                >
+                  Trade History
+                </button>
+                <button 
                   onClick={() => setActiveTab('funds')}
                   className={cn(
                     "text-sm pb-2 border-b-2",
@@ -363,6 +375,8 @@ function TradingPairPageContent() {
                   ))}
                 </div>
               )
+            ) : activeTab === 'history' ? (
+              <TradeHistoryTab symbol={symbol} />
             ) : (
               <FundsTab balances={balances || []} loading={balancesLoading} />
             )}
