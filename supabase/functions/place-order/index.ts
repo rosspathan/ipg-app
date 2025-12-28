@@ -139,7 +139,7 @@ serve(async (req) => {
       }
     }
 
-    // Insert order
+    // Insert order (use 'amount' column, not 'quantity')
     const { data: order, error: insertError } = await supabaseClient
       .from('orders')
       .insert({
@@ -147,7 +147,7 @@ serve(async (req) => {
         symbol,
         side,
         order_type: type,
-        quantity,
+        amount: quantity,
         price: price || null,
         remaining_amount: quantity,
         filled_amount: 0,
@@ -223,7 +223,7 @@ serve(async (req) => {
         symbol: order.symbol,
         side: order.side,
         type: order.order_type,
-        quantity: order.quantity,
+        quantity: order.amount,
         price: order.price,
         status: order.status,
         created_at: order.created_at,
