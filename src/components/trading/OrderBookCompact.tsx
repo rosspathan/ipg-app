@@ -30,8 +30,13 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
   const maxAskTotal = Math.max(...displayAsks.map(a => a.quantity), 1);
   const maxBidTotal = Math.max(...displayBids.map(b => b.quantity), 1);
 
-  const formatPrice = (price: number) => price.toFixed(4);
+  const formatPrice = (price: number) => price >= 1 ? price.toFixed(4) : price.toFixed(8);
   const formatQuantity = (qty: number) => qty.toFixed(2);
+  
+  const hasOrders = displayAsks.length > 0 || displayBids.length > 0;
+  const bestAsk = displayAsks.length > 0 ? displayAsks[displayAsks.length - 1]?.price : null;
+  const bestBid = displayBids.length > 0 ? displayBids[0]?.price : null;
+  const spread = bestAsk && bestBid ? ((bestAsk - bestBid) / bestBid * 100).toFixed(2) : null;
 
   return (
     <div className="bg-background border border-border rounded-lg overflow-hidden h-full flex flex-col">
@@ -43,66 +48,96 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
 
       {/* Asks (Sell orders) */}
       <div className="flex-1 overflow-hidden">
-        <div className="space-y-0">
-          {displayAsks.map((ask, idx) => (
-            <div
-              key={`ask-${idx}`}
-              onClick={() => onPriceClick?.(ask.price)}
-              className="relative flex items-center justify-between px-2 py-1 cursor-pointer hover:bg-muted/50"
-            >
+        {displayAsks.length > 0 ? (
+          <div className="space-y-0">
+            {displayAsks.map((ask, idx) => (
               <div
-                className="absolute right-0 top-0 bottom-0 bg-red-500/10"
-                style={{ width: `${(ask.quantity / maxAskTotal) * 100}%` }}
-              />
-              <span className="relative text-[10px] sm:text-xs font-mono text-red-400">
-                {formatPrice(ask.price)}
-              </span>
-              <span className="relative text-[10px] sm:text-xs font-mono text-muted-foreground">
-                {formatQuantity(ask.quantity)}
-              </span>
-            </div>
-          ))}
-        </div>
+                key={`ask-${idx}`}
+                onClick={() => onPriceClick?.(ask.price)}
+                className="relative flex items-center justify-between px-2 py-1 cursor-pointer hover:bg-muted/50"
+              >
+                <div
+                  className="absolute right-0 top-0 bottom-0 bg-red-500/10"
+                  style={{ width: `${(ask.quantity / maxAskTotal) * 100}%` }}
+                />
+                <span className="relative text-[10px] sm:text-xs font-mono text-red-400">
+                  {formatPrice(ask.price)}
+                </span>
+                <span className="relative text-[10px] sm:text-xs font-mono text-muted-foreground">
+                  {formatQuantity(ask.quantity)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-[10px] sm:text-xs text-muted-foreground">
+            No sell orders
+          </div>
+        )}
       </div>
 
       {/* Current Price - Compact but visible */}
       <div className="px-2 py-1.5 sm:py-2 border-y border-border bg-card relative z-10">
-        <div className="flex flex-col">
-          <span className={cn(
-            "text-sm sm:text-base font-bold font-mono",
-            priceChange >= 0 ? "text-emerald-400" : "text-red-400"
-          )}>
-            {currentPrice.toFixed(2)}
-          </span>
-          <span className="text-[10px] sm:text-xs text-muted-foreground">
-            ≈ ₹{(currentPrice * 83).toFixed(2)}
-          </span>
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className={cn(
+              "text-sm sm:text-base font-bold font-mono",
+              priceChange >= 0 ? "text-emerald-400" : "text-red-400"
+            )}>
+              {currentPrice >= 1 ? currentPrice.toFixed(2) : currentPrice.toFixed(6)}
+            </span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground">
+              ≈ ₹{(currentPrice * 83).toFixed(2)}
+            </span>
+          </div>
+          {spread && (
+            <div className="text-right">
+              <span className="text-[10px] sm:text-xs text-muted-foreground">Spread</span>
+              <span className="block text-[10px] sm:text-xs font-mono text-foreground">{spread}%</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Bids (Buy orders) */}
       <div className="flex-1 overflow-hidden">
-        <div className="space-y-0">
-          {displayBids.map((bid, idx) => (
-            <div
-              key={`bid-${idx}`}
-              onClick={() => onPriceClick?.(bid.price)}
-              className="relative flex items-center justify-between px-2 py-1 cursor-pointer hover:bg-muted/50"
-            >
+        {displayBids.length > 0 ? (
+          <div className="space-y-0">
+            {displayBids.map((bid, idx) => (
               <div
-                className="absolute right-0 top-0 bottom-0 bg-emerald-500/10"
-                style={{ width: `${(bid.quantity / maxBidTotal) * 100}%` }}
-              />
-              <span className="relative text-[10px] sm:text-xs font-mono text-emerald-400">
-                {formatPrice(bid.price)}
-              </span>
-              <span className="relative text-[10px] sm:text-xs font-mono text-muted-foreground">
-                {formatQuantity(bid.quantity)}
-              </span>
-            </div>
-          ))}
-        </div>
+                key={`bid-${idx}`}
+                onClick={() => onPriceClick?.(bid.price)}
+                className="relative flex items-center justify-between px-2 py-1 cursor-pointer hover:bg-muted/50"
+              >
+                <div
+                  className="absolute right-0 top-0 bottom-0 bg-emerald-500/10"
+                  style={{ width: `${(bid.quantity / maxBidTotal) * 100}%` }}
+                />
+                <span className="relative text-[10px] sm:text-xs font-mono text-emerald-400">
+                  {formatPrice(bid.price)}
+                </span>
+                <span className="relative text-[10px] sm:text-xs font-mono text-muted-foreground">
+                  {formatQuantity(bid.quantity)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-[10px] sm:text-xs text-muted-foreground">
+            No buy orders
+          </div>
+        )}
       </div>
+      
+      {/* Empty Order Book Message */}
+      {!hasOrders && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <p className="text-xs sm:text-sm text-muted-foreground">No orders yet</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground/70">Be the first to place an order!</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

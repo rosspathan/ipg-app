@@ -22,6 +22,7 @@ interface OrderFormProProps {
   currentPrice: number;
   tickSize?: number;
   lotSize?: number;
+  inrRate?: number; // INR per 1 unit of quote currency
   onPlaceOrder: (params: {
     side: 'buy' | 'sell';
     type: 'market' | 'limit';
@@ -44,6 +45,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   currentPrice,
   tickSize = 0.00000001,
   lotSize = 0.0001,
+  inrRate = 83, // Default INR rate
   onPlaceOrder,
   isPlacingOrder = false,
 }) => {
@@ -70,6 +72,16 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
   // Fee is always in USDT (0.1% of order value in USD terms)
   const estimatedFeeUsdt = total * 0.001;
+  
+  // INR values for display
+  const totalInr = total * inrRate;
+  const currentPriceInr = currentPrice * inrRate;
+  
+  // What user will receive/pay
+  const willReceive = isBuy ? numAmount : total;
+  const willReceiveCurrency = isBuy ? baseCurrency : quoteCurrency;
+  const willPay = isBuy ? total : numAmount;
+  const willPayCurrency = isBuy ? quoteCurrency : baseCurrency;
 
   const handlePercentageChange = (pct: number) => {
     setPercentage(pct);
@@ -107,6 +119,21 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
   return (
     <div className="space-y-2 sm:space-y-3">
+      {/* Market Price Display */}
+      <div className="bg-card border border-border rounded-lg px-3 py-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] sm:text-xs text-muted-foreground">Market Price</span>
+          <div className="text-right">
+            <span className="text-sm sm:text-base font-bold font-mono text-foreground">
+              {currentPrice.toFixed(currentPrice >= 1 ? 2 : 6)} {quoteCurrency}
+            </span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground ml-2">
+              ≈ ₹{currentPriceInr.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </div>
+      
       {/* Buy/Sell Toggle - Compact */}
       <div className="flex bg-muted rounded-full p-0.5">
         <button
@@ -213,16 +240,42 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* Total - Compact */}
       <div className="bg-card border border-border rounded-lg px-2 py-1.5 sm:py-2">
         <label className="block text-[10px] sm:text-xs text-muted-foreground mb-0.5">Total ({quoteCurrency})</label>
-        <div className="font-mono text-foreground text-xs sm:text-sm">
-          {total.toFixed(2)}
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-foreground text-xs sm:text-sm">
+            {total.toFixed(total >= 1 ? 2 : 6)}
+          </span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground">
+            ≈ ₹{totalInr.toFixed(2)}
+          </span>
         </div>
       </div>
+
+      {/* You Will Receive/Pay Summary */}
+      {numAmount > 0 && (
+        <div className="bg-muted/50 border border-border rounded-lg px-2 py-2 space-y-1">
+          <div className="flex items-center justify-between text-[10px] sm:text-xs">
+            <span className="text-muted-foreground">You will pay</span>
+            <span className="font-mono text-foreground font-medium">
+              {willPay.toFixed(willPay >= 1 ? 4 : 6)} {willPayCurrency}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-[10px] sm:text-xs">
+            <span className="text-muted-foreground">You will receive</span>
+            <span className={cn(
+              "font-mono font-medium",
+              isBuy ? "text-emerald-400" : "text-amber-400"
+            )}>
+              {willReceive.toFixed(willReceive >= 1 ? 4 : 6)} {willReceiveCurrency}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Estimated Fee - Compact */}
       <div className="flex items-center justify-between text-[10px] sm:text-xs py-0.5">
         <span className="text-muted-foreground">Est. Fee</span>
         <span className="text-foreground font-mono">
-          {estimatedFeeUsdt.toFixed(2)} USDT
+          {estimatedFeeUsdt.toFixed(4)} USDT
         </span>
       </div>
 

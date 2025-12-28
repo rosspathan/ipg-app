@@ -50,6 +50,7 @@ class BinanceWebSocketClient {
   private readonly RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000]; // Progressive backoff
   
   // Symbol mapping for our internal pairs to Binance format
+  // Only pairs that exist on Binance should be listed here
   private readonly SYMBOL_MAP: Record<string, string> = {
     'BTC/USDT': 'btcusdt',
     'ETH/USDT': 'ethusdt', 
@@ -58,8 +59,16 @@ class BinanceWebSocketClient {
     'SOL/USDT': 'solusdt',
     'MATIC/USDT': 'maticusdt',
     'DOT/USDT': 'dotusdt',
-    'AVAX/USDT': 'avaxusdt'
+    'AVAX/USDT': 'avaxusdt',
+    'XRP/USDT': 'xrpusdt',
+    'DOGE/USDT': 'dogeusdt',
+    'LINK/USDT': 'linkusdt',
   };
+  
+  // Check if a symbol is supported on Binance
+  isSupportedSymbol(symbol: string): boolean {
+    return symbol in this.SYMBOL_MAP;
+  }
 
   constructor(callbacks: MarketDataCallback = {}) {
     this.callbacks = callbacks;
@@ -283,6 +292,12 @@ class BinanceWebSocketClient {
   }
 
   subscribe(symbol: string) {
+    // Skip subscription for internal/unsupported pairs
+    if (!this.isSupportedSymbol(symbol)) {
+      console.log(`[MarketFeed] Skipping Binance subscription for internal pair: ${symbol}`);
+      return;
+    }
+    
     const connectionKey = this.getConnectionKey(symbol);
     
     if (!this.subscriptions.has(connectionKey)) {
