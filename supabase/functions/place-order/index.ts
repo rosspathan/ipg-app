@@ -67,9 +67,12 @@ serve(async (req) => {
       }
     }
 
-    const { symbol, side, type, quantity, price, trading_type } = await req.json();
+    const { symbol, side, type, quantity, price, trading_type, trading_mode } = await req.json();
 
-    console.log('[place-order] Received order:', { user_id: user.id, symbol, side, type, quantity, price });
+    // On-chain trading mode skips internal balance validation
+    const isOnchainMode = trading_mode === 'onchain';
+
+    console.log('[place-order] Received order:', { user_id: user.id, symbol, side, type, quantity, price, trading_mode: isOnchainMode ? 'onchain' : 'internal' });
 
     // Validate inputs
     if (!symbol || !side || !type || !quantity || quantity <= 0) {
@@ -94,49 +97,54 @@ serve(async (req) => {
     const required_asset = side === 'buy' ? quote_symbol : base_symbol;
     const required_amount = side === 'buy' ? order_value : quantity;
 
-    console.log('[place-order] Required:', { required_asset, required_amount });
+    console.log('[place-order] Required:', { required_asset, required_amount, skipBalanceCheck: isOnchainMode });
 
-    // PHASE 2.4: Atomic balance locking for limit orders
-    if (type === 'limit') {
-      const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
-        'lock_balance_for_order',
-        {
-          p_user_id: user.id,
-          p_asset_symbol: required_asset,
-          p_amount: required_amount,
+    // Skip balance validation for on-chain trading mode
+    if (!isOnchainMode) {
+      // PHASE 2.4: Atomic balance locking for limit orders
+      if (type === 'limit') {
+        const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
+          'lock_balance_for_order',
+          {
+            p_user_id: user.id,
+            p_asset_symbol: required_asset,
+            p_amount: required_amount,
+          }
+        );
+
+        if (lockError || !lockSuccess) {
+          console.error('[place-order] Lock balance failed:', lockError);
+          throw new Error('Insufficient balance or lock failed');
         }
-      );
 
-      if (lockError || !lockSuccess) {
-        console.error('[place-order] Lock balance failed:', lockError);
-        throw new Error('Insufficient balance or lock failed');
+        console.log('[place-order] Balance locked successfully');
       }
 
-      console.log('[place-order] Balance locked successfully');
-    }
+      // For market orders, validate balance
+      if (type === 'market') {
+        const { data: assetData } = await supabaseClient
+          .from('assets')
+          .select('id')
+          .eq('symbol', required_asset)
+          .single();
 
-    // For market orders, validate balance
-    if (type === 'market') {
-      const { data: assetData } = await supabaseClient
-        .from('assets')
-        .select('id')
-        .eq('symbol', required_asset)
-        .single();
+        if (!assetData) {
+          throw new Error(`Asset ${required_asset} not found`);
+        }
 
-      if (!assetData) {
-        throw new Error(`Asset ${required_asset} not found`);
+        const { data: balanceData } = await supabaseClient
+          .from('wallet_balances')
+          .select('available')
+          .eq('user_id', user.id)
+          .eq('asset_id', assetData.id)
+          .single();
+
+        if (!balanceData || balanceData.available < required_amount) {
+          throw new Error('Insufficient balance');
+        }
       }
-
-      const { data: balanceData } = await supabaseClient
-        .from('wallet_balances')
-        .select('available')
-        .eq('user_id', user.id)
-        .eq('asset_id', assetData.id)
-        .single();
-
-      if (!balanceData || balanceData.available < required_amount) {
-        throw new Error('Insufficient balance');
-      }
+    } else {
+      console.log('[place-order] On-chain mode: Skipping internal balance validation');
     }
 
     // Insert order (use 'amount' column, not 'quantity')
@@ -160,8 +168,8 @@ serve(async (req) => {
     if (insertError) {
       console.error('[place-order] Insert failed:', insertError);
       
-      // Rollback: unlock balance if limit order insert failed
-      if (type === 'limit') {
+      // Rollback: unlock balance if limit order insert failed (only for internal mode)
+      if (type === 'limit' && !isOnchainMode) {
         await supabaseClient.rpc('unlock_balance_for_order', {
           p_user_id: user.id,
           p_asset_symbol: required_asset,

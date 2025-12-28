@@ -11,6 +11,7 @@ interface PlaceOrderParams {
   stop_price?: number;
   time_in_force?: 'GTC' | 'IOC' | 'FOK';
   client_order_id?: string;
+  trading_mode?: 'internal' | 'onchain';
 }
 
 interface Order {
