@@ -76,36 +76,34 @@ export function TradingOverview() {
                 navigate(`/app/trade/${urlSymbol}`);
               }}
             >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(pair.symbol);
-                    }}
-                    className="text-muted-foreground hover:text-primary transition-colors shrink-0"
-                  >
-                    <Star
-                      className={cn(
-                        "h-4 w-4",
-                        favorites.includes(pair.symbol) && "fill-primary text-primary"
-                      )}
-                    />
-                  </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(pair.symbol);
+                  }}
+                  className="text-muted-foreground hover:text-primary transition-colors shrink-0"
+                >
+                  <Star
+                    className={cn(
+                      "h-4 w-4",
+                      favorites.includes(pair.symbol) && "fill-primary text-primary"
+                    )}
+                  />
+                </button>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold truncate">{pair.symbol}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      Vol ${(pair.volume24h / 1000000).toFixed(2)}M
-                    </div>
+                <div className="min-w-[90px] flex-1">
+                  <div className="font-semibold text-sm">{pair.symbol}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Vol ${(pair.volume24h / 1000000).toFixed(2)}M
                   </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <div className="font-mono text-base">${pair.price.toFixed(2)}</div>
+                <div className="text-right w-[80px] shrink-0">
+                  <div className="font-mono text-sm">${pair.price.toFixed(2)}</div>
                   <div
                     className={cn(
-                      "flex items-center justify-end gap-1 text-sm font-medium",
+                      "flex items-center justify-end gap-0.5 text-xs font-medium",
                       pair.change24h >= 0 ? "text-success" : "text-destructive"
                     )}
                   >
@@ -118,11 +116,11 @@ export function TradingOverview() {
                   </div>
                 </div>
 
-                <div className="ml-2 space-y-1 shrink-0">
+                <div className="shrink-0 flex flex-col gap-1">
                   <Button
                     size="sm"
                     variant="default"
-                    className="w-14 h-7 text-xs"
+                    className="w-11 h-6 text-xs px-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       const urlSymbol = pair.symbol.replace('/', '-');
@@ -134,7 +132,7 @@ export function TradingOverview() {
                   <Button
                     size="sm"
                     variant="destructive"
-                    className="w-14 h-7 text-xs"
+                    className="w-11 h-6 text-xs px-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       const urlSymbol = pair.symbol.replace('/', '-');
