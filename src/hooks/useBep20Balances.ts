@@ -23,6 +23,8 @@ export interface Bep20Balance {
   onchainBalance: number
   appBalance: number
   contractAddress: string | null
+  priceUsd: number
+  onchainUsdValue: number
 }
 
 async function getERC20Balance(contractAddress: string, walletAddress: string, decimals: number): Promise<number> {
@@ -121,11 +123,22 @@ export function useBep20Balances() {
     fetchAppBalances()
   }, [user?.id, assets])
 
-  // Query on-chain balances
+  // Query on-chain balances with prices
   const { data: balances, isLoading, error, refetch } = useQuery({
     queryKey: ['bep20-balances', walletAddress, assets.map(a => a.symbol).join(',')],
     queryFn: async (): Promise<Bep20Balance[]> => {
       if (!walletAddress || assets.length === 0) return []
+
+      // Fetch prices for all assets
+      let prices: Record<string, number> = {}
+      try {
+        const { data: priceData } = await supabase.functions.invoke('fetch-crypto-prices', {
+          body: { symbols: assets.map(a => a.symbol) }
+        })
+        prices = priceData?.prices || {}
+      } catch (err) {
+        console.warn('Failed to fetch prices:', err)
+      }
 
       const results = await Promise.all(
         assets.map(async (asset) => {
@@ -140,6 +153,9 @@ export function useBep20Balances() {
             console.warn(`Failed to fetch ${asset.symbol} balance:`, err)
           }
 
+          const priceUsd = prices[asset.symbol] || 0
+          const onchainUsdValue = onchainBalance * priceUsd
+
           return {
             assetId: asset.id,
             symbol: asset.symbol,
@@ -147,7 +163,9 @@ export function useBep20Balances() {
             logoUrl: asset.logoUrl,
             onchainBalance,
             appBalance: appBalances[asset.id] || 0,
-            contractAddress: asset.contractAddress
+            contractAddress: asset.contractAddress,
+            priceUsd,
+            onchainUsdValue
           }
         })
       )

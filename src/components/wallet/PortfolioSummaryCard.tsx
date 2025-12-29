@@ -1,5 +1,5 @@
 import { CleanCard } from '@/components/admin/clean/CleanCard'
-import { TrendingUp, TrendingDown, Wallet, Lock } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Lock, Globe } from 'lucide-react'
 import { formatCurrency } from '@/utils/formatters'
 import { useIsMobile } from '@/hooks/use-mobile'
 
@@ -7,6 +7,7 @@ interface PortfolioSummaryCardProps {
   totalUsd: number
   availableUsd: number
   lockedUsd: number
+  onchainUsd?: number
   change24h?: number
   loading?: boolean
 }
@@ -15,12 +16,15 @@ export function PortfolioSummaryCard({
   totalUsd,
   availableUsd,
   lockedUsd,
+  onchainUsd = 0,
   change24h = 0,
   loading = false
 }: PortfolioSummaryCardProps) {
   const isPositiveChange = change24h >= 0
-
   const isMobile = useIsMobile()
+  
+  // Combined total includes on-chain assets
+  const combinedTotal = totalUsd + onchainUsd
 
   if (loading) {
     return (
@@ -59,9 +63,9 @@ export function PortfolioSummaryCard({
         <div className="flex items-baseline gap-3">
           <p 
             className="text-2xl md:text-3xl font-bold text-foreground dark:text-white tabular-nums truncate"
-            title={formatCurrency(totalUsd)}
+            title={formatCurrency(combinedTotal)}
           >
-            {isMobile ? formatCurrency(totalUsd, { abbreviated: true }) : formatCurrency(totalUsd)}
+            {isMobile ? formatCurrency(combinedTotal, { abbreviated: true }) : formatCurrency(combinedTotal)}
           </p>
         </div>
       </div>
@@ -69,7 +73,7 @@ export function PortfolioSummaryCard({
       {/* Divider */}
       <div className="border-t border-border/40" />
 
-      {/* Available & Locked - Secondary Metrics */}
+      {/* Available, Locked & On-chain - Secondary Metrics */}
       <div className="px-5 py-3 space-y-2.5">
         {/* Available */}
         <div className="flex items-center justify-between">
@@ -98,6 +102,22 @@ export function PortfolioSummaryCard({
             {isMobile ? formatCurrency(lockedUsd, { abbreviated: true }) : formatCurrency(lockedUsd)}
           </p>
         </div>
+
+        {/* On-chain - Only show if there's a balance */}
+        {onchainUsd > 0 && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Globe className="h-4 w-4 text-blue-400" />
+              <span className="text-sm text-muted-foreground">On-chain</span>
+            </div>
+            <p 
+              className="text-lg md:text-xl font-semibold text-blue-400 tabular-nums truncate ml-4"
+              title={formatCurrency(onchainUsd)}
+            >
+              {isMobile ? formatCurrency(onchainUsd, { abbreviated: true }) : formatCurrency(onchainUsd)}
+            </p>
+          </div>
+        )}
       </div>
     </CleanCard>
   )

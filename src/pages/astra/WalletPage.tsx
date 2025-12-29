@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Copy, ExternalLink, QrCode, Eye, EyeOff, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -9,6 +9,7 @@ import { copyToClipboard } from "@/utils/clipboard"
 import { AppShellGlass } from "@/components/astra/AppShellGlass"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { useWalletBalances } from "@/hooks/useWalletBalances"
+import { useBep20Balances } from "@/hooks/useBep20Balances"
 import { QuickActionsRibbon } from "@/components/astra/grid/QuickActionsRibbon"
 import { useNavigation } from "@/hooks/useNavigation"
 import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
@@ -30,8 +31,17 @@ export function WalletPage() {
   const [showAddress, setShowAddress] = useState(true)
   const [showQrDialog, setShowQrDialog] = useState(false)
   
-  // Fetch real portfolio data
+  // Fetch real portfolio data (in-app balances)
   const { portfolio, loading: portfolioLoading } = useWalletBalances()
+  
+  // Fetch on-chain balances
+  const { balances: onchainBalances, isLoading: onchainLoading } = useBep20Balances()
+  
+  // Calculate total on-chain USD value
+  const onchainUsd = useMemo(() => {
+    if (!onchainBalances || onchainBalances.length === 0) return 0
+    return onchainBalances.reduce((total, bal) => total + (bal.onchainUsdValue || 0), 0)
+  }, [onchainBalances])
 
   useUsernameBackfill(); // Backfill username if missing
 
@@ -281,8 +291,9 @@ export function WalletPage() {
           totalUsd={portfolio?.total_usd || 0}
           availableUsd={portfolio?.available_usd || 0}
           lockedUsd={portfolio?.locked_usd || 0}
+          onchainUsd={onchainUsd}
           change24h={portfolio?.change_24h_percent || 0}
-          loading={portfolioLoading}
+          loading={portfolioLoading || onchainLoading}
         />
 
       {/* Balance Cluster with Crypto Assets Grid */}
