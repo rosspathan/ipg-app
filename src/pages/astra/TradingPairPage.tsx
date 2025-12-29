@@ -227,22 +227,18 @@ function TradingPairPageContent() {
     );
   }
 
-  // Find combined balances (on-chain + app) for the trading pair
+  // Find on-chain balances for the trading pair (only on-chain used for trading)
   const quoteBalanceData = bep20Balances?.find((b) => b.symbol === pair.quoteAsset);
   const baseBalanceData = bep20Balances?.find((b) => b.symbol === pair.baseAsset);
   
-  // Calculate combined balances for trading
+  // Use only on-chain balances for trading
   const quoteBalance = {
     symbol: pair.quoteAsset,
-    balance: (quoteBalanceData?.onchainBalance || 0) + (quoteBalanceData?.appBalance || 0),
-    onchain: quoteBalanceData?.onchainBalance || 0,
-    app: quoteBalanceData?.appBalance || 0
+    balance: quoteBalanceData?.onchainBalance || 0
   };
   const baseBalance = {
     symbol: pair.baseAsset,
-    balance: (baseBalanceData?.onchainBalance || 0) + (baseBalanceData?.appBalance || 0),
-    onchain: baseBalanceData?.onchainBalance || 0,
-    app: baseBalanceData?.appBalance || 0
+    balance: baseBalanceData?.onchainBalance || 0
   };
 
   const handlePriceClick = (price: number) => {
@@ -497,10 +493,10 @@ function TradingPairPageContent() {
                 balances={bep20Balances?.map(b => ({
                   symbol: b.symbol,
                   name: b.name,
-                  balance: b.onchainBalance + b.appBalance,
-                  available: b.onchainBalance + b.appBalance,
+                  balance: b.onchainBalance,
+                  available: b.onchainBalance,
                   locked: 0,
-                  usd_value: b.onchainUsdValue + (b.appBalance * b.priceUsd),
+                  usd_value: b.onchainUsdValue,
                   logo_url: b.logoUrl
                 })) || []} 
                 loading={balancesLoading} 
