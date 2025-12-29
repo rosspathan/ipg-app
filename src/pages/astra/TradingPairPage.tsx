@@ -8,7 +8,7 @@ import { OpenOrderCard } from "@/components/trading/OpenOrderCard";
 import { FundsTab } from "@/components/trading/FundsTab";
 import { TradeHistoryTab } from "@/components/trading/TradeHistoryTab";
 import { useTradingPairs } from "@/hooks/useTradingPairs";
-import { useOnchainBalances } from "@/hooks/useOnchainBalances";
+import { useBep20Balances } from "@/hooks/useBep20Balances";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useUserOrders } from "@/hooks/useUserOrders";
 import { useToast } from "@/hooks/use-toast";
@@ -53,7 +53,7 @@ function TradingPairPageContent() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { data: pairs, refetch: refetchPairs } = useTradingPairs();
-  const { balances: onchainBalances, isLoading: balancesLoading, refetch: refetchBalances } = useOnchainBalances();
+  const { balances: bep20Balances, isLoading: balancesLoading, refetch: refetchBalances } = useBep20Balances();
   const { placeOrder } = useTradingAPI();
   const queryClient = useQueryClient();
   const { user } = useAuthUser();
@@ -227,9 +227,23 @@ function TradingPairPageContent() {
     );
   }
 
-  // Find on-chain balances for the trading pair
-  const quoteBalance = onchainBalances?.find((b) => b.symbol === pair.quoteAsset);
-  const baseBalance = onchainBalances?.find((b) => b.symbol === pair.baseAsset);
+  // Find combined balances (on-chain + app) for the trading pair
+  const quoteBalanceData = bep20Balances?.find((b) => b.symbol === pair.quoteAsset);
+  const baseBalanceData = bep20Balances?.find((b) => b.symbol === pair.baseAsset);
+  
+  // Calculate combined balances for trading
+  const quoteBalance = {
+    symbol: pair.quoteAsset,
+    balance: (quoteBalanceData?.onchainBalance || 0) + (quoteBalanceData?.appBalance || 0),
+    onchain: quoteBalanceData?.onchainBalance || 0,
+    app: quoteBalanceData?.appBalance || 0
+  };
+  const baseBalance = {
+    symbol: pair.baseAsset,
+    balance: (baseBalanceData?.onchainBalance || 0) + (baseBalanceData?.appBalance || 0),
+    onchain: baseBalanceData?.onchainBalance || 0,
+    app: baseBalanceData?.appBalance || 0
+  };
 
   const handlePriceClick = (price: number) => {
     setSelectedPrice(price);
@@ -375,10 +389,10 @@ function TradingPairPageContent() {
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
                 quoteCurrency={pair.quoteAsset}
-                availableBase={baseBalance?.balance || 0}
-                availableQuote={quoteBalance?.balance || 0}
-                availableBaseUsd={(baseBalance?.balance || 0) * pair.price}
-                availableQuoteUsd={quoteBalance?.balance || 0}
+                availableBase={baseBalance.balance}
+                availableQuote={quoteBalance.balance}
+                availableBaseUsd={baseBalance.balance * pair.price}
+                availableQuoteUsd={quoteBalance.balance}
                 currentPrice={pair.price}
                 onPlaceOrder={handlePlaceOrder}
               />
@@ -480,13 +494,13 @@ function TradingPairPageContent() {
               <TradeHistoryTab symbol={symbol} />
             ) : (
               <FundsTab 
-                balances={onchainBalances?.map(b => ({
+                balances={bep20Balances?.map(b => ({
                   symbol: b.symbol,
                   name: b.name,
-                  balance: b.balance,
-                  available: b.balance,
+                  balance: b.onchainBalance + b.appBalance,
+                  available: b.onchainBalance + b.appBalance,
                   locked: 0,
-                  usd_value: b.balance * (b.symbol === 'USDT' ? 1 : pair.price),
+                  usd_value: b.onchainUsdValue + (b.appBalance * b.priceUsd),
                   logo_url: b.logoUrl
                 })) || []} 
                 loading={balancesLoading} 
