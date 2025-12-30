@@ -44,6 +44,11 @@ export function useWalletBalances() {
         body: { userIds: [user.id] }
       }).catch(err => console.warn('Native BNB sync failed:', err));
 
+      // Trigger BEP20 token sync in background (non-blocking)
+      supabase.functions.invoke('sync-bep20-balances', {
+        body: { userIds: [user.id] }
+      }).catch(err => console.warn('BEP20 sync failed:', err));
+
       // Trigger deposit discovery in background (non-blocking)
       supabase.functions.invoke('scheduled-discover-deposits', {
         body: { userIds: [user.id] }
