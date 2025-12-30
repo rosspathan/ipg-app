@@ -65,24 +65,46 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
 
   const loadSeedPhrase = useCallback(() => {
     try {
-      const walletData = localStorage.getItem("cryptoflow_wallet");
-      if (!walletData) {
-        toast({
-          title: "No Wallet Found",
-          description: "No wallet data found in this device",
-          variant: "destructive"
-        });
-        onOpenChange(false);
-        return false;
+      // Check multiple localStorage keys for wallet data
+      const storageKeys = [
+        "cryptoflow_wallet",
+        "pending_wallet_import",
+        "ipg_wallet_data"
+      ];
+
+      let phrase: string | null = null;
+
+      for (const key of storageKeys) {
+        const data = localStorage.getItem(key);
+        if (!data) continue;
+
+        try {
+          // ipg_wallet_data may be base64 encoded
+          let parsed;
+          if (key === "ipg_wallet_data") {
+            try {
+              parsed = JSON.parse(atob(data));
+            } catch {
+              parsed = JSON.parse(data);
+            }
+          } else {
+            parsed = JSON.parse(data);
+          }
+
+          const foundPhrase = parsed?.seedPhrase || parsed?.mnemonic;
+          if (foundPhrase) {
+            phrase = foundPhrase;
+            break;
+          }
+        } catch {
+          continue;
+        }
       }
 
-      const parsed = JSON.parse(walletData);
-      const phrase = parsed.seedPhrase || parsed.mnemonic;
-      
       if (!phrase) {
         toast({
-          title: "No Recovery Phrase",
-          description: "Recovery phrase not available",
+          title: "Recovery Phrase Not Available",
+          description: "Your seed phrase is not stored on this device. Re-import your wallet to access it.",
           variant: "destructive"
         });
         onOpenChange(false);
