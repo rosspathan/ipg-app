@@ -5,6 +5,7 @@ import { useAuthUser } from '@/hooks/useAuthUser';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
+import { hasStoredWallet } from '@/utils/walletStorage';
 
 export const AppStateManager = () => {
   const { lock, isUnlockRequired } = useAuthLock();
@@ -40,7 +41,7 @@ export const AppStateManager = () => {
         
         // Check if user has wallet in database
         if (!profile?.wallet_address) {
-          const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
+          const hasLocalWallet = hasStoredWallet(user.id);
           
           // If no wallet anywhere, redirect existing users to auth import
           if (!hasLocalWallet) {

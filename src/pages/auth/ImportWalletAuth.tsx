@@ -11,6 +11,7 @@ import * as bip39 from 'bip39';
 import { ethers } from 'ethers';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { hasAnySecurity } from '@/utils/localSecurityStorage';
+import { storeWallet, setWalletStorageUserId } from '@/utils/walletStorage';
 
 const ImportWalletAuth: React.FC = () => {
   const navigate = useNavigate();
@@ -55,16 +56,18 @@ const ImportWalletAuth: React.FC = () => {
       const address = ethersWallet.address;
       const privateKey = ethersWallet.privateKey;
 
-      // Store in localStorage (encrypted in production)
+      // Store in localStorage with user-scoped key
       const walletData = {
         address,
         privateKey,
-        mnemonic: cleanPhrase,
-        network: 'bsc-mainnet',
+        seedPhrase: cleanPhrase,
+        network: 'mainnet' as const,
         balance: '0'
       };
       
-      localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
+      // Set user ID for scoped storage and store wallet
+      setWalletStorageUserId(user.id);
+      storeWallet(walletData, user.id);
 
       // Update Supabase profile
       const { error: updateError } = await supabase
