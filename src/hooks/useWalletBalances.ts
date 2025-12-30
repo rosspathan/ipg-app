@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuthUser } from '@/hooks/useAuthUser';
@@ -27,33 +27,22 @@ export function useWalletBalances() {
   const [balances, setBalances] = useState<AssetBalance[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Refs to prevent infinite loops and debounce updates
+  const hasSyncedRef = useRef(false);
+  const lastRealtimeUpdateRef = useRef<number>(0);
+  const isMountedRef = useRef(true);
 
-  const fetchBalances = async () => {
-    if (!user) {
+  // ONLY reads from database - no sync calls
+  const fetchBalances = useCallback(async () => {
+    if (!user || !isMountedRef.current) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setError(null);
-
     try {
-      // Trigger native BNB sync in background (non-blocking)
-      supabase.functions.invoke('sync-native-bnb', {
-        body: { userIds: [user.id] }
-      }).catch(err => console.warn('Native BNB sync failed:', err));
-
-      // Trigger BEP20 token sync in background (non-blocking)
-      supabase.functions.invoke('sync-bep20-balances', {
-        body: { userIds: [user.id] }
-      }).catch(err => console.warn('BEP20 sync failed:', err));
-
-      // Trigger deposit discovery in background (non-blocking)
-      supabase.functions.invoke('scheduled-discover-deposits', {
-        body: { userIds: [user.id] }
-      }).catch(err => console.warn('Deposit discovery failed:', err));
-
       // Fetch user's wallet balances with asset details
       const { data: balanceData, error: balanceError } = await supabase
         .from('wallet_balances')
@@ -71,7 +60,7 @@ export function useWalletBalances() {
           )
         `)
         .eq('user_id', user.id)
-        .or('total.gt.0,available.gt.0,locked.gt.0'); // Include any positive balances (total may be null)
+        .or('total.gt.0,available.gt.0,locked.gt.0');
 
       if (balanceError) throw balanceError;
 
@@ -115,33 +104,73 @@ export function useWalletBalances() {
       const totalUsd = enrichedBalances.reduce((sum, b) => sum + b.usd_value, 0);
       const availableUsd = enrichedBalances.reduce((sum, b) => sum + (b.available * b.price_usd), 0);
       const lockedUsd = enrichedBalances.reduce((sum, b) => sum + (b.locked * b.price_usd), 0);
-
-      // Mock 24h change for now - would come from price history
       const change24hPercent = priceData?.change_24h || 0;
 
-      setBalances(enrichedBalances);
-      setPortfolio({
-        total_usd: totalUsd,
-        change_24h_percent: change24hPercent,
-        available_usd: availableUsd,
-        locked_usd: lockedUsd
-      });
+      if (isMountedRef.current) {
+        setBalances(enrichedBalances);
+        setPortfolio({
+          total_usd: totalUsd,
+          change_24h_percent: change24hPercent,
+          available_usd: availableUsd,
+          locked_usd: lockedUsd
+        });
+        setError(null);
+      }
     } catch (err: any) {
       console.error('Error fetching wallet balances:', err);
-      setError(err.message);
+      if (isMountedRef.current) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [user]);
+
+  // Runs ONCE on mount - triggers background sync
+  const syncOnchainBalances = useCallback(async () => {
+    if (!user || hasSyncedRef.current) return;
+    hasSyncedRef.current = true;
+    setIsSyncing(true);
+
+    try {
+      // Run all syncs in parallel, don't wait for them
+      await Promise.allSettled([
+        supabase.functions.invoke('sync-native-bnb', { body: { userIds: [user.id] } }),
+        supabase.functions.invoke('sync-bep20-balances', { body: { userIds: [user.id] } }),
+        supabase.functions.invoke('scheduled-discover-deposits', { body: { userIds: [user.id] } })
+      ]);
+
+      // Refresh data after sync completes
+      if (isMountedRef.current) {
+        await fetchBalances();
+      }
+    } catch (err) {
+      console.warn('Background sync failed:', err);
+    } finally {
+      if (isMountedRef.current) {
+        setIsSyncing(false);
+      }
+    }
+  }, [user, fetchBalances]);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    hasSyncedRef.current = false;
+
+    // 1. Immediately fetch cached data
     fetchBalances();
 
-    // Set up real-time subscription for balance updates
+    // 2. Start background sync (once) after initial fetch
+    const syncTimeout = setTimeout(() => {
+      syncOnchainBalances();
+    }, 100);
+
+    // 3. Set up realtime subscription with debouncing
     let channel: RealtimeChannel | null = null;
     
     const setupRealtimeSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       channel = supabase
@@ -154,8 +183,13 @@ export function useWalletBalances() {
             table: 'wallet_balances',
             filter: `user_id=eq.${user.id}`
           },
-          (payload) => {
-            console.log('Balance updated:', payload);
+          () => {
+            const now = Date.now();
+            // Debounce: ignore updates within 3 seconds of last one
+            if (now - lastRealtimeUpdateRef.current < 3000) {
+              return;
+            }
+            lastRealtimeUpdateRef.current = now;
             fetchBalances();
           }
         )
@@ -164,23 +198,28 @@ export function useWalletBalances() {
 
     setupRealtimeSubscription();
 
-    // Poll for price updates every 2 minutes (reduced to avoid rate limits)
-    const interval = setInterval(() => {
-      fetchBalances();
+    // Poll for price updates every 2 minutes (not balance refresh)
+    const priceInterval = setInterval(() => {
+      if (!isSyncing) {
+        fetchBalances();
+      }
     }, 120000);
 
     return () => {
+      isMountedRef.current = false;
+      clearTimeout(syncTimeout);
       if (channel) {
         supabase.removeChannel(channel);
       }
-      clearInterval(interval);
+      clearInterval(priceInterval);
     };
-  }, [user]);
+  }, [user, fetchBalances, syncOnchainBalances]);
 
   return {
     balances,
     portfolio,
     loading,
+    isSyncing,
     error,
     refetch: fetchBalances
   };
