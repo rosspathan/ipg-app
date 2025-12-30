@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-dom";
-import { ArrowLeft, ChevronDown, Search, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, Search, Loader2, Wifi, WifiOff } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookCompact } from "@/components/trading/OrderBookCompact";
 import { OpenOrderCard } from "@/components/trading/OpenOrderCard";
 import { FundsTab } from "@/components/trading/FundsTab";
 import { TradeHistoryTab } from "@/components/trading/TradeHistoryTab";
+import { MarketStatsHeader } from "@/components/trading/MarketStatsHeader";
 import { useTradingPairs } from "@/hooks/useTradingPairs";
 import { useBep20Balances } from "@/hooks/useBep20Balances";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
@@ -301,85 +302,119 @@ function TradingPairPageContent() {
       requireRiskDisclosure
     >
       <div className="flex flex-col h-screen bg-background trade-density">
-        {/* Clean Header */}
-        <div className="sticky top-0 z-10 bg-background border-b border-border px-4 py-3">
+        {/* Clean Header with Pair Picker */}
+        <div className="sticky top-0 z-10 bg-gradient-to-b from-background to-background/95 backdrop-blur-sm border-b border-border px-4 py-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button onClick={() => navigate("/app/trade")} className="p-1">
+              <button 
+                onClick={() => navigate("/app/trade")} 
+                className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors"
+              >
                 <ArrowLeft className="h-5 w-5 text-foreground" />
               </button>
               
               {/* Functional Pair Picker Dropdown */}
               <DropdownMenu open={pairPickerOpen} onOpenChange={setPairPickerOpen}>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 hover:bg-muted/50 rounded-lg px-2 py-1">
-                    <span className="text-foreground font-semibold text-lg">{pair.symbol}</span>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <button className="flex items-center gap-2 hover:bg-muted/50 rounded-lg px-3 py-1.5 transition-colors">
+                    <span className="text-foreground font-bold text-lg">{pair.symbol}</span>
+                    <ChevronDown className={cn(
+                      "h-4 w-4 text-muted-foreground transition-transform",
+                      pairPickerOpen && "rotate-180"
+                    )} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-72 bg-card border-border p-2">
+                <DropdownMenuContent align="start" className="w-80 bg-card/95 backdrop-blur-lg border-border p-2 shadow-xl">
                   {/* Search Input */}
                   <div className="relative mb-2">
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search pairs..."
                       value={pairSearch}
                       onChange={(e) => setPairSearch(e.target.value)}
-                      className="pl-8 h-9 bg-muted border-border text-foreground"
+                      className="pl-9 h-10 bg-muted/50 border-border text-foreground rounded-lg"
                       autoFocus
                     />
                   </div>
                   
                   {/* Pairs List */}
-                  <div className="max-h-64 overflow-y-auto space-y-0.5">
+                  <div className="max-h-72 overflow-y-auto space-y-0.5">
                     {sortedPairs.map((p) => (
                       <DropdownMenuItem
                         key={p.symbol}
                         onClick={() => handlePairSelect(p.symbol)}
                         className={cn(
-                          "flex items-center justify-between px-2 py-2 rounded cursor-pointer",
-                          p.symbol === pair.symbol && "bg-muted"
+                          "flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors",
+                          p.symbol === pair.symbol && "bg-primary/10 border border-primary/20"
                         )}
                       >
-                        <span className="font-medium text-foreground">{p.symbol}</span>
-                        <div className="flex items-center gap-2 text-xs">
+                        <span className="font-semibold text-foreground">{p.symbol}</span>
+                        <div className="flex items-center gap-3 text-xs">
                           <span className="text-muted-foreground font-mono">
                             ${p.price >= 1 ? p.price.toFixed(2) : p.price.toFixed(6)}
                           </span>
-                          <span className={p.change24h >= 0 ? "text-emerald-400" : "text-destructive"}>
+                          <span className={cn(
+                            "font-medium px-1.5 py-0.5 rounded",
+                            p.change24h >= 0 
+                              ? "text-emerald-400 bg-emerald-500/10" 
+                              : "text-red-400 bg-red-500/10"
+                          )}>
                             {p.change24h >= 0 ? "+" : ""}{p.change24h.toFixed(2)}%
                           </span>
                         </div>
                       </DropdownMenuItem>
                     ))}
                     {sortedPairs.length === 0 && (
-                      <div className="text-center py-4 text-muted-foreground text-sm">
+                      <div className="text-center py-6 text-muted-foreground text-sm">
                         No pairs found
                       </div>
                     )}
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
 
-              <span className={cn("text-sm font-medium", priceChangeColor)}>
-                {pair.change24h >= 0 ? "+" : ""}{pair.change24h.toFixed(2)}%
-              </span>
+            {/* Connection Status */}
+            <div className="flex items-center gap-2">
+              {wsConnected ? (
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[10px] font-medium text-emerald-400">Live</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted border border-border">
+                  <WifiOff className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[10px] font-medium text-muted-foreground">Offline</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Market Stats Header */}
+        <MarketStatsHeader
+          symbol={pair.symbol}
+          currentPrice={pair.price}
+          priceChange24h={pair.change24h}
+          high24h={pair.high24h}
+          low24h={pair.low24h}
+          volume24h={pair.volume24h}
+          isConnected={wsConnected}
+          quoteCurrency={pair.quoteAsset}
+        />
+
         {/* Chart Section (Optional) */}
         {showChart && (
-          <Card className="mx-3 mt-3 p-4 bg-muted/20">
+          <Card className="mx-3 mt-3 p-4 bg-muted/20 rounded-xl">
             <div className="h-48 flex items-center justify-center text-muted-foreground">
               Chart coming soon...
             </div>
           </Card>
         )}
 
-        {/* Main Content - Always side-by-side on all devices */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-3 lg:p-4">
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
+        {/* Main Content - Side by side layout */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {/* Order Form */}
             <div className="relative overflow-hidden isolate">
               <OrderFormPro
@@ -395,7 +430,7 @@ function TradingPairPageContent() {
             </div>
 
             {/* Order Book */}
-            <div className="h-[380px] sm:h-[450px] lg:h-[500px] relative overflow-hidden isolate">
+            <div className="h-[400px] sm:h-[480px] lg:h-[520px] relative overflow-hidden isolate">
               <OrderBookCompact
                 asks={orderBook?.asks?.slice(0, 8).map((a: any) => ({ 
                   price: typeof a === 'object' ? a.price : a[0], 
@@ -409,6 +444,8 @@ function TradingPairPageContent() {
                 priceChange={pair.change24h}
                 quoteCurrency={pair.quoteAsset}
                 onPriceClick={handlePriceClick}
+                marketPrice={marketPrice}
+                isLoading={!pair}
               />
             </div>
           </div>
