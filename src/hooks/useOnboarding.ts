@@ -6,6 +6,7 @@ import { SecuritySetup, getSecuritySetup, storeSecuritySetup } from '@/utils/sec
 import { refreshSessionIfNeeded, withSessionRefresh } from '@/utils/sessionRefresh';
 import { toast } from 'sonner';
 import { useWeb3 } from '@/contexts/Web3Context';
+import { storeWallet, StoredWalletData } from '@/utils/walletStorage';
 
 export type OnboardingStep = 
   | 'splash'
@@ -261,17 +262,17 @@ export function useOnboarding() {
 
       console.info('[ONBOARDING] Profile updated successfully');
 
-      // Store wallet in localStorage for immediate access
+      // Store wallet with user-scoped storage
       if (state.walletInfo) {
-        console.info('[ONBOARDING] Storing wallet in localStorage...');
-        const walletData = {
+        console.info('[ONBOARDING] Storing wallet with user-scoped storage...');
+        const walletData: StoredWalletData = {
           address: state.walletInfo.address,
           privateKey: state.walletInfo.privateKey,
           seedPhrase: state.walletInfo.mnemonic,
           network: 'mainnet',
           balance: '0'
         };
-        localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
+        storeWallet(walletData, session.user.id);
         
         // Connect wallet to Web3Context
         console.info('[ONBOARDING] Connecting wallet to Web3Context...');

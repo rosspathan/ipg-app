@@ -17,6 +17,8 @@ import {
   CheckCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { getStoredWallet } from "@/utils/walletStorage";
 
 interface RecoveryPhraseRevealProps {
   open: boolean;
@@ -29,6 +31,7 @@ const AUTO_HIDE_SECONDS = 30;
 
 const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [step, setStep] = useState<Step>("warning");
   const [seedPhrase, setSeedPhrase] = useState<string[]>([]);
   const [revealed, setRevealed] = useState(false);
@@ -65,39 +68,47 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
 
   const loadSeedPhrase = useCallback(() => {
     try {
-      // Check multiple localStorage keys for wallet data
-      const storageKeys = [
-        "cryptoflow_wallet",
-        "pending_wallet_import",
-        "ipg_wallet_data"
-      ];
-
       let phrase: string | null = null;
+      
+      // First try user-scoped wallet storage (PRIMARY - secure)
+      const userId = user?.id || null;
+      const userScopedWallet = getStoredWallet(userId);
+      if (userScopedWallet?.seedPhrase) {
+        phrase = userScopedWallet.seedPhrase;
+      }
+      
+      // Fallback to other storage keys for legacy data
+      if (!phrase) {
+        const storageKeys = [
+          "pending_wallet_import",
+          "ipg_wallet_data"
+        ];
 
-      for (const key of storageKeys) {
-        const data = localStorage.getItem(key);
-        if (!data) continue;
+        for (const key of storageKeys) {
+          const data = localStorage.getItem(key);
+          if (!data) continue;
 
-        try {
-          // ipg_wallet_data may be base64 encoded
-          let parsed;
-          if (key === "ipg_wallet_data") {
-            try {
-              parsed = JSON.parse(atob(data));
-            } catch {
+          try {
+            // ipg_wallet_data may be base64 encoded
+            let parsed;
+            if (key === "ipg_wallet_data") {
+              try {
+                parsed = JSON.parse(atob(data));
+              } catch {
+                parsed = JSON.parse(data);
+              }
+            } else {
               parsed = JSON.parse(data);
             }
-          } else {
-            parsed = JSON.parse(data);
-          }
 
-          const foundPhrase = parsed?.seedPhrase || parsed?.mnemonic;
-          if (foundPhrase) {
-            phrase = foundPhrase;
-            break;
+            const foundPhrase = parsed?.seedPhrase || parsed?.mnemonic;
+            if (foundPhrase) {
+              phrase = foundPhrase;
+              break;
+            }
+          } catch {
+            continue;
           }
-        } catch {
-          continue;
         }
       }
 
@@ -124,7 +135,7 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
       onOpenChange(false);
       return false;
     }
-  }, [onOpenChange, toast]);
+  }, [onOpenChange, toast, user?.id]);
 
   const handleCopy = async () => {
     try {
