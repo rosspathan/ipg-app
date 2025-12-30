@@ -47,11 +47,11 @@ Deno.serve(async (req) => {
     // Get user profiles with BSC wallet addresses
     let profileQuery = supabase
       .from('profiles')
-      .select('id, bsc_wallet_address')
+      .select('id, user_id, bsc_wallet_address')
       .not('bsc_wallet_address', 'is', null);
 
     if (userIds && userIds.length > 0) {
-      profileQuery = profileQuery.in('id', userIds);
+      profileQuery = profileQuery.in('user_id', userIds);
     }
 
     const { data: profiles, error: profileError } = await profileQuery;
@@ -80,7 +80,8 @@ Deno.serve(async (req) => {
     for (const profile of profiles) {
       try {
         const address = profile.bsc_wallet_address;
-        console.log(`[sync-native-bnb] Checking balance for ${address}`);
+        const userId = profile.user_id || profile.id; // Use user_id, fallback to id
+        console.log(`[sync-native-bnb] Checking balance for ${address} (user: ${userId})`);
 
         // Get native BNB balance
         const balanceWei = await provider.getBalance(address);
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
         const { error: upsertError } = await supabase
           .from('wallet_balances')
           .upsert({
-            user_id: profile.id,
+            user_id: userId,
             asset_id: bnbAsset.id,
             total: balance,
             available: balance,
@@ -104,7 +105,7 @@ Deno.serve(async (req) => {
 
         if (upsertError) {
           console.error(`[sync-native-bnb] Failed to upsert balance for ${address}:`, upsertError);
-          errors.push({ userId: profile.id, error: upsertError.message });
+          errors.push({ userId, error: upsertError.message });
         } else {
           syncedCount++;
           console.log(`[sync-native-bnb] Synced ${address}: ${balance} BNB`);
@@ -112,7 +113,7 @@ Deno.serve(async (req) => {
 
       } catch (error: any) {
         console.error(`[sync-native-bnb] Error syncing ${profile.bsc_wallet_address}:`, error);
-        errors.push({ userId: profile.id, error: error.message });
+        errors.push({ userId: profile.user_id || profile.id, error: error.message });
       }
     }
 

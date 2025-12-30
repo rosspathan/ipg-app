@@ -44,6 +44,11 @@ export function useWalletBalances() {
         body: { userIds: [user.id] }
       }).catch(err => console.warn('Native BNB sync failed:', err));
 
+      // Trigger deposit discovery in background (non-blocking)
+      supabase.functions.invoke('scheduled-discover-deposits', {
+        body: { userIds: [user.id] }
+      }).catch(err => console.warn('Deposit discovery failed:', err));
+
       // Fetch user's wallet balances with asset details
       const { data: balanceData, error: balanceError } = await supabase
         .from('wallet_balances')
