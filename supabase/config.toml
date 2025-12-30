@@ -230,3 +230,6 @@ verify_jwt = false
 
 [functions.match-orders]
 verify_jwt = false
+
+[functions.sync-bep20-balances]
+verify_jwt = false
