@@ -108,7 +108,7 @@ serve(async (req) => {
       const { data: profile, error: profileError } = await supabaseClient
         .from('profiles')
         .select('bsc_wallet_address')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
       
       if (profileError || !profile?.bsc_wallet_address) {
