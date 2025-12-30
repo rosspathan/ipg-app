@@ -15,13 +15,14 @@ import {
   Fingerprint,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  KeyRound
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthLock } from "@/hooks/useAuthLock";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
+import RecoveryPhraseReveal from "./RecoveryPhraseReveal";
 const SecurityTab = () => {
   const { user } = useAuth();
   const { 
@@ -39,6 +40,7 @@ const SecurityTab = () => {
   const [confirmNewPin, setConfirmNewPin] = useState("");
   const [showPins, setShowPins] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [showRecoveryPhrase, setShowRecoveryPhrase] = useState(false);
   const [settings, setSettings] = useState({
     biometricEnabled: false,
     requireOnActions: true,
@@ -302,6 +304,48 @@ const SecurityTab = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Recovery Phrase Backup */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5" />
+            Backup Recovery Phrase
+          </CardTitle>
+          <CardDescription>
+            View your 12-word recovery phrase to backup your wallet
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Recovery Phrase</p>
+              <p className="text-sm text-muted-foreground">
+                Your 12-word phrase is the only way to recover your wallet
+              </p>
+            </div>
+            <Button 
+              variant="outline"
+              onClick={() => setShowRecoveryPhrase(true)}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Reveal
+            </Button>
+          </div>
+          
+          <Alert className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              Never share your recovery phrase. IPG support will never ask for it.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
+      <RecoveryPhraseReveal 
+        open={showRecoveryPhrase} 
+        onOpenChange={setShowRecoveryPhrase} 
+      />
 
       {/* Biometric Authentication */}
       <Card>

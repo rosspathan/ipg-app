@@ -1,0 +1,411 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  AlertTriangle, 
+  Copy, 
+  Download, 
+  Eye, 
+  EyeOff,
+  Shield,
+  CheckCircle,
+  Loader2
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { verifyLocalPin, hasLocalSecurity } from "@/utils/localSecurityStorage";
+
+interface RecoveryPhraseRevealProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+type Step = "warning" | "verify" | "reveal";
+
+const AUTO_HIDE_SECONDS = 30;
+
+const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps) => {
+  const { toast } = useToast();
+  const [step, setStep] = useState<Step>("warning");
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [seedPhrase, setSeedPhrase] = useState<string[]>([]);
+  const [revealed, setRevealed] = useState(false);
+  const [countdown, setCountdown] = useState(AUTO_HIDE_SECONDS);
+  const [copied, setCopied] = useState(false);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setStep("warning");
+      setPin("");
+      setPinError("");
+      setSeedPhrase([]);
+      setRevealed(false);
+      setCountdown(AUTO_HIDE_SECONDS);
+      setCopied(false);
+    }
+  }, [open]);
+
+  // Auto-hide countdown
+  useEffect(() => {
+    if (step !== "reveal" || !revealed) return;
+
+    const interval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          setRevealed(false);
+          return AUTO_HIDE_SECONDS;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [step, revealed]);
+
+  const loadSeedPhrase = useCallback(() => {
+    try {
+      const walletData = localStorage.getItem("cryptoflow_wallet");
+      if (!walletData) {
+        toast({
+          title: "No Wallet Found",
+          description: "No wallet data found in this device",
+          variant: "destructive"
+        });
+        onOpenChange(false);
+        return false;
+      }
+
+      const parsed = JSON.parse(walletData);
+      const phrase = parsed.seedPhrase || parsed.mnemonic;
+      
+      if (!phrase) {
+        toast({
+          title: "No Recovery Phrase",
+          description: "Recovery phrase not available",
+          variant: "destructive"
+        });
+        onOpenChange(false);
+        return false;
+      }
+
+      const words = phrase.trim().split(/\s+/);
+      setSeedPhrase(words);
+      return true;
+    } catch (error) {
+      console.error("Failed to load seed phrase:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load recovery phrase",
+        variant: "destructive"
+      });
+      onOpenChange(false);
+      return false;
+    }
+  }, [onOpenChange, toast]);
+
+  const handleVerifyPin = async () => {
+    if (pin.length !== 6) {
+      setPinError("PIN must be 6 digits");
+      return;
+    }
+
+    setVerifying(true);
+    setPinError("");
+
+    try {
+      // Check if local security exists
+      if (!hasLocalSecurity()) {
+        // No PIN set, allow access (but this shouldn't happen in production)
+        if (loadSeedPhrase()) {
+          setStep("reveal");
+        }
+        return;
+      }
+
+      const isValid = await verifyLocalPin(pin);
+      
+      if (isValid) {
+        if (loadSeedPhrase()) {
+          setStep("reveal");
+        }
+      } else {
+        setPinError("Incorrect PIN. Please try again.");
+      }
+    } catch (error) {
+      console.error("PIN verification error:", error);
+      setPinError("Verification failed. Please try again.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(seedPhrase.join(" "));
+      setCopied(true);
+      toast({
+        title: "Copied",
+        description: "Recovery phrase copied to clipboard"
+      });
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      toast({
+        title: "Copy Failed",
+        description: "Please manually copy the words",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDownload = () => {
+    const content = `IPG i-SMART Recovery Phrase
+================================
+Keep this file safe and never share it with anyone!
+
+Your 12-word recovery phrase:
+${seedPhrase.map((word, i) => `${i + 1}. ${word}`).join("\n")}
+
+================================
+WARNING: Anyone with this phrase can access your funds.
+Store this in a secure location and delete this file after backing up.
+Generated: ${new Date().toISOString()}
+`;
+
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ipg-recovery-phrase-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Downloaded",
+      description: "Recovery phrase saved. Store it securely!"
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        {step === "warning" && (
+          <>
+            <DialogHeader>
+              <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+              </div>
+              <DialogTitle className="text-center">
+                Backup Recovery Phrase
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Your recovery phrase is the only way to restore your wallet if you lose access to this device.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Alert variant="destructive" className="mt-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Never share your recovery phrase!</strong>
+                <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
+                  <li>Anyone with this phrase can steal your funds</li>
+                  <li>IPG support will never ask for your phrase</li>
+                  <li>Store it in a secure, offline location</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+
+            <div className="flex gap-3 mt-6">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={() => setStep("verify")}
+              >
+                I Understand
+              </Button>
+            </div>
+          </>
+        )}
+
+        {step === "verify" && (
+          <>
+            <DialogHeader>
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                <Shield className="h-6 w-6 text-primary" />
+              </div>
+              <DialogTitle className="text-center">
+                Verify Your Identity
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Enter your 6-digit PIN to view your recovery phrase
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 mt-4">
+              <Input
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => {
+                  setPin(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  setPinError("");
+                }}
+                placeholder="••••••"
+                className="text-center text-2xl tracking-[0.5em] font-mono"
+                autoFocus
+              />
+              
+              {pinError && (
+                <p className="text-sm text-destructive text-center">{pinError}</p>
+              )}
+
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setStep("warning")}
+                >
+                  Back
+                </Button>
+                <Button 
+                  className="flex-1"
+                  onClick={handleVerifyPin}
+                  disabled={pin.length !== 6 || verifying}
+                >
+                  {verifying ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
+                  Verify
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {step === "reveal" && (
+          <>
+            <DialogHeader>
+              <div className="mx-auto w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-2">
+                <CheckCircle className="h-6 w-6 text-green-500" />
+              </div>
+              <DialogTitle className="text-center">
+                Your Recovery Phrase
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Write down these {seedPhrase.length} words in order and store them safely
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-4 relative">
+              {/* Word Grid */}
+              <div 
+                className={`grid grid-cols-3 gap-2 p-4 rounded-lg bg-muted/50 border transition-all duration-300 ${
+                  !revealed ? "blur-md select-none" : ""
+                }`}
+              >
+                {seedPhrase.map((word, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center gap-2 bg-background rounded px-2 py-1.5 text-sm"
+                  >
+                    <span className="text-muted-foreground w-5 text-right font-mono text-xs">
+                      {index + 1}.
+                    </span>
+                    <span className="font-medium">{word}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Reveal Overlay */}
+              {!revealed && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setRevealed(true);
+                      setCountdown(AUTO_HIDE_SECONDS);
+                    }}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Tap to Reveal
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {revealed && (
+              <p className="text-xs text-center text-muted-foreground mt-2">
+                Auto-hiding in {countdown} seconds
+              </p>
+            )}
+
+            <div className="flex gap-3 mt-4">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={handleCopy}
+                disabled={!revealed}
+              >
+                {copied ? (
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-2" />
+                )}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={handleDownload}
+                disabled={!revealed}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+            </div>
+
+            {revealed && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="w-full mt-2"
+                onClick={() => setRevealed(false)}
+              >
+                <EyeOff className="h-4 w-4 mr-2" />
+                Hide Phrase
+              </Button>
+            )}
+
+            <Button 
+              className="w-full mt-4"
+              onClick={() => onOpenChange(false)}
+            >
+              Done
+            </Button>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default RecoveryPhraseReveal;
