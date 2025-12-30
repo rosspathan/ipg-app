@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { setWalletStorageUserId, safeMigrateIfOwner, clearAllLocalWalletData } from '@/utils/walletStorage';
 
 interface AuthContextType {
   user: User | null;
@@ -46,24 +47,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          const userId = session.user.id;
+          
+          // ✅ SECURITY: Set wallet storage user ID immediately
+          setWalletStorageUserId(userId);
+          
           // ✅ Set auth as ready immediately - don't block on admin check
           setAuthInitializing(false);
           
-          // ✅ Check admin role silently in background (non-blocking)
+          // ✅ Check admin role and attempt safe wallet migration in background
           setTimeout(async () => {
             try {
+              // Admin check
               const { data } = await supabase
                 .from('user_roles')
                 .select('role')
-                .eq('user_id', session.user!.id)
+                .eq('user_id', userId)
                 .eq('role', 'admin')
                 .maybeSingle();
               setIsAdmin(!!data);
+              
+              // Safe wallet migration - only if address matches profile
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('wallet_address')
+                .eq('user_id', userId)
+                .maybeSingle();
+              
+              if (profile?.wallet_address) {
+                safeMigrateIfOwner(userId, profile.wallet_address);
+              }
             } catch {
               setIsAdmin(false);
             }
           }, 0);
         } else {
+          // ✅ SECURITY: Clear wallet storage user ID on logout
+          setWalletStorageUserId(null);
+          
           // Clear admin status on logout
           setIsAdmin(false);
           setAuthInitializing(false);
@@ -125,6 +146,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // ✅ SECURITY: Clear wallet storage user ID before logout
+    setWalletStorageUserId(null);
+    
     // Clear admin status
     setIsAdmin(false);
     await supabase.auth.signOut();

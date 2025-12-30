@@ -11,7 +11,8 @@ import {
   getStoredMetaMaskWallet,
   storeMetaMaskWallet,
   clearMetaMaskWallet,
-  migrateWalletToUserScope,
+  storePendingWallet,
+  clearAllLocalWalletData,
   StoredWalletData
 } from '@/utils/walletStorage';
 
@@ -96,12 +97,9 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         // Set user ID for wallet storage scoping
         setWalletStorageUserId(userId);
         
-        // Migrate legacy wallet data if user is authenticated
-        if (userId) {
-          migrateWalletToUserScope(userId);
-        }
+        // Note: Safe migration now happens in useAuth.tsx after fetching profile wallet address
         
-        // 1) Internal mnemonic wallet takes priority (now user-scoped)
+        // 1) Internal mnemonic wallet takes priority (user-scoped only)
         const storedWalletData = getStoredWallet(userId);
         if (storedWalletData) {
           setWallet(storedWalletData);

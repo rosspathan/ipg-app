@@ -68,51 +68,24 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
 
   const loadSeedPhrase = useCallback(() => {
     try {
-      let phrase: string | null = null;
+      // SECURITY: Only load from user-scoped storage for logged-in users
+      // Never fall back to global/pending keys - they may belong to another user
+      const userId = user?.id;
       
-      // First try user-scoped wallet storage (PRIMARY - secure)
-      const userId = user?.id || null;
+      if (!userId) {
+        toast({
+          title: "Not Logged In",
+          description: "Please log in to view your recovery phrase.",
+          variant: "destructive"
+        });
+        onOpenChange(false);
+        return false;
+      }
+      
       const userScopedWallet = getStoredWallet(userId);
-      if (userScopedWallet?.seedPhrase) {
-        phrase = userScopedWallet.seedPhrase;
-      }
       
-      // Fallback to other storage keys for legacy data
-      if (!phrase) {
-        const storageKeys = [
-          "pending_wallet_import",
-          "ipg_wallet_data"
-        ];
-
-        for (const key of storageKeys) {
-          const data = localStorage.getItem(key);
-          if (!data) continue;
-
-          try {
-            // ipg_wallet_data may be base64 encoded
-            let parsed;
-            if (key === "ipg_wallet_data") {
-              try {
-                parsed = JSON.parse(atob(data));
-              } catch {
-                parsed = JSON.parse(data);
-              }
-            } else {
-              parsed = JSON.parse(data);
-            }
-
-            const foundPhrase = parsed?.seedPhrase || parsed?.mnemonic;
-            if (foundPhrase) {
-              phrase = foundPhrase;
-              break;
-            }
-          } catch {
-            continue;
-          }
-        }
-      }
-
-      if (!phrase) {
+      if (!userScopedWallet?.seedPhrase) {
+        console.log('[RECOVERY] No seed phrase found for user:', userId.slice(0, 8) + '...');
         toast({
           title: "Recovery Phrase Not Available",
           description: "Your seed phrase is not stored on this device. Re-import your wallet to access it.",
@@ -122,7 +95,12 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
         return false;
       }
 
+      const phrase = userScopedWallet.seedPhrase;
       const words = phrase.trim().split(/\s+/);
+      
+      // Debug log (address only, never log seed phrase)
+      console.log('[RECOVERY] Loaded phrase for wallet:', userScopedWallet.address?.slice(0, 10) + '...');
+      
       setSeedPhrase(words);
       return true;
     } catch (error) {
