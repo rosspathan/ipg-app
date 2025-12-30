@@ -21,6 +21,7 @@ import { useDisplayName } from "@/hooks/useDisplayName"
 import { PendingDepositsCard } from "@/components/astra/PendingDepositsCard"
 import { NetworkBadge } from "@/components/wallet/NetworkBadge"
 import { PortfolioSummaryCard } from "@/components/wallet/PortfolioSummaryCard"
+import { getStoredWallet } from "@/utils/walletStorage"
 
 export function WalletPage() {
   const { navigate } = useNavigation()
@@ -73,13 +74,17 @@ export function WalletPage() {
           setWalletAddress(wallet.address);
           return;
         }
+        
+        // Try user-scoped local storage
+        const userId = user?.id || null;
+        const localWallet = getStoredWallet(userId);
+        if (localWallet?.address) {
+          setWalletAddress(localWallet.address);
+          return;
+        }
+        
+        // Legacy fallback for onboarding state
         try {
-          const local = localStorage.getItem('cryptoflow_wallet');
-          if (local) {
-            const parsed = JSON.parse(local);
-            if (parsed?.address) setWalletAddress(parsed.address);
-            return;
-          }
           const onboard = localStorage.getItem('ipg_onboarding_state');
           if (onboard) {
             const parsed = JSON.parse(onboard);

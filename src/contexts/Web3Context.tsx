@@ -3,6 +3,17 @@ import { ethers } from 'ethers';
 import { WalletInfo } from '@/utils/wallet';
 import { detectAndResolveSessionConflict } from '@/utils/sessionConflictDetector';
 import { SessionConflictModal } from '@/components/SessionConflictModal';
+import { 
+  setWalletStorageUserId,
+  getStoredWallet,
+  storeWallet,
+  clearWallet,
+  getStoredMetaMaskWallet,
+  storeMetaMaskWallet,
+  clearMetaMaskWallet,
+  migrateWalletToUserScope,
+  StoredWalletData
+} from '@/utils/walletStorage';
 
 // Extend Window interface for MetaMask
 declare global {
@@ -74,20 +85,27 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     const newProvider = new ethers.JsonRpcProvider(network.rpcUrl);
     setProvider(newProvider);
     
-    // Prefer stored 12-word wallet; fall back to MetaMask only if no internal wallet
+    // Get user ID and set it for scoped storage
     const initializeWallet = async () => {
       try {
-        // 1) Internal mnemonic wallet takes priority
-        const storedWallet = localStorage.getItem('cryptoflow_wallet');
-        if (storedWallet) {
-          try {
-            const parsedWallet = JSON.parse(storedWallet);
-            setWallet(parsedWallet);
-            return;
-          } catch (error) {
-            console.error('Error loading stored wallet:', error);
-            localStorage.removeItem('cryptoflow_wallet');
-          }
+        // Get current user for scoped storage
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id || null;
+        
+        // Set user ID for wallet storage scoping
+        setWalletStorageUserId(userId);
+        
+        // Migrate legacy wallet data if user is authenticated
+        if (userId) {
+          migrateWalletToUserScope(userId);
+        }
+        
+        // 1) Internal mnemonic wallet takes priority (now user-scoped)
+        const storedWalletData = getStoredWallet(userId);
+        if (storedWalletData) {
+          setWallet(storedWalletData);
+          return;
         }
 
         // 2) If no internal wallet, check live MetaMask session
@@ -110,7 +128,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
                 mmWallet.balance = '0';
               }
               setWallet(mmWallet);
-              localStorage.setItem('cryptoflow_metamask_wallet', JSON.stringify(mmWallet));
+              storeMetaMaskWallet(mmWallet as StoredWalletData, userId);
               return;
             }
           } catch (error) {
@@ -120,15 +138,9 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
 
         
         // 3) Fallback to previously stored MetaMask wallet (if any)
-        const storedMetaMaskWallet = localStorage.getItem('cryptoflow_metamask_wallet');
-        if (storedMetaMaskWallet) {
-          try {
-            const parsedMM = JSON.parse(storedMetaMaskWallet);
-            setWallet(parsedMM);
-          } catch (error) {
-            console.error('Error loading stored MetaMask wallet:', error);
-            localStorage.removeItem('cryptoflow_metamask_wallet');
-          }
+        const storedMetaMaskWalletData = getStoredMetaMaskWallet(userId);
+        if (storedMetaMaskWalletData) {
+          setWallet(storedMetaMaskWalletData);
         }
       } catch (e) {
         console.error('Wallet initialization error:', e);
@@ -165,8 +177,13 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for account changes in MetaMask
     if (typeof window.ethereum !== 'undefined') {
       const handleAccountsChanged = async (accounts: string[]) => {
+        // Get current user for scoped check
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id || null;
+        
         // If an internal mnemonic wallet exists, ignore MetaMask account changes
-        if (localStorage.getItem('cryptoflow_wallet')) {
+        if (getStoredWallet(userId)) {
           return;
         }
         if (accounts.length > 0) {
@@ -186,14 +203,14 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           setWallet(walletData);
-          localStorage.setItem('cryptoflow_metamask_wallet', JSON.stringify(walletData));
+          storeMetaMaskWallet(walletData as StoredWalletData, userId);
         } else {
           // User disconnected MetaMask - don't clear internal wallet if present
-          if (localStorage.getItem('cryptoflow_wallet')) {
+          if (getStoredWallet(userId)) {
             return;
           }
           setWallet(null);
-          localStorage.removeItem('cryptoflow_metamask_wallet');
+          clearMetaMaskWallet(userId);
         }
       };
 
@@ -237,8 +254,10 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       setWallet(walletData);
-      localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
-      
+      // Get user ID for scoped storage
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { user } } = await supabase.auth.getUser();
+      storeWallet(walletData as StoredWalletData, user?.id || null);
       // Save wallet address to profiles table
       try {
         const { supabase } = await import('@/integrations/supabase/client');
@@ -290,7 +309,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       setWallet(walletData);
-      localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
+      // User scoped storage handled below
       
       // Save wallet address to profiles table
       try {
@@ -298,6 +317,9 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
+          // Store wallet with user scope
+          storeWallet(walletData as StoredWalletData, user.id);
+          
           const walletAddresses = { evm: { mainnet: ethersWallet.address, bsc: ethersWallet.address } };
           await supabase
             .from('profiles')
@@ -353,10 +375,14 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       const balance = await provider.getBalance(wallet.address);
       const formattedBalance = ethers.formatEther(balance);
       
-      // Update wallet balance in state
+      // Update wallet balance in state and storage
       const updatedWallet = { ...wallet, balance: formattedBalance };
       setWallet(updatedWallet);
-      localStorage.setItem('cryptoflow_wallet', JSON.stringify(updatedWallet));
+      
+      // Get user for scoped storage
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { user } } = await supabase.auth.getUser();
+      storeWallet(updatedWallet as StoredWalletData, user?.id || null);
       
       return formattedBalance;
     } catch (error) {
@@ -428,13 +454,16 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       setWallet(walletData);
-      localStorage.setItem('cryptoflow_metamask_wallet', JSON.stringify(walletData));
+      // Will be stored with user scope below
 
       // Persist address to profiles for retrieval elsewhere
       try {
         const { supabase } = await import('@/integrations/supabase/client');
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // Store MetaMask wallet with user scope
+          storeMetaMaskWallet(walletData as StoredWalletData, user.id);
+          
           const walletAddresses = { evm: { mainnet: address, bsc: address } };
           await supabase
             .from('profiles')
@@ -466,7 +495,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     setWallet(walletData);
-    localStorage.setItem('cryptoflow_wallet', JSON.stringify(walletData));
+    // Will be stored with user scope in the async block below
     
     // Save wallet address to profiles table
     (async () => {
@@ -475,11 +504,17 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
+          // Store wallet with user scope
+          storeWallet(walletData as StoredWalletData, user.id);
+          
           const walletAddresses = { evm: { mainnet: walletInfo.address, bsc: walletInfo.address } };
           await supabase
             .from('profiles')
             .update({ wallet_address: walletInfo.address, wallet_addresses: walletAddresses })
             .eq('user_id', user.id);
+        } else {
+          // Store without user scope as fallback
+          storeWallet(walletData as StoredWalletData, null);
         }
       } catch (profileError) {
         console.warn('Could not update profile with wallet address:', profileError);
@@ -489,11 +524,15 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     // Fetch balance async
     if (provider) {
       provider.getBalance(walletInfo.address)
-        .then(balance => {
+        .then(async (balance) => {
           const formattedBalance = ethers.formatEther(balance);
           const updatedWallet = { ...walletData, balance: formattedBalance };
           setWallet(updatedWallet);
-          localStorage.setItem('cryptoflow_wallet', JSON.stringify(updatedWallet));
+          
+          // Get user for scoped storage
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data: { user } } = await supabase.auth.getUser();
+          storeWallet(updatedWallet as StoredWalletData, user?.id || null);
         })
         .catch(error => {
           console.warn('Could not fetch balance:', error);
@@ -501,10 +540,14 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const disconnectWallet = () => {
+  const disconnectWallet = async () => {
     setWallet(null);
-    localStorage.removeItem('cryptoflow_wallet');
-    localStorage.removeItem('cryptoflow_metamask_wallet');
+    
+    // Get user for scoped storage cleanup
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data: { user } } = await supabase.auth.getUser();
+    clearWallet(user?.id || null);
+    clearMetaMaskWallet(user?.id || null);
   };
 
   const value = {

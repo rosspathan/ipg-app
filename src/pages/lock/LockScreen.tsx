@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import ipgLogo from '@/assets/ipg-logo.jpg';
 import { supabase } from '@/integrations/supabase/client';
+import { getStoredWallet, setWalletStorageUserId } from '@/utils/walletStorage';
 
 export default function LockScreen() {
   const navigate = useNavigate();
@@ -36,24 +37,24 @@ export default function LockScreen() {
       if (error || !data.session) {
         console.log('[Session] Could not restore session, checking wallet fallback');
         
+        // Get user for scoped wallet access
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id || null;
+        setWalletStorageUserId(userId);
+        
         // If session restore failed but wallet is connected, trigger BSK load via wallet
-        const storedWallet = localStorage.getItem('cryptoflow_wallet');
-        if (storedWallet) {
-          try {
-            const wallet = JSON.parse(storedWallet);
-            if (wallet?.address) {
-              console.log('[Session] Triggering BSK load via wallet fallback');
-              // Dispatch event to trigger BSK reload in useAdMining
-              window.dispatchEvent(new CustomEvent('wallet:bsk:reload', { 
-                detail: { address: wallet.address } 
-              }));
-            }
-          } catch (e) {
-            console.warn('[Session] Could not parse wallet for fallback');
-          }
+        const storedWalletData = getStoredWallet(userId);
+        if (storedWalletData?.address) {
+          console.log('[Session] Triggering BSK load via wallet fallback');
+          // Dispatch event to trigger BSK reload in useAdMining
+          window.dispatchEvent(new CustomEvent('wallet:bsk:reload', { 
+            detail: { address: storedWalletData.address } 
+          }));
         }
       } else {
         console.log('[Session] ✅ Session restored successfully');
+        // Set user ID for wallet storage
+        setWalletStorageUserId(data.session.user.id);
       }
     } catch (err) {
       console.log('[Session] Session restore failed, will work in anonymous mode');
