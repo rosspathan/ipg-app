@@ -7,6 +7,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { getStoredWallet, getWalletStorageKey } from "@/utils/walletStorage";
 
 /**
  * Store EVM address to sessionStorage during onboarding
@@ -96,6 +97,13 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
 
     // Local fallbacks (created/imported wallet or cached MetaMask)
     try {
+      // First try user-scoped wallet
+      const scopedWallet = getStoredWallet(userId);
+      if (scopedWallet && isAddress(scopedWallet.address)) {
+        return scopedWallet.address;
+      }
+      
+      // Legacy fallback for non-scoped data
       const localWallet = localStorage.getItem('cryptoflow_wallet');
       if (localWallet) {
         const parsed = JSON.parse(localWallet);
@@ -136,7 +144,9 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
 async function deriveEvmAddressFromMnemonic(): Promise<string> {
   // Try multiple local storage locations for mnemonic set during onboarding
   const recovery = localStorage.getItem('wallet_data_recovery');
-  const internal = localStorage.getItem('cryptoflow_wallet');
+  // Try user-scoped wallet first, then legacy
+  const scopedWallet = getStoredWallet(null); // Uses current user ID
+  const internal = scopedWallet ? JSON.stringify(scopedWallet) : localStorage.getItem('cryptoflow_wallet');
 
   let mnemonic: string | null = null;
   try {

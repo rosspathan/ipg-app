@@ -82,12 +82,18 @@ export function getStoredWallet(userId?: string | null): StoredWalletData | null
   
   try {
     const data = localStorage.getItem(key);
+    let parsed: any = null;
+    
     if (!data) {
       // Fallback: Try legacy global key for migration
       const legacyData = localStorage.getItem(BASE_KEY);
       if (legacyData && id) {
         console.log('[WALLET_STORAGE] Found legacy wallet data, migrating...');
-        const parsed = JSON.parse(legacyData);
+        parsed = JSON.parse(legacyData);
+        // Normalize mnemonic to seedPhrase
+        if (parsed.mnemonic && !parsed.seedPhrase) {
+          parsed.seedPhrase = parsed.mnemonic;
+        }
         // Migrate to user-scoped key
         storeWallet(parsed, id);
         // Clear legacy key to prevent confusion
@@ -96,7 +102,15 @@ export function getStoredWallet(userId?: string | null): StoredWalletData | null
       }
       return null;
     }
-    return JSON.parse(data);
+    
+    parsed = JSON.parse(data);
+    
+    // Normalize mnemonic to seedPhrase for backwards compatibility
+    if (parsed.mnemonic && !parsed.seedPhrase) {
+      parsed.seedPhrase = parsed.mnemonic;
+    }
+    
+    return parsed;
   } catch (error) {
     console.error('[WALLET_STORAGE] Failed to retrieve wallet:', error);
     return null;

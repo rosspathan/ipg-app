@@ -8,6 +8,7 @@ import { Wallet, Shield, CheckCircle, AlertCircle, RefreshCw } from "lucide-reac
 import { useWeb3 } from "@/contexts/Web3Context";
 import { useAuthAdmin } from "@/hooks/useAuthAdmin";
 import { supabase } from "@/integrations/supabase/client";
+import { hasStoredWallet } from "@/utils/walletStorage";
 
 const AdminLoginScreen = () => {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ const AdminLoginScreen = () => {
         console.log('AdminLoginScreen: Admin role detected (email), checking onboarding');
         
         // Check if onboarding is complete
-        const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
+        const hasLocalWallet = hasStoredWallet(user.id);
         const { data: profile } = await supabase
           .from('profiles')
           .select('wallet_address')
@@ -250,7 +251,7 @@ const AdminLoginScreen = () => {
           // User is admin, check onboarding status before redirect
           setIsAdmin(true);
           
-          const hasLocalWallet = !!localStorage.getItem('cryptoflow_wallet');
+          const hasLocalWallet = hasStoredWallet(data.user.id);
           const { data: profile } = await supabase
             .from('profiles')
             .select('wallet_address')
