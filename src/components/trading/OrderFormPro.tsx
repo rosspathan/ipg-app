@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Info, ChevronDown, AlertCircle } from 'lucide-react';
+import { Plus, Info, ChevronDown, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PriceStepperInput } from './PriceStepperInput';
-import { PercentageSliderPro } from './PercentageSliderPro';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
@@ -22,7 +21,7 @@ interface OrderFormProProps {
   currentPrice: number;
   tickSize?: number;
   lotSize?: number;
-  inrRate?: number; // INR per 1 unit of quote currency
+  inrRate?: number;
   onPlaceOrder: (params: {
     side: 'buy' | 'sell';
     type: 'market' | 'limit';
@@ -35,6 +34,8 @@ interface OrderFormProProps {
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'limit' | 'market' | 'stop-limit';
 
+const QUICK_PERCENTAGES = [25, 50, 75, 100];
+
 export const OrderFormPro: React.FC<OrderFormProProps> = ({
   baseCurrency,
   quoteCurrency,
@@ -45,7 +46,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   currentPrice,
   tickSize = 0.00000001,
   lotSize = 0.0001,
-  inrRate = 83, // Default INR rate
+  inrRate = 83,
   onPlaceOrder,
   isPlacingOrder = false,
 }) => {
@@ -53,11 +54,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const [orderType, setOrderType] = useState<OrderType>('limit');
   const [price, setPrice] = useState(currentPrice.toFixed(2));
   const [amount, setAmount] = useState('');
-  const [percentage, setPercentage] = useState(0);
+  const [activePercent, setActivePercent] = useState<number | null>(null);
 
   const isBuy = side === 'buy';
   const availableBalance = isBuy ? availableQuote : availableBase;
-  const availableBalanceUsd = isBuy ? availableQuoteUsd : availableBaseUsd;
   const balanceCurrency = isBuy ? quoteCurrency : baseCurrency;
 
   const numPrice = parseFloat(price) || 0;
@@ -70,38 +70,34 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
     return numAmount * numPrice;
   }, [numAmount, numPrice, currentPrice, orderType]);
 
-  // Fee is always in USDT (0.1% of order value in USD terms)
   const estimatedFeeUsdt = total * 0.001;
-  
-  // INR values for display
   const totalInr = total * inrRate;
   const currentPriceInr = currentPrice * inrRate;
   
-  // What user will receive/pay
   const willReceive = isBuy ? numAmount : total;
   const willReceiveCurrency = isBuy ? baseCurrency : quoteCurrency;
   const willPay = isBuy ? total : numAmount;
   const willPayCurrency = isBuy ? quoteCurrency : baseCurrency;
 
-  const handlePercentageChange = (pct: number) => {
-    setPercentage(pct);
-    if (isBuy) {
-      const maxBuyAmount = (availableQuote * (pct / 100)) / (numPrice || currentPrice);
-      setAmount(maxBuyAmount.toFixed(4));
-    } else {
+  const handleQuickPercent = (pct: number) => {
+    setActivePercent(pct);
+    const effectivePrice = orderType === 'market' ? currentPrice : numPrice;
+    
+    if (isBuy && effectivePrice > 0) {
+      const maxBuyAmount = (availableQuote * (pct / 100)) / effectivePrice;
+      setAmount(maxBuyAmount.toFixed(6));
+    } else if (!isBuy) {
       const maxSellAmount = availableBase * (pct / 100);
-      setAmount(maxSellAmount.toFixed(4));
+      setAmount(maxSellAmount.toFixed(6));
     }
   };
 
-  // Calculate if user has sufficient balance
   const requiredAmount = isBuy ? total : numAmount;
   const hasInsufficientBalance = numAmount > 0 && requiredAmount > availableBalance;
 
   const handleSubmit = () => {
     if (numAmount <= 0) return;
     
-    // Validate balance before submitting
     if (hasInsufficientBalance) {
       toast.error('Insufficient balance', {
         description: `You need ${requiredAmount.toFixed(4)} ${balanceCurrency} but only have ${availableBalance.toFixed(4)}`,
@@ -115,14 +111,24 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       price: orderType === 'market' ? undefined : numPrice,
       quantity: numAmount,
     });
+    
+    // Reset form on success
+    setAmount('');
+    setActivePercent(null);
+  };
+
+  // Reset active percent when amount changes manually
+  const handleAmountChange = (val: string) => {
+    setAmount(val);
+    setActivePercent(null);
   };
 
   return (
     <div className="space-y-2 sm:space-y-3">
       {/* Market Price Display */}
-      <div className="bg-card border border-border rounded-lg px-3 py-2">
+      <div className="bg-gradient-to-r from-card to-muted/30 border border-border rounded-xl px-3 py-2.5 shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] sm:text-xs text-muted-foreground">Market Price</span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">Market Price</span>
           <div className="text-right">
             <span className="text-sm sm:text-base font-bold font-mono text-foreground">
               {currentPrice.toFixed(currentPrice >= 1 ? 2 : 6)} {quoteCurrency}
@@ -134,15 +140,15 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </div>
       </div>
       
-      {/* Buy/Sell Toggle - Compact */}
-      <div className="flex bg-muted rounded-full p-0.5">
+      {/* Buy/Sell Toggle - Premium look */}
+      <div className="flex bg-muted/50 rounded-xl p-1 border border-border">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 py-2 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm",
+            "flex-1 py-2.5 rounded-lg font-semibold text-xs sm:text-sm transition-all duration-200",
             isBuy
-              ? "bg-emerald-500 text-white"
-              : "text-muted-foreground"
+              ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           Buy
@@ -150,61 +156,59 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 py-2 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm",
+            "flex-1 py-2.5 rounded-lg font-semibold text-xs sm:text-sm transition-all duration-200",
             !isBuy
-              ? "bg-red-500 text-white"
-              : "text-muted-foreground"
+              ? "bg-red-500 text-white shadow-lg shadow-red-500/25"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           Sell
         </button>
       </div>
 
-      {/* Available Balance - Compact */}
-      <div className="flex items-center justify-between py-0.5">
-        <span className="text-[10px] sm:text-xs text-muted-foreground">Avail</span>
-        <div className="flex items-center gap-1.5">
-          <div className="text-right">
-            <span className={cn(
-              "text-xs sm:text-sm font-mono block",
-              hasInsufficientBalance ? "text-destructive" : "text-foreground"
-            )}>
-              {availableBalance.toFixed(2)} {balanceCurrency}
-            </span>
-          </div>
-          <button className="w-5 h-5 sm:w-6 sm:h-6 min-h-0 min-w-0 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+      {/* Available Balance */}
+      <div className="flex items-center justify-between py-1">
+        <span className="text-[10px] sm:text-xs text-muted-foreground">Available</span>
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "text-xs sm:text-sm font-mono font-medium",
+            hasInsufficientBalance ? "text-destructive" : "text-foreground"
+          )}>
+            {availableBalance.toFixed(4)} {balanceCurrency}
+          </span>
+          <button className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors">
             <Plus className="h-3 w-3" />
           </button>
         </div>
       </div>
 
-      {/* Insufficient Balance Warning - Compact */}
+      {/* Insufficient Balance Warning */}
       {hasInsufficientBalance && (
-        <div className="flex items-center gap-1.5 text-destructive text-[10px] sm:text-xs bg-destructive/10 rounded px-2 py-1.5">
-          <AlertCircle className="h-3 w-3 flex-shrink-0" />
-          <span>Insufficient balance</span>
+        <div className="flex items-center gap-2 text-destructive text-[10px] sm:text-xs bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+          <span>Insufficient {balanceCurrency} balance</span>
         </div>
       )}
 
-      {/* Order Type Selector - Compact */}
+      {/* Order Type Selector */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="w-full flex items-center justify-between bg-card border border-border rounded-lg px-2 py-2 sm:py-2.5 text-xs sm:text-sm">
-            <div className="flex items-center gap-1.5">
-              <Info className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-              <span className="text-foreground capitalize">{orderType.replace('-', ' ')}</span>
+          <button className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-3 py-2.5 text-xs sm:text-sm hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-2">
+              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-foreground font-medium capitalize">{orderType.replace('-', ' ')}</span>
             </div>
-            <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-32 sm:w-40">
-          <DropdownMenuItem onClick={() => setOrderType('limit')} className="py-2 text-xs sm:text-sm">
+        <DropdownMenuContent align="start" className="w-40">
+          <DropdownMenuItem onClick={() => setOrderType('limit')} className="py-2.5">
             Limit
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOrderType('market')} className="py-2 text-xs sm:text-sm">
+          <DropdownMenuItem onClick={() => setOrderType('market')} className="py-2.5">
             Market
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOrderType('stop-limit')} className="py-2 text-xs sm:text-sm">
+          <DropdownMenuItem onClick={() => setOrderType('stop-limit')} className="py-2.5">
             Stop-Limit
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -225,34 +229,50 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       <PriceStepperInput
         label={`Amount (${baseCurrency})`}
         value={amount}
-        onChange={setAmount}
+        onChange={handleAmountChange}
         step={lotSize}
         min={0}
         max={!isBuy ? availableBase : undefined}
       />
 
-      {/* Percentage Slider */}
-      <PercentageSliderPro
-        value={percentage}
-        onChange={handlePercentageChange}
-      />
+      {/* Quick Amount Buttons */}
+      <div className="flex gap-2">
+        {QUICK_PERCENTAGES.map((pct) => (
+          <button
+            key={pct}
+            onClick={() => handleQuickPercent(pct)}
+            className={cn(
+              "flex-1 py-1.5 text-[10px] sm:text-xs font-medium rounded-lg border transition-all duration-200",
+              activePercent === pct
+                ? isBuy 
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                  : "bg-red-500/10 border-red-500/30 text-red-400"
+                : "bg-muted/30 border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            {pct}%
+          </button>
+        ))}
+      </div>
 
-      {/* Total - Compact */}
-      <div className="bg-card border border-border rounded-lg px-2 py-1.5 sm:py-2">
-        <label className="block text-[10px] sm:text-xs text-muted-foreground mb-0.5">Total ({quoteCurrency})</label>
+      {/* Total */}
+      <div className="bg-card border border-border rounded-xl px-3 py-2">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-foreground text-xs sm:text-sm">
-            {total.toFixed(total >= 1 ? 2 : 6)}
-          </span>
-          <span className="text-[10px] sm:text-xs text-muted-foreground">
-            ≈ ₹{totalInr.toFixed(2)}
-          </span>
+          <label className="text-[10px] sm:text-xs text-muted-foreground">Total ({quoteCurrency})</label>
+          <div className="text-right">
+            <span className="font-mono text-foreground text-sm sm:text-base font-medium">
+              {total.toFixed(total >= 1 ? 2 : 6)}
+            </span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground ml-2">
+              ≈ ₹{totalInr.toFixed(2)}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* You Will Receive/Pay Summary */}
+      {/* Order Summary */}
       {numAmount > 0 && (
-        <div className="bg-muted/50 border border-border rounded-lg px-2 py-2 space-y-1">
+        <div className="bg-muted/30 border border-border rounded-xl px-3 py-2.5 space-y-1.5">
           <div className="flex items-center justify-between text-[10px] sm:text-xs">
             <span className="text-muted-foreground">You will pay</span>
             <span className="font-mono text-foreground font-medium">
@@ -262,41 +282,44 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           <div className="flex items-center justify-between text-[10px] sm:text-xs">
             <span className="text-muted-foreground">You will receive</span>
             <span className={cn(
-              "font-mono font-medium",
+              "font-mono font-semibold",
               isBuy ? "text-emerald-400" : "text-amber-400"
             )}>
               {willReceive.toFixed(willReceive >= 1 ? 4 : 6)} {willReceiveCurrency}
             </span>
           </div>
+          <div className="flex items-center justify-between text-[10px] sm:text-xs pt-1 border-t border-border/50">
+            <span className="text-muted-foreground">Est. Fee (0.1%)</span>
+            <span className="text-foreground font-mono">
+              {estimatedFeeUsdt.toFixed(4)} USDT
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Estimated Fee - Compact */}
-      <div className="flex items-center justify-between text-[10px] sm:text-xs py-0.5">
-        <span className="text-muted-foreground">Est. Fee</span>
-        <span className="text-foreground font-mono">
-          {estimatedFeeUsdt.toFixed(4)} USDT
-        </span>
-      </div>
-
-      {/* Submit Button - Compact but usable */}
+      {/* Submit Button */}
       <Button
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0 || hasInsufficientBalance}
         className={cn(
-          "w-full h-9 sm:h-10 text-xs sm:text-sm font-semibold rounded-lg",
+          "w-full h-11 sm:h-12 text-sm sm:text-base font-semibold rounded-xl transition-all duration-200",
           hasInsufficientBalance
             ? "bg-muted text-muted-foreground"
             : isBuy
-              ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-              : "bg-red-500 hover:bg-red-600 text-white"
+              ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40"
+              : "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40"
         )}
       >
-        {isPlacingOrder 
-          ? 'Placing...' 
-          : hasInsufficientBalance 
-            ? 'Insufficient'
-            : `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`}
+        {isPlacingOrder ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Placing Order...</span>
+          </div>
+        ) : hasInsufficientBalance ? (
+          'Insufficient Balance'
+        ) : (
+          `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`
+        )}
       </Button>
     </div>
   );
