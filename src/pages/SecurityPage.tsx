@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, Lock, Fingerprint, Smartphone, Shield, Eye, EyeOff,
-  LogOut, Key, CheckCircle
+  LogOut, Key, CheckCircle, Trash2
 } from "lucide-react";
 import RecoveryPhraseReveal from "@/components/profile/RecoveryPhraseReveal";
+import { ResetLocalWalletButton } from "@/components/profile/ResetLocalWalletButton";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useSecurity } from "@/hooks/useSecurity";
 import { useAuthLock } from "@/hooks/useAuthLock";
@@ -16,6 +17,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { clearAllLocalWalletData } from "@/utils/walletStorage";
+import { useWeb3 } from "@/contexts/Web3Context";
 
 export function SecurityPage() {
   const navigate = useNavigate();
@@ -386,7 +389,7 @@ export function SecurityPage() {
             </p>
           </div>
 
-        <Button
+          <Button
             variant="outline"
             onClick={() => setShowRecoveryPhrase(true)}
             className="w-full"
@@ -398,6 +401,8 @@ export function SecurityPage() {
             open={showRecoveryPhrase} 
             onOpenChange={setShowRecoveryPhrase} 
           />
+          
+          <ResetLocalWalletButton userId={user?.id} />
         </Card>
 
         {/* Anti-Phishing */}
