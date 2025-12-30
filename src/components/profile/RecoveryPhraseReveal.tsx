@@ -7,7 +7,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   AlertTriangle, 
@@ -15,28 +14,22 @@ import {
   Download, 
   Eye, 
   EyeOff,
-  Shield,
-  CheckCircle,
-  Loader2
+  CheckCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { verifyLocalPin, hasLocalSecurity } from "@/utils/localSecurityStorage";
 
 interface RecoveryPhraseRevealProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = "warning" | "verify" | "reveal";
+type Step = "warning" | "reveal";
 
 const AUTO_HIDE_SECONDS = 30;
 
 const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps) => {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("warning");
-  const [pin, setPin] = useState("");
-  const [pinError, setPinError] = useState("");
-  const [verifying, setVerifying] = useState(false);
   const [seedPhrase, setSeedPhrase] = useState<string[]>([]);
   const [revealed, setRevealed] = useState(false);
   const [countdown, setCountdown] = useState(AUTO_HIDE_SECONDS);
@@ -46,8 +39,6 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
   useEffect(() => {
     if (!open) {
       setStep("warning");
-      setPin("");
-      setPinError("");
       setSeedPhrase([]);
       setRevealed(false);
       setCountdown(AUTO_HIDE_SECONDS);
@@ -112,42 +103,6 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
       return false;
     }
   }, [onOpenChange, toast]);
-
-  const handleVerifyPin = async () => {
-    if (pin.length !== 6) {
-      setPinError("PIN must be 6 digits");
-      return;
-    }
-
-    setVerifying(true);
-    setPinError("");
-
-    try {
-      // Check if local security exists
-      if (!hasLocalSecurity()) {
-        // No PIN set, allow access (but this shouldn't happen in production)
-        if (loadSeedPhrase()) {
-          setStep("reveal");
-        }
-        return;
-      }
-
-      const isValid = await verifyLocalPin(pin);
-      
-      if (isValid) {
-        if (loadSeedPhrase()) {
-          setStep("reveal");
-        }
-      } else {
-        setPinError("Incorrect PIN. Please try again.");
-      }
-    } catch (error) {
-      console.error("PIN verification error:", error);
-      setPinError("Verification failed. Please try again.");
-    } finally {
-      setVerifying(false);
-    }
-  };
 
   const handleCopy = async () => {
     try {
@@ -236,67 +191,14 @@ Generated: ${new Date().toISOString()}
               </Button>
               <Button 
                 className="flex-1"
-                onClick={() => setStep("verify")}
+                onClick={() => {
+                  if (loadSeedPhrase()) {
+                    setStep("reveal");
+                  }
+                }}
               >
                 I Understand
               </Button>
-            </div>
-          </>
-        )}
-
-        {step === "verify" && (
-          <>
-            <DialogHeader>
-              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-                <Shield className="h-6 w-6 text-primary" />
-              </div>
-              <DialogTitle className="text-center">
-                Verify Your Identity
-              </DialogTitle>
-              <DialogDescription className="text-center">
-                Enter your 6-digit PIN to view your recovery phrase
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 mt-4">
-              <Input
-                type="password"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                value={pin}
-                onChange={(e) => {
-                  setPin(e.target.value.replace(/\D/g, "").slice(0, 6));
-                  setPinError("");
-                }}
-                placeholder="••••••"
-                className="text-center text-2xl tracking-[0.5em] font-mono"
-                autoFocus
-              />
-              
-              {pinError && (
-                <p className="text-sm text-destructive text-center">{pinError}</p>
-              )}
-
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setStep("warning")}
-                >
-                  Back
-                </Button>
-                <Button 
-                  className="flex-1"
-                  onClick={handleVerifyPin}
-                  disabled={pin.length !== 6 || verifying}
-                >
-                  {verifying ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : null}
-                  Verify
-                </Button>
-              </div>
             </div>
           </>
         )}
