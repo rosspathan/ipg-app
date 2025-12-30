@@ -123,7 +123,7 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col shadow-sm">
+    <div className="relative bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between text-[10px] sm:text-xs px-3 py-2 border-b border-border bg-muted/30">
         <span className="text-muted-foreground font-medium">Price ({quoteCurrency})</span>
@@ -131,7 +131,7 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
       </div>
 
       {/* Asks (Sell orders) - shown in reverse so lowest ask is closest to spread */}
-      <div className="flex-1 overflow-hidden flex flex-col justify-end">
+      <div className="flex-1 overflow-hidden flex flex-col justify-end min-h-[120px]">
         {displayAsks.length > 0 ? (
           <div className="space-y-0">
             {displayAsks.map((ask, idx) => (
@@ -147,14 +147,14 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
             ))}
           </div>
         ) : (
-          <div className="flex items-center justify-center flex-1 text-[10px] sm:text-xs text-muted-foreground/50">
-            Waiting for sell orders...
+          <div className="flex items-end justify-center pb-3 h-full">
+            <span className="text-[10px] text-muted-foreground/60">No sell orders</span>
           </div>
         )}
       </div>
 
       {/* Current Price - Premium look */}
-      <div className="px-3 py-2.5 border-y border-border bg-gradient-to-r from-card via-muted/30 to-card relative z-10">
+      <div className="px-3 py-2.5 border-y border-border bg-gradient-to-r from-card via-muted/30 to-card">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={cn(
@@ -193,7 +193,7 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
       </div>
 
       {/* Bids (Buy orders) */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden min-h-[120px]">
         {displayBids.length > 0 ? (
           <div className="space-y-0">
             {displayBids.map((bid, idx) => (
@@ -209,24 +209,11 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
             ))}
           </div>
         ) : (
-          <div className="flex items-center justify-center flex-1 text-[10px] sm:text-xs text-muted-foreground/50">
-            Waiting for buy orders...
+          <div className="flex items-start justify-center pt-3 h-full">
+            <span className="text-[10px] text-muted-foreground/60">No buy orders</span>
           </div>
         )}
       </div>
-
-      {/* Empty state overlay when no orders */}
-      {!hasOrders && (
-        <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm">
-          <div className="text-center px-4">
-            <div className="h-12 w-12 mx-auto mb-2 rounded-full bg-muted/50 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="text-sm font-medium text-foreground">No Active Orders</p>
-            <p className="text-xs text-muted-foreground mt-1">Place the first order to start trading!</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
