@@ -99,8 +99,131 @@ serve(async (req) => {
 
     console.log('[place-order] Required:', { required_asset, required_amount, skipBalanceCheck: isOnchainMode });
 
-    // Skip balance validation for on-chain trading mode
-    if (!isOnchainMode) {
+    // Balance validation - ALWAYS required for both modes
+    if (isOnchainMode) {
+      // ON-CHAIN MODE: Verify on-chain balance via BSC RPC
+      console.log('[place-order] On-chain mode: Verifying on-chain balance');
+      
+      // 1. Get user's BSC wallet address
+      const { data: profile, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('bsc_wallet_address')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError || !profile?.bsc_wallet_address) {
+        console.error('[place-order] No wallet address:', profileError);
+        throw new Error('No wallet connected. Please connect your wallet first.');
+      }
+      
+      const walletAddress = profile.bsc_wallet_address;
+      console.log('[place-order] User wallet:', walletAddress);
+      
+      // 2. Get asset details (contract address for ERC20 tokens)
+      const { data: assetData, error: assetError } = await supabaseClient
+        .from('assets')
+        .select('id, contract_address, decimals, symbol')
+        .eq('symbol', required_asset)
+        .single();
+      
+      if (assetError || !assetData) {
+        console.error('[place-order] Asset not found:', assetError);
+        throw new Error(`Asset ${required_asset} not found`);
+      }
+      
+      // 3. Fetch on-chain balance via BSC RPC
+      let onchainBalance = 0;
+      const RPC_URL = 'https://bsc-dataseed.binance.org';
+      const decimals = assetData.decimals || 18;
+      
+      try {
+        if (required_asset === 'BNB') {
+          // Native BNB balance
+          const response = await fetch(RPC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              method: 'eth_getBalance',
+              params: [walletAddress, 'latest'],
+              id: 1
+            })
+          });
+          const result = await response.json();
+          if (result.result) {
+            onchainBalance = parseInt(result.result, 16) / Math.pow(10, 18);
+          }
+        } else if (assetData.contract_address) {
+          // ERC20 token balance
+          const balanceOfSelector = '0x70a08231';
+          const paddedAddress = walletAddress.slice(2).toLowerCase().padStart(64, '0');
+          const data = balanceOfSelector + paddedAddress;
+          
+          const response = await fetch(RPC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              method: 'eth_call',
+              params: [{ to: assetData.contract_address, data }, 'latest'],
+              id: 1
+            })
+          });
+          const result = await response.json();
+          if (result.result && result.result !== '0x') {
+            onchainBalance = parseInt(result.result, 16) / Math.pow(10, decimals);
+          }
+        } else {
+          console.warn('[place-order] No contract address for asset:', required_asset);
+          throw new Error(`Cannot verify on-chain balance for ${required_asset}`);
+        }
+      } catch (rpcError) {
+        console.error('[place-order] RPC error:', rpcError);
+        throw new Error('Failed to verify on-chain balance. Please try again.');
+      }
+      
+      console.log('[place-order] On-chain balance:', { asset: required_asset, balance: onchainBalance, required: required_amount });
+      
+      // 4. Check for pending orders that would reduce available balance
+      const { data: pendingOrders } = await supabaseClient
+        .from('orders')
+        .select('amount, price, side, symbol, status')
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'partially_filled']);
+      
+      let totalPendingLocked = 0;
+      if (pendingOrders && pendingOrders.length > 0) {
+        totalPendingLocked = pendingOrders.reduce((sum, order) => {
+          const [orderBase, orderQuote] = order.symbol.split('/');
+          const orderAsset = order.side === 'buy' ? orderQuote : orderBase;
+          if (orderAsset === required_asset) {
+            const orderAmount = order.side === 'buy' 
+              ? order.amount * (order.price || estimated_market_price)
+              : order.amount;
+            return sum + orderAmount;
+          }
+          return sum;
+        }, 0);
+      }
+      
+      console.log('[place-order] Pending locked:', { totalPendingLocked, availableAfterPending: onchainBalance - totalPendingLocked });
+      
+      // 5. Validate sufficient balance
+      const availableBalance = onchainBalance - totalPendingLocked;
+      if (availableBalance < required_amount) {
+        const shortfall = required_amount - availableBalance;
+        throw new Error(
+          `Insufficient ${required_asset} balance. ` +
+          `Available: ${availableBalance.toFixed(6)} ${required_asset}, ` +
+          `Required: ${required_amount.toFixed(6)} ${required_asset}. ` +
+          `Short by: ${shortfall.toFixed(6)} ${required_asset}`
+        );
+      }
+      
+      console.log('[place-order] On-chain balance verified successfully');
+      
+    } else {
+      // INTERNAL MODE: Use wallet_balances table
       // PHASE 2.4: Atomic balance locking for limit orders
       if (type === 'limit') {
         const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
@@ -143,8 +266,6 @@ serve(async (req) => {
           throw new Error('Insufficient balance');
         }
       }
-    } else {
-      console.log('[place-order] On-chain mode: Skipping internal balance validation');
     }
 
     // Insert order (use 'amount' column, not 'quantity')
