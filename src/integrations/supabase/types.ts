@@ -3598,6 +3598,121 @@ export type Database = {
           },
         ]
       }
+      crypto_internal_transfers: {
+        Row: {
+          amount: number
+          asset_id: string
+          created_at: string
+          fee: number
+          id: string
+          net_amount: number
+          notes: string | null
+          recipient_balance_after: number
+          recipient_balance_before: number
+          recipient_id: string
+          sender_balance_after: number
+          sender_balance_before: number
+          sender_id: string
+          status: string
+          transaction_ref: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          created_at?: string
+          fee?: number
+          id?: string
+          net_amount: number
+          notes?: string | null
+          recipient_balance_after: number
+          recipient_balance_before: number
+          recipient_id: string
+          sender_balance_after: number
+          sender_balance_before: number
+          sender_id: string
+          status?: string
+          transaction_ref: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          created_at?: string
+          fee?: number
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          recipient_balance_after?: number
+          recipient_balance_before?: number
+          recipient_id?: string
+          sender_balance_after?: number
+          sender_balance_before?: number
+          sender_id?: string
+          status?: string
+          transaction_ref?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_internal_transfers_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crypto_supply_ledger: {
+        Row: {
+          amount: number
+          asset_id: string
+          balance_after: number | null
+          balance_before: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          reference_id: string | null
+          source: string | null
+          tx_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          balance_after?: number | null
+          balance_before?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          source?: string | null
+          tx_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          balance_after?: number | null
+          balance_before?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          source?: string | null
+          tx_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_supply_ledger_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crypto_to_inr_requests: {
         Row: {
           admin_notes: string | null
@@ -11258,6 +11373,18 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_get_crypto_balance_discrepancies: {
+        Args: never
+        Returns: {
+          asset_id: string
+          asset_symbol: string
+          discrepancy: number
+          ledger_balance: number
+          user_id: string
+          wallet_balance: number
+        }[]
+      }
+      admin_import_genesis_crypto_balances: { Args: never; Returns: Json }
       admin_mint_bsk: {
         Args: {
           p_admin_id: string
