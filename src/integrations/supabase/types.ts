@@ -11397,6 +11397,23 @@ export type Database = {
         Returns: Json
       }
       admin_reset_all_user_balances: { Args: never; Returns: Json }
+      admin_seed_market_order: {
+        Args: {
+          p_admin_id: string
+          p_amount: number
+          p_price: number
+          p_side: string
+          p_symbol: string
+        }
+        Returns: string
+      }
+      admin_trigger_matching: {
+        Args: { p_symbol?: string }
+        Returns: {
+          matched_count: number
+          message: string
+        }[]
+      }
       admin_update_bsk_rate: {
         Args: { p_admin_id: string; p_new_rate: number; p_notes?: string }
         Returns: Json
