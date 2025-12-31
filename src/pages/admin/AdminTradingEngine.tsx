@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Loader2, Play, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
+import { MarketMakerPanel } from '@/components/admin/trading/MarketMakerPanel';
 
 export default function AdminTradingEngine() {
   const queryClient = useQueryClient();
@@ -24,6 +25,20 @@ export default function AdminTradingEngine() {
       
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Fetch trading pairs
+  const { data: tradingPairs = [] } = useQuery({
+    queryKey: ['trading-pairs-admin'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('trading_pairs')
+        .select('symbol')
+        .eq('active', true);
+      
+      if (error) throw error;
+      return data || [];
     },
   });
 
@@ -297,6 +312,11 @@ export default function AdminTradingEngine() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Market Maker Panel */}
+      <div className="mt-6">
+        <MarketMakerPanel tradingPairs={tradingPairs} />
+      </div>
     </div>
   );
 }
