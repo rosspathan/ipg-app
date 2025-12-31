@@ -188,8 +188,9 @@ export function useOnboarding() {
     );
 
     const actualCompletion = async () => {
-      if (!state.walletInfo || !state.email || !state.pinHash) {
-        throw new Error('Missing required onboarding data');
+      // Only require wallet info - PIN is now optional since flow skips it
+      if (!state.walletInfo) {
+        throw new Error('Missing wallet data');
       }
 
       // Session is already established - just verify it exists

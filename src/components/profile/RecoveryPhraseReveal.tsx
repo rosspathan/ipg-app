@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { getStoredWallet } from "@/utils/walletStorage";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RecoveryPhraseRevealProps {
   open: boolean;
@@ -66,11 +67,16 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
     return () => clearInterval(interval);
   }, [step, revealed]);
 
-  const loadSeedPhrase = useCallback(() => {
+  const loadSeedPhrase = useCallback(async () => {
     try {
       // SECURITY: Only load from user-scoped storage for logged-in users
-      // Never fall back to global/pending keys - they may belong to another user
-      const userId = user?.id;
+      // Try context user first, then fetch directly from Supabase
+      let userId = user?.id;
+      
+      if (!userId) {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        userId = currentUser?.id;
+      }
       
       if (!userId) {
         toast({
@@ -202,8 +208,8 @@ Generated: ${new Date().toISOString()}
               </Button>
               <Button 
                 className="flex-1"
-                onClick={() => {
-                  if (loadSeedPhrase()) {
+                onClick={async () => {
+                  if (await loadSeedPhrase()) {
                     setStep("reveal");
                   }
                 }}
