@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { supabase } from '@/integrations/supabase/client';
 import WalletChoiceScreen from './onboarding/WalletChoiceScreen';
 import CreateWalletScreen from './onboarding/CreateWalletScreen';
 import ImportWalletScreen from './onboarding/ImportWalletScreen';
@@ -71,14 +72,86 @@ const OnboardingFlow: React.FC = () => {
     setStep(choice + '-wallet' as any);
   };
 
-  const handleWalletCreated = (wallet: any) => {
+  const handleWalletCreated = async (wallet: any) => {
+    // Store wallet IMMEDIATELY to localStorage before anything else
+    try {
+      const { storeWallet, setWalletStorageUserId } = await import('@/utils/walletStorage');
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser?.id) {
+        setWalletStorageUserId(currentUser.id);
+        storeWallet({
+          address: wallet.address,
+          privateKey: wallet.privateKey,
+          seedPhrase: wallet.mnemonic,
+          network: 'mainnet',
+          balance: '0'
+        }, currentUser.id);
+        console.log('[ONBOARDING] Wallet stored immediately for user:', currentUser.id.slice(0, 8) + '...');
+        
+        // Also update the profile with wallet address
+        await supabase
+          .from('profiles')
+          .update({ 
+            wallet_address: wallet.address,
+            wallet_addresses: {
+              evm: { mainnet: wallet.address, bsc: wallet.address }
+            }
+          })
+          .eq('user_id', currentUser.id);
+      } else {
+        console.warn('[ONBOARDING] No user found when storing wallet - using pending storage');
+        const { storePendingWallet } = await import('@/utils/walletStorage');
+        storePendingWallet({
+          address: wallet.address,
+          privateKey: wallet.privateKey,
+          seedPhrase: wallet.mnemonic,
+          network: 'mainnet',
+          balance: '0'
+        });
+      }
+    } catch (error) {
+      console.error('[ONBOARDING] Error storing wallet:', error);
+    }
+    
     setWalletInfo(wallet);
     // Skip PIN setup, go directly to success
     setStep('success');
     navigate('/onboarding/success');
   };
   
-  const handleWalletImported = (wallet: any) => {
+  const handleWalletImported = async (wallet: any) => {
+    // Store wallet IMMEDIATELY to localStorage
+    try {
+      const { storeWallet, setWalletStorageUserId } = await import('@/utils/walletStorage');
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser?.id) {
+        setWalletStorageUserId(currentUser.id);
+        storeWallet({
+          address: wallet.address,
+          privateKey: wallet.privateKey,
+          seedPhrase: wallet.mnemonic,
+          network: 'mainnet',
+          balance: '0'
+        }, currentUser.id);
+        console.log('[ONBOARDING] Imported wallet stored for user:', currentUser.id.slice(0, 8) + '...');
+        
+        // Update profile with wallet address
+        await supabase
+          .from('profiles')
+          .update({ 
+            wallet_address: wallet.address,
+            wallet_addresses: {
+              evm: { mainnet: wallet.address, bsc: wallet.address }
+            }
+          })
+          .eq('user_id', currentUser.id);
+      }
+    } catch (error) {
+      console.error('[ONBOARDING] Error storing imported wallet:', error);
+    }
+    
     setWalletInfo(wallet);
     // Skip PIN setup, go directly to success
     setStep('success');
