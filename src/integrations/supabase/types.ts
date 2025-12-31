@@ -11602,6 +11602,14 @@ export type Database = {
           username: string
         }[]
       }
+      fix_unlocked_pending_orders: {
+        Args: never
+        Returns: {
+          error_msg: string
+          fixed: boolean
+          order_id: string
+        }[]
+      }
       generate_referral_code: {
         Args: { code_length?: number }
         Returns: string
