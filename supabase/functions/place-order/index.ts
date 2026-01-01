@@ -69,8 +69,9 @@ serve(async (req) => {
 
     const { symbol, side, type, quantity, price, trading_type, trading_mode } = await req.json();
 
-    // On-chain trading mode skips internal balance validation
+    // Default to internal mode - on-chain mode should be explicitly requested
     const isOnchainMode = trading_mode === 'onchain';
+    const FEE_PERCENT = 0.005; // 0.5% fee buffer for buy orders
 
     console.log('[place-order] Received order:', { user_id: user.id, symbol, side, type, quantity, price, trading_mode: isOnchainMode ? 'onchain' : 'internal' });
 
@@ -89,15 +90,16 @@ serve(async (req) => {
       throw new Error('Invalid symbol format. Expected: BASE/QUOTE');
     }
 
-    // Calculate required balance
+    // Calculate required balance WITH FEE BUFFER for buys
     const estimated_market_price = type === 'market' 
       ? (side === 'buy' ? price || 999999999 : price || 0.00000001) 
       : price!;
     const order_value = quantity * estimated_market_price;
     const required_asset = side === 'buy' ? quote_symbol : base_symbol;
-    const required_amount = side === 'buy' ? order_value : quantity;
+    // Add 0.5% fee buffer for buy orders to ensure settlement works
+    const required_amount = side === 'buy' ? order_value * (1 + FEE_PERCENT) : quantity;
 
-    console.log('[place-order] Required:', { required_asset, required_amount, skipBalanceCheck: isOnchainMode });
+    console.log('[place-order] Required:', { required_asset, required_amount, feeBuffer: side === 'buy' ? FEE_PERCENT : 0, skipBalanceCheck: isOnchainMode });
 
     // Balance validation - ALWAYS required for both modes
     if (isOnchainMode) {
