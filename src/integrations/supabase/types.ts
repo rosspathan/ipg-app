@@ -11605,9 +11605,9 @@ export type Database = {
       fix_unlocked_pending_orders: {
         Args: never
         Returns: {
-          error_msg: string
-          fixed: boolean
+          message: string
           order_id: string
+          status: string
         }[]
       }
       generate_referral_code: {
