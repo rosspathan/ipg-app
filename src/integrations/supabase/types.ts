@@ -4330,6 +4330,39 @@ export type Database = {
           },
         ]
       }
+      encrypted_wallet_backups: {
+        Row: {
+          created_at: string
+          encrypted_data: string
+          id: string
+          iv: string
+          salt: string
+          updated_at: string
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_data: string
+          id?: string
+          iv: string
+          salt: string
+          updated_at?: string
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_data?: string
+          id?: string
+          iv?: string
+          salt?: string
+          updated_at?: string
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       fee_configs: {
         Row: {
           active: boolean | null
