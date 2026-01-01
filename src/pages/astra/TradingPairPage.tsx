@@ -228,18 +228,18 @@ function TradingPairPageContent() {
     );
   }
 
-  // Find on-chain balances for the trading pair (only on-chain used for trading)
+  // Find balances for the trading pair - use INTERNAL (app) balances for trading
   const quoteBalanceData = bep20Balances?.find((b) => b.symbol === pair.quoteAsset);
   const baseBalanceData = bep20Balances?.find((b) => b.symbol === pair.baseAsset);
   
-  // Use only on-chain balances for trading
+  // Use INTERNAL balances for trading (wallet_balances table) - these are what settle_trade uses
   const quoteBalance = {
     symbol: pair.quoteAsset,
-    balance: quoteBalanceData?.onchainBalance || 0
+    balance: quoteBalanceData?.appBalance || quoteBalanceData?.onchainBalance || 0
   };
   const baseBalance = {
     symbol: pair.baseAsset,
-    balance: baseBalanceData?.onchainBalance || 0
+    balance: baseBalanceData?.appBalance || baseBalanceData?.onchainBalance || 0
   };
 
   const handlePriceClick = (price: number) => {
@@ -254,7 +254,7 @@ function TradingPairPageContent() {
         type: params.type,
         quantity: params.quantity,
         price: params.price,
-        trading_mode: 'onchain', // Skip internal balance validation for on-chain trading
+        trading_mode: 'internal', // Use internal balance for trading (required for settlement)
       });
 
       // Check the actual result - don't assume success

@@ -124,7 +124,19 @@ Deno.serve(async (req) => {
 
       // Match orders using price-time priority
       for (const buyOrder of sortedBuys) {
+        // Skip fully filled buy orders
+        if (buyOrder.remaining_amount <= 0) continue;
+        
         for (const sellOrder of sortedSells) {
+          // Skip fully filled sell orders
+          if (sellOrder.remaining_amount <= 0) continue;
+          
+          // SELF-TRADE PREVENTION: Skip if same user
+          if (buyOrder.user_id === sellOrder.user_id) {
+            console.log(`[Matching Engine] Skipping self-trade: user ${buyOrder.user_id}`);
+            continue;
+          }
+          
           // PHASE 2.1 FIX: Determine if orders can match without infinite prices
           let canMatch = false;
           let executionPrice = 0;

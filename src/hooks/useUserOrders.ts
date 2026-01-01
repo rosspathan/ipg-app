@@ -47,8 +47,11 @@ export const useUserOrders = (symbol?: string) => {
       // Parse symbol to get quote asset for balance locking
       const [baseSymbol, quoteSymbol] = params.symbol.split('/');
       const assetToLock = params.side === 'buy' ? quoteSymbol : baseSymbol;
+      
+      // FEE BUFFER: For buy orders, lock (qty * price) * (1 + 0.5% fee) to ensure settlement works
+      const FEE_PERCENT = 0.005; // 0.5% fee
       const amountToLock = params.side === 'buy' 
-        ? params.quantity * (params.price || 0) 
+        ? params.quantity * (params.price || 0) * (1 + FEE_PERCENT)
         : params.quantity;
 
       // Lock balance before placing order (only for limit orders)
@@ -60,7 +63,7 @@ export const useUserOrders = (symbol?: string) => {
         });
 
         if (lockError || !locked) {
-          throw new Error('Insufficient balance');
+          throw new Error(`Insufficient ${assetToLock} balance. Need ${amountToLock.toFixed(6)} (includes 0.5% fee buffer)`);
         }
       }
 
@@ -141,12 +144,13 @@ export const useUserOrders = (symbol?: string) => {
 
       if (fetchError) throw fetchError;
 
-      // Unlock balance if it's a pending limit order
+      // Unlock balance if it's a pending limit order (include fee buffer for buy orders)
       if (order.status === 'pending' && order.order_type === 'limit') {
         const [baseSymbol, quoteSymbol] = order.symbol.split('/');
         const assetToUnlock = order.side === 'buy' ? quoteSymbol : baseSymbol;
+        const FEE_PERCENT = 0.005; // 0.5% fee
         const amountToUnlock = order.side === 'buy' 
-          ? order.remaining_amount * order.price 
+          ? order.remaining_amount * order.price * (1 + FEE_PERCENT)
           : order.remaining_amount;
 
         await supabase.rpc('unlock_balance_for_order', {
