@@ -8,36 +8,47 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   AlertTriangle, 
   Copy, 
   Download, 
   Eye, 
   EyeOff,
-  CheckCircle
+  CheckCircle,
+  Cloud,
+  Loader2,
+  Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { getStoredWallet } from "@/utils/walletStorage";
+import { getStoredWallet, storeWallet, setWalletStorageUserId } from "@/utils/walletStorage";
 import { supabase } from "@/integrations/supabase/client";
+import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
 
 interface RecoveryPhraseRevealProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = "warning" | "reveal";
+type Step = "warning" | "pin_entry" | "reveal" | "not_found";
 
 const AUTO_HIDE_SECONDS = 30;
 
 const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { checkBackupExists, retrieveBackup } = useEncryptedWalletBackup();
   const [step, setStep] = useState<Step>("warning");
   const [seedPhrase, setSeedPhrase] = useState<string[]>([]);
   const [revealed, setRevealed] = useState(false);
   const [countdown, setCountdown] = useState(AUTO_HIDE_SECONDS);
   const [copied, setCopied] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState("");
+  const [hasServerBackup, setHasServerBackup] = useState(false);
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -47,6 +58,9 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
       setRevealed(false);
       setCountdown(AUTO_HIDE_SECONDS);
       setCopied(false);
+      setPin("");
+      setPinError("");
+      setHasServerBackup(false);
     }
   }, [open]);
 
@@ -70,7 +84,6 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
   const loadSeedPhrase = useCallback(async () => {
     try {
       // SECURITY: Only load from user-scoped storage for logged-in users
-      // Try context user first, then fetch directly from Supabase
       let userId = user?.id;
       
       if (!userId) {
@@ -88,27 +101,31 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
         return false;
       }
       
+      // First try local storage
       const userScopedWallet = getStoredWallet(userId);
       
-      if (!userScopedWallet?.seedPhrase) {
-        console.log('[RECOVERY] No seed phrase found for user:', userId.slice(0, 8) + '...');
-        toast({
-          title: "Recovery Phrase Not Available",
-          description: "Your seed phrase is not stored on this device. Re-import your wallet to access it.",
-          variant: "destructive"
-        });
-        onOpenChange(false);
-        return false;
+      if (userScopedWallet?.seedPhrase) {
+        const phrase = userScopedWallet.seedPhrase;
+        const words = phrase.trim().split(/\s+/);
+        console.log('[RECOVERY] Loaded phrase from local storage for wallet:', userScopedWallet.address?.slice(0, 10) + '...');
+        setSeedPhrase(words);
+        return true;
       }
 
-      const phrase = userScopedWallet.seedPhrase;
-      const words = phrase.trim().split(/\s+/);
+      // Check if server backup exists
+      const backupStatus = await checkBackupExists(userId);
       
-      // Debug log (address only, never log seed phrase)
-      console.log('[RECOVERY] Loaded phrase for wallet:', userScopedWallet.address?.slice(0, 10) + '...');
-      
-      setSeedPhrase(words);
-      return true;
+      if (backupStatus.exists) {
+        console.log('[RECOVERY] No local phrase, but server backup exists');
+        setHasServerBackup(true);
+        setStep("pin_entry");
+        return false; // Will continue after PIN entry
+      }
+
+      // No local and no server backup
+      console.log('[RECOVERY] No seed phrase found for user:', userId.slice(0, 8) + '...');
+      setStep("not_found");
+      return false;
     } catch (error) {
       console.error("Failed to load seed phrase:", error);
       toast({
@@ -119,7 +136,56 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
       onOpenChange(false);
       return false;
     }
-  }, [onOpenChange, toast, user?.id]);
+  }, [onOpenChange, toast, user?.id, checkBackupExists]);
+
+  const handlePinSubmit = async () => {
+    if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+      setPinError("PIN must be 6 digits");
+      return;
+    }
+
+    setPinLoading(true);
+    setPinError("");
+
+    try {
+      const phrase = await retrieveBackup(pin);
+      
+      if (phrase) {
+        const words = phrase.trim().split(/\s+/);
+        setSeedPhrase(words);
+        
+        // Re-store locally for future access
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('wallet_address')
+            .eq('user_id', currentUser.id)
+            .single();
+          
+          if (profile?.wallet_address) {
+            setWalletStorageUserId(currentUser.id);
+            storeWallet({
+              address: profile.wallet_address,
+              privateKey: '', // Not available from server backup
+              seedPhrase: phrase,
+              network: 'mainnet',
+              balance: '0'
+            }, currentUser.id);
+            console.log('[RECOVERY] Re-stored wallet locally from server backup');
+          }
+        }
+        
+        setStep("reveal");
+      } else {
+        setPinError("Invalid PIN or decryption failed");
+      }
+    } catch (error) {
+      setPinError("Failed to decrypt backup");
+    } finally {
+      setPinLoading(false);
+    }
+  };
 
   const handleCopy = async () => {
     try {
@@ -217,6 +283,105 @@ Generated: ${new Date().toISOString()}
                 I Understand
               </Button>
             </div>
+          </>
+        )}
+
+        {step === "pin_entry" && (
+          <>
+            <DialogHeader>
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                <Cloud className="h-6 w-6 text-primary" />
+              </div>
+              <DialogTitle className="text-center">
+                Cloud Backup Found
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Your wallet is backed up securely. Enter your PIN to decrypt it.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="pin">Backup PIN</Label>
+                <Input
+                  id="pin"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="••••••"
+                  value={pin}
+                  onChange={(e) => {
+                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
+                    setPinError("");
+                  }}
+                  className="text-center text-2xl tracking-widest"
+                  autoFocus
+                />
+              </div>
+
+              {pinError && (
+                <p className="text-sm text-destructive text-center">{pinError}</p>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => onOpenChange(false)}
+                  disabled={pinLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={handlePinSubmit}
+                  disabled={pinLoading || pin.length !== 6}
+                >
+                  {pinLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Lock className="h-4 w-4 mr-2" />
+                      Decrypt
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {step === "not_found" && (
+          <>
+            <DialogHeader>
+              <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+              </div>
+              <DialogTitle className="text-center">
+                Recovery Phrase Not Available
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Your seed phrase is not stored on this device and no cloud backup was found.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Alert className="mt-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>To access your recovery phrase:</strong>
+                <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
+                  <li>Use the device where you originally created your wallet</li>
+                  <li>Or re-import your wallet using your seed phrase</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+
+            <Button 
+              className="w-full mt-6"
+              onClick={() => onOpenChange(false)}
+            >
+              Close
+            </Button>
           </>
         )}
 
