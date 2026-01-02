@@ -53,13 +53,18 @@ const RecoverWalletScreen: React.FC = () => {
       });
 
       if (error) throw error;
+      
+      // Check for API error in response
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       if (data?.token) {
-        // Verify the OTP token
+        // Verify the magic link token
         const { error: verifyError } = await supabase.auth.verifyOtp({
           email,
           token: data.token,
-          type: 'email'
+          type: 'magiclink'
         });
 
         if (verifyError) throw verifyError;
@@ -77,6 +82,12 @@ const RecoverWalletScreen: React.FC = () => {
         } else {
           navigate('/app/home');
         }
+      } else if (data?.success) {
+        // If we got success but no token, show a different message
+        toast({
+          title: "Verification Required",
+          description: "Please check your email to complete login",
+        });
       }
     } catch (error: any) {
       console.error('Recovery error:', error);

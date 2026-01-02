@@ -119,22 +119,54 @@ serve(async (req) => {
       }
     );
 
-// Find user by wallet address
-const { data: walletData, error: walletError } = await supabaseAdmin
-  .from('wallets_user')
-  .select('user_id, address')
-  .eq('address', walletAddress.toLowerCase())
-  .maybeSingle();
+    // Find user by wallet address - check wallets_user first, then profiles
+    let userId: string | null = null;
+    let foundWalletAddress: string = walletAddress;
 
-if (walletError || !walletData) {
-  return new Response(
-    JSON.stringify({ error: "Wallet not found. Please sign up first." }),
-    { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
-}
+    // Try wallets_user table first
+    const { data: walletData } = await supabaseAdmin
+      .from('wallets_user')
+      .select('user_id, address')
+      .eq('address', walletAddress.toLowerCase())
+      .maybeSingle();
+
+    if (walletData) {
+      userId = walletData.user_id;
+      foundWalletAddress = walletData.address;
+      console.log("Found user in wallets_user:", userId);
+    } else {
+      // Fallback: check profiles table by wallet_address
+      const { data: profileData } = await supabaseAdmin
+        .from('profiles')
+        .select('id, wallet_address, email')
+        .or(`wallet_address.ilike.${walletAddress},wallet_address.ilike.${walletAddress.toLowerCase()}`)
+        .maybeSingle();
+
+      if (profileData) {
+        userId = profileData.id;
+        foundWalletAddress = profileData.wallet_address || walletAddress;
+        console.log("Found user in profiles:", userId);
+        
+        // Also verify email matches if provided in profile
+        if (profileData.email && profileData.email.toLowerCase() !== email.toLowerCase()) {
+          return new Response(
+            JSON.stringify({ error: "Email does not match wallet owner" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
+    if (!userId) {
+      console.log("Wallet not found in wallets_user or profiles:", walletAddress);
+      return new Response(
+        JSON.stringify({ error: "Wallet not found. Please ensure you're using the correct recovery phrase for this email." }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Get user details
-    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(walletData.user_id);
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId);
     
     if (!userData.user) {
       return new Response(
@@ -151,31 +183,38 @@ if (walletError || !walletData) {
       );
     }
 
-// Optionally update any usage metrics here if your schema supports it
-// (Skipped: wallets_user table doesn't have last_used_at in current schema)
-
-    // Generate session token (using OTP for passwordless login)
-    const { data: otpData, error: otpError } = await supabaseAdmin.auth.admin.generateLink({
+    // Generate a magic link and extract the token for OTP verification
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: userData.user.email!,
-      options: {
-        redirectTo: `${Deno.env.get("SUPABASE_URL")}/auth/v1/verify`,
-      }
     });
 
-    if (otpError) {
-      throw new Error(`Failed to generate login token: ${otpError.message}`);
+    if (linkError) {
+      throw new Error(`Failed to generate login token: ${linkError.message}`);
     }
 
+    // Extract the token from the action link
+    // The link format is: https://xxx.supabase.co/auth/v1/verify?token=TOKEN&type=magiclink
+    const actionLink = linkData.properties.action_link;
+    const urlParams = new URLSearchParams(new URL(actionLink).hash.substring(1) || new URL(actionLink).search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+      console.log("Action link:", actionLink);
+      throw new Error("Failed to extract token from magic link");
+    }
+
+    console.log("Successfully generated token for user:", userId);
+
     return new Response(
-JSON.stringify({ 
-  success: true,
-  userId: walletData.user_id,
-  email: userData.user.email,
-  walletAddress: walletData.address,
-  accessToken: otpData.properties.hashed_token,
-  message: "Login successful"
-}),
+      JSON.stringify({ 
+        success: true,
+        userId: userId,
+        email: userData.user.email,
+        walletAddress: foundWalletAddress,
+        token: token, // This can be used with verifyOtp
+        message: "Login successful"
+      }),
       { 
         status: 200, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
