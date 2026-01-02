@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -7,7 +8,8 @@ import {
   XCircle, 
   Cloud, 
   Loader2,
-  Shield
+  Shield,
+  Download
 } from "lucide-react";
 import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +22,7 @@ type BackupState = "loading" | "backed_up" | "local_only" | "not_available";
 const WalletBackupStatus = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { backupStatus, checkBackupExists, createBackup } = useEncryptedWalletBackup();
   const [backupState, setBackupState] = useState<BackupState>("loading");
   const [showPinDialog, setShowPinDialog] = useState(false);
@@ -79,6 +82,10 @@ const WalletBackupStatus = () => {
     }
 
     return success;
+  };
+
+  const handleReimportWallet = () => {
+    navigate("/auth/import-wallet-backup");
   };
 
   const getStatusDisplay = () => {
@@ -151,6 +158,17 @@ const WalletBackupStatus = () => {
               >
                 <Cloud className="h-4 w-4 mr-1" />
                 Backup
+              </Button>
+            )}
+            {backupState === "not_available" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleReimportWallet}
+                className="shrink-0"
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Re-import
               </Button>
             )}
           </div>

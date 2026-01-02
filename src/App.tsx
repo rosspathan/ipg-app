@@ -399,6 +399,11 @@ function AppContent() {
               {React.createElement(React.lazy(() => import('./pages/auth/ImportWalletAuth')))}
             </AuthProviderUser>
           } />
+          <Route path="/auth/import-wallet-backup" element={
+            <AuthProviderUser>
+              {React.createElement(React.lazy(() => import('./pages/auth/ImportWalletBackup')))}
+            </AuthProviderUser>
+          } />
           <Route path="/auth/forgot-password" element={<ForgotPasswordScreen />} />
           <Route path="/auth/verify-reset-code" element={<VerifyResetCodeScreen />} />
           <Route path="/auth/reset-password" element={<ResetPasswordScreen />} />
