@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useAuthUser } from '@/hooks/useAuthUser';
@@ -10,6 +10,9 @@ import SuccessCelebrationScreen from './onboarding/SuccessCelebrationScreen';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
+import PinEntryDialog from '@/components/profile/PinEntryDialog';
+import { useEncryptedWalletBackup } from '@/hooks/useEncryptedWalletBackup';
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * OnboardingFlow - Post-authentication wallet setup
@@ -21,6 +24,8 @@ import { ProgressIndicator } from '@/components/onboarding/ProgressIndicator';
 const OnboardingFlow: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuthUser();
+  const { toast } = useToast();
+  const { createBackup } = useEncryptedWalletBackup();
   const {
     state,
     setStep,
@@ -28,6 +33,10 @@ const OnboardingFlow: React.FC = () => {
     setReferralCode,
     completeOnboarding
   } = useOnboarding();
+
+  // State for PIN backup dialog
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [pendingWallet, setPendingWallet] = useState<any>(null);
 
   // Determine initial step based on URL path
   useEffect(() => {
@@ -115,7 +124,43 @@ const OnboardingFlow: React.FC = () => {
     }
     
     setWalletInfo(wallet);
-    // Skip PIN setup, go directly to success
+    // Show PIN dialog to create encrypted backup
+    setPendingWallet(wallet);
+    setShowPinDialog(true);
+  };
+
+  const handlePinSubmit = async (pin: string): Promise<boolean> => {
+    if (!pendingWallet) return false;
+    
+    try {
+      const success = await createBackup(
+        pendingWallet.mnemonic,
+        pendingWallet.address,
+        pin
+      );
+      
+      if (success) {
+        toast({
+          title: "Wallet Backed Up",
+          description: "Your wallet is now securely encrypted and backed up.",
+        });
+        // Proceed to success after backup
+        setShowPinDialog(false);
+        setPendingWallet(null);
+        setStep('success');
+        navigate('/onboarding/success');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('[ONBOARDING] Backup failed:', error);
+      return false;
+    }
+  };
+
+  const handleSkipBackup = () => {
+    setShowPinDialog(false);
+    setPendingWallet(null);
     setStep('success');
     navigate('/onboarding/success');
   };
@@ -153,9 +198,9 @@ const OnboardingFlow: React.FC = () => {
     }
     
     setWalletInfo(wallet);
-    // Skip PIN setup, go directly to success
-    setStep('success');
-    navigate('/onboarding/success');
+    // Show PIN dialog to create encrypted backup
+    setPendingWallet(wallet);
+    setShowPinDialog(true);
   };
 
   // Show message if user arrives without proper auth
@@ -187,49 +232,67 @@ const OnboardingFlow: React.FC = () => {
   }
 
   // Render based on current step
-  switch (state.step) {
-    case 'wallet-choice':
-      return (
-        <WalletChoiceScreen
-          onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
-          onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
-          onBack={() => navigate('/auth/signup')}
-        />
-      );
-    
-    case 'create-wallet':
-      return (
-        <CreateWalletScreen
-          onWalletCreated={handleWalletCreated}
-          onBack={() => { setStep('wallet-choice'); navigate('/onboarding/wallet'); }}
-        />
-      );
-    
-    case 'import-wallet':
-      return (
-        <ImportWalletScreen
-          onWalletImported={handleWalletImported}
-          onBack={() => { setStep('wallet-choice'); navigate('/onboarding/wallet'); }}
-        />
-      );
-    
-    case 'success':
-      return (
-        <SuccessCelebrationScreen 
-          hasBiometric={state.biometricSetup || false}
-          onComplete={completeOnboarding}
-        />
-      );
-    
-    default:
-      return (
-        <WalletChoiceScreen
-          onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
-          onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
-          onBack={() => navigate('/auth/signup')}
-        />
-      );
-  }
+  const renderContent = () => {
+    switch (state.step) {
+      case 'wallet-choice':
+        return (
+          <WalletChoiceScreen
+            onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
+            onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
+            onBack={() => navigate('/auth/signup')}
+          />
+        );
+      
+      case 'create-wallet':
+        return (
+          <CreateWalletScreen
+            onWalletCreated={handleWalletCreated}
+            onBack={() => { setStep('wallet-choice'); navigate('/onboarding/wallet'); }}
+          />
+        );
+      
+      case 'import-wallet':
+        return (
+          <ImportWalletScreen
+            onWalletImported={handleWalletImported}
+            onBack={() => { setStep('wallet-choice'); navigate('/onboarding/wallet'); }}
+          />
+        );
+      
+      case 'success':
+        return (
+          <SuccessCelebrationScreen 
+            hasBiometric={state.biometricSetup || false}
+            onComplete={completeOnboarding}
+          />
+        );
+      
+      default:
+        return (
+          <WalletChoiceScreen
+            onCreateWallet={() => { setStep('create-wallet'); navigate('/onboarding/wallet/create'); }}
+            onImportWallet={() => { setStep('import-wallet'); navigate('/onboarding/wallet/import'); }}
+            onBack={() => navigate('/auth/signup')}
+          />
+        );
+    }
+  };
+
+  return (
+    <>
+      {renderContent()}
+      <PinEntryDialog
+        open={showPinDialog}
+        onOpenChange={(open) => {
+          if (!open) handleSkipBackup();
+        }}
+        onSubmit={handlePinSubmit}
+        title="Secure Your Wallet"
+        description="Create a 6-digit PIN to encrypt your wallet backup. You'll need this PIN to restore your wallet on other devices."
+        isNewPin={true}
+      />
+    </>
+  );
 };
 
 export default OnboardingFlow;

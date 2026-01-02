@@ -23,6 +23,8 @@ import { useAuthLock } from "@/hooks/useAuthLock";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import RecoveryPhraseReveal from "./RecoveryPhraseReveal";
+import WalletBackupStatus from "./WalletBackupStatus";
+
 const SecurityTab = () => {
   const { user } = useAuth();
   const { 
@@ -304,6 +306,9 @@ const SecurityTab = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Wallet Cloud Backup Status */}
+      <WalletBackupStatus />
 
       {/* Recovery Phrase Backup */}
       <Card>
