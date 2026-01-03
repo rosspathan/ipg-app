@@ -88,6 +88,23 @@ const OnboardingFlow: React.FC = () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
       if (currentUser?.id) {
+        // SECURITY: Check if this wallet address is already used by another user
+        const { data: existingWallet } = await supabase
+          .from('profiles')
+          .select('user_id, email')
+          .ilike('wallet_address', wallet.address)
+          .neq('user_id', currentUser.id)
+          .maybeSingle();
+
+        if (existingWallet) {
+          toast({
+            title: "Wallet Already In Use",
+            description: "This wallet is already linked to another account. Each wallet can only be linked to one account.",
+            variant: "destructive"
+          });
+          return;
+        }
+
         setWalletStorageUserId(currentUser.id);
         storeWallet({
           address: wallet.address,
@@ -172,6 +189,23 @@ const OnboardingFlow: React.FC = () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
       if (currentUser?.id) {
+        // SECURITY: Check if this wallet address is already used by another user
+        const { data: existingWallet } = await supabase
+          .from('profiles')
+          .select('user_id, email')
+          .ilike('wallet_address', wallet.address)
+          .neq('user_id', currentUser.id)
+          .maybeSingle();
+
+        if (existingWallet) {
+          toast({
+            title: "Wallet Already In Use",
+            description: "This wallet is already linked to another account. Please use your own unique recovery phrase.",
+            variant: "destructive"
+          });
+          return;
+        }
+
         setWalletStorageUserId(currentUser.id);
         storeWallet({
           address: wallet.address,
