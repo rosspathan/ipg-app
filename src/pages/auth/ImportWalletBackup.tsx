@@ -66,14 +66,14 @@ const ImportWalletBackup = () => {
         network: 'mainnet'
       }, user.id);
 
-      // Update profile with wallet address
+      // Update profile with wallet address (use user_id, not id)
       await supabase
         .from('profiles')
         .update({ 
           wallet_address: walletAddress,
           setup_complete: true 
         })
-        .eq('id', user.id);
+        .eq('user_id', user.id);
 
       // Store for PIN dialog
       setImportedWallet({
