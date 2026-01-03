@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Loader2, Key, FileText } from 'lucide-react';
+import { ArrowLeft, Loader2, Key, FileText, AlertCircle } from 'lucide-react';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 
 const RecoverWalletScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const RecoverWalletScreen: React.FC = () => {
   const [privateKey, setPrivateKey] = useState('');
   const [activeTab, setActiveTab] = useState<'mnemonic' | 'privatekey'>('mnemonic');
   const [loading, setLoading] = useState(false);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
   // Normalize mnemonic: trim, lowercase, collapse whitespace
   const normalizeMnemonic = (input: string) => {
@@ -29,7 +31,12 @@ const RecoverWalletScreen: React.FC = () => {
     return normalized ? normalized.split(' ').length : 0;
   };
 
+  const wordCount = getWordCount(mnemonic);
+  const isValidWordCount = wordCount === 12 || wordCount === 24;
+
   const handleRecover = async () => {
+    setErrorCode(null);
+    
     if (!email) {
       toast({
         title: "Email Required",
@@ -54,8 +61,7 @@ const RecoverWalletScreen: React.FC = () => {
 
     // Validate word count for mnemonic
     if (activeTab === 'mnemonic') {
-      const wordCount = getWordCount(mnemonic);
-      if (wordCount !== 12 && wordCount !== 24) {
+      if (!isValidWordCount) {
         toast({
           title: "Invalid Recovery Phrase",
           description: `Your phrase has ${wordCount} words. Please enter a 12 or 24 word recovery phrase.`,
@@ -79,29 +85,46 @@ const RecoverWalletScreen: React.FC = () => {
 
       // Handle edge function errors - parse the response for the actual error message
       if (error) {
-        // Try to get the actual error message from the response
         let errorMessage = "Could not recover wallet. Please check your details.";
+        let errorCodeFromResponse: string | null = null;
         
         try {
-          // The error context contains the Response object
-          if (error.context && typeof error.context.json === 'function') {
-            const errorData = await error.context.json();
-            if (errorData?.error) {
-              errorMessage = errorData.error;
+          // For FunctionsHttpError, get the response body text
+          if (error instanceof FunctionsHttpError && error.context) {
+            const errorBody = await error.context.text();
+            try {
+              const errorJson = JSON.parse(errorBody);
+              if (errorJson?.error) {
+                errorMessage = errorJson.error;
+              }
+              if (errorJson?.code) {
+                errorCodeFromResponse = errorJson.code;
+              }
+            } catch {
+              // Body wasn't JSON, use it as text if not empty
+              if (errorBody && !errorBody.includes('non-2xx')) {
+                errorMessage = errorBody;
+              }
             }
+          } else if (error.message && !error.message.includes('non-2xx')) {
+            errorMessage = error.message;
           }
         } catch {
-          // If we can't parse, use the error message
+          // Fallback to original error message
           if (error.message && !error.message.includes('non-2xx')) {
             errorMessage = error.message;
           }
         }
         
+        setErrorCode(errorCodeFromResponse);
         throw new Error(errorMessage);
       }
       
       // Check for API error in response data
       if (data?.error) {
+        if (data?.code) {
+          setErrorCode(data.code);
+        }
         throw new Error(data.error);
       }
 
@@ -146,6 +169,118 @@ const RecoverWalletScreen: React.FC = () => {
     }
   };
 
+  // Render error-specific guidance
+  const renderErrorGuidance = () => {
+    if (!errorCode) return null;
+
+    switch (errorCode) {
+      case 'NO_WALLET_LINKED':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-amber-500/20 border border-amber-500/40 rounded-2xl p-4 space-y-3"
+          >
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-amber-200 font-medium">No Wallet Linked</p>
+                <p className="text-amber-200/80 text-sm mt-1">
+                  Your account doesn't have a wallet linked yet. Please sign in with your password first, then import your wallet from Settings.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => navigate('/auth/login')}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-black"
+              >
+                Sign In with Password
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/auth/reset-password')}
+                className="w-full border-amber-500/50 text-amber-200 hover:bg-amber-500/20"
+              >
+                Reset Password
+              </Button>
+            </div>
+          </motion.div>
+        );
+
+      case 'EMAIL_NOT_FOUND':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-blue-500/20 border border-blue-500/40 rounded-2xl p-4 space-y-3"
+          >
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-blue-200 font-medium">Account Not Found</p>
+                <p className="text-blue-200/80 text-sm mt-1">
+                  No account exists with this email. Please create a new account or try a different email.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate('/auth/register')}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              Create Account
+            </Button>
+          </motion.div>
+        );
+
+      case 'WALLET_MISMATCH':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-500/20 border border-red-500/40 rounded-2xl p-4"
+          >
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-red-200 font-medium">Wallet Mismatch</p>
+                <p className="text-red-200/80 text-sm mt-1">
+                  The recovery phrase doesn't match the wallet linked to this account. Please check:
+                </p>
+                <ul className="text-red-200/80 text-sm mt-2 list-disc list-inside space-y-1">
+                  <li>Word order is correct</li>
+                  <li>All words are spelled correctly</li>
+                  <li>You're using the right phrase for this account</li>
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+        );
+
+      case 'INVALID_MNEMONIC':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-500/20 border border-red-500/40 rounded-2xl p-4"
+          >
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-red-200 font-medium">Invalid Recovery Phrase</p>
+                <p className="text-red-200/80 text-sm mt-1">
+                  The recovery phrase is not valid. Please check that all words are spelled correctly and are from the BIP39 word list.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-background flex flex-col">
       <div className="flex-1 flex flex-col px-6 py-8 overflow-y-auto">
@@ -175,6 +310,9 @@ const RecoverWalletScreen: React.FC = () => {
             </p>
           </div>
 
+          {/* Error Guidance */}
+          {renderErrorGuidance()}
+
           {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-white">Email Address</Label>
@@ -183,13 +321,19 @@ const RecoverWalletScreen: React.FC = () => {
               type="email"
               placeholder="your@email.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setErrorCode(null);
+              }}
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
             />
           </div>
 
           {/* Recovery Method Tabs */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+          <Tabs value={activeTab} onValueChange={(v) => {
+            setActiveTab(v as any);
+            setErrorCode(null);
+          }} className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-white/10">
               <TabsTrigger value="mnemonic" className="data-[state=active]:bg-white data-[state=active]:text-primary">
                 <FileText className="w-4 h-4 mr-2" />
@@ -202,12 +346,26 @@ const RecoverWalletScreen: React.FC = () => {
             </TabsList>
 
             <TabsContent value="mnemonic" className="mt-4 space-y-2">
-              <Label htmlFor="mnemonic" className="text-white">12-Word Recovery Phrase</Label>
+              <div className="flex justify-between items-center">
+                <Label htmlFor="mnemonic" className="text-white">12-Word Recovery Phrase</Label>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                  wordCount === 0 
+                    ? 'text-white/50' 
+                    : isValidWordCount 
+                      ? 'text-green-400 bg-green-500/20' 
+                      : 'text-amber-400 bg-amber-500/20'
+                }`}>
+                  {wordCount > 0 ? `${wordCount} / 12 words` : '0 words'}
+                </span>
+              </div>
               <Textarea
                 id="mnemonic"
                 placeholder="Enter your 12-word recovery phrase separated by spaces"
                 value={mnemonic}
-                onChange={(e) => setMnemonic(e.target.value)}
+                onChange={(e) => {
+                  setMnemonic(e.target.value);
+                  setErrorCode(null);
+                }}
                 rows={4}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 resize-none"
               />
@@ -222,7 +380,10 @@ const RecoverWalletScreen: React.FC = () => {
                 id="privateKey"
                 placeholder="Enter your private key (0x...)"
                 value={privateKey}
-                onChange={(e) => setPrivateKey(e.target.value)}
+                onChange={(e) => {
+                  setPrivateKey(e.target.value);
+                  setErrorCode(null);
+                }}
                 rows={4}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 resize-none font-mono text-sm"
               />
