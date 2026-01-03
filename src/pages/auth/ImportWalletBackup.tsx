@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2, Shield, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import * as bip39 from "bip39";
 import { ethers } from "ethers";
 import { storeWallet, setWalletStorageUserId } from "@/utils/walletStorage";
@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 const ImportWalletBackup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuthUser();
   const { createBackup } = useEncryptedWalletBackup();
   
   const [seedPhrase, setSeedPhrase] = useState("");
@@ -38,7 +38,15 @@ const ImportWalletBackup = () => {
   ];
 
   const handleImport = async () => {
-    if (!user?.id) {
+    // Get user ID from context or fallback to direct Supabase call
+    let userId = user?.id;
+    
+    if (!userId) {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      userId = currentUser?.id;
+    }
+    
+    if (!userId) {
       setError("Please log in first");
       return;
     }
@@ -75,7 +83,7 @@ const ImportWalletBackup = () => {
         .from('profiles')
         .select('user_id')
         .ilike('wallet_address', walletAddress)
-        .neq('user_id', user.id)
+        .neq('user_id', userId)
         .maybeSingle();
 
       if (existingWallet) {
@@ -85,13 +93,13 @@ const ImportWalletBackup = () => {
       }
 
       // Store locally
-      setWalletStorageUserId(user.id);
+      setWalletStorageUserId(userId);
       storeWallet({
         address: walletAddress,
         seedPhrase: normalizedPhrase,
         privateKey: hdNode.privateKey,
         network: 'mainnet'
-      }, user.id);
+      }, userId);
 
       // Update profile with wallet address (use user_id, not id)
       await supabase
@@ -100,7 +108,7 @@ const ImportWalletBackup = () => {
           wallet_address: walletAddress,
           setup_complete: true 
         })
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
 
       // Store for PIN dialog
       setImportedWallet({
@@ -132,14 +140,14 @@ const ImportWalletBackup = () => {
         title: "Wallet Imported & Backed Up",
         description: "Your recovery phrase is now securely stored.",
       });
-      navigate("/profile/security");
+      navigate("/app/profile/security");
     } else {
       toast({
         title: "Backup Failed",
         description: "Wallet imported but backup failed. You can try again from Security settings.",
         variant: "destructive"
       });
-      navigate("/profile/security");
+      navigate("/app/profile/security");
     }
 
     return success;
@@ -150,7 +158,7 @@ const ImportWalletBackup = () => {
       title: "Wallet Imported",
       description: "Your wallet was imported. You can backup later from Security settings.",
     });
-    navigate("/profile/security");
+    navigate("/app/profile/security");
   };
 
   return (
@@ -161,7 +169,7 @@ const ImportWalletBackup = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/profile/security")}
+            onClick={() => navigate("/app/profile/security")}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -244,7 +252,7 @@ const ImportWalletBackup = () => {
 
           <Button
             variant="ghost"
-            onClick={() => navigate("/profile/security")}
+            onClick={() => navigate("/app/profile/security")}
             className="w-full"
           >
             Cancel
