@@ -101,13 +101,14 @@ class SessionManagerClass {
       setSecurityUserId(userId);
 
       // Parallel checks for efficiency
-      const [walletResult, hasSecurity, lockState] = await Promise.all([
-        supabase.from('user_wallets').select('wallet_address').eq('user_id', userId).maybeSingle(),
+      // FIX: Check profiles.wallet_address instead of user_wallets (which is unused)
+      const [profileResult, hasSecurity, lockState] = await Promise.all([
+        supabase.from('profiles').select('wallet_address').eq('user_id', userId).maybeSingle(),
         Promise.resolve(hasLocalSecurity()),
         this.checkLockState(userId)
       ]);
 
-      const hasWallet = !!walletResult.data;
+      const hasWallet = !!profileResult.data?.wallet_address;
 
       this.updateState({
         session,

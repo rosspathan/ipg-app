@@ -260,9 +260,9 @@ const ImportWalletBackup = () => {
           setShowPinDialog(open);
         }}
         onSubmit={handlePinSubmit}
-        title="Enter PIN to Encrypt Backup"
-        description="Your recovery phrase will be encrypted with your PIN before being stored securely."
-        isNewPin={false}
+        title="Create Backup PIN"
+        description="Create a 6-digit PIN to encrypt your backup. You'll need this PIN to restore your wallet on other devices."
+        isNewPin={true}
       />
     </div>
   );
