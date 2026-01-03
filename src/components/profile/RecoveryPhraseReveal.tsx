@@ -25,7 +25,7 @@ import {
   Plus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import { getStoredWallet, storeWallet, setWalletStorageUserId } from "@/utils/walletStorage";
 import AddRecoveryPhraseDialog from "./AddRecoveryPhraseDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +42,7 @@ const AUTO_HIDE_SECONDS = 30;
 
 const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user } = useAuthUser();
   const navigate = useNavigate();
   const { checkBackupExists, retrieveBackup } = useEncryptedWalletBackup();
   const [step, setStep] = useState<Step>("warning");

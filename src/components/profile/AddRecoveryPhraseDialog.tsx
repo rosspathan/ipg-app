@@ -33,7 +33,7 @@ import {
   Shield
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthUser } from "@/hooks/useAuthUser";
 import * as bip39 from "bip39";
 import { ethers } from "ethers";
 import { storeWallet, setWalletStorageUserId } from "@/utils/walletStorage";
@@ -62,7 +62,7 @@ const AddRecoveryPhraseDialog = ({
   onSuccess
 }: AddRecoveryPhraseDialogProps) => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuthUser();
   const { createBackup } = useEncryptedWalletBackup();
 
   const [step, setStep] = useState<Step>("phrase_entry");
@@ -93,7 +93,15 @@ const AddRecoveryPhraseDialog = ({
   };
 
   const handlePhraseSubmit = async () => {
-    if (!user?.id) {
+    // Get user ID from context or fallback to direct Supabase call
+    let userId = user?.id;
+    
+    if (!userId) {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      userId = currentUser?.id;
+    }
+    
+    if (!userId) {
       setError("Please log in first");
       return;
     }
@@ -131,7 +139,7 @@ const AddRecoveryPhraseDialog = ({
       const { data: profile } = await supabase
         .from('profiles')
         .select('wallet_address')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       // If profile has a wallet address, check if it matches
@@ -147,7 +155,7 @@ const AddRecoveryPhraseDialog = ({
           .from('profiles')
           .select('user_id')
           .ilike('wallet_address', derivedAddress)
-          .neq('user_id', user.id)
+          .neq('user_id', userId)
           .maybeSingle();
 
         if (existingWallet) {
@@ -158,13 +166,13 @@ const AddRecoveryPhraseDialog = ({
       }
 
       // Store locally
-      setWalletStorageUserId(user.id);
+      setWalletStorageUserId(userId);
       storeWallet({
         address: derivedAddress,
         seedPhrase: normalizedPhrase,
         privateKey: hdNode.privateKey,
         network: 'mainnet'
-      }, user.id);
+      }, userId);
 
       // Update profile if no wallet was linked
       if (!profile?.wallet_address) {
@@ -174,7 +182,7 @@ const AddRecoveryPhraseDialog = ({
             wallet_address: derivedAddress,
             setup_complete: true 
           })
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
       }
 
       setWalletAddress(derivedAddress);
