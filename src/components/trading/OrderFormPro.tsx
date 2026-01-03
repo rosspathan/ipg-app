@@ -70,7 +70,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
     return numAmount * numPrice;
   }, [numAmount, numPrice, currentPrice, orderType]);
 
-  const estimatedFeeUsdt = total * 0.001;
+  const estimatedFeeUsdt = total * 0.005; // 0.5% fee
   const totalInr = total * inrRate;
   const currentPriceInr = currentPrice * inrRate;
   
@@ -289,9 +289,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             </span>
           </div>
           <div className="flex items-center justify-between text-[10px] sm:text-xs pt-1 border-t border-border/50">
-            <span className="text-muted-foreground">Est. Fee (0.1%)</span>
+            <span className="text-muted-foreground">Est. Fee (0.5%)</span>
             <span className="text-foreground font-mono">
-              {estimatedFeeUsdt.toFixed(4)} USDT
+              {estimatedFeeUsdt.toFixed(4)} {quoteCurrency}
             </span>
           </div>
         </div>

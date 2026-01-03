@@ -12,6 +12,7 @@ import { useTradingPairs } from "@/hooks/useTradingPairs";
 import { useBep20Balances } from "@/hooks/useBep20Balances";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useUserOrders } from "@/hooks/useUserOrders";
+import { useInternalOrderBook } from "@/hooks/useInternalOrderBook";
 import { useToast } from "@/hooks/use-toast";
 import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
 import { useMarketStore } from "@/hooks/useMarketStore";
@@ -79,9 +80,12 @@ function TradingPairPageContent() {
   // Get user orders
   const { orders, cancelOrder, refetch: refetchOrders } = useUserOrders(symbol);
 
+  // Fetch internal order book from database (real pending orders)
+  const { data: internalOrderBookData, refetch: refetchOrderBook } = useInternalOrderBook(symbol);
+
   // Subscribe to internal trading WebSocket for order book and trades
   const { 
-    orderBook: internalOrderBook, 
+    orderBook: wsOrderBook, 
     trades: internalTrades,
     isConnected: wsConnected,
     subscribeToSymbol,
@@ -94,8 +98,8 @@ function TradingPairPageContent() {
   const unsubscribe = useMarketStore((state) => state.unsubscribe);
   const marketPrice = useMarketStore((state) => state.tickers[symbol]?.lastPrice);
 
-  // Get the internal order book for this symbol
-  const orderBook = internalOrderBook[symbol];
+  // Use internal order book from database, fallback to websocket
+  const orderBook = internalOrderBookData || wsOrderBook[symbol];
 
   // Subscribe to internal WebSocket for order book
   useEffect(() => {
@@ -142,6 +146,7 @@ function TradingPairPageContent() {
           console.log('[Realtime] Order update:', payload);
           refetchOrders();
           refetchBalances();
+          refetchOrderBook(); // Refresh order book when orders change
         }
       )
       .subscribe();

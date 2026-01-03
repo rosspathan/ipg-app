@@ -9,6 +9,8 @@ import { ChevronLeft, TrendingUp, TrendingDown, Activity, Clock, Zap } from "luc
 import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useToast } from "@/hooks/use-toast";
 import { useMarketStore, useMarketTicker, useMarketOrderBook, useMarketTrades, useMarketConnection } from "@/hooks/useMarketStore";
+import { useBep20Balances } from "@/hooks/useBep20Balances";
+import { useUserOrders } from "@/hooks/useUserOrders";
 
 // Enhanced trading components
 import { ChartPanel } from "@/components/trading/ChartPanel";
@@ -38,6 +40,10 @@ const TradingScreen = () => {
   const ticker = useMarketTicker(selectedPair);
   const orderBook = useMarketOrderBook(selectedPair);
   const trades = useMarketTrades(selectedPair);
+
+  // User data hooks
+  const { balances: userBalances, isLoading: balancesLoading } = useBep20Balances();
+  const { orders: userOrders, cancelOrder: cancelUserOrder, isLoading: ordersLoading } = useUserOrders(selectedPair);
 
   // Trading API
   const { placeOrder, cancelOrder, getOrderHistory, loading } = useTradingAPI();
@@ -113,35 +119,18 @@ const TradingScreen = () => {
     time: new Date(trade.timestamp).toISOString()
   }));
 
-  // Mock user balances - in real app, this would come from user's wallet
+  // Get real user balances from hook
+  const [baseAsset, quoteAsset] = selectedPair.split('/');
+  const quoteBalance = userBalances?.find(b => b.symbol === quoteAsset);
+  const baseBalance = userBalances?.find(b => b.symbol === baseAsset);
+  
   const availableBalance = {
-    buy: 1000.00, // USDT balance for buying
-    sell: 0.1000  // BTC balance for selling
+    buy: quoteBalance?.appBalance || quoteBalance?.onchainBalance || 0, // Quote currency for buying
+    sell: baseBalance?.appBalance || baseBalance?.onchainBalance || 0   // Base currency for selling
   };
 
-  // Mock open orders for demo
-  const mockOpenOrders = [
-    { 
-      id: '1', 
-      pair: 'BTC/USDT', 
-      side: 'buy' as const, 
-      type: 'limit', 
-      amount: '0.025', 
-      price: '43000.00', 
-      status: 'open',
-      created_at: '2024-01-15T10:30:00Z'
-    },
-    { 
-      id: '2', 
-      pair: 'ETH/USDT', 
-      side: 'sell' as const, 
-      type: 'limit', 
-      amount: '0.5', 
-      price: '2650.00', 
-      status: 'open',
-      created_at: '2024-01-15T09:15:00Z'
-    },
-  ];
+  // Get real open orders from hook
+  const openOrders = userOrders?.filter(o => o.status === 'pending' || o.status === 'open') || [];
 
   // Handle order placement
   const handlePlaceOrder = async (orderData: {
@@ -373,7 +362,7 @@ const TradingScreen = () => {
             <CardTitle className="text-sm flex items-center justify-between">
               Orders & History
               <Badge variant="outline" className="text-xs">
-                {mockOpenOrders.length} active
+                {openOrders.length} active
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -381,7 +370,7 @@ const TradingScreen = () => {
             <Tabs defaultValue="open" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="open" className="text-xs">
-                  Open Orders ({mockOpenOrders.length})
+                  Open Orders ({openOrders.length})
                 </TabsTrigger>
                 <TabsTrigger value="history" className="text-xs">
                   Trade History
@@ -389,9 +378,9 @@ const TradingScreen = () => {
               </TabsList>
               
               <TabsContent value="open" className="space-y-3 mt-4">
-                {mockOpenOrders.length > 0 ? (
+                {openOrders.length > 0 ? (
                   <div className="space-y-3">
-                    {mockOpenOrders.map((order) => (
+                    {openOrders.map((order) => (
                       <div key={order.id} className="p-3 bg-muted/30 rounded-lg border">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -401,16 +390,16 @@ const TradingScreen = () => {
                             >
                               {order.side.toUpperCase()}
                             </Badge>
-                            <span className="text-sm font-medium">{order.pair}</span>
+                            <span className="text-sm font-medium">{order.symbol}</span>
                             <Badge variant="outline" className="text-xs">
-                              {order.type}
+                              {order.order_type}
                             </Badge>
                           </div>
                           <Button 
                             size="sm" 
                             variant="outline" 
                             className="h-6 text-xs hover:bg-red-500 hover:text-white transition-colors"
-                            onClick={() => handleCancelOrder(order.id)}
+                            onClick={() => cancelUserOrder(order.id)}
                           >
                             Cancel
                           </Button>
@@ -423,7 +412,7 @@ const TradingScreen = () => {
                           </div>
                           <div>
                             <span className="text-muted-foreground">Price:</span>
-                            <div className="font-medium">${order.price}</div>
+                            <div className="font-medium">${order.price || 'Market'}</div>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Status:</span>

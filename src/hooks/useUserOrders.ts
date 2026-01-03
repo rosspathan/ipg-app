@@ -44,72 +44,33 @@ export const useUserOrders = (symbol?: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Parse symbol to get quote asset for balance locking
-      const [baseSymbol, quoteSymbol] = params.symbol.split('/');
-      const assetToLock = params.side === 'buy' ? quoteSymbol : baseSymbol;
-      
-      // FEE BUFFER: For buy orders, lock (qty * price) * (1 + 0.5% fee) to ensure settlement works
-      const FEE_PERCENT = 0.005; // 0.5% fee
-      const amountToLock = params.side === 'buy' 
-        ? params.quantity * (params.price || 0) * (1 + FEE_PERCENT)
-        : params.quantity;
+      // Note: Balance locking is handled by the place-order edge function
+      // to avoid duplicate locking and race conditions
 
-      // Lock balance before placing order (only for limit orders)
-      if (params.type === 'limit') {
-        const { data: locked, error: lockError } = await supabase.rpc('lock_balance_for_order', {
-          p_user_id: user.id,
-          p_asset_symbol: assetToLock,
-          p_amount: amountToLock
-        });
-
-        if (lockError || !locked) {
-          throw new Error(`Insufficient ${assetToLock} balance. Need ${amountToLock.toFixed(6)} (includes 0.5% fee buffer)`);
-        }
-      }
-
-      // Insert order into database using correct column names
-      const { data: order, error } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
+      // Call the place-order edge function which handles balance locking atomically
+      const { data: orderResult, error } = await supabase.functions.invoke('place-order', {
+        body: {
           symbol: params.symbol,
           side: params.side,
-          order_type: params.type,
-          amount: params.quantity,
+          type: params.type,
+          quantity: params.quantity,
           price: params.price,
-          filled_amount: 0,
-          remaining_amount: params.quantity,
-          status: 'pending',
           trading_type: params.trading_type || 'spot',
-        })
-        .select()
-        .single();
+          trading_mode: 'internal'
+        }
+      });
 
       if (error) {
-        // Unlock balance if order creation failed
-        if (params.type === 'limit') {
-          await supabase.rpc('unlock_balance_for_order', {
-            p_user_id: user.id,
-            p_asset_symbol: assetToLock,
-            p_amount: amountToLock
-          });
-        }
         throw error;
       }
 
-      // Trigger the matching engine after order placement
-      try {
-        const { error: matchError } = await supabase.functions.invoke('match-orders', {
-          body: {}
-        });
-        
-        if (matchError) {
-          console.warn('[useUserOrders] Matching engine call failed:', matchError);
-          // Don't fail the order - matching can happen asynchronously
-        }
-      } catch (matchErr) {
-        console.warn('[useUserOrders] Matching engine error:', matchErr);
+      if (!orderResult?.success) {
+        throw new Error(orderResult?.error || 'Failed to place order');
       }
+
+      const order = orderResult.order;
+
+      // Matching engine is triggered by place-order edge function
 
       return order;
     },
