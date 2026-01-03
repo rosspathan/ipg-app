@@ -90,6 +90,16 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
       return;
     }
 
+    // SECURITY: Block known test mnemonics
+    if (isBlockedMnemonic(mnemonic)) {
+      toast({
+        title: "Security Alert",
+        description: "This is a publicly known test phrase and cannot be used. Please use your own unique recovery phrase.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsImporting(true);
     try {
       // LOCAL-ONLY IMPORT: Skip server check, derive wallet locally
@@ -151,16 +161,18 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
     }
   };
 
-  const suggestMnemonic = (suggestion: string) => {
-    setMnemonic(suggestion);
-    handleMnemonicChange(suggestion);
-  };
-
-  // Sample valid mnemonics for testing
-  const sampleMnemonics = [
+  // SECURITY: Blocked test mnemonics that should never be used in production
+  const BLOCKED_MNEMONICS = [
     "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
-    "legal winner thank year wave sausage worth useful legal winner thank yellow"
+    "legal winner thank year wave sausage worth useful legal winner thank yellow",
+    "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong",
+    "void come effort suffer camp survey warrior heavy shoot primary clutch crush open amazing screen patrol group space point ten exist slush involve unfold"
   ];
+
+  const isBlockedMnemonic = (phrase: string): boolean => {
+    const normalized = phrase.trim().toLowerCase();
+    return BLOCKED_MNEMONICS.some(blocked => normalized === blocked);
+  };
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden" style={{ height: '100dvh' }}>
@@ -362,27 +374,16 @@ const ImportWalletScreen: React.FC<ImportWalletScreenProps> = ({
             </Card>
           </motion.div>
 
-          {/* Quick Test Options (for development) */}
+          {/* Security notice about unique wallets */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="space-y-2"
+            className="text-center"
           >
-            <p className="text-white/60 text-sm text-center">Quick test with sample phrases:</p>
-            <div className="grid grid-cols-1 gap-2">
-              {sampleMnemonics.map((sample, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => suggestMnemonic(sample)}
-                  className="border-white/20 text-white/70 hover:bg-black/40 text-xs p-2 h-auto"
-                >
-                  Sample {index + 1}: {sample.split(' ').slice(0, 3).join(' ')}...
-                </Button>
-              ))}
-            </div>
+            <p className="text-white/50 text-xs">
+              🔐 Each wallet must be unique to your account
+            </p>
           </motion.div>
 
           {/* Import Button */}

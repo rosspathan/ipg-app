@@ -30,6 +30,13 @@ const ImportWalletBackup = () => {
     setError("");
   };
 
+  // SECURITY: Blocked test mnemonics
+  const BLOCKED_MNEMONICS = [
+    "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+    "legal winner thank year wave sausage worth useful legal winner thank yellow",
+    "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong"
+  ];
+
   const handleImport = async () => {
     if (!user?.id) {
       setError("Please log in first");
@@ -49,6 +56,12 @@ const ImportWalletBackup = () => {
       return;
     }
 
+    // SECURITY: Block known test mnemonics
+    if (BLOCKED_MNEMONICS.includes(normalizedPhrase)) {
+      setError("This is a publicly known test phrase and cannot be used. Please use your own unique recovery phrase.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -56,6 +69,20 @@ const ImportWalletBackup = () => {
       // Derive wallet from seed phrase
       const hdNode = ethers.HDNodeWallet.fromPhrase(normalizedPhrase);
       const walletAddress = hdNode.address;
+
+      // SECURITY: Check if this wallet is already linked to another user
+      const { data: existingWallet } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .ilike('wallet_address', walletAddress)
+        .neq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingWallet) {
+        setError("This wallet is already linked to another account. Please use your own unique recovery phrase.");
+        setLoading(false);
+        return;
+      }
 
       // Store locally
       setWalletStorageUserId(user.id);

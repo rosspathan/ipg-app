@@ -183,6 +183,27 @@ serve(async (req) => {
         // Continue to add the new wallet - multi-wallet support enabled
       }
     } else {
+      // SECURITY: Check if this wallet address is already used by another user
+      if (importedWallet?.address) {
+        const { data: existingOwner } = await supabaseAdmin
+          .from('profiles')
+          .select('user_id, email')
+          .ilike('wallet_address', importedWallet.address)
+          .maybeSingle();
+
+        if (existingOwner) {
+          console.log('[complete-onboarding] BLOCKED: Wallet already owned by:', existingOwner.user_id);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              reason: "wallet_already_linked",
+              error: "This wallet is already linked to another account. Please use your own unique recovery phrase." 
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
       // Use IMPORTED wallet if provided, otherwise generate NEW wallet
       if (importedWallet?.mnemonic && importedWallet?.address) {
         console.log('[complete-onboarding] Using imported wallet:', importedWallet.address);
@@ -195,6 +216,12 @@ serve(async (req) => {
           publicKey: '', // Not needed for imported wallets
           privateKey: '' // Not needed for imported wallets
         };
+      } else {
+        // Generate NEW wallet for new user
+        console.log('[complete-onboarding] Generating new wallet');
+        mnemonic = generateMnemonic(128); // 12 words
+        walletData = generateWalletFromMnemonic(mnemonic);
+      }
       } else {
         // Generate NEW wallet for new user
         console.log('[complete-onboarding] Generating new wallet');

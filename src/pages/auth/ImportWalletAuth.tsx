@@ -21,6 +21,13 @@ const ImportWalletAuth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // SECURITY: Blocked test mnemonics
+  const BLOCKED_MNEMONICS = [
+    "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+    "legal winner thank year wave sausage worth useful legal winner thank yellow",
+    "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong"
+  ];
+
   const handleImport = async () => {
     if (!user) {
       toast({
@@ -51,10 +58,29 @@ const ImportWalletAuth: React.FC = () => {
         return;
       }
 
+      // SECURITY: Block known test mnemonics
+      if (BLOCKED_MNEMONICS.includes(cleanPhrase)) {
+        setError('This is a publicly known test phrase and cannot be used. Please use your own unique recovery phrase.');
+        return;
+      }
+
       // Derive wallet from mnemonic
       const ethersWallet = ethers.Wallet.fromPhrase(cleanPhrase);
       const address = ethersWallet.address;
       const privateKey = ethersWallet.privateKey;
+
+      // SECURITY: Check if this wallet is already linked to another user
+      const { data: existingWallet } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .ilike('wallet_address', address)
+        .neq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingWallet) {
+        setError('This wallet is already linked to another account. Please use your own unique recovery phrase.');
+        return;
+      }
 
       // Store in localStorage with user-scoped key
       const walletData = {
