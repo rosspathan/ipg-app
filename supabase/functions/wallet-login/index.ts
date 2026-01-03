@@ -65,14 +65,14 @@ serve(async (req) => {
 
     if (!email) {
       return new Response(
-        JSON.stringify({ error: "Email is required for wallet login" }),
+        JSON.stringify({ error: "Email is required for wallet login", code: "EMAIL_REQUIRED" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!mnemonic && !privateKey) {
       return new Response(
-        JSON.stringify({ error: "Either mnemonic or private key is required" }),
+        JSON.stringify({ error: "Either mnemonic or private key is required", code: "INPUT_REQUIRED" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -81,28 +81,37 @@ serve(async (req) => {
 
     // Determine wallet address from mnemonic or private key
     if (mnemonic) {
+      // Normalize mnemonic: trim, lowercase, collapse all whitespace to single spaces
+      const normalizedMnemonic = mnemonic.trim().toLowerCase().split(/\s+/).join(' ');
+      
       // Validate mnemonic format
-      if (!validateMnemonic(mnemonic.trim())) {
+      if (!validateMnemonic(normalizedMnemonic)) {
+        console.log("[wallet-login] Invalid mnemonic format, word count:", normalizedMnemonic.split(' ').length);
         return new Response(
-          JSON.stringify({ error: "Invalid mnemonic phrase" }),
+          JSON.stringify({ 
+            error: "Invalid recovery phrase. Please check that all words are spelled correctly and in the right order.", 
+            code: "INVALID_MNEMONIC" 
+          }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
-      const wallet = generateWalletFromMnemonic(mnemonic.trim());
+      const wallet = generateWalletFromMnemonic(normalizedMnemonic);
       walletAddress = wallet.address;
+      console.log("[wallet-login] Derived address from mnemonic:", walletAddress);
     } else if (privateKey) {
       try {
         walletAddress = generateAddressFromPrivateKey(privateKey.trim());
+        console.log("[wallet-login] Derived address from private key:", walletAddress);
       } catch (error) {
         return new Response(
-          JSON.stringify({ error: "Invalid private key" }),
+          JSON.stringify({ error: "Invalid private key format", code: "INVALID_PRIVATE_KEY" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     } else {
       return new Response(
-        JSON.stringify({ error: "Invalid login method" }),
+        JSON.stringify({ error: "Invalid login method", code: "INVALID_METHOD" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -119,66 +128,97 @@ serve(async (req) => {
       }
     );
 
-    // Find user by wallet address - check wallets_user first, then profiles
-    let userId: string | null = null;
-    let foundWalletAddress: string = walletAddress;
-
-    // Try wallets_user table first
-    const { data: walletData } = await supabaseAdmin
-      .from('wallets_user')
-      .select('user_id, address')
-      .eq('address', walletAddress.toLowerCase())
+    // STRATEGY: First find user by email, then verify wallet matches
+    // This gives clearer error messages to users
+    
+    console.log("[wallet-login] Looking up profile for email:", email);
+    
+    // First, try to find the user by email in profiles
+    const { data: profileByEmail, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id, wallet_address, email')
+      .ilike('email', email)
       .maybeSingle();
 
-    if (walletData) {
-      userId = walletData.user_id;
-      foundWalletAddress = walletData.address;
-      console.log("Found user in wallets_user:", userId);
+    if (profileError) {
+      console.error("[wallet-login] Profile lookup error:", profileError);
+    }
+
+    let userId: string | null = null;
+    let storedWalletAddress: string | null = null;
+
+    if (profileByEmail) {
+      userId = profileByEmail.user_id;
+      storedWalletAddress = profileByEmail.wallet_address;
+      console.log("[wallet-login] Found profile by email, user_id:", userId, "wallet_address:", storedWalletAddress);
     } else {
-      // Fallback: check profiles table by wallet_address
-      const { data: profileData } = await supabaseAdmin
-        .from('profiles')
-        .select('id, wallet_address, email')
-        .or(`wallet_address.ilike.${walletAddress},wallet_address.ilike.${walletAddress.toLowerCase()}`)
+      // Email not found in profiles, check if this is an old account
+      // Try wallets_user table as fallback
+      const { data: walletData } = await supabaseAdmin
+        .from('wallets_user')
+        .select('user_id, address')
+        .eq('address', walletAddress.toLowerCase())
         .maybeSingle();
 
-      if (profileData) {
-        userId = profileData.id;
-        foundWalletAddress = profileData.wallet_address || walletAddress;
-        console.log("Found user in profiles:", userId);
-        
-        // Also verify email matches if provided in profile
-        if (profileData.email && profileData.email.toLowerCase() !== email.toLowerCase()) {
-          return new Response(
-            JSON.stringify({ error: "Email does not match wallet owner" }),
-            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+      if (walletData) {
+        userId = walletData.user_id;
+        storedWalletAddress = walletData.address;
+        console.log("[wallet-login] Found user in wallets_user:", userId);
       }
     }
 
+    // Check if we found the email/account at all
     if (!userId) {
-      console.log("Wallet not found in wallets_user or profiles:", walletAddress);
+      console.log("[wallet-login] No account found for email:", email);
       return new Response(
-        JSON.stringify({ error: "Wallet not found. Please ensure you're using the correct recovery phrase for this email." }),
+        JSON.stringify({ 
+          error: "No account found with this email. Please check your email address or create a new account.", 
+          code: "EMAIL_NOT_FOUND" 
+        }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get user details
-    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId);
+    // Check if the account has a wallet linked
+    if (!storedWalletAddress) {
+      console.log("[wallet-login] Account has no wallet linked:", userId);
+      return new Response(
+        JSON.stringify({ 
+          error: "No wallet is linked to this account. Please use password login and then import your wallet from Settings.", 
+          code: "NO_WALLET_LINKED" 
+        }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify the derived wallet address matches the stored one
+    if (storedWalletAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      console.log("[wallet-login] Wallet mismatch - stored:", storedWalletAddress, "derived:", walletAddress);
+      return new Response(
+        JSON.stringify({ 
+          error: "The recovery phrase does not match the wallet linked to this account. Please double-check your words and their order.", 
+          code: "WALLET_MISMATCH" 
+        }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get user details from auth
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
     
-    if (!userData.user) {
+    if (userError || !userData.user) {
+      console.error("[wallet-login] User lookup error:", userError);
       return new Response(
-        JSON.stringify({ error: "User not found" }),
+        JSON.stringify({ error: "Account not found in authentication system", code: "AUTH_USER_NOT_FOUND" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Verify email matches
+    // Verify email matches the auth user email
     if (userData.user.email?.toLowerCase() !== email.toLowerCase()) {
+      console.log("[wallet-login] Email mismatch with auth user");
       return new Response(
-        JSON.stringify({ error: "Email does not match wallet owner" }),
+        JSON.stringify({ error: "Email does not match account records", code: "EMAIL_MISMATCH" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -190,29 +230,29 @@ serve(async (req) => {
     });
 
     if (linkError) {
+      console.error("[wallet-login] Magic link generation error:", linkError);
       throw new Error(`Failed to generate login token: ${linkError.message}`);
     }
 
     // Extract the token from the action link
-    // The link format is: https://xxx.supabase.co/auth/v1/verify?token=TOKEN&type=magiclink
     const actionLink = linkData.properties.action_link;
     const urlParams = new URLSearchParams(new URL(actionLink).hash.substring(1) || new URL(actionLink).search);
     const token = urlParams.get('token');
 
     if (!token) {
-      console.log("Action link:", actionLink);
+      console.log("[wallet-login] Failed to extract token from action link:", actionLink);
       throw new Error("Failed to extract token from magic link");
     }
 
-    console.log("Successfully generated token for user:", userId);
+    console.log("[wallet-login] Successfully generated token for user:", userId);
 
     return new Response(
       JSON.stringify({ 
         success: true,
         userId: userId,
         email: userData.user.email,
-        walletAddress: foundWalletAddress,
-        token: token, // This can be used with verifyOtp
+        walletAddress: storedWalletAddress,
+        token: token,
         message: "Login successful"
       }),
       { 
@@ -222,9 +262,9 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error("Wallet login error:", error);
+    console.error("[wallet-login] Unexpected error:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Login failed" }),
+      JSON.stringify({ error: error.message || "Login failed", code: "INTERNAL_ERROR" }),
       { 
         status: 500, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 

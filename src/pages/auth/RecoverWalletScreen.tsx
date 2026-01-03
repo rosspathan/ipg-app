@@ -19,6 +19,16 @@ const RecoverWalletScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'mnemonic' | 'privatekey'>('mnemonic');
   const [loading, setLoading] = useState(false);
 
+  // Normalize mnemonic: trim, lowercase, collapse whitespace
+  const normalizeMnemonic = (input: string) => {
+    return input.trim().toLowerCase().split(/\s+/).join(' ');
+  };
+
+  const getWordCount = (input: string) => {
+    const normalized = normalizeMnemonic(input);
+    return normalized ? normalized.split(' ').length : 0;
+  };
+
   const handleRecover = async () => {
     if (!email) {
       toast({
@@ -29,7 +39,9 @@ const RecoverWalletScreen: React.FC = () => {
       return;
     }
 
-    const recoveryInput = activeTab === 'mnemonic' ? mnemonic.trim() : privateKey.trim();
+    const recoveryInput = activeTab === 'mnemonic' 
+      ? normalizeMnemonic(mnemonic) 
+      : privateKey.trim();
 
     if (!recoveryInput) {
       toast({
@@ -38,6 +50,19 @@ const RecoverWalletScreen: React.FC = () => {
         variant: "destructive"
       });
       return;
+    }
+
+    // Validate word count for mnemonic
+    if (activeTab === 'mnemonic') {
+      const wordCount = getWordCount(mnemonic);
+      if (wordCount !== 12 && wordCount !== 24) {
+        toast({
+          title: "Invalid Recovery Phrase",
+          description: `Your phrase has ${wordCount} words. Please enter a 12 or 24 word recovery phrase.`,
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     setLoading(true);
@@ -52,9 +77,30 @@ const RecoverWalletScreen: React.FC = () => {
         }
       });
 
-      if (error) throw error;
+      // Handle edge function errors - parse the response for the actual error message
+      if (error) {
+        // Try to get the actual error message from the response
+        let errorMessage = "Could not recover wallet. Please check your details.";
+        
+        try {
+          // The error context contains the Response object
+          if (error.context && typeof error.context.json === 'function') {
+            const errorData = await error.context.json();
+            if (errorData?.error) {
+              errorMessage = errorData.error;
+            }
+          }
+        } catch {
+          // If we can't parse, use the error message
+          if (error.message && !error.message.includes('non-2xx')) {
+            errorMessage = error.message;
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
       
-      // Check for API error in response
+      // Check for API error in response data
       if (data?.error) {
         throw new Error(data.error);
       }
@@ -83,7 +129,6 @@ const RecoverWalletScreen: React.FC = () => {
           navigate('/app/home');
         }
       } else if (data?.success) {
-        // If we got success but no token, show a different message
         toast({
           title: "Verification Required",
           description: "Please check your email to complete login",
