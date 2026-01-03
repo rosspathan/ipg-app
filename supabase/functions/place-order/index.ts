@@ -90,10 +90,23 @@ serve(async (req) => {
       throw new Error('Invalid symbol format. Expected: BASE/QUOTE');
     }
 
-    // Calculate required balance WITH FEE BUFFER for buys
-    const estimated_market_price = type === 'market' 
-      ? (side === 'buy' ? price || 999999999 : price || 0.00000001) 
-      : price!;
+    // For market orders, fetch actual market price from database
+    let estimated_market_price = price;
+    if (type === 'market' && !price) {
+      const { data: marketPriceData } = await supabaseClient
+        .from('market_prices')
+        .select('current_price')
+        .eq('symbol', symbol)
+        .single();
+      
+      estimated_market_price = marketPriceData?.current_price || 0;
+      console.log('[place-order] Fetched market price:', estimated_market_price);
+      
+      if (!estimated_market_price || estimated_market_price <= 0) {
+        throw new Error('Unable to fetch current market price for market order');
+      }
+    }
+    
     const order_value = quantity * estimated_market_price;
     const required_asset = side === 'buy' ? quote_symbol : base_symbol;
     // Add 0.5% fee buffer for buy orders to ensure settlement works
@@ -226,48 +239,22 @@ serve(async (req) => {
       
     } else {
       // INTERNAL MODE: Use wallet_balances table
-      // PHASE 2.4: Atomic balance locking for limit orders
-      if (type === 'limit') {
-        const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
-          'lock_balance_for_order',
-          {
-            p_user_id: user.id,
-            p_asset_symbol: required_asset,
-            p_amount: required_amount,
-          }
-        );
-
-        if (lockError || !lockSuccess) {
-          console.error('[place-order] Lock balance failed:', lockError);
-          throw new Error('Insufficient balance or lock failed');
+      // PHASE 2.4: Atomic balance locking for ALL order types (not just limit)
+      const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
+        'lock_balance_for_order',
+        {
+          p_user_id: user.id,
+          p_asset_symbol: required_asset,
+          p_amount: required_amount,
         }
+      );
 
-        console.log('[place-order] Balance locked successfully');
+      if (lockError || !lockSuccess) {
+        console.error('[place-order] Lock balance failed:', lockError);
+        throw new Error(`Insufficient ${required_asset} balance. Required: ${required_amount.toFixed(6)} (includes fee buffer)`);
       }
 
-      // For market orders, validate balance
-      if (type === 'market') {
-        const { data: assetData } = await supabaseClient
-          .from('assets')
-          .select('id')
-          .eq('symbol', required_asset)
-          .single();
-
-        if (!assetData) {
-          throw new Error(`Asset ${required_asset} not found`);
-        }
-
-        const { data: balanceData } = await supabaseClient
-          .from('wallet_balances')
-          .select('available')
-          .eq('user_id', user.id)
-          .eq('asset_id', assetData.id)
-          .single();
-
-        if (!balanceData || balanceData.available < required_amount) {
-          throw new Error('Insufficient balance');
-        }
-      }
+      console.log('[place-order] Balance locked successfully for', type, 'order');
     }
 
     // Insert order (use 'amount' column, not 'quantity')
@@ -290,8 +277,8 @@ serve(async (req) => {
     if (insertError) {
       console.error('[place-order] Insert failed:', insertError);
       
-      // Rollback: unlock balance if limit order insert failed (only for internal mode)
-      if (type === 'limit' && !isOnchainMode) {
+      // Rollback: unlock balance if order insert failed (only for internal mode)
+      if (!isOnchainMode) {
         await supabaseClient.rpc('unlock_balance_for_order', {
           p_user_id: user.id,
           p_asset_symbol: required_asset,

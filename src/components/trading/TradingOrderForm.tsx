@@ -53,7 +53,7 @@ const TradingOrderForm: React.FC<TradingOrderFormProps> = ({
     ? finalAmount * currentPrice
     : price ? finalAmount * parseFloat(price) : 0;
 
-  const estimatedFee = estimatedTotal * 0.001; // 0.1% fee
+  const estimatedFee = estimatedTotal * 0.005; // 0.5% fee
 
   useEffect(() => {
     if (orderType === 'limit' && !price) {
@@ -208,7 +208,7 @@ const TradingOrderForm: React.FC<TradingOrderFormProps> = ({
             </div>
             
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Est. Fee (0.1%):</span>
+              <span>Est. Fee (0.5%):</span>
               <span>{estimatedFee.toFixed(4)} {quoteAsset}</span>
             </div>
           </div>
