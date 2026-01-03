@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -19,11 +20,14 @@ import {
   CheckCircle,
   Cloud,
   Loader2,
-  Lock
+  Lock,
+  KeyRound,
+  Plus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { getStoredWallet, storeWallet, setWalletStorageUserId } from "@/utils/walletStorage";
+import AddRecoveryPhraseDialog from "./AddRecoveryPhraseDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
 
@@ -39,6 +43,7 @@ const AUTO_HIDE_SECONDS = 30;
 const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { checkBackupExists, retrieveBackup } = useEncryptedWalletBackup();
   const [step, setStep] = useState<Step>("warning");
   const [seedPhrase, setSeedPhrase] = useState<string[]>([]);
@@ -49,6 +54,7 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
   const [pinLoading, setPinLoading] = useState(false);
   const [pinError, setPinError] = useState("");
   const [hasServerBackup, setHasServerBackup] = useState(false);
+  const [showAddPhraseDialog, setShowAddPhraseDialog] = useState(false);
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -236,6 +242,7 @@ Generated: ${new Date().toISOString()}
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         {step === "warning" && (
@@ -354,8 +361,8 @@ Generated: ${new Date().toISOString()}
         {step === "not_found" && (
           <>
             <DialogHeader>
-              <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-2">
-                <AlertTriangle className="h-6 w-6 text-destructive" />
+              <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-2">
+                <KeyRound className="h-6 w-6 text-amber-500" />
               </div>
               <DialogTitle className="text-center">
                 Recovery Phrase Not Available
@@ -368,20 +375,43 @@ Generated: ${new Date().toISOString()}
             <Alert className="mt-4">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                <strong>To access your recovery phrase:</strong>
-                <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
-                  <li>Use the device where you originally created your wallet</li>
-                  <li>Or re-import your wallet using your seed phrase</li>
-                </ul>
+                <p className="text-sm">
+                  For your safety, i-SMART does not store your recovery phrase unless you create an encrypted cloud backup.
+                </p>
               </AlertDescription>
             </Alert>
 
-            <Button 
-              className="w-full mt-6"
-              onClick={() => onOpenChange(false)}
-            >
-              Close
-            </Button>
+            <div className="space-y-3 mt-6">
+              <Button 
+                className="w-full"
+                onClick={() => {
+                  onOpenChange(false);
+                  setShowAddPhraseDialog(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Recovery Phrase
+              </Button>
+              
+              <Button 
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate("/onboarding/wallet");
+                }}
+              >
+                Create New Wallet
+              </Button>
+
+              <Button 
+                variant="ghost"
+                className="w-full"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+            </div>
           </>
         )}
 
@@ -489,6 +519,17 @@ Generated: ${new Date().toISOString()}
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Add Recovery Phrase Dialog */}
+    <AddRecoveryPhraseDialog
+      open={showAddPhraseDialog}
+      onOpenChange={setShowAddPhraseDialog}
+      onSuccess={() => {
+        // Refresh the backup check if user opens reveal again
+        setStep("warning");
+      }}
+    />
+  </>
   );
 };
 
