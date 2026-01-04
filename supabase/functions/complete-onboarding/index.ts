@@ -222,12 +222,6 @@ serve(async (req) => {
         mnemonic = generateMnemonic(128); // 12 words
         walletData = generateWalletFromMnemonic(mnemonic);
       }
-      } else {
-        // Generate NEW wallet for new user
-        console.log('[complete-onboarding] Generating new wallet');
-        mnemonic = generateMnemonic(128); // 12 words
-        walletData = generateWalletFromMnemonic(mnemonic);
-      }
       
       // Create user with admin privileges (auto-confirmed)
       const tempPassword = crypto.randomUUID() + 'Aa1!';
