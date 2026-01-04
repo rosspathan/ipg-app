@@ -14,7 +14,7 @@ import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useUserOrders } from "@/hooks/useUserOrders";
 import { useRealtimeOrderBook } from "@/hooks/useRealtimeOrderBook";
 import { useRealtimeTradingBalances } from "@/hooks/useRealtimeTradingBalances";
-import { useAutoSyncBalances } from "@/hooks/useAutoSyncBalances";
+
 import { useToast } from "@/hooks/use-toast";
 import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
 import { useMarketStore } from "@/hooks/useMarketStore";
@@ -61,8 +61,6 @@ function TradingPairPageContent() {
   const queryClient = useQueryClient();
   const { user } = useAuthUser();
 
-  // Auto-sync on-chain balances to trading balances on page load
-  useAutoSyncBalances();
 
   // Tab state for Open Orders / Funds / History
   type BottomTab = 'orders' | 'funds' | 'history';
