@@ -12,7 +12,8 @@ import { useTradingPairs } from "@/hooks/useTradingPairs";
 import { useBep20Balances } from "@/hooks/useBep20Balances";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useUserOrders } from "@/hooks/useUserOrders";
-import { useInternalOrderBook } from "@/hooks/useInternalOrderBook";
+import { useRealtimeOrderBook } from "@/hooks/useRealtimeOrderBook";
+import { useRealtimeTradingBalances } from "@/hooks/useRealtimeTradingBalances";
 import { useToast } from "@/hooks/use-toast";
 import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
 import { useMarketStore } from "@/hooks/useMarketStore";
@@ -80,8 +81,11 @@ function TradingPairPageContent() {
   // Get user orders
   const { orders, cancelOrder, refetch: refetchOrders } = useUserOrders(symbol);
 
-  // Fetch internal order book from database (real pending orders)
-  const { data: internalOrderBookData, refetch: refetchOrderBook } = useInternalOrderBook(symbol);
+  // Real-time order book from database (auto-updates on changes)
+  const { data: internalOrderBookData, refetch: refetchOrderBook } = useRealtimeOrderBook(symbol);
+  
+  // Enable real-time balance and trade notifications
+  useRealtimeTradingBalances();
 
   // Subscribe to internal trading WebSocket for order book and trades
   const { 
@@ -128,68 +132,8 @@ function TradingPairPageContent() {
     };
   }, [symbol, subscribe, unsubscribe]);
 
-  // Real-time subscription for orders
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel('user-orders-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('[Realtime] Order update:', payload);
-          refetchOrders();
-          refetchBalances();
-          refetchOrderBook(); // Refresh order book when orders change
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, refetchOrders, refetchBalances]);
-
-  // Real-time subscription for trades (when user's orders are matched)
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel('user-trades-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'trades'
-        },
-        (payload) => {
-          const trade = payload.new as any;
-          // Check if this trade involves the current user
-          if (trade.buyer_id === user.id || trade.seller_id === user.id) {
-            console.log('[Realtime] Trade executed:', trade);
-            toast({
-              title: "Trade Executed",
-              description: `${trade.quantity} @ ${trade.price}`,
-            });
-            refetchOrders();
-            refetchBalances();
-            queryClient.invalidateQueries({ queryKey: ['trade-history'] });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, refetchOrders, refetchBalances, queryClient, toast]);
+  // Note: Real-time subscriptions for orders, trades, and balances are now handled 
+  // by useRealtimeTradingBalances() and useRealtimeOrderBook() hooks
 
   useEffect(() => {
     if (!pair && pairs && pairs.length > 0) {
@@ -238,13 +182,18 @@ function TradingPairPageContent() {
   const baseBalanceData = bep20Balances?.find((b) => b.symbol === pair.baseAsset);
   
   // Use INTERNAL balances for trading (wallet_balances table) - these are what settle_trade uses
+  // Available = spendable now, Locked = in open orders
   const quoteBalance = {
     symbol: pair.quoteAsset,
-    balance: quoteBalanceData?.appBalance || quoteBalanceData?.onchainBalance || 0
+    available: quoteBalanceData?.appAvailable || quoteBalanceData?.onchainBalance || 0,
+    locked: quoteBalanceData?.appLocked || 0,
+    total: quoteBalanceData?.appBalance || quoteBalanceData?.onchainBalance || 0
   };
   const baseBalance = {
     symbol: pair.baseAsset,
-    balance: baseBalanceData?.appBalance || baseBalanceData?.onchainBalance || 0
+    available: baseBalanceData?.appAvailable || baseBalanceData?.onchainBalance || 0,
+    locked: baseBalanceData?.appLocked || 0,
+    total: baseBalanceData?.appBalance || baseBalanceData?.onchainBalance || 0
   };
 
   const handlePriceClick = (price: number) => {
@@ -425,10 +374,12 @@ function TradingPairPageContent() {
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
                 quoteCurrency={pair.quoteAsset}
-                availableBase={baseBalance.balance}
-                availableQuote={quoteBalance.balance}
-                availableBaseUsd={baseBalance.balance * pair.price}
-                availableQuoteUsd={quoteBalance.balance}
+                availableBase={baseBalance.available}
+                availableQuote={quoteBalance.available}
+                lockedBase={baseBalance.locked}
+                lockedQuote={quoteBalance.locked}
+                availableBaseUsd={baseBalance.total * pair.price}
+                availableQuoteUsd={quoteBalance.total}
                 currentPrice={pair.price}
                 onPlaceOrder={handlePlaceOrder}
               />
