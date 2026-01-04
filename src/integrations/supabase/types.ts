@@ -12002,13 +12002,13 @@ export type Database = {
       settle_pending_referrer_rewards: { Args: never; Returns: Json }
       settle_trade: {
         Args: {
-          p_base_symbol: string
-          p_buyer_fee: number
+          p_base_amount: number
+          p_base_asset: string
+          p_buyer_fee?: number
           p_buyer_id: string
-          p_price: number
-          p_quantity: number
-          p_quote_symbol: string
-          p_seller_fee: number
+          p_quote_amount: number
+          p_quote_asset: string
+          p_seller_fee?: number
           p_seller_id: string
         }
         Returns: boolean

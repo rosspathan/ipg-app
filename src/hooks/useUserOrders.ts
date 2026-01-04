@@ -44,9 +44,6 @@ export const useUserOrders = (symbol?: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Note: Balance locking is handled by the place-order edge function
-      // to avoid duplicate locking and race conditions
-
       // Call the place-order edge function which handles balance locking atomically
       const { data: orderResult, error } = await supabase.functions.invoke('place-order', {
         body: {
@@ -61,18 +58,30 @@ export const useUserOrders = (symbol?: string) => {
       });
 
       if (error) {
-        throw error;
+        // Extract the actual error message from the edge function response
+        let errorMessage = error.message || 'Failed to place order';
+        
+        // Try to parse error body for detailed message
+        if (error.context?.body) {
+          try {
+            const bodyText = await error.context.body.text?.() || error.context.body;
+            const parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
+            if (parsed?.error) {
+              errorMessage = parsed.error;
+            }
+          } catch {
+            // Keep original error message if parsing fails
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (!orderResult?.success) {
         throw new Error(orderResult?.error || 'Failed to place order');
       }
 
-      const order = orderResult.order;
-
-      // Matching engine is triggered by place-order edge function
-
-      return order;
+      return orderResult.order;
     },
     onSuccess: (order, params) => {
       toast.success(
