@@ -22,6 +22,8 @@ export interface Bep20Balance {
   logoUrl: string | null
   onchainBalance: number
   appBalance: number
+  appAvailable: number
+  appLocked: number
   contractAddress: string | null
   priceUsd: number
   onchainUsdValue: number
@@ -66,7 +68,7 @@ export function useBep20Balances() {
   const { user } = useAuthUser()
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [assets, setAssets] = useState<Bep20Asset[]>([])
-  const [appBalances, setAppBalances] = useState<Record<string, number>>({})
+  const [appBalances, setAppBalances] = useState<Record<string, { available: number; locked: number; total: number }>>({})
 
   // Fetch wallet address
   useEffect(() => {
@@ -101,27 +103,58 @@ export function useBep20Balances() {
     fetchAssets()
   }, [])
 
-  // Fetch app balances from wallet_balances
-  useEffect(() => {
-    const fetchAppBalances = async () => {
-      if (!user?.id || assets.length === 0) return
-      
-      const { data } = await supabase
-        .from('wallet_balances')
-        .select('asset_id, available, locked')
-        .eq('user_id', user.id)
-        .in('asset_id', assets.map(a => a.id))
+  // Fetch app balances from wallet_balances (available + locked)
+  const fetchAppBalances = useCallback(async () => {
+    if (!user?.id || assets.length === 0) return
+    
+    const { data } = await supabase
+      .from('wallet_balances')
+      .select('asset_id, available, locked, total')
+      .eq('user_id', user.id)
+      .in('asset_id', assets.map(a => a.id))
 
-      if (data) {
-        const balMap: Record<string, number> = {}
-        data.forEach(b => {
-          balMap[b.asset_id] = (b.available || 0) + (b.locked || 0)
-        })
-        setAppBalances(balMap)
-      }
+    if (data) {
+      const balMap: Record<string, { available: number; locked: number; total: number }> = {}
+      data.forEach(b => {
+        balMap[b.asset_id] = {
+          available: b.available || 0,
+          locked: b.locked || 0,
+          total: b.total || ((b.available || 0) + (b.locked || 0))
+        }
+      })
+      setAppBalances(balMap)
     }
-    fetchAppBalances()
   }, [user?.id, assets])
+
+  useEffect(() => {
+    fetchAppBalances()
+  }, [fetchAppBalances])
+
+  // Real-time subscription for app balances
+  useEffect(() => {
+    if (!user?.id) return
+
+    const channel = supabase
+      .channel(`bep20-app-balances-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wallet_balances',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('[useBep20Balances] Balance changed, refetching...')
+          fetchAppBalances()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, fetchAppBalances])
 
   // Query on-chain balances with prices
   const { data: balances, isLoading, error, refetch } = useQuery({
@@ -155,6 +188,7 @@ export function useBep20Balances() {
 
           const priceUsd = prices[asset.symbol] || 0
           const onchainUsdValue = onchainBalance * priceUsd
+          const appBal = appBalances[asset.id] || { available: 0, locked: 0, total: 0 }
 
           return {
             assetId: asset.id,
@@ -162,7 +196,9 @@ export function useBep20Balances() {
             name: asset.name,
             logoUrl: asset.logoUrl,
             onchainBalance,
-            appBalance: appBalances[asset.id] || 0,
+            appBalance: appBal.total,
+            appAvailable: appBal.available,
+            appLocked: appBal.locked,
             contractAddress: asset.contractAddress,
             priceUsd,
             onchainUsdValue

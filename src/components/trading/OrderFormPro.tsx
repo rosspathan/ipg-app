@@ -16,6 +16,8 @@ interface OrderFormProProps {
   quoteCurrency: string;
   availableBase: number;
   availableQuote: number;
+  lockedBase?: number;
+  lockedQuote?: number;
   availableBaseUsd?: number;
   availableQuoteUsd?: number;
   currentPrice: number;
@@ -41,6 +43,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   quoteCurrency,
   availableBase,
   availableQuote,
+  lockedBase = 0,
+  lockedQuote = 0,
   availableBaseUsd = 0,
   availableQuoteUsd = 0,
   currentPrice,
@@ -166,20 +170,31 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </button>
       </div>
 
-      {/* Available Balance */}
-      <div className="flex items-center justify-between py-1">
-        <span className="text-[10px] sm:text-xs text-muted-foreground">Available</span>
-        <div className="flex items-center gap-2">
-          <span className={cn(
-            "text-xs sm:text-sm font-mono font-medium",
-            hasInsufficientBalance ? "text-destructive" : "text-foreground"
-          )}>
-            {availableBalance.toFixed(4)} {balanceCurrency}
-          </span>
-          <button className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors">
-            <Plus className="h-3 w-3" />
-          </button>
+      {/* Available Balance with Locked indicator */}
+      <div className="bg-muted/30 border border-border rounded-xl px-3 py-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] sm:text-xs text-muted-foreground">Available</span>
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "text-xs sm:text-sm font-mono font-medium",
+              hasInsufficientBalance ? "text-destructive" : "text-foreground"
+            )}>
+              {availableBalance.toFixed(4)} {balanceCurrency}
+            </span>
+            <button className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors">
+              <Plus className="h-3 w-3" />
+            </button>
+          </div>
         </div>
+        {/* Show locked balance if any */}
+        {((isBuy && lockedQuote > 0) || (!isBuy && lockedBase > 0)) && (
+          <div className="flex items-center justify-between mt-1 pt-1 border-t border-border/50">
+            <span className="text-[10px] text-muted-foreground">In Orders</span>
+            <span className="text-[10px] font-mono text-amber-400">
+              {(isBuy ? lockedQuote : lockedBase).toFixed(4)} {balanceCurrency}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Insufficient Balance Warning */}
