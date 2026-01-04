@@ -14,13 +14,13 @@ import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useUserOrders } from "@/hooks/useUserOrders";
 import { useRealtimeOrderBook } from "@/hooks/useRealtimeOrderBook";
 import { useRealtimeTradingBalances } from "@/hooks/useRealtimeTradingBalances";
+import { useAutoSyncBalances } from "@/hooks/useAutoSyncBalances";
 import { useToast } from "@/hooks/use-toast";
 import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
 import { useMarketStore } from "@/hooks/useMarketStore";
 import { cn } from "@/lib/utils";
 import { ComplianceGate } from "@/components/compliance/ComplianceGate";
 import { useAuthUser } from "@/hooks/useAuthUser";
-import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
@@ -60,6 +60,9 @@ function TradingPairPageContent() {
   const { placeOrder } = useTradingAPI();
   const queryClient = useQueryClient();
   const { user } = useAuthUser();
+
+  // Auto-sync on-chain balances to trading balances on page load
+  useAutoSyncBalances();
 
   // Tab state for Open Orders / Funds / History
   type BottomTab = 'orders' | 'funds' | 'history';
@@ -379,25 +382,10 @@ function TradingPairPageContent() {
                 availableQuote={quoteBalance.available}
                 lockedBase={baseBalance.locked}
                 lockedQuote={quoteBalance.locked}
-                onchainBase={baseBalanceData?.onchainBalance || 0}
-                onchainQuote={quoteBalanceData?.onchainBalance || 0}
                 availableBaseUsd={baseBalance.total * pair.price}
                 availableQuoteUsd={quoteBalance.total}
                 currentPrice={pair.price}
                 onPlaceOrder={handlePlaceOrder}
-                onSyncBalance={async () => {
-                  try {
-                    const { data, error } = await supabase.functions.invoke('sync-onchain-to-trading', {
-                      body: { assetSymbols: [pair.baseAsset, pair.quoteAsset] }
-                    });
-                    if (error) throw error;
-                    if (!data?.success) throw new Error(data?.error || 'Sync failed');
-                    toast({ title: 'Balances synced', description: 'Your on-chain funds are now available for trading' });
-                    refetchBalances();
-                  } catch (err: any) {
-                    toast({ title: 'Sync failed', description: err.message, variant: 'destructive' });
-                  }
-                }}
               />
             </div>
 
