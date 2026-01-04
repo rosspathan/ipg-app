@@ -14,27 +14,28 @@ interface InternalOrderBook {
 }
 
 /**
- * Real-time order book hook with instant updates
- * Subscribes to orders table changes for the given symbol
+ * Real-time PUBLIC order book hook with instant updates
+ * Fetches ALL users' pending orders for the given symbol (not just current user)
+ * This is essential for a trading platform - order book must show all market depth
  */
 export function useRealtimeOrderBook(symbol?: string) {
   const queryClient = useQueryClient();
 
-  // Main query for order book data
+  // Main query for order book data - fetches ALL pending orders (public order book)
   const query = useQuery({
-    queryKey: ['internal-order-book', symbol],
+    queryKey: ['public-order-book', symbol],
     queryFn: async (): Promise<InternalOrderBook> => {
       if (!symbol) {
         return { bids: [], asks: [] };
       }
 
-      // Fetch pending buy orders (bids) - highest price first
+      // Fetch ALL pending buy orders (bids) - no user filter, highest price first
       const { data: buyOrders, error: buyError } = await supabase
         .from('orders')
         .select('price, remaining_amount')
         .eq('symbol', symbol)
         .eq('side', 'buy')
-        .eq('status', 'pending')
+        .in('status', ['pending', 'partially_filled'])
         .eq('order_type', 'limit')
         .not('price', 'is', null)
         .order('price', { ascending: false })
@@ -44,13 +45,13 @@ export function useRealtimeOrderBook(symbol?: string) {
         console.error('[useRealtimeOrderBook] Error fetching bids:', buyError);
       }
 
-      // Fetch pending sell orders (asks) - lowest price first
+      // Fetch ALL pending sell orders (asks) - no user filter, lowest price first
       const { data: sellOrders, error: sellError } = await supabase
         .from('orders')
         .select('price, remaining_amount')
         .eq('symbol', symbol)
         .eq('side', 'sell')
-        .eq('status', 'pending')
+        .in('status', ['pending', 'partially_filled'])
         .eq('order_type', 'limit')
         .not('price', 'is', null)
         .order('price', { ascending: true })
@@ -110,8 +111,8 @@ export function useRealtimeOrderBook(symbol?: string) {
         },
         (payload) => {
           console.log('[RealtimeOrderBook] Order change for', symbol, payload.eventType);
-          // Immediately invalidate and refetch the order book
-          queryClient.invalidateQueries({ queryKey: ['internal-order-book', symbol] });
+          // Immediately invalidate and refetch the public order book
+          queryClient.invalidateQueries({ queryKey: ['public-order-book', symbol] });
         }
       )
       .subscribe();
