@@ -156,9 +156,9 @@ export function useBep20Balances() {
     }
   }, [user?.id, fetchAppBalances])
 
-  // Query on-chain balances with prices
+  // Query on-chain balances with prices and auto-sync to wallet_balances
   const { data: balances, isLoading, error, refetch } = useQuery({
-    queryKey: ['bep20-balances', walletAddress, assets.map(a => a.symbol).join(',')],
+    queryKey: ['bep20-balances', walletAddress, assets.map(a => a.symbol).join(','), user?.id],
     queryFn: async (): Promise<Bep20Balance[]> => {
       if (!walletAddress || assets.length === 0) return []
 
@@ -205,6 +205,55 @@ export function useBep20Balances() {
           }
         })
       )
+
+      // Auto-sync on-chain balances to wallet_balances table
+      if (user?.id) {
+        const assetsToSync = results.filter(b => b.onchainBalance > 0)
+        if (assetsToSync.length > 0) {
+          console.log('[useBep20Balances] Auto-syncing', assetsToSync.length, 'assets to wallet_balances...')
+          
+          // Fetch existing locked amounts to preserve them
+          const { data: existingBalances } = await supabase
+            .from('wallet_balances')
+            .select('asset_id, available, locked, total')
+            .eq('user_id', user.id)
+            .in('asset_id', assetsToSync.map(a => a.assetId))
+          
+          const existingMap = new Map(existingBalances?.map(b => [b.asset_id, b]) || [])
+          
+          // Upsert each balance (preserving locked amounts)
+          for (const asset of assetsToSync) {
+            const existing = existingMap.get(asset.assetId)
+            const currentLocked = existing?.locked || 0
+            const currentTotal = existing?.total || 0
+            
+            // Only sync if on-chain balance is greater than current total
+            if (asset.onchainBalance > currentTotal) {
+              const newTotal = asset.onchainBalance
+              const newAvailable = Math.max(0, newTotal - currentLocked)
+              
+              const { error: upsertError } = await supabase.from('wallet_balances').upsert({
+                user_id: user.id,
+                asset_id: asset.assetId,
+                available: newAvailable,
+                locked: currentLocked,
+                total: newTotal,
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'user_id,asset_id' })
+              
+              if (upsertError) {
+                console.error('[useBep20Balances] Failed to sync', asset.symbol, ':', upsertError)
+              } else {
+                console.log('[useBep20Balances] Synced', asset.symbol, ':', newTotal, '(available:', newAvailable, ', locked:', currentLocked, ')')
+                // Update the appBalance in results to reflect the sync
+                asset.appBalance = newTotal
+                asset.appAvailable = newAvailable
+                asset.appLocked = currentLocked
+              }
+            }
+          }
+        }
+      }
 
       // Sort: tokens with onchain balance first, then by symbol
       return results.sort((a, b) => {
