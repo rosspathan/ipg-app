@@ -109,35 +109,28 @@ async function getRecentTrades(symbol: string, limit = 50) {
   }));
 }
 
-// Get ticker data
+// Get ticker data from market_prices table
 async function getTicker(symbol: string) {
+  // Read from market_prices table instead of broken RPC
   const { data, error } = await supabase
-    .rpc('get_market_ticker', { market_symbol: symbol });
+    .from('market_prices')
+    .select('symbol, current_price, price_change_24h, price_change_percent_24h, high_24h, low_24h, volume_24h')
+    .eq('symbol', symbol)
+    .maybeSingle();
 
-  if (error || !data || data.length === 0) {
-    console.error('Error fetching ticker:', error);
-    return {
-      symbol,
-      lastPrice: 0,
-      priceChange24h: 0,
-      priceChangePercent24h: 0,
-      high24h: 0,
-      low24h: 0,
-      volume24h: 0,
-      count24h: 0
-    };
+  if (error) {
+    console.warn(`[Ticker] Failed to fetch for ${symbol}:`, error.message);
   }
 
-  const ticker = data[0];
   return {
-    symbol: ticker.symbol,
-    lastPrice: parseFloat(ticker.last_price || 0),
-    priceChange24h: parseFloat(ticker.price_change_24h || 0),
-    priceChangePercent24h: parseFloat(ticker.price_change_percent_24h || 0),
-    high24h: parseFloat(ticker.high_24h || 0),
-    low24h: parseFloat(ticker.low_24h || 0),
-    volume24h: parseFloat(ticker.volume_24h || 0),
-    count24h: parseInt(ticker.count_24h || 0)
+    symbol,
+    lastPrice: parseFloat(data?.current_price || 0),
+    priceChange24h: parseFloat(data?.price_change_24h || 0),
+    priceChangePercent24h: parseFloat(data?.price_change_percent_24h || 0),
+    high24h: parseFloat(data?.high_24h || 0),
+    low24h: parseFloat(data?.low_24h || 0),
+    volume24h: parseFloat(data?.volume_24h || 0),
+    count24h: 0
   };
 }
 

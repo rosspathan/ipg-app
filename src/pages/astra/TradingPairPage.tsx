@@ -177,23 +177,24 @@ function TradingPairPageContent() {
     );
   }
 
-  // Find balances for the trading pair - use INTERNAL (app) balances for trading
+  // Find balances for the trading pair - use INTERNAL (app) balances ONLY for trading
   const quoteBalanceData = bep20Balances?.find((b) => b.symbol === pair.quoteAsset);
   const baseBalanceData = bep20Balances?.find((b) => b.symbol === pair.baseAsset);
   
-  // Use INTERNAL balances for trading (wallet_balances table) - these are what settle_trade uses
+  // Use ONLY internal balances for trading (wallet_balances table) - these are what settle_trade uses
   // Available = spendable now, Locked = in open orders
+  // DO NOT fallback to on-chain - user must explicitly sync first
   const quoteBalance = {
     symbol: pair.quoteAsset,
-    available: quoteBalanceData?.appAvailable || quoteBalanceData?.onchainBalance || 0,
-    locked: quoteBalanceData?.appLocked || 0,
-    total: quoteBalanceData?.appBalance || quoteBalanceData?.onchainBalance || 0
+    available: quoteBalanceData?.appAvailable ?? 0,
+    locked: quoteBalanceData?.appLocked ?? 0,
+    total: quoteBalanceData?.appBalance ?? 0
   };
   const baseBalance = {
     symbol: pair.baseAsset,
-    available: baseBalanceData?.appAvailable || baseBalanceData?.onchainBalance || 0,
-    locked: baseBalanceData?.appLocked || 0,
-    total: baseBalanceData?.appBalance || baseBalanceData?.onchainBalance || 0
+    available: baseBalanceData?.appAvailable ?? 0,
+    locked: baseBalanceData?.appLocked ?? 0,
+    total: baseBalanceData?.appBalance ?? 0
   };
 
   const handlePriceClick = (price: number) => {

@@ -106,13 +106,31 @@ Deno.serve(async (req) => {
 
           // Only upsert if balance > 0 to avoid cluttering the table
           if (balance > 0) {
+            // CRITICAL: Preserve existing locked balance - never reset it!
+            // First fetch existing record to get current locked amount
+            const { data: existingBalance } = await supabase
+              .from('wallet_balances')
+              .select('available, locked, total')
+              .eq('user_id', userId)
+              .eq('asset_id', asset.id)
+              .maybeSingle();
+
+            const existingLocked = existingBalance?.locked || 0;
+            const existingTotal = existingBalance?.total || 0;
+            
+            // Only credit the difference if on-chain is higher than what we have
+            // This prevents "free" balance from appearing
+            const newTotal = Math.max(balance, existingTotal);
+            const newAvailable = newTotal - existingLocked;
+
             const { error: upsertError } = await supabase
               .from('wallet_balances')
               .upsert({
                 user_id: userId,
                 asset_id: asset.id,
-                available: balance,
-                locked: 0,
+                available: newAvailable,
+                locked: existingLocked, // PRESERVE locked balance
+                total: newTotal,
                 updated_at: new Date().toISOString()
               }, {
                 onConflict: 'user_id,asset_id'
@@ -123,7 +141,7 @@ Deno.serve(async (req) => {
               errors.push({ userId, asset: asset.symbol, error: upsertError.message });
             } else {
               syncedCount++;
-              console.log(`[sync-bep20-balances] Synced ${asset.symbol}: ${balance} for user ${userId}`);
+              console.log(`[sync-bep20-balances] Synced ${asset.symbol}: available=${newAvailable}, locked=${existingLocked}, total=${newTotal} for user ${userId}`);
             }
           }
         } catch (error: any) {
