@@ -378,10 +378,25 @@ function TradingPairPageContent() {
                 availableQuote={quoteBalance.available}
                 lockedBase={baseBalance.locked}
                 lockedQuote={quoteBalance.locked}
+                onchainBase={baseBalanceData?.onchainBalance || 0}
+                onchainQuote={quoteBalanceData?.onchainBalance || 0}
                 availableBaseUsd={baseBalance.total * pair.price}
                 availableQuoteUsd={quoteBalance.total}
                 currentPrice={pair.price}
                 onPlaceOrder={handlePlaceOrder}
+                onSyncBalance={async () => {
+                  try {
+                    const { data, error } = await supabase.functions.invoke('sync-onchain-to-trading', {
+                      body: { assetSymbols: [pair.baseAsset, pair.quoteAsset] }
+                    });
+                    if (error) throw error;
+                    if (!data?.success) throw new Error(data?.error || 'Sync failed');
+                    toast({ title: 'Balances synced', description: 'Your on-chain funds are now available for trading' });
+                    refetchBalances();
+                  } catch (err: any) {
+                    toast({ title: 'Sync failed', description: err.message, variant: 'destructive' });
+                  }
+                }}
               />
             </div>
 
@@ -486,9 +501,13 @@ function TradingPairPageContent() {
                 balances={bep20Balances?.map(b => ({
                   symbol: b.symbol,
                   name: b.name,
-                  balance: b.onchainBalance,
-                  available: b.onchainBalance,
-                  locked: 0,
+                  balance: b.appBalance || b.onchainBalance,
+                  available: b.appAvailable || 0,
+                  locked: b.appLocked || 0,
+                  onchainBalance: b.onchainBalance,
+                  appBalance: b.appBalance,
+                  appAvailable: b.appAvailable,
+                  appLocked: b.appLocked,
                   usd_value: b.onchainUsdValue,
                   logo_url: b.logoUrl
                 })) || []} 
