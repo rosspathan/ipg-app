@@ -233,3 +233,6 @@ verify_jwt = false
 
 [functions.sync-bep20-balances]
 verify_jwt = false
+
+[functions.sync-onchain-to-trading]
+verify_jwt = true

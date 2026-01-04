@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Info, ChevronDown, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Info, ChevronDown, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PriceStepperInput } from './PriceStepperInput';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,8 @@ interface OrderFormProProps {
   lockedQuote?: number;
   availableBaseUsd?: number;
   availableQuoteUsd?: number;
+  onchainBase?: number;
+  onchainQuote?: number;
   currentPrice: number;
   tickSize?: number;
   lotSize?: number;
@@ -31,6 +33,7 @@ interface OrderFormProProps {
     quantity: number;
   }) => void;
   isPlacingOrder?: boolean;
+  onSyncBalance?: () => void;
 }
 
 type OrderSide = 'buy' | 'sell';
@@ -47,12 +50,15 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   lockedQuote = 0,
   availableBaseUsd = 0,
   availableQuoteUsd = 0,
+  onchainBase = 0,
+  onchainQuote = 0,
   currentPrice,
   tickSize = 0.00000001,
   lotSize = 0.0001,
   inrRate = 83,
   onPlaceOrder,
   isPlacingOrder = false,
+  onSyncBalance,
 }) => {
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderType, setOrderType] = useState<OrderType>('limit');
@@ -63,6 +69,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const isBuy = side === 'buy';
   const availableBalance = isBuy ? availableQuote : availableBase;
   const balanceCurrency = isBuy ? quoteCurrency : baseCurrency;
+  const onchainBalance = isBuy ? onchainQuote : onchainBase;
+  
+  // Check if user has on-chain funds but no trading balance
+  const needsSync = availableBalance <= 0 && onchainBalance > 0;
 
   const numPrice = parseFloat(price) || 0;
   const numAmount = parseFloat(amount) || 0;
@@ -197,8 +207,26 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         )}
       </div>
 
+      {/* Sync Required Notice - Show when trading balance is 0 but on-chain has funds */}
+      {needsSync && onSyncBalance && (
+        <div className="flex items-center justify-between bg-primary/10 border border-primary/20 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+            <span className="text-[10px] sm:text-xs text-foreground">
+              {onchainBalance.toFixed(4)} {balanceCurrency} on-chain
+            </span>
+          </div>
+          <button
+            onClick={onSyncBalance}
+            className="text-[10px] font-semibold text-primary hover:underline"
+          >
+            Sync Now
+          </button>
+        </div>
+      )}
+
       {/* Insufficient Balance Warning */}
-      {hasInsufficientBalance && (
+      {hasInsufficientBalance && !needsSync && (
         <div className="flex items-center gap-2 text-destructive text-[10px] sm:text-xs bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
           <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
           <span>Insufficient {balanceCurrency} balance</span>
