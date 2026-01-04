@@ -96,8 +96,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
     }
   };
 
-  const requiredAmount = isBuy ? total : numAmount;
+  // Backend locks 0.5% extra for buy orders as fee buffer
+  const requiredAmount = isBuy ? total * 1.005 : numAmount;
   const hasInsufficientBalance = numAmount > 0 && requiredAmount > availableBalance;
+  const hasZeroBalance = availableBalance === 0;
 
   const handleSubmit = () => {
     if (numAmount <= 0) return;
@@ -197,11 +199,24 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         )}
       </div>
 
+      {/* Zero Balance Helper */}
+      {hasZeroBalance && (
+        <div className="flex items-center gap-2 text-amber-400 text-[10px] sm:text-xs bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+          <span>
+            {isBuy 
+              ? `No ${quoteCurrency} balance. Deposit ${quoteCurrency} or switch to Sell.`
+              : `No ${baseCurrency} balance. Deposit ${baseCurrency} or switch to Buy.`
+            }
+          </span>
+        </div>
+      )}
+
       {/* Insufficient Balance Warning */}
-      {hasInsufficientBalance && (
+      {hasInsufficientBalance && !hasZeroBalance && (
         <div className="flex items-center gap-2 text-destructive text-[10px] sm:text-xs bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
           <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-          <span>Insufficient {balanceCurrency} balance</span>
+          <span>Insufficient {balanceCurrency} (need {requiredAmount.toFixed(4)} inc. fee)</span>
         </div>
       )}
 
