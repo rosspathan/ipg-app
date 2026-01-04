@@ -83,15 +83,27 @@ serve(async (req) => {
     // Use service role client for database writes (bypasses RLS)
     const adminClient = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Get user's wallet address from profiles
+    // Get user's wallet address from profiles - try multiple columns
     const { data: profile } = await adminClient
       .from('profiles')
-      .select('evm_address')
-      .eq('id', user.id)
+      .select('bsc_wallet_address, wallet_address, wallet_addresses')
+      .eq('user_id', user.id)
       .single()
 
-    if (!profile?.evm_address) {
-      console.log('[sync-user-balances] No EVM address found for user')
+    // Fallback order: bsc_wallet_address -> wallet_addresses.bsc -> wallet_address
+    let walletAddress: string | null = null
+    
+    if (profile?.bsc_wallet_address) {
+      walletAddress = profile.bsc_wallet_address
+    } else if (profile?.wallet_addresses) {
+      const wa = profile.wallet_addresses as Record<string, any>
+      walletAddress = wa['bsc-mainnet'] || wa['bsc'] || wa['evm']?.bsc || null
+    } else if (profile?.wallet_address) {
+      walletAddress = profile.wallet_address
+    }
+
+    if (!walletAddress) {
+      console.log('[sync-user-balances] No wallet address found for user. Profile:', JSON.stringify(profile))
       return new Response(JSON.stringify({ 
         success: true, 
         message: 'No wallet address configured',
@@ -101,7 +113,14 @@ serve(async (req) => {
       })
     }
 
-    const walletAddress = profile.evm_address
+    // Backfill bsc_wallet_address if it was found from a fallback
+    if (!profile?.bsc_wallet_address && walletAddress) {
+      console.log(`[sync-user-balances] Backfilling bsc_wallet_address for user ${user.id}`)
+      await adminClient
+        .from('profiles')
+        .update({ bsc_wallet_address: walletAddress })
+        .eq('user_id', user.id)
+    }
     console.log(`[sync-user-balances] Wallet address: ${walletAddress}`)
 
     // Fetch BEP20 assets from DB

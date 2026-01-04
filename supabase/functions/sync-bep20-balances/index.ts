@@ -54,17 +54,27 @@ Deno.serve(async (req) => {
     console.log(`[sync-bep20-balances] Found ${bep20Assets.length} BEP20 assets:`, 
       bep20Assets.map(a => `${a.symbol} (${a.contract_address})`));
 
-    // Get user profiles with BSC wallet addresses
+    // Get user profiles with BSC wallet addresses (including legacy wallet_address)
     let profileQuery = supabase
       .from('profiles')
-      .select('id, user_id, bsc_wallet_address')
-      .not('bsc_wallet_address', 'is', null);
+      .select('id, user_id, bsc_wallet_address, wallet_address, wallet_addresses');
 
     if (userIds && userIds.length > 0) {
       profileQuery = profileQuery.in('user_id', userIds);
     }
 
-    const { data: profiles, error: profileError } = await profileQuery;
+    const { data: rawProfiles, error: profileError } = await profileQuery;
+    
+    // Filter to profiles that have any wallet address
+    const profiles = rawProfiles?.filter(p => {
+      if (p.bsc_wallet_address) return true;
+      if (p.wallet_address) return true;
+      if (p.wallet_addresses) {
+        const wa = p.wallet_addresses as Record<string, any>;
+        if (wa['bsc-mainnet'] || wa['bsc'] || wa['evm']?.bsc) return true;
+      }
+      return false;
+    }) || [];
 
     if (profileError) {
       console.error('[sync-bep20-balances] Failed to fetch profiles:', profileError);
@@ -89,7 +99,18 @@ Deno.serve(async (req) => {
 
     // Process each profile
     for (const profile of profiles) {
-      const walletAddress = profile.bsc_wallet_address;
+      // Resolve wallet address with fallbacks
+      let walletAddress = profile.bsc_wallet_address;
+      if (!walletAddress && profile.wallet_addresses) {
+        const wa = profile.wallet_addresses as Record<string, any>;
+        walletAddress = wa['bsc-mainnet'] || wa['bsc'] || wa['evm']?.bsc || null;
+      }
+      if (!walletAddress) {
+        walletAddress = profile.wallet_address;
+      }
+      
+      if (!walletAddress) continue;
+      
       const userId = profile.user_id || profile.id;
 
       console.log(`[sync-bep20-balances] Processing wallet ${walletAddress} for user ${userId}`);
@@ -123,6 +144,7 @@ Deno.serve(async (req) => {
             const newTotal = Math.max(balance, existingTotal);
             const newAvailable = newTotal - existingLocked;
 
+            // Note: 'total' is a generated column, don't include it in upsert
             const { error: upsertError } = await supabase
               .from('wallet_balances')
               .upsert({
@@ -130,7 +152,6 @@ Deno.serve(async (req) => {
                 asset_id: asset.id,
                 available: newAvailable,
                 locked: existingLocked, // PRESERVE locked balance
-                total: newTotal,
                 updated_at: new Date().toISOString()
               }, {
                 onConflict: 'user_id,asset_id'
