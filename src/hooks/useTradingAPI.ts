@@ -52,7 +52,23 @@ export const useTradingAPI = () => {
       });
 
       if (error) {
-        throw error;
+        // Try to extract the actual error message from the edge function response
+        let errorMessage = error.message || 'Failed to place order';
+        
+        // The error.context?.body often contains the JSON response from the edge function
+        if (error.context?.body) {
+          try {
+            const bodyText = await error.context.body.text?.() || error.context.body;
+            const parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
+            if (parsed?.error) {
+              errorMessage = parsed.error;
+            }
+          } catch {
+            // If parsing fails, check if error already has a meaningful message
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (!data.success) {
