@@ -95,10 +95,19 @@ serve(async (req) => {
     
     if (profile?.bsc_wallet_address) {
       walletAddress = profile.bsc_wallet_address
-    } else if (profile?.wallet_addresses) {
+    }
+    
+    // Try wallet_addresses object if bsc_wallet_address not found
+    if (!walletAddress && profile?.wallet_addresses && typeof profile.wallet_addresses === 'object') {
       const wa = profile.wallet_addresses as Record<string, any>
-      walletAddress = wa['bsc-mainnet'] || wa['bsc'] || wa['evm']?.bsc || null
-    } else if (profile?.wallet_address) {
+      const foundAddress = wa['bsc-mainnet'] || wa['bsc'] || wa['evm']?.bsc
+      if (foundAddress) {
+        walletAddress = foundAddress
+      }
+    }
+    
+    // Final fallback to legacy wallet_address field
+    if (!walletAddress && profile?.wallet_address) {
       walletAddress = profile.wallet_address
     }
 
