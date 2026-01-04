@@ -166,28 +166,29 @@ export function useBep20Balances() {
       
       if (error) {
         console.error('[useBep20Balances] Sync failed:', error)
-      } else if (data?.synced > 0) {
-        console.log('[useBep20Balances] Synced', data.synced, 'assets:', data.results)
-        // Refetch app balances after sync
-        await fetchAppBalances()
+      } else {
+        console.log('[useBep20Balances] Sync result:', data)
       }
+      
+      // Always refetch app balances after sync attempt
+      await fetchAppBalances()
     } catch (err) {
       console.error('[useBep20Balances] Sync error:', err)
     }
   }, [user?.id, fetchAppBalances])
 
-  // Auto-sync on mount
+  // Auto-sync on mount when user exists (server reads wallet from profiles)
   useEffect(() => {
-    if (user?.id && walletAddress) {
+    if (user?.id && assets.length > 0) {
       syncBalances()
     }
-  }, [user?.id, walletAddress, syncBalances])
+  }, [user?.id, assets.length, syncBalances])
 
-  // Query on-chain balances with prices (no client-side upsert - handled by edge function)
-  const { data: balances, isLoading, error, refetch } = useQuery({
-    queryKey: ['bep20-balances', walletAddress, assets.map(a => a.symbol).join(','), user?.id],
-    queryFn: async (): Promise<Bep20Balance[]> => {
-      if (!walletAddress || assets.length === 0) return []
+  // Query on-chain balances with prices (optional - only when walletAddress exists)
+  const { data: onchainData, isLoading: isLoadingOnchain, error, refetch } = useQuery({
+    queryKey: ['bep20-onchain', walletAddress, assets.map(a => a.symbol).join(',')],
+    queryFn: async (): Promise<Record<string, { onchainBalance: number; priceUsd: number }>> => {
+      if (!walletAddress || assets.length === 0) return {}
 
       // Fetch prices for all assets
       let prices: Record<string, number> = {}
@@ -200,7 +201,9 @@ export function useBep20Balances() {
         console.warn('Failed to fetch prices:', err)
       }
 
-      const results = await Promise.all(
+      const results: Record<string, { onchainBalance: number; priceUsd: number }> = {}
+      
+      await Promise.all(
         assets.map(async (asset) => {
           let onchainBalance = 0
           try {
@@ -212,41 +215,54 @@ export function useBep20Balances() {
           } catch (err) {
             console.warn(`Failed to fetch ${asset.symbol} balance:`, err)
           }
-
-          const priceUsd = prices[asset.symbol] || 0
-          const onchainUsdValue = onchainBalance * priceUsd
-          const appBal = appBalances[asset.id] || { available: 0, locked: 0, total: 0 }
-
-          return {
-            assetId: asset.id,
-            symbol: asset.symbol,
-            name: asset.name,
-            logoUrl: asset.logoUrl,
+          
+          results[asset.id] = {
             onchainBalance,
-            appBalance: appBal.total,
-            appAvailable: appBal.available,
-            appLocked: appBal.locked,
-            contractAddress: asset.contractAddress,
-            priceUsd,
-            onchainUsdValue
+            priceUsd: prices[asset.symbol] || 0
           }
         })
       )
 
-      // Sort: tokens with onchain balance first, then by symbol
-      return results.sort((a, b) => {
-        if (a.onchainBalance > 0 && b.onchainBalance === 0) return -1
-        if (a.onchainBalance === 0 && b.onchainBalance > 0) return 1
-        return a.symbol.localeCompare(b.symbol)
-      })
+      return results
     },
     enabled: !!walletAddress && assets.length > 0,
     staleTime: 30000,
     refetchInterval: 30000
   })
 
+  // Always derive balances from assets + appBalances (internal ledger)
+  // This ensures trading UI always shows correct internal balances
+  const balances: Bep20Balance[] = assets.map((asset) => {
+    const appBal = appBalances[asset.id] || { available: 0, locked: 0, total: 0 }
+    const onchain = onchainData?.[asset.id] || { onchainBalance: 0, priceUsd: 0 }
+    
+    return {
+      assetId: asset.id,
+      symbol: asset.symbol,
+      name: asset.name,
+      logoUrl: asset.logoUrl,
+      onchainBalance: onchain.onchainBalance,
+      appBalance: appBal.total,
+      appAvailable: appBal.available,
+      appLocked: appBal.locked,
+      contractAddress: asset.contractAddress,
+      priceUsd: onchain.priceUsd,
+      onchainUsdValue: onchain.onchainBalance * onchain.priceUsd
+    }
+  }).sort((a, b) => {
+    // Sort: tokens with balance first, then by symbol
+    const aHasBalance = a.appBalance > 0 || a.onchainBalance > 0
+    const bHasBalance = b.appBalance > 0 || b.onchainBalance > 0
+    if (aHasBalance && !bHasBalance) return -1
+    if (!aHasBalance && bHasBalance) return 1
+    return a.symbol.localeCompare(b.symbol)
+  })
+
+  // Loading state: only when assets haven't loaded yet
+  const isLoading = assets.length === 0
+
   return {
-    balances: balances || [],
+    balances,
     isLoading,
     error,
     refetch,
