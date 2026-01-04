@@ -87,22 +87,21 @@ Deno.serve(async (req) => {
     const body: SyncRequest = await req.json().catch(() => ({}))
     const assetSymbols = body.assetSymbols || []
 
-    // Get user's wallet address
+    // Get user's wallet address - check both bsc_wallet_address and wallet_address
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('evm_address')
-      .eq('id', user.id)
+      .select('bsc_wallet_address, wallet_address')
+      .eq('user_id', user.id)
       .single()
 
-    if (profileError || !profile?.evm_address) {
+    const walletAddress = profile?.bsc_wallet_address || profile?.wallet_address
+    if (profileError || !walletAddress) {
       console.error('[sync-onchain-to-trading] No wallet address found:', profileError)
       return new Response(
         JSON.stringify({ success: false, error: 'No wallet address found. Please set up your wallet first.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    const walletAddress = profile.evm_address
     console.log(`[sync-onchain-to-trading] Wallet address: ${walletAddress}`)
 
     // Get BSC assets from database
