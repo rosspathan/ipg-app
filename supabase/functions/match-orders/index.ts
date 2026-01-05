@@ -31,7 +31,8 @@ interface EngineSettings {
 const ADMIN_FEE_PERCENT = new BigNumber('0.5'); // 0.5% fee on each side (buy and sell)
 const ADMIN_FEE_WALLET = '0x97E07a738600A6F13527fAe0Cacb0A592FbEAfB1';
 
-const MAX_PRICE_DEVIATION = new BigNumber('0.10'); // 10% price deviation triggers circuit breaker
+const MAX_PRICE_DEVIATION = new BigNumber('0.50'); // 50% price deviation triggers circuit breaker (high for low-liquidity pairs)
+const MIN_TRADES_FOR_CIRCUIT_BREAKER = 5; // Require at least 5 trades before enabling circuit breaker
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -169,33 +170,42 @@ Deno.serve(async (req) => {
           }
 
           if (canMatch && executionPrice.isGreaterThan(0)) {
-            // PHASE 4.3: Circuit Breaker Check
-            const { data: lastTrade } = await supabase
+            // PHASE 4.3: Circuit Breaker Check - only after MIN_TRADES_FOR_CIRCUIT_BREAKER trades
+            const { count: tradeCount } = await supabase
               .from('trades')
-              .select('price')
-              .eq('symbol', symbol)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single();
+              .select('id', { count: 'exact', head: true })
+              .eq('symbol', symbol);
 
-            if (lastTrade) {
-              const lastPrice = new BigNumber(String(lastTrade.price));
-              const priceDeviation = executionPrice.minus(lastPrice).abs().dividedBy(lastPrice);
-              
-              if (priceDeviation.isGreaterThan(MAX_PRICE_DEVIATION)) {
-                console.warn(`[Circuit Breaker] Price deviation too high: ${priceDeviation.times(100).toFixed(2)}%`);
+            if (tradeCount && tradeCount >= MIN_TRADES_FOR_CIRCUIT_BREAKER) {
+              const { data: lastTrade } = await supabase
+                .from('trades')
+                .select('price')
+                .eq('symbol', symbol)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+              if (lastTrade) {
+                const lastPrice = new BigNumber(String(lastTrade.price));
+                const priceDeviation = executionPrice.minus(lastPrice).abs().dividedBy(lastPrice);
                 
-                // Activate circuit breaker
-                await supabase
-                  .from('trading_engine_settings')
-                  .update({ circuit_breaker_active: true })
-                  .eq('id', settings.id);
-                
-                console.error(`[Circuit Breaker] ACTIVATED for ${symbol}. Last: ${lastPrice.toString()}, Current: ${executionPrice.toString()}`);
-                
-                // Stop matching for this symbol
-                break;
+                if (priceDeviation.isGreaterThan(MAX_PRICE_DEVIATION)) {
+                  console.warn(`[Circuit Breaker] Price deviation too high: ${priceDeviation.times(100).toFixed(2)}%`);
+                  
+                  // Activate circuit breaker
+                  await supabase
+                    .from('trading_engine_settings')
+                    .update({ circuit_breaker_active: true })
+                    .eq('id', settings.id);
+                  
+                  console.error(`[Circuit Breaker] ACTIVATED for ${symbol}. Last: ${lastPrice.toString()}, Current: ${executionPrice.toString()}`);
+                  
+                  // Stop matching for this symbol
+                  break;
+                }
               }
+            } else {
+              console.log(`[Circuit Breaker] Skipped - only ${tradeCount || 0} trades for ${symbol} (need ${MIN_TRADES_FOR_CIRCUIT_BREAKER})`);
             }
 
             // PHASE 3.4: Calculate matched quantity using BigNumber, quantized to 8 decimals
