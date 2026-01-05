@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Loader2, Play, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Loader2, Play, RefreshCw, AlertTriangle, ShieldOff } from 'lucide-react';
 import { useState } from 'react';
 import { MarketMakerPanel } from '@/components/admin/trading/MarketMakerPanel';
 
@@ -84,6 +84,26 @@ export default function AdminTradingEngine() {
         description: error.message,
       });
       setIsMatching(false);
+    },
+  });
+
+  // Reset circuit breaker mutation
+  const resetCircuitBreakerMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('admin-reset-circuit-breaker');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success('Circuit breaker reset', {
+        description: data.message || 'Trading is now enabled',
+      });
+      queryClient.invalidateQueries({ queryKey: ['trading-engine-settings'] });
+    },
+    onError: (error: any) => {
+      toast.error('Failed to reset circuit breaker', {
+        description: error.message,
+      });
     },
   });
 
@@ -235,13 +255,33 @@ export default function AdminTradingEngine() {
             </div>
 
             {settings?.circuit_breaker_active && (
-              <div className="p-3 bg-destructive/10 border border-destructive rounded-md">
-                <p className="text-sm text-destructive font-medium">
-                  ⚠️ All trading is currently halted
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  No orders will be matched until circuit breaker is disabled
-                </p>
+              <div className="space-y-3">
+                <div className="p-3 bg-destructive/10 border border-destructive rounded-md">
+                  <p className="text-sm text-destructive font-medium">
+                    ⚠️ All trading is currently halted
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    No orders will be matched until circuit breaker is disabled
+                  </p>
+                </div>
+                <Button
+                  onClick={() => resetCircuitBreakerMutation.mutate()}
+                  disabled={resetCircuitBreakerMutation.isPending}
+                  variant="outline"
+                  className="w-full border-success text-success hover:bg-success/10"
+                >
+                  {resetCircuitBreakerMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Resetting...
+                    </>
+                  ) : (
+                    <>
+                      <ShieldOff className="mr-2 h-4 w-4" />
+                      Reset Circuit Breaker
+                    </>
+                  )}
+                </Button>
               </div>
             )}
           </CardContent>
