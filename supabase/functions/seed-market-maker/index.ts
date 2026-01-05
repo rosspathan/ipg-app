@@ -2,6 +2,9 @@
  * Seed Market Maker Orders
  * Creates buy and sell orders at spreads around the last trade price
  * to provide liquidity for the trading pairs.
+ * 
+ * FIXED: Proper balance locking (increment locked, not overwrite)
+ * FIXED: Unlock funds before cancelling old orders
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
@@ -54,31 +57,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get or create market maker user
-    let marketMakerUserId = mmSettings.market_maker_user_id;
+    // Require market_maker_user_id to be set
+    const marketMakerUserId = mmSettings.market_maker_user_id;
     
     if (!marketMakerUserId) {
-      // Try to find existing market maker user
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('identifier', 'MARKET_MAKER')
-        .single();
-      
-      if (existingUser) {
-        marketMakerUserId = existingUser.id;
-        // Update settings with the user ID
-        await supabase
-          .from('trading_engine_settings')
-          .update({ market_maker_user_id: marketMakerUserId })
-          .eq('id', settings.id);
-      } else {
-        console.error('[Market Maker] No market maker user found. Please create one first.');
-        return new Response(
-          JSON.stringify({ success: false, message: 'No market maker user configured' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      console.error('[Market Maker] No market_maker_user_id configured. Run admin-setup-market-maker first.');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'No market maker user configured. Please run Setup Market Maker first.' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('[Market Maker] Using market maker user:', marketMakerUserId);
@@ -103,12 +93,94 @@ Deno.serve(async (req) => {
     }
 
     let ordersCreated = 0;
+    let ordersUnlocked = 0;
 
     for (const market of markets || []) {
       const symbol = `${market.base_asset.symbol}/${market.quote_asset.symbol}`;
       console.log(`[Market Maker] Processing ${symbol}`);
 
-      // Get last trade price for this symbol
+      // ============================================
+      // STEP 1: Unlock funds from existing MM orders BEFORE cancelling
+      // ============================================
+      const { data: existingOrders } = await supabase
+        .from('orders')
+        .select('id, side, remaining_amount, price')
+        .eq('user_id', marketMakerUserId)
+        .eq('symbol', symbol)
+        .eq('status', 'pending');
+
+      if (existingOrders && existingOrders.length > 0) {
+        console.log(`[Market Maker] Found ${existingOrders.length} existing orders to cancel`);
+        
+        // Calculate total locked amounts to unlock
+        let unlockBase = 0;
+        let unlockQuote = 0;
+
+        for (const order of existingOrders) {
+          const remaining = order.remaining_amount || 0;
+          if (order.side === 'buy') {
+            unlockQuote += remaining * order.price;
+          } else {
+            unlockBase += remaining;
+          }
+        }
+
+        // Unlock quote asset (for buy orders)
+        if (unlockQuote > 0) {
+          const { data: quoteBalance } = await supabase
+            .from('wallet_balances')
+            .select('id, available, locked')
+            .eq('user_id', marketMakerUserId)
+            .eq('asset_id', market.quote_asset.id)
+            .single();
+
+          if (quoteBalance) {
+            await supabase
+              .from('wallet_balances')
+              .update({
+                available: quoteBalance.available + unlockQuote,
+                locked: Math.max(0, quoteBalance.locked - unlockQuote)
+              })
+              .eq('id', quoteBalance.id);
+            console.log(`[Market Maker] Unlocked ${unlockQuote.toFixed(4)} ${market.quote_asset.symbol}`);
+            ordersUnlocked++;
+          }
+        }
+
+        // Unlock base asset (for sell orders)
+        if (unlockBase > 0) {
+          const { data: baseBalance } = await supabase
+            .from('wallet_balances')
+            .select('id, available, locked')
+            .eq('user_id', marketMakerUserId)
+            .eq('asset_id', market.base_asset.id)
+            .single();
+
+          if (baseBalance) {
+            await supabase
+              .from('wallet_balances')
+              .update({
+                available: baseBalance.available + unlockBase,
+                locked: Math.max(0, baseBalance.locked - unlockBase)
+              })
+              .eq('id', baseBalance.id);
+            console.log(`[Market Maker] Unlocked ${unlockBase.toFixed(4)} ${market.base_asset.symbol}`);
+            ordersUnlocked++;
+          }
+        }
+
+        // Now cancel the orders
+        await supabase
+          .from('orders')
+          .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+          .eq('user_id', marketMakerUserId)
+          .eq('symbol', symbol)
+          .eq('status', 'pending');
+      }
+
+      // ============================================
+      // STEP 2: Determine reference price
+      // ============================================
       const { data: lastTrade } = await supabase
         .from('trades')
         .select('price')
@@ -117,13 +189,13 @@ Deno.serve(async (req) => {
         .limit(1)
         .single();
 
-      // Get best bid and ask from order book
       const { data: bestBid } = await supabase
         .from('orders')
         .select('price')
         .eq('symbol', symbol)
         .eq('side', 'buy')
         .eq('status', 'pending')
+        .neq('user_id', marketMakerUserId) // Exclude MM orders
         .order('price', { ascending: false })
         .limit(1)
         .single();
@@ -134,11 +206,11 @@ Deno.serve(async (req) => {
         .eq('symbol', symbol)
         .eq('side', 'sell')
         .eq('status', 'pending')
+        .neq('user_id', marketMakerUserId) // Exclude MM orders
         .order('price', { ascending: true })
         .limit(1)
         .single();
 
-      // Determine reference price (priority: last trade > midpoint > fallback)
       let referencePrice: number;
       
       if (lastTrade?.price) {
@@ -162,43 +234,50 @@ Deno.serve(async (req) => {
 
       console.log(`[Market Maker] Reference price for ${symbol}: ${referencePrice}`);
 
-      // Cancel existing market maker orders for this symbol
-      await supabase
-        .from('orders')
-        .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+      // ============================================
+      // STEP 3: Create new orders with proper locking (INCREMENT locked)
+      // ============================================
+
+      // Get fresh balances after unlock
+      const { data: freshQuoteBalance } = await supabase
+        .from('wallet_balances')
+        .select('id, available, locked')
         .eq('user_id', marketMakerUserId)
-        .eq('symbol', symbol)
-        .eq('status', 'pending');
+        .eq('asset_id', market.quote_asset.id)
+        .single();
+
+      const { data: freshBaseBalance } = await supabase
+        .from('wallet_balances')
+        .select('id, available, locked')
+        .eq('user_id', marketMakerUserId)
+        .eq('asset_id', market.base_asset.id)
+        .single();
+
+      if (!freshQuoteBalance || !freshBaseBalance) {
+        console.warn(`[Market Maker] Missing balance for ${symbol}, skipping`);
+        continue;
+      }
+
+      let currentQuoteAvailable = freshQuoteBalance.available;
+      let currentQuoteLocked = freshQuoteBalance.locked;
+      let currentBaseAvailable = freshBaseBalance.available;
+      let currentBaseLocked = freshBaseBalance.locked;
 
       // Create buy orders at decreasing prices
       for (let level = 1; level <= depthLevels; level++) {
         const priceOffset = (spreadPercent * level) / 100;
         const buyPrice = referencePrice * (1 - priceOffset);
         const quantity = orderSize / buyPrice;
-
-        // Lock quote balance for buy order
         const quoteAmount = quantity * buyPrice;
-        const { data: quoteBalance } = await supabase
-          .from('wallet_balances')
-          .select('available')
-          .eq('user_id', marketMakerUserId)
-          .eq('asset_id', market.quote_asset.id)
-          .single();
 
-        if (!quoteBalance || quoteBalance.available < quoteAmount) {
-          console.warn(`[Market Maker] Insufficient ${market.quote_asset.symbol} balance for buy order`);
+        if (currentQuoteAvailable < quoteAmount) {
+          console.warn(`[Market Maker] Insufficient ${market.quote_asset.symbol} for buy level ${level}`);
           continue;
         }
 
-        // Lock the balance
-        await supabase
-          .from('wallet_balances')
-          .update({ 
-            available: quoteBalance.available - quoteAmount,
-            locked: quoteAmount
-          })
-          .eq('user_id', marketMakerUserId)
-          .eq('asset_id', market.quote_asset.id);
+        // Lock by decrementing available and incrementing locked
+        currentQuoteAvailable -= quoteAmount;
+        currentQuoteLocked += quoteAmount;
 
         // Create buy order
         const { error: buyError } = await supabase
@@ -209,6 +288,7 @@ Deno.serve(async (req) => {
             side: 'buy',
             order_type: 'limit',
             amount: quantity,
+            remaining_amount: quantity,
             price: buyPrice,
             status: 'pending',
             trading_type: 'spot',
@@ -217,7 +297,12 @@ Deno.serve(async (req) => {
 
         if (!buyError) {
           ordersCreated++;
-          console.log(`[Market Maker] Created buy order: ${quantity.toFixed(6)} ${symbol} @ ${buyPrice.toFixed(6)}`);
+          console.log(`[Market Maker] Created buy: ${quantity.toFixed(6)} ${symbol} @ ${buyPrice.toFixed(6)}`);
+        } else {
+          console.error(`[Market Maker] Buy order error:`, buyError);
+          // Rollback the lock tracking
+          currentQuoteAvailable += quoteAmount;
+          currentQuoteLocked -= quoteAmount;
         }
       }
 
@@ -227,28 +312,14 @@ Deno.serve(async (req) => {
         const sellPrice = referencePrice * (1 + priceOffset);
         const quantity = orderSize / sellPrice;
 
-        // Lock base balance for sell order
-        const { data: baseBalance } = await supabase
-          .from('wallet_balances')
-          .select('available')
-          .eq('user_id', marketMakerUserId)
-          .eq('asset_id', market.base_asset.id)
-          .single();
-
-        if (!baseBalance || baseBalance.available < quantity) {
-          console.warn(`[Market Maker] Insufficient ${market.base_asset.symbol} balance for sell order`);
+        if (currentBaseAvailable < quantity) {
+          console.warn(`[Market Maker] Insufficient ${market.base_asset.symbol} for sell level ${level}`);
           continue;
         }
 
-        // Lock the balance
-        await supabase
-          .from('wallet_balances')
-          .update({ 
-            available: baseBalance.available - quantity,
-            locked: quantity
-          })
-          .eq('user_id', marketMakerUserId)
-          .eq('asset_id', market.base_asset.id);
+        // Lock by decrementing available and incrementing locked
+        currentBaseAvailable -= quantity;
+        currentBaseLocked += quantity;
 
         // Create sell order
         const { error: sellError } = await supabase
@@ -259,6 +330,7 @@ Deno.serve(async (req) => {
             side: 'sell',
             order_type: 'limit',
             amount: quantity,
+            remaining_amount: quantity,
             price: sellPrice,
             status: 'pending',
             trading_type: 'spot',
@@ -267,21 +339,48 @@ Deno.serve(async (req) => {
 
         if (!sellError) {
           ordersCreated++;
-          console.log(`[Market Maker] Created sell order: ${quantity.toFixed(6)} ${symbol} @ ${sellPrice.toFixed(6)}`);
+          console.log(`[Market Maker] Created sell: ${quantity.toFixed(6)} ${symbol} @ ${sellPrice.toFixed(6)}`);
+        } else {
+          console.error(`[Market Maker] Sell order error:`, sellError);
+          // Rollback the lock tracking
+          currentBaseAvailable += quantity;
+          currentBaseLocked -= quantity;
         }
       }
+
+      // Update balances with final locked amounts
+      await supabase
+        .from('wallet_balances')
+        .update({
+          available: currentQuoteAvailable,
+          locked: currentQuoteLocked
+        })
+        .eq('id', freshQuoteBalance.id);
+
+      await supabase
+        .from('wallet_balances')
+        .update({
+          available: currentBaseAvailable,
+          locked: currentBaseLocked
+        })
+        .eq('id', freshBaseBalance.id);
     }
 
-    console.log(`[Market Maker] Completed: ${ordersCreated} orders created`);
+    console.log(`[Market Maker] Completed: ${ordersCreated} orders created, ${ordersUnlocked} unlock operations`);
 
     // Trigger order matching
-    await supabase.functions.invoke('match-orders');
+    try {
+      await supabase.functions.invoke('match-orders');
+    } catch (e) {
+      console.warn('[Market Maker] Match-orders invocation failed (non-critical):', e);
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Created ${ordersCreated} market maker orders`,
-        ordersCreated
+        ordersCreated,
+        ordersUnlocked
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

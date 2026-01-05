@@ -8,12 +8,14 @@ import { OpenOrderCard } from "@/components/trading/OpenOrderCard";
 import { FundsTab } from "@/components/trading/FundsTab";
 import { TradeHistoryTab } from "@/components/trading/TradeHistoryTab";
 import { MarketStatsHeader } from "@/components/trading/MarketStatsHeader";
+import { AdminMarketMakerControls } from "@/components/trading/AdminMarketMakerControls";
 import { useTradingPairs } from "@/hooks/useTradingPairs";
 import { useBep20Balances } from "@/hooks/useBep20Balances";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useUserOrders } from "@/hooks/useUserOrders";
 import { useRealtimeOrderBook } from "@/hooks/useRealtimeOrderBook";
 import { useRealtimeTradingBalances } from "@/hooks/useRealtimeTradingBalances";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 import { useToast } from "@/hooks/use-toast";
 import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
@@ -60,7 +62,7 @@ function TradingPairPageContent() {
   const { placeOrder } = useTradingAPI();
   const queryClient = useQueryClient();
   const { user } = useAuthUser();
-
+  const { isAdmin } = useAdminCheck();
 
   // Tab state for Open Orders / Funds / History
   type BottomTab = 'orders' | 'funds' | 'history';
@@ -330,8 +332,11 @@ function TradingPairPageContent() {
               </DropdownMenu>
             </div>
 
-            {/* Connection Status */}
+            {/* Connection Status + Admin Controls */}
             <div className="flex items-center gap-2">
+              {/* Admin Market Maker Controls */}
+              <AdminMarketMakerControls isAdmin={isAdmin} />
+              
               {wsConnected ? (
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
