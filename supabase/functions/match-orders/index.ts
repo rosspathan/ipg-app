@@ -291,41 +291,51 @@ Deno.serve(async (req) => {
                 console.log(`[Matching Engine] ✓ Fees recorded: Buyer=${buyerFee}, Seller=${sellerFee} -> ${adminWallet}`);
               }
 
-              // Update buy order
-              const newBuyFilled = buyOrder.filled_amount + matchedQuantity;
-              const newBuyRemaining = buyOrder.remaining_amount - matchedQuantity;
-              const buyStatus = newBuyRemaining <= 0 ? 'filled' : 'partially_filled';
+              // Update buy order - DO NOT update remaining_amount (it's a generated column)
+              const newBuyFilled = Number(buyOrder.filled_amount) + matchedQuantity;
+              const buyIsFilled = newBuyFilled >= Number(buyOrder.amount);
+              const buyStatus = buyIsFilled ? 'filled' : 'partially_filled';
 
-              await supabase
+              const { error: buyUpdateError } = await supabase
                 .from('orders')
                 .update({
                   filled_amount: newBuyFilled,
-                  remaining_amount: newBuyRemaining,
                   status: buyStatus,
-                  filled_at: buyStatus === 'filled' ? new Date().toISOString() : null
+                  filled_at: buyIsFilled ? new Date().toISOString() : null
                 })
                 .eq('id', buyOrder.id);
 
-              // Update sell order
-              const newSellFilled = sellOrder.filled_amount + matchedQuantity;
-              const newSellRemaining = sellOrder.remaining_amount - matchedQuantity;
-              const sellStatus = newSellRemaining <= 0 ? 'filled' : 'partially_filled';
+              if (buyUpdateError) {
+                console.error('[Matching Engine] Buy order update error:', buyUpdateError);
+                continue;
+              }
 
-              await supabase
+              // Update sell order - DO NOT update remaining_amount (it's a generated column)
+              const newSellFilled = Number(sellOrder.filled_amount) + matchedQuantity;
+              const sellIsFilled = newSellFilled >= Number(sellOrder.amount);
+              const sellStatus = sellIsFilled ? 'filled' : 'partially_filled';
+
+              const { error: sellUpdateError } = await supabase
                 .from('orders')
                 .update({
                   filled_amount: newSellFilled,
-                  remaining_amount: newSellRemaining,
                   status: sellStatus,
-                  filled_at: sellStatus === 'filled' ? new Date().toISOString() : null
+                  filled_at: sellIsFilled ? new Date().toISOString() : null
                 })
                 .eq('id', sellOrder.id);
+
+              if (sellUpdateError) {
+                console.error('[Matching Engine] Sell order update error:', sellUpdateError);
+                continue;
+              }
 
               totalMatches++;
 
               // Update local order objects for next iteration
-              buyOrder.remaining_amount = newBuyRemaining;
-              sellOrder.remaining_amount = newSellRemaining;
+              buyOrder.filled_amount = newBuyFilled;
+              buyOrder.remaining_amount = Number(buyOrder.amount) - newBuyFilled;
+              sellOrder.filled_amount = newSellFilled;
+              sellOrder.remaining_amount = Number(sellOrder.amount) - newSellFilled;
 
               console.log(`[Matching Engine] ✓ Trade executed: ${matchedQuantity} ${symbol} at ${executionPrice}`);
 
