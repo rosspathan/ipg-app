@@ -11864,10 +11864,19 @@ export type Database = {
         Args: { p_module_id: string; p_user_id: string }
         Returns: string
       }
-      lock_balance_for_order: {
-        Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
-        Returns: boolean
-      }
+      lock_balance_for_order:
+        | {
+            Args: { p_amount: number; p_asset_id: string; p_user_id: string }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_asset_symbol: string
+              p_user_id: string
+            }
+            Returns: boolean
+          }
       lock_bsk_for_withdrawal: {
         Args: { p_amount: number; p_user_id: string }
         Returns: Json
@@ -12015,19 +12024,33 @@ export type Database = {
       }
       select_draw_winners: { Args: { p_draw_id: string }; Returns: Json }
       settle_pending_referrer_rewards: { Args: never; Returns: Json }
-      settle_trade: {
-        Args: {
-          p_base_amount: number
-          p_base_asset: string
-          p_buyer_fee?: number
-          p_buyer_id: string
-          p_quote_amount: number
-          p_quote_asset: string
-          p_seller_fee?: number
-          p_seller_id: string
-        }
-        Returns: boolean
-      }
+      settle_trade:
+        | {
+            Args: {
+              p_base_amount: number
+              p_base_asset: string
+              p_buyer_fee?: number
+              p_buyer_id: string
+              p_quote_amount: number
+              p_quote_asset: string
+              p_seller_fee?: number
+              p_seller_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_base_amount: number
+              p_base_asset_id: string
+              p_buyer_fee: number
+              p_buyer_id: string
+              p_quote_amount: number
+              p_quote_asset_id: string
+              p_seller_fee: number
+              p_seller_id: string
+            }
+            Returns: boolean
+          }
       sync_kyc_approval_status: {
         Args: never
         Returns: {
@@ -12040,10 +12063,19 @@ export type Database = {
         Args: { p_asset_id: string; p_balance_delta: number; p_user_id: string }
         Returns: boolean
       }
-      unlock_balance_for_order: {
-        Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
-        Returns: boolean
-      }
+      unlock_balance_for_order:
+        | {
+            Args: { p_amount: number; p_asset_id: string; p_user_id: string }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_asset_symbol: string
+              p_user_id: string
+            }
+            Returns: boolean
+          }
       unlock_banking_details: {
         Args: { p_reason: string; p_user_id: string }
         Returns: undefined

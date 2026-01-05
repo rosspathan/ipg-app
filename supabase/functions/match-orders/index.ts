@@ -73,11 +73,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get all pending orders
+    // Get all pending and partially_filled orders
     const { data: pendingOrders, error: ordersError } = await supabase
       .from('orders')
       .select('*')
-      .eq('status', 'pending')
+      .in('status', ['pending', 'partially_filled'])
       .order('created_at', { ascending: true });
 
     if (ordersError) {
@@ -198,36 +198,36 @@ Deno.serve(async (req) => {
               }
             }
 
-            // PHASE 3.4: Calculate matched quantity using BigNumber
-            const matchedQuantity = BigNumber.min(buyRemaining, sellRemaining);
+            // PHASE 3.4: Calculate matched quantity using BigNumber, quantized to 8 decimals
+            const matchedQuantity = BigNumber.min(buyRemaining, sellRemaining).decimalPlaces(8, BigNumber.ROUND_DOWN);
 
-            console.log(`[Matching Engine] Matching ${matchedQuantity.toString()} ${symbol} at ${executionPrice.toString()}`);
+            console.log(`[Matching Engine] Matching ${matchedQuantity.toFixed(8)} ${symbol} at ${executionPrice.toFixed(8)}`);
 
             // ADMIN FEE: 0.5% on each side (buyer and seller)
             // Both fees calculated in quote asset for simplicity
-            const quoteAmount = matchedQuantity.times(executionPrice);
-            const buyerFee = quoteAmount.times(ADMIN_FEE_PERCENT).dividedBy(100);
-            const sellerFee = quoteAmount.times(ADMIN_FEE_PERCENT).dividedBy(100);
+            const quoteAmount = matchedQuantity.times(executionPrice).decimalPlaces(8, BigNumber.ROUND_DOWN);
+            const buyerFee = quoteAmount.times(ADMIN_FEE_PERCENT).dividedBy(100).decimalPlaces(8, BigNumber.ROUND_DOWN);
+            const sellerFee = quoteAmount.times(ADMIN_FEE_PERCENT).dividedBy(100).decimalPlaces(8, BigNumber.ROUND_DOWN);
             const adminWallet = engineSettings.admin_fee_wallet || ADMIN_FEE_WALLET;
 
             // Parse symbol (e.g., BTC/USDT -> base: BTC, quote: USDT)
             const [baseSymbol, quoteSymbol] = symbol.split('/');
 
-            console.log(`[Matching Engine] Fee calculation: Buyer fee=${buyerFee.toString()} ${quoteSymbol}, Seller fee=${sellerFee.toString()} ${quoteSymbol}, Admin wallet=${adminWallet}`);
+            console.log(`[Matching Engine] Fee calculation: Buyer fee=${buyerFee.toFixed(8)} ${quoteSymbol}, Seller fee=${sellerFee.toFixed(8)} ${quoteSymbol}, Admin wallet=${adminWallet}`);
 
             try {
-              console.log(`[Matching Engine] Settling trade: buyer=${buyOrder.id}, seller=${sellOrder.id}, base=${matchedQuantity.toString()} ${baseSymbol}, quote=${quoteAmount.toString()} ${quoteSymbol}`);
+              console.log(`[Matching Engine] Settling trade: buyer=${buyOrder.id}, seller=${sellOrder.id}, base=${matchedQuantity.toFixed(8)} ${baseSymbol}, quote=${quoteAmount.toFixed(8)} ${quoteSymbol}`);
 
-              // PHASE 3.4: Settle trade with exact decimal strings
+              // PHASE 3.4: Settle trade with exact 8-decimal fixed-point strings
               const { data: settleData, error: settleError } = await supabase.rpc('settle_trade', {
                 p_buyer_id: buyOrder.user_id,
                 p_seller_id: sellOrder.user_id,
                 p_base_asset: baseSymbol,
                 p_quote_asset: quoteSymbol,
-                p_base_amount: matchedQuantity.toString(),
-                p_quote_amount: quoteAmount.toString(),
-                p_buyer_fee: buyerFee.toString(),
-                p_seller_fee: sellerFee.toString()
+                p_base_amount: matchedQuantity.toFixed(8),
+                p_quote_amount: quoteAmount.toFixed(8),
+                p_buyer_fee: buyerFee.toFixed(8),
+                p_seller_fee: sellerFee.toFixed(8)
               });
 
               if (settleError) {
@@ -239,7 +239,24 @@ Deno.serve(async (req) => {
               // Check if settle_trade returned FALSE (validation failed)
               if (settleData === false) {
                 console.warn('[Matching Engine] settle_trade returned FALSE - insufficient locked balance.');
-                console.warn(`[Matching Engine] Debug: buyer=${buyOrder.user_id}, seller=${sellOrder.user_id}, quoteAmount=${quoteAmount.toString()}, baseAmount=${matchedQuantity.toString()}`);
+                
+                // Fetch actual balances for debugging
+                const { data: buyerBalance } = await supabase
+                  .from('wallet_balances')
+                  .select('locked, available')
+                  .eq('user_id', buyOrder.user_id)
+                  .eq('asset_id', (await supabase.from('assets').select('id').eq('symbol', quoteSymbol).single()).data?.id)
+                  .single();
+                
+                const { data: sellerBalance } = await supabase
+                  .from('wallet_balances')
+                  .select('locked, available')
+                  .eq('user_id', sellOrder.user_id)
+                  .eq('asset_id', (await supabase.from('assets').select('id').eq('symbol', baseSymbol).single()).data?.id)
+                  .single();
+                
+                console.warn(`[Matching Engine] Buyer ${buyOrder.user_id} ${quoteSymbol}: locked=${buyerBalance?.locked}, required=${quoteAmount.plus(buyerFee).toFixed(8)}`);
+                console.warn(`[Matching Engine] Seller ${sellOrder.user_id} ${baseSymbol}: locked=${sellerBalance?.locked}, required=${matchedQuantity.toFixed(8)}`);
                 continue;
               }
 
