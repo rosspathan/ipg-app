@@ -41,14 +41,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user is admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single();
+    // Check if user is admin using the has_role function
+    const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin'
+    });
 
-    if (!profile?.is_admin) {
+    if (roleError || !isAdmin) {
+      console.log('[Circuit Breaker] User', user.id, 'is not admin');
       return new Response(
         JSON.stringify({ success: false, error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
