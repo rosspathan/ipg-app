@@ -2,10 +2,18 @@
  * Match Orders Edge Function
  * Phase 2.1: Fixed order matching priority (no infinite prices for market orders)
  * Phase 2.2: Fixed fee calculation (fees in correct assets)
+ * Phase 3.4: BigNumber precision-safe calculations
  * Phase 4.3: Implemented circuit breaker logic
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
+import BigNumber from "https://esm.sh/bignumber.js@9.1.2";
+
+// Configure BigNumber for financial calculations
+BigNumber.config({
+  DECIMAL_PLACES: 8,
+  ROUNDING_MODE: BigNumber.ROUND_DOWN,
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,10 +28,10 @@ interface EngineSettings {
   admin_fee_wallet: string;
 }
 
-const ADMIN_FEE_PERCENT = 0.5; // 0.5% fee on each side (buy and sell)
+const ADMIN_FEE_PERCENT = new BigNumber('0.5'); // 0.5% fee on each side (buy and sell)
 const ADMIN_FEE_WALLET = '0x97E07a738600A6F13527fAe0Cacb0A592FbEAfB1';
 
-const MAX_PRICE_DEVIATION = 0.10; // 10% price deviation triggers circuit breaker
+const MAX_PRICE_DEVIATION = new BigNumber('0.10'); // 10% price deviation triggers circuit breaker
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -124,12 +132,14 @@ Deno.serve(async (req) => {
 
       // Match orders using price-time priority
       for (const buyOrder of sortedBuys) {
-        // Skip fully filled buy orders
-        if (buyOrder.remaining_amount <= 0) continue;
+        // Skip fully filled buy orders - use BigNumber for comparison
+        const buyRemaining = new BigNumber(String(buyOrder.remaining_amount));
+        if (buyRemaining.isLessThanOrEqualTo(0)) continue;
         
         for (const sellOrder of sortedSells) {
-          // Skip fully filled sell orders
-          if (sellOrder.remaining_amount <= 0) continue;
+          // Skip fully filled sell orders - use BigNumber for comparison
+          const sellRemaining = new BigNumber(String(sellOrder.remaining_amount));
+          if (sellRemaining.isLessThanOrEqualTo(0)) continue;
           
           // SELF-TRADE PREVENTION: Skip if same user
           if (buyOrder.user_id === sellOrder.user_id) {
@@ -139,7 +149,7 @@ Deno.serve(async (req) => {
           
           // PHASE 2.1 FIX: Determine if orders can match without infinite prices
           let canMatch = false;
-          let executionPrice = 0;
+          let executionPrice = new BigNumber(0);
 
           if (buyOrder.order_type === 'market' && sellOrder.order_type === 'market') {
             // Both market orders - should not match (no price reference)
@@ -147,18 +157,18 @@ Deno.serve(async (req) => {
           } else if (buyOrder.order_type === 'market') {
             // Buy market order takes seller's limit price
             canMatch = true;
-            executionPrice = sellOrder.price;
+            executionPrice = new BigNumber(String(sellOrder.price));
           } else if (sellOrder.order_type === 'market') {
             // Sell market order takes buyer's limit price
             canMatch = true;
-            executionPrice = buyOrder.price;
+            executionPrice = new BigNumber(String(buyOrder.price));
           } else {
             // Both limit orders: match if buy price >= sell price
             canMatch = buyOrder.price >= sellOrder.price;
-            executionPrice = sellOrder.price; // Maker (seller) sets the price
+            executionPrice = new BigNumber(String(sellOrder.price)); // Maker (seller) sets the price
           }
 
-          if (canMatch && executionPrice > 0) {
+          if (canMatch && executionPrice.isGreaterThan(0)) {
             // PHASE 4.3: Circuit Breaker Check
             const { data: lastTrade } = await supabase
               .from('trades')
@@ -169,10 +179,11 @@ Deno.serve(async (req) => {
               .single();
 
             if (lastTrade) {
-              const priceDeviation = Math.abs((executionPrice - lastTrade.price) / lastTrade.price);
+              const lastPrice = new BigNumber(String(lastTrade.price));
+              const priceDeviation = executionPrice.minus(lastPrice).abs().dividedBy(lastPrice);
               
-              if (priceDeviation > MAX_PRICE_DEVIATION) {
-                console.warn(`[Circuit Breaker] Price deviation too high: ${(priceDeviation * 100).toFixed(2)}%`);
+              if (priceDeviation.isGreaterThan(MAX_PRICE_DEVIATION)) {
+                console.warn(`[Circuit Breaker] Price deviation too high: ${priceDeviation.times(100).toFixed(2)}%`);
                 
                 // Activate circuit breaker
                 await supabase
@@ -180,46 +191,43 @@ Deno.serve(async (req) => {
                   .update({ circuit_breaker_active: true })
                   .eq('id', settings.id);
                 
-                console.error(`[Circuit Breaker] ACTIVATED for ${symbol}. Last: ${lastTrade.price}, Current: ${executionPrice}`);
+                console.error(`[Circuit Breaker] ACTIVATED for ${symbol}. Last: ${lastPrice.toString()}, Current: ${executionPrice.toString()}`);
                 
                 // Stop matching for this symbol
                 break;
               }
             }
 
-            // Calculate matched quantity
-            const matchedQuantity = Math.min(buyOrder.remaining_amount, sellOrder.remaining_amount);
+            // PHASE 3.4: Calculate matched quantity using BigNumber
+            const matchedQuantity = BigNumber.min(buyRemaining, sellRemaining);
 
-            console.log(`[Matching Engine] Matching ${matchedQuantity} ${symbol} at ${executionPrice}`);
+            console.log(`[Matching Engine] Matching ${matchedQuantity.toString()} ${symbol} at ${executionPrice.toString()}`);
 
             // ADMIN FEE: 0.5% on each side (buyer and seller)
             // Both fees calculated in quote asset for simplicity
-            const totalValueQuote = matchedQuantity * executionPrice;
-            const buyerFee = totalValueQuote * (ADMIN_FEE_PERCENT / 100);
-            const sellerFee = totalValueQuote * (ADMIN_FEE_PERCENT / 100);
+            const quoteAmount = matchedQuantity.times(executionPrice);
+            const buyerFee = quoteAmount.times(ADMIN_FEE_PERCENT).dividedBy(100);
+            const sellerFee = quoteAmount.times(ADMIN_FEE_PERCENT).dividedBy(100);
             const adminWallet = engineSettings.admin_fee_wallet || ADMIN_FEE_WALLET;
 
             // Parse symbol (e.g., BTC/USDT -> base: BTC, quote: USDT)
             const [baseSymbol, quoteSymbol] = symbol.split('/');
 
-            console.log(`[Matching Engine] Fee calculation: Buyer fee=${buyerFee} ${quoteSymbol}, Seller fee=${sellerFee} ${quoteSymbol}, Admin wallet=${adminWallet}`);
+            console.log(`[Matching Engine] Fee calculation: Buyer fee=${buyerFee.toString()} ${quoteSymbol}, Seller fee=${sellerFee.toString()} ${quoteSymbol}, Admin wallet=${adminWallet}`);
 
             try {
-              // Calculate quote amount (base * price)
-              const quoteAmount = matchedQuantity * executionPrice;
+              console.log(`[Matching Engine] Settling trade: buyer=${buyOrder.id}, seller=${sellOrder.id}, base=${matchedQuantity.toString()} ${baseSymbol}, quote=${quoteAmount.toString()} ${quoteSymbol}`);
 
-              console.log(`[Matching Engine] Settling trade: buyer=${buyOrder.id}, seller=${sellOrder.id}, base=${matchedQuantity} ${baseSymbol}, quote=${quoteAmount} ${quoteSymbol}`);
-
-              // Settle trade (update balances) with correct parameter names
+              // PHASE 3.4: Settle trade with exact decimal strings
               const { data: settleData, error: settleError } = await supabase.rpc('settle_trade', {
                 p_buyer_id: buyOrder.user_id,
                 p_seller_id: sellOrder.user_id,
                 p_base_asset: baseSymbol,
                 p_quote_asset: quoteSymbol,
-                p_base_amount: matchedQuantity,
-                p_quote_amount: quoteAmount,
-                p_buyer_fee: buyerFee,
-                p_seller_fee: sellerFee
+                p_base_amount: matchedQuantity.toString(),
+                p_quote_amount: quoteAmount.toString(),
+                p_buyer_fee: buyerFee.toString(),
+                p_seller_fee: sellerFee.toString()
               });
 
               if (settleError) {
@@ -230,7 +238,8 @@ Deno.serve(async (req) => {
 
               // Check if settle_trade returned FALSE (validation failed)
               if (settleData === false) {
-                console.warn('[Matching Engine] settle_trade returned FALSE - insufficient locked balance. Skipping this match.');
+                console.warn('[Matching Engine] settle_trade returned FALSE - insufficient locked balance.');
+                console.warn(`[Matching Engine] Debug: buyer=${buyOrder.user_id}, seller=${sellOrder.user_id}, quoteAmount=${quoteAmount.toString()}, baseAmount=${matchedQuantity.toString()}`);
                 continue;
               }
 
@@ -245,11 +254,11 @@ Deno.serve(async (req) => {
                   sell_order_id: sellOrder.id,
                   buyer_id: buyOrder.user_id,
                   seller_id: sellOrder.user_id,
-                  quantity: matchedQuantity,
-                  price: executionPrice,
-                  total_value: totalValueQuote,
-                  buyer_fee: buyerFee,
-                  seller_fee: sellerFee,
+                  quantity: matchedQuantity.toNumber(),
+                  price: executionPrice.toNumber(),
+                  total_value: quoteAmount.toNumber(),
+                  buyer_fee: buyerFee.toNumber(),
+                  seller_fee: sellerFee.toNumber(),
                   trading_type: buyOrder.trading_type || 'spot'
                 })
                 .select('id')
@@ -271,8 +280,8 @@ Deno.serve(async (req) => {
                     trade_id: tradeId,
                     symbol,
                     fee_asset: quoteSymbol,
-                    fee_amount: buyerFee,
-                    fee_percent: ADMIN_FEE_PERCENT,
+                    fee_amount: buyerFee.toNumber(),
+                    fee_percent: ADMIN_FEE_PERCENT.toNumber(),
                     user_id: buyOrder.user_id,
                     side: 'buy',
                     admin_wallet: adminWallet,
@@ -286,26 +295,27 @@ Deno.serve(async (req) => {
                     trade_id: tradeId,
                     symbol,
                     fee_asset: quoteSymbol,
-                    fee_amount: sellerFee,
-                    fee_percent: ADMIN_FEE_PERCENT,
+                    fee_amount: sellerFee.toNumber(),
+                    fee_percent: ADMIN_FEE_PERCENT.toNumber(),
                     user_id: sellOrder.user_id,
                     side: 'sell',
                     admin_wallet: adminWallet,
                     status: 'collected'
                   });
 
-                console.log(`[Matching Engine] ✓ Fees recorded: Buyer=${buyerFee}, Seller=${sellerFee} -> ${adminWallet}`);
+                console.log(`[Matching Engine] ✓ Fees recorded: Buyer=${buyerFee.toString()}, Seller=${sellerFee.toString()} -> ${adminWallet}`);
               }
 
               // Update buy order - DO NOT update remaining_amount (it's a generated column)
-              const newBuyFilled = Number(buyOrder.filled_amount) + matchedQuantity;
-              const buyIsFilled = newBuyFilled >= Number(buyOrder.amount);
+              const newBuyFilled = new BigNumber(String(buyOrder.filled_amount)).plus(matchedQuantity);
+              const buyOrderAmount = new BigNumber(String(buyOrder.amount));
+              const buyIsFilled = newBuyFilled.isGreaterThanOrEqualTo(buyOrderAmount);
               const buyStatus = buyIsFilled ? 'filled' : 'partially_filled';
 
               const { error: buyUpdateError } = await supabase
                 .from('orders')
                 .update({
-                  filled_amount: newBuyFilled,
+                  filled_amount: newBuyFilled.toNumber(),
                   status: buyStatus,
                   filled_at: buyIsFilled ? new Date().toISOString() : null
                 })
@@ -317,14 +327,15 @@ Deno.serve(async (req) => {
               }
 
               // Update sell order - DO NOT update remaining_amount (it's a generated column)
-              const newSellFilled = Number(sellOrder.filled_amount) + matchedQuantity;
-              const sellIsFilled = newSellFilled >= Number(sellOrder.amount);
+              const newSellFilled = new BigNumber(String(sellOrder.filled_amount)).plus(matchedQuantity);
+              const sellOrderAmount = new BigNumber(String(sellOrder.amount));
+              const sellIsFilled = newSellFilled.isGreaterThanOrEqualTo(sellOrderAmount);
               const sellStatus = sellIsFilled ? 'filled' : 'partially_filled';
 
               const { error: sellUpdateError } = await supabase
                 .from('orders')
                 .update({
-                  filled_amount: newSellFilled,
+                  filled_amount: newSellFilled.toNumber(),
                   status: sellStatus,
                   filled_at: sellIsFilled ? new Date().toISOString() : null
                 })
@@ -338,12 +349,12 @@ Deno.serve(async (req) => {
               totalMatches++;
 
               // Update local order objects for next iteration
-              buyOrder.filled_amount = newBuyFilled;
-              buyOrder.remaining_amount = Number(buyOrder.amount) - newBuyFilled;
-              sellOrder.filled_amount = newSellFilled;
-              sellOrder.remaining_amount = Number(sellOrder.amount) - newSellFilled;
+              buyOrder.filled_amount = newBuyFilled.toNumber();
+              buyOrder.remaining_amount = buyOrderAmount.minus(newBuyFilled).toNumber();
+              sellOrder.filled_amount = newSellFilled.toNumber();
+              sellOrder.remaining_amount = sellOrderAmount.minus(newSellFilled).toNumber();
 
-              console.log(`[Matching Engine] ✓ Trade executed: ${matchedQuantity} ${symbol} at ${executionPrice}`);
+              console.log(`[Matching Engine] ✓ Trade executed: ${matchedQuantity.toString()} ${symbol} at ${executionPrice.toString()}`);
 
               // If buy order is fully filled, break inner loop
               if (buyOrder.remaining_amount <= 0) {

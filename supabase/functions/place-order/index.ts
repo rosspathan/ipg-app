@@ -2,10 +2,18 @@
  * Place Order Edge Function
  * Phase 2.3: Added idempotency key support
  * Phase 2.4: Added atomic transaction handling
+ * Phase 3.4: BigNumber precision-safe calculations
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import BigNumber from "https://esm.sh/bignumber.js@9.1.2";
+
+// Configure BigNumber for financial calculations
+BigNumber.config({
+  DECIMAL_PLACES: 8,
+  ROUNDING_MODE: BigNumber.ROUND_DOWN,
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -71,7 +79,7 @@ serve(async (req) => {
 
     // Default to internal mode - on-chain mode should be explicitly requested
     const isOnchainMode = trading_mode === 'onchain';
-    const FEE_PERCENT = 0.005; // 0.5% fee buffer for buy orders
+    const FEE_PERCENT = new BigNumber('0.005'); // 0.5% fee buffer for buy orders
 
     console.log('[place-order] Received order:', { user_id: user.id, symbol, side, type, quantity, price, trading_mode: isOnchainMode ? 'onchain' : 'internal' });
 
@@ -107,12 +115,24 @@ serve(async (req) => {
       }
     }
     
-    const order_value = quantity * estimated_market_price;
+    // PHASE 3.4: Use BigNumber for precision-safe calculations
+    const quantityBN = new BigNumber(String(quantity));
+    const priceBN = new BigNumber(String(estimated_market_price));
+    const order_value = quantityBN.times(priceBN);
+    
     const required_asset = side === 'buy' ? quote_symbol : base_symbol;
+    
     // Add 0.5% fee buffer for buy orders to ensure settlement works
-    const required_amount = side === 'buy' ? order_value * (1 + FEE_PERCENT) : quantity;
+    const required_amount = side === 'buy' 
+      ? order_value.times(new BigNumber('1').plus(FEE_PERCENT))
+      : quantityBN;
 
-    console.log('[place-order] Required:', { required_asset, required_amount, feeBuffer: side === 'buy' ? FEE_PERCENT : 0, skipBalanceCheck: isOnchainMode });
+    console.log('[place-order] Required (BigNumber):', { 
+      required_asset, 
+      required_amount: required_amount.toString(), 
+      feeBuffer: side === 'buy' ? FEE_PERCENT.toString() : '0', 
+      skipBalanceCheck: isOnchainMode 
+    });
 
     // Balance validation - ALWAYS required for both modes
     if (isOnchainMode) {
@@ -147,7 +167,7 @@ serve(async (req) => {
       }
       
       // 3. Fetch on-chain balance via BSC RPC
-      let onchainBalance = 0;
+      let onchainBalance = new BigNumber(0);
       const RPC_URL = 'https://bsc-dataseed.binance.org';
       const decimals = assetData.decimals || 18;
       
@@ -166,7 +186,7 @@ serve(async (req) => {
           });
           const result = await response.json();
           if (result.result) {
-            onchainBalance = parseInt(result.result, 16) / Math.pow(10, 18);
+            onchainBalance = new BigNumber(result.result).dividedBy(new BigNumber(10).pow(18));
           }
         } else if (assetData.contract_address) {
           // ERC20 token balance
@@ -186,7 +206,7 @@ serve(async (req) => {
           });
           const result = await response.json();
           if (result.result && result.result !== '0x') {
-            onchainBalance = parseInt(result.result, 16) / Math.pow(10, decimals);
+            onchainBalance = new BigNumber(result.result).dividedBy(new BigNumber(10).pow(decimals));
           }
         } else {
           console.warn('[place-order] No contract address for asset:', required_asset);
@@ -197,7 +217,7 @@ serve(async (req) => {
         throw new Error('Failed to verify on-chain balance. Please try again.');
       }
       
-      console.log('[place-order] On-chain balance:', { asset: required_asset, balance: onchainBalance, required: required_amount });
+      console.log('[place-order] On-chain balance:', { asset: required_asset, balance: onchainBalance.toString(), required: required_amount.toString() });
       
       // 4. Check for pending orders that would reduce available balance
       const { data: pendingOrders } = await supabaseClient
@@ -206,27 +226,26 @@ serve(async (req) => {
         .eq('user_id', user.id)
         .in('status', ['pending', 'partially_filled']);
       
-      let totalPendingLocked = 0;
+      let totalPendingLocked = new BigNumber(0);
       if (pendingOrders && pendingOrders.length > 0) {
-        totalPendingLocked = pendingOrders.reduce((sum, order) => {
+        for (const order of pendingOrders) {
           const [orderBase, orderQuote] = order.symbol.split('/');
           const orderAsset = order.side === 'buy' ? orderQuote : orderBase;
           if (orderAsset === required_asset) {
             const orderAmount = order.side === 'buy' 
-              ? order.amount * (order.price || estimated_market_price)
-              : order.amount;
-            return sum + orderAmount;
+              ? new BigNumber(String(order.amount)).times(new BigNumber(String(order.price || estimated_market_price)))
+              : new BigNumber(String(order.amount));
+            totalPendingLocked = totalPendingLocked.plus(orderAmount);
           }
-          return sum;
-        }, 0);
+        }
       }
       
-      console.log('[place-order] Pending locked:', { totalPendingLocked, availableAfterPending: onchainBalance - totalPendingLocked });
+      console.log('[place-order] Pending locked:', { totalPendingLocked: totalPendingLocked.toString(), availableAfterPending: onchainBalance.minus(totalPendingLocked).toString() });
       
       // 5. Validate sufficient balance
-      const availableBalance = onchainBalance - totalPendingLocked;
-      if (availableBalance < required_amount) {
-        const shortfall = required_amount - availableBalance;
+      const availableBalance = onchainBalance.minus(totalPendingLocked);
+      if (availableBalance.isLessThan(required_amount)) {
+        const shortfall = required_amount.minus(availableBalance);
         throw new Error(
           `Insufficient ${required_asset} balance. ` +
           `Available: ${availableBalance.toFixed(6)} ${required_asset}, ` +
@@ -240,12 +259,13 @@ serve(async (req) => {
     } else {
       // INTERNAL MODE: Use wallet_balances table
       // PHASE 2.4: Atomic balance locking for ALL order types (not just limit)
+      // PHASE 3.4: Pass exact decimal string to RPC
       const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
         'lock_balance_for_order',
         {
           p_user_id: user.id,
           p_asset_symbol: required_asset,
-          p_amount: required_amount,
+          p_amount: required_amount.toString(), // Pass as exact decimal string
         }
       );
 
@@ -254,7 +274,7 @@ serve(async (req) => {
         throw new Error(`Insufficient ${required_asset} balance. Required: ${required_amount.toFixed(6)} (includes fee buffer)`);
       }
 
-      console.log('[place-order] Balance locked successfully for', type, 'order');
+      console.log('[place-order] Balance locked successfully:', required_amount.toString());
     }
 
     // Insert order (use 'amount' column, not 'quantity')
@@ -266,8 +286,8 @@ serve(async (req) => {
         symbol,
         side,
         order_type: type,
-        amount: quantity,
-        price: price || null,
+        amount: quantityBN.toNumber(), // DB expects numeric
+        price: price ? new BigNumber(String(price)).toNumber() : null,
         status: 'pending',
         trading_type: trading_type || 'spot',
       })
@@ -282,7 +302,7 @@ serve(async (req) => {
         await supabaseClient.rpc('unlock_balance_for_order', {
           p_user_id: user.id,
           p_asset_symbol: required_asset,
-          p_amount: required_amount,
+          p_amount: required_amount.toString(),
         });
       }
       
