@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { Loader2, Bot, RefreshCw, PowerOff, Power, CheckCircle2, XCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface MarketMakerPanelProps {
   tradingPairs: Array<{ symbol: string }>;
@@ -16,107 +16,161 @@ interface MarketMakerPanelProps {
 export function MarketMakerPanel({ tradingPairs }: MarketMakerPanelProps) {
   const queryClient = useQueryClient();
   const [symbol, setSymbol] = useState('IPG/USDT');
-  const [buyPrice, setBuyPrice] = useState('0.50');
-  const [sellPrice, setSellPrice] = useState('0.50');
-  const [buyAmount, setBuyAmount] = useState('100');
-  const [sellAmount, setSellAmount] = useState('100');
-  const [isSeeding, setIsSeeding] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
 
-  // Seed order mutation
-  const seedOrderMutation = useMutation({
-    mutationFn: async ({ side, amount, price }: { side: 'buy' | 'sell'; amount: number; price: number }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase.rpc('admin_seed_market_order', {
-        p_admin_id: user.id,
-        p_symbol: symbol,
-        p_side: side,
-        p_amount: amount,
-        p_price: price,
-      });
-
+  // Fetch current market maker settings
+  const { data: settings, isLoading: settingsLoading } = useQuery({
+    queryKey: ['trading-engine-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('trading_engine_settings')
+        .select('*')
+        .single();
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
-      toast.success(`${variables.side.toUpperCase()} order created`, {
-        description: `${variables.amount} @ ${variables.price}`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-    },
-    onError: (error: any) => {
-      toast.error('Failed to create order', {
-        description: error.message,
-      });
-    },
   });
 
-  // Trigger database matching function
-  const triggerMatchingMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.rpc('admin_trigger_matching', {
-        p_symbol: symbol,
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      if (data && data.length > 0) {
-        toast.success('Matching completed', {
-          description: data[0].message,
-        });
-      }
-      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-    },
-    onError: (error: any) => {
-      toast.error('Matching failed', {
-        description: error.message,
-      });
-    },
-  });
-
-  const handleSeedBothSides = async () => {
-    setIsSeeding(true);
+  const handleSetup = async () => {
+    setLoading('setup');
     try {
-      // Create buy order
-      await seedOrderMutation.mutateAsync({
-        side: 'buy',
-        amount: parseFloat(buyAmount),
-        price: parseFloat(buyPrice),
+      const { data, error } = await supabase.functions.invoke('admin-setup-market-maker', {
+        body: { action: 'setup_and_seed' }
       });
 
-      // Create sell order
-      await seedOrderMutation.mutateAsync({
-        side: 'sell',
-        amount: parseFloat(sellAmount),
-        price: parseFloat(sellPrice),
-      });
-
-      toast.success('Liquidity seeded on both sides');
-    } catch (error) {
-      // Individual errors already handled by mutation
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success('Market Maker Setup Complete', {
+          description: `Bot user created and orders seeded. ID: ${data.marketMakerUserId?.slice(0, 8)}...`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['trading-engine-settings'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      } else {
+        throw new Error(data?.error || 'Setup failed');
+      }
+    } catch (error: any) {
+      toast.error('Setup Failed', { description: error.message });
     } finally {
-      setIsSeeding(false);
+      setLoading(null);
     }
   };
+
+  const handleSeed = async () => {
+    setLoading('seed');
+    try {
+      const { data, error } = await supabase.functions.invoke('seed-market-maker');
+
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success('Orders Seeded', {
+          description: `Created ${data.ordersCreated} market maker orders`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      } else {
+        throw new Error(data?.message || data?.error || 'Seeding failed');
+      }
+    } catch (error: any) {
+      toast.error('Seed Failed', { description: error.message });
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleDisable = async () => {
+    setLoading('disable');
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-setup-market-maker', {
+        body: { action: 'disable' }
+      });
+
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success('Market Maker Disabled', {
+          description: 'All pending orders cancelled and funds unlocked',
+        });
+        queryClient.invalidateQueries({ queryKey: ['trading-engine-settings'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      } else {
+        throw new Error(data?.error || 'Disable failed');
+      }
+    } catch (error: any) {
+      toast.error('Disable Failed', { description: error.message });
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const isEnabled = settings?.market_maker_enabled;
+  const hasUserId = !!settings?.market_maker_user_id;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RefreshCw className="h-5 w-5" />
-          Market Maker
+          <Bot className="h-5 w-5" />
+          Market Maker Bot
         </CardTitle>
         <CardDescription>
-          Seed initial liquidity for trading pairs. Admin balance will be used.
+          Automated liquidity provider with dedicated virtual funds.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Status Section */}
+        <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Status</span>
+            {settingsLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isEnabled ? (
+              <Badge variant="default" className="bg-green-600 gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Enabled
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="gap-1">
+                <XCircle className="h-3 w-3" />
+                Disabled
+              </Badge>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Bot User</span>
+            {settingsLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : hasUserId ? (
+              <code className="text-xs bg-muted px-2 py-1 rounded">
+                {settings.market_maker_user_id?.slice(0, 8)}...
+              </code>
+            ) : (
+              <span className="text-xs text-muted-foreground">Not created</span>
+            )}
+          </div>
+
+          {settings && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Spread</span>
+                <span className="text-sm">{settings.market_maker_spread_percent}%</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Depth Levels</span>
+                <span className="text-sm">{settings.market_maker_depth_levels}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Order Size</span>
+                <span className="text-sm">{settings.market_maker_order_size}</span>
+              </div>
+            </>
+          )}
+        </div>
+
         {/* Symbol Selection */}
         <div className="space-y-2">
-          <Label>Trading Pair</Label>
+          <Label>Trading Pair (for seeding)</Label>
           <Select value={symbol} onValueChange={setSymbol}>
             <SelectTrigger>
               <SelectValue />
@@ -134,129 +188,55 @@ export function MarketMakerPanel({ tradingPairs }: MarketMakerPanelProps) {
           </Select>
         </div>
 
-        {/* Buy Side */}
-        <div className="p-4 border rounded-lg bg-green-500/5 border-green-500/20">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-green-500" />
-            <span className="font-medium text-green-500">Buy Side (Bids)</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Price</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={buyPrice}
-                onChange={(e) => setBuyPrice(e.target.value)}
-                placeholder="0.50"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Amount</Label>
-              <Input
-                type="number"
-                step="1"
-                value={buyAmount}
-                onChange={(e) => setBuyAmount(e.target.value)}
-                placeholder="100"
-              />
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="w-full mt-3 border-green-500/50 text-green-600 hover:bg-green-500/10"
-            onClick={() =>
-              seedOrderMutation.mutate({
-                side: 'buy',
-                amount: parseFloat(buyAmount),
-                price: parseFloat(buyPrice),
-              })
-            }
-            disabled={seedOrderMutation.isPending}
-          >
-            {seedOrderMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : null}
-            Create Buy Order
-          </Button>
-        </div>
-
-        {/* Sell Side */}
-        <div className="p-4 border rounded-lg bg-red-500/5 border-red-500/20">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingDown className="h-4 w-4 text-red-500" />
-            <span className="font-medium text-red-500">Sell Side (Asks)</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Price</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={sellPrice}
-                onChange={(e) => setSellPrice(e.target.value)}
-                placeholder="0.50"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Amount</Label>
-              <Input
-                type="number"
-                step="1"
-                value={sellAmount}
-                onChange={(e) => setSellAmount(e.target.value)}
-                placeholder="100"
-              />
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="w-full mt-3 border-red-500/50 text-red-600 hover:bg-red-500/10"
-            onClick={() =>
-              seedOrderMutation.mutate({
-                side: 'sell',
-                amount: parseFloat(sellAmount),
-                price: parseFloat(sellPrice),
-              })
-            }
-            disabled={seedOrderMutation.isPending}
-          >
-            {seedOrderMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : null}
-            Create Sell Order
-          </Button>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex gap-3">
-          <Button
-            className="flex-1"
-            onClick={handleSeedBothSides}
-            disabled={isSeeding}
-          >
-            {isSeeding ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : null}
-            Seed Both Sides
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => triggerMatchingMutation.mutate()}
-            disabled={triggerMatchingMutation.isPending}
-          >
-            {triggerMatchingMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            Run Matching
-          </Button>
+        {/* Actions */}
+        <div className="space-y-3">
+          {!hasUserId ? (
+            <Button
+              className="w-full gap-2"
+              onClick={handleSetup}
+              disabled={loading !== null}
+            >
+              {loading === 'setup' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Power className="h-4 w-4" />
+              )}
+              Setup Market Maker Bot
+            </Button>
+          ) : (
+            <>
+              <Button
+                className="w-full gap-2"
+                onClick={handleSeed}
+                disabled={loading !== null}
+              >
+                {loading === 'seed' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Seed Orders Now
+              </Button>
+              
+              <Button
+                variant="destructive"
+                className="w-full gap-2"
+                onClick={handleDisable}
+                disabled={loading !== null}
+              >
+                {loading === 'disable' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PowerOff className="h-4 w-4" />
+                )}
+                Disable Market Maker
+              </Button>
+            </>
+          )}
         </div>
 
         <p className="text-xs text-muted-foreground">
-          💡 To execute a trade: Create a buy order at X price and a sell order at the same or lower price.
-          Then run matching. Orders from the same user won't match.
+          💡 The bot uses a dedicated system user with virtual funds. Setup creates the user, funds it (1M IPG + 1M USDT), and seeds initial orders.
         </p>
       </CardContent>
     </Card>
