@@ -228,6 +228,12 @@ Deno.serve(async (req) => {
                 continue;
               }
 
+              // Check if settle_trade returned FALSE (validation failed)
+              if (settleData === false) {
+                console.warn('[Matching Engine] settle_trade returned FALSE - insufficient locked balance. Skipping this match.');
+                continue;
+              }
+
               console.log('[Matching Engine] Settle success:', settleData);
 
               // Create trade record

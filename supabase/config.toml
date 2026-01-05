@@ -239,3 +239,6 @@ verify_jwt = true
 
 [functions.sync-user-balances]
 verify_jwt = true
+
+[functions.seed-market-maker]
+verify_jwt = false

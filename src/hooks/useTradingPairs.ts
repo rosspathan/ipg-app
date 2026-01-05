@@ -46,7 +46,7 @@ export function useTradingPairs(type?: 'listed' | 'all') {
 
       if (error) throw error;
 
-      // Fetch latest prices
+      // Fetch latest prices from market_prices
       const { data: prices } = await supabase
         .from('market_prices')
         .select('*')
@@ -60,13 +60,30 @@ export function useTradingPairs(type?: 'listed' | 'all') {
         }
       });
 
+      // Fetch last trade prices for each symbol (priority over market_prices)
+      const { data: lastTrades } = await supabase
+        .from('trades')
+        .select('symbol, price, created_at')
+        .order('created_at', { ascending: false });
+
+      // Create a map of symbol to last trade price
+      const lastTradeMap = new Map<string, number>();
+      lastTrades?.forEach(trade => {
+        if (!lastTradeMap.has(trade.symbol)) {
+          lastTradeMap.set(trade.symbol, trade.price);
+        }
+      });
+
       // Transform to trading pairs with real market data
       const pairs: TradingPair[] = (markets || []).map((market: any) => {
         const symbol = `${market.base_asset.symbol}/${market.quote_asset.symbol}`;
         const priceData = priceMap.get(market.id);
         
-        // Use real price data if available, otherwise use fallback
-        const currentPrice = priceData?.current_price || getFallbackPrice(market.base_asset.symbol);
+        // Priority: 1) Last trade price, 2) market_prices, 3) fallback
+        const lastTradePrice = lastTradeMap.get(symbol);
+        const marketPrice = priceData?.current_price;
+        const currentPrice = lastTradePrice || marketPrice || getFallbackPrice(market.base_asset.symbol);
+        
         const priceChange24h = priceData?.price_change_percentage_24h || 0;
         const high24h = priceData?.high_24h || currentPrice * 1.05;
         const low24h = priceData?.low_24h || currentPrice * 0.95;
