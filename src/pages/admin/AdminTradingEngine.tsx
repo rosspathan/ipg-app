@@ -98,7 +98,7 @@ export default function AdminTradingEngine() {
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Trading Engine Controls</h1>
+        <h1 className="text-3xl font-bold text-foreground">Trading Engine Controls</h1>
         <p className="text-muted-foreground">
           Configure and monitor the order matching engine
         </p>

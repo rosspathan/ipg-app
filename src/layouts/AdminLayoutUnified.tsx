@@ -5,8 +5,9 @@ import { AdminSidebarUnified } from "@/components/admin/unified/AdminSidebarUnif
 import { AdminDockUnified } from "@/components/admin/unified/AdminDockUnified";
 import { CommandPalette } from "@/components/admin/unified/CommandPalette";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTransferNotifications } from "@/hooks/useTransferNotifications";
+import { useTheme } from "next-themes";
 
 /**
  * Unified Admin Layout - World-Class Admin Panel
@@ -18,6 +19,12 @@ import { useTransferNotifications } from "@/hooks/useTransferNotifications";
  */
 const AdminLayoutUnified = () => {
   const [commandOpen, setCommandOpen] = useState(false);
+  const { setTheme } = useTheme();
+  
+  // Force dark mode in admin panel
+  useEffect(() => {
+    setTheme("dark");
+  }, [setTheme]);
   
   // Enable real-time notifications for large transfers
   useTransferNotifications();
@@ -25,7 +32,7 @@ const AdminLayoutUnified = () => {
   return (
     <NavigationStateManager>
       <SidebarProvider defaultOpen={true}>
-        <div className="flex min-h-screen w-full bg-[hsl(240_35%_7%)]">
+        <div className="flex min-h-screen w-full bg-[hsl(240_35%_7%)] text-foreground">
           {/* Desktop Sidebar - Hidden on mobile */}
           <div className="hidden md:block">
             <AdminSidebarUnified />

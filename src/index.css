@@ -237,6 +237,49 @@ All colors MUST be HSL.
     --sidebar-border: 220 15% 88%;
     --sidebar-ring: 260 85% 55%;
   }
+
+  /* Dark mode - explicit class for next-themes */
+  .dark {
+    --background: 240 35% 7%;
+    --foreground: 0 0% 98%;
+    
+    --card: 235 28% 13%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 223 32% 11%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 262 100% 65%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 265 100% 71%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 217 19% 16%;
+    --muted-foreground: 0 0% 70%;
+    
+    --accent: 189 100% 50%;
+    --accent-foreground: 0 0% 8%;
+    
+    --destructive: 0 70% 68%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 235 20% 22%;
+    --input: 217 24% 18%;
+    --ring: 248 67% 64%;
+    
+    --success: 154 67% 52%;
+    --success-foreground: 0 0% 98%;
+    
+    --sidebar-background: 230 35% 8%;
+    --sidebar-foreground: 220 30% 90%;
+    --sidebar-primary: 260 85% 65%;
+    --sidebar-primary-foreground: 220 30% 98%;
+    --sidebar-accent: 230 25% 18%;
+    --sidebar-accent-foreground: 220 30% 90%;
+    --sidebar-border: 230 25% 25%;
+    --sidebar-ring: 260 85% 65%;
+  }
 }
 
 @layer base {
