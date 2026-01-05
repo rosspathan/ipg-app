@@ -226,77 +226,31 @@ Deno.serve(async (req) => {
             console.log(`[Matching Engine] Fee calculation: Buyer fee=${buyerFee.toFixed(8)} ${quoteSymbol}, Seller fee=${sellerFee.toFixed(8)} ${quoteSymbol}, Admin wallet=${adminWallet}`);
 
             try {
-              console.log(`[Matching Engine] Settling trade: buyer=${buyOrder.id}, seller=${sellOrder.id}, base=${matchedQuantity.toFixed(8)} ${baseSymbol}, quote=${quoteAmount.toFixed(8)} ${quoteSymbol}`);
+              console.log(`[Matching Engine] Executing atomic trade: buyer=${buyOrder.id}, seller=${sellOrder.id}, base=${matchedQuantity.toFixed(8)} ${baseSymbol}, quote=${quoteAmount.toFixed(8)} ${quoteSymbol}`);
 
-              // PHASE 3.4: Settle trade with exact 8-decimal fixed-point strings
-              const { data: settleData, error: settleError } = await supabase.rpc('settle_trade', {
+              // Use atomic execute_trade RPC that handles settle + trade record + order updates in one transaction
+              const { data: tradeId, error: executeError } = await supabase.rpc('execute_trade', {
+                p_buy_order_id: buyOrder.id,
+                p_sell_order_id: sellOrder.id,
                 p_buyer_id: buyOrder.user_id,
                 p_seller_id: sellOrder.user_id,
+                p_symbol: symbol,
                 p_base_asset: baseSymbol,
                 p_quote_asset: quoteSymbol,
                 p_base_amount: matchedQuantity.toFixed(8),
                 p_quote_amount: quoteAmount.toFixed(8),
                 p_buyer_fee: buyerFee.toFixed(8),
-                p_seller_fee: sellerFee.toFixed(8)
+                p_seller_fee: sellerFee.toFixed(8),
+                p_trading_type: buyOrder.trading_type || 'spot'
               });
 
-              if (settleError) {
-                console.error('[Matching Engine] Settle error:', settleError);
-                console.error('[Matching Engine] Settle error details:', JSON.stringify(settleError));
+              if (executeError) {
+                console.error('[Matching Engine] Execute trade error:', executeError);
+                console.error('[Matching Engine] Execute trade error message:', executeError.message);
                 continue;
               }
 
-              // Check if settle_trade returned FALSE (validation failed)
-              if (settleData === false) {
-                console.warn('[Matching Engine] settle_trade returned FALSE - insufficient locked balance.');
-                
-                // Fetch actual balances for debugging
-                const { data: buyerBalance } = await supabase
-                  .from('wallet_balances')
-                  .select('locked, available')
-                  .eq('user_id', buyOrder.user_id)
-                  .eq('asset_id', (await supabase.from('assets').select('id').eq('symbol', quoteSymbol).single()).data?.id)
-                  .single();
-                
-                const { data: sellerBalance } = await supabase
-                  .from('wallet_balances')
-                  .select('locked, available')
-                  .eq('user_id', sellOrder.user_id)
-                  .eq('asset_id', (await supabase.from('assets').select('id').eq('symbol', baseSymbol).single()).data?.id)
-                  .single();
-                
-                console.warn(`[Matching Engine] Buyer ${buyOrder.user_id} ${quoteSymbol}: locked=${buyerBalance?.locked}, required=${quoteAmount.plus(buyerFee).toFixed(8)}`);
-                console.warn(`[Matching Engine] Seller ${sellOrder.user_id} ${baseSymbol}: locked=${sellerBalance?.locked}, required=${matchedQuantity.toFixed(8)}`);
-                continue;
-              }
-
-              console.log('[Matching Engine] Settle success:', settleData);
-
-              // Create trade record
-              const { data: tradeData, error: tradeError } = await supabase
-                .from('trades')
-                .insert({
-                  symbol,
-                  buy_order_id: buyOrder.id,
-                  sell_order_id: sellOrder.id,
-                  buyer_id: buyOrder.user_id,
-                  seller_id: sellOrder.user_id,
-                  quantity: matchedQuantity.toNumber(),
-                  price: executionPrice.toNumber(),
-                  total_value: quoteAmount.toNumber(),
-                  buyer_fee: buyerFee.toNumber(),
-                  seller_fee: sellerFee.toNumber(),
-                  trading_type: buyOrder.trading_type || 'spot'
-                })
-                .select('id')
-                .single();
-
-              const tradeId = tradeData?.id;
-
-              if (tradeError) {
-                console.error('[Matching Engine] Trade creation error:', tradeError);
-                continue;
-              }
+              console.log('[Matching Engine] Trade executed successfully, trade_id:', tradeId);
 
               // Record fees in trading_fees_collected ledger
               if (tradeId) {
@@ -333,51 +287,16 @@ Deno.serve(async (req) => {
                 console.log(`[Matching Engine] ✓ Fees recorded: Buyer=${buyerFee.toString()}, Seller=${sellerFee.toString()} -> ${adminWallet}`);
               }
 
-              // Update buy order - DO NOT update remaining_amount (it's a generated column)
-              const newBuyFilled = new BigNumber(String(buyOrder.filled_amount)).plus(matchedQuantity);
-              const buyOrderAmount = new BigNumber(String(buyOrder.amount));
-              const buyIsFilled = newBuyFilled.isGreaterThanOrEqualTo(buyOrderAmount);
-              const buyStatus = buyIsFilled ? 'filled' : 'partially_filled';
-
-              const { error: buyUpdateError } = await supabase
-                .from('orders')
-                .update({
-                  filled_amount: newBuyFilled.toNumber(),
-                  status: buyStatus,
-                  filled_at: buyIsFilled ? new Date().toISOString() : null
-                })
-                .eq('id', buyOrder.id);
-
-              if (buyUpdateError) {
-                console.error('[Matching Engine] Buy order update error:', buyUpdateError);
-                continue;
-              }
-
-              // Update sell order - DO NOT update remaining_amount (it's a generated column)
-              const newSellFilled = new BigNumber(String(sellOrder.filled_amount)).plus(matchedQuantity);
-              const sellOrderAmount = new BigNumber(String(sellOrder.amount));
-              const sellIsFilled = newSellFilled.isGreaterThanOrEqualTo(sellOrderAmount);
-              const sellStatus = sellIsFilled ? 'filled' : 'partially_filled';
-
-              const { error: sellUpdateError } = await supabase
-                .from('orders')
-                .update({
-                  filled_amount: newSellFilled.toNumber(),
-                  status: sellStatus,
-                  filled_at: sellIsFilled ? new Date().toISOString() : null
-                })
-                .eq('id', sellOrder.id);
-
-              if (sellUpdateError) {
-                console.error('[Matching Engine] Sell order update error:', sellUpdateError);
-                continue;
-              }
-
               totalMatches++;
 
               // Update local order objects for next iteration
+              const newBuyFilled = new BigNumber(String(buyOrder.filled_amount)).plus(matchedQuantity);
+              const buyOrderAmount = new BigNumber(String(buyOrder.amount));
               buyOrder.filled_amount = newBuyFilled.toNumber();
               buyOrder.remaining_amount = buyOrderAmount.minus(newBuyFilled).toNumber();
+              
+              const newSellFilled = new BigNumber(String(sellOrder.filled_amount)).plus(matchedQuantity);
+              const sellOrderAmount = new BigNumber(String(sellOrder.amount));
               sellOrder.filled_amount = newSellFilled.toNumber();
               sellOrder.remaining_amount = sellOrderAmount.minus(newSellFilled).toNumber();
 
