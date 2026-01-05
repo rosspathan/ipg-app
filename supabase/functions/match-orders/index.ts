@@ -205,22 +205,30 @@ Deno.serve(async (req) => {
             console.log(`[Matching Engine] Fee calculation: Buyer fee=${buyerFee} ${quoteSymbol}, Seller fee=${sellerFee} ${quoteSymbol}, Admin wallet=${adminWallet}`);
 
             try {
-              // Settle trade (update balances) with 0.5% fee for each party
-              const { error: settleError } = await supabase.rpc('settle_trade', {
+              // Calculate quote amount (base * price)
+              const quoteAmount = matchedQuantity * executionPrice;
+
+              console.log(`[Matching Engine] Settling trade: buyer=${buyOrder.id}, seller=${sellOrder.id}, base=${matchedQuantity} ${baseSymbol}, quote=${quoteAmount} ${quoteSymbol}`);
+
+              // Settle trade (update balances) with correct parameter names
+              const { data: settleData, error: settleError } = await supabase.rpc('settle_trade', {
                 p_buyer_id: buyOrder.user_id,
                 p_seller_id: sellOrder.user_id,
-                p_base_symbol: baseSymbol,
-                p_quote_symbol: quoteSymbol,
-                p_quantity: matchedQuantity,
-                p_price: executionPrice,
+                p_base_asset: baseSymbol,
+                p_quote_asset: quoteSymbol,
+                p_base_amount: matchedQuantity,
+                p_quote_amount: quoteAmount,
                 p_buyer_fee: buyerFee,
                 p_seller_fee: sellerFee
               });
 
               if (settleError) {
                 console.error('[Matching Engine] Settle error:', settleError);
+                console.error('[Matching Engine] Settle error details:', JSON.stringify(settleError));
                 continue;
               }
+
+              console.log('[Matching Engine] Settle success:', settleData);
 
               // Create trade record
               const { data: tradeData, error: tradeError } = await supabase
