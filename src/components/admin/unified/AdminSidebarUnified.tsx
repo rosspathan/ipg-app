@@ -16,6 +16,8 @@ import {
   Crown,
   AlertTriangle,
   Link as LinkIcon,
+  Activity,
+  ClipboardList,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -44,6 +46,8 @@ const mainNav: NavItem[] = [
   { title: "Users", url: "/admin/users", icon: Users },
   { title: "Programs", url: "/admin/programs", icon: FolderKanban },
   { title: "Markets", url: "/admin/markets", icon: TrendingUp },
+  { title: "Trading Engine", url: "/admin/trading-engine", icon: Activity },
+  { title: "Trading Orders", url: "/admin/trading-orders", icon: ClipboardList },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
 ];
 
