@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMarketStore, useMarketTicker, useMarketOrderBook, useMarketTrades, useMarketConnection } from "@/hooks/useMarketStore";
 import { useBep20Balances } from "@/hooks/useBep20Balances";
 import { useUserOrders } from "@/hooks/useUserOrders";
+import { useInternalMarketPrice, isInternalPair } from "@/hooks/useInternalMarketPrice";
 
 // Enhanced trading components
 import { ChartPanel } from "@/components/trading/ChartPanel";
@@ -36,10 +37,14 @@ const TradingScreen = () => {
   const { subscribe, unsubscribe, disconnect } = useMarketStore();
   const { isConnected, error: connectionError } = useMarketConnection();
   
-  // Real-time market data for current pair
+  // Real-time market data for current pair (Binance WebSocket)
   const ticker = useMarketTicker(selectedPair);
   const orderBook = useMarketOrderBook(selectedPair);
   const trades = useMarketTrades(selectedPair);
+
+  // Internal market price from database (for non-Binance pairs like IPG/USDT)
+  const isInternal = isInternalPair(selectedPair);
+  const internalPrice = useInternalMarketPrice(isInternal ? selectedPair : undefined);
 
   // User data hooks
   const { balances: userBalances, isLoading: balancesLoading } = useBep20Balances();
@@ -81,12 +86,16 @@ const TradingScreen = () => {
   const [previousPrice, setPreviousPrice] = useState<number | null>(null);
   const [priceBlinkClass, setPriceBlinkClass] = useState('');
 
-  // Use real-time data from Binance WebSocket, fallback to mock data
-  const currentPrice = ticker?.lastPrice || currentPairData.price;
-  const changePercent = ticker?.priceChangePercent24h || currentPairData.change;
-  const volume24h = ticker?.volume24h;
-  const high24h = ticker?.high24h;
-  const low24h = ticker?.low24h;
+  // Use internal database price for internal pairs, Binance WebSocket for listed pairs
+  const currentPrice = isInternal 
+    ? (internalPrice?.currentPrice || 0)
+    : (ticker?.lastPrice || currentPairData.price);
+  const changePercent = isInternal 
+    ? (internalPrice?.priceChange24h || 0)
+    : (ticker?.priceChangePercent24h || currentPairData.change);
+  const volume24h = isInternal ? internalPrice?.volume24h : ticker?.volume24h;
+  const high24h = isInternal ? internalPrice?.high24h : ticker?.high24h;
+  const low24h = isInternal ? internalPrice?.low24h : ticker?.low24h;
   
   // Add blinking effect when price changes
   useEffect(() => {
