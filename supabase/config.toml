@@ -225,6 +225,9 @@ verify_jwt = false
 [functions.bsk-loan-check-cancellation]
 verify_jwt = false
 
+[functions.bsk-loan-check-cancellation]
+verify_jwt = false
+
 [functions.bsk-loan-complete]
 verify_jwt = false
 
@@ -242,3 +245,6 @@ verify_jwt = true
 
 [functions.seed-market-maker]
 verify_jwt = false
+
+[functions.admin-setup-market-maker]
+verify_jwt = true
