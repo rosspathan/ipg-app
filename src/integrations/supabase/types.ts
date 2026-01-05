@@ -9537,6 +9537,11 @@ export type Database = {
           created_at: string
           id: string
           maker_fee_percent: number
+          market_maker_depth_levels: number | null
+          market_maker_enabled: boolean | null
+          market_maker_order_size: number | null
+          market_maker_spread_percent: number | null
+          market_maker_user_id: string | null
           matching_interval_seconds: number
           max_orders_per_user_per_minute: number
           taker_fee_percent: number
@@ -9549,6 +9554,11 @@ export type Database = {
           created_at?: string
           id?: string
           maker_fee_percent?: number
+          market_maker_depth_levels?: number | null
+          market_maker_enabled?: boolean | null
+          market_maker_order_size?: number | null
+          market_maker_spread_percent?: number | null
+          market_maker_user_id?: string | null
           matching_interval_seconds?: number
           max_orders_per_user_per_minute?: number
           taker_fee_percent?: number
@@ -9561,6 +9571,11 @@ export type Database = {
           created_at?: string
           id?: string
           maker_fee_percent?: number
+          market_maker_depth_levels?: number | null
+          market_maker_enabled?: boolean | null
+          market_maker_order_size?: number | null
+          market_maker_spread_percent?: number | null
+          market_maker_user_id?: string | null
           matching_interval_seconds?: number
           max_orders_per_user_per_minute?: number
           taker_fee_percent?: number
