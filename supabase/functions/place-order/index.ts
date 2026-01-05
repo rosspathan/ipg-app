@@ -259,22 +259,24 @@ serve(async (req) => {
     } else {
       // INTERNAL MODE: Use wallet_balances table
       // PHASE 2.4: Atomic balance locking for ALL order types (not just limit)
-      // PHASE 3.4: Pass exact decimal string to RPC
+      // PHASE 3.4: Pass exact decimal string quantized to 8 decimals
+      const required_amount_q = required_amount.decimalPlaces(8, BigNumber.ROUND_DOWN);
+      
       const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
         'lock_balance_for_order',
         {
           p_user_id: user.id,
           p_asset_symbol: required_asset,
-          p_amount: required_amount.toString(), // Pass as exact decimal string
+          p_amount: required_amount_q.toFixed(8), // Pass as exact 8-decimal string
         }
       );
 
       if (lockError || !lockSuccess) {
         console.error('[place-order] Lock balance failed:', lockError);
-        throw new Error(`Insufficient ${required_asset} balance. Required: ${required_amount.toFixed(6)} (includes fee buffer)`);
+        throw new Error(`Insufficient ${required_asset} balance. Required: ${required_amount_q.toFixed(8)} (includes fee buffer)`);
       }
 
-      console.log('[place-order] Balance locked successfully:', required_amount.toString());
+      console.log('[place-order] Balance locked successfully:', required_amount_q.toFixed(8));
     }
 
     // Insert order (use 'amount' column, not 'quantity')
@@ -299,10 +301,11 @@ serve(async (req) => {
       
       // Rollback: unlock balance if order insert failed (only for internal mode)
       if (!isOnchainMode) {
+        const required_amount_q = required_amount.decimalPlaces(8, BigNumber.ROUND_DOWN);
         await supabaseClient.rpc('unlock_balance_for_order', {
           p_user_id: user.id,
           p_asset_symbol: required_asset,
-          p_amount: required_amount.toString(),
+          p_amount: required_amount_q.toFixed(8),
         });
       }
       
