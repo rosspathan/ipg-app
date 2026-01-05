@@ -248,3 +248,6 @@ verify_jwt = false
 
 [functions.admin-setup-market-maker]
 verify_jwt = true
+
+[functions.admin-reset-circuit-breaker]
+verify_jwt = false
