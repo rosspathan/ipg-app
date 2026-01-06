@@ -1,7 +1,7 @@
 import { CleanCard } from '@/components/admin/clean/CleanCard'
 import { TrendingUp, TrendingDown, Wallet, Lock, Globe } from 'lucide-react'
 import { formatCurrency } from '@/utils/formatters'
-import { useIsMobile } from '@/hooks/use-mobile'
+
 
 interface PortfolioSummaryCardProps {
   totalUsd: number
@@ -21,7 +21,6 @@ export function PortfolioSummaryCard({
   loading = false
 }: PortfolioSummaryCardProps) {
   const isPositiveChange = change24h >= 0
-  const isMobile = useIsMobile()
   
   // Combined total includes on-chain assets
   const combinedTotal = totalUsd + onchainUsd
@@ -65,7 +64,7 @@ export function PortfolioSummaryCard({
             className="text-2xl md:text-3xl font-bold text-foreground dark:text-white tabular-nums truncate"
             title={formatCurrency(combinedTotal)}
           >
-            {isMobile ? formatCurrency(combinedTotal, { abbreviated: true }) : formatCurrency(combinedTotal)}
+            {formatCurrency(combinedTotal)}
           </p>
         </div>
       </div>
@@ -85,7 +84,7 @@ export function PortfolioSummaryCard({
             className="text-lg md:text-xl font-semibold text-emerald-400 tabular-nums truncate ml-4"
             title={formatCurrency(availableUsd)}
           >
-            {isMobile ? formatCurrency(availableUsd, { abbreviated: true }) : formatCurrency(availableUsd)}
+            {formatCurrency(availableUsd)}
           </p>
         </div>
 
@@ -99,7 +98,7 @@ export function PortfolioSummaryCard({
             className="text-lg md:text-xl font-semibold text-amber-400 tabular-nums truncate ml-4"
             title={formatCurrency(lockedUsd)}
           >
-            {isMobile ? formatCurrency(lockedUsd, { abbreviated: true }) : formatCurrency(lockedUsd)}
+            {formatCurrency(lockedUsd)}
           </p>
         </div>
 
@@ -114,7 +113,7 @@ export function PortfolioSummaryCard({
               className="text-lg md:text-xl font-semibold text-blue-400 tabular-nums truncate ml-4"
               title={formatCurrency(onchainUsd)}
             >
-              {isMobile ? formatCurrency(onchainUsd, { abbreviated: true }) : formatCurrency(onchainUsd)}
+              {formatCurrency(onchainUsd)}
             </p>
           </div>
         )}
