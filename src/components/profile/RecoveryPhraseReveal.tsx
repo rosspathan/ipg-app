@@ -114,6 +114,37 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
         const phrase = userScopedWallet.seedPhrase;
         const words = phrase.trim().split(/\s+/);
         console.log('[RECOVERY] Loaded phrase from local storage for wallet:', userScopedWallet.address?.slice(0, 10) + '...');
+        
+        // CRITICAL INTEGRITY CHECK: Verify seed phrase matches wallet address
+        try {
+          const { Wallet } = await import('ethers');
+          const derivedWallet = Wallet.fromPhrase(phrase.trim());
+          
+          // Get profile wallet address for comparison
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('wallet_address')
+            .eq('user_id', userId)
+            .single();
+          
+          if (profile?.wallet_address && 
+              derivedWallet.address.toLowerCase() !== profile.wallet_address.toLowerCase()) {
+            console.error('[RECOVERY] CRITICAL: Seed phrase does not match wallet address!');
+            console.error('[RECOVERY] Derived:', derivedWallet.address, 'Profile:', profile.wallet_address);
+            toast({
+              title: "⚠️ Wallet Mismatch Detected",
+              description: "Your recovery phrase doesn't match your registered wallet. Please contact support immediately.",
+              variant: "destructive",
+              duration: 15000
+            });
+            // Still show the phrase but user is warned
+          } else if (profile?.wallet_address) {
+            console.log('[RECOVERY] ✓ Seed phrase integrity verified - addresses match');
+          }
+        } catch (verifyErr) {
+          console.error('[RECOVERY] Failed to verify seed phrase integrity:', verifyErr);
+        }
+        
         setSeedPhrase(words);
         return true;
       }
