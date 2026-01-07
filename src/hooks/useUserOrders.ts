@@ -84,12 +84,24 @@ export const useUserOrders = (symbol?: string) => {
       return orderResult.order;
     },
     onSuccess: (order, params) => {
-      toast.success(
-        `${params.side.toUpperCase()} order placed`,
-        {
-          description: `${params.quantity} ${params.symbol.split('/')[0]} @ ${params.price ? `$${params.price}` : 'Market'}`,
-        }
-      );
+      const isFilled = order?.status === 'filled';
+      const isPartiallyFilled = order?.status === 'partially_filled';
+      
+      let title: string;
+      let description: string;
+      
+      if (isFilled) {
+        title = `${params.side.toUpperCase()} order filled instantly`;
+        description = `${params.quantity} ${params.symbol.split('/')[0]} @ ${params.price ? `$${params.price}` : 'Market'}`;
+      } else if (isPartiallyFilled) {
+        title = `${params.side.toUpperCase()} order partially filled`;
+        description = `${params.quantity} ${params.symbol.split('/')[0]} @ ${params.price ? `$${params.price}` : 'Market'} - remaining in order book`;
+      } else {
+        title = `${params.side.toUpperCase()} order placed`;
+        description = `${params.quantity} ${params.symbol.split('/')[0]} @ ${params.price ? `$${params.price}` : 'Market'} - waiting to fill`;
+      }
+      
+      toast.success(title, { description });
       queryClient.invalidateQueries({ queryKey: ['user-orders'] });
       queryClient.invalidateQueries({ queryKey: ['user-balance'] });
     },
