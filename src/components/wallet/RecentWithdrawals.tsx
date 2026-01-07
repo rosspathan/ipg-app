@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
-import { CheckCircle2, Clock, Loader2, XCircle, ArrowDownLeft } from "lucide-react";
+import { CheckCircle2, Clock, Loader2, XCircle, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import AssetLogo from "@/components/AssetLogo";
 
-interface Deposit {
+interface Withdrawal {
   id: string;
   amount: number;
   status: string;
-  tx_hash: string;
-  confirmations: number;
-  required_confirmations: number;
+  tx_hash: string | null;
+  to_address: string;
   created_at: string;
+  fee: number | null;
   assets: {
     symbol: string;
     name: string;
@@ -22,58 +22,52 @@ interface Deposit {
   } | null;
 }
 
-export function RecentDeposits({ assetId }: { assetId?: string }) {
+export function RecentWithdrawals({ limit = 5 }: { limit?: number }) {
   const { user } = useAuthUser();
-  const [deposits, setDeposits] = useState<Deposit[]>([]);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
 
-    const fetchDeposits = async () => {
-      let query = supabase
-        .from('deposits')
+    const fetchWithdrawals = async () => {
+      const { data, error } = await supabase
+        .from('withdrawals')
         .select(`
           id, 
           amount, 
           status, 
           tx_hash, 
-          confirmations,
-          required_confirmations,
+          to_address,
+          fee,
           created_at,
           assets (symbol, name, logo_url)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (assetId) {
-        query = query.eq('asset_id', assetId);
-      }
-
-      const { data, error } = await query;
+        .limit(limit);
       
       if (!error && data) {
-        setDeposits(data as Deposit[]);
+        setWithdrawals(data as Withdrawal[]);
       }
       setLoading(false);
     };
 
-    fetchDeposits();
+    fetchWithdrawals();
 
     // Subscribe to realtime updates
     const channel = supabase
-      .channel('deposits-realtime')
+      .channel('withdrawals-realtime')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'deposits',
+          table: 'withdrawals',
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          fetchDeposits();
+          fetchWithdrawals();
         }
       )
       .subscribe();
@@ -81,17 +75,17 @@ export function RecentDeposits({ assetId }: { assetId?: string }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, assetId]);
+  }, [user, limit]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-      case 'credited':
         return <CheckCircle2 className="w-4 h-4 text-primary" />;
       case 'pending':
-      case 'confirming':
+      case 'processing':
         return <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />;
       case 'failed':
+      case 'rejected':
         return <XCircle className="w-4 h-4 text-destructive" />;
       default:
         return <Clock className="w-4 h-4 text-muted-foreground" />;
@@ -101,16 +95,21 @@ export function RecentDeposits({ assetId }: { assetId?: string }) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-      case 'credited':
         return 'text-primary';
       case 'pending':
-      case 'confirming':
+      case 'processing':
         return 'text-amber-500';
       case 'failed':
+      case 'rejected':
         return 'text-destructive';
       default:
         return 'text-muted-foreground';
     }
+  };
+
+  const formatAddress = (address: string) => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
   if (loading) {
@@ -123,10 +122,10 @@ export function RecentDeposits({ assetId }: { assetId?: string }) {
     );
   }
 
-  if (deposits.length === 0) {
+  if (withdrawals.length === 0) {
     return (
       <div className="text-center py-6 text-muted-foreground text-sm">
-        No recent deposits
+        No recent withdrawals
       </div>
     );
   }
@@ -134,9 +133,9 @@ export function RecentDeposits({ assetId }: { assetId?: string }) {
   return (
     <div className="space-y-2">
       <AnimatePresence mode="popLayout">
-        {deposits.map((deposit, index) => (
+        {withdrawals.map((withdrawal, index) => (
           <motion.div
-            key={deposit.id}
+            key={withdrawal.id}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
@@ -149,33 +148,36 @@ export function RecentDeposits({ assetId }: { assetId?: string }) {
             <div className="flex items-center gap-3">
               <div className="relative">
                 <AssetLogo 
-                  symbol={deposit.assets?.symbol || '?'} 
-                  logoUrl={deposit.assets?.logo_url} 
+                  symbol={withdrawal.assets?.symbol || '?'} 
+                  logoUrl={withdrawal.assets?.logo_url} 
                   size="sm" 
                 />
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                  <ArrowDownLeft className="w-2.5 h-2.5 text-primary-foreground" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                  <ArrowUpRight className="w-2.5 h-2.5 text-white" />
                 </div>
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  +{deposit.amount} {deposit.assets?.symbol || ''}
+                  -{withdrawal.amount} {withdrawal.assets?.symbol || ''}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(deposit.created_at), { addSuffix: true })}
+                  To: {formatAddress(withdrawal.to_address)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(withdrawal.created_at), { addSuffix: true })}
                 </p>
               </div>
             </div>
             
             <div className="text-right flex items-center gap-2">
-              {getStatusIcon(deposit.status)}
+              {getStatusIcon(withdrawal.status)}
               <div>
-                <p className={cn("text-xs font-medium capitalize", getStatusColor(deposit.status))}>
-                  {deposit.status}
+                <p className={cn("text-xs font-medium capitalize", getStatusColor(withdrawal.status))}>
+                  {withdrawal.status}
                 </p>
-                {(deposit.status === 'pending' || deposit.status === 'confirming') && deposit.confirmations !== null && (
+                {withdrawal.fee && withdrawal.fee > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    {deposit.confirmations}/{deposit.required_confirmations || 12} confirms
+                    Fee: {withdrawal.fee}
                   </p>
                 )}
               </div>
