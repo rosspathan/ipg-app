@@ -135,14 +135,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       <div className="bg-gradient-to-r from-card to-muted/30 border border-border rounded-xl px-3 py-2.5 shadow-sm">
         <div className="flex items-center justify-between">
           <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">Market Price</span>
-          <div className="text-right">
-            <span className="text-sm sm:text-base font-bold font-mono text-foreground">
-              {currentPrice.toFixed(currentPrice >= 1 ? 2 : 6)} {quoteCurrency}
-            </span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground ml-2">
-              ≈ ₹{currentPriceInr.toFixed(2)}
-            </span>
-          </div>
+          <span className="text-sm sm:text-base font-bold font-mono text-foreground">
+            {currentPrice.toFixed(currentPrice >= 1 ? 2 : 6)} {quoteCurrency}
+          </span>
         </div>
       </div>
       
@@ -289,14 +284,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       <div className="bg-card border border-border rounded-xl px-3 py-2">
         <div className="flex items-center justify-between">
           <label className="text-[10px] sm:text-xs text-muted-foreground">Total ({quoteCurrency})</label>
-          <div className="text-right">
-            <span className="font-mono text-foreground text-sm sm:text-base font-medium">
-              {total.toFixed(total >= 1 ? 2 : 6)}
-            </span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground ml-2">
-              ≈ ₹{totalInr.toFixed(2)}
-            </span>
-          </div>
+          <span className="font-mono text-foreground text-sm sm:text-base font-medium">
+            {total.toFixed(total >= 1 ? 2 : 6)}
+          </span>
         </div>
       </div>
 
