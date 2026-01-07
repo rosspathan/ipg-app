@@ -20,6 +20,7 @@ import EnhancedOrderBook from "@/components/trading/EnhancedOrderBook";
 import TradingOrderForm from "@/components/trading/TradingOrderForm";
 import RecentTrades from "@/components/RecentTrades";
 import MarketDiagnostics from "@/components/trading/MarketDiagnostics";
+import { PendingSettlements } from "@/components/trading/PendingSettlements";
 
 const TradingScreen = () => {
   const navigate = useNavigate();
@@ -362,6 +363,11 @@ const TradingScreen = () => {
           onPlaceOrder={handlePlaceOrder}
           isLoading={loading}
         />
+      </div>
+
+      {/* Pending Settlements - P2P On-Chain Transfers */}
+      <div className="px-4">
+        <PendingSettlements />
       </div>
 
       {/* Open Orders & Trade History */}
