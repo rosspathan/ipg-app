@@ -130,12 +130,65 @@ serve(async (req) => {
     console.log('[place-order] Required (BigNumber):', { 
       required_asset, 
       required_amount: required_amount.toString(), 
-      feeBuffer: side === 'buy' ? FEE_PERCENT.toString() : '0', 
-      skipBalanceCheck: isOnchainMode 
+      feeBuffer: side === 'buy' ? FEE_PERCENT.toString() : '0'
     });
 
-    // Balance validation - ALWAYS required for both modes
-    if (isOnchainMode) {
+    // PHASE 4: Check escrow balance first (non-custodial model)
+    // Try escrow balance check first, fall back to on-chain if no escrow configured
+    let useEscrowModel = false;
+    
+    // Check if escrow is configured
+    const { data: escrowConfig } = await supabaseClient
+      .from('escrow_contract_config')
+      .select('contract_address, is_active')
+      .eq('is_active', true)
+      .single();
+    
+    if (escrowConfig?.contract_address) {
+      console.log('[place-order] Escrow contract configured:', escrowConfig.contract_address);
+      
+      // Check escrow balance
+      const { data: escrowBalance } = await supabaseClient
+        .from('escrow_balances')
+        .select('deposited, locked, available')
+        .eq('user_id', user.id)
+        .eq('asset_symbol', required_asset)
+        .single();
+      
+      if (escrowBalance) {
+        const escrowAvailable = new BigNumber(String(escrowBalance.available || 0));
+        console.log('[place-order] Escrow balance:', { 
+          deposited: escrowBalance.deposited, 
+          locked: escrowBalance.locked, 
+          available: escrowAvailable.toString() 
+        });
+        
+        if (escrowAvailable.isGreaterThanOrEqualTo(required_amount)) {
+          useEscrowModel = true;
+          console.log('[place-order] Using escrow model - sufficient balance');
+          
+          // Lock escrow balance
+          const newLocked = new BigNumber(String(escrowBalance.locked)).plus(required_amount);
+          const { error: lockError } = await supabaseClient
+            .from('escrow_balances')
+            .update({ locked: newLocked.toNumber() })
+            .eq('user_id', user.id)
+            .eq('asset_symbol', required_asset);
+          
+          if (lockError) {
+            console.error('[place-order] Escrow lock failed:', lockError);
+            throw new Error('Failed to lock escrow balance');
+          }
+          
+          console.log('[place-order] Escrow balance locked:', required_amount.toString());
+        } else {
+          console.log('[place-order] Insufficient escrow balance, checking on-chain...');
+        }
+      }
+    }
+    
+    // If not using escrow, fall back to on-chain validation
+    if (!useEscrowModel) {
       // ON-CHAIN MODE: Verify on-chain balance via BSC RPC
       console.log('[place-order] On-chain mode: Verifying on-chain balance');
       
@@ -255,7 +308,6 @@ serve(async (req) => {
       }
       
       console.log('[place-order] On-chain balance verified successfully');
-      
     }
     
     // Also lock balance in wallet_balances for order tracking

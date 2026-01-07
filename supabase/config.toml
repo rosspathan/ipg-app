@@ -257,3 +257,9 @@ verify_jwt = false
 
 [functions.settle-trade-onchain]
 verify_jwt = false
+
+[functions.monitor-escrow-deposits]
+verify_jwt = false
+
+[functions.escrow-withdraw]
+verify_jwt = true

@@ -4363,6 +4363,171 @@ export type Database = {
         }
         Relationships: []
       }
+      escrow_balances: {
+        Row: {
+          asset_symbol: string
+          available: number | null
+          created_at: string
+          deposited: number
+          escrow_address: string | null
+          id: string
+          last_deposit_at: string | null
+          last_deposit_tx: string | null
+          locked: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_symbol: string
+          available?: number | null
+          created_at?: string
+          deposited?: number
+          escrow_address?: string | null
+          id?: string
+          last_deposit_at?: string | null
+          last_deposit_tx?: string | null
+          locked?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_symbol?: string
+          available?: number | null
+          created_at?: string
+          deposited?: number
+          escrow_address?: string | null
+          id?: string
+          last_deposit_at?: string | null
+          last_deposit_tx?: string | null
+          locked?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      escrow_contract_config: {
+        Row: {
+          chain: string
+          chain_id: number
+          contract_address: string
+          created_at: string
+          deployed_at: string | null
+          id: string
+          is_active: boolean
+          relayer_address: string | null
+          updated_at: string
+        }
+        Insert: {
+          chain?: string
+          chain_id?: number
+          contract_address: string
+          created_at?: string
+          deployed_at?: string | null
+          id?: string
+          is_active?: boolean
+          relayer_address?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chain?: string
+          chain_id?: number
+          contract_address?: string
+          created_at?: string
+          deployed_at?: string | null
+          id?: string
+          is_active?: boolean
+          relayer_address?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      escrow_deposits: {
+        Row: {
+          amount: number
+          asset_symbol: string
+          confirmations: number
+          created_at: string
+          credited_at: string | null
+          from_address: string
+          id: string
+          required_confirmations: number
+          status: string
+          tx_hash: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_symbol: string
+          confirmations?: number
+          created_at?: string
+          credited_at?: string | null
+          from_address: string
+          id?: string
+          required_confirmations?: number
+          status?: string
+          tx_hash: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_symbol?: string
+          confirmations?: number
+          created_at?: string
+          credited_at?: string | null
+          from_address?: string
+          id?: string
+          required_confirmations?: number
+          status?: string
+          tx_hash?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      escrow_withdrawals: {
+        Row: {
+          amount: number
+          asset_symbol: string
+          created_at: string
+          error_message: string | null
+          gas_used: number | null
+          id: string
+          processed_at: string | null
+          status: string
+          to_address: string
+          tx_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_symbol: string
+          created_at?: string
+          error_message?: string | null
+          gas_used?: number | null
+          id?: string
+          processed_at?: string | null
+          status?: string
+          to_address: string
+          tx_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_symbol?: string
+          created_at?: string
+          error_message?: string | null
+          gas_used?: number | null
+          id?: string
+          processed_at?: string | null
+          status?: string
+          to_address?: string
+          tx_hash?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       fee_configs: {
         Row: {
           active: boolean | null
