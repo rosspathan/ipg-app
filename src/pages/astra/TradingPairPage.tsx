@@ -415,7 +415,7 @@ function TradingPairPageContent() {
 
           {/* Open Orders / Funds Section */}
           <div className="mt-4">
-            <div className="flex items-center justify-between border-b border-border pb-2 mb-3">
+            <div className="flex items-center border-b border-border pb-2 mb-3">
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => setActiveTab('orders')}
@@ -451,12 +451,6 @@ function TradingPairPageContent() {
                   Funds
                 </button>
               </div>
-              <button 
-                onClick={() => navigate(activeTab === 'orders' ? '/app/orders' : '/app/wallet')}
-                className="text-amber-500 text-xs font-medium"
-              >
-                View All
-              </button>
             </div>
             
             {activeTab === 'orders' ? (
