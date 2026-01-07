@@ -9636,6 +9636,8 @@ export type Database = {
           status: string | null
           symbol: string
           trade_id: string | null
+          transferred_at: string | null
+          tx_hash: string | null
           user_id: string | null
         }
         Insert: {
@@ -9649,6 +9651,8 @@ export type Database = {
           status?: string | null
           symbol: string
           trade_id?: string | null
+          transferred_at?: string | null
+          tx_hash?: string | null
           user_id?: string | null
         }
         Update: {
@@ -9662,6 +9666,8 @@ export type Database = {
           status?: string | null
           symbol?: string
           trade_id?: string | null
+          transferred_at?: string | null
+          tx_hash?: string | null
           user_id?: string | null
         }
         Relationships: [
