@@ -115,30 +115,55 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get buyer wallet address from profiles
+    // Get buyer wallet address from profiles (check bsc_wallet_address first, then wallet_address)
     const { data: buyerProfile, error: buyerError } = await supabase
       .from('profiles')
-      .select('wallet_address')
-      .eq('id', buyer_id)
+      .select('bsc_wallet_address, wallet_address')
+      .eq('user_id', buyer_id)
       .single();
 
-    if (buyerError || !buyerProfile?.wallet_address) {
-      throw new Error(`Buyer wallet not found: ${buyerError?.message || 'No wallet address'}`);
+    let buyerWallet = buyerProfile?.bsc_wallet_address || buyerProfile?.wallet_address;
+
+    // Fallback: check wallets_user table if no wallet in profile
+    if (!buyerWallet) {
+      const { data: buyerUserWallet } = await supabase
+        .from('wallets_user')
+        .select('address')
+        .eq('user_id', buyer_id)
+        .eq('chain', 'bsc')
+        .eq('is_primary', true)
+        .single();
+      buyerWallet = buyerUserWallet?.address;
     }
 
-    // Get seller wallet address from profiles
+    if (!buyerWallet) {
+      throw new Error(`Buyer wallet not found for user ${buyer_id}. User needs to connect a BSC wallet.`);
+    }
+
+    // Get seller wallet address from profiles (check bsc_wallet_address first, then wallet_address)
     const { data: sellerProfile, error: sellerError } = await supabase
       .from('profiles')
-      .select('wallet_address')
-      .eq('id', seller_id)
+      .select('bsc_wallet_address, wallet_address')
+      .eq('user_id', seller_id)
       .single();
 
-    if (sellerError || !sellerProfile?.wallet_address) {
-      throw new Error(`Seller wallet not found: ${sellerError?.message || 'No wallet address'}`);
+    let sellerWallet = sellerProfile?.bsc_wallet_address || sellerProfile?.wallet_address;
+
+    // Fallback: check wallets_user table if no wallet in profile
+    if (!sellerWallet) {
+      const { data: sellerUserWallet } = await supabase
+        .from('wallets_user')
+        .select('address')
+        .eq('user_id', seller_id)
+        .eq('chain', 'bsc')
+        .eq('is_primary', true)
+        .single();
+      sellerWallet = sellerUserWallet?.address;
     }
 
-    const buyerWallet = buyerProfile.wallet_address;
-    const sellerWallet = sellerProfile.wallet_address;
+    if (!sellerWallet) {
+      throw new Error(`Seller wallet not found for user ${seller_id}. User needs to connect a BSC wallet.`);
+    }
 
     console.log(`[settle-trade-onchain] Buyer wallet: ${buyerWallet}`);
     console.log(`[settle-trade-onchain] Seller wallet: ${sellerWallet}`);
