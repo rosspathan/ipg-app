@@ -6,7 +6,6 @@ interface PriceDisplayProps {
   price: number;
   priceChange?: number;
   quoteCurrency?: string;
-  inrRate?: number;
   size?: 'sm' | 'md' | 'lg';
   showIcon?: boolean;
 }
@@ -15,7 +14,6 @@ export const PriceDisplay: React.FC<PriceDisplayProps> = ({
   price,
   priceChange = 0,
   quoteCurrency = 'USDT',
-  inrRate = 83,
   size = 'md',
   showIcon = true,
 }) => {

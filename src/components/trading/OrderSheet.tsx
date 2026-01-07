@@ -165,7 +165,7 @@ export function OrderSheet({
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Price</span>
-                <span className="text-xl font-bold tabular-nums">₹{currentPrice.toFixed(2)}</span>
+                <span className="text-xl font-bold tabular-nums">${currentPrice.toFixed(2)}</span>
                 <ChevronUp className="h-4 w-4 text-muted-foreground transition-transform duration-220 group-hover:-translate-y-0.5" />
               </div>
             </div>
@@ -217,7 +217,7 @@ export function OrderSheet({
 
               <div className="text-sm">
                 <span className="text-muted-foreground">Available: </span>
-                <span className="font-semibold tabular-nums text-foreground">₹{availableBalance.toFixed(2)}</span>
+                <span className="font-semibold tabular-nums text-foreground">${availableBalance.toFixed(2)}</span>
               </div>
             </div>
 
@@ -316,19 +316,19 @@ export function OrderSheet({
             <div className="rounded-xl border border-border/40 bg-card/40 p-4 space-y-2 transition-all duration-220 hover:border-border/60">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Est. Total</span>
-                <span className="font-semibold tabular-nums text-foreground">₹{calculateTotal().toFixed(2)}</span>
+                <span className="font-semibold tabular-nums text-foreground">${calculateTotal().toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground flex items-center gap-1">
                   Fee ({type === "market" ? "Taker" : "Maker"} {type === "market" ? takerFee : makerFee}%)
                   <Info className="h-3 w-3" />
                 </span>
-                <span className="font-semibold tabular-nums text-foreground">₹{calculateFee().toFixed(2)}</span>
+                <span className="font-semibold tabular-nums text-foreground">${calculateFee().toFixed(2)}</span>
               </div>
               <div className="h-px bg-border/40 my-2" />
               <div className="flex justify-between text-base">
                 <span className="font-semibold text-foreground">Final Cost</span>
-                <span className="font-bold tabular-nums text-foreground">₹{calculateFinalCost().toFixed(2)}</span>
+                <span className="font-bold tabular-nums text-foreground">${calculateFinalCost().toFixed(2)}</span>
               </div>
             </div>
 

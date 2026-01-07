@@ -62,7 +62,7 @@ export function TradesTapePro({ trades }: TradesTapeProProps) {
                     <span className={`font-bold tabular-nums ${
                       trade.side === "buy" ? "text-success" : "text-destructive"
                     }`}>
-                      ₹{trade.price.toFixed(2)}
+                      ${trade.price.toFixed(2)}
                     </span>
                     <span className="tabular-nums text-muted-foreground">
                       {trade.quantity.toFixed(3)}
