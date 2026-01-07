@@ -1,6 +1,8 @@
 import { CleanCard } from '@/components/admin/clean/CleanCard'
-import { TrendingUp, TrendingDown, Wallet, Lock, Globe } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Lock, Globe, Info, ChevronRight } from 'lucide-react'
 import { formatCurrency } from '@/utils/formatters'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useNavigate } from 'react-router-dom'
 
 
 interface PortfolioSummaryCardProps {
@@ -20,6 +22,7 @@ export function PortfolioSummaryCard({
   change24h = 0,
   loading = false
 }: PortfolioSummaryCardProps) {
+  const navigate = useNavigate()
   const isPositiveChange = change24h >= 0
   
   // Combined total includes on-chain assets
@@ -88,18 +91,34 @@ export function PortfolioSummaryCard({
           </p>
         </div>
 
-        {/* Locked */}
-        <div className="flex items-center justify-between">
+        {/* In Orders (Locked) */}
+        <div 
+          className="flex items-center justify-between cursor-pointer hover:bg-white/5 -mx-5 px-5 py-1 rounded transition-colors"
+          onClick={() => navigate('/app/trade')}
+        >
           <div className="flex items-center gap-2 flex-shrink-0">
             <Lock className="h-4 w-4 text-amber-400" />
-            <span className="text-sm text-muted-foreground">Locked</span>
+            <span className="text-sm text-muted-foreground">In Orders</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px]">
+                  <p className="text-xs">Funds reserved in open trading orders. Cancel orders to unlock.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <p 
-            className="text-lg md:text-xl font-semibold text-amber-400 tabular-nums truncate ml-4"
-            title={formatCurrency(lockedUsd)}
-          >
-            {formatCurrency(lockedUsd)}
-          </p>
+          <div className="flex items-center gap-2">
+            <p 
+              className="text-lg md:text-xl font-semibold text-amber-400 tabular-nums truncate"
+              title={formatCurrency(lockedUsd)}
+            >
+              {formatCurrency(lockedUsd)}
+            </p>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </div>
         </div>
 
         {/* On-chain - Only show if there's a balance */}
