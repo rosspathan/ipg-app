@@ -42,18 +42,12 @@ export function OnchainWalletPage() {
     }
   }, [user?.id, walletAddress])
 
-  // Persist wallet address to profile on load
-  useEffect(() => {
-    const persistAddress = async () => {
-      if (!user?.id || !walletAddress) return
-      try {
-        await storeEvmAddress(user.id, walletAddress)
-      } catch (err) {
-        console.warn('[OnchainWalletPage] Failed to persist wallet address:', err)
-      }
-    }
-    persistAddress()
-  }, [user?.id, walletAddress])
+  // REMOVED: Auto-persist wallet address on load
+  // This was causing wallet corruption by persisting addresses from untrusted sources
+  // Wallet address persistence now ONLY happens during:
+  // 1. Wallet creation (onboarding)
+  // 2. Wallet import (onboarding)
+  // 3. Explicit user action (wallet repair flow)
 
   // Fetch recent deposits (all BEP20 tokens)
   const fetchDeposits = async () => {
@@ -102,14 +96,9 @@ export function OnchainWalletPage() {
 
     setDiscovering(true)
     try {
-      // Ensure wallet address is persisted
-      if (walletAddress) {
-        try {
-          await storeEvmAddress(user.id, walletAddress)
-        } catch (persistErr) {
-          console.warn('[OnchainWalletPage] Persist-before-discover failed:', persistErr)
-        }
-      }
+      // REMOVED: Auto-persist before discover
+      // Wallet address should already be set correctly from onboarding
+      // Auto-persisting here can overwrite the correct address with an incorrect one
 
       // Discover deposits for all tokens (USDT, IPG, BNB)
       const tokensToSync = ['USDT', 'IPG']

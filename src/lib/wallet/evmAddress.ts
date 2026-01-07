@@ -4,6 +4,9 @@
  * 
  * SECURITY: This module NEVER handles seed phrases directly.
  * Only public addresses are stored and retrieved.
+ * 
+ * INTEGRITY: For authenticated users, only trusted sources are used.
+ * Legacy/global localStorage fallbacks are disabled to prevent wallet corruption.
  */
 
 import { supabase } from "@/integrations/supabase/client";
@@ -22,64 +25,135 @@ export function storeEvmAddressTemp(address: string): void {
   console.info('[EVM] Stored temp address:', address.slice(0, 10) + '...');
 }
 
+// Helper: validate address format
+const isValidAddress = (val: unknown): val is string => 
+  typeof val === 'string' && val.startsWith('0x') && val.length >= 42;
+
+/**
+ * Check if there's a wallet integrity mismatch for a user
+ * Returns details about any detected mismatch
+ */
+export async function checkWalletIntegrity(userId: string): Promise<{
+  hasMismatch: boolean;
+  profileWallet: string | null;
+  bscWallet: string | null;
+  backupWallet: string | null;
+  mismatchType: 'profile_vs_backup' | 'profile_vs_bsc' | 'both' | null;
+}> {
+  try {
+    // Fetch profile data
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('wallet_address, bsc_wallet_address')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    // Fetch backup data
+    const { data: backup } = await supabase
+      .from('encrypted_wallet_backups')
+      .select('wallet_address')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const profileWallet = profile?.wallet_address?.toLowerCase() || null;
+    const bscWallet = profile?.bsc_wallet_address?.toLowerCase() || null;
+    const backupWallet = backup?.wallet_address?.toLowerCase() || null;
+
+    const hasProfileVsBackup = backupWallet && profileWallet && profileWallet !== backupWallet;
+    const hasProfileVsBsc = profileWallet && bscWallet && profileWallet !== bscWallet;
+
+    let mismatchType: 'profile_vs_backup' | 'profile_vs_bsc' | 'both' | null = null;
+    if (hasProfileVsBackup && hasProfileVsBsc) {
+      mismatchType = 'both';
+    } else if (hasProfileVsBackup) {
+      mismatchType = 'profile_vs_backup';
+    } else if (hasProfileVsBsc) {
+      mismatchType = 'profile_vs_bsc';
+    }
+
+    return {
+      hasMismatch: mismatchType !== null,
+      profileWallet: profile?.wallet_address || null,
+      bscWallet: profile?.bsc_wallet_address || null,
+      backupWallet: backup?.wallet_address || null,
+      mismatchType
+    };
+  } catch (error) {
+    console.error('[EVM] Error checking wallet integrity:', error);
+    return {
+      hasMismatch: false,
+      profileWallet: null,
+      bscWallet: null,
+      backupWallet: null,
+      mismatchType: null
+    };
+  }
+}
+
 /**
  * Get stored EVM address for a user from Supabase
+ * SECURITY: For authenticated users, only trusted DB sources are used.
+ * Legacy localStorage fallbacks are disabled to prevent wallet corruption.
+ * 
  * @param userId - User's ID
  * @returns The EVM address (0x...) or null if not found
  */
 export async function getStoredEvmAddress(userId: string): Promise<string | null> {
   try {
-    const { data, error } = await (supabase as any)
-      .from('profiles' as any)
-      .select('wallet_addresses, wallet_address, bsc_wallet_address' as any)
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('wallet_addresses, wallet_address, bsc_wallet_address')
       .eq('user_id', userId)
       .maybeSingle();
 
-    // Helper: validate
-    const isAddress = (val: unknown) => typeof val === 'string' && val.startsWith('0x') && val.length >= 42;
-
-    // Try parsing from DB first (even if error, continue to local fallbacks)
+    // Try parsing from DB first
     if (data) {
-      const wa = (data as any).wallet_addresses;
-      const legacy = (data as any).wallet_address;
-      const bscAddr = (data as any).bsc_wallet_address;
+      const wa = data.wallet_addresses as Record<string, unknown> | null;
+      const walletAddr = data.wallet_address as string | null;
+      const bscAddr = data.bsc_wallet_address as string | null;
 
-      // Handle many possible shapes
-      const candidates: any[] = [
-        // Preferred dedicated column
-        bscAddr,
+      // CANONICAL RULE: wallet_address is authoritative
+      // If both exist and differ, we have a mismatch - still return wallet_address
+      // but this will trigger integrity warnings elsewhere
+      
+      if (isValidAddress(walletAddr)) {
+        // Check for BSC mismatch and log warning
+        if (isValidAddress(bscAddr) && walletAddr.toLowerCase() !== bscAddr.toLowerCase()) {
+          console.warn('[EVM] INTEGRITY: wallet_address and bsc_wallet_address differ!', {
+            wallet: walletAddr.slice(0, 10),
+            bsc: bscAddr.slice(0, 10)
+          });
+        }
+        return walletAddr;
+      }
 
-        // Flat keys
-        wa?.['bsc-mainnet'],
-        wa?.['evm-mainnet'],
-        wa?.bsc,
+      // Fall back to bsc_wallet_address if wallet_address is empty
+      if (isValidAddress(bscAddr)) {
+        return bscAddr;
+      }
 
-        // Nested structures
-        wa?.evm?.bsc,
-        wa?.evm?.mainnet,
-        wa?.evm,
-        wa?.ethereum,
-        wa?.BEP20,
-        wa?.ERC20,
-
-        // If wallet_addresses itself is a string
-        wa,
-
-        // Legacy column
-        legacy,
-      ];
-
-      const found = candidates.find(isAddress);
-      if (found) return found as string;
+      // Try wallet_addresses JSON
+      if (wa) {
+        const candidates: unknown[] = [
+          (wa as any)?.['bsc-mainnet'],
+          (wa as any)?.['evm-mainnet'],
+          (wa as any)?.bsc,
+          (wa as any)?.evm?.bsc,
+          (wa as any)?.evm?.mainnet,
+          (wa as any)?.evm,
+        ];
+        const found = candidates.find(isValidAddress);
+        if (found) return found;
+      }
     }
 
     if (error) {
-      console.warn('[EVM] profiles fetch error, will try local fallbacks:', error);
+      console.warn('[EVM] profiles fetch error:', error);
     }
 
-    // Fallback: Check user_wallets table if profiles didn't have the address
+    // Fallback: Check user_wallets table
     try {
-      const { data: walletData, error: walletError } = await supabase
+      const { data: walletData } = await supabase
         .from('user_wallets')
         .select('wallet_address')
         .eq('user_id', userId)
@@ -87,7 +161,7 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
         .limit(1)
         .maybeSingle();
       
-      if (walletData?.wallet_address && isAddress(walletData.wallet_address)) {
+      if (walletData?.wallet_address && isValidAddress(walletData.wallet_address)) {
         console.info('[EVM] Found wallet in user_wallets table');
         return walletData.wallet_address;
       }
@@ -95,46 +169,63 @@ export async function getStoredEvmAddress(userId: string): Promise<string | null
       console.warn('[EVM] user_wallets fallback failed:', walletErr);
     }
 
-    // Local fallbacks (created/imported wallet or cached MetaMask)
+    // SECURITY: Only use user-scoped wallet storage for authenticated users
+    // Legacy/global localStorage fallbacks are DISABLED to prevent wallet corruption
     try {
-      // First try user-scoped wallet
       const scopedWallet = getStoredWallet(userId);
-      if (scopedWallet && isAddress(scopedWallet.address)) {
+      if (scopedWallet && isValidAddress(scopedWallet.address)) {
+        console.info('[EVM] Found user-scoped local wallet');
         return scopedWallet.address;
       }
-      
-      // Legacy fallback for non-scoped data
-      const localWallet = localStorage.getItem('cryptoflow_wallet');
-      if (localWallet) {
-        const parsed = JSON.parse(localWallet);
-        if (isAddress(parsed?.address)) return parsed.address;
-      }
     } catch {}
 
-    try {
-      const mm = localStorage.getItem('cryptoflow_metamask_wallet');
-      if (mm) {
-        const parsed = JSON.parse(mm);
-        if (isAddress(parsed?.address)) return parsed.address;
-      }
-    } catch {}
-
-    // Onboarding state fallback
-    try {
-      const onboard = localStorage.getItem('ipg_onboarding_state');
-      if (onboard) {
-        const parsed = JSON.parse(onboard);
-        const addr = parsed?.walletInfo?.address;
-        if (isAddress(addr)) return addr;
-      }
-    } catch {}
-
-    console.warn('[EVM] No profile or local wallet address found for user');
+    // NO LEGACY FALLBACKS for authenticated users
+    // This prevents:
+    // - cryptoflow_wallet (global, could be another user's wallet)
+    // - cryptoflow_metamask_wallet (global, could be unrelated MetaMask)
+    // - ipg_onboarding_state (could be stale from previous session)
+    
+    console.warn('[EVM] No verified wallet address found for user', userId.slice(0, 8));
     return null;
   } catch (err) {
     console.error('[EVM] Error fetching wallet address:', err);
     return null;
   }
+}
+
+/**
+ * Get stored EVM address for unauthenticated/onboarding flow
+ * This allows legacy fallbacks since there's no user context to corrupt
+ */
+export async function getStoredEvmAddressUnauthenticated(): Promise<string | null> {
+  // Check onboarding state first (most likely for new users)
+  try {
+    const onboard = localStorage.getItem('ipg_onboarding_state');
+    if (onboard) {
+      const parsed = JSON.parse(onboard);
+      const addr = parsed?.walletInfo?.address;
+      if (isValidAddress(addr)) return addr;
+    }
+  } catch {}
+
+  // Legacy wallet storage
+  try {
+    const localWallet = localStorage.getItem('cryptoflow_wallet');
+    if (localWallet) {
+      const parsed = JSON.parse(localWallet);
+      if (isValidAddress(parsed?.address)) return parsed.address;
+    }
+  } catch {}
+
+  try {
+    const mm = localStorage.getItem('cryptoflow_metamask_wallet');
+    if (mm) {
+      const parsed = JSON.parse(mm);
+      if (isValidAddress(parsed?.address)) return parsed.address;
+    }
+  } catch {}
+
+  return null;
 }
 
 /**
@@ -209,6 +300,9 @@ export async function ensureWalletAddressOnboarded(): Promise<string> {
 
 /**
  * Store EVM address for a user (called after on-device derivation)
+ * CRITICAL: Always updates wallet_address, bsc_wallet_address, AND wallet_addresses
+ * to maintain consistency and prevent mismatches.
+ * 
  * @param userId - User's ID
  * @param address - The derived EVM address (0x...)
  */
@@ -218,6 +312,7 @@ export async function storeEvmAddress(userId: string, address: string): Promise<
   }
 
   // Store in both nested and flat key formats for maximum compatibility
+  // CRITICAL: All fields must be set to the SAME address
   const walletAddresses = {
     // Nested format (legacy)
     evm: {
@@ -235,7 +330,7 @@ export async function storeEvmAddress(userId: string, address: string): Promise<
     .update({ 
       wallet_addresses: walletAddresses,
       wallet_address: address,
-      bsc_wallet_address: address, // Critical for edge functions
+      bsc_wallet_address: address, // MUST match wallet_address
       updated_at: new Date().toISOString()
     })
     .eq('user_id', userId);
@@ -245,7 +340,7 @@ export async function storeEvmAddress(userId: string, address: string): Promise<
     throw error;
   }
 
-  console.info('[EVM] Stored wallet address:', address.slice(0, 10) + '...');
+  console.info('[EVM] Stored wallet address (all fields synchronized):', address.slice(0, 10) + '...');
   
   // Dispatch event to notify components
   window.dispatchEvent(new CustomEvent('evm:address:updated', { detail: { address } }));
