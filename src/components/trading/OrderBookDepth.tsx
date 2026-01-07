@@ -43,7 +43,7 @@ export function OrderBookDepth({ bids, asks, onPriceClick }: OrderBookDepthProps
         <CardContent className="space-y-4 p-4 pt-0">
           {/* Header */}
           <div className="grid grid-cols-3 text-xs text-muted-foreground font-medium">
-            <div>Price (₹)</div>
+            <div>Price (USDT)</div>
             <div className="text-right">Amount</div>
             <div className="text-right">Total</div>
           </div>
@@ -73,7 +73,7 @@ export function OrderBookDepth({ bids, asks, onPriceClick }: OrderBookDepthProps
               <div className="text-muted-foreground mb-1">Spread</div>
               <div className="font-bold text-primary">
                 {asks.length > 0 && bids.length > 0 
-                  ? `₹${(asks[0].price - bids[0].price).toFixed(2)}`
+                  ? `$${(asks[0].price - bids[0].price).toFixed(2)}`
                   : "—"
                 }
               </div>

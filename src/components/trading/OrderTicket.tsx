@@ -118,7 +118,7 @@ export function OrderTicket({
           {/* Price (Limit only) */}
           {type === "limit" && (
             <div className="space-y-2">
-              <Label className="text-xs">Limit Price (₹)</Label>
+              <Label className="text-xs">Limit Price (USDT)</Label>
               <Input
                 type="number"
                 value={price}
@@ -178,17 +178,17 @@ export function OrderTicket({
           <div className="space-y-2 p-3 bg-muted/30 rounded-lg text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Est. Total:</span>
-              <span className="font-bold">₹{total.toFixed(2)}</span>
+              <span className="font-bold">${total.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">
                 Fee ({type === "market" ? "Taker" : "Maker"} {feeRate}%):
               </span>
-              <span className="font-medium text-primary">₹{fee.toFixed(2)}</span>
+              <span className="font-medium text-primary">${fee.toFixed(2)}</span>
             </div>
             <div className="flex justify-between pt-2 border-t border-border">
               <span className="font-medium">Final {side === "buy" ? "Cost" : "Receive"}:</span>
-              <span className="font-bold text-lg">₹{finalTotal.toFixed(2)}</span>
+              <span className="font-bold text-lg">${finalTotal.toFixed(2)}</span>
             </div>
           </div>
 

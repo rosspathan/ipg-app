@@ -25,7 +25,7 @@ export function MarketStatsRow({
       <Card className="p-3 bg-gradient-to-br from-card to-card/50 border-border/50 hover:border-primary/30 transition-all">
         <div className="text-xs text-muted-foreground mb-1">Last Price</div>
         <div className="text-lg font-bold">
-          ₹{lastPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ${lastPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       </Card>
 

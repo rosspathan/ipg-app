@@ -91,14 +91,14 @@ export function PairPickerSheet({
           <div className="text-left">
             <p className="font-bold text-sm">{pair.symbol}</p>
             <p className="text-xs text-muted-foreground">
-              Vol: ₹{(pair.volume24h / 100000).toFixed(2)}L
+              Vol: ${(pair.volume24h / 1000).toFixed(1)}K
             </p>
           </div>
         </div>
 
         <div className="text-right">
           <p className="font-bold text-sm tabular-nums">
-            ₹{pair.lastPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            ${pair.lastPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </p>
           <div className="flex items-center justify-end gap-1">
             {isPositive ? (

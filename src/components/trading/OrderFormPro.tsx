@@ -23,7 +23,6 @@ interface OrderFormProProps {
   currentPrice: number;
   tickSize?: number;
   lotSize?: number;
-  inrRate?: number;
   onPlaceOrder: (params: {
     side: 'buy' | 'sell';
     type: 'market' | 'limit';
@@ -50,7 +49,6 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   currentPrice,
   tickSize = 0.00000001,
   lotSize = 0.0001,
-  inrRate = 83,
   onPlaceOrder,
   isPlacingOrder = false,
 }) => {
@@ -75,8 +73,6 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   }, [numAmount, numPrice, currentPrice, orderType]);
 
   const estimatedFeeUsdt = total * 0.005; // 0.5% fee
-  const totalInr = total * inrRate;
-  const currentPriceInr = currentPrice * inrRate;
   
   const willReceive = isBuy ? numAmount : total;
   const willReceiveCurrency = isBuy ? baseCurrency : quoteCurrency;

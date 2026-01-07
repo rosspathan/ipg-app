@@ -113,13 +113,13 @@ export function PairsGrid({
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Vol: ₹{(pair.volume24h / 100000).toFixed(2)}L
+                      Vol: ${(pair.volume24h / 1000).toFixed(1)}K
                     </p>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <p className="font-bold text-sm">₹{pair.lastPrice.toFixed(2)}</p>
+                  <p className="font-bold text-sm">${pair.lastPrice.toFixed(2)}</p>
                   <div className={`flex items-center justify-end gap-1 text-xs font-medium ${
                     pair.priceChange24h >= 0 ? 'text-success' : 'text-destructive'
                   }`}>

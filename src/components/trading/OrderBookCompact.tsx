@@ -167,17 +167,12 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
                 <TrendingDown className="h-3.5 w-3.5 text-red-400" />
               )}
             </div>
-            <div className="flex flex-col">
-              <span className={cn(
-                "text-base sm:text-lg font-bold font-mono",
-                isPositive ? "text-emerald-400" : "text-red-400"
-              )}>
-                {displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                ≈ ₹{(displayPrice * 83).toFixed(2)}
-              </span>
-            </div>
+            <span className={cn(
+              "text-base sm:text-lg font-bold font-mono",
+              isPositive ? "text-emerald-400" : "text-red-400"
+            )}>
+              ${displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
+            </span>
           </div>
           
           {/* Spread indicator */}
