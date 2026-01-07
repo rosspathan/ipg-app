@@ -81,7 +81,7 @@ export function useWalletBalances() {
     }
   }, [user]);
 
-  // Fetch prices for assets
+  // Fetch prices for assets - prioritize USDT pairs for accurate USD pricing
   const fetchPrices = useCallback(async (symbols: string[]): Promise<Record<string, number>> => {
     const prices: Record<string, number> = {};
     
@@ -91,11 +91,25 @@ export function useWalletBalances() {
         .from('market_prices')
         .select('symbol, current_price');
       
+      // Track which prices came from USD pairs (more accurate for USD valuation)
+      const pricesBySymbol: Record<string, { price: number; isUsdPair: boolean }> = {};
+      
       for (const mp of marketPrices || []) {
-        const baseSymbol = mp.symbol.split('/')[0];
+        const [baseSymbol, quoteSymbol] = mp.symbol.split('/');
+        const isUsdPair = quoteSymbol === 'USDT' || quoteSymbol === 'USD';
+        
         if (mp.current_price) {
-          prices[baseSymbol] = mp.current_price;
+          const existing = pricesBySymbol[baseSymbol];
+          // Prioritize USD pairs over other pairs
+          if (!existing || (isUsdPair && !existing.isUsdPair)) {
+            pricesBySymbol[baseSymbol] = { price: mp.current_price, isUsdPair };
+          }
         }
+      }
+      
+      // Extract final prices
+      for (const [symbol, data] of Object.entries(pricesBySymbol)) {
+        prices[symbol] = data.price;
       }
 
       // Fallback to assets table for initial_price
