@@ -56,20 +56,15 @@ export const PriceDisplay: React.FC<PriceDisplayProps> = ({
           )}
         </div>
       )}
-      <div className="flex flex-col">
-        <span className={cn(
-          "font-bold font-mono transition-all duration-200",
-          sizeClasses[size],
-          isPositive ? "text-emerald-400" : "text-red-400",
-          flashClass === 'flash-green' && "animate-pulse text-emerald-300",
-          flashClass === 'flash-red' && "animate-pulse text-red-300"
-        )}>
-          {formatPrice(price)}
-        </span>
-        <span className="text-[10px] sm:text-xs text-muted-foreground">
-          ≈ ₹{(price * inrRate).toFixed(2)}
-        </span>
-      </div>
+      <span className={cn(
+        "font-bold font-mono transition-all duration-200",
+        sizeClasses[size],
+        isPositive ? "text-emerald-400" : "text-red-400",
+        flashClass === 'flash-green' && "animate-pulse text-emerald-300",
+        flashClass === 'flash-red' && "animate-pulse text-red-300"
+      )}>
+        {formatPrice(price)}
+      </span>
     </div>
   );
 };
