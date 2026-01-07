@@ -6,6 +6,9 @@ import { ChevronLeft, Copy, Download, Eye, EyeOff, RefreshCw } from 'lucide-reac
 import { createWallet, WalletInfo } from '@/utils/wallet';
 import { useToast } from '@/hooks/use-toast';
 import { copyToClipboard } from '@/utils/clipboard';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+
 interface CreateWalletScreenProps {
   onWalletCreated: (wallet: WalletInfo) => void;
   onBack: () => void;
@@ -104,6 +107,38 @@ const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
     if (wallet?.address) {
       const { storeEvmAddressTemp } = await import('@/lib/wallet/evmAddress');
       storeEvmAddressTemp(wallet.address);
+    }
+
+    // CRITICAL FIX: Store wallet in pending_wallet_import so it gets passed to server
+    // This ensures the SAME wallet the user backed up is the one stored in the database
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await Preferences.set({
+          key: 'pending_wallet_address',
+          value: wallet.address
+        });
+        await Preferences.set({
+          key: 'pending_wallet_mnemonic',
+          value: wallet.mnemonic
+        });
+        console.log('[CreateWallet] Stored pending wallet (mobile):', wallet.address);
+      } else {
+        const walletData = {
+          address: wallet.address,
+          mnemonic: wallet.mnemonic,
+          privateKey: wallet.privateKey
+        };
+        localStorage.setItem('pending_wallet_import', JSON.stringify(walletData));
+        console.log('[CreateWallet] Stored pending wallet (web):', wallet.address);
+      }
+    } catch (e) {
+      console.error('[CreateWallet] Failed to store pending wallet:', e);
+      toast({
+        title: "Warning",
+        description: "Could not store wallet temporarily. Please try again.",
+        variant: "destructive"
+      });
+      return;
     }
 
     onWalletCreated(wallet);

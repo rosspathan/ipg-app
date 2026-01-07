@@ -204,23 +204,32 @@ serve(async (req) => {
         }
       }
 
-      // Use IMPORTED wallet if provided, otherwise generate NEW wallet
-      if (importedWallet?.mnemonic && importedWallet?.address) {
-        console.log('[complete-onboarding] Using imported wallet:', importedWallet.address);
-        mnemonic = importedWallet.mnemonic?.trim();
-        
-        // For imported wallets, trust the provided address and mnemonic
-        // The wallet already exists and works, so we don't need to re-derive
-        walletData = {
-          address: importedWallet.address.trim().toLowerCase(),
-          publicKey: '', // Not needed for imported wallets
-          privateKey: '' // Not needed for imported wallets
-        };
-      } else {
-        // Generate NEW wallet for new user
-        console.log('[complete-onboarding] Generating new wallet');
-        mnemonic = generateMnemonic(128); // 12 words
-        walletData = generateWalletFromMnemonic(mnemonic);
+      // CRITICAL: Always require client-provided wallet - never generate server-side
+      // This prevents mismatch between what user backed up and what's stored
+      if (!importedWallet?.mnemonic || !importedWallet?.address) {
+        console.error('[complete-onboarding] No wallet provided - client must generate wallet');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            reason: "no_wallet_provided",
+            error: "Wallet data is required. Please restart the onboarding process." 
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log('[complete-onboarding] Using client wallet:', importedWallet.address);
+      mnemonic = importedWallet.mnemonic.trim();
+      
+      // CRITICAL: Always derive wallet from mnemonic to ensure address matches
+      // This guarantees the stored address matches what the mnemonic generates
+      walletData = generateWalletFromMnemonic(mnemonic);
+      
+      // Verify the client-provided address matches the derived address
+      if (walletData.address.toLowerCase() !== importedWallet.address.toLowerCase()) {
+        console.warn('[complete-onboarding] Address mismatch! Client:', importedWallet.address, 'Derived:', walletData.address);
+        console.log('[complete-onboarding] Using derived address (correct from mnemonic)');
+        // walletData already contains the correct derived address
       }
       
       // Create user with admin privileges (auto-confirmed)
@@ -252,22 +261,29 @@ serve(async (req) => {
       }
     }
 
-    // If no wallet yet, use imported or generate one
+    // If no wallet yet, require imported wallet - never generate server-side
     if (!mnemonic) {
-      if (importedWallet?.mnemonic && importedWallet?.address) {
-        console.log('[complete-onboarding] Using imported wallet for existing user:', importedWallet.address);
-        mnemonic = importedWallet.mnemonic?.trim();
-        
-        // For imported wallets, trust the provided address
-        walletData = {
-          address: importedWallet.address.trim().toLowerCase(),
-          publicKey: '',
-          privateKey: ''
-        };
-      } else {
-        console.log('[complete-onboarding] Generating new wallet for existing user');
-        mnemonic = generateMnemonic(128);
-        walletData = generateWalletFromMnemonic(mnemonic);
+      if (!importedWallet?.mnemonic || !importedWallet?.address) {
+        console.error('[complete-onboarding] No wallet for existing user - client must provide wallet');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            reason: "no_wallet_provided",
+            error: "Wallet data is required. Please restart the onboarding process." 
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log('[complete-onboarding] Using imported wallet for existing user:', importedWallet.address);
+      mnemonic = importedWallet.mnemonic.trim();
+      
+      // CRITICAL: Always derive wallet from mnemonic to ensure address matches
+      walletData = generateWalletFromMnemonic(mnemonic);
+      
+      // Log if there's a mismatch
+      if (walletData.address.toLowerCase() !== importedWallet.address.toLowerCase()) {
+        console.warn('[complete-onboarding] Address mismatch for existing user! Client:', importedWallet.address, 'Derived:', walletData.address);
       }
     }
 
