@@ -180,24 +180,24 @@ function TradingPairPageContent() {
     );
   }
 
-  // Find balances for the trading pair - use INTERNAL (app) balances ONLY for trading
+  // Find balances for the trading pair - use ON-CHAIN balances as source of truth
   const quoteBalanceData = bep20Balances?.find((b) => b.symbol === pair.quoteAsset);
   const baseBalanceData = bep20Balances?.find((b) => b.symbol === pair.baseAsset);
   
-  // Use ONLY internal balances for trading (wallet_balances table) - these are what settle_trade uses
-  // Available = spendable now, Locked = in open orders
-  // DO NOT fallback to on-chain - user must explicitly sync first
+  // SOURCE OF TRUTH: On-chain balances
+  // Available = on-chain balance minus locked in orders
+  // Locked = amount reserved in open orders
   const quoteBalance = {
     symbol: pair.quoteAsset,
-    available: quoteBalanceData?.appAvailable ?? 0,
+    available: Math.max(0, (quoteBalanceData?.onchainBalance ?? 0) - (quoteBalanceData?.appLocked ?? 0)),
     locked: quoteBalanceData?.appLocked ?? 0,
-    total: quoteBalanceData?.appBalance ?? 0
+    total: quoteBalanceData?.onchainBalance ?? 0
   };
   const baseBalance = {
     symbol: pair.baseAsset,
-    available: baseBalanceData?.appAvailable ?? 0,
+    available: Math.max(0, (baseBalanceData?.onchainBalance ?? 0) - (baseBalanceData?.appLocked ?? 0)),
     locked: baseBalanceData?.appLocked ?? 0,
-    total: baseBalanceData?.appBalance ?? 0
+    total: baseBalanceData?.onchainBalance ?? 0
   };
 
   const handlePriceClick = (price: number) => {

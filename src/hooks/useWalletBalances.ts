@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { useOnchainBalances } from '@/hooks/useOnchainBalances';
 
 export interface AssetBalance {
   asset_id: string;
@@ -22,107 +23,162 @@ export interface PortfolioSummary {
   locked_usd: number;
 }
 
+/**
+ * useWalletBalances - PRIMARY balance hook
+ * 
+ * SOURCE OF TRUTH: On-chain balances
+ * - Fetches actual token balances from user's BSC wallet
+ * - Only shows what user truly owns on the blockchain
+ * - Locked amounts come from open orders in the database
+ */
 export function useWalletBalances() {
   const { user } = useAuthUser();
+  const { balances: onchainBalances, isLoading: onchainLoading, refetch: refetchOnchain } = useOnchainBalances();
+  
   const [balances, setBalances] = useState<AssetBalance[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lockedAmounts, setLockedAmounts] = useState<Record<string, number>>({});
   
-  // Refs to prevent infinite loops and debounce updates
-  const hasSyncedRef = useRef(false);
-  const lastRealtimeUpdateRef = useRef<number>(0);
   const isMountedRef = useRef(true);
 
-  // ONLY reads from database - no sync calls
-  const fetchBalances = useCallback(async () => {
-    if (!user || !isMountedRef.current) {
-      setLoading(false);
+  // Fetch locked amounts from pending orders
+  const fetchLockedAmounts = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Get all pending orders to calculate locked amounts per asset
+      const { data: pendingOrders } = await supabase
+        .from('orders')
+        .select('symbol, side, amount, price, status')
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'partially_filled']);
+
+      const locked: Record<string, number> = {};
+
+      if (pendingOrders) {
+        for (const order of pendingOrders) {
+          const [baseSymbol, quoteSymbol] = order.symbol.split('/');
+          
+          if (order.side === 'buy') {
+            // Buy order locks quote currency (e.g., USDT)
+            const lockAmount = (order.amount || 0) * (order.price || 0);
+            locked[quoteSymbol] = (locked[quoteSymbol] || 0) + lockAmount;
+          } else {
+            // Sell order locks base currency
+            locked[baseSymbol] = (locked[baseSymbol] || 0) + (order.amount || 0);
+          }
+        }
+      }
+
+      if (isMountedRef.current) {
+        setLockedAmounts(locked);
+      }
+    } catch (err) {
+      console.error('Error fetching locked amounts:', err);
+    }
+  }, [user]);
+
+  // Fetch prices for assets
+  const fetchPrices = useCallback(async (symbols: string[]): Promise<Record<string, number>> => {
+    const prices: Record<string, number> = {};
+    
+    try {
+      // Fetch from market_prices table
+      const { data: marketPrices } = await supabase
+        .from('market_prices')
+        .select('symbol, current_price');
+      
+      for (const mp of marketPrices || []) {
+        const baseSymbol = mp.symbol.split('/')[0];
+        if (mp.current_price) {
+          prices[baseSymbol] = mp.current_price;
+        }
+      }
+
+      // Fallback to assets table for initial_price
+      for (const symbol of symbols) {
+        if (!prices[symbol]) {
+          const { data: asset } = await supabase
+            .from('assets')
+            .select('initial_price')
+            .eq('symbol', symbol)
+            .single();
+          
+          if (asset?.initial_price) {
+            prices[symbol] = asset.initial_price;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch prices:', err);
+    }
+
+    return prices;
+  }, []);
+
+  // Combine on-chain balances with locked amounts and prices
+  const computeBalances = useCallback(async () => {
+    if (!user || onchainBalances.length === 0) {
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
       return;
     }
 
     try {
-      // Fetch user's wallet balances with asset details
-      const { data: balanceData, error: balanceError } = await supabase
-        .from('wallet_balances')
-        .select(`
-          total,
+      // Get prices for all assets
+      const symbols = onchainBalances.map(b => b.symbol);
+      const prices = await fetchPrices(symbols);
+
+      // Map on-chain balances to AssetBalance format
+      const enrichedBalances: AssetBalance[] = [];
+
+      for (const onchain of onchainBalances) {
+        const locked = lockedAmounts[onchain.symbol] || 0;
+        const available = Math.max(0, onchain.balance - locked);
+        const priceUsd = prices[onchain.symbol] || 0;
+        const usdValue = onchain.balance * priceUsd;
+
+        // Get asset_id from database
+        const { data: asset } = await supabase
+          .from('assets')
+          .select('id')
+          .eq('symbol', onchain.symbol)
+          .single();
+
+        enrichedBalances.push({
+          asset_id: asset?.id || onchain.symbol,
+          symbol: onchain.symbol,
+          name: onchain.name,
+          balance: onchain.balance,
           available,
           locked,
-          asset_id,
-          assets (
-            symbol,
-            name,
-            logo_url,
-            initial_price,
-            network
-          )
-        `)
-        .eq('user_id', user.id)
-        .or('total.gt.0,available.gt.0,locked.gt.0');
-
-      if (balanceError) throw balanceError;
-
-      // Get crypto prices - fetch from market_prices table directly
-      const priceData: { prices: Record<string, number>; change_24h: number } = { prices: {}, change_24h: 0 };
-      
-      if (balanceData && balanceData.length > 0) {
-        try {
-          // Fetch internal market prices from market_prices table
-          const { data: marketPrices } = await supabase
-            .from('market_prices')
-            .select('symbol, current_price');
-          
-          for (const mp of marketPrices || []) {
-            const baseSymbol = mp.symbol.split('/')[0];
-            if (mp.current_price) {
-              priceData.prices[baseSymbol] = mp.current_price;
-            }
-          }
-        } catch (err) {
-          console.warn('Failed to fetch market prices:', err);
-        }
-      }
-
-      // Calculate balances with USD values
-      const enrichedBalances: AssetBalance[] = (balanceData || []).map((item: any) => {
-        const asset = item.assets;
-        const priceUsd = priceData?.prices?.[asset.symbol] || asset.initial_price || 0;
-        const totalBalance = (item.total ?? 0) || ((item.available || 0) + (item.locked || 0));
-        const usdValue = totalBalance * priceUsd;
-
-        return {
-          asset_id: item.asset_id,
-          symbol: asset.symbol,
-          name: asset.name,
-          balance: totalBalance,
-          available: item.available,
-          locked: item.locked,
           usd_value: usdValue,
           price_usd: priceUsd,
-          logo_url: asset.logo_url
-        };
-      });
+          logo_url: onchain.logoUrl
+        });
+      }
 
       // Calculate portfolio summary
       const totalUsd = enrichedBalances.reduce((sum, b) => sum + b.usd_value, 0);
       const availableUsd = enrichedBalances.reduce((sum, b) => sum + (b.available * b.price_usd), 0);
       const lockedUsd = enrichedBalances.reduce((sum, b) => sum + (b.locked * b.price_usd), 0);
-      const change24hPercent = priceData?.change_24h || 0;
 
       if (isMountedRef.current) {
         setBalances(enrichedBalances);
         setPortfolio({
           total_usd: totalUsd,
-          change_24h_percent: change24hPercent,
+          change_24h_percent: 0, // Could fetch from price change data
           available_usd: availableUsd,
           locked_usd: lockedUsd
         });
         setError(null);
       }
     } catch (err: any) {
-      console.error('Error fetching wallet balances:', err);
+      console.error('Error computing balances:', err);
       if (isMountedRef.current) {
         setError(err.message);
       }
@@ -131,101 +187,71 @@ export function useWalletBalances() {
         setLoading(false);
       }
     }
-  }, [user]);
+  }, [user, onchainBalances, lockedAmounts, fetchPrices]);
 
-  // Runs ONCE on mount - triggers background sync
-  const syncOnchainBalances = useCallback(async () => {
-    if (!user || hasSyncedRef.current) return;
-    hasSyncedRef.current = true;
-    setIsSyncing(true);
+  // Recompute when on-chain balances or locked amounts change
+  useEffect(() => {
+    computeBalances();
+  }, [computeBalances]);
 
-    try {
-      // Run all syncs in parallel, don't wait for them
-      await Promise.allSettled([
-        supabase.functions.invoke('sync-native-bnb', { body: { userIds: [user.id] } }),
-        supabase.functions.invoke('sync-bep20-balances', { body: { userIds: [user.id] } }),
-        supabase.functions.invoke('scheduled-discover-deposits', { body: { userIds: [user.id] } })
-      ]);
-
-      // Refresh data after sync completes
-      if (isMountedRef.current) {
-        await fetchBalances();
-      }
-    } catch (err) {
-      console.warn('Background sync failed:', err);
-    } finally {
-      if (isMountedRef.current) {
-        setIsSyncing(false);
-      }
-    }
-  }, [user, fetchBalances]);
-
+  // Fetch locked amounts on mount and set up realtime subscription
   useEffect(() => {
     isMountedRef.current = true;
-    hasSyncedRef.current = false;
-
-    // 1. Immediately fetch cached data
-    fetchBalances();
-
-    // 2. Start background sync (once) after initial fetch
-    const syncTimeout = setTimeout(() => {
-      syncOnchainBalances();
-    }, 100);
-
-    // 3. Set up realtime subscription with debouncing
-    let channel: RealtimeChannel | null = null;
     
-    const setupRealtimeSubscription = async () => {
-      if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-      channel = supabase
-        .channel('wallet_balances_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'wallet_balances',
-            filter: `user_id=eq.${user.id}`
-          },
-          () => {
-            const now = Date.now();
-            // Debounce: ignore updates within 3 seconds of last one
-            if (now - lastRealtimeUpdateRef.current < 3000) {
-              return;
-            }
-            lastRealtimeUpdateRef.current = now;
-            fetchBalances();
-          }
-        )
-        .subscribe();
-    };
+    // Initial fetch
+    fetchLockedAmounts();
 
-    setupRealtimeSubscription();
+    // Subscribe to order changes (affects locked amounts)
+    const channel = supabase
+      .channel('orders_changes_for_balance')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchLockedAmounts();
+        }
+      )
+      .subscribe();
 
-    // Poll for price updates every 2 minutes (not balance refresh)
+    // Poll for price updates every 2 minutes
     const priceInterval = setInterval(() => {
-      if (!isSyncing) {
-        fetchBalances();
-      }
+      computeBalances();
     }, 120000);
 
     return () => {
       isMountedRef.current = false;
-      clearTimeout(syncTimeout);
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      supabase.removeChannel(channel);
       clearInterval(priceInterval);
     };
-  }, [user, fetchBalances, syncOnchainBalances]);
+  }, [user, fetchLockedAmounts, computeBalances]);
+
+  // Sync function - refreshes on-chain data
+  const syncOnchainBalances = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      await refetchOnchain();
+      await fetchLockedAmounts();
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [refetchOnchain, fetchLockedAmounts]);
 
   return {
     balances,
     portfolio,
-    loading,
+    loading: loading || onchainLoading,
     isSyncing,
     error,
-    refetch: fetchBalances
+    refetch: syncOnchainBalances
   };
 }

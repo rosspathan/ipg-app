@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log(`[sync-onchain-to-trading] Starting sync for user: ${user.id}`)
+    console.log(`[sync-onchain-to-trading] Starting TWO-WAY sync for user: ${user.id}`)
 
     // Parse request body
     const body: SyncRequest = await req.json().catch(() => ({}))
@@ -146,9 +146,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const results: { symbol: string; onchainBalance: number; synced: boolean; message: string }[] = []
+    const results: { symbol: string; onchainBalance: number; synced: boolean; message: string; action?: string }[] = []
 
-    // Sync each asset
+    // Sync each asset - TWO-WAY SYNC
     for (const asset of assets) {
       try {
         // Get on-chain balance
@@ -165,28 +165,35 @@ Deno.serve(async (req) => {
 
         console.log(`[sync-onchain-to-trading] ${asset.symbol}: on-chain = ${onchainBalance}`)
 
-        if (onchainBalance <= 0) {
-          results.push({
-            symbol: asset.symbol,
-            onchainBalance: 0,
-            synced: false,
-            message: 'No on-chain balance'
-          })
-          continue
-        }
-
         // Get existing balance
         const existing = currentBalanceMap.get(asset.id)
         const currentTotal = existing?.total || 0
         const currentLocked = existing?.locked || 0
+        const currentAvailable = existing?.available || 0
 
-        // If on-chain balance is greater than what we have, add the difference
+        // TWO-WAY SYNC LOGIC:
+        // 1. If on-chain > DB total: user deposited, increase available
+        // 2. If on-chain < DB total: user withdrew externally, decrease available (respecting locked)
+        // 3. If on-chain == DB total: already synced
+
+        if (Math.abs(onchainBalance - currentTotal) < 0.000001) {
+          // Already synced (within floating point tolerance)
+          results.push({
+            symbol: asset.symbol,
+            onchainBalance,
+            synced: true,
+            message: 'Already synced',
+            action: 'none'
+          })
+          continue
+        }
+
         if (onchainBalance > currentTotal) {
+          // User deposited - increase available
           const toAdd = onchainBalance - currentTotal
-          const newAvailable = (existing?.available || 0) + toAdd
+          const newAvailable = currentAvailable + toAdd
           const newTotal = onchainBalance
 
-          // Upsert wallet_balances
           const { error: upsertError } = await serviceClient
             .from('wallet_balances')
             .upsert({
@@ -206,24 +213,77 @@ Deno.serve(async (req) => {
               symbol: asset.symbol,
               onchainBalance,
               synced: false,
-              message: `Database error: ${upsertError.message}`
+              message: `Database error: ${upsertError.message}`,
+              action: 'add_failed'
             })
           } else {
-            console.log(`[sync-onchain-to-trading] Synced ${asset.symbol}: added ${toAdd}, new available = ${newAvailable}`)
+            console.log(`[sync-onchain-to-trading] ${asset.symbol}: ADDED ${toAdd.toFixed(6)}, new available = ${newAvailable.toFixed(6)}`)
             results.push({
               symbol: asset.symbol,
               onchainBalance,
               synced: true,
-              message: `Added ${toAdd.toFixed(6)} to trading balance`
+              message: `Added ${toAdd.toFixed(6)} to trading balance`,
+              action: 'added'
             })
           }
         } else {
-          results.push({
-            symbol: asset.symbol,
-            onchainBalance,
-            synced: true,
-            message: 'Already synced'
-          })
+          // User withdrew externally OR on-chain balance reduced
+          // We need to reduce the DB balance to match on-chain
+          const toRemove = currentTotal - onchainBalance
+          
+          // Calculate new available (can't go below 0, and must respect locked)
+          // If on-chain < locked, user is in debt (shouldn't happen, but handle gracefully)
+          let newAvailable = currentAvailable - toRemove
+          let newLocked = currentLocked
+          let warningMsg = ''
+
+          if (newAvailable < 0) {
+            // User withdrew more than their available balance (touched locked funds externally)
+            // This is a critical issue - their locked orders can't settle
+            const shortfall = Math.abs(newAvailable)
+            newAvailable = 0
+            
+            // Also reduce locked if necessary
+            if (onchainBalance < currentLocked) {
+              newLocked = Math.max(0, onchainBalance)
+              warningMsg = ` WARNING: On-chain balance (${onchainBalance.toFixed(6)}) is less than locked amount (${currentLocked.toFixed(6)}). Open orders may fail!`
+            }
+          }
+
+          const newTotal = onchainBalance
+
+          const { error: upsertError } = await serviceClient
+            .from('wallet_balances')
+            .upsert({
+              user_id: user.id,
+              asset_id: asset.id,
+              available: newAvailable,
+              locked: newLocked,
+              total: newTotal,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id,asset_id'
+            })
+
+          if (upsertError) {
+            console.error(`[sync-onchain-to-trading] Failed to reduce ${asset.symbol}:`, upsertError)
+            results.push({
+              symbol: asset.symbol,
+              onchainBalance,
+              synced: false,
+              message: `Database error: ${upsertError.message}`,
+              action: 'reduce_failed'
+            })
+          } else {
+            console.log(`[sync-onchain-to-trading] ${asset.symbol}: REDUCED by ${toRemove.toFixed(6)}, new available = ${newAvailable.toFixed(6)}, new total = ${newTotal.toFixed(6)}${warningMsg}`)
+            results.push({
+              symbol: asset.symbol,
+              onchainBalance,
+              synced: true,
+              message: `Reduced trading balance by ${toRemove.toFixed(6)} to match on-chain.${warningMsg}`,
+              action: 'reduced'
+            })
+          }
         }
       } catch (assetError: any) {
         console.error(`[sync-onchain-to-trading] Error syncing ${asset.symbol}:`, assetError)
@@ -236,13 +296,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    const syncedCount = results.filter(r => r.synced && r.message.includes('Added')).length
-    console.log(`[sync-onchain-to-trading] Completed. Synced ${syncedCount} assets.`)
+    const addedCount = results.filter(r => r.action === 'added').length
+    const reducedCount = results.filter(r => r.action === 'reduced').length
+    console.log(`[sync-onchain-to-trading] Completed. Added: ${addedCount}, Reduced: ${reducedCount}`)
 
     return new Response(
       JSON.stringify({
         success: true,
-        syncedCount,
+        addedCount,
+        reducedCount,
         results
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
