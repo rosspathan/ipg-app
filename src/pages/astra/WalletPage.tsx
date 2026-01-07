@@ -22,6 +22,8 @@ import { PendingDepositsCard } from "@/components/astra/PendingDepositsCard"
 import { NetworkBadge } from "@/components/wallet/NetworkBadge"
 import { PortfolioSummaryCard } from "@/components/wallet/PortfolioSummaryCard"
 import { getStoredWallet } from "@/utils/walletStorage"
+import { useWalletIntegrity } from "@/lib/wallet/useWalletIntegrity"
+import { WalletIntegrityBanner } from "@/components/wallet/WalletIntegrityBanner"
 
 export function WalletPage() {
   const { navigate } = useNavigation()
@@ -31,6 +33,10 @@ export function WalletPage() {
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [showAddress, setShowAddress] = useState(true)
   const [showQrDialog, setShowQrDialog] = useState(false)
+  const [integrityDismissed, setIntegrityDismissed] = useState(false)
+  
+  // Check wallet integrity
+  const walletIntegrity = useWalletIntegrity(user?.id || null)
   
   // Fetch real portfolio data (in-app balances)
   const { portfolio, loading: portfolioLoading } = useWalletBalances()
@@ -182,6 +188,17 @@ export function WalletPage() {
 
   return (
     <div className="space-y-6" data-testid="page-wallet" data-version="usr-wallet-link-v3">
+        {/* Wallet Integrity Warning Banner */}
+        {walletIntegrity.hasMismatch && !integrityDismissed && walletIntegrity.mismatchType && (
+          <WalletIntegrityBanner
+            mismatchType={walletIntegrity.mismatchType}
+            profileWallet={walletIntegrity.profileWallet}
+            backupWallet={walletIntegrity.backupWallet}
+            bscWallet={walletIntegrity.bscWallet}
+            onDismiss={walletIntegrity.mismatchType === 'profile_vs_bsc' ? () => setIntegrityDismissed(true) : undefined}
+          />
+        )}
+
         {/* Address Panel with Network Badge */}
         <div 
           className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 transition-all duration-220"
