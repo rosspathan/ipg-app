@@ -64,19 +64,24 @@ export function useWalletBalances() {
 
       if (balanceError) throw balanceError;
 
-      // Get crypto prices from edge function (only if we have balances)
-      let priceData: any = null;
+      // Get crypto prices - fetch from market_prices table directly
+      const priceData: { prices: Record<string, number>; change_24h: number } = { prices: {}, change_24h: 0 };
+      
       if (balanceData && balanceData.length > 0) {
-        const { data, error: priceError } = await supabase.functions.invoke('fetch-crypto-prices', {
-          body: { 
-            symbols: balanceData.map((b: any) => b.assets.symbol)
+        try {
+          // Fetch internal market prices from market_prices table
+          const { data: marketPrices } = await supabase
+            .from('market_prices')
+            .select('symbol, current_price');
+          
+          for (const mp of marketPrices || []) {
+            const baseSymbol = mp.symbol.split('/')[0];
+            if (mp.current_price) {
+              priceData.prices[baseSymbol] = mp.current_price;
+            }
           }
-        });
-
-        if (priceError) {
-          console.warn('Failed to fetch live prices, using fallback:', priceError);
-        } else {
-          priceData = data;
+        } catch (err) {
+          console.warn('Failed to fetch market prices:', err);
         }
       }
 

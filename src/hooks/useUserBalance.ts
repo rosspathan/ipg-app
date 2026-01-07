@@ -1,29 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-// Fetch current crypto prices from Binance API
+// Fetch current crypto prices from Binance API + internal market prices
 const fetchCryptoPrices = async (): Promise<Record<string, number>> => {
+  const prices: Record<string, number> = { USDT: 1 };
+  
   try {
+    // Fetch Binance prices
     const response = await fetch('https://api.binance.com/api/v3/ticker/price');
     const data = await response.json();
-    const prices: Record<string, number> = {};
     
-    // Build price map (e.g., BTCUSDT -> price)
     for (const ticker of data) {
       if (ticker.symbol.endsWith('USDT')) {
         const base = ticker.symbol.replace('USDT', '');
         prices[base] = parseFloat(ticker.price);
       }
     }
-    
-    // USDT is always 1 USD
-    prices['USDT'] = 1;
-    
-    return prices;
   } catch (error) {
-    console.error('Failed to fetch crypto prices:', error);
-    return { USDT: 1 };
+    console.error('Failed to fetch Binance prices:', error);
   }
+  
+  // Fetch internal market prices for tokens not on Binance (IPG, BSK, etc.)
+  try {
+    const { data: internalPrices } = await supabase
+      .from('market_prices')
+      .select('symbol, current_price')
+      .like('symbol', '%/USDT');
+    
+    for (const ip of internalPrices || []) {
+      const baseSymbol = ip.symbol.split('/')[0];
+      // Only add if not already in Binance prices
+      if (!prices[baseSymbol] && ip.current_price) {
+        prices[baseSymbol] = ip.current_price;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch internal market prices:', error);
+  }
+  
+  return prices;
 };
 
 export const useUserBalance = (assetSymbol?: string, showAllAssets = false) => {
