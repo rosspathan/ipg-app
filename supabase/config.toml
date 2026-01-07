@@ -251,3 +251,6 @@ verify_jwt = true
 
 [functions.admin-reset-circuit-breaker]
 verify_jwt = false
+
+[functions.transfer-trading-fee]
+verify_jwt = false
