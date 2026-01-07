@@ -123,22 +123,33 @@ serve(async (req) => {
       for (const deposit of pendingDeposits || []) {
         try {
           const asset = deposit.assets
-          // Fetch profile for this user to get wallet addresses
+          // Fetch profile for this user to get wallet addresses - check multiple sources
           const { data: profile, error: profileErr } = await supabaseClient
             .from('profiles')
-            .select('wallet_address, wallet_addresses')
+            .select('wallet_address, bsc_wallet_address, wallet_addresses')
             .eq('user_id', deposit.user_id)
             .single()
-          if (profileErr) {
-            console.log(`[monitor-deposit] Skipping deposit ${deposit.id}: failed to load profile`)
+          
+          // Also check wallets_user table as fallback
+          const { data: userWallets } = await supabaseClient
+            .from('wallets_user')
+            .select('address, chain')
+            .eq('user_id', deposit.user_id)
+            .in('chain', ['bsc', 'bep20', 'BSC', 'BEP20', 'bsc-mainnet'])
+            .limit(1);
+          
+          if (profileErr && !userWallets?.length) {
+            console.log(`[monitor-deposit] Skipping deposit ${deposit.id}: failed to load profile or user wallets`)
             results.push({ id: deposit.id, status: 'skipped', reason: 'profile_load_failed' })
             continue
           }
 
-          // Compute EVM address from profile
-          const evmAddress = profile?.wallet_addresses?.['bsc-mainnet'] ||
+          // Compute EVM address from multiple sources
+          const evmAddress = profile?.bsc_wallet_address ||
+                            profile?.wallet_address ||
+                            profile?.wallet_addresses?.['bsc-mainnet'] ||
                             profile?.wallet_addresses?.['evm-mainnet'] ||
-                            profile?.wallet_address;
+                            userWallets?.[0]?.address;
 
           // Only verify BEP20/ERC20 tokens with contract addresses
           if (!asset?.contract_address || !evmAddress) {
@@ -283,18 +294,29 @@ serve(async (req) => {
     if (depositError) throw depositError
 
     const asset = deposit.assets
-    // Load profile for wallet addresses
+    // Load profile for wallet addresses - check multiple sources
     const { data: profile, error: profileErr } = await supabaseClient
       .from('profiles')
-      .select('wallet_address, wallet_addresses')
+      .select('wallet_address, bsc_wallet_address, wallet_addresses')
       .eq('user_id', deposit.user_id)
       .single()
-    if (profileErr) throw profileErr
+    
+    // Also check wallets_user table as fallback  
+    const { data: userWallets } = await supabaseClient
+      .from('wallets_user')
+      .select('address, chain')
+      .eq('user_id', deposit.user_id)
+      .in('chain', ['bsc', 'bep20', 'BSC', 'BEP20', 'bsc-mainnet'])
+      .limit(1);
+    
+    if (profileErr && !userWallets?.length) throw new Error('Could not load wallet address')
 
-    // Compute EVM address from profile
-    const evmAddress = profile?.wallet_addresses?.['bsc-mainnet'] ||
+    // Compute EVM address from multiple sources
+    const evmAddress = profile?.bsc_wallet_address ||
+                      profile?.wallet_address ||
+                      profile?.wallet_addresses?.['bsc-mainnet'] ||
                       profile?.wallet_addresses?.['evm-mainnet'] ||
-                      profile?.wallet_address;
+                      userWallets?.[0]?.address;
 
     if (!asset?.contract_address || !evmAddress) {
       throw new Error('Missing contract address or wallet address')

@@ -11262,6 +11262,27 @@ export type Database = {
           },
         ]
       }
+      crypto_transactions: {
+        Row: {
+          amount: number | null
+          asset_name: string | null
+          completed_at: string | null
+          confirmations: number | null
+          created_at: string | null
+          fee: number | null
+          id: string | null
+          logo_url: string | null
+          network: string | null
+          required_confirmations: number | null
+          status: string | null
+          symbol: string | null
+          to_address: string | null
+          transaction_type: string | null
+          tx_hash: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       mv_user_bsk_balances: {
         Row: {
           holding_balance: number | null

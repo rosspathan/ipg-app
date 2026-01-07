@@ -270,17 +270,26 @@ const DepositScreen = () => {
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center space-x-4"
+          className="flex items-center justify-between"
         >
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/app/wallet")}
+              className="p-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-2xl font-bold text-foreground">Deposit</h1>
+          </div>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={() => navigate("/app/wallet")}
-            className="p-2"
+            onClick={() => navigate("/app/history/crypto")}
           >
-            <ArrowLeft className="w-5 h-5" />
+            History
           </Button>
-          <h1 className="text-2xl font-bold text-foreground">Deposit</h1>
         </motion.div>
 
         {/* Tabs for Crypto and INR */}
