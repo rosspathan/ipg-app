@@ -113,6 +113,47 @@ Deno.serve(async (req) => {
     for (const [symbol, orders] of Object.entries(ordersBySymbol)) {
       console.log(`[Matching Engine] Processing ${symbol}: ${orders.buys.length} buys, ${orders.sells.length} sells`);
 
+      // Prefetch circuit breaker reference price once per symbol.
+      // Using last trade price alone can permanently block low-liquidity markets after a large gap.
+      const { count: tradeCount, error: tradeCountError } = await supabase
+        .from('trades')
+        .select('id', { count: 'exact', head: true })
+        .eq('symbol', symbol);
+
+      if (tradeCountError) {
+        console.warn('[Matching Engine] Trade count lookup failed (circuit breaker will be skipped):', tradeCountError);
+      }
+
+      let referencePrice: BigNumber | null = null;
+      let referenceSource: 'market_prices' | 'last_trade' | 'none' = 'none';
+
+      if (!tradeCountError && tradeCount && tradeCount >= MIN_TRADES_FOR_CIRCUIT_BREAKER) {
+        // Prefer current market reference price (admin-set / internal price) over the last executed trade.
+        const { data: marketRef, error: marketRefError } = await supabase
+          .from('market_prices')
+          .select('current_price')
+          .eq('symbol', symbol)
+          .single();
+
+        if (!marketRefError && marketRef?.current_price && Number(marketRef.current_price) > 0) {
+          referencePrice = new BigNumber(String(marketRef.current_price));
+          referenceSource = 'market_prices';
+        } else {
+          const { data: lastTrade } = await supabase
+            .from('trades')
+            .select('price')
+            .eq('symbol', symbol)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (lastTrade?.price && Number(lastTrade.price) > 0) {
+            referencePrice = new BigNumber(String(lastTrade.price));
+            referenceSource = 'last_trade';
+          }
+        }
+      }
+
       // PHASE 2.1 FIX: Sort market orders LAST (lower priority than limit orders)
       // Market orders should match against existing limit orders, not get infinite priority
       const sortedBuys = orders.buys.sort((a, b) => {
@@ -171,41 +212,31 @@ Deno.serve(async (req) => {
 
           if (canMatch && executionPrice.isGreaterThan(0)) {
             // PHASE 4.3: Circuit Breaker Check - only after MIN_TRADES_FOR_CIRCUIT_BREAKER trades
-            const { count: tradeCount } = await supabase
-              .from('trades')
-              .select('id', { count: 'exact', head: true })
-              .eq('symbol', symbol);
+            if (referencePrice && referenceSource !== 'none') {
+              const priceDeviation = executionPrice.minus(referencePrice).abs().dividedBy(referencePrice);
 
-            if (tradeCount && tradeCount >= MIN_TRADES_FOR_CIRCUIT_BREAKER) {
-              const { data: lastTrade } = await supabase
-                .from('trades')
-                .select('price')
-                .eq('symbol', symbol)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .single();
+              if (priceDeviation.isGreaterThan(MAX_PRICE_DEVIATION)) {
+                console.warn(`[Circuit Breaker] Price deviation too high vs ${referenceSource}: ${priceDeviation.times(100).toFixed(2)}%`);
 
-              if (lastTrade) {
-                const lastPrice = new BigNumber(String(lastTrade.price));
-                const priceDeviation = executionPrice.minus(lastPrice).abs().dividedBy(lastPrice);
-                
-                if (priceDeviation.isGreaterThan(MAX_PRICE_DEVIATION)) {
-                  console.warn(`[Circuit Breaker] Price deviation too high: ${priceDeviation.times(100).toFixed(2)}%`);
-                  
-                  // Activate circuit breaker
-                  await supabase
-                    .from('trading_engine_settings')
-                    .update({ circuit_breaker_active: true })
-                    .eq('id', settings.id);
-                  
-                  console.error(`[Circuit Breaker] ACTIVATED for ${symbol}. Last: ${lastPrice.toString()}, Current: ${executionPrice.toString()}`);
-                  
-                  // Stop matching for this symbol
-                  break;
-                }
+                // Activate circuit breaker
+                await supabase
+                  .from('trading_engine_settings')
+                  .update({ circuit_breaker_active: true })
+                  .eq('id', settings.id);
+
+                console.error(
+                  `[Circuit Breaker] ACTIVATED for ${symbol}. Reference(${referenceSource}): ${referencePrice.toString()}, Execution: ${executionPrice.toString()}`
+                );
+
+                // Stop matching for this symbol
+                break;
               }
+            } else if ((tradeCount || 0) < MIN_TRADES_FOR_CIRCUIT_BREAKER) {
+              console.log(
+                `[Circuit Breaker] Skipped - only ${tradeCount || 0} trades for ${symbol} (need ${MIN_TRADES_FOR_CIRCUIT_BREAKER})`
+              );
             } else {
-              console.log(`[Circuit Breaker] Skipped - only ${tradeCount || 0} trades for ${symbol} (need ${MIN_TRADES_FOR_CIRCUIT_BREAKER})`);
+              console.log(`[Circuit Breaker] Skipped - no reference price available for ${symbol}`);
             }
 
             // PHASE 3.4: Calculate matched quantity using BigNumber, quantized to 8 decimals
