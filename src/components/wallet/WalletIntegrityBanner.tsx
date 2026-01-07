@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigation } from '@/hooks/useNavigation';
+import { FixWalletDialog } from './FixWalletDialog';
 
 interface WalletIntegrityBannerProps {
   mismatchType: 'profile_vs_backup' | 'profile_vs_bsc' | 'both';
@@ -8,6 +9,7 @@ interface WalletIntegrityBannerProps {
   backupWallet: string | null;
   bscWallet: string | null;
   onDismiss?: () => void;
+  onFixed?: () => void;
 }
 
 export function WalletIntegrityBanner({
@@ -15,9 +17,10 @@ export function WalletIntegrityBanner({
   profileWallet,
   backupWallet,
   bscWallet,
-  onDismiss
+  onDismiss,
+  onFixed
 }: WalletIntegrityBannerProps) {
-  const { navigate } = useNavigation();
+  const [showFixDialog, setShowFixDialog] = useState(false);
 
   const getMessage = () => {
     switch (mismatchType) {
@@ -91,7 +94,7 @@ export function WalletIntegrityBanner({
                 <Button
                   size="sm"
                   variant="destructive"
-                  onClick={() => navigate('/app/profile/security')}
+                  onClick={() => setShowFixDialog(true)}
                   className="text-xs"
                 >
                   Fix Wallet
@@ -100,7 +103,6 @@ export function WalletIntegrityBanner({
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    // Open support or help
                     window.open('mailto:support@example.com?subject=Wallet%20Integrity%20Issue', '_blank');
                   }}
                   className="text-xs"
@@ -112,7 +114,7 @@ export function WalletIntegrityBanner({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => navigate('/app/profile/security')}
+                onClick={() => setShowFixDialog(true)}
                 className="text-xs"
               >
                 Sync Wallet
@@ -132,6 +134,17 @@ export function WalletIntegrityBanner({
           </Button>
         )}
       </div>
+
+      {/* Fix Wallet Dialog */}
+      <FixWalletDialog
+        open={showFixDialog}
+        onOpenChange={setShowFixDialog}
+        profileWallet={profileWallet}
+        backupWallet={backupWallet}
+        onSuccess={() => {
+          onFixed?.();
+        }}
+      />
     </div>
   );
 }

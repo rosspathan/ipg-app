@@ -196,6 +196,7 @@ export function WalletPage() {
             backupWallet={walletIntegrity.backupWallet}
             bscWallet={walletIntegrity.bscWallet}
             onDismiss={walletIntegrity.mismatchType === 'profile_vs_bsc' ? () => setIntegrityDismissed(true) : undefined}
+            onFixed={() => walletIntegrity.refetch()}
           />
         )}
 
