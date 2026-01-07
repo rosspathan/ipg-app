@@ -269,3 +269,6 @@ verify_jwt = true
 
 [functions.admin-reset-user-wallet]
 verify_jwt = true
+
+[functions.fix-user-wallet]
+verify_jwt = false
