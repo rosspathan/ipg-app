@@ -59,15 +59,18 @@ export function PortfolioSummaryCard({
         )}
       </div>
 
-      {/* Total Value - Primary Metric */}
+      {/* Total Value - Primary Metric (On-Chain Balance) */}
       <div className="px-5 pb-4">
-        <p className="text-xs text-muted-foreground mb-1.5">Total Value</p>
+        <div className="flex items-center gap-2 mb-1.5">
+          <p className="text-xs text-muted-foreground">On-Chain Balance</p>
+          <Globe className="h-3 w-3 text-blue-400" />
+        </div>
         <div className="flex items-baseline gap-3">
           <p 
             className="text-2xl md:text-3xl font-bold text-foreground dark:text-white tabular-nums truncate"
-            title={formatCurrency(combinedTotal)}
+            title={formatCurrency(totalUsd)}
           >
-            {formatCurrency(combinedTotal)}
+            {formatCurrency(totalUsd)}
           </p>
         </div>
       </div>
@@ -121,21 +124,12 @@ export function PortfolioSummaryCard({
           </div>
         </div>
 
-        {/* On-chain - Only show if there's a balance */}
-        {onchainUsd > 0 && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Globe className="h-4 w-4 text-blue-400" />
-              <span className="text-sm text-muted-foreground">On-chain</span>
-            </div>
-            <p 
-              className="text-lg md:text-xl font-semibold text-blue-400 tabular-nums truncate ml-4"
-              title={formatCurrency(onchainUsd)}
-            >
-              {formatCurrency(onchainUsd)}
-            </p>
-          </div>
-        )}
+        {/* Note about on-chain trading */}
+        <div className="pt-2 border-t border-border/30">
+          <p className="text-[10px] text-muted-foreground/70 text-center">
+            Balances reflect your actual on-chain holdings
+          </p>
+        </div>
       </div>
     </CleanCard>
   )

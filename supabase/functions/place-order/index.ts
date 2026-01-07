@@ -77,11 +77,11 @@ serve(async (req) => {
 
     const { symbol, side, type, quantity, price, trading_type, trading_mode } = await req.json();
 
-    // Default to internal mode - on-chain mode should be explicitly requested
-    const isOnchainMode = trading_mode === 'onchain';
+    // ALWAYS use on-chain mode - on-chain is now the source of truth
+    const isOnchainMode = true; // Force on-chain verification for all orders
     const FEE_PERCENT = new BigNumber('0.005'); // 0.5% fee buffer for buy orders
 
-    console.log('[place-order] Received order:', { user_id: user.id, symbol, side, type, quantity, price, trading_mode: isOnchainMode ? 'onchain' : 'internal' });
+    console.log('[place-order] Received order:', { user_id: user.id, symbol, side, type, quantity, price, mode: 'on-chain-verified' });
 
     // Validate inputs
     if (!symbol || !side || !type || !quantity || quantity <= 0) {
@@ -256,27 +256,30 @@ serve(async (req) => {
       
       console.log('[place-order] On-chain balance verified successfully');
       
-    } else {
-      // INTERNAL MODE: Use wallet_balances table
-      // PHASE 2.4: Atomic balance locking for ALL order types (not just limit)
-      // PHASE 3.4: Pass exact decimal string quantized to 8 decimals
-      const required_amount_q = required_amount.decimalPlaces(8, BigNumber.ROUND_DOWN);
-      
+    }
+    
+    // Also lock balance in wallet_balances for order tracking
+    // This ensures the locked amount is reflected in the UI
+    const required_amount_q = required_amount.decimalPlaces(8, BigNumber.ROUND_DOWN);
+    
+    try {
       const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
         'lock_balance_for_order',
         {
           p_user_id: user.id,
           p_asset_symbol: required_asset,
-          p_amount: required_amount_q.toFixed(8), // Pass as exact 8-decimal string
+          p_amount: required_amount_q.toFixed(8),
         }
       );
 
-      if (lockError || !lockSuccess) {
-        console.error('[place-order] Lock balance failed:', lockError);
-        throw new Error(`Insufficient ${required_asset} balance. Required: ${required_amount_q.toFixed(8)} (includes fee buffer)`);
+      if (lockError) {
+        console.warn('[place-order] Lock balance warning (non-fatal for on-chain mode):', lockError);
+        // Don't fail - on-chain verification already passed
+      } else {
+        console.log('[place-order] Balance locked in wallet_balances:', required_amount_q.toFixed(8));
       }
-
-      console.log('[place-order] Balance locked successfully:', required_amount_q.toFixed(8));
+    } catch (lockErr) {
+      console.warn('[place-order] Lock balance failed (non-fatal):', lockErr);
     }
 
     // Insert order (use 'amount' column, not 'quantity')
