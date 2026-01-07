@@ -12014,6 +12014,10 @@ export type Database = {
           withdrawable_diff: number
         }[]
       }
+      reconcile_locked_balance: {
+        Args: { p_asset_symbol: string; p_user_id: string }
+        Returns: undefined
+      }
       record_bsk_transaction: {
         Args: {
           p_amount_bsk: number
