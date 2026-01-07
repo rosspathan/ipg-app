@@ -91,7 +91,7 @@ export function WalletIntegrityBanner({
                 <Button
                   size="sm"
                   variant="destructive"
-                  onClick={() => navigate('/app/settings/security')}
+                  onClick={() => navigate('/app/profile/security')}
                   className="text-xs"
                 >
                   Fix Wallet
@@ -112,7 +112,7 @@ export function WalletIntegrityBanner({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => navigate('/app/settings/security')}
+                onClick={() => navigate('/app/profile/security')}
                 className="text-xs"
               >
                 Sync Wallet
