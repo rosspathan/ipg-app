@@ -139,7 +139,7 @@ const TradingScreen = () => {
   };
 
   // Get real open orders from hook
-  const openOrders = userOrders?.filter(o => o.status === 'pending' || o.status === 'open') || [];
+  const openOrders = userOrders?.filter(o => o.status === 'pending' || o.status === 'partially_filled') || [];
 
   // Handle order placement
   const handlePlaceOrder = async (orderData: {

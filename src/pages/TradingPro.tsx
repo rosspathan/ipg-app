@@ -74,7 +74,7 @@ const TradingPro: React.FC = () => {
 
   // Open orders
   const openOrders = useMemo(() => {
-    return orders.filter((o: any) => o.status === 'pending' || o.status === 'open');
+    return orders.filter((o: any) => o.status === 'pending' || o.status === 'partially_filled');
   }, [orders]);
 
   const handlePlaceOrder = async (params: {
