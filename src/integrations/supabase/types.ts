@@ -9460,6 +9460,83 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_settlements: {
+        Row: {
+          base_amount: number
+          base_asset: string
+          base_tx_hash: string | null
+          buyer_id: string
+          buyer_wallet: string
+          created_at: string | null
+          error_message: string | null
+          gas_used_base: number | null
+          gas_used_quote: number | null
+          id: string
+          quote_amount: number
+          quote_asset: string
+          quote_tx_hash: string | null
+          retry_count: number | null
+          seller_id: string
+          seller_wallet: string
+          settled_at: string | null
+          status: string | null
+          symbol: string
+          trade_id: string
+        }
+        Insert: {
+          base_amount: number
+          base_asset: string
+          base_tx_hash?: string | null
+          buyer_id: string
+          buyer_wallet: string
+          created_at?: string | null
+          error_message?: string | null
+          gas_used_base?: number | null
+          gas_used_quote?: number | null
+          id?: string
+          quote_amount: number
+          quote_asset: string
+          quote_tx_hash?: string | null
+          retry_count?: number | null
+          seller_id: string
+          seller_wallet: string
+          settled_at?: string | null
+          status?: string | null
+          symbol: string
+          trade_id: string
+        }
+        Update: {
+          base_amount?: number
+          base_asset?: string
+          base_tx_hash?: string | null
+          buyer_id?: string
+          buyer_wallet?: string
+          created_at?: string | null
+          error_message?: string | null
+          gas_used_base?: number | null
+          gas_used_quote?: number | null
+          id?: string
+          quote_amount?: number
+          quote_asset?: string
+          quote_tx_hash?: string | null
+          retry_count?: number | null
+          seller_id?: string
+          seller_wallet?: string
+          settled_at?: string | null
+          status?: string | null
+          symbol?: string
+          trade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_settlements_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trades: {
         Row: {
           buy_order_id: string
