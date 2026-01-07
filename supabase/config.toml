@@ -263,3 +263,6 @@ verify_jwt = false
 
 [functions.escrow-withdraw]
 verify_jwt = true
+
+[functions.process-crypto-withdrawal]
+verify_jwt = true
