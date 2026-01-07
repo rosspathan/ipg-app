@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, DollarSign, ArrowUpCircle, ArrowDownCircle, Shield, FileText } from "lucide-react";
+import { Users, DollarSign, ArrowUpCircle, ArrowDownCircle, Shield } from "lucide-react";
+import { AdminWalletCard } from "@/components/admin/AdminWalletCard";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -119,8 +120,9 @@ const AdminDashboard = () => {
         </Card>
       </div>
 
-      {/* Queues */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
+      {/* Admin Wallet & Queues */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 md:gap-4">
+        <AdminWalletCard />
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Pending Queues</CardTitle>
