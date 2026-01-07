@@ -250,7 +250,7 @@ function TradingPairPageContent() {
     }
   };
 
-  const openOrders = orders?.filter(o => o.status === 'pending' || o.status === 'open') || [];
+  const openOrders = orders?.filter(o => o.status === 'pending' || o.status === 'partially_filled') || [];
   const priceChangeColor = pair.change24h >= 0 ? "text-emerald-400" : "text-destructive";
 
   return (
