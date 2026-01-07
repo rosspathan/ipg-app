@@ -321,6 +321,37 @@ Deno.serve(async (req) => {
                     console.error(`[Matching Engine] Fee transfer failed (non-fatal):`, feeTransferError);
                   }
                 }
+
+                // Invoke on-chain trade settlement as background task
+                try {
+                  console.log(`[Matching Engine] Initiating on-chain trade settlement`);
+                  
+                  EdgeRuntime.waitUntil(
+                    supabase.functions.invoke('settle-trade-onchain', {
+                      body: {
+                        trade_id: tradeId,
+                        buyer_id: buyOrder.user_id,
+                        seller_id: sellOrder.user_id,
+                        symbol,
+                        base_asset: baseSymbol,
+                        quote_asset: quoteSymbol,
+                        base_amount: matchedQuantity.toFixed(8),
+                        quote_amount: quoteAmount.toFixed(8)
+                      }
+                    }).then(result => {
+                      if (result.error) {
+                        console.error(`[Matching Engine] Settlement invocation error:`, result.error);
+                      } else if (result.data?.success) {
+                        console.log(`[Matching Engine] ✓ Settlement initiated: ${result.data.settlement_id}`);
+                      }
+                    }).catch(err => {
+                      console.error(`[Matching Engine] Settlement background task failed:`, err);
+                    })
+                  );
+                } catch (settlementError) {
+                  // Log but don't fail the trade
+                  console.error(`[Matching Engine] Settlement initiation failed (non-fatal):`, settlementError);
+                }
               }
 
               totalMatches++;
