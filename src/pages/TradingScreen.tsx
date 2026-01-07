@@ -20,7 +20,7 @@ import EnhancedOrderBook from "@/components/trading/EnhancedOrderBook";
 import TradingOrderForm from "@/components/trading/TradingOrderForm";
 import RecentTrades from "@/components/RecentTrades";
 import MarketDiagnostics from "@/components/trading/MarketDiagnostics";
-import { PendingSettlements } from "@/components/trading/PendingSettlements";
+// PendingSettlements removed - Hybrid model uses internal ledger settlement
 
 const TradingScreen = () => {
   const navigate = useNavigate();
@@ -134,9 +134,10 @@ const TradingScreen = () => {
   const quoteBalance = userBalances?.find(b => b.symbol === quoteAsset);
   const baseBalance = userBalances?.find(b => b.symbol === baseAsset);
   
+  // HYBRID MODEL: Always use internal ledger balance for trading (not on-chain)
   const availableBalance = {
-    buy: quoteBalance?.appBalance || quoteBalance?.onchainBalance || 0, // Quote currency for buying
-    sell: baseBalance?.appBalance || baseBalance?.onchainBalance || 0   // Base currency for selling
+    buy: quoteBalance?.appAvailable ?? 0,  // Internal available quote balance
+    sell: baseBalance?.appAvailable ?? 0   // Internal available base balance
   };
 
   // Get real open orders from hook
@@ -365,10 +366,7 @@ const TradingScreen = () => {
         />
       </div>
 
-      {/* Pending Settlements - P2P On-Chain Transfers */}
-      <div className="px-4">
-        <PendingSettlements />
-      </div>
+      {/* HYBRID MODEL: No P2P settlements needed - trades settle internally */}
 
       {/* Open Orders & Trade History */}
       <div className="p-4 pb-20">

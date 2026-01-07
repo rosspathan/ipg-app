@@ -130,11 +130,12 @@ export function useBep20Balances() {
     fetchAppBalances()
   }, [fetchAppBalances])
 
-  // Real-time subscription for app balances
+  // Real-time subscription for app balances + trades
   useEffect(() => {
     if (!user?.id) return
 
-    const channel = supabase
+    // Subscribe to wallet_balances changes
+    const balanceChannel = supabase
       .channel(`bep20-app-balances-${user.id}`)
       .on(
         'postgres_changes',
@@ -151,8 +152,40 @@ export function useBep20Balances() {
       )
       .subscribe()
 
+    // Subscribe to trades table (HYBRID MODEL: refresh after trade execution)
+    const tradesChannel = supabase
+      .channel(`user-trades-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'trades',
+          filter: `buyer_id=eq.${user.id}`
+        },
+        () => {
+          console.log('[useBep20Balances] Trade executed (buyer), refetching...')
+          fetchAppBalances()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'trades',
+          filter: `seller_id=eq.${user.id}`
+        },
+        () => {
+          console.log('[useBep20Balances] Trade executed (seller), refetching...')
+          fetchAppBalances()
+        }
+      )
+      .subscribe()
+
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(balanceChannel)
+      supabase.removeChannel(tradesChannel)
     }
   }, [user?.id, fetchAppBalances])
 
