@@ -8580,6 +8580,66 @@ export type Database = {
         }
         Relationships: []
       }
+      settlement_requests: {
+        Row: {
+          amount: number
+          asset_symbol: string
+          confirmed_at: string | null
+          counterparty_id: string
+          created_at: string
+          direction: string
+          error_message: string | null
+          expires_at: string
+          from_wallet: string
+          id: string
+          status: string
+          submitted_at: string | null
+          to_wallet: string
+          trade_id: string
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_symbol: string
+          confirmed_at?: string | null
+          counterparty_id: string
+          created_at?: string
+          direction: string
+          error_message?: string | null
+          expires_at?: string
+          from_wallet: string
+          id?: string
+          status?: string
+          submitted_at?: string | null
+          to_wallet: string
+          trade_id: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_symbol?: string
+          confirmed_at?: string | null
+          counterparty_id?: string
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          expires_at?: string
+          from_wallet?: string
+          id?: string
+          status?: string
+          submitted_at?: string | null
+          to_wallet?: string
+          trade_id?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       spin_config: {
         Row: {
           created_at: string
