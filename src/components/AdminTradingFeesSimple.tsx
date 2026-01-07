@@ -67,7 +67,7 @@ export const AdminTradingFeesSimple = () => {
   const [formData, setFormData] = useState({
     maker_fee_percent: "0.5",
     taker_fee_percent: "0.5",
-    admin_fee_wallet: "0x97E07a738600A6F13527fAe0Cacb0A592FbEAfB1"
+    admin_fee_wallet: "0x68e5bbd91c9b3bc74cbe47f649c6c58bd6aaae33"
   });
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export const AdminTradingFeesSimple = () => {
       setFormData({
         maker_fee_percent: String(settings.maker_fee_percent),
         taker_fee_percent: String(settings.taker_fee_percent),
-        admin_fee_wallet: settings.admin_fee_wallet || "0x97E07a738600A6F13527fAe0Cacb0A592FbEAfB1"
+        admin_fee_wallet: settings.admin_fee_wallet || "0x68e5bbd91c9b3bc74cbe47f649c6c58bd6aaae33"
       });
     }
   }, [settings]);
@@ -132,7 +132,7 @@ export const AdminTradingFeesSimple = () => {
         </CardHeader>
         <CardContent>
           <div className="p-4 bg-muted/50 rounded-lg font-mono text-sm break-all">
-            {settings?.admin_fee_wallet || "0x97E07a738600A6F13527fAe0Cacb0A592FbEAfB1"}
+            {settings?.admin_fee_wallet || "0x68e5bbd91c9b3bc74cbe47f649c6c58bd6aaae33"}
           </div>
         </CardContent>
       </Card>

@@ -29,7 +29,7 @@ interface EngineSettings {
 }
 
 const ADMIN_FEE_PERCENT = new BigNumber('0.5'); // 0.5% fee on each side (buy and sell)
-const ADMIN_FEE_WALLET = '0x97E07a738600A6F13527fAe0Cacb0A592FbEAfB1';
+const ADMIN_FEE_WALLET = '0x68e5bbd91c9b3bc74cbe47f649c6c58bd6aaae33';
 
 const MAX_PRICE_DEVIATION = new BigNumber('0.50'); // 50% price deviation triggers circuit breaker (high for low-liquidity pairs)
 const MIN_TRADES_FOR_CIRCUIT_BREAKER = 5; // Require at least 5 trades before enabling circuit breaker
@@ -252,10 +252,12 @@ Deno.serve(async (req) => {
 
               console.log('[Matching Engine] Trade executed successfully, trade_id:', tradeId);
 
-              // Record fees in trading_fees_collected ledger
+              // Record fees in trading_fees_collected ledger and transfer on-chain
               if (tradeId) {
+                const feeRecordIds: string[] = [];
+
                 // Buyer fee
-                await supabase
+                const { data: buyerFeeRecord } = await supabase
                   .from('trading_fees_collected')
                   .insert({
                     trade_id: tradeId,
@@ -266,11 +268,15 @@ Deno.serve(async (req) => {
                     user_id: buyOrder.user_id,
                     side: 'buy',
                     admin_wallet: adminWallet,
-                    status: 'collected'
-                  });
+                    status: 'pending'
+                  })
+                  .select('id')
+                  .single();
+
+                if (buyerFeeRecord) feeRecordIds.push(buyerFeeRecord.id);
 
                 // Seller fee
-                await supabase
+                const { data: sellerFeeRecord } = await supabase
                   .from('trading_fees_collected')
                   .insert({
                     trade_id: tradeId,
@@ -281,10 +287,40 @@ Deno.serve(async (req) => {
                     user_id: sellOrder.user_id,
                     side: 'sell',
                     admin_wallet: adminWallet,
-                    status: 'collected'
-                  });
+                    status: 'pending'
+                  })
+                  .select('id')
+                  .single();
 
-                console.log(`[Matching Engine] ✓ Fees recorded: Buyer=${buyerFee.toString()}, Seller=${sellerFee.toString()} -> ${adminWallet}`);
+                if (sellerFeeRecord) feeRecordIds.push(sellerFeeRecord.id);
+
+                console.log(`[Matching Engine] ✓ Fees recorded: Buyer=${buyerFee.toString()}, Seller=${sellerFee.toString()}`);
+
+                // Transfer combined fees on-chain
+                const totalFee = buyerFee.plus(sellerFee);
+                if (totalFee.isGreaterThan(0)) {
+                  try {
+                    console.log(`[Matching Engine] Initiating on-chain fee transfer: ${totalFee.toString()} ${quoteSymbol}`);
+                    
+                    const { data: feeTransfer, error: feeError } = await supabase.functions.invoke('transfer-trading-fee', {
+                      body: {
+                        amount: totalFee.toString(),
+                        asset: quoteSymbol,
+                        trade_id: tradeId,
+                        fee_record_ids: feeRecordIds
+                      }
+                    });
+
+                    if (feeError) {
+                      console.error(`[Matching Engine] Fee transfer error:`, feeError);
+                    } else if (feeTransfer?.tx_hash) {
+                      console.log(`[Matching Engine] ✓ Fees transferred on-chain: ${totalFee.toString()} ${quoteSymbol} -> tx: ${feeTransfer.tx_hash}`);
+                    }
+                  } catch (feeTransferError) {
+                    // Log error but don't fail the trade - fees are still recorded in DB
+                    console.error(`[Matching Engine] Fee transfer failed (non-fatal):`, feeTransferError);
+                  }
+                }
               }
 
               totalMatches++;
