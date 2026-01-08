@@ -223,13 +223,30 @@ export function useBep20Balances() {
     queryFn: async (): Promise<Record<string, { onchainBalance: number; priceUsd: number }>> => {
       if (!walletAddress || assets.length === 0) return {}
 
-      // Fetch prices for all assets
-      let prices: Record<string, number> = {}
+      // Fetch prices from market_prices table
+      let prices: Record<string, number> = { 'USDT': 1 }
       try {
-        const { data: priceData } = await supabase.functions.invoke('fetch-crypto-prices', {
-          body: { symbols: assets.map(a => a.symbol) }
-        })
-        prices = priceData?.prices || {}
+        // Get all prices from market_prices table (populated by fetch-crypto-prices edge function)
+        const { data: marketPrices } = await supabase
+          .from('market_prices')
+          .select('symbol, current_price')
+        
+        if (marketPrices) {
+          for (const mp of marketPrices) {
+            // Parse "BNB/USDT" -> "BNB", "IPG/USDT" -> "IPG"
+            const parts = mp.symbol?.split('/') || []
+            const baseSymbol = parts[0]
+            const quoteSymbol = parts[1]
+            
+            if (baseSymbol && quoteSymbol === 'USDT' && mp.current_price) {
+              prices[baseSymbol] = mp.current_price
+              // Also map "BNB ORIGINAL" from "BNB ORIGINAL/USDT"
+              if (baseSymbol.includes(' ')) {
+                prices[baseSymbol] = mp.current_price
+              }
+            }
+          }
+        }
       } catch (err) {
         console.warn('Failed to fetch prices:', err)
       }
