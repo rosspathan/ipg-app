@@ -45,13 +45,16 @@ const WithdrawScreen = () => {
   // Check for open orders that might lock funds
   const { data: openOrdersData } = useOpenOrdersCheck(selectedAsset);
 
-  // Filter assets and use actual network from database
+  // Filter assets - hide dust/test balances below threshold
+  const MIN_WITHDRAWAL_BALANCE = 0.001;
+  
   const assets = (balances || [])
     .filter(asset => 
       asset.symbol !== 'BSK' && 
       asset.symbol !== 'INR' &&
       asset.network !== 'fiat' &&
-      asset.network !== 'FIAT'
+      asset.network !== 'FIAT' &&
+      asset.available >= MIN_WITHDRAWAL_BALANCE // Only show meaningful balances
     )
     .map(asset => ({
       symbol: asset.symbol,
