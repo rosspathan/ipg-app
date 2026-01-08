@@ -1,5 +1,16 @@
+/**
+ * Cancel Order Edge Function - IMPROVED
+ * Proper balance unlock for all pending/partially_filled orders
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import BigNumber from "https://esm.sh/bignumber.js@9.1.2";
+
+BigNumber.config({
+  DECIMAL_PLACES: 8,
+  ROUNDING_MODE: BigNumber.ROUND_DOWN,
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,7 +62,14 @@ serve(async (req) => {
       throw new Error('Order not found');
     }
 
-    console.log('[cancel-order] Found order:', { id: order.id, status: order.status, type: order.type });
+    console.log('[cancel-order] Found order:', { 
+      id: order.id, 
+      status: order.status, 
+      type: order.order_type,
+      amount: order.amount,
+      filled_amount: order.filled_amount,
+      price: order.price
+    });
 
     // Check if order can be cancelled
     if (order.status === 'filled') {
@@ -62,31 +80,54 @@ serve(async (req) => {
       throw new Error('Order already cancelled');
     }
 
-    // Unlock balance for limit orders
-    if (order.type === 'limit' && order.status === 'pending') {
-      const [base_symbol, quote_symbol] = order.symbol.split('/');
-      const unlock_asset = order.side === 'buy' ? quote_symbol : base_symbol;
-      const unlock_amount = order.side === 'buy' 
-        ? order.remaining_quantity * order.price 
-        : order.remaining_quantity;
+    // Calculate remaining amount to unlock
+    const [base_symbol, quote_symbol] = order.symbol.split('/');
+    const filled = new BigNumber(String(order.filled_amount || 0));
+    const total = new BigNumber(String(order.amount));
+    const remaining = total.minus(filled);
+    
+    if (remaining.isGreaterThan(0)) {
+      const price = new BigNumber(String(order.price || 0));
+      const FEE_BUFFER = new BigNumber('1.005'); // 0.5% fee buffer (same as place-order)
+      
+      let unlock_asset: string;
+      let unlock_amount: BigNumber;
+      
+      if (order.side === 'buy') {
+        // Buyer locked quote asset (e.g., USDT)
+        unlock_asset = quote_symbol;
+        // Must match the locked amount from place-order (including fee buffer)
+        unlock_amount = remaining.times(price).times(FEE_BUFFER).decimalPlaces(8, BigNumber.ROUND_UP);
+      } else {
+        // Seller locked base asset (e.g., BTC)
+        unlock_asset = base_symbol;
+        unlock_amount = remaining.decimalPlaces(8, BigNumber.ROUND_DOWN);
+      }
 
-      console.log('[cancel-order] Unlocking balance:', { unlock_asset, unlock_amount });
+      console.log('[cancel-order] Unlocking balance:', { 
+        unlock_asset, 
+        unlock_amount: unlock_amount.toFixed(8),
+        remaining: remaining.toString()
+      });
 
       const { data: unlockSuccess, error: unlockError } = await supabaseClient.rpc(
         'unlock_balance_for_order',
         {
           p_user_id: user.id,
           p_asset_symbol: unlock_asset,
-          p_amount: unlock_amount,
+          p_amount: unlock_amount.toFixed(8),
         }
       );
 
-      if (unlockError || !unlockSuccess) {
-        console.error('[cancel-order] Unlock failed:', unlockError);
-        throw new Error('Failed to unlock balance');
+      if (unlockError) {
+        console.error('[cancel-order] Unlock error:', unlockError);
+        // Log but don't fail - order should still be cancelled
+        console.warn('[cancel-order] Could not unlock balance, continuing with cancellation');
+      } else if (!unlockSuccess) {
+        console.warn('[cancel-order] Unlock returned false - possibly already unlocked');
+      } else {
+        console.log('[cancel-order] Balance unlocked successfully');
       }
-
-      console.log('[cancel-order] Balance unlocked');
     }
 
     // Update order status

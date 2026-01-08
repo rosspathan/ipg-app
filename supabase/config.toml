@@ -272,3 +272,6 @@ verify_jwt = true
 
 [functions.fix-user-wallet]
 verify_jwt = false
+
+[functions.auto-detect-deposits]
+verify_jwt = false

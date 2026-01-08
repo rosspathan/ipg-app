@@ -1,15 +1,13 @@
 /**
- * Place Order Edge Function
- * Phase 2.3: Added idempotency key support
- * Phase 2.4: Added atomic transaction handling
- * Phase 3.4: BigNumber precision-safe calculations
+ * Place Order Edge Function - SIMPLIFIED
+ * Uses wallet_balances as single source of truth
+ * No on-chain verification during order placement
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import BigNumber from "https://esm.sh/bignumber.js@9.1.2";
 
-// Configure BigNumber for financial calculations
 BigNumber.config({
   DECIMAL_PLACES: 8,
   ROUNDING_MODE: BigNumber.ROUND_DOWN,
@@ -26,7 +24,6 @@ serve(async (req) => {
   }
 
   try {
-    // Extract JWT token explicitly for proper auth
     const authHeader = req.headers.get('Authorization');
     const token = authHeader?.replace('Bearer ', '').trim();
     
@@ -38,21 +35,18 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
-        global: {
-          headers: { Authorization: authHeader! },
-        },
+        global: { headers: { Authorization: authHeader! } },
         auth: { persistSession: false }
       }
     );
 
-    // Pass token explicitly to getUser
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
       console.error('[place-order] Auth error:', userError);
       throw new Error('Unauthorized');
     }
 
-    // PHASE 2.3: Check for idempotency key
+    // Check for idempotency key
     const idempotencyKey = req.headers.get('idempotency-key');
     
     if (idempotencyKey) {
@@ -67,7 +61,7 @@ serve(async (req) => {
         .single();
       
       if (existing) {
-        console.log('[place-order] Returning cached response for idempotency key');
+        console.log('[place-order] Returning cached response');
         return new Response(
           JSON.stringify(existing.response_data),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -75,13 +69,10 @@ serve(async (req) => {
       }
     }
 
-    const { symbol, side, type, quantity, price, trading_type, trading_mode } = await req.json();
+    const { symbol, side, type, quantity, price, trading_type } = await req.json();
+    const FEE_BUFFER = new BigNumber('1.005'); // 0.5% fee buffer
 
-    // ALWAYS use on-chain mode - on-chain is now the source of truth
-    const isOnchainMode = true; // Force on-chain verification for all orders
-    const FEE_PERCENT = new BigNumber('0.005'); // 0.5% fee buffer for buy orders
-
-    console.log('[place-order] Received order:', { user_id: user.id, symbol, side, type, quantity, price, mode: 'on-chain-verified' });
+    console.log('[place-order] Order request:', { user_id: user.id, symbol, side, type, quantity, price });
 
     // Validate inputs
     if (!symbol || !side || !type || !quantity || quantity <= 0) {
@@ -98,8 +89,8 @@ serve(async (req) => {
       throw new Error('Invalid symbol format. Expected: BASE/QUOTE');
     }
 
-    // For market orders, fetch actual market price from database
-    let estimated_market_price = price;
+    // For market orders, fetch market price
+    let order_price = price;
     if (type === 'market' && !price) {
       const { data: marketPriceData } = await supabaseClient
         .from('market_prices')
@@ -107,235 +98,66 @@ serve(async (req) => {
         .eq('symbol', symbol)
         .single();
       
-      estimated_market_price = marketPriceData?.current_price || 0;
-      console.log('[place-order] Fetched market price:', estimated_market_price);
+      order_price = marketPriceData?.current_price || 0;
+      console.log('[place-order] Fetched market price:', order_price);
       
-      if (!estimated_market_price || estimated_market_price <= 0) {
-        throw new Error('Unable to fetch current market price for market order');
+      if (!order_price || order_price <= 0) {
+        throw new Error('Unable to fetch current market price');
       }
     }
-    
-    // PHASE 3.4: Use BigNumber for precision-safe calculations
+
+    // Calculate required amount using BigNumber
     const quantityBN = new BigNumber(String(quantity));
-    const priceBN = new BigNumber(String(estimated_market_price));
+    const priceBN = new BigNumber(String(order_price));
     const order_value = quantityBN.times(priceBN);
     
     const required_asset = side === 'buy' ? quote_symbol : base_symbol;
     
-    // Add 0.5% fee buffer for buy orders to ensure settlement works
+    // Add fee buffer for buy orders
     const required_amount = side === 'buy' 
-      ? order_value.times(new BigNumber('1').plus(FEE_PERCENT))
-      : quantityBN;
+      ? order_value.times(FEE_BUFFER).decimalPlaces(8, BigNumber.ROUND_UP)
+      : quantityBN.decimalPlaces(8, BigNumber.ROUND_DOWN);
 
-    console.log('[place-order] Required (BigNumber):', { 
-      required_asset, 
-      required_amount: required_amount.toString(), 
-      feeBuffer: side === 'buy' ? FEE_PERCENT.toString() : '0'
+    console.log('[place-order] Required:', { 
+      asset: required_asset, 
+      amount: required_amount.toString()
     });
 
-    // PHASE 4: Check escrow balance first (non-custodial model)
-    // Try escrow balance check first, fall back to on-chain if no escrow configured
-    let useEscrowModel = false;
-    
-    // Check if escrow is configured
-    const { data: escrowConfig } = await supabaseClient
-      .from('escrow_contract_config')
-      .select('contract_address, is_active')
-      .eq('is_active', true)
-      .single();
-    
-    if (escrowConfig?.contract_address) {
-      console.log('[place-order] Escrow contract configured:', escrowConfig.contract_address);
-      
-      // Check escrow balance
-      const { data: escrowBalance } = await supabaseClient
-        .from('escrow_balances')
-        .select('deposited, locked, available')
-        .eq('user_id', user.id)
-        .eq('asset_symbol', required_asset)
-        .single();
-      
-      if (escrowBalance) {
-        const escrowAvailable = new BigNumber(String(escrowBalance.available || 0));
-        console.log('[place-order] Escrow balance:', { 
-          deposited: escrowBalance.deposited, 
-          locked: escrowBalance.locked, 
-          available: escrowAvailable.toString() 
-        });
-        
-        if (escrowAvailable.isGreaterThanOrEqualTo(required_amount)) {
-          useEscrowModel = true;
-          console.log('[place-order] Using escrow model - sufficient balance');
-          
-          // Lock escrow balance
-          const newLocked = new BigNumber(String(escrowBalance.locked)).plus(required_amount);
-          const { error: lockError } = await supabaseClient
-            .from('escrow_balances')
-            .update({ locked: newLocked.toNumber() })
-            .eq('user_id', user.id)
-            .eq('asset_symbol', required_asset);
-          
-          if (lockError) {
-            console.error('[place-order] Escrow lock failed:', lockError);
-            throw new Error('Failed to lock escrow balance');
-          }
-          
-          console.log('[place-order] Escrow balance locked:', required_amount.toString());
-        } else {
-          console.log('[place-order] Insufficient escrow balance, checking on-chain...');
-        }
+    // SIMPLIFIED: Lock balance using wallet_balances only
+    const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
+      'lock_balance_for_order',
+      {
+        p_user_id: user.id,
+        p_asset_symbol: required_asset,
+        p_amount: required_amount.toFixed(8),
       }
+    );
+
+    if (lockError) {
+      console.error('[place-order] Lock balance error:', lockError);
+      throw new Error(`Failed to lock balance: ${lockError.message}`);
     }
-    
-    // If not using escrow, fall back to on-chain validation
-    if (!useEscrowModel) {
-      // ON-CHAIN MODE: Verify on-chain balance via BSC RPC
-      console.log('[place-order] On-chain mode: Verifying on-chain balance');
-      
-      // 1. Get user's BSC wallet address
-      const { data: profile, error: profileError } = await supabaseClient
-        .from('profiles')
-        .select('bsc_wallet_address')
+
+    if (!lockSuccess) {
+      // Get current balance for error message
+      const { data: balance } = await supabaseClient
+        .from('wallet_balances')
+        .select('available, asset:assets(symbol)')
         .eq('user_id', user.id)
+        .eq('assets.symbol', required_asset)
         .single();
       
-      if (profileError || !profile?.bsc_wallet_address) {
-        console.error('[place-order] No wallet address:', profileError);
-        throw new Error('No wallet connected. Please connect your wallet first.');
-      }
-      
-      const walletAddress = profile.bsc_wallet_address;
-      console.log('[place-order] User wallet:', walletAddress);
-      
-      // 2. Get asset details (contract address for ERC20 tokens)
-      const { data: assetData, error: assetError } = await supabaseClient
-        .from('assets')
-        .select('id, contract_address, decimals, symbol')
-        .eq('symbol', required_asset)
-        .single();
-      
-      if (assetError || !assetData) {
-        console.error('[place-order] Asset not found:', assetError);
-        throw new Error(`Asset ${required_asset} not found`);
-      }
-      
-      // 3. Fetch on-chain balance via BSC RPC
-      let onchainBalance = new BigNumber(0);
-      const RPC_URL = 'https://bsc-dataseed.binance.org';
-      const decimals = assetData.decimals || 18;
-      
-      try {
-        if (required_asset === 'BNB') {
-          // Native BNB balance
-          const response = await fetch(RPC_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              method: 'eth_getBalance',
-              params: [walletAddress, 'latest'],
-              id: 1
-            })
-          });
-          const result = await response.json();
-          if (result.result) {
-            onchainBalance = new BigNumber(result.result).dividedBy(new BigNumber(10).pow(18));
-          }
-        } else if (assetData.contract_address) {
-          // ERC20 token balance
-          const balanceOfSelector = '0x70a08231';
-          const paddedAddress = walletAddress.slice(2).toLowerCase().padStart(64, '0');
-          const data = balanceOfSelector + paddedAddress;
-          
-          const response = await fetch(RPC_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              method: 'eth_call',
-              params: [{ to: assetData.contract_address, data }, 'latest'],
-              id: 1
-            })
-          });
-          const result = await response.json();
-          if (result.result && result.result !== '0x') {
-            onchainBalance = new BigNumber(result.result).dividedBy(new BigNumber(10).pow(decimals));
-          }
-        } else {
-          console.warn('[place-order] No contract address for asset:', required_asset);
-          throw new Error(`Cannot verify on-chain balance for ${required_asset}`);
-        }
-      } catch (rpcError) {
-        console.error('[place-order] RPC error:', rpcError);
-        throw new Error('Failed to verify on-chain balance. Please try again.');
-      }
-      
-      console.log('[place-order] On-chain balance:', { asset: required_asset, balance: onchainBalance.toString(), required: required_amount.toString() });
-      
-      // 4. Check for pending orders that would reduce available balance
-      const { data: pendingOrders } = await supabaseClient
-        .from('orders')
-        .select('amount, price, side, symbol, status')
-        .eq('user_id', user.id)
-        .in('status', ['pending', 'partially_filled']);
-      
-      let totalPendingLocked = new BigNumber(0);
-      if (pendingOrders && pendingOrders.length > 0) {
-        for (const order of pendingOrders) {
-          const [orderBase, orderQuote] = order.symbol.split('/');
-          const orderAsset = order.side === 'buy' ? orderQuote : orderBase;
-          if (orderAsset === required_asset) {
-            const orderAmount = order.side === 'buy' 
-              ? new BigNumber(String(order.amount)).times(new BigNumber(String(order.price || estimated_market_price)))
-              : new BigNumber(String(order.amount));
-            totalPendingLocked = totalPendingLocked.plus(orderAmount);
-          }
-        }
-      }
-      
-      console.log('[place-order] Pending locked:', { totalPendingLocked: totalPendingLocked.toString(), availableAfterPending: onchainBalance.minus(totalPendingLocked).toString() });
-      
-      // 5. Validate sufficient balance
-      const availableBalance = onchainBalance.minus(totalPendingLocked);
-      if (availableBalance.isLessThan(required_amount)) {
-        const shortfall = required_amount.minus(availableBalance);
-        throw new Error(
-          `Insufficient ${required_asset} balance. ` +
-          `Available: ${availableBalance.toFixed(6)} ${required_asset}, ` +
-          `Required: ${required_amount.toFixed(6)} ${required_asset}. ` +
-          `Short by: ${shortfall.toFixed(6)} ${required_asset}`
-        );
-      }
-      
-      console.log('[place-order] On-chain balance verified successfully');
-    }
-    
-    // Also lock balance in wallet_balances for order tracking
-    // This ensures the locked amount is reflected in the UI
-    const required_amount_q = required_amount.decimalPlaces(8, BigNumber.ROUND_DOWN);
-    
-    try {
-      const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
-        'lock_balance_for_order',
-        {
-          p_user_id: user.id,
-          p_asset_symbol: required_asset,
-          p_amount: required_amount_q.toFixed(8),
-        }
+      const available = balance?.available || 0;
+      throw new Error(
+        `Insufficient ${required_asset} balance. ` +
+        `Available: ${available} ${required_asset}, ` +
+        `Required: ${required_amount.toFixed(8)} ${required_asset}`
       );
-
-      if (lockError) {
-        console.warn('[place-order] Lock balance warning (non-fatal for on-chain mode):', lockError);
-        // Don't fail - on-chain verification already passed
-      } else {
-        console.log('[place-order] Balance locked in wallet_balances:', required_amount_q.toFixed(8));
-      }
-    } catch (lockErr) {
-      console.warn('[place-order] Lock balance failed (non-fatal):', lockErr);
     }
 
-    // Insert order (use 'amount' column, not 'quantity')
-    // Note: remaining_amount is a generated column, filled_amount has default 0
+    console.log('[place-order] Balance locked:', required_amount.toFixed(8), required_asset);
+
+    // Insert order
     const { data: order, error: insertError } = await supabaseClient
       .from('orders')
       .insert({
@@ -343,8 +165,8 @@ serve(async (req) => {
         symbol,
         side,
         order_type: type,
-        amount: quantityBN.toNumber(), // DB expects numeric
-        price: price ? new BigNumber(String(price)).toNumber() : null,
+        amount: quantityBN.toNumber(),
+        price: order_price ? priceBN.toNumber() : null,
         status: 'pending',
         trading_type: trading_type || 'spot',
       })
@@ -354,22 +176,19 @@ serve(async (req) => {
     if (insertError) {
       console.error('[place-order] Insert failed:', insertError);
       
-      // Rollback: unlock balance if order insert failed (only for internal mode)
-      if (!isOnchainMode) {
-        const required_amount_q = required_amount.decimalPlaces(8, BigNumber.ROUND_DOWN);
-        await supabaseClient.rpc('unlock_balance_for_order', {
-          p_user_id: user.id,
-          p_asset_symbol: required_asset,
-          p_amount: required_amount_q.toFixed(8),
-        });
-      }
+      // Rollback: unlock balance
+      await supabaseClient.rpc('unlock_balance_for_order', {
+        p_user_id: user.id,
+        p_asset_symbol: required_asset,
+        p_amount: required_amount.toFixed(8),
+      });
       
       throw new Error('Failed to create order');
     }
 
     console.log('[place-order] Order created:', order.id);
 
-    // Trigger matching engine after order creation
+    // Trigger matching engine
     const matchingAdminClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -377,7 +196,6 @@ serve(async (req) => {
     );
 
     try {
-      // Check if auto-matching is enabled
       const { data: settings } = await matchingAdminClient
         .from('trading_engine_settings')
         .select('auto_matching_enabled, circuit_breaker_active')
@@ -386,7 +204,6 @@ serve(async (req) => {
       if (settings?.auto_matching_enabled && !settings?.circuit_breaker_active) {
         console.log('[place-order] Triggering matching engine...');
         
-        // Call match-orders function internally using service role
         const matchResponse = await fetch(
           `${Deno.env.get('SUPABASE_URL')}/functions/v1/match-orders`,
           {
@@ -402,13 +219,10 @@ serve(async (req) => {
         if (matchResponse.ok) {
           const matchResult = await matchResponse.json();
           console.log('[place-order] Matching result:', matchResult);
-        } else {
-          console.warn('[place-order] Matching engine returned error');
         }
       }
     } catch (matchErr) {
       console.warn('[place-order] Matching engine call failed:', matchErr);
-      // Don't fail the order - matching can happen asynchronously
     }
 
     const responseData = {
@@ -425,7 +239,7 @@ serve(async (req) => {
       },
     };
 
-    // PHASE 2.3: Store idempotency key after successful operation
+    // Store idempotency key
     if (idempotencyKey) {
       await supabaseClient.from('idempotency_keys').insert({
         key: idempotencyKey,
@@ -434,7 +248,6 @@ serve(async (req) => {
         resource_id: order.id,
         response_data: responseData,
       }).catch(err => {
-        // Non-fatal: log but don't fail the request
         console.warn('[place-order] Failed to store idempotency key:', err);
       });
     }
