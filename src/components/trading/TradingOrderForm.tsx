@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import AmountSlider from './AmountSlider';
-import { Zap, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import TradingHaltedBanner from './TradingHaltedBanner';
+import { useTradingEngineStatus } from '@/hooks/useTradingEngineStatus';
+import { Zap, DollarSign, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 
 interface TradingOrderFormProps {
   selectedPair: string;
@@ -41,6 +43,9 @@ const TradingOrderForm: React.FC<TradingOrderFormProps> = ({
   const [price, setPrice] = useState('');
   const [selectedPercentage, setSelectedPercentage] = useState(0);
   const [customAmount, setCustomAmount] = useState('');
+  
+  const { data: engineStatus } = useTradingEngineStatus();
+  const isHalted = engineStatus?.isHalted ?? false;
 
   const [baseAsset, quoteAsset] = selectedPair.split('/');
   const currentBalance = orderSide === 'buy' ? availableBalance.buy : availableBalance.sell;
@@ -81,12 +86,25 @@ const TradingOrderForm: React.FC<TradingOrderFormProps> = ({
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center justify-between">
           Place Order
-          <Badge variant="outline" className="text-xs">
-            {selectedPair}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {isHalted && (
+              <Badge variant="destructive" className="text-xs animate-pulse">
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Halted
+              </Badge>
+            )}
+            <Badge variant="outline" className="text-xs">
+              {selectedPair}
+            </Badge>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Trading Halted Banner */}
+        <TradingHaltedBanner
+          circuitBreakerActive={engineStatus?.circuitBreakerActive ?? false}
+          autoMatchingEnabled={engineStatus?.autoMatchingEnabled ?? true}
+        />
         {/* Buy/Sell Toggle */}
         <div className="grid grid-cols-2 gap-2">
           <Button
@@ -217,14 +235,21 @@ const TradingOrderForm: React.FC<TradingOrderFormProps> = ({
         {/* Place Order Button */}
         <Button 
           className={`w-full h-12 font-semibold transition-all duration-200 ${
-            orderSide === 'buy' 
-              ? 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/25' 
-              : 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25'
-          } ${isValidOrder ? 'animate-pulse' : ''}`}
-          disabled={!isValidOrder || isLoading}
+            isHalted 
+              ? 'bg-muted text-muted-foreground cursor-not-allowed'
+              : orderSide === 'buy' 
+                ? 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/25' 
+                : 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/25'
+          } ${isValidOrder && !isHalted ? 'animate-pulse' : ''}`}
+          disabled={!isValidOrder || isLoading || isHalted}
           onClick={handlePlaceOrder}
         >
-          {isLoading ? (
+          {isHalted ? (
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Trading Halted
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Placing Order...

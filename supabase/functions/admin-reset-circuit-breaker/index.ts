@@ -21,19 +21,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Parse request body for force reset option
-    let forceReset = false;
-    try {
-      const body = await req.json();
-      forceReset = body?.force === true;
-    } catch {
-      // No body or invalid JSON, continue normally
-    }
-
-    // Allow force reset from service role (for testing/deployment)
-    if (forceReset) {
-      console.log('[Circuit Breaker] Force reset requested');
-    } else {
+    // SECURITY FIX: Force reset is no longer allowed via request body
+    // All resets must be authenticated as admin
+    {
       // Get the authorization header to verify admin
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
@@ -69,7 +59,7 @@ Deno.serve(async (req) => {
       }
 
       console.log('[Circuit Breaker] Admin', user.id, 'resetting circuit breaker');
-    }
+    } // End of auth block
 
     // Reset the circuit breaker
     const { error: updateError } = await supabase
@@ -85,7 +75,7 @@ Deno.serve(async (req) => {
       throw updateError;
     }
 
-    console.log('[Circuit Breaker] Successfully reset', forceReset ? '(force)' : `by admin`);
+    console.log('[Circuit Breaker] Successfully reset by admin');
 
     return new Response(
       JSON.stringify({ 
