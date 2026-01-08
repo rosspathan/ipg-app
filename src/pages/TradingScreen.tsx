@@ -12,6 +12,7 @@ import { useMarketStore, useMarketTicker, useMarketOrderBook, useMarketTrades, u
 import { useBep20Balances } from "@/hooks/useBep20Balances";
 import { useUserOrders } from "@/hooks/useUserOrders";
 import { useInternalMarketPrice, isInternalPair } from "@/hooks/useInternalMarketPrice";
+import { useAutoSyncDeposits } from "@/hooks/useAutoSyncDeposits";
 
 // Enhanced trading components
 import { ChartPanel } from "@/components/trading/ChartPanel";
@@ -26,6 +27,9 @@ const TradingScreen = () => {
   const navigate = useNavigate();
   const { pair } = useParams<{ pair: string }>();
   const { toast } = useToast();
+  
+  // Auto-sync deposits on page load (background, silent)
+  useAutoSyncDeposits();
   
   // State management
   const [selectedPair, setSelectedPair] = useState(pair?.replace('-', '/') || 'BTC/USDT');

@@ -9,6 +9,7 @@ import { useTradingPairs } from '@/hooks/useTradingPairs';
 import { useUserBalance } from '@/hooks/useUserBalance';
 import { useUserOrders } from '@/hooks/useUserOrders';
 import { useMarketStore, useMarketOrderBook, useMarketTicker } from '@/hooks/useMarketStore';
+import { useAutoSyncDeposits } from '@/hooks/useAutoSyncDeposits';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -23,6 +24,9 @@ const TradingPro: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Spot');
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
+  
+  // Auto-sync deposits on page load
+  useAutoSyncDeposits();
   
   const { data: tradingPairs, isLoading: pairsLoading } = useTradingPairs();
   const { data: balances } = useUserBalance(undefined, true);
