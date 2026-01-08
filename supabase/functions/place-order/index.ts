@@ -188,7 +188,7 @@ serve(async (req) => {
 
     console.log('[place-order] Order created:', order.id);
 
-    // Trigger matching engine
+    // Trigger matching engine using admin client with functions.invoke
     const matchingAdminClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -201,28 +201,25 @@ serve(async (req) => {
         .select('auto_matching_enabled, circuit_breaker_active')
         .single();
       
+      console.log('[place-order] Engine settings:', settings);
+      
       if (settings?.auto_matching_enabled && !settings?.circuit_breaker_active) {
-        console.log('[place-order] Triggering matching engine...');
+        console.log('[place-order] Triggering matching engine via functions.invoke...');
         
-        const matchResponse = await fetch(
-          `${Deno.env.get('SUPABASE_URL')}/functions/v1/match-orders`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-            },
-            body: JSON.stringify({})
-          }
-        );
+        const { data: matchResult, error: matchError } = await matchingAdminClient.functions.invoke('match-orders', {
+          body: {}
+        });
         
-        if (matchResponse.ok) {
-          const matchResult = await matchResponse.json();
+        if (matchError) {
+          console.error('[place-order] Matching engine invoke error:', matchError);
+        } else {
           console.log('[place-order] Matching result:', matchResult);
         }
+      } else {
+        console.log('[place-order] Matching skipped - auto_matching:', settings?.auto_matching_enabled, 'circuit_breaker:', settings?.circuit_breaker_active);
       }
     } catch (matchErr) {
-      console.warn('[place-order] Matching engine call failed:', matchErr);
+      console.error('[place-order] Matching engine call failed:', matchErr);
     }
 
     const responseData = {
