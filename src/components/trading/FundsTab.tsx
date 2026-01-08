@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw, ArrowRight, Loader2 } from 'lucide-react';
+import { Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw, ArrowRight, Loader2, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -236,6 +236,19 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
         >
           <ArrowDownLeft className="h-4 w-4 mr-1" />
           Deposit
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex-1"
+          onClick={() => {
+            // Pre-select first asset with balance for transfer
+            const firstAsset = assetsWithBalance[0]?.symbol;
+            navigate(firstAsset ? `/app/wallet/transfer?asset=${firstAsset}` : '/app/wallet/transfer');
+          }}
+        >
+          <ArrowLeftRight className="h-4 w-4 mr-1" />
+          Transfer
         </Button>
         <Button 
           variant="outline" 
