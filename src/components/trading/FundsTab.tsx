@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw, Loader2, ArrowLeftRight } from 'lucide-react';
+import { Wallet, RefreshCw, Loader2, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -247,38 +247,19 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
         })}
       </div>
 
-      {/* Quick Actions */}
-      <div className="flex gap-2 pt-2">
+      {/* Quick Actions - Transfer Only */}
+      <div className="pt-2">
         <Button 
           variant="outline" 
           size="sm" 
-          className="flex-1"
-          onClick={() => navigate('/app/wallet/deposit')}
-        >
-          <ArrowDownLeft className="h-4 w-4 mr-1" />
-          Deposit
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex-1"
+          className="w-full"
           onClick={() => {
-            // Pre-select first asset with balance for transfer
             const firstAsset = assetsWithBalance[0]?.symbol;
             navigate(firstAsset ? `/app/wallet/transfer?asset=${firstAsset}` : '/app/wallet/transfer');
           }}
         >
           <ArrowLeftRight className="h-4 w-4 mr-1" />
           Transfer
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex-1"
-          onClick={() => navigate('/app/wallet/withdraw')}
-        >
-          <ArrowUpRight className="h-4 w-4 mr-1" />
-          Withdraw
         </Button>
       </div>
     </div>
