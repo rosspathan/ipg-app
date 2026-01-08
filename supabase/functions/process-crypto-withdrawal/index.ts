@@ -1,16 +1,22 @@
 /**
- * Process Crypto Withdrawal Edge Function
- * HYBRID MODEL: Handles user-initiated withdrawals from internal ledger to on-chain
+ * Process Crypto Withdrawal Edge Function - IMPROVED
  * 
  * Flow:
- * 1. Validate user has sufficient internal balance
- * 2. Deduct from wallet_balances (available)
- * 3. Sign and broadcast on-chain transfer from user's Web3 wallet
- * 4. Record the withdrawal request
+ * 1. Validate user has sufficient balance
+ * 2. Lock the amount (move to locked)
+ * 3. Execute on-chain transfer
+ * 4. On success: deduct locked
+ * 5. On failure: return to available
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
 import { ethers } from 'https://esm.sh/ethers@6.15.0';
+import BigNumber from 'https://esm.sh/bignumber.js@9.1.2';
+
+BigNumber.config({
+  DECIMAL_PLACES: 8,
+  ROUNDING_MODE: BigNumber.ROUND_DOWN,
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,7 +25,6 @@ const corsHeaders = {
 
 const BSC_RPC = 'https://bsc-dataseed.binance.org';
 
-// ERC20 Transfer ABI
 const ERC20_ABI = [
   'function transfer(address to, uint256 amount) returns (bool)',
   'function decimals() view returns (uint8)',
@@ -38,12 +43,19 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
 
+  let withdrawalId: string | null = null;
+  let lockedAmount: BigNumber | null = null;
+  let userId: string | null = null;
+  let assetId: string | null = null;
+  let originalAvailable: number = 0;
+  let originalLocked: number = 0;
+
+  try {
     // Get user from auth header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -63,6 +75,8 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    userId = user.id;
 
     const body: WithdrawalRequest = await req.json();
     const { asset_symbol, amount, destination_address, network = 'BEP20' } = body;
@@ -91,6 +105,8 @@ Deno.serve(async (req) => {
       );
     }
 
+    assetId = asset.id;
+
     if (!asset.withdraw_enabled) {
       return new Response(
         JSON.stringify({ success: false, error: `Withdrawals disabled for ${asset_symbol}` }),
@@ -101,16 +117,18 @@ Deno.serve(async (req) => {
     // Validate amount
     const minWithdraw = asset.min_withdraw_amount || 0;
     const maxWithdraw = asset.max_withdraw_amount || Infinity;
-    const withdrawFee = asset.withdraw_fee || 0;
+    const withdrawFee = new BigNumber(String(asset.withdraw_fee || 0));
+    const amountBN = new BigNumber(String(amount));
+    const totalRequired = amountBN.plus(withdrawFee);
 
-    if (amount < minWithdraw) {
+    if (amountBN.isLessThan(minWithdraw)) {
       return new Response(
         JSON.stringify({ success: false, error: `Minimum withdrawal is ${minWithdraw} ${asset_symbol}` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (amount > maxWithdraw) {
+    if (amountBN.isGreaterThan(maxWithdraw)) {
       return new Response(
         JSON.stringify({ success: false, error: `Maximum withdrawal is ${maxWithdraw} ${asset_symbol}` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -132,18 +150,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    const totalRequired = amount + withdrawFee;
-    if (balance.available < totalRequired) {
+    originalAvailable = balance.available;
+    originalLocked = balance.locked || 0;
+
+    const availableBN = new BigNumber(String(balance.available));
+
+    if (availableBN.isLessThan(totalRequired)) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Insufficient balance. Available: ${balance.available}, Required: ${totalRequired} (${amount} + ${withdrawFee} fee)` 
+          error: `Insufficient balance. Available: ${balance.available}, Required: ${totalRequired.toFixed(8)} (${amount} + ${withdrawFee.toFixed(8)} fee)` 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get user's wallet private key from encrypted storage
+    // Get user's wallet private key
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('wallet_address, encrypted_private_key')
@@ -157,7 +179,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Decrypt private key (using env secret)
+    // Decrypt private key
     const encryptionKey = Deno.env.get('WALLET_ENCRYPTION_KEY');
     if (!encryptionKey) {
       console.error('[Withdrawal] WALLET_ENCRYPTION_KEY not configured');
@@ -169,7 +191,6 @@ Deno.serve(async (req) => {
 
     let privateKey: string;
     try {
-      // Simple XOR decryption (in production, use proper AES)
       const encrypted = Buffer.from(profile.encrypted_private_key, 'base64');
       const key = Buffer.from(encryptionKey, 'utf-8');
       const decrypted = Buffer.alloc(encrypted.length);
@@ -185,14 +206,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create withdrawal request record (status: pending)
+    // Step 1: Create pending withdrawal record
     const { data: withdrawal, error: withdrawalError } = await supabase
       .from('crypto_withdrawal_requests')
       .insert({
         user_id: user.id,
         asset_id: asset.id,
-        amount,
-        fee: withdrawFee,
+        amount: amountBN.toNumber(),
+        fee: withdrawFee.toNumber(),
         destination_address,
         network,
         status: 'pending',
@@ -209,34 +230,43 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Deduct from internal balance (move to locked during processing)
-    const { error: deductError } = await supabase
+    withdrawalId = withdrawal.id;
+    lockedAmount = totalRequired;
+
+    // Step 2: Lock the amount (move from available to locked)
+    const newAvailable = availableBN.minus(totalRequired);
+    const newLocked = new BigNumber(String(originalLocked)).plus(totalRequired);
+
+    const { error: lockError } = await supabase
       .from('wallet_balances')
       .update({
-        available: balance.available - totalRequired,
-        locked: (balance.locked || 0) + totalRequired
+        available: newAvailable.toFixed(8),
+        locked: newLocked.toFixed(8),
+        updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id)
       .eq('asset_id', asset.id);
 
-    if (deductError) {
-      // Rollback withdrawal request
+    if (lockError) {
+      // Cleanup withdrawal record
       await supabase.from('crypto_withdrawal_requests').delete().eq('id', withdrawal.id);
-      console.error('[Withdrawal] Failed to deduct balance:', deductError);
+      console.error('[Withdrawal] Failed to lock balance:', lockError);
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to process withdrawal' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Execute on-chain transfer
+    console.log(`[Withdrawal] Locked ${totalRequired.toFixed(8)} ${asset_symbol}`);
+
+    // Step 3: Execute on-chain transfer
     let txHash: string | null = null;
     try {
       const provider = new ethers.JsonRpcProvider(BSC_RPC);
       const wallet = new ethers.Wallet(privateKey, provider);
 
       const decimals = asset.decimals || 18;
-      const amountWei = ethers.parseUnits(amount.toString(), decimals);
+      const amountWei = ethers.parseUnits(amountBN.toFixed(decimals), decimals);
 
       if (asset.symbol === 'BNB' || !asset.contract_address) {
         // Native BNB transfer
@@ -256,7 +286,17 @@ Deno.serve(async (req) => {
 
       console.log(`[Withdrawal] ✓ On-chain transfer complete: ${txHash}`);
 
-      // Update withdrawal request to completed
+      // Step 4: Success - remove from locked balance (already transferred)
+      await supabase
+        .from('wallet_balances')
+        .update({
+          locked: Math.max(0, newLocked.minus(totalRequired).toNumber()),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('asset_id', asset.id);
+
+      // Update withdrawal to completed
       await supabase
         .from('crypto_withdrawal_requests')
         .update({
@@ -266,22 +306,13 @@ Deno.serve(async (req) => {
         })
         .eq('id', withdrawal.id);
 
-      // Remove from locked balance (already transferred)
-      await supabase
-        .from('wallet_balances')
-        .update({
-          locked: Math.max(0, (balance.locked || 0) + totalRequired - totalRequired)
-        })
-        .eq('user_id', user.id)
-        .eq('asset_id', asset.id);
-
       return new Response(
         JSON.stringify({
           success: true,
           withdrawal_id: withdrawal.id,
           tx_hash: txHash,
-          amount,
-          fee: withdrawFee,
+          amount: amountBN.toNumber(),
+          fee: withdrawFee.toNumber(),
           destination: destination_address
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -290,7 +321,17 @@ Deno.serve(async (req) => {
     } catch (txError) {
       console.error('[Withdrawal] On-chain transfer failed:', txError);
 
-      // Mark withdrawal as failed and unlock balance
+      // Step 5: Failure - return funds to available
+      await supabase
+        .from('wallet_balances')
+        .update({
+          available: originalAvailable,
+          locked: originalLocked
+        })
+        .eq('user_id', user.id)
+        .eq('asset_id', asset.id);
+
+      // Mark withdrawal as failed
       await supabase
         .from('crypto_withdrawal_requests')
         .update({
@@ -298,16 +339,6 @@ Deno.serve(async (req) => {
           error_message: txError instanceof Error ? txError.message : 'Transfer failed'
         })
         .eq('id', withdrawal.id);
-
-      // Return funds to available
-      await supabase
-        .from('wallet_balances')
-        .update({
-          available: balance.available,
-          locked: balance.locked || 0
-        })
-        .eq('user_id', user.id)
-        .eq('asset_id', asset.id);
 
       return new Response(
         JSON.stringify({ 
@@ -321,6 +352,34 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('[Withdrawal] Fatal error:', error);
+
+    // Attempt to rollback if we have context
+    if (userId && assetId && lockedAmount) {
+      try {
+        await supabase
+          .from('wallet_balances')
+          .update({
+            available: originalAvailable,
+            locked: originalLocked
+          })
+          .eq('user_id', userId)
+          .eq('asset_id', assetId);
+        console.log('[Withdrawal] Rolled back balance after error');
+      } catch (rollbackError) {
+        console.error('[Withdrawal] Rollback failed:', rollbackError);
+      }
+    }
+
+    if (withdrawalId) {
+      await supabase
+        .from('crypto_withdrawal_requests')
+        .update({
+          status: 'failed',
+          error_message: error instanceof Error ? error.message : 'Unknown error'
+        })
+        .eq('id', withdrawalId);
+    }
+
     return new Response(
       JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
