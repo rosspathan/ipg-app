@@ -13,6 +13,7 @@ import AssetLogo from "@/components/AssetLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useRealtimeTradingBalances } from "@/hooks/useRealtimeTradingBalances";
 
 type TransferDirection = "to_trading" | "to_wallet";
 
@@ -69,6 +70,9 @@ const TransferScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Subscribe to real-time balance updates
+  useRealtimeTradingBalances();
   
   const [selectedAsset, setSelectedAsset] = useState("");
   const [direction, setDirection] = useState<TransferDirection>("to_trading");
@@ -154,7 +158,7 @@ const TransferScreen = () => {
       return results;
     },
     enabled: !!userWallet,
-    refetchInterval: 30000
+    refetchInterval: 10000
   });
 
   // Set default asset
