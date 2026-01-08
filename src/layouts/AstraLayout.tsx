@@ -7,10 +7,13 @@ import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
 import { ReferralCodeClaimBanner } from "@/components/referrals/ReferralCodeClaimBanner"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useSafeAreaPolyfill } from "@/hooks/useSafeAreaPolyfill"
+import { useRealtimeTradingBalances } from "@/hooks/useRealtimeTradingBalances"
 import { Button } from "@/components/ui/button"
 import { X, AlertCircle } from "lucide-react"
 
 export function AstraLayout() {
+  // Global real-time balance subscription - updates all wallet screens instantly
+  useRealtimeTradingBalances();
   useSafeAreaPolyfill()
   const { user, signOut } = useAuthUser()
   const navigate = useNavigate()
