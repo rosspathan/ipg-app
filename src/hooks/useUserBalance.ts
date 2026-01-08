@@ -44,6 +44,8 @@ const fetchCryptoPrices = async (): Promise<Record<string, number>> => {
 export const useUserBalance = (assetSymbol?: string, showAllAssets = false) => {
   return useQuery({
     queryKey: ['user-balance', assetSymbol, showAllAssets],
+    refetchOnWindowFocus: true,
+    staleTime: 5000, // Consider data stale after 5 seconds
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       

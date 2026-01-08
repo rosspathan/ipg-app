@@ -13,7 +13,7 @@ import AssetLogo from "@/components/AssetLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useRealtimeTradingBalances } from "@/hooks/useRealtimeTradingBalances";
+import { formatUnits } from "ethers";
 
 type TransferDirection = "to_trading" | "to_wallet";
 
@@ -30,49 +30,56 @@ interface AssetBalance {
   decimals: number;
 }
 
-// Fetch on-chain balance
+// Fetch on-chain balance with BigInt-safe precision
 async function getOnchainBalance(contractAddress: string | null, walletAddress: string, decimals: number, symbol: string): Promise<number> {
-  if (symbol === 'BNB' || !contractAddress) {
-    // Native BNB balance
+  try {
+    if (symbol === 'BNB' || !contractAddress) {
+      // Native BNB balance
+      const response = await fetch('https://bsc-dataseed.binance.org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_getBalance',
+          params: [walletAddress, 'latest'],
+          id: 1
+        })
+      });
+      const result = await response.json();
+      if (!result.result || result.result === '0x') return 0;
+      // Use BigInt for precision
+      const balanceBigInt = BigInt(result.result);
+      return parseFloat(formatUnits(balanceBigInt, 18));
+    }
+
+    // ERC20 balance
+    const data = `0x70a08231000000000000000000000000${walletAddress.replace('0x', '')}`;
     const response = await fetch('https://bsc-dataseed.binance.org', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         jsonrpc: '2.0',
-        method: 'eth_getBalance',
-        params: [walletAddress, 'latest'],
+        method: 'eth_call',
+        params: [{ data, to: contractAddress }, 'latest'],
         id: 1
       })
     });
     const result = await response.json();
-    if (!result.result) return 0;
-    return parseInt(result.result, 16) / 1e18;
+    if (!result.result || result.result === '0x') return 0;
+    // Use BigInt for precision - handles large token balances correctly
+    const balanceBigInt = BigInt(result.result);
+    return parseFloat(formatUnits(balanceBigInt, decimals));
+  } catch (error) {
+    console.error(`Failed to fetch on-chain balance for ${symbol}:`, error);
+    return 0;
   }
-
-  // ERC20 balance
-  const data = `0x70a08231000000000000000000000000${walletAddress.replace('0x', '')}`;
-  const response = await fetch('https://bsc-dataseed.binance.org', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'eth_call',
-      params: [{ data, to: contractAddress }, 'latest'],
-      id: 1
-    })
-  });
-  const result = await response.json();
-  if (!result.result || result.result === '0x') return 0;
-  return parseInt(result.result, 16) / Math.pow(10, decimals);
 }
 
 const TransferScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // Subscribe to real-time balance updates
-  useRealtimeTradingBalances();
+  // Real-time subscription is handled globally in AstraLayout
   
   const [selectedAsset, setSelectedAsset] = useState("");
   const [direction, setDirection] = useState<TransferDirection>("to_trading");
