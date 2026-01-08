@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Shield, ScanLine, Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import INRWithdrawScreen from "./INRWithdrawScreen";
 import { QRScanner } from "@/components/scanner/QRScanner";
@@ -19,6 +20,8 @@ import { useOpenOrdersCheck } from "@/hooks/useOpenOrdersCheck";
 const WithdrawScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const cleanupRanRef = useRef(false);
   
   // Check for pre-selected asset from URL params
   const searchParams = new URLSearchParams(window.location.search)
@@ -45,6 +48,40 @@ const WithdrawScreen = () => {
   // Check for open orders that might lock funds
   const { data: openOrdersData } = useOpenOrdersCheck(selectedAsset);
 
+  // Auto-cleanup duplicated test balances (appears as the same number across many assets)
+  useEffect(() => {
+    if (cleanupRanRef.current) return;
+    if (isLoading || error || !balances?.length) return;
+
+    const suspiciousValue = 0.02886256;
+    const suspiciousCount = balances.filter((b) => Math.abs((b.available ?? 0) - suspiciousValue) < 1e-12).length;
+
+    // Only trigger when it's clearly the "fake balances" pattern
+    if (suspiciousCount < 5) return;
+
+    cleanupRanRef.current = true;
+
+    (async () => {
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke('cleanup-fake-balances', {
+          body: { value: suspiciousValue },
+        });
+
+        if (fnError) throw fnError;
+
+        const deletedCount = (data as any)?.deleted_count ?? 0;
+        if (deletedCount > 0) {
+          toast({
+            title: 'Removed test balances',
+            description: `Cleaned ${deletedCount} fake balance entries.`,
+          });
+          queryClient.invalidateQueries({ queryKey: ['user-balance'] });
+        }
+      } catch (e: any) {
+        console.error('[WithdrawScreen] cleanup-fake-balances failed', e);
+      }
+    })();
+  }, [balances, isLoading, error, toast, queryClient]);
   // Filter assets - hide dust/test balances below threshold
   const MIN_WITHDRAWAL_BALANCE = 0.001;
   
