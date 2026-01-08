@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw, ArrowRight, Loader2, ArrowLeftRight } from 'lucide-react';
+import { Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw, Loader2, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { SyncStatusBadge, BalanceExplainer } from '@/components/wallet/SyncStatusBadge';
 
 interface AssetBalance {
   symbol: string;
@@ -113,12 +114,12 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
     <div className="space-y-3">
       {/* Sync Banner - Show when on-chain > trading */}
       {hasUnsyncedBalance && (
-        <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ArrowRight className="h-4 w-4 text-primary" />
-              <span className="text-xs font-medium text-foreground">
-                Move on-chain funds to trading
+              <SyncStatusBadge status="needs_sync" showTooltip={false} />
+              <span className="text-xs text-muted-foreground">
+                New deposits detected
               </span>
             </div>
             <Button
@@ -146,9 +147,15 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
 
       {/* Total Portfolio Value */}
       <div className="bg-muted/30 rounded-lg p-3">
-        <div className="text-xs text-muted-foreground mb-1">Trading Balance</div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+          <span>Your Balance</span>
+          <BalanceExplainer />
+        </div>
         <div className="text-xl font-semibold text-foreground">
           ${totalUsdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          Verified on-chain
         </div>
       </div>
 
@@ -158,14 +165,15 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
           const tradingAvailable = asset.appAvailable ?? asset.available ?? 0;
           const tradingLocked = asset.appLocked ?? asset.locked ?? 0;
           const onchain = asset.onchainBalance ?? 0;
-          const needsSync = onchain > 0 && tradingAvailable < onchain;
+          const needsSync = onchain > 0 && tradingAvailable < onchain - 0.000001;
+          const isSynced = !needsSync && tradingAvailable > 0;
 
           return (
             <div 
               key={asset.symbol}
               className={cn(
                 "bg-card border rounded-lg p-3",
-                needsSync ? "border-primary/30" : "border-border"
+                needsSync ? "border-amber-500/30" : "border-border"
               )}
             >
               <div className="flex items-center justify-between">
@@ -190,35 +198,48 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
                 </div>
                 
                 <div className="text-right">
-                  {/* Trading balance (what's available for orders) */}
+                  {/* Primary balance (source of truth) */}
                   <div className="font-mono text-sm text-foreground">
-                    {tradingAvailable.toFixed(tradingAvailable < 1 ? 6 : 4)}
-                    <span className="text-muted-foreground text-xs ml-1">tradable</span>
+                    {Math.max(onchain, tradingAvailable + tradingLocked).toFixed(
+                      Math.max(onchain, tradingAvailable + tradingLocked) < 1 ? 6 : 4
+                    )}
                   </div>
                   
-                  {/* Show locked in orders */}
-                  {tradingLocked > 0 && (
-                    <div className="text-xs text-amber-400 font-mono">
-                      {tradingLocked.toFixed(4)} in orders
-                    </div>
-                  )}
-                  
-                  {/* USD value */}
-                  {asset.usd_value !== undefined && asset.usd_value > 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      ≈ ${asset.usd_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  )}
+                  {/* Sync status */}
+                  <div className="mt-0.5">
+                    {needsSync ? (
+                      <SyncStatusBadge status="needs_sync" />
+                    ) : isSynced ? (
+                      <SyncStatusBadge status="synced" />
+                    ) : null}
+                  </div>
                 </div>
               </div>
               
-              {/* Show on-chain balance if different from trading */}
-              {onchain > 0 && Math.abs(onchain - tradingAvailable) > 0.000001 && (
-                <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">On-chain wallet</span>
-                  <span className="text-xs font-mono text-muted-foreground">
-                    {onchain.toFixed(onchain < 1 ? 6 : 4)}
-                  </span>
+              {/* Trading breakdown */}
+              {(tradingAvailable > 0 || tradingLocked > 0) && (
+                <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Available for trading</span>
+                    <span className="font-mono text-foreground">
+                      {tradingAvailable.toFixed(tradingAvailable < 1 ? 6 : 4)}
+                    </span>
+                  </div>
+                  {tradingLocked > 0 && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Locked in orders</span>
+                      <span className="font-mono text-amber-400">
+                        {tradingLocked.toFixed(4)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* USD value */}
+              {asset.usd_value !== undefined && asset.usd_value > 0 && (
+                <div className="mt-1 text-xs text-muted-foreground text-right">
+                  ≈ ${asset.usd_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               )}
             </div>

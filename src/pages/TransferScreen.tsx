@@ -380,8 +380,8 @@ const TransferScreen = () => {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            Transfer between your on-chain BSC wallet and trading balance. 
-            "To Trading" syncs deposits, "To Wallet" initiates withdrawals.
+            Your crypto is stored on-chain. Use "To Trading" to make new deposits available for orders, 
+            or "To Wallet" to withdraw. These are the same funds, not separate balances.
           </AlertDescription>
         </Alert>
 
@@ -464,28 +464,50 @@ const TransferScreen = () => {
                 </CardContent>
               </Card>
 
-              {/* Balance Display */}
+              {/* Unified Balance Display */}
               {currentAsset && (
                 <Card className="bg-card shadow-lg border border-border">
                   <CardContent className="p-4 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">On-chain Wallet</span>
-                      <span className="font-mono text-sm font-medium">
-                        {currentAsset.onchainBalance.toFixed(6)} {selectedAsset}
-                      </span>
+                    {/* Primary balance - single source of truth */}
+                    <div className="text-center pb-2 border-b border-border/50">
+                      <div className="text-xs text-muted-foreground mb-1">Your Balance</div>
+                      <div className="text-2xl font-semibold font-mono">
+                        {Math.max(currentAsset.onchainBalance, currentAsset.tradingTotal).toFixed(6)}
+                        <span className="text-base text-muted-foreground ml-1">{selectedAsset}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Verified on-chain</div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Trading Available</span>
-                      <span className="font-mono text-sm font-medium text-primary">
-                        {currentAsset.tradingAvailable.toFixed(6)} {selectedAsset}
-                      </span>
-                    </div>
-                    {currentAsset.tradingLocked > 0 && (
+                    
+                    {/* Trading status breakdown */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Trading Status
+                      </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Trading Locked</span>
-                        <span className="font-mono text-sm font-medium text-warning">
-                          {currentAsset.tradingLocked.toFixed(6)} {selectedAsset}
+                        <span className="text-sm text-muted-foreground">Available</span>
+                        <span className="font-mono text-sm font-medium text-primary">
+                          {currentAsset.tradingAvailable.toFixed(6)}
                         </span>
+                      </div>
+                      {currentAsset.tradingLocked > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">In Orders</span>
+                          <span className="font-mono text-sm font-medium text-amber-400">
+                            {currentAsset.tradingLocked.toFixed(6)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Sync status indicator */}
+                    {currentAsset.onchainBalance > currentAsset.tradingTotal + 0.000001 && (
+                      <div className="pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-amber-500">Unsynced deposits detected</span>
+                          <span className="font-mono text-amber-500">
+                            +{(currentAsset.onchainBalance - currentAsset.tradingTotal).toFixed(6)}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </CardContent>
