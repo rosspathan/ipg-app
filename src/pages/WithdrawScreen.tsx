@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Shield, ScanLine, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, Shield, ScanLine, Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import INRWithdrawScreen from "./INRWithdrawScreen";
@@ -13,6 +14,7 @@ import { useUserBalance } from "@/hooks/useUserBalance";
 import { supabase } from "@/integrations/supabase/client";
 import { validateCryptoAddress } from "@/lib/validation/cryptoAddressValidator";
 import { useWithdrawalFees } from "@/hooks/useWithdrawalFees";
+import { useOpenOrdersCheck } from "@/hooks/useOpenOrdersCheck";
 
 const WithdrawScreen = () => {
   const navigate = useNavigate();
@@ -39,6 +41,9 @@ const WithdrawScreen = () => {
   
   // Get dynamic withdrawal fees
   const { fees: withdrawalFees, loading: feesLoading } = useWithdrawalFees(selectedAsset, selectedNetwork);
+
+  // Check for open orders that might lock funds
+  const { data: openOrdersData } = useOpenOrdersCheck(selectedAsset);
 
   // Filter assets and use actual network from database
   const assets = (balances || [])
@@ -320,6 +325,17 @@ const WithdrawScreen = () => {
             {/* Withdrawal Form - Only show if assets available */}
             {!isLoading && !error && assets.length > 0 && (
               <>
+                {/* Open Orders Warning */}
+                {openOrdersData?.hasOpenOrders && openOrdersData.totalLockedByAsset[selectedAsset] > 0 && (
+                  <Alert className="bg-warning/10 border-warning/30">
+                    <AlertTriangle className="h-4 w-4 text-warning" />
+                    <AlertDescription className="text-warning-foreground">
+                      <strong>Funds Locked in Orders:</strong> You have {openOrdersData.openOrdersCount} open order(s) 
+                      locking {openOrdersData.totalLockedByAsset[selectedAsset]?.toFixed(4)} {selectedAsset}. 
+                      Cancel orders to unlock funds for withdrawal.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
         {/* Asset Selection */}
         <Card className="bg-gradient-card shadow-card border-0">
