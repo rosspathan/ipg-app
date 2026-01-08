@@ -77,10 +77,32 @@ Deno.serve(async (req) => {
 
     console.log('[Circuit Breaker] Successfully reset by admin');
 
+    // Automatically trigger order matching to process any pending orders
+    // that accumulated while circuit breaker was active
+    console.log('[Circuit Breaker] Triggering match-orders to process pending orders...');
+    try {
+      const matchResponse = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/functions/v1/match-orders`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({})
+        }
+      );
+      const matchResult = await matchResponse.json();
+      console.log('[Circuit Breaker] Match-orders result:', matchResult);
+    } catch (matchError) {
+      console.error('[Circuit Breaker] Failed to trigger match-orders:', matchError);
+      // Don't fail the reset, just log the error
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Circuit breaker reset - trading is now enabled' 
+        message: 'Circuit breaker reset - trading is now enabled and pending orders are being matched' 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
