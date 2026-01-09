@@ -57,6 +57,8 @@ interface Web3ContextType {
   disconnectWallet: () => void;
   // Onboarding integration
   setWalletFromOnboarding: (walletInfo: WalletInfo) => void;
+  // Refresh wallet from storage (call after import)
+  refreshWallet: () => Promise<void>;
 }
 
 const Web3Context = createContext<Web3ContextType | undefined>(undefined);
@@ -548,6 +550,29 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     clearMetaMaskWallet(user?.id || null);
   };
 
+  /**
+   * Refresh wallet state from storage - call after import/restore
+   */
+  const refreshWallet = async () => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || null;
+      
+      setWalletStorageUserId(userId);
+      
+      const storedWalletData = getStoredWallet(userId);
+      if (storedWalletData) {
+        console.log('[Web3Context] refreshWallet: found stored wallet with privateKey:', !!storedWalletData.privateKey);
+        setWallet(storedWalletData);
+      } else {
+        console.warn('[Web3Context] refreshWallet: no stored wallet found for user', userId?.slice(0, 8));
+      }
+    } catch (e) {
+      console.error('[Web3Context] refreshWallet error:', e);
+    }
+  };
+
   const value = {
     wallet,
     isConnected: !!wallet,
@@ -560,6 +585,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     getBalance,
     disconnectWallet,
     setWalletFromOnboarding,
+    refreshWallet,
   };
 
   return (
