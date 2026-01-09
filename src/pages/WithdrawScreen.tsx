@@ -164,30 +164,26 @@ const WithdrawScreen = () => {
       let result;
       const netAmountValue = (parseFloat(amount) - (withdrawalFees?.totalFee || 0)).toString();
 
-      // Check if we have a private key (internal wallet) or need MetaMask
-      if (wallet?.privateKey) {
-        // Use internal wallet to sign transaction
-        if (selectedAsset === 'BNB') {
-          result = await transferBNB(wallet.privateKey, address, netAmountValue);
-        } else if (asset.contractAddress) {
-          result = await transferERC20(
-            wallet.privateKey,
-            asset.contractAddress,
-            address,
-            netAmountValue,
-            asset.decimals
-          );
-        } else {
-          throw new Error('Token contract address not found');
-        }
-      } else {
-        // Use MetaMask for signing
-        result = await transferViaMetaMask(
-          selectedAsset === 'BNB' ? null : asset.contractAddress || null,
+      // Must have internal wallet with privateKey for on-chain withdrawals
+      const hasInternalWallet = wallet?.privateKey && wallet.privateKey.length > 0;
+      
+      if (!hasInternalWallet) {
+        throw new Error('No wallet available. Please create or import a wallet first.');
+      }
+
+      // Use internal wallet to sign transaction directly (no MetaMask redirect)
+      if (selectedAsset === 'BNB') {
+        result = await transferBNB(wallet.privateKey, address, netAmountValue);
+      } else if (asset.contractAddress) {
+        result = await transferERC20(
+          wallet.privateKey,
+          asset.contractAddress,
           address,
           netAmountValue,
           asset.decimals
         );
+      } else {
+        throw new Error('Token contract address not found');
       }
 
       if (!result.success) {
