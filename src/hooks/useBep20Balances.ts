@@ -20,7 +20,9 @@ export interface Bep20Balance {
   symbol: string
   name: string
   logoUrl: string | null
+  // On-chain balance (in user's personal wallet - display only)
   onchainBalance: number
+  // Trading balance (funds deposited to hot wallet - used for trading)
   appBalance: number
   appAvailable: number
   appLocked: number
@@ -64,6 +66,13 @@ async function getBNBBalance(walletAddress: string): Promise<number> {
   return parseInt(result.result, 16) / 1e18
 }
 
+/**
+ * Hook to fetch BEP20 balances with clear separation:
+ * - onchainBalance: User's personal wallet (display only, NOT for trading)
+ * - appBalance/appAvailable/appLocked: Trading balance in hot wallet (used for orders)
+ * 
+ * IMPORTANT: Trading uses ONLY appAvailable. On-chain balance must be deposited first.
+ */
 export function useBep20Balances() {
   const { user } = useAuthUser()
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
@@ -104,7 +113,7 @@ export function useBep20Balances() {
     fetchAssets()
   }, [])
 
-  // Fetch trading balances from wallet_balances (only custodial deposits)
+  // Fetch TRADING balances from wallet_balances (REAL custodial deposits only)
   const fetchAppBalances = useCallback(async () => {
     if (!user?.id || assets.length === 0) return
     
@@ -118,9 +127,9 @@ export function useBep20Balances() {
       const balMap: Record<string, { available: number; locked: number; total: number }> = {}
       data.forEach(b => {
         balMap[b.asset_id] = {
-          available: b.available || 0,
-          locked: b.locked || 0,
-          total: b.total || ((b.available || 0) + (b.locked || 0))
+          available: Number(b.available) || 0,
+          locked: Number(b.locked) || 0,
+          total: Number(b.total) || ((Number(b.available) || 0) + (Number(b.locked) || 0))
         }
       })
       setAppBalances(balMap)
@@ -151,11 +160,10 @@ export function useBep20Balances() {
     fetchOnchainBalancesFromDb()
   }, [fetchAppBalances, fetchOnchainBalancesFromDb])
 
-  // Real-time subscription for app balances + trades
+  // Real-time subscription for trading balances
   useEffect(() => {
     if (!user?.id) return
 
-    // Subscribe to wallet_balances changes
     const balanceChannel = supabase
       .channel(`bep20-app-balances-${user.id}`)
       .on(
@@ -167,13 +175,13 @@ export function useBep20Balances() {
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          console.log('[useBep20Balances] Balance changed, refetching...')
+          console.log('[useBep20Balances] Trading balance changed, refetching...')
           fetchAppBalances()
         }
       )
       .subscribe()
 
-    // Subscribe to trades table (HYBRID MODEL: refresh after trade execution)
+    // Subscribe to trades table (refresh after trade execution)
     const tradesChannel = supabase
       .channel(`user-trades-${user.id}`)
       .on(
@@ -210,35 +218,7 @@ export function useBep20Balances() {
     }
   }, [user?.id, fetchAppBalances])
 
-  // Trigger server-side balance sync
-  const syncBalances = useCallback(async () => {
-    if (!user?.id) return
-    
-    try {
-      console.log('[useBep20Balances] Triggering server-side balance sync...')
-      const { data, error } = await supabase.functions.invoke('sync-user-balances')
-      
-      if (error) {
-        console.error('[useBep20Balances] Sync failed:', error)
-      } else {
-        console.log('[useBep20Balances] Sync result:', data)
-      }
-      
-      // Always refetch app balances after sync attempt
-      await fetchAppBalances()
-    } catch (err) {
-      console.error('[useBep20Balances] Sync error:', err)
-    }
-  }, [user?.id, fetchAppBalances])
-
-  // Auto-sync on mount when user exists (server reads wallet from profiles)
-  useEffect(() => {
-    if (user?.id && assets.length > 0) {
-      syncBalances()
-    }
-  }, [user?.id, assets.length, syncBalances])
-
-  // Query on-chain balances with prices (optional - only when walletAddress exists)
+  // Query on-chain balances with prices (for display only)
   const { data: onchainData, isLoading: isLoadingOnchain, error, refetch } = useQuery({
     queryKey: ['bep20-onchain', walletAddress, assets.map(a => a.symbol).join(',')],
     queryFn: async (): Promise<Record<string, { onchainBalance: number; priceUsd: number }>> => {
@@ -247,24 +227,18 @@ export function useBep20Balances() {
       // Fetch prices from market_prices table
       let prices: Record<string, number> = { 'USDT': 1 }
       try {
-        // Get all prices from market_prices table (populated by fetch-crypto-prices edge function)
         const { data: marketPrices } = await supabase
           .from('market_prices')
           .select('symbol, current_price')
         
         if (marketPrices) {
           for (const mp of marketPrices) {
-            // Parse "BNB/USDT" -> "BNB", "IPG/USDT" -> "IPG"
             const parts = mp.symbol?.split('/') || []
             const baseSymbol = parts[0]
             const quoteSymbol = parts[1]
             
             if (baseSymbol && quoteSymbol === 'USDT' && mp.current_price) {
               prices[baseSymbol] = mp.current_price
-              // Also map "BNB ORIGINAL" from "BNB ORIGINAL/USDT"
-              if (baseSymbol.includes(' ')) {
-                prices[baseSymbol] = mp.current_price
-              }
             }
           }
         }
@@ -278,7 +252,6 @@ export function useBep20Balances() {
         assets.map(async (asset) => {
           let onchainBalance = 0
           try {
-            // Check if native BNB (no contract address) - works for 'BNB' or 'BNB ORIGINAL'
             if (!asset.contractAddress) {
               onchainBalance = await getBNBBalance(walletAddress)
             } else {
@@ -302,9 +275,7 @@ export function useBep20Balances() {
     refetchInterval: 30000
   })
 
-  // Derive balances from assets + appBalances (internal ledger)
-  // Trading balance comes from wallet_balances (custodial deposits only)
-  // On-chain balance comes from onchain_balances table OR live RPC call
+  // Derive balances - CLEAR SEPARATION between on-chain and trading
   const balances: Bep20Balance[] = assets.map((asset) => {
     const appBal = appBalances[asset.id] || { available: 0, locked: 0, total: 0 }
     const onchain = onchainData?.[asset.id] || { onchainBalance: 0, priceUsd: 0 }
@@ -318,7 +289,9 @@ export function useBep20Balances() {
       symbol: asset.symbol,
       name: asset.name,
       logoUrl: asset.logoUrl,
+      // On-chain balance (display only - NOT for trading)
       onchainBalance: finalOnchainBalance,
+      // Trading balance (actual custodial deposits - used for orders)
       appBalance: appBal.total,
       appAvailable: appBal.available,
       appLocked: appBal.locked,
@@ -327,15 +300,20 @@ export function useBep20Balances() {
       onchainUsdValue: finalOnchainBalance * onchain.priceUsd
     }
   }).sort((a, b) => {
-    // Sort: tokens with balance first, then by symbol
-    const aHasBalance = a.appBalance > 0 || a.onchainBalance > 0
-    const bHasBalance = b.appBalance > 0 || b.onchainBalance > 0
+    // Sort: tokens with trading balance first, then on-chain balance, then alphabetically
+    const aHasTradingBalance = a.appBalance > 0
+    const bHasTradingBalance = b.appBalance > 0
+    if (aHasTradingBalance && !bHasTradingBalance) return -1
+    if (!aHasTradingBalance && bHasTradingBalance) return 1
+    
+    const aHasBalance = a.onchainBalance > 0
+    const bHasBalance = b.onchainBalance > 0
     if (aHasBalance && !bHasBalance) return -1
     if (!aHasBalance && bHasBalance) return 1
+    
     return a.symbol.localeCompare(b.symbol)
   })
 
-  // Loading state: only when assets haven't loaded yet
   const isLoading = assets.length === 0
 
   return {
@@ -344,6 +322,6 @@ export function useBep20Balances() {
     error,
     refetch,
     walletAddress,
-    syncBalances
+    // No sync function - trading balance only comes from hot wallet deposits
   }
 }
