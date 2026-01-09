@@ -20,6 +20,11 @@ export interface TransferRequest {
   direction: "to_trading" | "from_trading";
 }
 
+/**
+ * Hook to fetch REAL trading balances from wallet_balances table.
+ * These balances are ONLY credited when users deposit to the hot wallet.
+ * Do NOT confuse with on-chain balances which are for display only.
+ */
 export function useTradingBalances() {
   const { user } = useAuthUser();
 
@@ -28,13 +33,14 @@ export function useTradingBalances() {
     queryFn: async (): Promise<TradingBalance[]> => {
       if (!user?.id) return [];
 
-      // Fetch wallet_balances (the actual source of truth for trading)
+      // Fetch wallet_balances - ONLY contains real custodial deposits
       const { data: balances, error } = await supabase
         .from("wallet_balances")
         .select(`
           id,
           available,
           locked,
+          total,
           asset_id,
           assets (
             symbol,
@@ -55,7 +61,7 @@ export function useTradingBalances() {
         .select("symbol, current_price");
 
       const priceMap = new Map(
-        prices?.map((p) => [p.symbol, p.current_price]) || []
+        prices?.map((p) => [p.symbol?.split('/')[0], p.current_price]) || []
       );
 
       return (balances || []).map((b) => {
@@ -75,13 +81,18 @@ export function useTradingBalances() {
           usd_value: total * price,
           asset_id: b.asset_id,
         };
-      });
+      }).filter(b => b.balance > 0.000001); // Only show non-zero balances
     },
     enabled: !!user?.id,
     staleTime: 10000,
   });
 }
 
+/**
+ * Hook to handle transfers to/from trading balance.
+ * - TO_TRADING: User sends funds to hot wallet, credited after confirmation
+ * - FROM_TRADING: User withdraws from trading balance to their wallet
+ */
 export function useTradingTransfer() {
   const queryClient = useQueryClient();
   const { user } = useAuthUser();
@@ -119,15 +130,52 @@ export function useTradingTransfer() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      toast.success("Transfer initiated successfully");
+    onSuccess: (data) => {
+      if (data?.status === "awaiting_deposit") {
+        toast.info("Deposit Instructions", {
+          description: `Send funds to ${data.deposit_address?.slice(0, 10)}...`,
+          duration: 10000,
+        });
+      } else if (data?.status === "withdrawal_queued") {
+        toast.success("Withdrawal Queued", {
+          description: data.message,
+        });
+      } else {
+        toast.success("Transfer initiated successfully");
+      }
       queryClient.invalidateQueries({ queryKey: ["trading-balances"] });
       queryClient.invalidateQueries({ queryKey: ["user-balance"] });
       queryClient.invalidateQueries({ queryKey: ["wallet-balances"] });
+      queryClient.invalidateQueries({ queryKey: ["bep20-balances"] });
     },
     onError: (error) => {
       console.error("Transfer error:", error);
       toast.error(error.message || "Transfer failed");
     },
+  });
+}
+
+/**
+ * Hook to get the platform hot wallet address for deposits
+ */
+export function useHotWalletAddress() {
+  return useQuery({
+    queryKey: ["hot-wallet-address"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("platform_hot_wallet")
+        .select("address")
+        .eq("is_active", true)
+        .eq("chain", "BSC")
+        .single();
+
+      if (error) {
+        console.error("Error fetching hot wallet:", error);
+        return null;
+      }
+
+      return data?.address || null;
+    },
+    staleTime: 60000, // Cache for 1 minute
   });
 }

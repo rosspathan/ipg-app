@@ -5,7 +5,7 @@
  * When a deposit is detected:
  * 1. Identifies the sender (user) by matching from_address to profiles
  * 2. Creates a custodial_deposits record
- * 3. Credits the user's trading_balances when confirmed
+ * 3. Credits the user's wallet_balances (trading balance) when confirmed
  * 
  * This function should be called periodically (e.g., every 1-2 minutes via cron)
  */
@@ -284,31 +284,38 @@ async function creditDeposit(
     return;
   }
 
-  // Credit to trading_balances (upsert)
+  // Credit to wallet_balances (the actual trading balance table)
   const { data: existingBalance } = await supabase
-    .from('trading_balances')
-    .select('available')
+    .from('wallet_balances')
+    .select('available, locked, total')
     .eq('user_id', deposit.user_id)
     .eq('asset_id', assetId)
     .single();
 
   if (existingBalance) {
+    // Update existing balance
+    const newAvailable = (existingBalance.available || 0) + amount;
+    const newTotal = newAvailable + (existingBalance.locked || 0);
+    
     await supabase
-      .from('trading_balances')
+      .from('wallet_balances')
       .update({
-        available: (existingBalance.available || 0) + amount,
+        available: newAvailable,
+        total: newTotal,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', deposit.user_id)
       .eq('asset_id', assetId);
   } else {
+    // Insert new balance record
     await supabase
-      .from('trading_balances')
+      .from('wallet_balances')
       .insert({
         user_id: deposit.user_id,
         asset_id: assetId,
         available: amount,
-        locked: 0
+        locked: 0,
+        total: amount
       });
   }
 
@@ -322,5 +329,5 @@ async function creditDeposit(
     })
     .eq('id', depositId);
 
-  console.log(`[monitor-custodial-deposits] ✓ Credited ${amount} to user ${deposit.user_id}`);
+  console.log(`[monitor-custodial-deposits] ✓ Credited ${amount} to user ${deposit.user_id} (wallet_balances)`);
 }
