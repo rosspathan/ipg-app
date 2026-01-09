@@ -6715,6 +6715,38 @@ export type Database = {
           },
         ]
       }
+      onchain_balances: {
+        Row: {
+          asset_id: string
+          balance: number
+          id: string
+          last_synced_at: string | null
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          balance?: number
+          id?: string
+          last_synced_at?: string | null
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          balance?: number
+          id?: string
+          last_synced_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onchain_balances_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount: number
