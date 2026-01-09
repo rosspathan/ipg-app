@@ -226,11 +226,16 @@ const WithdrawScreen = () => {
   };
 
   const resolvePrivateKey = async (): Promise<string | null> => {
+    // 1) If Web3 context has a real private key, use it
     if (wallet?.privateKey && wallet.privateKey.length > 0) {
       return wallet.privateKey;
     }
 
-    // Try user-scoped wallet storage
+    // 2) Try local stored wallet (uses current user scope if available)
+    const storedAnyScope = getStoredWallet();
+    if (storedAnyScope?.privateKey) return storedAnyScope.privateKey;
+
+    // 3) Try explicit user-scoped wallet (if auth session is available)
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
