@@ -264,6 +264,7 @@ import { BSKWalletPage } from "@/pages/astra/BSKWalletPage";
 import { WalletPage } from "@/pages/astra/WalletPage";
 import { OnchainWalletPage } from "@/pages/astra/OnchainWalletPage";
 import CryptoWalletPage from "@/pages/astra/CryptoWalletPage";
+import { TradingTransferPage } from "@/pages/astra/TradingTransferPage";
 
 import { AstraLayout } from "@/layouts/AstraLayout";
 import { HomePageRebuilt } from "@/pages/astra/HomePageRebuilt";
@@ -498,7 +499,8 @@ function AppContent() {
               <Route path="wallet/deposit" element={<DepositScreen />} />
               <Route path="wallet/withdraw" element={<WithdrawScreen />} />
               <Route path="wallet/send" element={<SendScreen />} />
-              <Route path="wallet/transfer" element={<TransferScreen />} />
+              <Route path="wallet/transfer" element={<TradingTransferPage />} />
+              <Route path="wallet/transfer-old" element={<TransferScreen />} />
               <Route path="wallet/history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoHistoryPage')))}</React.Suspense>} />
               <Route path="wallet/history/crypto" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoHistoryPage')))}</React.Suspense>} />
               <Route path="wallet/history/bsk" element={<HistoryScreen />} />
