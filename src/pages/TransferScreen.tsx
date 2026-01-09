@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, RefreshCw, Info } from "lucide-react";
+import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, Info, Copy, Check, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { SuccessAnimation } from "@/components/wallet/SuccessAnimation";
@@ -13,7 +13,7 @@ import AssetLogo from "@/components/AssetLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { formatUnits } from "ethers";
+import { useHotWalletAddress } from "@/hooks/useTradingBalances";
 
 type TransferDirection = "to_trading" | "to_wallet";
 
@@ -21,108 +21,43 @@ interface AssetBalance {
   symbol: string;
   name: string;
   logoUrl?: string;
-  onchainBalance: number;
   tradingAvailable: number;
   tradingLocked: number;
   tradingTotal: number;
   assetId: string;
-  contractAddress?: string;
-  decimals: number;
-}
-
-// Fetch on-chain balance with BigInt-safe precision
-async function getOnchainBalance(contractAddress: string | null, walletAddress: string, decimals: number, symbol: string): Promise<number> {
-  try {
-    if (symbol === 'BNB' || !contractAddress) {
-      // Native BNB balance
-      const response = await fetch('https://bsc-dataseed.binance.org', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_getBalance',
-          params: [walletAddress, 'latest'],
-          id: 1
-        })
-      });
-      const result = await response.json();
-      if (!result.result || result.result === '0x') return 0;
-      // Use BigInt for precision
-      const balanceBigInt = BigInt(result.result);
-      return parseFloat(formatUnits(balanceBigInt, 18));
-    }
-
-    // ERC20 balance
-    const data = `0x70a08231000000000000000000000000${walletAddress.replace('0x', '')}`;
-    const response = await fetch('https://bsc-dataseed.binance.org', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'eth_call',
-        params: [{ data, to: contractAddress }, 'latest'],
-        id: 1
-      })
-    });
-    const result = await response.json();
-    if (!result.result || result.result === '0x') return 0;
-    // Use BigInt for precision - handles large token balances correctly
-    const balanceBigInt = BigInt(result.result);
-    return parseFloat(formatUnits(balanceBigInt, decimals));
-  } catch (error) {
-    console.error(`Failed to fetch on-chain balance for ${symbol}:`, error);
-    return 0;
-  }
 }
 
 const TransferScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  // Real-time subscription is handled globally in AstraLayout
+  const { data: hotWalletAddress } = useHotWalletAddress();
   
   const [selectedAsset, setSelectedAsset] = useState("");
   const [direction, setDirection] = useState<TransferDirection>("to_trading");
   const [amount, setAmount] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  // Fetch user's wallet address
-  const { data: userWallet } = useQuery({
-    queryKey: ['user-wallet-address'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('bsc_wallet_address, wallet_address')
-        .eq('user_id', user.id)
-        .single();
-
-      return profile?.bsc_wallet_address || profile?.wallet_address || null;
-    }
-  });
-
-  // Fetch assets with balances
+  // Fetch assets with trading balances only
   const { data: assets = [], isLoading: assetsLoading, refetch: refetchAssets } = useQuery({
-    queryKey: ['transfer-assets', userWallet],
+    queryKey: ['transfer-assets-custodial'],
     queryFn: async (): Promise<AssetBalance[]> => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !userWallet) return [];
+      if (!user) return [];
 
       // Get tradable BSC assets
       const { data: dbAssets } = await supabase
         .from('assets')
-        .select('id, symbol, name, logo_url, contract_address, decimals')
+        .select('id, symbol, name, logo_url')
         .or('network.ilike.%bep20%,network.ilike.%bsc%')
         .eq('is_active', true)
         .eq('trading_enabled', true);
 
       if (!dbAssets?.length) return [];
 
-      // Get trading balances
+      // Get trading balances from wallet_balances (custodial)
       const { data: tradingBalances } = await supabase
         .from('wallet_balances')
         .select('asset_id, available, locked, total')
@@ -130,92 +65,62 @@ const TransferScreen = () => {
 
       const tradingMap = new Map((tradingBalances || []).map(b => [b.asset_id, b]));
 
-      // Fetch on-chain balances for each asset
+      // Build asset list - include all tradable assets for deposits
       const results: AssetBalance[] = [];
       for (const asset of dbAssets) {
-        try {
-          const onchainBalance = await getOnchainBalance(
-            asset.contract_address,
-            userWallet,
-            asset.decimals || 18,
-            asset.symbol
-          );
-          const trading = tradingMap.get(asset.id);
-
-          // Include if either balance > 0
-          if (onchainBalance > 0.000001 || (trading?.total || 0) > 0.000001) {
-            results.push({
-              symbol: asset.symbol,
-              name: asset.name,
-              logoUrl: asset.logo_url,
-              onchainBalance,
-              tradingAvailable: trading?.available || 0,
-              tradingLocked: trading?.locked || 0,
-              tradingTotal: trading?.total || 0,
-              assetId: asset.id,
-              contractAddress: asset.contract_address,
-              decimals: asset.decimals || 18
-            });
-          }
-        } catch (e) {
-          console.error(`Error fetching balance for ${asset.symbol}:`, e);
-        }
+        const trading = tradingMap.get(asset.id);
+        results.push({
+          symbol: asset.symbol,
+          name: asset.name,
+          logoUrl: asset.logo_url,
+          tradingAvailable: trading?.available || 0,
+          tradingLocked: trading?.locked || 0,
+          tradingTotal: trading?.total || 0,
+          assetId: asset.id,
+        });
       }
 
-      return results;
+      // Sort: assets with balance first, then alphabetically
+      return results.sort((a, b) => {
+        if (a.tradingTotal > 0 && b.tradingTotal === 0) return -1;
+        if (a.tradingTotal === 0 && b.tradingTotal > 0) return 1;
+        return a.symbol.localeCompare(b.symbol);
+      });
     },
-    enabled: !!userWallet,
-    refetchInterval: 10000
+    refetchInterval: 15000
   });
 
   // Set default asset
   useEffect(() => {
     if (assets.length > 0 && !selectedAsset) {
-      setSelectedAsset(assets[0].symbol);
+      // Prefer USDT or first asset with balance
+      const usdt = assets.find(a => a.symbol === 'USDT');
+      const withBalance = assets.find(a => a.tradingTotal > 0);
+      setSelectedAsset(usdt?.symbol || withBalance?.symbol || assets[0].symbol);
     }
   }, [assets, selectedAsset]);
 
   const currentAsset = assets.find(a => a.symbol === selectedAsset);
 
-  // Calculate available balance based on direction
-  const availableBalance = direction === "to_trading" 
-    ? (currentAsset?.onchainBalance || 0)
-    : (currentAsset?.tradingAvailable || 0);
+  // For withdrawals, available balance is from trading
+  const availableBalance = currentAsset?.tradingAvailable || 0;
 
-  // Sync on-chain deposits to trading balance
-  const handleSync = async () => {
-    setIsSyncing(true);
+  const handleCopyAddress = async () => {
+    if (!hotWalletAddress) return;
     try {
-      const { data, error } = await supabase.functions.invoke('sync-onchain-to-trading', {
-        body: { assetSymbols: selectedAsset ? [selectedAsset] : undefined }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Sync Complete",
-        description: `Synced ${data?.addedCount || 0} deposit(s) to trading balance`
-      });
-
-      // Refresh balances
-      queryClient.invalidateQueries({ queryKey: ['transfer-assets'] });
-      queryClient.invalidateQueries({ queryKey: ['user-balance'] });
-      refetchAssets();
-    } catch (err: any) {
-      toast({
-        title: "Sync Failed",
-        description: err.message || "Failed to sync balances",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSyncing(false);
+      await navigator.clipboard.writeText(hotWalletAddress);
+      setCopied(true);
+      toast({ title: "Address copied!" });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: "Failed to copy", variant: "destructive" });
     }
   };
 
-  // Handle transfer
-  const handleTransfer = async () => {
+  // Handle withdrawal (trading → wallet)
+  const handleWithdraw = async () => {
     if (!amount || !currentAsset) {
-      toast({ title: "Invalid Transfer", description: "Please enter an amount", variant: "destructive" });
+      toast({ title: "Invalid Request", description: "Please enter an amount", variant: "destructive" });
       return;
     }
 
@@ -234,59 +139,29 @@ const TransferScreen = () => {
     setIsProcessing(true);
 
     try {
-      if (direction === "to_trading") {
-        // Sync on-chain balance to trading (detects deposits)
-        const { data, error } = await supabase.functions.invoke('sync-onchain-to-trading', {
-          body: { assetSymbols: [selectedAsset] }
-        });
-
-        if (error) throw error;
-
-        // Check if the sync added the expected amount
-        const addedResult = data?.results?.find((r: any) => r.symbol === selectedAsset);
-        if (addedResult?.action === 'added' || addedResult?.action === 'none') {
-          toast({
-            title: "Transfer Complete",
-            description: `${amountNum.toFixed(6)} ${selectedAsset} is now available for trading`
-          });
-          setShowSuccess(true);
-        } else if (addedResult?.action === 'reduced') {
-          toast({
-            title: "Balance Synced",
-            description: "Trading balance was adjusted to match on-chain balance"
-          });
-        } else {
-          toast({
-            title: "Sync Complete",
-            description: "Balances are now synchronized"
-          });
+      const { data, error } = await supabase.functions.invoke('request-custodial-withdrawal', {
+        body: {
+          asset_symbol: selectedAsset,
+          amount: amountNum
         }
-      } else {
-        // Trading → Wallet (release balance from trading ledger)
-        // The tokens are already in the user's on-chain wallet, we just reduce the trading balance
-        const { data, error } = await supabase.functions.invoke('release-trading-balance', {
-          body: {
-            asset_symbol: selectedAsset,
-            amount: amountNum
-          }
-        });
+      });
 
-        if (error) throw error;
-        if (data && !data.success) throw new Error(data.error || 'Transfer failed');
+      if (error) throw error;
+      if (data && !data.success) throw new Error(data.error || 'Withdrawal failed');
 
-        toast({
-          title: "Transfer Complete",
-          description: `${amountNum.toFixed(6)} ${selectedAsset} released from trading`
-        });
-        setShowSuccess(true);
-      }
+      toast({
+        title: "Withdrawal Requested",
+        description: `${amountNum.toFixed(6)} ${selectedAsset} withdrawal is being processed`
+      });
+      setShowSuccess(true);
 
       // Refresh balances
-      queryClient.invalidateQueries({ queryKey: ['transfer-assets'] });
-      queryClient.invalidateQueries({ queryKey: ['user-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['transfer-assets-custodial'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['bep20-balances'] });
     } catch (err: any) {
       toast({
-        title: "Transfer Failed",
+        title: "Withdrawal Failed",
         description: err.message || "An error occurred",
         variant: "destructive"
       });
@@ -300,10 +175,8 @@ const TransferScreen = () => {
       <div className="min-h-screen bg-background px-6 py-8">
         <div className="max-w-sm mx-auto w-full space-y-6">
           <SuccessAnimation
-            title="Transfer Complete!"
-            subtitle={direction === "to_trading" 
-              ? "Funds are now available for trading" 
-              : "Withdrawal initiated to your wallet"}
+            title="Request Submitted!"
+            subtitle="Your withdrawal is being processed"
           />
 
           <motion.div
@@ -314,18 +187,16 @@ const TransferScreen = () => {
             <Card className="bg-card shadow-lg border border-border">
               <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Direction</span>
-                  <span className="font-medium text-foreground">
-                    {direction === "to_trading" ? "Wallet → Trading" : "Trading → Wallet"}
-                  </span>
+                  <span className="text-muted-foreground">Type</span>
+                  <span className="font-medium text-foreground">Withdrawal</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Amount</span>
                   <span className="font-medium text-foreground">{amount} {selectedAsset}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Fee</span>
-                  <span className="font-medium text-primary">Free</span>
+                  <span className="text-muted-foreground">Status</span>
+                  <span className="font-medium text-amber-400">Processing</span>
                 </div>
               </CardContent>
             </Card>
@@ -364,37 +235,26 @@ const TransferScreen = () => {
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between"
+          className="flex items-center space-x-4"
         >
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/app/wallet")}
-              className="p-2"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="text-2xl font-bold text-foreground">Transfer Funds</h1>
-          </div>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={handleSync}
-            disabled={isSyncing}
+            onClick={() => navigate("/app/wallet")}
+            className="p-2"
           >
-            <RefreshCw className={`w-4 h-4 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
-            Sync
+            <ArrowLeft className="w-5 h-5" />
           </Button>
+          <h1 className="text-2xl font-bold text-foreground">Trading Funds</h1>
         </motion.div>
 
-        {/* Info Alert - Explains two-balance system */}
-        <Alert className="bg-muted/30">
-          <Info className="h-4 w-4" />
+        {/* Info Alert - Custodial model explanation */}
+        <Alert className="bg-primary/10 border-primary/20">
+          <Info className="h-4 w-4 text-primary" />
           <AlertDescription className="text-xs space-y-1">
-            <p><strong>On-Chain Wallet</strong>: Your actual crypto on the BSC blockchain.</p>
-            <p><strong>Trading Balance</strong>: Funds credited for placing orders.</p>
-            <p className="text-muted-foreground">Use "Deposit" to sync on-chain funds. Use "Withdraw" to send back to your wallet.</p>
+            <p><strong>Custodial Trading</strong>: Your trading balance is held securely in the platform wallet.</p>
+            <p><strong>Deposit</strong>: Send tokens to the deposit address below.</p>
+            <p><strong>Withdraw</strong>: Request funds back to your personal wallet.</p>
           </AlertDescription>
         </Alert>
 
@@ -410,42 +270,6 @@ const TransferScreen = () => {
               <BalanceCardSkeleton />
               <BalanceCardSkeleton />
             </motion.div>
-          ) : !userWallet ? (
-            <motion.div
-              key="no-wallet"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12"
-            >
-              <div className="w-16 h-16 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center">
-                <Info className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">No Wallet Connected</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Please set up your BSC wallet first
-              </p>
-              <Button onClick={() => navigate("/app/settings")}>
-                Go to Settings
-              </Button>
-            </motion.div>
-          ) : assets.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12"
-            >
-              <div className="w-16 h-16 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center">
-                <ArrowDownToLine className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">No Assets Found</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Deposit crypto to your wallet first
-              </p>
-              <Button onClick={() => navigate("/app/wallet/deposit")}>
-                Deposit Now
-              </Button>
-            </motion.div>
           ) : (
             <motion.div
               key="form"
@@ -453,168 +277,239 @@ const TransferScreen = () => {
               animate={{ opacity: 1 }}
               className="space-y-4"
             >
-              {/* Asset Selection */}
-              <Card className="bg-card shadow-lg border border-border">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base text-foreground">Select Asset</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Select value={selectedAsset} onValueChange={setSelectedAsset}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assets.map((asset) => (
-                        <SelectItem key={asset.symbol} value={asset.symbol}>
-                          <div className="flex items-center gap-2">
-                            <AssetLogo symbol={asset.symbol} logoUrl={asset.logoUrl} size="sm" />
-                            <span>{asset.symbol}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card>
+              {/* Direction Tabs */}
+              <div className="flex bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setDirection("to_trading")}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                    direction === "to_trading"
+                      ? "bg-background shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <ArrowDownToLine className="w-4 h-4 inline mr-2" />
+                  Deposit
+                </button>
+                <button
+                  onClick={() => setDirection("to_wallet")}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                    direction === "to_wallet"
+                      ? "bg-background shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <ArrowUpFromLine className="w-4 h-4 inline mr-2" />
+                  Withdraw
+                </button>
+              </div>
 
-              {/* Two-Column Balance Display - Clear separation */}
-              {currentAsset && (
+              {direction === "to_trading" ? (
+                /* DEPOSIT SECTION */
                 <Card className="bg-card shadow-lg border border-border">
-                  <CardContent className="p-4 space-y-4">
-                    {/* Side-by-side balance display */}
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* On-Chain Wallet Balance */}
-                      <div className="p-3 bg-muted/30 rounded-lg text-center">
-                        <div className="text-xs text-muted-foreground mb-1">On-Chain Wallet</div>
-                        <div className="text-lg font-semibold font-mono">
-                          {currentAsset.onchainBalance.toFixed(4)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">BSC Blockchain</div>
-                      </div>
-                      
-                      {/* Trading Balance */}
-                      <div className="p-3 bg-primary/10 rounded-lg border border-primary/20 text-center">
-                        <div className="text-xs text-muted-foreground mb-1">Trading Balance</div>
-                        <div className="text-lg font-semibold font-mono text-primary">
-                          {currentAsset.tradingAvailable.toFixed(4)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">Available for orders</div>
-                      </div>
-                    </div>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base text-foreground flex items-center gap-2">
+                      <ArrowDownToLine className="w-4 h-4 text-primary" />
+                      Deposit to Trading
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Send BEP-20 tokens to this address. Your trading balance will be credited automatically after confirmation.
+                    </p>
                     
-                    {/* Trading breakdown if locked funds exist */}
-                    {currentAsset.tradingLocked > 0.000001 && (
-                      <div className="flex justify-between items-center px-1 text-sm">
-                        <span className="text-muted-foreground">Locked in Orders</span>
-                        <span className="font-mono font-medium text-amber-500">
-                          {currentAsset.tradingLocked.toFixed(4)} {selectedAsset}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Balance mismatch indicator */}
-                    {Math.abs(currentAsset.onchainBalance - currentAsset.tradingTotal) > 0.0001 && (
-                      <div className="p-2 bg-warning/10 border border-warning/20 rounded-lg">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-warning-foreground font-medium">
-                            {currentAsset.onchainBalance > currentAsset.tradingTotal 
-                              ? "New deposits available to sync" 
-                              : "Trading balance differs from on-chain"}
-                          </span>
-                          <span className="font-mono text-warning-foreground">
-                            {currentAsset.onchainBalance > currentAsset.tradingTotal ? "+" : ""}
-                            {(currentAsset.onchainBalance - currentAsset.tradingTotal).toFixed(4)}
-                          </span>
+                    {hotWalletAddress ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 bg-muted rounded-lg p-3">
+                          <code className="text-xs font-mono text-foreground flex-1 break-all">
+                            {hotWalletAddress}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 shrink-0"
+                            onClick={handleCopyAddress}
+                          >
+                            {copied ? (
+                              <Check className="h-4 w-4 text-emerald-400" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 shrink-0"
+                            onClick={() => window.open(`https://bscscan.com/address/${hotWalletAddress}`, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
                         </div>
+                        
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span className="bg-muted px-2 py-1 rounded">BSC (BEP-20)</span>
+                          <span className="bg-muted px-2 py-1 rounded">~15 confirmations</span>
+                        </div>
+                        
+                        <Alert className="bg-amber-500/10 border-amber-500/20">
+                          <AlertDescription className="text-xs text-amber-400">
+                            Only send BSC (BEP-20) tokens. Sending other networks will result in permanent loss.
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Loading deposit address...</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
+              ) : (
+                /* WITHDRAW SECTION */
+                <>
+                  {/* Asset Selection */}
+                  <Card className="bg-card shadow-lg border border-border">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base text-foreground">Select Asset</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Select value={selectedAsset} onValueChange={setSelectedAsset}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {assets.filter(a => a.tradingTotal > 0.000001).map((asset) => (
+                            <SelectItem key={asset.symbol} value={asset.symbol}>
+                              <div className="flex items-center gap-2">
+                                <AssetLogo symbol={asset.symbol} logoUrl={asset.logoUrl} size="sm" />
+                                <span>{asset.symbol}</span>
+                                <span className="text-muted-foreground ml-2">
+                                  ({asset.tradingAvailable.toFixed(4)} available)
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                          {assets.filter(a => a.tradingTotal > 0.000001).length === 0 && (
+                            <SelectItem value="none" disabled>
+                              No trading balance
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </CardContent>
+                  </Card>
+
+                  {/* Balance Display */}
+                  {currentAsset && currentAsset.tradingTotal > 0 && (
+                    <Card className="bg-muted/30 border border-border">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Trading Balance</span>
+                          <div className="text-right">
+                            <div className="font-medium text-foreground">
+                              {currentAsset.tradingTotal.toFixed(6)} {selectedAsset}
+                            </div>
+                            {currentAsset.tradingLocked > 0 && (
+                              <div className="text-xs text-amber-400">
+                                {currentAsset.tradingLocked.toFixed(4)} in orders
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Amount Input */}
+                  <Card className="bg-card shadow-lg border border-border">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base text-foreground">Withdraw Amount</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                          className="pr-20 text-lg"
+                          step="any"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-7 text-xs"
+                          onClick={() => setAmount(availableBalance.toString())}
+                          disabled={availableBalance <= 0}
+                        >
+                          MAX
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Available: {availableBalance.toFixed(6)} {selectedAsset}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Withdraw Button */}
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={handleWithdraw}
+                    disabled={isProcessing || !amount || parseFloat(amount) <= 0 || parseFloat(amount) > availableBalance}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowUpFromLine className="w-4 h-4 mr-2" />
+                        Withdraw {amount && `${amount} ${selectedAsset}`}
+                      </>
+                    )}
+                  </Button>
+                </>
               )}
 
-              {/* Direction Selection */}
+              {/* Current Trading Balances */}
               <Card className="bg-card shadow-lg border border-border">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base text-foreground">Transfer Direction</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground">Your Trading Balances</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant={direction === "to_trading" ? "default" : "outline"}
-                      onClick={() => setDirection("to_trading")}
-                      className="flex items-center gap-2"
-                    >
-                      <ArrowDownToLine className="w-4 h-4" />
-                      Deposit
-                    </Button>
-                    <Button
-                      variant={direction === "to_wallet" ? "default" : "outline"}
-                      onClick={() => setDirection("to_wallet")}
-                      className="flex items-center gap-2"
-                    >
-                      <ArrowUpFromLine className="w-4 h-4" />
-                      Withdraw
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    {direction === "to_trading" 
-                      ? "Credit on-chain funds to trading balance" 
-                      : "Send trading balance to your on-chain wallet"}
-                  </p>
+                <CardContent>
+                  {assets.filter(a => a.tradingTotal > 0.000001).length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-muted-foreground">No trading balance</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Deposit funds to start trading
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {assets.filter(a => a.tradingTotal > 0.000001).map(asset => (
+                        <div key={asset.symbol} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                          <div className="flex items-center gap-2">
+                            <AssetLogo symbol={asset.symbol} logoUrl={asset.logoUrl} size="sm" />
+                            <span className="font-medium text-foreground">{asset.symbol}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-mono text-sm text-foreground">
+                              {asset.tradingTotal.toFixed(4)}
+                            </div>
+                            {asset.tradingLocked > 0 && (
+                              <div className="text-xs text-amber-400">
+                                {asset.tradingLocked.toFixed(4)} locked
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-
-              {/* Amount */}
-              <Card className="bg-card shadow-lg border border-border">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base text-foreground">Amount</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex space-x-2">
-                    <Input
-                      placeholder="0.00"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      type="number"
-                      step="any"
-                      className="text-lg"
-                    />
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setAmount(availableBalance.toFixed(6))}
-                    >
-                      Max
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Available: <span className="font-medium text-foreground">{availableBalance.toFixed(6)}</span> {selectedAsset}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Transfer Button */}
-              <Button 
-                onClick={handleTransfer} 
-                className="w-full" 
-                size="lg"
-                disabled={isProcessing || !amount || parseFloat(amount) <= 0}
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    {direction === "to_trading" ? (
-                      <ArrowDownToLine className="w-4 h-4 mr-2" />
-                    ) : (
-                      <ArrowUpFromLine className="w-4 h-4 mr-2" />
-                    )}
-                    {direction === "to_trading" ? "Deposit to Trading" : "Withdraw to Wallet"}
-                  </>
-                )}
-              </Button>
             </motion.div>
           )}
         </AnimatePresence>

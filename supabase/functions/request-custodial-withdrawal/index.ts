@@ -3,8 +3,8 @@
  * 
  * Called by users to request a withdrawal from their trading balance.
  * This function:
- * 1. Validates the user has sufficient trading balance
- * 2. Deducts from trading_balances
+ * 1. Validates the user has sufficient trading balance in wallet_balances
+ * 2. Deducts from wallet_balances (available and total)
  * 3. Creates a custodial_withdrawals record (pending)
  * 4. The actual on-chain transfer is handled by process-custodial-withdrawal
  */
@@ -107,10 +107,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get user's trading balance
+    // Get user's trading balance from wallet_balances (the correct table)
     const { data: balance, error: balanceError } = await adminClient
-      .from('trading_balances')
-      .select('available, locked')
+      .from('wallet_balances')
+      .select('available, locked, total')
       .eq('user_id', user.id)
       .eq('asset_id', asset.id)
       .single();
@@ -179,11 +179,16 @@ Deno.serve(async (req) => {
 
     console.log(`[request-custodial-withdrawal] Destination: ${destinationAddress}`);
 
-    // Deduct from trading balance
+    // Calculate new balances
+    const newAvailable = available - totalRequired;
+    const newTotal = (balance.total || 0) - totalRequired;
+
+    // Deduct from wallet_balances
     const { error: deductError } = await adminClient
-      .from('trading_balances')
+      .from('wallet_balances')
       .update({
-        available: available - totalRequired,
+        available: newAvailable,
+        total: newTotal,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id)
@@ -214,11 +219,12 @@ Deno.serve(async (req) => {
     if (withdrawalError) {
       console.error('[request-custodial-withdrawal] Create error:', withdrawalError);
       
-      // Refund
+      // Refund to wallet_balances
       await adminClient
-        .from('trading_balances')
+        .from('wallet_balances')
         .update({
           available: available,
+          total: balance.total,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)

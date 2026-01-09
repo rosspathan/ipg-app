@@ -290,3 +290,6 @@ verify_jwt = false
 
 [functions.request-custodial-withdrawal]
 verify_jwt = true
+
+[functions.admin-cleanup-trading-ledger]
+verify_jwt = true
