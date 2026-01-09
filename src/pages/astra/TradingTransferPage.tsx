@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Loader2, Wallet, TrendingUp } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Loader2, Wallet, TrendingUp, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,12 +16,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useTradingBalances, useTradingTransfer } from "@/hooks/useTradingBalances";
 import { useWalletBalances } from "@/hooks/useWalletBalances";
 import AssetLogo from "@/components/AssetLogo";
+import { CustodialDepositInstructions } from "@/components/wallet/CustodialDepositInstructions";
+import { CustodialWithdrawalHistory } from "@/components/wallet/CustodialWithdrawalHistory";
 
 export function TradingTransferPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [direction, setDirection] = useState<"to_trading" | "from_trading">("to_trading");
   const [selectedAsset, setSelectedAsset] = useState<string>("");
   const [amount, setAmount] = useState("");
+  const [showDepositInstructions, setShowDepositInstructions] = useState(false);
+  const [withdrawalSubmitted, setWithdrawalSubmitted] = useState(false);
 
   // Fetch wallet balances (on-chain)
   const { balances: walletBalances, loading: walletLoading } = useWalletBalances();
@@ -63,9 +68,14 @@ export function TradingTransferPage() {
       },
       {
         onSuccess: () => {
+          if (direction === "to_trading") {
+            // Show deposit instructions for custodial model
+            setShowDepositInstructions(true);
+          } else {
+            // Show withdrawal confirmation
+            setWithdrawalSubmitted(true);
+          }
           setAmount("");
-          setSelectedAsset("");
-          navigate("/app/wallet");
         },
       }
     );
@@ -78,6 +88,77 @@ export function TradingTransferPage() {
   };
 
   const isLoading = walletLoading || tradingLoading;
+
+  // If deposit instructions should be shown
+  if (showDepositInstructions) {
+    return (
+      <div className="space-y-6 p-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => {
+            setShowDepositInstructions(false);
+            setSelectedAsset("");
+          }}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold">Deposit to Trading</h1>
+            <p className="text-sm text-muted-foreground">Send tokens to the deposit address</p>
+          </div>
+        </div>
+
+        <CustodialDepositInstructions 
+          assetSymbol={selectedBalance?.symbol}
+          amount={Number(amount) || undefined}
+        />
+
+        <Button 
+          className="w-full" 
+          variant="outline"
+          onClick={() => navigate("/app/wallet")}
+        >
+          Done - Go to Wallet
+        </Button>
+      </div>
+    );
+  }
+
+  // If withdrawal was submitted
+  if (withdrawalSubmitted) {
+    return (
+      <div className="space-y-6 p-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/app/wallet")}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold">Withdrawal Queued</h1>
+            <p className="text-sm text-muted-foreground">Your withdrawal is being processed</p>
+          </div>
+        </div>
+
+        <Card className="border-green-500/50">
+          <CardContent className="flex flex-col items-center py-8 gap-4">
+            <CheckCircle className="h-12 w-12 text-green-500" />
+            <div className="text-center">
+              <h3 className="font-semibold text-lg">Withdrawal Submitted</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Your withdrawal request has been queued and will be processed shortly.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <CustodialWithdrawalHistory />
+
+        <Button 
+          className="w-full" 
+          onClick={() => navigate("/app/wallet")}
+        >
+          Back to Wallet
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-4">
@@ -104,15 +185,17 @@ export function TradingTransferPage() {
             setDirection(v as "to_trading" | "from_trading");
             setSelectedAsset("");
             setAmount("");
+            setShowDepositInstructions(false);
+            setWithdrawalSubmitted(false);
           }}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="to_trading" className="gap-2">
                 <TrendingUp className="h-4 w-4" />
-                To Trading
+                Deposit
               </TabsTrigger>
               <TabsTrigger value="from_trading" className="gap-2">
                 <Wallet className="h-4 w-4" />
-                To Wallet
+                Withdraw
               </TabsTrigger>
             </TabsList>
 
