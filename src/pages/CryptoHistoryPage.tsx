@@ -45,7 +45,17 @@ function TransactionCard({ tx }: { tx: CryptoTransaction }) {
   const statusConfig = getStatusConfig(tx.status);
   const StatusIcon = statusConfig.icon;
   const explorerUrl = getBscScanUrl(tx.tx_hash, tx.network);
-  const isDeposit = tx.transaction_type === 'deposit';
+  const isIncoming = tx.transaction_type === 'deposit' || tx.transaction_type === 'transfer_in';
+  const isTransfer = tx.transaction_type === 'transfer_in' || tx.transaction_type === 'transfer_out';
+
+  const getTypeLabel = () => {
+    switch (tx.transaction_type) {
+      case 'deposit': return 'Deposit';
+      case 'withdrawal': return 'Withdrawal';
+      case 'transfer_in': return 'Received';
+      case 'transfer_out': return 'Sent';
+    }
+  };
 
   return (
     <motion.div
@@ -62,9 +72,9 @@ function TransactionCard({ tx }: { tx: CryptoTransaction }) {
                 <AssetLogo symbol={tx.symbol} logoUrl={tx.logo_url} size="md" />
                 <div className={cn(
                   "absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center",
-                  isDeposit ? "bg-primary" : "bg-amber-500"
+                  isIncoming ? "bg-primary" : "bg-amber-500"
                 )}>
-                  {isDeposit 
+                  {isIncoming 
                     ? <ArrowDownLeft className="w-3 h-3 text-primary-foreground" />
                     : <ArrowUpRight className="w-3 h-3 text-white" />
                   }
@@ -73,13 +83,18 @@ function TransactionCard({ tx }: { tx: CryptoTransaction }) {
               
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold text-foreground truncate">
-                    {isDeposit ? '+' : '-'}{tx.amount} {tx.symbol}
+                  <p className={cn("font-semibold", isIncoming ? "text-primary" : "text-amber-500")}>
+                    {isIncoming ? '+' : '-'}{tx.amount} {tx.symbol}
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {tx.transaction_type} • {formatDistanceToNow(new Date(tx.created_at), { addSuffix: true })}
+                <p className="text-xs text-muted-foreground">
+                  {getTypeLabel()} • {formatDistanceToNow(new Date(tx.created_at), { addSuffix: true })}
                 </p>
+                {isTransfer && tx.counterparty && (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {tx.transaction_type === 'transfer_in' ? 'From' : 'To'}: {tx.counterparty}
+                  </p>
+                )}
                 {tx.to_address && (
                   <p className="text-xs text-muted-foreground truncate mt-0.5">
                     To: {formatAddress(tx.to_address)}
@@ -96,13 +111,13 @@ function TransactionCard({ tx }: { tx: CryptoTransaction }) {
               </Badge>
               
               {/* Confirmation progress for pending deposits */}
-              {isDeposit && tx.status === 'confirming' && tx.confirmations !== null && (
+              {tx.transaction_type === 'deposit' && tx.status === 'confirming' && tx.confirmations !== null && (
                 <p className="text-xs text-muted-foreground">
                   {tx.confirmations}/{tx.required_confirmations} confirms
                 </p>
               )}
 
-              {/* Fee for withdrawals */}
+              {/* Fee for withdrawals/transfers */}
               {tx.fee && tx.fee > 0 && (
                 <p className="text-xs text-muted-foreground">
                   Fee: {tx.fee} {tx.symbol}
@@ -110,7 +125,7 @@ function TransactionCard({ tx }: { tx: CryptoTransaction }) {
               )}
 
               {/* Explorer link */}
-              {explorerUrl && tx.tx_hash && (
+              {explorerUrl && tx.tx_hash && !isTransfer && (
                 <a
                   href={explorerUrl}
                   target="_blank"
@@ -156,9 +171,9 @@ const CryptoHistoryPage = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Crypto History</h1>
+              <h1 className="text-2xl font-bold text-foreground">Transaction History</h1>
               <p className="text-sm text-muted-foreground">
-                All your deposits and withdrawals
+                All your crypto deposits, withdrawals & transfers
               </p>
             </div>
           </div>
@@ -176,10 +191,11 @@ const CryptoHistoryPage = () => {
         <div className="space-y-3">
           {/* Type filter */}
           <Tabs value={typeFilter} onValueChange={(v) => setTypeFilter(v as TransactionFilter)}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="deposit">Deposits</TabsTrigger>
-              <TabsTrigger value="withdrawal">Withdrawals</TabsTrigger>
+              <TabsTrigger value="withdrawal">Sent</TabsTrigger>
+              <TabsTrigger value="transfer">Transfers</TabsTrigger>
             </TabsList>
           </Tabs>
 
