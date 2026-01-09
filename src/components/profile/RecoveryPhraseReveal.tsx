@@ -191,25 +191,55 @@ const RecoveryPhraseReveal = ({ open, onOpenChange }: RecoveryPhraseRevealProps)
         const words = phrase.trim().split(/\s+/);
         setSeedPhrase(words);
         
-        // Re-store locally for future access
+        // Re-store locally for future access (to enable internal signing on this device)
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         if (currentUser?.id) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('wallet_address')
-            .eq('user_id', currentUser.id)
-            .single();
-          
-          if (profile?.wallet_address) {
+          try {
             setWalletStorageUserId(currentUser.id);
-            storeWallet({
-              address: profile.wallet_address,
-              privateKey: '', // Not available from server backup
-              seedPhrase: phrase,
-              network: 'mainnet',
-              balance: '0'
-            }, currentUser.id);
-            console.log('[RECOVERY] Re-stored wallet locally from server backup');
+
+            // Prefer profile wallet address if present; otherwise derive from phrase
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('wallet_address')
+              .eq('user_id', currentUser.id)
+              .maybeSingle();
+
+            const normalized = phrase.trim().toLowerCase().replace(/\s+/g, ' ');
+
+            const { Wallet } = await import('ethers');
+            const derivedWallet = Wallet.fromPhrase(normalized);
+
+            // Safety: if profile wallet exists, ensure it matches the decrypted phrase
+            if (
+              profile?.wallet_address &&
+              derivedWallet.address.toLowerCase() !== profile.wallet_address.toLowerCase()
+            ) {
+              console.error('[RECOVERY] Backup phrase does not match profile wallet address');
+              toast({
+                title: 'Wallet Mismatch',
+                description:
+                  'This backup PIN decrypted a phrase that does not match your registered wallet address. Please re-import your correct wallet.',
+                variant: 'destructive',
+                duration: 12000,
+              });
+              setPinError('Backup does not match this account');
+              return;
+            }
+
+            storeWallet(
+              {
+                address: profile?.wallet_address || derivedWallet.address,
+                privateKey: '', // keep private key out of storage; derive when needed
+                seedPhrase: normalized,
+                network: 'mainnet',
+                balance: '0',
+              },
+              currentUser.id
+            );
+
+            console.log('[RECOVERY] Stored decrypted seed phrase locally for signing');
+          } catch (e) {
+            console.warn('[RECOVERY] Failed to persist decrypted phrase locally:', e);
           }
         }
         
