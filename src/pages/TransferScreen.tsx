@@ -262,20 +262,21 @@ const TransferScreen = () => {
           });
         }
       } else {
-        // Trading → Wallet (withdrawal)
-        const { error } = await supabase.functions.invoke('process-crypto-withdrawal', {
+        // Trading → Wallet (release balance from trading ledger)
+        // The tokens are already in the user's on-chain wallet, we just reduce the trading balance
+        const { data, error } = await supabase.functions.invoke('release-trading-balance', {
           body: {
             asset_symbol: selectedAsset,
-            amount: amountNum,
-            destination_address: userWallet
+            amount: amountNum
           }
         });
 
         if (error) throw error;
+        if (data && !data.success) throw new Error(data.error || 'Transfer failed');
 
         toast({
-          title: "Withdrawal Initiated",
-          description: `${amountNum.toFixed(6)} ${selectedAsset} will be sent to your wallet`
+          title: "Transfer Complete",
+          description: `${amountNum.toFixed(6)} ${selectedAsset} released from trading`
         });
         setShowSuccess(true);
       }
