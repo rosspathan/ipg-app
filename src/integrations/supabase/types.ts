@@ -3803,6 +3803,112 @@ export type Database = {
           },
         ]
       }
+      custodial_deposits: {
+        Row: {
+          amount: number
+          asset_id: string
+          confirmations: number | null
+          created_at: string | null
+          credited_at: string | null
+          from_address: string
+          id: string
+          required_confirmations: number | null
+          status: string
+          tx_hash: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          confirmations?: number | null
+          created_at?: string | null
+          credited_at?: string | null
+          from_address: string
+          id?: string
+          required_confirmations?: number | null
+          status?: string
+          tx_hash: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          confirmations?: number | null
+          created_at?: string | null
+          credited_at?: string | null
+          from_address?: string
+          id?: string
+          required_confirmations?: number | null
+          status?: string
+          tx_hash?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custodial_deposits_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custodial_withdrawals: {
+        Row: {
+          amount: number
+          asset_id: string
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          fee_amount: number | null
+          id: string
+          status: string
+          to_address: string
+          tx_hash: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          fee_amount?: number | null
+          id?: string
+          status?: string
+          to_address: string
+          tx_hash?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          fee_amount?: number | null
+          id?: string
+          status?: string
+          to_address?: string
+          tx_hash?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custodial_withdrawals_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_commission_totals: {
         Row: {
           created_at: string | null
