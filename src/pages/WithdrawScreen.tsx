@@ -6,30 +6,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Shield, ScanLine, Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { QRScanner } from "@/components/scanner/QRScanner";
+import { WalletPinDialog } from "@/components/wallet/WalletPinDialog";
 import { useOnchainBalances } from "@/hooks/useOnchainBalances";
 import { supabase } from "@/integrations/supabase/client";
 import { validateCryptoAddress } from "@/lib/validation/cryptoAddressValidator";
 import { useWithdrawalFees } from "@/hooks/useWithdrawalFees";
 import { useWeb3 } from "@/contexts/Web3Context";
-import { transferBNB, transferERC20, transferViaMetaMask } from "@/lib/wallet/onchainTransfer";
+import { transferBNB, transferERC20 } from "@/lib/wallet/onchainTransfer";
 import { useOpenOrdersCheck } from "@/hooks/useOpenOrdersCheck";
+import { retrieveWalletData } from "@/utils/wallet";
+import { getStoredEvmAddress } from "@/lib/wallet/evmAddress";
 
 const WithdrawScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  // Get user's wallet from Web3 context
+
+  // Get user's wallet from Web3 context (may be MetaMask wallet with no privateKey)
   const { wallet } = useWeb3();
-  
+
   // Check for pre-selected asset from URL params
-  const searchParams = new URLSearchParams(window.location.search)
-  const preSelectedAsset = searchParams.get('asset')
-  
+  const searchParams = new URLSearchParams(window.location.search);
+  const preSelectedAsset = searchParams.get("asset");
+
   const [selectedAsset, setSelectedAsset] = useState(preSelectedAsset || "");
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [address, setAddress] = useState("");
@@ -37,6 +38,12 @@ const WithdrawScreen = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // PIN dialog (used when private key isn't in memory)
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinDialogError, setPinDialogError] = useState<string | null>(null);
+  const [sourceWalletAddress, setSourceWalletAddress] = useState<string | null>(null);
+
   const [addressValidation, setAddressValidation] = useState<{
     isValid: boolean;
     error?: string;
@@ -44,15 +51,23 @@ const WithdrawScreen = () => {
 
   // Fetch REAL on-chain balances (not database balances)
   const { balances: onchainBalances, isLoading, error, refetch: refetchBalances } = useOnchainBalances();
-  
+
+  // Capture the wallet address that balances are based on (for PIN wallet safety check)
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const addr = await getStoredEvmAddress(user.id);
+        if (addr) setSourceWalletAddress(addr);
+      } catch (e) {
+        console.warn('[WithdrawScreen] Failed to resolve source wallet address', e);
+      }
+    })();
+  }, []);
+
   // Get dynamic withdrawal fees
   const { fees: withdrawalFees, loading: feesLoading } = useWithdrawalFees(selectedAsset, selectedNetwork);
-
-  // Check for open orders that might lock funds
-  const { data: openOrdersData } = useOpenOrdersCheck(selectedAsset);
-
-  // Filter assets - hide dust balances below threshold
-  const MIN_WITHDRAWAL_BALANCE = 0.001;
 
   // Transform on-chain balances into the format needed for the UI
   const assets = onchainBalances
@@ -155,52 +170,53 @@ const WithdrawScreen = () => {
     setShowConfirmation(true);
   };
 
-  const confirmWithdraw = async () => {
+  const executeWithdraw = async (privateKey: string) => {
     setIsProcessing(true);
     try {
-      const asset = assets.find(a => a.symbol === selectedAsset);
-      if (!asset) throw new Error('Asset not found');
+      const asset = assets.find((a) => a.symbol === selectedAsset);
+      if (!asset) throw new Error("Asset not found");
 
-      let result;
-      const netAmountValue = (parseFloat(amount) - (withdrawalFees?.totalFee || 0)).toString();
+      const netAmountValue = (
+        parseFloat(amount) - (withdrawalFees?.totalFee || 0)
+      ).toString();
 
-      // Must have internal wallet with privateKey for on-chain withdrawals
-      const hasInternalWallet = wallet?.privateKey && wallet.privateKey.length > 0;
-      
-      if (!hasInternalWallet) {
-        throw new Error('No wallet available. Please create or import a wallet first.');
+      if (Number(netAmountValue) <= 0) {
+        throw new Error("Amount after fee must be greater than 0");
       }
 
-      // Use internal wallet to sign transaction directly (no MetaMask redirect)
-      if (selectedAsset === 'BNB') {
-        result = await transferBNB(wallet.privateKey, address, netAmountValue);
-      } else if (asset.contractAddress) {
-        result = await transferERC20(
-          wallet.privateKey,
-          asset.contractAddress,
-          address,
-          netAmountValue,
-          asset.decimals
-        );
-      } else {
-        throw new Error('Token contract address not found');
-      }
+      // Sign transaction directly with provided private key
+      const result =
+        selectedAsset === "BNB"
+          ? await transferBNB(privateKey, address, netAmountValue)
+          : asset.contractAddress
+            ? await transferERC20(
+                privateKey,
+                asset.contractAddress,
+                address,
+                netAmountValue,
+                asset.decimals
+              )
+            : (() => {
+                throw new Error("Token contract address not found");
+              })();
 
       if (!result.success) {
-        throw new Error(result.error || 'Transaction failed');
+        throw new Error(result.error || "Transaction failed");
       }
 
       // Record withdrawal in database for history
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('escrow_withdrawals').insert({
+        await supabase.from("escrow_withdrawals").insert({
           user_id: user.id,
           asset_symbol: selectedAsset,
           amount: parseFloat(amount),
           to_address: address,
           tx_hash: result.txHash,
-          status: 'completed',
-          processed_at: new Date().toISOString()
+          status: "completed",
+          processed_at: new Date().toISOString(),
         });
       }
 
@@ -208,20 +224,61 @@ const WithdrawScreen = () => {
         title: "Withdrawal Successful",
         description: `${netAmountValue} ${selectedAsset} sent to ${address.slice(0, 8)}...${address.slice(-6)}`,
       });
-      
+
       // Refresh on-chain balances
       refetchBalances();
       navigate("/app/wallet");
     } catch (error: any) {
-      console.error('[WithdrawScreen] Withdrawal error:', error);
+      console.error("[WithdrawScreen] Withdrawal error:", error);
       toast({
         title: "Withdrawal Failed",
         description: error.message || "Failed to process withdrawal",
-        variant: "destructive"
+        variant: "destructive",
       });
       setShowConfirmation(false);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const confirmWithdraw = async () => {
+    // If Web3 context already has a private key (internal wallet), use it
+    if (wallet?.privateKey && wallet.privateKey.length > 0) {
+      await executeWithdraw(wallet.privateKey);
+      return;
+    }
+
+    // Otherwise, ask for PIN and decrypt local wallet to sign inside the app
+    setPinDialogError(null);
+    setPinDialogOpen(true);
+  };
+
+  const handlePinConfirm = async (pin: string) => {
+    try {
+      setPinDialogError(null);
+
+      const walletData = retrieveWalletData(pin);
+      if (!walletData) {
+        setPinDialogError("Incorrect PIN");
+        return;
+      }
+
+      // Safety: ensure PIN wallet matches the wallet address used for balances (if known)
+      if (
+        sourceWalletAddress &&
+        walletData.address.toLowerCase() !== sourceWalletAddress.toLowerCase()
+      ) {
+        setPinDialogError(
+          `PIN wallet (${walletData.address.slice(0, 6)}...${walletData.address.slice(-4)}) does not match your active wallet (${sourceWalletAddress.slice(0, 6)}...${sourceWalletAddress.slice(-4)}).`
+        );
+        return;
+      }
+
+      setPinDialogOpen(false);
+      await executeWithdraw(walletData.privateKey);
+    } catch (e: any) {
+      console.error('[WithdrawScreen] PIN confirm failed', e);
+      setPinDialogError(e?.message ?? 'Failed to unlock wallet');
     }
   };
 
@@ -265,9 +322,9 @@ const WithdrawScreen = () => {
           </Card>
 
           <div className="space-y-3">
-            <Button 
-              onClick={confirmWithdraw} 
-              className="w-full" 
+            <Button
+              onClick={confirmWithdraw}
+              className="w-full"
               size="lg"
               disabled={isProcessing}
             >
@@ -277,19 +334,30 @@ const WithdrawScreen = () => {
                   Processing...
                 </>
               ) : (
-                'Confirm with PIN/Biometric'
+                "Confirm with PIN/Biometric"
               )}
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowConfirmation(false)} 
-              className="w-full" 
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmation(false)}
+              className="w-full"
               size="lg"
               disabled={isProcessing}
             >
               Cancel
             </Button>
           </div>
+
+          <WalletPinDialog
+            open={pinDialogOpen}
+            onOpenChange={(open) => {
+              setPinDialogOpen(open);
+              if (!open) setPinDialogError(null);
+            }}
+            onConfirm={handlePinConfirm}
+            isConfirming={isProcessing}
+            error={pinDialogError}
+          />
         </div>
       </div>
     );
