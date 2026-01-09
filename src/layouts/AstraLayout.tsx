@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
-import { Outlet, useNavigate } from "react-router-dom"
+import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { AppTopBar } from "@/components/astra/AppTopBar"
 import { BottomNavBar } from "@/components/navigation/BottomNavBar"
 import { SupportLinkWhatsApp } from "@/components/support/SupportLinkWhatsApp"
@@ -11,14 +11,24 @@ import { useRealtimeTradingBalances } from "@/hooks/useRealtimeTradingBalances"
 import { Button } from "@/components/ui/button"
 import { X, AlertCircle } from "lucide-react"
 
+const BUILD_ID = "2026-01-09T10:20:00Z";
+
+
 export function AstraLayout() {
   // Global real-time balance subscription - updates all wallet screens instantly
   useRealtimeTradingBalances();
   useSafeAreaPolyfill()
   const { user, signOut } = useAuthUser()
   const navigate = useNavigate()
+  const location = useLocation()
+  const debugBuild = new URLSearchParams(location.search).get('debugBuild') === '1'
   const [showMismatchBanner, setShowMismatchBanner] = useState(false)
   const [onboardingEmail, setOnboardingEmail] = useState<string | null>(null)
+
+  // Build marker (helps confirm domain is on latest deployed code)
+  useEffect(() => {
+    console.info('[BUILD_ID]', BUILD_ID)
+  }, [])
 
   // Check for session mismatch
   useEffect(() => {
@@ -34,6 +44,7 @@ export function AstraLayout() {
       console.error('Error checking session mismatch:', err)
     }
   }, [user?.email])
+
 
   const handleSwitchAccount = async () => {
     try {
