@@ -35,8 +35,13 @@ END $$;
 -- Scans hot wallet for incoming token transfers
 -- Credits confirmed deposits to user trading_balances
 
--- Remove existing job if it exists
-SELECT cron.unschedule('monitor-custodial-deposits');
+-- Safely remove existing job if it exists (won't error if not found)
+DO $$
+BEGIN
+    PERFORM cron.unschedule('monitor-custodial-deposits');
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
 
 -- Create the deposit monitoring cron job
 SELECT cron.schedule(
@@ -57,8 +62,13 @@ SELECT cron.schedule(
 -- Processes pending withdrawal requests
 -- Sends tokens from hot wallet to user addresses
 
--- Remove existing job if it exists
-SELECT cron.unschedule('process-custodial-withdrawals');
+-- Safely remove existing job if it exists (won't error if not found)
+DO $$
+BEGIN
+    PERFORM cron.unschedule('process-custodial-withdrawals');
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
 
 -- Create the withdrawal processing cron job
 SELECT cron.schedule(
