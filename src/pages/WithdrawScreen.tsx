@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Shield, ScanLine, Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
@@ -25,7 +25,13 @@ const MIN_WITHDRAWAL_BALANCE = 0.0001;
 
 const WithdrawScreen = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  // Check for pre-selected asset / debug flags from URL params
+  const searchParams = new URLSearchParams(location.search);
+  const preSelectedAsset = searchParams.get("asset");
+  const debugClicks = searchParams.get("debugClicks") === "1";
 
   // Get user's wallet from Web3 context (may be MetaMask wallet with no privateKey)
   const { wallet, refreshWallet } = useWeb3();
@@ -36,9 +42,38 @@ const WithdrawScreen = () => {
     refreshWallet();
   }, []);
 
-  // Check for pre-selected asset from URL params
-  const searchParams = new URLSearchParams(window.location.search);
-  const preSelectedAsset = searchParams.get("asset");
+  // Debug: Log what element is actually receiving taps/clicks (domain vs preview)
+  useEffect(() => {
+    if (!debugClicks) return;
+
+    const handler = (e: PointerEvent) => {
+      const stack = document
+        .elementsFromPoint(e.clientX, e.clientY)
+        .slice(0, 6)
+        .map((el) => {
+          const he = el as HTMLElement;
+          const s = window.getComputedStyle(he);
+          return {
+            tag: he.tagName.toLowerCase(),
+            id: he.id || undefined,
+            className: String((he as any).className || "") || undefined,
+            pointerEvents: s.pointerEvents,
+            position: s.position,
+            zIndex: s.zIndex,
+          };
+        });
+
+      console.log("[DEBUG_TAP]", {
+        x: e.clientX,
+        y: e.clientY,
+        target: String((e.target as any)?.tagName || ""),
+        stack,
+      });
+    };
+
+    window.addEventListener("pointerdown", handler, true);
+    return () => window.removeEventListener("pointerdown", handler, true);
+  }, [debugClicks]);
 
   const [selectedAsset, setSelectedAsset] = useState(preSelectedAsset || "");
   const [selectedNetwork, setSelectedNetwork] = useState("");
@@ -50,6 +85,8 @@ const WithdrawScreen = () => {
   const [gasCheckError, setGasCheckError] = useState<string | null>(null);
   const [isCheckingGas, setIsCheckingGas] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
+  const [isPreparingSigner, setIsPreparingSigner] = useState(false);
+
 
   const [addressValidation, setAddressValidation] = useState<{
     isValid: boolean;
@@ -451,36 +488,56 @@ const WithdrawScreen = () => {
   };
 
   const confirmWithdraw = async () => {
-    // Try refreshing wallet first in case it was imported after context loaded
-    await refreshWallet();
+    if (isProcessing || isPreparingSigner) return;
 
-    const privateKey = await resolvePrivateKey();
-
-    if (privateKey) {
-      await executeWithdraw({ type: "privateKey", privateKey });
-      return;
+    if (debugClicks) {
+      console.log("[WithdrawScreen] Sign & Send tapped", { ts: Date.now() });
+      toast({
+        title: "Tapped Sign & Send",
+        description: "Handler triggered (debugClicks=1)",
+        duration: 2000,
+      });
     }
 
-    // Only use MetaMask signing if the *active wallet* is MetaMask.
-    // (Prevents auto-opening MetaMask when the user expects internal signing.)
-    const isMetaMaskWallet = !!wallet && !wallet.privateKey && !wallet.seedPhrase;
-    if (isMetaMaskWallet && typeof window !== "undefined" && typeof window.ethereum !== "undefined") {
-      await executeWithdraw({ type: "metamask" });
-      return;
-    }
+    setIsPreparingSigner(true);
+    try {
+      // Try refreshing wallet first in case it was imported after context loaded
+      await refreshWallet();
 
-    const backupStatus = await checkBackupExists();
-    if (backupStatus.exists) {
-      setShowPinDialog(true);
-      return;
-    }
+      const privateKey = await resolvePrivateKey();
 
-    toast({
-      title: "Cannot Sign Internally",
-      description:
-        "Your internal wallet key isn't available on this device. Please re-import your wallet (Profile → Security) to sign inside the app.",
-      variant: "destructive",
-    });
+      if (privateKey) {
+        await executeWithdraw({ type: "privateKey", privateKey });
+        return;
+      }
+
+      // Only use MetaMask signing if the *active wallet* is MetaMask.
+      // (Prevents auto-opening MetaMask when the user expects internal signing.)
+      const isMetaMaskWallet = !!wallet && !wallet.privateKey && !wallet.seedPhrase;
+      if (
+        isMetaMaskWallet &&
+        typeof window !== "undefined" &&
+        typeof window.ethereum !== "undefined"
+      ) {
+        await executeWithdraw({ type: "metamask" });
+        return;
+      }
+
+      const backupStatus = await checkBackupExists();
+      if (backupStatus.exists) {
+        setShowPinDialog(true);
+        return;
+      }
+
+      toast({
+        title: "Cannot Sign Internally",
+        description:
+          "Your internal wallet key isn't available on this device. Please re-import your wallet (Profile → Security) to sign inside the app.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPreparingSigner(false);
+    }
   };
 
   if (showConfirmation) {
@@ -551,9 +608,16 @@ const WithdrawScreen = () => {
             <Button
               type="button"
               onClick={confirmWithdraw}
+              onPointerDown={(e) => {
+                if (!debugClicks) return;
+                console.log("[WithdrawScreen] pointerdown Sign & Send", {
+                  ts: Date.now(),
+                  target: (e.target as HTMLElement)?.tagName,
+                });
+              }}
               className="w-full min-h-[56px] touch-manipulation"
               size="lg"
-              disabled={isProcessing || isCheckingGas}
+              disabled={isProcessing || isCheckingGas || isPreparingSigner}
             >
               {isProcessing ? (
                 <>
@@ -564,6 +628,11 @@ const WithdrawScreen = () => {
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Checking Gas...
+                </>
+              ) : isPreparingSigner ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Preparing...
                 </>
               ) : (
                 "Sign & Send"
