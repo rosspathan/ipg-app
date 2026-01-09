@@ -180,24 +180,24 @@ function TradingPairPageContent() {
     );
   }
 
-  // Find balances for the trading pair - use ON-CHAIN balances as source of truth
+  // Find balances for the trading pair - use INTERNAL LEDGER (wallet_balances) as source of truth
   const quoteBalanceData = bep20Balances?.find((b) => b.symbol === pair.quoteAsset);
   const baseBalanceData = bep20Balances?.find((b) => b.symbol === pair.baseAsset);
   
-  // SOURCE OF TRUTH: On-chain balances
-  // Available = on-chain balance minus locked in orders
-  // Locked = amount reserved in open orders
+  // SOURCE OF TRUTH: Internal wallet_balances (custodial trading)
+  // Available = wallet_balances.available (funds ready to trade)
+  // Locked = wallet_balances.locked (funds in open orders)
   const quoteBalance = {
     symbol: pair.quoteAsset,
-    available: Math.max(0, (quoteBalanceData?.onchainBalance ?? 0) - (quoteBalanceData?.appLocked ?? 0)),
+    available: quoteBalanceData?.appAvailable ?? 0,
     locked: quoteBalanceData?.appLocked ?? 0,
-    total: quoteBalanceData?.onchainBalance ?? 0
+    total: (quoteBalanceData?.appAvailable ?? 0) + (quoteBalanceData?.appLocked ?? 0)
   };
   const baseBalance = {
     symbol: pair.baseAsset,
-    available: Math.max(0, (baseBalanceData?.onchainBalance ?? 0) - (baseBalanceData?.appLocked ?? 0)),
+    available: baseBalanceData?.appAvailable ?? 0,
     locked: baseBalanceData?.appLocked ?? 0,
-    total: baseBalanceData?.onchainBalance ?? 0
+    total: (baseBalanceData?.appAvailable ?? 0) + (baseBalanceData?.appLocked ?? 0)
   };
 
   const handlePriceClick = (price: number) => {
