@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { validateCryptoAddress } from "@/lib/validation/cryptoAddressValidator";
 import { useWithdrawalFees } from "@/hooks/useWithdrawalFees";
 import { useWeb3 } from "@/contexts/Web3Context";
-import { transferBNB, transferERC20 } from "@/lib/wallet/onchainTransfer";
+import { transferBNB, transferERC20, transferViaMetaMask } from "@/lib/wallet/onchainTransfer";
 import { useOpenOrdersCheck } from "@/hooks/useOpenOrdersCheck";
 import { getStoredWallet } from "@/utils/walletStorage";
 
@@ -187,7 +187,11 @@ const WithdrawScreen = () => {
     setShowConfirmation(true);
   };
 
-  const executeWithdraw = async (privateKey: string) => {
+  type SigningMethod =
+    | { type: "privateKey"; privateKey: string }
+    | { type: "metamask" };
+
+  const executeWithdraw = async (signer: SigningMethod) => {
     setIsProcessing(true);
     try {
       const asset = assets.find((a) => a.symbol === selectedAsset);
@@ -201,21 +205,33 @@ const WithdrawScreen = () => {
         throw new Error("Amount after fee must be greater than 0");
       }
 
-      // Sign transaction directly with provided private key
       const result =
-        selectedAsset === "BNB"
-          ? await transferBNB(privateKey, address, netAmountValue)
-          : asset.contractAddress
-            ? await transferERC20(
-                privateKey,
-                asset.contractAddress,
-                address,
-                netAmountValue,
-                asset.decimals
-              )
-            : (() => {
-                throw new Error("Token contract address not found");
-              })();
+        signer.type === "metamask"
+          ? await transferViaMetaMask(
+              selectedAsset === "BNB"
+                ? null
+                : asset.contractAddress
+                  ? asset.contractAddress
+                  : (() => {
+                      throw new Error("Token contract address not found");
+                    })(),
+              address,
+              netAmountValue,
+              asset.decimals
+            )
+          : selectedAsset === "BNB"
+            ? await transferBNB(signer.privateKey, address, netAmountValue)
+            : asset.contractAddress
+              ? await transferERC20(
+                  signer.privateKey,
+                  asset.contractAddress,
+                  address,
+                  netAmountValue,
+                  asset.decimals
+                )
+              : (() => {
+                  throw new Error("Token contract address not found");
+                })();
 
       if (!result.success) {
         throw new Error(result.error || "Transaction failed");
@@ -247,26 +263,32 @@ const WithdrawScreen = () => {
       navigate("/app/wallet");
     } catch (error: any) {
       console.error("[WithdrawScreen] Withdrawal error:", error);
-      
+
       // Parse common blockchain errors for user-friendly messages
       let errorTitle = "Withdrawal Failed";
       let errorDescription = error.message || "Failed to process withdrawal";
-      
-      const errMsg = (error.message || '').toLowerCase();
-      if (errMsg.includes('insufficient funds') || errMsg.includes('insufficient balance')) {
+
+      const errMsg = (error.message || "").toLowerCase();
+      if (
+        errMsg.includes("insufficient funds") ||
+        errMsg.includes("insufficient balance")
+      ) {
         errorTitle = "Insufficient BNB for Gas";
-        errorDescription = "You need BNB in your wallet to pay for transaction fees. Please deposit some BNB first.";
-      } else if (errMsg.includes('nonce') || errMsg.includes('replacement')) {
+        errorDescription =
+          "You need BNB in your wallet to pay for transaction fees. Please deposit some BNB first.";
+      } else if (errMsg.includes("nonce") || errMsg.includes("replacement")) {
         errorTitle = "Transaction Pending";
-        errorDescription = "A previous transaction is still pending. Please wait a moment and try again.";
-      } else if (errMsg.includes('rejected') || errMsg.includes('denied')) {
+        errorDescription =
+          "A previous transaction is still pending. Please wait a moment and try again.";
+      } else if (errMsg.includes("rejected") || errMsg.includes("denied")) {
         errorTitle = "Transaction Rejected";
         errorDescription = "The transaction was cancelled.";
-      } else if (errMsg.includes('timeout') || errMsg.includes('network')) {
+      } else if (errMsg.includes("timeout") || errMsg.includes("network")) {
         errorTitle = "Network Error";
-        errorDescription = "Could not connect to BSC network. Please check your connection and try again.";
+        errorDescription =
+          "Could not connect to BSC network. Please check your connection and try again.";
       }
-      
+
       toast({
         title: errorTitle,
         description: errorDescription,
@@ -327,16 +349,23 @@ const WithdrawScreen = () => {
   const confirmWithdraw = async () => {
     const privateKey = await resolvePrivateKey();
 
-    if (!privateKey) {
-      toast({
-        title: "Wallet Not Available",
-        description: "Please create or import your wallet first.",
-        variant: "destructive",
-      });
+    if (privateKey) {
+      await executeWithdraw({ type: "privateKey", privateKey });
       return;
     }
 
-    await executeWithdraw(privateKey);
+    // If user is using MetaMask (or another injected wallet), send via it
+    if (typeof window !== "undefined" && typeof window.ethereum !== "undefined") {
+      await executeWithdraw({ type: "metamask" });
+      return;
+    }
+
+    toast({
+      title: "Cannot Sign Transaction",
+      description:
+        "Your wallet keys aren't available on this device. Please re-import your wallet (Profile → Security) or connect MetaMask.",
+      variant: "destructive",
+    });
   };
 
   if (showConfirmation) {
