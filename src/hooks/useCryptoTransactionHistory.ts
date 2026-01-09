@@ -184,35 +184,48 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
             fee,
             status,
             transaction_ref,
-            recipient:profiles!crypto_internal_transfers_recipient_id_fkey (username, full_name),
             assets (symbol, name, logo_url)
           `)
           .eq('sender_id', user.id)
           .order('created_at', { ascending: false })
           .limit(limit);
 
-        if (sentError) throw sentError;
+        if (sentError) {
+          console.error('Error fetching sent transfers:', sentError);
+        }
 
         if (sentTransfers) {
-          results.push(...sentTransfers.map((t: any) => ({
-            id: t.id,
-            user_id: t.sender_id,
-            created_at: t.created_at,
-            amount: parseFloat(t.amount),
-            symbol: t.assets?.symbol || 'Unknown',
-            asset_name: t.assets?.name || 'Unknown',
-            logo_url: t.assets?.logo_url || null,
-            transaction_type: 'transfer_out' as const,
-            status: t.status,
-            tx_hash: t.transaction_ref,
-            network: null,
-            confirmations: null,
-            required_confirmations: 0,
-            to_address: null,
-            fee: t.fee ? parseFloat(t.fee) : null,
-            completed_at: t.created_at,
-            counterparty: t.recipient?.full_name || t.recipient?.username || 'User'
-          })));
+          // Fetch recipient profiles separately
+          const recipientIds = [...new Set(sentTransfers.map(t => t.recipient_id))];
+          const { data: recipientProfiles } = await supabase
+            .from('profiles')
+            .select('id, username, full_name')
+            .in('id', recipientIds);
+
+          const profileMap = new Map(recipientProfiles?.map(p => [p.id, p]) || []);
+
+          results.push(...sentTransfers.map((t: any) => {
+            const recipient = profileMap.get(t.recipient_id);
+            return {
+              id: t.id,
+              user_id: t.sender_id,
+              created_at: t.created_at,
+              amount: parseFloat(t.amount),
+              symbol: t.assets?.symbol || 'Unknown',
+              asset_name: t.assets?.name || 'Unknown',
+              logo_url: t.assets?.logo_url || null,
+              transaction_type: 'transfer_out' as const,
+              status: t.status,
+              tx_hash: t.transaction_ref,
+              network: null,
+              confirmations: null,
+              required_confirmations: 0,
+              to_address: null,
+              fee: t.fee ? parseFloat(t.fee) : null,
+              completed_at: t.created_at,
+              counterparty: recipient?.full_name || recipient?.username || 'User'
+            };
+          }));
         }
 
         // Fetch internal transfers (received by user)
@@ -226,35 +239,48 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
             net_amount,
             status,
             transaction_ref,
-            sender:profiles!crypto_internal_transfers_sender_id_fkey (username, full_name),
             assets (symbol, name, logo_url)
           `)
           .eq('recipient_id', user.id)
           .order('created_at', { ascending: false })
           .limit(limit);
 
-        if (receivedError) throw receivedError;
+        if (receivedError) {
+          console.error('Error fetching received transfers:', receivedError);
+        }
 
         if (receivedTransfers) {
-          results.push(...receivedTransfers.map((t: any) => ({
-            id: `${t.id}_recv`,
-            user_id: t.recipient_id,
-            created_at: t.created_at,
-            amount: parseFloat(t.net_amount),
-            symbol: t.assets?.symbol || 'Unknown',
-            asset_name: t.assets?.name || 'Unknown',
-            logo_url: t.assets?.logo_url || null,
-            transaction_type: 'transfer_in' as const,
-            status: t.status,
-            tx_hash: t.transaction_ref,
-            network: null,
-            confirmations: null,
-            required_confirmations: 0,
-            to_address: null,
-            fee: null,
-            completed_at: t.created_at,
-            counterparty: t.sender?.full_name || t.sender?.username || 'User'
-          })));
+          // Fetch sender profiles separately
+          const senderIds = [...new Set(receivedTransfers.map(t => t.sender_id))];
+          const { data: senderProfiles } = await supabase
+            .from('profiles')
+            .select('id, username, full_name')
+            .in('id', senderIds);
+
+          const profileMap = new Map(senderProfiles?.map(p => [p.id, p]) || []);
+
+          results.push(...receivedTransfers.map((t: any) => {
+            const sender = profileMap.get(t.sender_id);
+            return {
+              id: `${t.id}_recv`,
+              user_id: t.recipient_id,
+              created_at: t.created_at,
+              amount: parseFloat(t.net_amount),
+              symbol: t.assets?.symbol || 'Unknown',
+              asset_name: t.assets?.name || 'Unknown',
+              logo_url: t.assets?.logo_url || null,
+              transaction_type: 'transfer_in' as const,
+              status: t.status,
+              tx_hash: t.transaction_ref,
+              network: null,
+              confirmations: null,
+              required_confirmations: 0,
+              to_address: null,
+              fee: null,
+              completed_at: t.created_at,
+              counterparty: sender?.full_name || sender?.username || 'User'
+            };
+          }));
         }
       }
 
