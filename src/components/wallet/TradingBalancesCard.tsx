@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftRight, Loader2 } from "lucide-react"
 import AssetLogo from "@/components/AssetLogo"
@@ -28,37 +27,46 @@ export function TradingBalancesCard({ balances, loading, onTransfer }: TradingBa
 
   if (loading) {
     return (
-      <Card className="bg-card/60 backdrop-blur-xl border-border/40">
-        <CardContent className="p-6 flex items-center justify-center">
+      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6">
+        <div className="flex items-center justify-center py-6">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card className="bg-card/60 backdrop-blur-xl border-border/40">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-semibold">Trading Balances</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Funds available for placing orders
-            </p>
-          </div>
-          {onTransfer && (
-            <Button variant="outline" size="sm" onClick={onTransfer}>
-              <ArrowLeftRight className="h-3.5 w-3.5 mr-1" />
-              Transfer
-            </Button>
-          )}
+    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl overflow-hidden">
+      {/* Header with Transfer Button */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-3">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">Trading Balances</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Funds available for placing orders
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
+        {onTransfer && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onTransfer}
+            className="h-9 px-4 bg-primary/10 hover:bg-primary/20 border-primary/40 hover:border-primary/60 text-primary rounded-lg transition-all duration-200"
+          >
+            <ArrowLeftRight className="h-3.5 w-3.5 mr-1.5" />
+            Transfer
+          </Button>
+        )}
+      </div>
+      
+      {/* Content */}
+      <div className="px-5 pb-5 space-y-3">
         {activeBalances.length === 0 ? (
-          <div className="text-center py-6">
-            <p className="text-sm text-muted-foreground mb-2">No trading balances</p>
-            <p className="text-xs text-muted-foreground">
+          <div className="text-center py-8 px-4">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted/50 flex items-center justify-center">
+              <ArrowLeftRight className="h-5 w-5 text-muted-foreground/60" />
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">No trading balances</p>
+            <p className="text-xs text-muted-foreground/70">
               Transfer funds from your on-chain wallet to start trading
             </p>
           </div>
@@ -66,9 +74,9 @@ export function TradingBalancesCard({ balances, loading, onTransfer }: TradingBa
           <>
             {/* Total Value */}
             {totalUsd > 0 && (
-              <div className="flex justify-between items-center pb-2 border-b border-border/40">
+              <div className="flex justify-between items-center py-3 border-b border-border/40">
                 <span className="text-sm text-muted-foreground">Total Value</span>
-                <span className="font-semibold text-foreground">
+                <span className="font-bold text-lg text-foreground tabular-nums">
                   ${totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
@@ -79,21 +87,21 @@ export function TradingBalancesCard({ balances, loading, onTransfer }: TradingBa
               {activeBalances.map((asset) => (
                 <div 
                   key={asset.symbol}
-                  className="flex items-center justify-between p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-transparent hover:border-border/40 transition-all duration-200"
                 >
                   <div className="flex items-center gap-3">
                     <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} size="sm" />
                     <div>
-                      <p className="font-medium text-sm">{asset.symbol}</p>
+                      <p className="font-semibold text-sm">{asset.symbol}</p>
                       <p className="text-xs text-muted-foreground">{asset.name}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-sm font-medium">
+                    <p className="font-mono text-sm font-semibold tabular-nums">
                       {asset.available.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                     </p>
                     {asset.locked > 0.000001 && (
-                      <p className="text-xs text-amber-500 font-mono">
+                      <p className="text-xs text-amber-500 font-mono tabular-nums">
                         +{asset.locked.toFixed(4)} locked
                       </p>
                     )}
@@ -103,7 +111,7 @@ export function TradingBalancesCard({ balances, loading, onTransfer }: TradingBa
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

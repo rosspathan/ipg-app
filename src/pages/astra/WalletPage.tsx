@@ -192,7 +192,7 @@ export function WalletPage() {
   )
 
   return (
-    <div className="space-y-6" data-testid="page-wallet" data-version="usr-wallet-link-v3">
+    <div className="space-y-4 pb-24" data-testid="page-wallet" data-version="usr-wallet-link-v3">
         {/* Wallet Integrity Warning Banner */}
         {walletIntegrity.hasMismatch && !integrityDismissed && walletIntegrity.mismatchType && (
           <WalletIntegrityBanner
@@ -207,112 +207,143 @@ export function WalletPage() {
 
         {/* Address Panel with Network Badge */}
         <div 
-          className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 transition-all duration-220"
+          className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 via-card/80 to-card/60 backdrop-blur-xl p-5 transition-all duration-300"
           data-testid="address-panel"
         >
           {/* Network Badge */}
           <NetworkBadge network="BINANCE SMART CHAIN" className="mb-4" />
 
           {/* Address Display */}
-          <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-muted-foreground">Your EVM Address (BEP20/ERC20)</p>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate('/app/wallet/onchain')}
-                    className="h-7 px-2 text-xs"
-                  >
-                    <Wallet className="h-3.5 w-3.5 mr-1" />
-                    On-chain
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAddress(!showAddress)}
-                    className="h-7 px-2"
-                  >
-                    {showAddress ? (
-                      <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Your EVM Address<br/><span className="text-xs">(BEP20/ERC20)</span></p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/app/wallet/onchain')}
+                  className="h-8 px-3 text-xs bg-muted/40 hover:bg-muted/60 rounded-lg"
+                >
+                  <Wallet className="h-3.5 w-3.5 mr-1.5" />
+                  On-chain
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddress(!showAddress)}
+                  className="h-8 w-8 p-0 bg-muted/40 hover:bg-muted/60 rounded-lg"
+                >
+                  {showAddress ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
               </div>
+            </div>
 
-              <div className="bg-muted/40 backdrop-blur-sm rounded-xl p-3 border border-border/40">
-                <p className="font-mono text-xs break-all text-foreground/90 leading-relaxed" data-testid="wallet-evm-address">
-                  {showAddress ? (walletAddress || 'NO wallet connected') : '••••••••••••••••••••••••••••••••••'}
+            <div className="bg-muted/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <p className="font-mono text-sm break-all text-foreground leading-relaxed" data-testid="wallet-evm-address">
+                {showAddress ? (walletAddress || 'No wallet connected') : '••••••••••••••••••••••••••••••••••••••••'}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyAddress}
+                className="flex flex-col items-center gap-1.5 h-auto py-3 bg-card/80 hover:bg-primary/10 hover:border-primary/50 border-border/50 rounded-xl transition-all duration-200"
+                data-testid="wallet-copy"
+              >
+                <Copy className="h-4 w-4" />
+                <span className="text-xs font-medium">Copy</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowQrDialog(true)}
+                className="flex flex-col items-center gap-1.5 h-auto py-3 bg-card/80 hover:bg-primary/10 hover:border-primary/50 border-border/50 rounded-xl transition-all duration-200"
+                disabled={!walletAddress}
+                data-testid="wallet-qr"
+              >
+                <QrCode className="h-4 w-4" />
+                <span className="text-xs font-medium">QR</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(getExplorerUrl(walletAddress, 'bsc'), '_blank')}
+                className="flex flex-col items-center gap-1.5 h-auto py-3 bg-card/80 hover:bg-primary/10 hover:border-primary/50 border-border/50 rounded-xl transition-all duration-200"
+                disabled={!walletAddress}
+                data-testid="wallet-explorer"
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span className="text-xs font-medium">BSC</span>
+              </Button>
+            </div>
+          </div>
+
+          {!walletAddress && (
+            <div className="mt-4 space-y-3">
+              <div className="p-4 bg-warning/10 border border-warning/20 rounded-xl">
+                <p className="text-sm text-warning-foreground font-medium mb-2">
+                  Wallet Setup Required
+                </p>
+                <p className="text-xs text-warning-foreground/80">
+                  You need to create or import a wallet to use this feature.
                 </p>
               </div>
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyAddress}
-                  className="flex flex-col items-center gap-1 h-auto py-2 bg-background/60 hover:bg-primary/10 hover:border-primary/40 transition-colors"
-                  data-testid="wallet-copy"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium">Copy</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowQrDialog(true)}
-                  className="flex flex-col items-center gap-1 h-auto py-2 bg-background/60 hover:bg-primary/10 hover:border-primary/40 transition-colors"
-                  disabled={!walletAddress}
-                  data-testid="wallet-qr"
-                >
-                  <QrCode className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium">QR</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(getExplorerUrl(walletAddress, 'bsc'), '_blank')}
-                  className="flex flex-col items-center gap-1 h-auto py-2 bg-background/60 hover:bg-primary/10 hover:border-primary/40 transition-colors"
-                  disabled={!walletAddress}
-                  data-testid="wallet-explorer"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium">BSC</span>
-                </Button>
-              </div>
-            {!walletAddress && (
-              <div className="pt-3 space-y-3">
-                <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                  <p className="text-sm text-warning-foreground font-medium mb-2">
-                    Wallet Setup Required
-                  </p>
-                  <p className="text-xs text-warning-foreground/80">
-                    You need to create or import a wallet to use this feature. This is a one-time setup that creates your secure cryptocurrency wallet.
-                  </p>
-                </div>
-                <Button
-                  onClick={() => {
-                    localStorage.setItem('ipg_return_path', '/app/wallet');
-                    navigate('/onboarding/wallet');
-                  }}
-                  className="w-full"
-                  size="lg"
-                >
-                  Set Up Wallet Now
-                </Button>
-              </div>
-            )}
-          </div>
+              <Button
+                onClick={() => {
+                  localStorage.setItem('ipg_return_path', '/app/wallet');
+                  navigate('/onboarding/wallet');
+                }}
+                className="w-full"
+                size="lg"
+              >
+                Set Up Wallet Now
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* Quick Actions Ribbon */}
-        <QuickActionsRibbon actions={quickActions} />
-
-        {/* Pending Deposits */}
-        <PendingDepositsCard />
+        {/* Quick Actions - 2x2 Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            onClick={() => navigate("/app/wallet/deposit")}
+            className="flex flex-col items-center gap-2 h-auto py-5 bg-primary/15 hover:bg-primary/25 border border-primary/40 hover:border-primary/60 text-primary rounded-xl transition-all duration-200"
+            variant="ghost"
+          >
+            <span className="text-xl">↓</span>
+            <span className="text-sm font-semibold">Deposit</span>
+          </Button>
+          <Button
+            onClick={() => navigate("/app/wallet/withdraw")}
+            className="flex flex-col items-center gap-2 h-auto py-5 bg-card/80 hover:bg-muted/60 border border-border/50 hover:border-border rounded-xl transition-all duration-200"
+            variant="ghost"
+          >
+            <span className="text-xl">↑</span>
+            <span className="text-sm font-semibold">Withdraw</span>
+          </Button>
+          <Button
+            onClick={() => navigate("/app/swap")}
+            className="flex flex-col items-center gap-2 h-auto py-5 bg-card/80 hover:bg-muted/60 border border-border/50 hover:border-border rounded-xl transition-all duration-200"
+            variant="ghost"
+          >
+            <span className="text-xl">⇄</span>
+            <span className="text-sm font-semibold">Swap</span>
+          </Button>
+          <Button
+            onClick={() => navigate("/app/wallet/history")}
+            className="flex flex-col items-center gap-2 h-auto py-5 bg-card/80 hover:bg-muted/60 border border-border/50 hover:border-border rounded-xl transition-all duration-200"
+            variant="ghost"
+          >
+            <span className="text-xl">📋</span>
+            <span className="text-sm font-semibold">History</span>
+          </Button>
+        </div>
 
         {/* Portfolio Summary - Enhanced */}
         <PortfolioSummaryCard
@@ -324,36 +355,47 @@ export function WalletPage() {
           loading={portfolioLoading || onchainLoading}
         />
 
-      {/* Trading Balances Section */}
-      <TradingBalancesCard 
-        balances={tradingBalances || []} 
-        loading={tradingLoading}
-        onTransfer={() => navigate('/app/wallet/transfer')}
-      />
+        {/* Trading Balances Section with integrated Transfer */}
+        <TradingBalancesCard 
+          balances={tradingBalances || []} 
+          loading={tradingLoading}
+          onTransfer={() => navigate('/app/wallet/transfer')}
+        />
 
-      {/* Balance Cluster with Crypto Assets Grid */}
-      <BalanceCluster />
+        {/* Pending Deposits */}
+        <PendingDepositsCard />
+
+        {/* Balance Cluster with Crypto Assets Grid */}
+        <BalanceCluster />
 
       {/* QR Code Dialog */}
       <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-card/95 backdrop-blur-xl border-border/50">
           <DialogHeader>
-            <DialogTitle>Wallet QR Code</DialogTitle>
+            <DialogTitle className="text-center">Wallet QR Code</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-center gap-4 py-4">
+          <div className="flex flex-col items-center gap-4 py-6">
             {walletAddress && (
-              <div className="bg-white p-4 rounded-lg">
+              <div className="bg-white p-5 rounded-2xl shadow-lg">
                 <QRCodeSVG
                   value={walletAddress}
-                  size={256}
+                  size={220}
                   level="H"
                   includeMargin={true}
                 />
               </div>
             )}
-            <p className="text-xs text-muted-foreground text-center font-mono break-all px-4">
+            <p className="text-xs text-muted-foreground text-center font-mono break-all px-6">
               {walletAddress}
             </p>
+            <Button
+              onClick={handleCopyAddress}
+              className="w-full max-w-xs"
+              variant="outline"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Copy Address
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
