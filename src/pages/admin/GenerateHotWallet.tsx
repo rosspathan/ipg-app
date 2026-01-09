@@ -21,12 +21,14 @@ import {
   ArrowLeft,
   Database,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Fuel
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as bip39 from 'bip39';
 import { ethers } from 'ethers';
 import { supabase } from '@/integrations/supabase/client';
+import { useHotWalletStatus } from '@/hooks/useHotWalletStatus';
 
 interface WalletCredentials {
   mnemonic: string;
@@ -45,6 +47,7 @@ export default function GenerateHotWallet() {
   const [savedToDb, setSavedToDb] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { data: hotWalletStatus, isLoading: statusLoading } = useHotWalletStatus();
 
   const saveWalletToDatabase = async () => {
     if (!credentials) return;
@@ -194,12 +197,98 @@ NEXT STEPS:
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Generate Platform Hot Wallet</h1>
+            <h1 className="text-2xl font-bold">Platform Hot Wallet</h1>
             <p className="text-muted-foreground">
-              Create a new wallet for custodial exchange operations
+              Manage the custodial exchange hot wallet
             </p>
           </div>
         </div>
+
+        {/* Current Wallet Status */}
+        {hotWalletStatus && (
+          <Card className={hotWalletStatus.isLowGas ? "border-destructive" : "border-green-500/50"}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wallet className="h-5 w-5" />
+                Active Hot Wallet
+                {hotWalletStatus.isLowGas && (
+                  <Badge variant="destructive" className="ml-2">Low Gas</Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                Current hot wallet status and balances
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Address */}
+              <div className="space-y-2">
+                <Label>Wallet Address</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={hotWalletStatus.address} 
+                    readOnly 
+                    className="font-mono text-sm"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(hotWalletStatus.address, 'Address')}
+                  >
+                    {copiedField === 'Address' ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Gas Balance */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <Fuel className="h-4 w-4" />
+                    BNB for Gas
+                  </div>
+                  <div className="text-2xl font-bold">
+                    {parseFloat(hotWalletStatus.bnbBalance).toFixed(4)} BNB
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    ≈ ${hotWalletStatus.bnbBalanceUsd.toFixed(2)} USD
+                  </div>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <div className="text-sm text-muted-foreground mb-1">Status</div>
+                  <div className={`text-2xl font-bold ${hotWalletStatus.isLowGas ? 'text-destructive' : 'text-green-500'}`}>
+                    {hotWalletStatus.isLowGas ? 'Low Gas' : 'Healthy'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {hotWalletStatus.isLowGas ? 'Fund immediately' : 'Ready for operations'}
+                  </div>
+                </div>
+              </div>
+
+              {hotWalletStatus.isLowGas && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Low Gas Warning</AlertTitle>
+                  <AlertDescription>
+                    The hot wallet has less than 0.1 BNB. Send BNB to <code className="bg-muted px-1 rounded">{hotWalletStatus.address}</code> to ensure withdrawals can be processed.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <a
+                href={`https://bscscan.com/address/${hotWalletStatus.address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+              >
+                View on BscScan →
+              </a>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Warning */}
         <Alert variant="destructive">

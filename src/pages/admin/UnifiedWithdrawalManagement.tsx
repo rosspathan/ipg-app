@@ -9,8 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, XCircle, ExternalLink, Download, TrendingDown } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, ExternalLink, Download, TrendingDown, Wallet } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useCustodialWithdrawals, useProcessCustodialWithdrawal } from "@/hooks/useCustodialWithdrawals";
+import { useHotWalletStatus } from "@/hooks/useHotWalletStatus";
 
 interface Withdrawal {
   id: string;
@@ -163,6 +165,11 @@ export default function UnifiedWithdrawalManagement() {
     }
   });
 
+  // Fetch custodial withdrawals
+  const { data: custodialWithdrawals, isLoading: loadingCustodial } = useCustodialWithdrawals(activeTab);
+  const { mutate: processCustodial, isPending: processingCustodial } = useProcessCustodialWithdrawal();
+  const { data: hotWalletStatus } = useHotWalletStatus();
+
   // Process withdrawal mutation
   const processWithdrawal = useMutation({
     mutationFn: async ({ id, action, table, hash, notes }: {
@@ -210,11 +217,25 @@ export default function UnifiedWithdrawalManagement() {
     }
   });
 
+  // Map custodial withdrawals to Withdrawal interface
+  const mappedCustodialWithdrawals: Withdrawal[] = (custodialWithdrawals || []).map((w) => ({
+    id: w.id,
+    user_id: w.user_id,
+    amount: Number(w.amount),
+    status: w.status,
+    created_at: w.created_at,
+    asset: `CUSTODIAL-${w.asset?.symbol || 'TOKEN'}`,
+    to_address: w.to_address,
+    tx_hash: w.tx_hash || undefined,
+    profiles: w.profile ? { email: w.profile.email, full_name: w.profile.full_name } : null,
+  }));
+
   // Calculate stats
   const allWithdrawals: Withdrawal[] = [
     ...(fiatWithdrawals || []),
     ...(cryptoWithdrawals || []),
-    ...(bskWithdrawals || [])
+    ...(bskWithdrawals || []),
+    ...mappedCustodialWithdrawals,
   ];
 
   const pendingCount = allWithdrawals.filter(w => w.status === 'pending').length;
@@ -222,7 +243,7 @@ export default function UnifiedWithdrawalManagement() {
     .filter(w => w.status === 'pending')
     .reduce((sum, w) => sum + (Number(w.amount) || 0), 0);
 
-  const isLoading = loadingFiat || loadingCrypto || loadingBSK;
+  const isLoading = loadingFiat || loadingCrypto || loadingBSK || loadingCustodial;
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -282,8 +303,30 @@ export default function UnifiedWithdrawalManagement() {
         </Button>
       </div>
 
+      {/* Hot Wallet Status Banner */}
+      {hotWalletStatus && (
+        <Card className={hotWalletStatus.isLowGas ? "border-destructive" : "border-green-500/50"}>
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <Wallet className={`h-5 w-5 ${hotWalletStatus.isLowGas ? 'text-destructive' : 'text-green-500'}`} />
+              <div>
+                <div className="text-sm font-medium">Hot Wallet</div>
+                <code className="text-xs text-muted-foreground">{hotWalletStatus.address.slice(0, 10)}...{hotWalletStatus.address.slice(-8)}</code>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="font-mono font-bold">{parseFloat(hotWalletStatus.bnbBalance).toFixed(4)} BNB</div>
+              <div className="text-xs text-muted-foreground">${hotWalletStatus.bnbBalanceUsd.toFixed(2)} USD</div>
+              {hotWalletStatus.isLowGas && (
+                <Badge variant="destructive" className="mt-1">Low Gas!</Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -310,7 +353,7 @@ export default function UnifiedWithdrawalManagement() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <TrendingDown className="w-4 h-4" />
-              Total Processed Today
+              Processed Today
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -319,6 +362,19 @@ export default function UnifiedWithdrawalManagement() {
                 new Date(w.created_at).toDateString() === new Date().toDateString() &&
                 (w.status === 'approved' || w.status === 'completed')
               ).length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Custodial Pending
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {mappedCustodialWithdrawals.filter(w => w.status === 'pending').length}
             </div>
           </CardContent>
         </Card>
@@ -439,6 +495,19 @@ export default function UnifiedWithdrawalManagement() {
                                     </Button>
                                   </div>
                                 </div>
+                              ) : withdrawal.asset.startsWith('CUSTODIAL-') ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => processCustodial({ withdrawalId: withdrawal.id })}
+                                  disabled={processingCustodial}
+                                >
+                                  {processingCustodial ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    'Process Auto'
+                                  )}
+                                </Button>
                               ) : (
                                 <Button
                                   size="sm"
