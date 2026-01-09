@@ -97,21 +97,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
+        const userId = session.user.id;
+
+        // ✅ SECURITY: Set wallet storage user ID on initial session restore
+        setWalletStorageUserId(userId);
+
         // ✅ Set auth as ready immediately
         setAuthInitializing(false);
-        
-        // ✅ Check admin role silently in background
+
+        // ✅ Check admin role + safe wallet migration silently in background
         (async () => {
           try {
             const { data } = await supabase
               .from('user_roles')
               .select('role')
-              .eq('user_id', session.user.id)
+              .eq('user_id', userId)
               .eq('role', 'admin')
               .maybeSingle();
             setIsAdmin(!!data);
+
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('wallet_address')
+              .eq('user_id', userId)
+              .maybeSingle();
+
+            if (profile?.wallet_address) {
+              safeMigrateIfOwner(userId, profile.wallet_address);
+            }
           } catch {
             setIsAdmin(false);
           }
