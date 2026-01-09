@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, Lock, Fingerprint, Smartphone, Shield, Eye, EyeOff,
-  LogOut, Key, CheckCircle, Trash2
+  LogOut, Key, CheckCircle, Trash2, KeyRound
 } from "lucide-react";
 import RecoveryPhraseReveal from "@/components/profile/RecoveryPhraseReveal";
 import { ResetLocalWalletButton } from "@/components/profile/ResetLocalWalletButton";
+import { ResetPinDialog } from "@/components/security/ResetPinDialog";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useSecurity } from "@/hooks/useSecurity";
 import { useAuthLock } from "@/hooks/useAuthLock";
@@ -35,6 +36,7 @@ export function SecurityPage() {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [devices, setDevices] = useState<any[]>([]);
   const [showRecoveryPhrase, setShowRecoveryPhrase] = useState(false);
+  const [showResetPin, setShowResetPin] = useState(false);
   const [antiPhishingInput, setAntiPhishingInput] = useState("");
 
   useEffect(() => {
@@ -223,6 +225,19 @@ export function SecurityPage() {
                   </Button>
                 </div>
               </div>
+            )}
+
+            {/* Forgot PIN option */}
+            {security?.pin_set && (
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => setShowResetPin(true)}
+                className="text-muted-foreground hover:text-primary p-0 h-auto"
+              >
+                <KeyRound className="h-3 w-3 mr-1" />
+                Forgot PIN?
+              </Button>
             )}
 
             {biometricAvailable && (
@@ -471,6 +486,9 @@ export function SecurityPage() {
           </div>
         </Card>
       </div>
+
+      {/* Reset PIN Dialog */}
+      <ResetPinDialog open={showResetPin} onOpenChange={setShowResetPin} />
     </div>
   );
 }
