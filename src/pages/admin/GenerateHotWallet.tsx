@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -18,11 +18,15 @@ import {
   Eye,
   EyeOff,
   Wallet,
-  ArrowLeft
+  ArrowLeft,
+  Database,
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as bip39 from 'bip39';
 import { ethers } from 'ethers';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WalletCredentials {
   mnemonic: string;
@@ -37,8 +41,51 @@ export default function GenerateHotWallet() {
   const [showPrivateKey, setShowPrivateKey] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [isSavingToDb, setIsSavingToDb] = useState(false);
+  const [savedToDb, setSavedToDb] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const saveWalletToDatabase = async () => {
+    if (!credentials) return;
+    
+    setIsSavingToDb(true);
+    try {
+      // First, deactivate any existing active hot wallets for BSC
+      await supabase
+        .from('platform_hot_wallet')
+        .update({ is_active: false })
+        .eq('chain', 'BSC')
+        .eq('is_active', true);
+
+      // Insert new hot wallet
+      const { error } = await supabase
+        .from('platform_hot_wallet')
+        .insert({
+          address: credentials.address,
+          chain: 'BSC',
+          label: 'Trading Hot Wallet',
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      setSavedToDb(true);
+      toast({
+        title: "Wallet Saved",
+        description: "Hot wallet address saved to database successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error saving wallet to database:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save wallet to database.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingToDb(false);
+    }
+  };
 
   const generateWallet = async () => {
     setIsGenerating(true);
@@ -344,6 +391,33 @@ NEXT STEPS:
                   <Download className="h-4 w-4 mr-2" />
                   Download Credentials File
                 </Button>
+
+                <Separator />
+
+                {/* Save to Database */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    Save Wallet to Database
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    This will save the wallet address to the platform_hot_wallet table and mark it as active.
+                  </p>
+                  <Button
+                    variant={savedToDb ? "secondary" : "default"}
+                    className="w-full"
+                    onClick={saveWalletToDatabase}
+                    disabled={isSavingToDb || savedToDb}
+                  >
+                    {isSavingToDb ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+                    ) : savedToDb ? (
+                      <><CheckCircle2 className="h-4 w-4 mr-2 text-green-500" /> Saved to Database</>
+                    ) : (
+                      <><Database className="h-4 w-4 mr-2" /> Activate Hot Wallet</>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
