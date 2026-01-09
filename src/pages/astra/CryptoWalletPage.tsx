@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useWalletBalances } from "@/hooks/useWalletBalances"
 import { AssetBalanceCard } from "@/components/wallet/AssetBalanceCard"
 import { WithdrawalList } from "@/components/wallet/WithdrawalList"
+import { CryptoTransactionHistory } from "@/components/wallet/CryptoTransactionHistory"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -131,6 +132,9 @@ export default function CryptoWalletPage() {
 
         {/* Pending Withdrawals */}
         <WithdrawalList />
+
+        {/* Transaction History */}
+        <CryptoTransactionHistory />
 
         {/* Asset Balance Cards */}
         <div className="space-y-4">
