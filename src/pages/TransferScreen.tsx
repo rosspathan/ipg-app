@@ -265,9 +265,9 @@ const TransferScreen = () => {
         // Trading → Wallet (withdrawal)
         const { error } = await supabase.functions.invoke('process-crypto-withdrawal', {
           body: {
-            assetSymbol: selectedAsset,
+            asset_symbol: selectedAsset,
             amount: amountNum,
-            destinationAddress: userWallet
+            destination_address: userWallet
           }
         });
 
