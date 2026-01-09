@@ -66,20 +66,65 @@ serve(async (req) => {
       body = {};
     }
 
-    // The known "fake balances" pattern value (8dp)
+    // The suspicious duplicated value to clean up (8dp)
     const suspiciousValue =
       typeof body.value === "number" && Number.isFinite(body.value)
         ? body.value
         : 0.02886256;
 
-    // Delete ONLY rows that match the duplicated test pattern
+    console.log(
+      "[cleanup-fake-balances] user:",
+      user.id,
+      "value:",
+      suspiciousValue
+    );
+
+    // Fetch candidates first (safer than deleting with overly strict filters)
+    const { data: candidateRows, error: candidateError } = await supabaseAdmin
+      .from("wallet_balances")
+      .select("id, asset_id, available, locked, total")
+      .eq("user_id", user.id)
+      .eq("available", suspiciousValue)
+      .eq("locked", 0);
+
+    if (candidateError) {
+      return new Response(
+        JSON.stringify({
+          error: "Cleanup failed",
+          details: candidateError.message,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const idsToDelete = (candidateRows ?? [])
+      .filter((r: any) => r.total === null || Number(r.total) === suspiciousValue)
+      .map((r: any) => r.id);
+
+    console.log(
+      "[cleanup-fake-balances] candidates:",
+      candidateRows?.length ?? 0,
+      "to_delete:",
+      idsToDelete.length
+    );
+
+    if (idsToDelete.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          deleted_count: 0,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { data: deletedRows, error: deleteError } = await supabaseAdmin
       .from("wallet_balances")
       .delete()
-      .eq("user_id", user.id)
-      .eq("available", suspiciousValue)
-      .eq("locked", 0)
-      .eq("total", suspiciousValue)
+      .in("id", idsToDelete)
       .select("id, asset_id");
 
     if (deleteError) {
