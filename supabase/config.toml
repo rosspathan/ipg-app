@@ -278,3 +278,6 @@ verify_jwt = false
 
 [functions.release-trading-balance]
 verify_jwt = true
+
+[functions.transfer-to-trading]
+verify_jwt = true
