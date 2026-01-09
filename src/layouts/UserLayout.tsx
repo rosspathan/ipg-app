@@ -71,7 +71,7 @@ const UserLayout = () => {
     <NavigationStateManager>
       <div className="h-screen bg-background w-full max-w-full overflow-hidden flex flex-col">
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-24">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden pb-[calc(6rem+var(--bso))]">
           <Outlet />
         </div>
 
