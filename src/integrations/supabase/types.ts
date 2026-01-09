@@ -6737,6 +6737,39 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_hot_wallet: {
+        Row: {
+          address: string
+          chain: string
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string | null
+          min_gas_balance: number
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          chain: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          min_gas_balance?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          chain?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          min_gas_balance?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profile_completion_new: {
         Row: {
           completion_score: number
@@ -9827,6 +9860,103 @@ export type Database = {
             columns: ["sell_order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trading_balance_transfers: {
+        Row: {
+          amount: number
+          asset_id: string
+          completed_at: string | null
+          created_at: string
+          direction: string
+          error_message: string | null
+          from_address: string | null
+          id: string
+          status: string
+          to_address: string | null
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          completed_at?: string | null
+          created_at?: string
+          direction: string
+          error_message?: string | null
+          from_address?: string | null
+          id?: string
+          status?: string
+          to_address?: string | null
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          completed_at?: string | null
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          from_address?: string | null
+          id?: string
+          status?: string
+          to_address?: string | null
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trading_balance_transfers_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trading_balances: {
+        Row: {
+          asset_id: string
+          available: number
+          created_at: string
+          id: string
+          locked: number
+          total: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          available?: number
+          created_at?: string
+          id?: string
+          locked?: number
+          total?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          available?: number
+          created_at?: string
+          id?: string
+          locked?: number
+          total?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trading_balances_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
             referencedColumns: ["id"]
           },
         ]
