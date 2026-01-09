@@ -257,7 +257,8 @@ export function useBep20Balances() {
         assets.map(async (asset) => {
           let onchainBalance = 0
           try {
-            if (asset.symbol === 'BNB' || !asset.contractAddress) {
+            // Check if native BNB (no contract address) - works for 'BNB' or 'BNB ORIGINAL'
+            if (!asset.contractAddress) {
               onchainBalance = await getBNBBalance(walletAddress)
             } else {
               onchainBalance = await getERC20Balance(asset.contractAddress, walletAddress, asset.decimals)

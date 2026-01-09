@@ -484,19 +484,25 @@ function TradingPairPageContent() {
               <TradeHistoryTab symbol={symbol} />
             ) : (
               <FundsTab 
-                balances={bep20Balances?.map(b => ({
-                  symbol: b.symbol,
-                  name: b.name,
-                  balance: b.appBalance || b.onchainBalance,
-                  available: b.appAvailable || 0,
-                  locked: b.appLocked || 0,
-                  onchainBalance: b.onchainBalance,
-                  appBalance: b.appBalance,
-                  appAvailable: b.appAvailable,
-                  appLocked: b.appLocked,
-                  usd_value: b.onchainUsdValue,
-                  logo_url: b.logoUrl
-                })) || []} 
+                balances={bep20Balances?.map(b => {
+                  // Use max of on-chain and app balance for accurate USD value
+                  const displayBalance = Math.max(b.onchainBalance || 0, (b.appAvailable || 0) + (b.appLocked || 0));
+                  const usdValue = displayBalance * (b.priceUsd || 0);
+                  return {
+                    symbol: b.symbol,
+                    name: b.name,
+                    balance: b.appBalance || b.onchainBalance,
+                    available: b.appAvailable || 0,
+                    locked: b.appLocked || 0,
+                    onchainBalance: b.onchainBalance,
+                    appBalance: b.appBalance,
+                    appAvailable: b.appAvailable,
+                    appLocked: b.appLocked,
+                    usd_value: usdValue,
+                    logo_url: b.logoUrl,
+                    network: (b as any).network
+                  };
+                }) || []} 
                 loading={balancesLoading} 
               />
             )}
