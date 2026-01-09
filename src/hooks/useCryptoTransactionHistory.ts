@@ -10,7 +10,7 @@ export interface CryptoTransaction {
   symbol: string;
   asset_name: string;
   logo_url: string | null;
-  transaction_type: 'deposit' | 'withdrawal';
+  transaction_type: 'deposit' | 'withdrawal' | 'transfer_in' | 'transfer_out';
   status: string;
   tx_hash: string | null;
   network: string | null;
@@ -19,9 +19,10 @@ export interface CryptoTransaction {
   to_address: string | null;
   fee: number | null;
   completed_at: string | null;
+  counterparty?: string; // For internal transfers
 }
 
-export type TransactionFilter = 'all' | 'deposit' | 'withdrawal';
+export type TransactionFilter = 'all' | 'deposit' | 'withdrawal' | 'transfer';
 export type StatusFilter = 'all' | 'pending' | 'completed' | 'failed';
 
 interface UseCryptoTransactionHistoryOptions {
@@ -48,70 +49,43 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
       setLoading(true);
       setError(null);
 
-      // Fetch deposits
-      let depositsQuery = supabase
-        .from('deposits')
-        .select(`
-          id,
-          user_id,
-          created_at,
-          amount,
-          status,
-          tx_hash,
-          network,
-          confirmations,
-          required_confirmations,
-          credited_at,
-          assets (
-            symbol,
-            name,
-            logo_url
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      // Fetch withdrawals
-      let withdrawalsQuery = supabase
-        .from('withdrawals')
-        .select(`
-          id,
-          user_id,
-          created_at,
-          amount,
-          status,
-          tx_hash,
-          network,
-          to_address,
-          fee,
-          approved_at,
-          assets (
-            symbol,
-            name,
-            logo_url
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      // Apply status filter
-      if (status !== 'all') {
-        if (status === 'pending') {
-          depositsQuery = depositsQuery.in('status', ['pending', 'confirming', 'processing']);
-          withdrawalsQuery = withdrawalsQuery.in('status', ['pending', 'processing']);
-        } else if (status === 'completed') {
-          depositsQuery = depositsQuery.in('status', ['completed', 'credited']);
-          withdrawalsQuery = withdrawalsQuery.eq('status', 'completed');
-        } else if (status === 'failed') {
-          depositsQuery = depositsQuery.in('status', ['failed', 'rejected']);
-          withdrawalsQuery = withdrawalsQuery.in('status', ['failed', 'rejected']);
-        }
-      }
-
       const results: CryptoTransaction[] = [];
 
-      // Fetch deposits if not filtering to withdrawals only
+      // Fetch deposits
       if (transactionType === 'all' || transactionType === 'deposit') {
+        let depositsQuery = supabase
+          .from('deposits')
+          .select(`
+            id,
+            user_id,
+            created_at,
+            amount,
+            status,
+            tx_hash,
+            network,
+            confirmations,
+            required_confirmations,
+            credited_at,
+            assets (
+              symbol,
+              name,
+              logo_url
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        // Apply status filter
+        if (status !== 'all') {
+          if (status === 'pending') {
+            depositsQuery = depositsQuery.in('status', ['pending', 'confirming', 'processing']);
+          } else if (status === 'completed') {
+            depositsQuery = depositsQuery.in('status', ['completed', 'credited']);
+          } else if (status === 'failed') {
+            depositsQuery = depositsQuery.in('status', ['failed', 'rejected']);
+          }
+        }
+
         const { data: deposits, error: depositsError } = await depositsQuery.limit(limit);
         if (depositsError) throw depositsError;
         
@@ -137,8 +111,41 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
         }
       }
 
-      // Fetch withdrawals if not filtering to deposits only
+      // Fetch withdrawals
       if (transactionType === 'all' || transactionType === 'withdrawal') {
+        let withdrawalsQuery = supabase
+          .from('withdrawals')
+          .select(`
+            id,
+            user_id,
+            created_at,
+            amount,
+            status,
+            tx_hash,
+            network,
+            to_address,
+            fee,
+            approved_at,
+            assets (
+              symbol,
+              name,
+              logo_url
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        // Apply status filter
+        if (status !== 'all') {
+          if (status === 'pending') {
+            withdrawalsQuery = withdrawalsQuery.in('status', ['pending', 'processing']);
+          } else if (status === 'completed') {
+            withdrawalsQuery = withdrawalsQuery.eq('status', 'completed');
+          } else if (status === 'failed') {
+            withdrawalsQuery = withdrawalsQuery.in('status', ['failed', 'rejected']);
+          }
+        }
+
         const { data: withdrawals, error: withdrawalsError } = await withdrawalsQuery.limit(limit);
         if (withdrawalsError) throw withdrawalsError;
         
@@ -160,6 +167,93 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
             to_address: w.to_address,
             fee: w.fee ? parseFloat(w.fee) : null,
             completed_at: w.approved_at
+          })));
+        }
+      }
+
+      // Fetch internal transfers (sent by user)
+      if (transactionType === 'all' || transactionType === 'transfer') {
+        const { data: sentTransfers, error: sentError } = await supabase
+          .from('crypto_internal_transfers')
+          .select(`
+            id,
+            sender_id,
+            recipient_id,
+            created_at,
+            amount,
+            fee,
+            status,
+            transaction_ref,
+            recipient:profiles!crypto_internal_transfers_recipient_id_fkey (username, full_name),
+            assets (symbol, name, logo_url)
+          `)
+          .eq('sender_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (sentError) throw sentError;
+
+        if (sentTransfers) {
+          results.push(...sentTransfers.map((t: any) => ({
+            id: t.id,
+            user_id: t.sender_id,
+            created_at: t.created_at,
+            amount: parseFloat(t.amount),
+            symbol: t.assets?.symbol || 'Unknown',
+            asset_name: t.assets?.name || 'Unknown',
+            logo_url: t.assets?.logo_url || null,
+            transaction_type: 'transfer_out' as const,
+            status: t.status,
+            tx_hash: t.transaction_ref,
+            network: null,
+            confirmations: null,
+            required_confirmations: 0,
+            to_address: null,
+            fee: t.fee ? parseFloat(t.fee) : null,
+            completed_at: t.created_at,
+            counterparty: t.recipient?.full_name || t.recipient?.username || 'User'
+          })));
+        }
+
+        // Fetch internal transfers (received by user)
+        const { data: receivedTransfers, error: receivedError } = await supabase
+          .from('crypto_internal_transfers')
+          .select(`
+            id,
+            sender_id,
+            recipient_id,
+            created_at,
+            net_amount,
+            status,
+            transaction_ref,
+            sender:profiles!crypto_internal_transfers_sender_id_fkey (username, full_name),
+            assets (symbol, name, logo_url)
+          `)
+          .eq('recipient_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (receivedError) throw receivedError;
+
+        if (receivedTransfers) {
+          results.push(...receivedTransfers.map((t: any) => ({
+            id: `${t.id}_recv`,
+            user_id: t.recipient_id,
+            created_at: t.created_at,
+            amount: parseFloat(t.net_amount),
+            symbol: t.assets?.symbol || 'Unknown',
+            asset_name: t.assets?.name || 'Unknown',
+            logo_url: t.assets?.logo_url || null,
+            transaction_type: 'transfer_in' as const,
+            status: t.status,
+            tx_hash: t.transaction_ref,
+            network: null,
+            confirmations: null,
+            required_confirmations: 0,
+            to_address: null,
+            fee: null,
+            completed_at: t.created_at,
+            counterparty: t.sender?.full_name || t.sender?.username || 'User'
           })));
         }
       }
@@ -197,9 +291,7 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
           table: 'deposits',
           filter: `user_id=eq.${user.id}`
         },
-        () => {
-          fetchTransactions();
-        }
+        () => fetchTransactions()
       )
       .subscribe();
 
@@ -213,15 +305,27 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
           table: 'withdrawals',
           filter: `user_id=eq.${user.id}`
         },
-        () => {
-          fetchTransactions();
-        }
+        () => fetchTransactions()
+      )
+      .subscribe();
+
+    const transfersChannel = supabase
+      .channel('crypto-transfers-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'crypto_internal_transfers'
+        },
+        () => fetchTransactions()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(depositsChannel);
       supabase.removeChannel(withdrawalsChannel);
+      supabase.removeChannel(transfersChannel);
     };
   }, [user, fetchTransactions]);
 

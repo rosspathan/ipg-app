@@ -499,8 +499,9 @@ function AppContent() {
               <Route path="wallet/withdraw" element={<WithdrawScreen />} />
               <Route path="wallet/send" element={<SendScreen />} />
               <Route path="wallet/transfer" element={<TransferScreen />} />
-              <Route path="wallet/history" element={<HistoryScreen />} />
+              <Route path="wallet/history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoHistoryPage')))}</React.Suspense>} />
               <Route path="wallet/history/crypto" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoHistoryPage')))}</React.Suspense>} />
+              <Route path="wallet/history/bsk" element={<HistoryScreen />} />
               <Route path="history/crypto" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoHistoryPage')))}</React.Suspense>} />
               <Route path="programs" element={<ProgramsScreen />} />
               <Route path="programs/:programKey" element={<ProgramDetailPage />} />
