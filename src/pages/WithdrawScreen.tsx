@@ -48,23 +48,55 @@ const WithdrawScreen = () => {
   // Check for open orders that might lock funds
   const { data: openOrdersData } = useOpenOrdersCheck(selectedAsset);
 
-  // Auto-cleanup duplicated test balances (appears as the same number across many assets)
+  // Filter assets - hide dust balances below threshold
+  const MIN_WITHDRAWAL_BALANCE = 0.001;
+
+  // Auto-cleanup duplicated test balances (same number across many assets)
   useEffect(() => {
     if (cleanupRanRef.current) return;
     if (isLoading || error || !balances?.length) return;
 
-    const suspiciousValue = 0.02886256;
-    const suspiciousCount = balances.filter((b) => Math.abs((b.available ?? 0) - suspiciousValue) < 1e-12).length;
+    const nonDust = balances
+      .filter((b) => (b.available ?? 0) >= MIN_WITHDRAWAL_BALANCE)
+      .filter((b) => b.symbol !== 'INR');
 
-    // Only trigger when it's clearly the "fake balances" pattern
-    if (suspiciousCount < 5) return;
+    if (nonDust.length < 5) return;
+
+    const buckets = new Map<
+      string,
+      { value: number; count: number; symbols: Set<string> }
+    >();
+
+    for (const b of nonDust) {
+      const raw = Number(b.available ?? 0);
+      const rounded = Math.round(raw * 1e8) / 1e8; // normalize floating point noise
+      const key = rounded.toFixed(8);
+
+      const existing = buckets.get(key) ?? {
+        value: rounded,
+        count: 0,
+        symbols: new Set<string>(),
+      };
+
+      existing.count += 1;
+      existing.symbols.add(b.symbol);
+      buckets.set(key, existing);
+    }
+
+    let mode: { value: number; count: number; symbols: Set<string> } | null = null;
+    for (const v of buckets.values()) {
+      if (!mode || v.count > mode.count) mode = v;
+    }
+
+    // Only trigger when it's clearly a duplicated/test pattern across many different assets
+    if (!mode || mode.count < 5 || mode.symbols.size < 5) return;
 
     cleanupRanRef.current = true;
 
     (async () => {
       try {
         const { data, error: fnError } = await supabase.functions.invoke('cleanup-fake-balances', {
-          body: { value: suspiciousValue },
+          body: { value: mode!.value },
         });
 
         if (fnError) throw fnError;
@@ -72,19 +104,23 @@ const WithdrawScreen = () => {
         const deletedCount = (data as any)?.deleted_count ?? 0;
         if (deletedCount > 0) {
           toast({
-            title: 'Removed test balances',
-            description: `Cleaned ${deletedCount} fake balance entries.`,
+            title: 'Removed fake balances',
+            description: `Cleaned ${deletedCount} duplicated balance entries.`,
           });
           queryClient.invalidateQueries({ queryKey: ['user-balance'] });
         }
       } catch (e: any) {
+        cleanupRanRef.current = false; // allow retry
         console.error('[WithdrawScreen] cleanup-fake-balances failed', e);
+        toast({
+          title: 'Failed to clean balances',
+          description: e?.message ?? 'Please refresh and try again.',
+          variant: 'destructive',
+        });
       }
     })();
   }, [balances, isLoading, error, toast, queryClient]);
-  // Filter assets - hide dust/test balances below threshold
-  const MIN_WITHDRAWAL_BALANCE = 0.001;
-  
+
   const assets = (balances || [])
     .filter(asset => 
       asset.symbol !== 'BSK' && 
