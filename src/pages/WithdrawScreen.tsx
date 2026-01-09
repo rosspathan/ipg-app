@@ -551,10 +551,11 @@ const WithdrawScreen = () => {
             </Alert>
           )}
 
-          <div className="space-y-3">
+          <div className="space-y-3 pb-8">
             <Button
+              type="button"
               onClick={confirmWithdraw}
-              className="w-full"
+              className="w-full min-h-[56px] touch-manipulation"
               size="lg"
               disabled={isProcessing || isCheckingGas}
             >
@@ -573,12 +574,13 @@ const WithdrawScreen = () => {
               )}
             </Button>
             <Button
+              type="button"
               variant="outline"
               onClick={() => {
                 setShowConfirmation(false);
                 setGasCheckError(null);
               }}
-              className="w-full"
+              className="w-full min-h-[56px] touch-manipulation"
               size="lg"
               disabled={isProcessing}
             >
