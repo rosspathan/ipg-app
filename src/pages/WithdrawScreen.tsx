@@ -489,7 +489,7 @@ const WithdrawScreen = () => {
 
   if (showConfirmation) {
     return (
-      <div className="min-h-full bg-background px-6 py-8">
+      <div className="min-h-full bg-background px-6 py-8 with-bottom-nav">
         <div className="max-w-sm mx-auto w-full space-y-6">
           <div className="text-center space-y-4">
             <Shield className="w-16 h-16 text-primary mx-auto" />
@@ -594,7 +594,7 @@ const WithdrawScreen = () => {
   }
 
   return (
-    <div className="min-h-full bg-background px-6 py-8">
+    <div className="min-h-full bg-background px-6 py-8 with-bottom-nav">
       <div className="max-w-sm mx-auto w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
