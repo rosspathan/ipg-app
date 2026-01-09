@@ -158,15 +158,15 @@ Deno.serve(async (req) => {
       // ==========================================
       // Deduct from trading_balances and create withdrawal request
       
-      // Check trading balance
-      const { data: tradingBalance, error: balanceError } = await adminClient
-        .from("trading_balances")
+      // Check wallet_balances (the actual source of truth for trading)
+      const { data: walletBalance, error: balanceError } = await adminClient
+        .from("wallet_balances")
         .select("available")
         .eq("user_id", user.id)
         .eq("asset_id", transfer.asset_id)
         .single();
 
-      if (balanceError || !tradingBalance) {
+      if (balanceError || !walletBalance) {
         await adminClient
           .from("trading_balance_transfers")
           .update({ status: "failed", error_message: "Trading balance not found" })
@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      if (Number(tradingBalance.available) < Number(transfer.amount)) {
+      if (Number(walletBalance.available) < Number(transfer.amount)) {
         await adminClient
           .from("trading_balance_transfers")
           .update({ status: "failed", error_message: "Insufficient trading balance" })
@@ -224,11 +224,11 @@ Deno.serve(async (req) => {
         .update({ status: "processing" })
         .eq("id", transfer_id);
 
-      // Deduct from trading_balances
+      // Deduct from wallet_balances (the actual source of truth)
       const { error: deductError } = await adminClient
-        .from("trading_balances")
+        .from("wallet_balances")
         .update({
-          available: Number(tradingBalance.available) - Number(transfer.amount),
+          available: Number(walletBalance.available) - Number(transfer.amount),
           updated_at: new Date().toISOString()
         })
         .eq("user_id", user.id)
@@ -261,11 +261,11 @@ Deno.serve(async (req) => {
 
       if (withdrawalError) {
         console.error("Withdrawal create error:", withdrawalError);
-        // Refund trading balance
+        // Refund wallet balance
         await adminClient
-          .from("trading_balances")
+          .from("wallet_balances")
           .update({
-            available: Number(tradingBalance.available),
+            available: Number(walletBalance.available),
             updated_at: new Date().toISOString()
           })
           .eq("user_id", user.id)

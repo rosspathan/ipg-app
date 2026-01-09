@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTradingBalances, useTradingTransfer } from "@/hooks/useTradingBalances";
-import { useWalletBalances } from "@/hooks/useWalletBalances";
+import { useTradingTransfer } from "@/hooks/useTradingBalances";
+import { useBep20Balances } from "@/hooks/useBep20Balances";
 import AssetLogo from "@/components/AssetLogo";
 import { CustodialDepositInstructions } from "@/components/wallet/CustodialDepositInstructions";
 import { CustodialWithdrawalHistory } from "@/components/wallet/CustodialWithdrawalHistory";
@@ -28,31 +28,32 @@ export function TradingTransferPage() {
   const [showDepositInstructions, setShowDepositInstructions] = useState(false);
   const [withdrawalSubmitted, setWithdrawalSubmitted] = useState(false);
 
-  // Fetch wallet balances (on-chain)
-  const { balances: walletBalances, loading: walletLoading } = useWalletBalances();
-  
-  // Fetch trading balances
-  const { data: tradingBalances, isLoading: tradingLoading } = useTradingBalances();
+  // Fetch balances using useBep20Balances (both on-chain and internal)
+  const { balances: bep20Balances, isLoading: balancesLoading } = useBep20Balances();
 
   const { mutate: transfer, isPending } = useTradingTransfer();
 
-  // Map wallet balances to the format needed
-  const walletAssets = (walletBalances || []).filter(b => b.available > 0).map(b => ({
-    asset_id: b.asset_id,
-    symbol: b.symbol,
-    name: b.name,
-    available: b.available,
-    logo_url: b.logo_url,
-  }));
+  // DEPOSIT: Show on-chain balance (what user can send to hot wallet)
+  const walletAssets = (bep20Balances || [])
+    .filter(b => b.onchainBalance > 0)
+    .map(b => ({
+      asset_id: b.assetId,
+      symbol: b.symbol,
+      name: b.name,
+      available: b.onchainBalance,
+      logo_url: b.logoUrl,
+    }));
 
-  // Map trading balances to the format needed
-  const tradingAssets = (tradingBalances || []).filter(b => b.available > 0).map(b => ({
-    asset_id: b.asset_id,
-    symbol: b.symbol,
-    name: b.name,
-    available: b.available,
-    logo_url: b.logo_url,
-  }));
+  // WITHDRAW: Show internal trading balance (wallet_balances.available)
+  const tradingAssets = (bep20Balances || [])
+    .filter(b => b.appAvailable > 0)
+    .map(b => ({
+      asset_id: b.assetId,
+      symbol: b.symbol,
+      name: b.name,
+      available: b.appAvailable,
+      logo_url: b.logoUrl,
+    }));
 
   const sourceBalances = direction === "to_trading" ? walletAssets : tradingAssets;
   const selectedBalance = sourceBalances.find((b) => b.asset_id === selectedAsset);
@@ -87,7 +88,7 @@ export function TradingTransferPage() {
     }
   };
 
-  const isLoading = walletLoading || tradingLoading;
+  const isLoading = balancesLoading;
 
   // If deposit instructions should be shown
   if (showDepositInstructions) {

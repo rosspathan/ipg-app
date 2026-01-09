@@ -28,14 +28,13 @@ export function useTradingBalances() {
     queryFn: async (): Promise<TradingBalance[]> => {
       if (!user?.id) return [];
 
-      // Fetch trading balances with asset info
+      // Fetch wallet_balances (the actual source of truth for trading)
       const { data: balances, error } = await supabase
-        .from("trading_balances")
+        .from("wallet_balances")
         .select(`
           id,
           available,
           locked,
-          total,
           asset_id,
           assets (
             symbol,
@@ -62,14 +61,16 @@ export function useTradingBalances() {
       return (balances || []).map((b) => {
         const asset = b.assets as { symbol: string; name: string; logo_url?: string } | null;
         const price = priceMap.get(asset?.symbol || "") || 0;
-        const total = Number(b.available) + Number(b.locked);
+        const available = Number(b.available) || 0;
+        const locked = Number(b.locked) || 0;
+        const total = available + locked;
         
         return {
           symbol: asset?.symbol || "Unknown",
           name: asset?.name || "Unknown",
           balance: total,
-          available: Number(b.available),
-          locked: Number(b.locked),
+          available: available,
+          locked: locked,
           logo_url: asset?.logo_url,
           usd_value: total * price,
           asset_id: b.asset_id,
