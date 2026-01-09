@@ -160,18 +160,18 @@ export function WalletPage() {
       onPress: () => navigate("/app/wallet/withdraw")
     },
     { 
-      id: "send", 
-      label: "Send", 
-      icon: React.createElement('span', { className: "text-lg" }, "→"),
-      variant: "default" as const,
-      onPress: () => navigate("/app/wallet/send")
-    },
-    { 
       id: "swap", 
       label: "Swap", 
       icon: React.createElement('span', { className: "text-lg" }, "⇄"),
       variant: "default" as const,
       onPress: () => navigate("/app/swap")
+    },
+    { 
+      id: "history", 
+      label: "History", 
+      icon: React.createElement('span', { className: "text-lg" }, "📋"),
+      variant: "default" as const,
+      onPress: () => navigate("/app/wallet/history")
     }
   ]
 
