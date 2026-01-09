@@ -275,3 +275,6 @@ verify_jwt = false
 
 [functions.auto-detect-deposits]
 verify_jwt = false
+
+[functions.release-trading-balance]
+verify_jwt = true
