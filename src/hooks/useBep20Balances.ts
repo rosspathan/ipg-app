@@ -69,6 +69,7 @@ export function useBep20Balances() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [assets, setAssets] = useState<Bep20Asset[]>([])
   const [appBalances, setAppBalances] = useState<Record<string, { available: number; locked: number; total: number }>>({})
+  const [onchainBalancesFromDb, setOnchainBalancesFromDb] = useState<Record<string, number>>({})
 
   // Fetch wallet address
   useEffect(() => {
@@ -103,7 +104,7 @@ export function useBep20Balances() {
     fetchAssets()
   }, [])
 
-  // Fetch app balances from wallet_balances (available + locked)
+  // Fetch trading balances from wallet_balances (only custodial deposits)
   const fetchAppBalances = useCallback(async () => {
     if (!user?.id || assets.length === 0) return
     
@@ -126,9 +127,29 @@ export function useBep20Balances() {
     }
   }, [user?.id, assets])
 
+  // Fetch on-chain balances from onchain_balances table (synced by cron, display only)
+  const fetchOnchainBalancesFromDb = useCallback(async () => {
+    if (!user?.id || assets.length === 0) return
+    
+    const { data } = await supabase
+      .from('onchain_balances')
+      .select('asset_id, balance')
+      .eq('user_id', user.id)
+      .in('asset_id', assets.map(a => a.id))
+
+    if (data) {
+      const balMap: Record<string, number> = {}
+      data.forEach(b => {
+        balMap[b.asset_id] = Number(b.balance) || 0
+      })
+      setOnchainBalancesFromDb(balMap)
+    }
+  }, [user?.id, assets])
+
   useEffect(() => {
     fetchAppBalances()
-  }, [fetchAppBalances])
+    fetchOnchainBalancesFromDb()
+  }, [fetchAppBalances, fetchOnchainBalancesFromDb])
 
   // Real-time subscription for app balances + trades
   useEffect(() => {
@@ -281,24 +302,29 @@ export function useBep20Balances() {
     refetchInterval: 30000
   })
 
-  // Always derive balances from assets + appBalances (internal ledger)
-  // This ensures trading UI always shows correct internal balances
+  // Derive balances from assets + appBalances (internal ledger)
+  // Trading balance comes from wallet_balances (custodial deposits only)
+  // On-chain balance comes from onchain_balances table OR live RPC call
   const balances: Bep20Balance[] = assets.map((asset) => {
     const appBal = appBalances[asset.id] || { available: 0, locked: 0, total: 0 }
     const onchain = onchainData?.[asset.id] || { onchainBalance: 0, priceUsd: 0 }
+    
+    // Use DB on-chain balance if available, otherwise fall back to live RPC
+    const dbOnchainBal = onchainBalancesFromDb[asset.id] || 0
+    const finalOnchainBalance = dbOnchainBal > 0 ? dbOnchainBal : onchain.onchainBalance
     
     return {
       assetId: asset.id,
       symbol: asset.symbol,
       name: asset.name,
       logoUrl: asset.logoUrl,
-      onchainBalance: onchain.onchainBalance,
+      onchainBalance: finalOnchainBalance,
       appBalance: appBal.total,
       appAvailable: appBal.available,
       appLocked: appBal.locked,
       contractAddress: asset.contractAddress,
       priceUsd: onchain.priceUsd,
-      onchainUsdValue: onchain.onchainBalance * onchain.priceUsd
+      onchainUsdValue: finalOnchainBalance * onchain.priceUsd
     }
   }).sort((a, b) => {
     // Sort: tokens with balance first, then by symbol

@@ -125,45 +125,25 @@ Deno.serve(async (req) => {
 
           console.log(`[sync-bep20-balances] ${asset.symbol} balance for ${walletAddress}: ${balance}`);
 
-          // Only upsert if balance > 0 to avoid cluttering the table
-          if (balance > 0) {
-            // CRITICAL: Preserve existing locked balance - never reset it!
-            // First fetch existing record to get current locked amount
-            const { data: existingBalance } = await supabase
-              .from('wallet_balances')
-              .select('available, locked, total')
-              .eq('user_id', userId)
-              .eq('asset_id', asset.id)
-              .maybeSingle();
+          // Upsert to onchain_balances table (display only, NOT for trading)
+          // This is separate from wallet_balances which is only for custodial deposits
+          const { error: upsertError } = await supabase
+            .from('onchain_balances')
+            .upsert({
+              user_id: userId,
+              asset_id: asset.id,
+              balance: balance,
+              last_synced_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id,asset_id'
+            });
 
-            const existingLocked = existingBalance?.locked || 0;
-            const existingTotal = existingBalance?.total || 0;
-            
-            // Only credit the difference if on-chain is higher than what we have
-            // This prevents "free" balance from appearing
-            const newTotal = Math.max(balance, existingTotal);
-            const newAvailable = newTotal - existingLocked;
-
-            // Note: 'total' is a generated column, don't include it in upsert
-            const { error: upsertError } = await supabase
-              .from('wallet_balances')
-              .upsert({
-                user_id: userId,
-                asset_id: asset.id,
-                available: newAvailable,
-                locked: existingLocked, // PRESERVE locked balance
-                updated_at: new Date().toISOString()
-              }, {
-                onConflict: 'user_id,asset_id'
-              });
-
-            if (upsertError) {
-              console.error(`[sync-bep20-balances] Failed to upsert ${asset.symbol} for ${walletAddress}:`, upsertError);
-              errors.push({ userId, asset: asset.symbol, error: upsertError.message });
-            } else {
-              syncedCount++;
-              console.log(`[sync-bep20-balances] Synced ${asset.symbol}: available=${newAvailable}, locked=${existingLocked}, total=${newTotal} for user ${userId}`);
-            }
+          if (upsertError) {
+            console.error(`[sync-bep20-balances] Failed to upsert ${asset.symbol} for ${walletAddress}:`, upsertError);
+            errors.push({ userId, asset: asset.symbol, error: upsertError.message });
+          } else {
+            syncedCount++;
+            console.log(`[sync-bep20-balances] Synced on-chain balance ${asset.symbol}: ${balance} for user ${userId}`);
           }
         } catch (error: any) {
           console.error(`[sync-bep20-balances] Error fetching ${asset.symbol} balance for ${walletAddress}:`, error);
