@@ -20,6 +20,8 @@ import { useOpenOrdersCheck } from "@/hooks/useOpenOrdersCheck";
 import { retrieveWalletData } from "@/utils/wallet";
 import { getStoredEvmAddress } from "@/lib/wallet/evmAddress";
 
+const MIN_WITHDRAWAL_BALANCE = 0.0001;
+
 const WithdrawScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -68,6 +70,9 @@ const WithdrawScreen = () => {
 
   // Get dynamic withdrawal fees
   const { fees: withdrawalFees, loading: feesLoading } = useWithdrawalFees(selectedAsset, selectedNetwork);
+
+  // Check for open orders locking assets
+  const { data: openOrdersData } = useOpenOrdersCheck(selectedAsset);
 
   // Transform on-chain balances into the format needed for the UI
   const assets = onchainBalances
