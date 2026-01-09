@@ -402,56 +402,52 @@ const WithdrawScreen = () => {
     const phrase = await retrieveBackup(pin);
     if (!phrase) return false;
 
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      if (!user) return false;
+    if (!user) return false;
 
-      const normalized = phrase.trim().toLowerCase().replace(/\s+/g, " ");
-      const derivedWallet = ethers.Wallet.fromPhrase(normalized);
+    const normalized = phrase.trim().toLowerCase().replace(/\s+/g, " ");
+    const derivedWallet = ethers.Wallet.fromPhrase(normalized);
 
-      // Safety: ensure this backup belongs to this account's registered wallet
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("wallet_address")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    // Safety: ensure this backup belongs to this account's registered wallet
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("wallet_address")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-      if (
-        profile?.wallet_address &&
-        derivedWallet.address.toLowerCase() !== profile.wallet_address.toLowerCase()
-      ) {
-        toast({
-          title: "Wallet Mismatch",
-          description:
-            "This PIN unlocked a recovery phrase that doesn't match your wallet address. Please re-import your correct wallet.",
-          variant: "destructive",
-          duration: 8000,
-        });
-        return false;
-      }
-
-      // Persist phrase locally so internal signing works smoothly going forward
-      setWalletStorageUserId(user.id);
-      storeWallet(
-        {
-          address: profile?.wallet_address || derivedWallet.address,
-          seedPhrase: normalized,
-          privateKey: "", // do not store private key; derive when needed
-          network: "mainnet",
-          balance: "0",
-        },
-        user.id
-      );
-      await refreshWallet();
-
-      await executeWithdraw({ type: "privateKey", privateKey: derivedWallet.privateKey });
-      return true;
-    } finally {
-      setShowPinDialog(false);
+    if (
+      profile?.wallet_address &&
+      derivedWallet.address.toLowerCase() !== profile.wallet_address.toLowerCase()
+    ) {
+      toast({
+        title: "Wallet Mismatch",
+        description:
+          "This PIN unlocked a recovery phrase that doesn't match your wallet address. Please re-import your correct wallet.",
+        variant: "destructive",
+        duration: 8000,
+      });
+      return false;
     }
+
+    // Persist phrase locally so internal signing works smoothly going forward
+    setWalletStorageUserId(user.id);
+    storeWallet(
+      {
+        address: profile?.wallet_address || derivedWallet.address,
+        seedPhrase: normalized,
+        privateKey: "", // do not store private key; derive when needed
+        network: "mainnet",
+        balance: "0",
+      },
+      user.id
+    );
+    await refreshWallet();
+
+    await executeWithdraw({ type: "privateKey", privateKey: derivedWallet.privateKey });
+    return true;
   };
 
   const confirmWithdraw = async () => {
@@ -587,6 +583,14 @@ const WithdrawScreen = () => {
               Cancel
             </Button>
           </div>
+
+          <PinEntryDialog
+            open={showPinDialog}
+            onOpenChange={setShowPinDialog}
+            onSubmit={unlockFromBackupAndWithdraw}
+            title="Enter PIN to sign"
+            description="Enter your 6-digit PIN to unlock your wallet backup and sign this withdrawal."
+          />
 
         </div>
       </div>
