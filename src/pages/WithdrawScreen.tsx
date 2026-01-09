@@ -38,6 +38,8 @@ const WithdrawScreen = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [gasCheckError, setGasCheckError] = useState<string | null>(null);
+  const [isCheckingGas, setIsCheckingGas] = useState(false);
 
   const [addressValidation, setAddressValidation] = useState<{
     isValid: boolean;
@@ -151,6 +153,37 @@ const WithdrawScreen = () => {
       return;
     }
 
+    // Check gas before showing confirmation
+    setIsCheckingGas(true);
+    setGasCheckError(null);
+    
+    try {
+      const bnbBalance = onchainBalances.find(b => b.symbol === 'BNB')?.balance || 0;
+      const MIN_GAS_BNB = 0.0005; // ~$0.30 worth of BNB for gas
+      
+      // For BNB withdrawals, ensure enough remains for gas
+      if (selectedAsset === 'BNB') {
+        const remainingBnb = bnbBalance - amountNum;
+        if (remainingBnb < 0) {
+          setGasCheckError(`Insufficient BNB balance. You have ${bnbBalance.toFixed(6)} BNB.`);
+          setIsCheckingGas(false);
+          return;
+        }
+      } else {
+        // For token withdrawals, need BNB for gas
+        if (bnbBalance < MIN_GAS_BNB) {
+          setGasCheckError(`Insufficient BNB for gas fees. You need at least ${MIN_GAS_BNB} BNB but have ${bnbBalance.toFixed(6)} BNB. Please deposit BNB first.`);
+          setIsCheckingGas(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('[WithdrawScreen] Gas check warning:', e);
+      // Don't block - let the transaction attempt and fail with a clearer error
+    } finally {
+      setIsCheckingGas(false);
+    }
+
     setShowConfirmation(true);
   };
 
@@ -214,9 +247,29 @@ const WithdrawScreen = () => {
       navigate("/app/wallet");
     } catch (error: any) {
       console.error("[WithdrawScreen] Withdrawal error:", error);
+      
+      // Parse common blockchain errors for user-friendly messages
+      let errorTitle = "Withdrawal Failed";
+      let errorDescription = error.message || "Failed to process withdrawal";
+      
+      const errMsg = (error.message || '').toLowerCase();
+      if (errMsg.includes('insufficient funds') || errMsg.includes('insufficient balance')) {
+        errorTitle = "Insufficient BNB for Gas";
+        errorDescription = "You need BNB in your wallet to pay for transaction fees. Please deposit some BNB first.";
+      } else if (errMsg.includes('nonce') || errMsg.includes('replacement')) {
+        errorTitle = "Transaction Pending";
+        errorDescription = "A previous transaction is still pending. Please wait a moment and try again.";
+      } else if (errMsg.includes('rejected') || errMsg.includes('denied')) {
+        errorTitle = "Transaction Rejected";
+        errorDescription = "The transaction was cancelled.";
+      } else if (errMsg.includes('timeout') || errMsg.includes('network')) {
+        errorTitle = "Network Error";
+        errorDescription = "Could not connect to BSC network. Please check your connection and try again.";
+      }
+      
       toast({
-        title: "Withdrawal Failed",
-        description: error.message || "Failed to process withdrawal",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       });
       setShowConfirmation(false);
@@ -322,20 +375,50 @@ const WithdrawScreen = () => {
                 <span className="font-semibold">Net Amount</span>
                 <span className="font-semibold">{netAmount} {selectedAsset}</span>
               </div>
+              
+              {/* Show BNB gas balance for token withdrawals */}
+              {selectedAsset !== 'BNB' && (
+                <div className="flex justify-between text-xs pt-2 border-t border-dashed">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    BNB for Gas
+                  </span>
+                  <span className={`font-medium ${
+                    (onchainBalances.find(b => b.symbol === 'BNB')?.balance || 0) < 0.0005 
+                      ? 'text-destructive' 
+                      : 'text-green-500'
+                  }`}>
+                    {(onchainBalances.find(b => b.symbol === 'BNB')?.balance || 0).toFixed(6)} BNB
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {/* Gas Error Alert */}
+          {gasCheckError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{gasCheckError}</AlertDescription>
+            </Alert>
+          )}
 
           <div className="space-y-3">
             <Button
               onClick={confirmWithdraw}
               className="w-full"
               size="lg"
-              disabled={isProcessing}
+              disabled={isProcessing || isCheckingGas}
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
+                  Sending Transaction...
+                </>
+              ) : isCheckingGas ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Checking Gas...
                 </>
               ) : (
                 "Sign & Send"
@@ -343,7 +426,10 @@ const WithdrawScreen = () => {
             </Button>
             <Button
               variant="outline"
-              onClick={() => setShowConfirmation(false)}
+              onClick={() => {
+                setShowConfirmation(false);
+                setGasCheckError(null);
+              }}
               className="w-full"
               size="lg"
               disabled={isProcessing}
