@@ -17,7 +17,9 @@ import { useWithdrawalFees } from "@/hooks/useWithdrawalFees";
 import { useWeb3 } from "@/contexts/Web3Context";
 import { transferBNB, transferERC20, transferViaMetaMask } from "@/lib/wallet/onchainTransfer";
 import { useOpenOrdersCheck } from "@/hooks/useOpenOrdersCheck";
-import { getStoredWallet } from "@/utils/walletStorage";
+import { getStoredWallet, setWalletStorageUserId, storeWallet } from "@/utils/walletStorage";
+import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
+import PinEntryDialog from "@/components/profile/PinEntryDialog";
 
 const MIN_WITHDRAWAL_BALANCE = 0.0001;
 
@@ -27,6 +29,7 @@ const WithdrawScreen = () => {
 
   // Get user's wallet from Web3 context (may be MetaMask wallet with no privateKey)
   const { wallet, refreshWallet } = useWeb3();
+  const { checkBackupExists, retrieveBackup } = useEncryptedWalletBackup();
 
   // Ensure wallet is loaded from storage on mount (handles post-import scenario)
   useEffect(() => {
@@ -46,6 +49,7 @@ const WithdrawScreen = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [gasCheckError, setGasCheckError] = useState<string | null>(null);
   const [isCheckingGas, setIsCheckingGas] = useState(false);
+  const [showPinDialog, setShowPinDialog] = useState(false);
 
   const [addressValidation, setAddressValidation] = useState<{
     isValid: boolean;
@@ -393,6 +397,63 @@ const WithdrawScreen = () => {
     return null;
   };
 
+  const unlockFromBackupAndWithdraw = async (pin: string): Promise<boolean> => {
+    // Decrypt from server backup and sign immediately
+    const phrase = await retrieveBackup(pin);
+    if (!phrase) return false;
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return false;
+
+      const normalized = phrase.trim().toLowerCase().replace(/\s+/g, " ");
+      const derivedWallet = ethers.Wallet.fromPhrase(normalized);
+
+      // Safety: ensure this backup belongs to this account's registered wallet
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("wallet_address")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (
+        profile?.wallet_address &&
+        derivedWallet.address.toLowerCase() !== profile.wallet_address.toLowerCase()
+      ) {
+        toast({
+          title: "Wallet Mismatch",
+          description:
+            "This PIN unlocked a recovery phrase that doesn't match your wallet address. Please re-import your correct wallet.",
+          variant: "destructive",
+          duration: 8000,
+        });
+        return false;
+      }
+
+      // Persist phrase locally so internal signing works smoothly going forward
+      setWalletStorageUserId(user.id);
+      storeWallet(
+        {
+          address: profile?.wallet_address || derivedWallet.address,
+          seedPhrase: normalized,
+          privateKey: "", // do not store private key; derive when needed
+          network: "mainnet",
+          balance: "0",
+        },
+        user.id
+      );
+      await refreshWallet();
+
+      await executeWithdraw({ type: "privateKey", privateKey: derivedWallet.privateKey });
+      return true;
+    } finally {
+      setShowPinDialog(false);
+    }
+  };
+
   const confirmWithdraw = async () => {
     // Try refreshing wallet first in case it was imported after context loaded
     await refreshWallet();
@@ -409,6 +470,12 @@ const WithdrawScreen = () => {
     const isMetaMaskWallet = !!wallet && !wallet.privateKey && !wallet.seedPhrase;
     if (isMetaMaskWallet && typeof window !== "undefined" && typeof window.ethereum !== "undefined") {
       await executeWithdraw({ type: "metamask" });
+      return;
+    }
+
+    const backupStatus = await checkBackupExists();
+    if (backupStatus.exists) {
+      setShowPinDialog(true);
       return;
     }
 
