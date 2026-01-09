@@ -228,35 +228,46 @@ const WithdrawScreen = () => {
   const resolvePrivateKey = async (): Promise<string | null> => {
     // 1) If Web3 context has a real private key, use it
     if (wallet?.privateKey && wallet.privateKey.length > 0) {
+      console.log('[WithdrawScreen] Using privateKey from Web3Context');
       return wallet.privateKey;
     }
 
-    // 2) Try local stored wallet (uses current user scope if available)
-    const storedAnyScope = getStoredWallet();
-    if (storedAnyScope?.privateKey) return storedAnyScope.privateKey;
-
-    // 3) Try explicit user-scoped wallet (if auth session is available)
+    // 2) Get user ID first, then try user-scoped storage
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const stored = getStoredWallet(user.id);
-        if (stored?.privateKey) return stored.privateKey;
+        if (stored?.privateKey) {
+          console.log('[WithdrawScreen] Using privateKey from user-scoped storage');
+          return stored.privateKey;
+        }
       }
     } catch (e) {
-      console.warn('[WithdrawScreen] Failed to load stored wallet', e);
+      console.warn('[WithdrawScreen] Failed to get user for wallet lookup', e);
     }
 
-    // Legacy fallback: base64 JSON (ipg_wallet_data)
+    // 3) Fallback: try without user scope (legacy/anonymous)
+    const storedAnyScope = getStoredWallet();
+    if (storedAnyScope?.privateKey) {
+      console.log('[WithdrawScreen] Using privateKey from unscoped storage');
+      return storedAnyScope.privateKey;
+    }
+
+    // 4) Legacy fallback: base64 JSON (ipg_wallet_data)
     try {
       const raw = localStorage.getItem('ipg_wallet_data');
       if (raw) {
         const parsed = JSON.parse(atob(raw));
-        if (parsed?.privateKey) return parsed.privateKey;
+        if (parsed?.privateKey) {
+          console.log('[WithdrawScreen] Using privateKey from legacy ipg_wallet_data');
+          return parsed.privateKey;
+        }
       }
     } catch {
       // ignore
     }
 
+    console.warn('[WithdrawScreen] No privateKey found in any storage location');
     return null;
   };
 
