@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Shield, ScanLine, Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ethers } from "ethers";
 import { useToast } from "@/hooks/use-toast";
 import { QRScanner } from "@/components/scanner/QRScanner";
 import { useOnchainBalances } from "@/hooks/useOnchainBalances";
@@ -306,48 +307,89 @@ const WithdrawScreen = () => {
   };
 
   const resolvePrivateKey = async (): Promise<string | null> => {
+    const deriveFromSeed = (seedPhrase: string): string | null => {
+      try {
+        return ethers.Wallet.fromPhrase(seedPhrase.trim()).privateKey;
+      } catch {
+        return null;
+      }
+    };
+
     // 1) If Web3 context has a real private key, use it
     if (wallet?.privateKey && wallet.privateKey.length > 0) {
-      console.log('[WithdrawScreen] Using privateKey from Web3Context');
+      console.log("[WithdrawScreen] Using privateKey from Web3Context");
       return wallet.privateKey;
+    }
+
+    // 1b) If we have a seedPhrase in context, derive the private key (internal wallet restore)
+    if (wallet?.seedPhrase) {
+      const derived = deriveFromSeed(wallet.seedPhrase);
+      if (derived) {
+        console.log("[WithdrawScreen] Derived privateKey from Web3Context seedPhrase");
+        return derived;
+      }
     }
 
     // 2) Get user ID first, then try user-scoped storage
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         const stored = getStoredWallet(user.id);
         if (stored?.privateKey) {
-          console.log('[WithdrawScreen] Using privateKey from user-scoped storage');
+          console.log("[WithdrawScreen] Using privateKey from user-scoped storage");
           return stored.privateKey;
+        }
+        if (stored?.seedPhrase) {
+          const derived = deriveFromSeed(stored.seedPhrase);
+          if (derived) {
+            console.log("[WithdrawScreen] Derived privateKey from user-scoped seedPhrase");
+            return derived;
+          }
         }
       }
     } catch (e) {
-      console.warn('[WithdrawScreen] Failed to get user for wallet lookup', e);
+      console.warn("[WithdrawScreen] Failed to get user for wallet lookup", e);
     }
 
     // 3) Fallback: try without user scope (legacy/anonymous)
     const storedAnyScope = getStoredWallet();
     if (storedAnyScope?.privateKey) {
-      console.log('[WithdrawScreen] Using privateKey from unscoped storage');
+      console.log("[WithdrawScreen] Using privateKey from unscoped storage");
       return storedAnyScope.privateKey;
+    }
+    if (storedAnyScope?.seedPhrase) {
+      const derived = deriveFromSeed(storedAnyScope.seedPhrase);
+      if (derived) {
+        console.log("[WithdrawScreen] Derived privateKey from unscoped seedPhrase");
+        return derived;
+      }
     }
 
     // 4) Legacy fallback: base64 JSON (ipg_wallet_data)
     try {
-      const raw = localStorage.getItem('ipg_wallet_data');
+      const raw = localStorage.getItem("ipg_wallet_data");
       if (raw) {
         const parsed = JSON.parse(atob(raw));
         if (parsed?.privateKey) {
-          console.log('[WithdrawScreen] Using privateKey from legacy ipg_wallet_data');
+          console.log("[WithdrawScreen] Using privateKey from legacy ipg_wallet_data");
           return parsed.privateKey;
+        }
+        if (parsed?.seedPhrase || parsed?.mnemonic) {
+          const seed = (parsed.seedPhrase || parsed.mnemonic) as string;
+          const derived = deriveFromSeed(seed);
+          if (derived) {
+            console.log("[WithdrawScreen] Derived privateKey from legacy ipg_wallet_data seed");
+            return derived;
+          }
         }
       }
     } catch {
       // ignore
     }
 
-    console.warn('[WithdrawScreen] No privateKey found in any storage location');
+    console.warn("[WithdrawScreen] No privateKey found in any storage location");
     return null;
   };
 
@@ -362,16 +404,18 @@ const WithdrawScreen = () => {
       return;
     }
 
-    // If user is using MetaMask (or another injected wallet), send via it
-    if (typeof window !== "undefined" && typeof window.ethereum !== "undefined") {
+    // Only use MetaMask signing if the *active wallet* is MetaMask.
+    // (Prevents auto-opening MetaMask when the user expects internal signing.)
+    const isMetaMaskWallet = !!wallet && !wallet.privateKey && !wallet.seedPhrase;
+    if (isMetaMaskWallet && typeof window !== "undefined" && typeof window.ethereum !== "undefined") {
       await executeWithdraw({ type: "metamask" });
       return;
     }
 
     toast({
-      title: "Cannot Sign Transaction",
+      title: "Cannot Sign Internally",
       description:
-        "Your wallet keys aren't available on this device. Please re-import your wallet (Profile → Security) or connect MetaMask.",
+        "Your internal wallet key isn't available on this device. Please re-import your wallet (Profile → Security) to sign inside the app.",
       variant: "destructive",
     });
   };
