@@ -6,23 +6,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Shield, ScanLine, Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import INRWithdrawScreen from "./INRWithdrawScreen";
 import { QRScanner } from "@/components/scanner/QRScanner";
-import { useUserBalance } from "@/hooks/useUserBalance";
 import { useOnchainBalances } from "@/hooks/useOnchainBalances";
 import { supabase } from "@/integrations/supabase/client";
 import { validateCryptoAddress } from "@/lib/validation/cryptoAddressValidator";
 import { useWithdrawalFees } from "@/hooks/useWithdrawalFees";
+import { useWeb3 } from "@/contexts/Web3Context";
+import { transferBNB, transferERC20, transferViaMetaMask } from "@/lib/wallet/onchainTransfer";
 import { useOpenOrdersCheck } from "@/hooks/useOpenOrdersCheck";
 
 const WithdrawScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const cleanupRanRef = useRef(false);
+  
+  // Get user's wallet from Web3 context
+  const { wallet } = useWeb3();
   
   // Check for pre-selected asset from URL params
   const searchParams = new URLSearchParams(window.location.search)
@@ -40,8 +42,8 @@ const WithdrawScreen = () => {
     error?: string;
   }>({ isValid: false });
 
-  // Fetch real user balances - showAllAssets to display all withdrawal-enabled assets
-  const { data: balances, isLoading, error } = useUserBalance(undefined, true);
+  // Fetch REAL on-chain balances (not database balances)
+  const { balances: onchainBalances, isLoading, error, refetch: refetchBalances } = useOnchainBalances();
   
   // Get dynamic withdrawal fees
   const { fees: withdrawalFees, loading: feesLoading } = useWithdrawalFees(selectedAsset, selectedNetwork);
@@ -52,102 +54,23 @@ const WithdrawScreen = () => {
   // Filter assets - hide dust balances below threshold
   const MIN_WITHDRAWAL_BALANCE = 0.001;
 
-  // Auto-cleanup duplicated test balances (same number across many assets)
-  useEffect(() => {
-    if (cleanupRanRef.current) return;
-    if (isLoading || error || !balances?.length) return;
-
-    const nonDust = balances
-      .filter((b) => (b.available ?? 0) >= MIN_WITHDRAWAL_BALANCE)
-      .filter((b) => b.symbol !== 'INR');
-
-    if (nonDust.length < 5) return;
-
-    const buckets = new Map<
-      string,
-      { value: number; count: number; symbols: Set<string> }
-    >();
-
-    for (const b of nonDust) {
-      const raw = Number(b.available ?? 0);
-      const rounded = Math.round(raw * 1e8) / 1e8; // normalize floating point noise
-      const key = rounded.toFixed(8);
-
-      const existing = buckets.get(key) ?? {
-        value: rounded,
-        count: 0,
-        symbols: new Set<string>(),
-      };
-
-      existing.count += 1;
-      existing.symbols.add(b.symbol);
-      buckets.set(key, existing);
-    }
-
-    let mode: { value: number; count: number; symbols: Set<string> } | null = null;
-    for (const v of buckets.values()) {
-      if (!mode || v.count > mode.count) mode = v;
-    }
-
-    // Only trigger when it's clearly a duplicated/test pattern across many different assets
-    if (!mode || mode.count < 5 || mode.symbols.size < 5) return;
-
-    cleanupRanRef.current = true;
-
-    (async () => {
-      try {
-        const { data, error: fnError } = await supabase.functions.invoke('cleanup-fake-balances', {
-          body: { value: mode!.value },
-        });
-
-        if (fnError) throw fnError;
-
-        const deletedCount = (data as any)?.deleted_count ?? 0;
-        if (deletedCount > 0) {
-          toast({
-            title: 'Removed fake balances',
-            description: `Cleaned ${deletedCount} duplicated balance entries.`,
-          });
-          queryClient.invalidateQueries({ queryKey: ['user-balance'] });
-        }
-      } catch (e: any) {
-        cleanupRanRef.current = false; // allow retry
-        console.error('[WithdrawScreen] cleanup-fake-balances failed', e);
-        toast({
-          title: 'Failed to clean balances',
-          description: e?.message ?? 'Please refresh and try again.',
-          variant: 'destructive',
-        });
-      }
-    })();
-  }, [balances, isLoading, error, toast, queryClient]);
-
-  const assets = (balances || [])
+  // Transform on-chain balances into the format needed for the UI
+  const assets = onchainBalances
     .filter(asset => 
       asset.symbol !== 'BSK' && 
-      asset.symbol !== 'INR' &&
-      asset.network !== 'fiat' &&
-      asset.network !== 'FIAT' &&
-      asset.available >= MIN_WITHDRAWAL_BALANCE // Only show meaningful balances
+      asset.balance >= MIN_WITHDRAWAL_BALANCE
     )
     .map(asset => ({
       symbol: asset.symbol,
       name: asset.name,
-      balance: asset.available.toString(),
-      available: asset.available,
-      locked: asset.locked,
-      logo_url: asset.logo_url,
-      withdraw_fee: asset.withdraw_fee,
-      // Use actual network from database, fallback to array for compatibility
-      networks: asset.network ? [asset.network] : ['BEP20'],
-    }))
-    // Sort: assets with balance first (highest first), then alphabetically for zero balances
-    .sort((a, b) => {
-      if (a.available > 0 && b.available <= 0) return -1;
-      if (a.available <= 0 && b.available > 0) return 1;
-      if (a.available > 0 && b.available > 0) return b.available - a.available;
-      return a.symbol.localeCompare(b.symbol);
-    });
+      balance: asset.balance.toString(),
+      available: asset.balance,
+      locked: 0,
+      logo_url: asset.logoUrl,
+      contractAddress: asset.contractAddress,
+      decimals: asset.decimals,
+      networks: [asset.network || 'BEP20'],
+    }));
 
   // Set initial selected asset when balances load
   useEffect(() => {
@@ -235,24 +158,66 @@ const WithdrawScreen = () => {
   const confirmWithdraw = async () => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('process-withdrawal', {
-        body: {
-          asset_symbol: selectedAsset,
-          network: selectedNetwork,
-          to_address: address,
-          amount: amount
-        }
-      });
+      const asset = assets.find(a => a.symbol === selectedAsset);
+      if (!asset) throw new Error('Asset not found');
 
-      if (error) throw error;
+      let result;
+      const netAmountValue = (parseFloat(amount) - (withdrawalFees?.totalFee || 0)).toString();
+
+      // Check if we have a private key (internal wallet) or need MetaMask
+      if (wallet?.privateKey) {
+        // Use internal wallet to sign transaction
+        if (selectedAsset === 'BNB') {
+          result = await transferBNB(wallet.privateKey, address, netAmountValue);
+        } else if (asset.contractAddress) {
+          result = await transferERC20(
+            wallet.privateKey,
+            asset.contractAddress,
+            address,
+            netAmountValue,
+            asset.decimals
+          );
+        } else {
+          throw new Error('Token contract address not found');
+        }
+      } else {
+        // Use MetaMask for signing
+        result = await transferViaMetaMask(
+          selectedAsset === 'BNB' ? null : asset.contractAddress || null,
+          address,
+          netAmountValue,
+          asset.decimals
+        );
+      }
+
+      if (!result.success) {
+        throw new Error(result.error || 'Transaction failed');
+      }
+
+      // Record withdrawal in database for history
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('escrow_withdrawals').insert({
+          user_id: user.id,
+          asset_symbol: selectedAsset,
+          amount: parseFloat(amount),
+          to_address: address,
+          tx_hash: result.txHash,
+          status: 'completed',
+          processed_at: new Date().toISOString()
+        });
+      }
 
       toast({
-        title: "Withdrawal Processing",
-        description: `Your ${amount} ${selectedAsset} is being sent to ${address}. Check transaction history for status.`,
+        title: "Withdrawal Successful",
+        description: `${netAmountValue} ${selectedAsset} sent to ${address.slice(0, 8)}...${address.slice(-6)}`,
       });
       
+      // Refresh on-chain balances
+      refetchBalances();
       navigate("/app/wallet");
     } catch (error: any) {
+      console.error('[WithdrawScreen] Withdrawal error:', error);
       toast({
         title: "Withdrawal Failed",
         description: error.message || "Failed to process withdrawal",
