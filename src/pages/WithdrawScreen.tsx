@@ -9,7 +9,6 @@ import { ArrowLeft, Shield, ScanLine, Loader2, CheckCircle2, XCircle, AlertTrian
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { QRScanner } from "@/components/scanner/QRScanner";
-import { WalletPinDialog } from "@/components/wallet/WalletPinDialog";
 import { useOnchainBalances } from "@/hooks/useOnchainBalances";
 import { supabase } from "@/integrations/supabase/client";
 import { validateCryptoAddress } from "@/lib/validation/cryptoAddressValidator";
@@ -17,8 +16,7 @@ import { useWithdrawalFees } from "@/hooks/useWithdrawalFees";
 import { useWeb3 } from "@/contexts/Web3Context";
 import { transferBNB, transferERC20 } from "@/lib/wallet/onchainTransfer";
 import { useOpenOrdersCheck } from "@/hooks/useOpenOrdersCheck";
-import { retrieveWalletData } from "@/utils/wallet";
-import { getStoredEvmAddress } from "@/lib/wallet/evmAddress";
+import { getStoredWallet } from "@/utils/walletStorage";
 
 const MIN_WITHDRAWAL_BALANCE = 0.0001;
 
@@ -41,11 +39,6 @@ const WithdrawScreen = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // PIN dialog (used when private key isn't in memory)
-  const [pinDialogOpen, setPinDialogOpen] = useState(false);
-  const [pinDialogError, setPinDialogError] = useState<string | null>(null);
-  const [sourceWalletAddress, setSourceWalletAddress] = useState<string | null>(null);
-
   const [addressValidation, setAddressValidation] = useState<{
     isValid: boolean;
     error?: string;
@@ -53,20 +46,6 @@ const WithdrawScreen = () => {
 
   // Fetch REAL on-chain balances (not database balances)
   const { balances: onchainBalances, isLoading, error, refetch: refetchBalances } = useOnchainBalances();
-
-  // Capture the wallet address that balances are based on (for PIN wallet safety check)
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const addr = await getStoredEvmAddress(user.id);
-        if (addr) setSourceWalletAddress(addr);
-      } catch (e) {
-        console.warn('[WithdrawScreen] Failed to resolve source wallet address', e);
-      }
-    })();
-  }, []);
 
   // Get dynamic withdrawal fees
   const { fees: withdrawalFees, loading: feesLoading } = useWithdrawalFees(selectedAsset, selectedNetwork);
@@ -246,45 +225,49 @@ const WithdrawScreen = () => {
     }
   };
 
-  const confirmWithdraw = async () => {
-    // If Web3 context already has a private key (internal wallet), use it
+  const resolvePrivateKey = async (): Promise<string | null> => {
     if (wallet?.privateKey && wallet.privateKey.length > 0) {
-      await executeWithdraw(wallet.privateKey);
+      return wallet.privateKey;
+    }
+
+    // Try user-scoped wallet storage
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const stored = getStoredWallet(user.id);
+        if (stored?.privateKey) return stored.privateKey;
+      }
+    } catch (e) {
+      console.warn('[WithdrawScreen] Failed to load stored wallet', e);
+    }
+
+    // Legacy fallback: base64 JSON (ipg_wallet_data)
+    try {
+      const raw = localStorage.getItem('ipg_wallet_data');
+      if (raw) {
+        const parsed = JSON.parse(atob(raw));
+        if (parsed?.privateKey) return parsed.privateKey;
+      }
+    } catch {
+      // ignore
+    }
+
+    return null;
+  };
+
+  const confirmWithdraw = async () => {
+    const privateKey = await resolvePrivateKey();
+
+    if (!privateKey) {
+      toast({
+        title: "Wallet Not Available",
+        description: "Please create or import your wallet first.",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Otherwise, ask for PIN and decrypt local wallet to sign inside the app
-    setPinDialogError(null);
-    setPinDialogOpen(true);
-  };
-
-  const handlePinConfirm = async (pin: string) => {
-    try {
-      setPinDialogError(null);
-
-      const walletData = retrieveWalletData(pin);
-      if (!walletData) {
-        setPinDialogError("Incorrect PIN");
-        return;
-      }
-
-      // Safety: ensure PIN wallet matches the wallet address used for balances (if known)
-      if (
-        sourceWalletAddress &&
-        walletData.address.toLowerCase() !== sourceWalletAddress.toLowerCase()
-      ) {
-        setPinDialogError(
-          `PIN wallet (${walletData.address.slice(0, 6)}...${walletData.address.slice(-4)}) does not match your active wallet (${sourceWalletAddress.slice(0, 6)}...${sourceWalletAddress.slice(-4)}).`
-        );
-        return;
-      }
-
-      setPinDialogOpen(false);
-      await executeWithdraw(walletData.privateKey);
-    } catch (e: any) {
-      console.error('[WithdrawScreen] PIN confirm failed', e);
-      setPinDialogError(e?.message ?? 'Failed to unlock wallet');
-    }
+    await executeWithdraw(privateKey);
   };
 
   if (showConfirmation) {
@@ -339,7 +322,7 @@ const WithdrawScreen = () => {
                   Processing...
                 </>
               ) : (
-                "Confirm with PIN/Biometric"
+                "Sign & Send"
               )}
             </Button>
             <Button
@@ -353,16 +336,6 @@ const WithdrawScreen = () => {
             </Button>
           </div>
 
-          <WalletPinDialog
-            open={pinDialogOpen}
-            onOpenChange={(open) => {
-              setPinDialogOpen(open);
-              if (!open) setPinDialogError(null);
-            }}
-            onConfirm={handlePinConfirm}
-            isConfirming={isProcessing}
-            error={pinDialogError}
-          />
         </div>
       </div>
     );
