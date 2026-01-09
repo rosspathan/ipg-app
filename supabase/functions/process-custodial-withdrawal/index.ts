@@ -2,9 +2,12 @@
  * Process Custodial Withdrawal Edge Function
  * 
  * Processes pending withdrawal requests by:
- * 1. Deducting from user's trading_balances
- * 2. Sending tokens from the hot wallet to user's wallet
- * 3. Updating custodial_withdrawals with tx hash
+ * 1. Sending tokens from the hot wallet to user's wallet
+ * 2. Updating custodial_withdrawals with tx hash
+ * 
+ * Note: Balance has already been deducted from wallet_balances when the
+ * withdrawal request was created (by request-custodial-withdrawal).
+ * If the withdrawal fails, we refund to wallet_balances.
  * 
  * Uses ADMIN_WALLET_PRIVATE_KEY to sign transactions from the hot wallet.
  */
@@ -218,31 +221,49 @@ Deno.serve(async (req) => {
           })
           .eq('id', withdrawal.id);
 
-        // Refund trading balance
+        // Refund to wallet_balances (the correct trading balance table)
         const { data: balance } = await supabase
-          .from('trading_balances')
-          .select('available')
+          .from('wallet_balances')
+          .select('available, locked, total')
           .eq('user_id', withdrawal.user_id)
           .eq('asset_id', withdrawal.asset_id)
           .single();
 
+        const refundAmount = withdrawal.amount + (withdrawal.fee_amount || 0);
+
         if (balance) {
+          // Update existing balance
           await supabase
-            .from('trading_balances')
+            .from('wallet_balances')
             .update({
-              available: (balance.available || 0) + withdrawal.amount,
+              available: (balance.available || 0) + refundAmount,
+              total: (balance.total || 0) + refundAmount,
               updated_at: new Date().toISOString()
             })
             .eq('user_id', withdrawal.user_id)
             .eq('asset_id', withdrawal.asset_id);
 
-          console.log(`[process-custodial-withdrawal] Refunded ${withdrawal.amount} to trading balance`);
+          console.log(`[process-custodial-withdrawal] Refunded ${refundAmount} to wallet_balances`);
+        } else {
+          // Insert new balance row if none exists
+          await supabase
+            .from('wallet_balances')
+            .insert({
+              user_id: withdrawal.user_id,
+              asset_id: withdrawal.asset_id,
+              available: refundAmount,
+              locked: 0,
+              total: refundAmount
+            });
+
+          console.log(`[process-custodial-withdrawal] Created new wallet_balance with refund ${refundAmount}`);
         }
 
         results.push({
           withdrawal_id: withdrawal.id,
           status: 'failed',
-          error: withdrawalError.message
+          error: withdrawalError.message,
+          refunded: true
         });
       }
     }
