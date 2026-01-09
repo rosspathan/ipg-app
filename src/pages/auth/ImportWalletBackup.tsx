@@ -12,12 +12,14 @@ import { storeWallet, setWalletStorageUserId } from "@/utils/walletStorage";
 import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
 import PinEntryDialog from "@/components/profile/PinEntryDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useWeb3 } from "@/contexts/Web3Context";
 
 const ImportWalletBackup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuthUser();
   const { createBackup } = useEncryptedWalletBackup();
+  const { refreshWallet } = useWeb3();
   
   const [seedPhrase, setSeedPhrase] = useState("");
   const [loading, setLoading] = useState(false);
@@ -100,6 +102,9 @@ const ImportWalletBackup = () => {
         privateKey: hdNode.privateKey,
         network: 'mainnet'
       }, userId);
+
+      // Refresh Web3Context so wallet is immediately available app-wide
+      await refreshWallet();
 
       // Update profile with wallet address (use user_id, not id)
       await supabase

@@ -25,7 +25,12 @@ const WithdrawScreen = () => {
   const { toast } = useToast();
 
   // Get user's wallet from Web3 context (may be MetaMask wallet with no privateKey)
-  const { wallet } = useWeb3();
+  const { wallet, refreshWallet } = useWeb3();
+
+  // Ensure wallet is loaded from storage on mount (handles post-import scenario)
+  useEffect(() => {
+    refreshWallet();
+  }, []);
 
   // Check for pre-selected asset from URL params
   const searchParams = new URLSearchParams(window.location.search);
@@ -347,6 +352,9 @@ const WithdrawScreen = () => {
   };
 
   const confirmWithdraw = async () => {
+    // Try refreshing wallet first in case it was imported after context loaded
+    await refreshWallet();
+
     const privateKey = await resolvePrivateKey();
 
     if (privateKey) {
