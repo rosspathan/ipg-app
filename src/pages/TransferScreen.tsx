@@ -387,12 +387,13 @@ const TransferScreen = () => {
           </Button>
         </motion.div>
 
-        {/* Info Alert */}
-        <Alert>
+        {/* Info Alert - Explains two-balance system */}
+        <Alert className="bg-muted/30">
           <Info className="h-4 w-4" />
-          <AlertDescription className="text-xs">
-            Your crypto is stored on-chain. Use "To Trading" to make new deposits available for orders, 
-            or "To Wallet" to withdraw. These are the same funds, not separate balances.
+          <AlertDescription className="text-xs space-y-1">
+            <p><strong>On-Chain Wallet</strong>: Your actual crypto on the BSC blockchain.</p>
+            <p><strong>Trading Balance</strong>: Funds credited for placing orders.</p>
+            <p className="text-muted-foreground">Use "Deposit" to sync on-chain funds. Use "Withdraw" to send back to your wallet.</p>
           </AlertDescription>
         </Alert>
 
@@ -475,48 +476,53 @@ const TransferScreen = () => {
                 </CardContent>
               </Card>
 
-              {/* Unified Balance Display */}
+              {/* Two-Column Balance Display - Clear separation */}
               {currentAsset && (
                 <Card className="bg-card shadow-lg border border-border">
-                  <CardContent className="p-4 space-y-3">
-                    {/* Primary balance - single source of truth */}
-                    <div className="text-center pb-2 border-b border-border/50">
-                      <div className="text-xs text-muted-foreground mb-1">Your Balance</div>
-                      <div className="text-2xl font-semibold font-mono">
-                        {Math.max(currentAsset.onchainBalance, currentAsset.tradingTotal).toFixed(6)}
-                        <span className="text-base text-muted-foreground ml-1">{selectedAsset}</span>
+                  <CardContent className="p-4 space-y-4">
+                    {/* Side-by-side balance display */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* On-Chain Wallet Balance */}
+                      <div className="p-3 bg-muted/30 rounded-lg text-center">
+                        <div className="text-xs text-muted-foreground mb-1">On-Chain Wallet</div>
+                        <div className="text-lg font-semibold font-mono">
+                          {currentAsset.onchainBalance.toFixed(4)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">BSC Blockchain</div>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">Verified on-chain</div>
+                      
+                      {/* Trading Balance */}
+                      <div className="p-3 bg-primary/10 rounded-lg border border-primary/20 text-center">
+                        <div className="text-xs text-muted-foreground mb-1">Trading Balance</div>
+                        <div className="text-lg font-semibold font-mono text-primary">
+                          {currentAsset.tradingAvailable.toFixed(4)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Available for orders</div>
+                      </div>
                     </div>
                     
-                    {/* Trading status breakdown */}
-                    <div className="space-y-2">
-                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Trading Status
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Available</span>
-                        <span className="font-mono text-sm font-medium text-primary">
-                          {currentAsset.tradingAvailable.toFixed(6)}
+                    {/* Trading breakdown if locked funds exist */}
+                    {currentAsset.tradingLocked > 0.000001 && (
+                      <div className="flex justify-between items-center px-1 text-sm">
+                        <span className="text-muted-foreground">Locked in Orders</span>
+                        <span className="font-mono font-medium text-amber-500">
+                          {currentAsset.tradingLocked.toFixed(4)} {selectedAsset}
                         </span>
                       </div>
-                      {currentAsset.tradingLocked > 0 && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">In Orders</span>
-                          <span className="font-mono text-sm font-medium text-amber-400">
-                            {currentAsset.tradingLocked.toFixed(6)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                    )}
                     
-                    {/* Sync status indicator */}
-                    {currentAsset.onchainBalance > currentAsset.tradingTotal + 0.000001 && (
-                      <div className="pt-2 border-t border-border/50">
+                    {/* Balance mismatch indicator */}
+                    {Math.abs(currentAsset.onchainBalance - currentAsset.tradingTotal) > 0.0001 && (
+                      <div className="p-2 bg-warning/10 border border-warning/20 rounded-lg">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-amber-500">Unsynced deposits detected</span>
-                          <span className="font-mono text-amber-500">
-                            +{(currentAsset.onchainBalance - currentAsset.tradingTotal).toFixed(6)}
+                          <span className="text-warning-foreground font-medium">
+                            {currentAsset.onchainBalance > currentAsset.tradingTotal 
+                              ? "New deposits available to sync" 
+                              : "Trading balance differs from on-chain"}
+                          </span>
+                          <span className="font-mono text-warning-foreground">
+                            {currentAsset.onchainBalance > currentAsset.tradingTotal ? "+" : ""}
+                            {(currentAsset.onchainBalance - currentAsset.tradingTotal).toFixed(4)}
                           </span>
                         </div>
                       </div>
@@ -538,7 +544,7 @@ const TransferScreen = () => {
                       className="flex items-center gap-2"
                     >
                       <ArrowDownToLine className="w-4 h-4" />
-                      To Trading
+                      Deposit
                     </Button>
                     <Button
                       variant={direction === "to_wallet" ? "default" : "outline"}
@@ -546,13 +552,13 @@ const TransferScreen = () => {
                       className="flex items-center gap-2"
                     >
                       <ArrowUpFromLine className="w-4 h-4" />
-                      To Wallet
+                      Withdraw
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
                     {direction === "to_trading" 
-                      ? "Sync on-chain deposits to trading balance" 
-                      : "Withdraw from trading to your wallet"}
+                      ? "Credit on-chain funds to trading balance" 
+                      : "Send trading balance to your on-chain wallet"}
                   </p>
                 </CardContent>
               </Card>
@@ -604,7 +610,7 @@ const TransferScreen = () => {
                     ) : (
                       <ArrowUpFromLine className="w-4 h-4 mr-2" />
                     )}
-                    {direction === "to_trading" ? "Sync to Trading" : "Withdraw to Wallet"}
+                    {direction === "to_trading" ? "Deposit to Trading" : "Withdraw to Wallet"}
                   </>
                 )}
               </Button>

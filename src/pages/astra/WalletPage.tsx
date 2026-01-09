@@ -10,6 +10,7 @@ import { AppShellGlass } from "@/components/astra/AppShellGlass"
 import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { useWalletBalances } from "@/hooks/useWalletBalances"
 import { useBep20Balances } from "@/hooks/useBep20Balances"
+import { useUserBalance } from "@/hooks/useUserBalance"
 import { QuickActionsRibbon } from "@/components/astra/grid/QuickActionsRibbon"
 import { useNavigation } from "@/hooks/useNavigation"
 import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
@@ -21,6 +22,7 @@ import { useDisplayName } from "@/hooks/useDisplayName"
 import { PendingDepositsCard } from "@/components/astra/PendingDepositsCard"
 import { NetworkBadge } from "@/components/wallet/NetworkBadge"
 import { PortfolioSummaryCard } from "@/components/wallet/PortfolioSummaryCard"
+import { TradingBalancesCard } from "@/components/wallet/TradingBalancesCard"
 import { getStoredWallet } from "@/utils/walletStorage"
 import { useWalletIntegrity } from "@/lib/wallet/useWalletIntegrity"
 import { WalletIntegrityBanner } from "@/components/wallet/WalletIntegrityBanner"
@@ -43,6 +45,9 @@ export function WalletPage() {
   
   // Fetch on-chain balances
   const { balances: onchainBalances, isLoading: onchainLoading } = useBep20Balances()
+  
+  // Fetch trading balances (wallet_balances table)
+  const { data: tradingBalances, isLoading: tradingLoading } = useUserBalance()
   
   // Calculate total on-chain USD value
   const onchainUsd = useMemo(() => {
@@ -318,6 +323,13 @@ export function WalletPage() {
           change24h={portfolio?.change_24h_percent || 0}
           loading={portfolioLoading || onchainLoading}
         />
+
+      {/* Trading Balances Section */}
+      <TradingBalancesCard 
+        balances={tradingBalances || []} 
+        loading={tradingLoading}
+        onTransfer={() => navigate('/app/wallet/transfer')}
+      />
 
       {/* Balance Cluster with Crypto Assets Grid */}
       <BalanceCluster />
