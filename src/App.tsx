@@ -694,6 +694,7 @@ function AppContent() {
                 <Route path="orphaned-users-cleanup" element={<React.Suspense fallback={<LoadingFallback />}><OrphanedUsersCleanup /></React.Suspense>} />
                 <Route path="test-user-generator" element={<React.Suspense fallback={<LoadingFallback />}><AdminTestUserGenerator /></React.Suspense>} />
                 <Route path="mobile-linking" element={<React.Suspense fallback={<LoadingFallback />}><AdminMobileLinking /></React.Suspense>} />
+                <Route path="generate-hot-wallet" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/GenerateHotWallet')))}</React.Suspense>} />
               </Route>
 
               {/* Legacy Admin Console removed */}
