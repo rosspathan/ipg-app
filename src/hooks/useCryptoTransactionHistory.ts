@@ -111,7 +111,7 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
         }
       }
 
-      // Fetch withdrawals
+      // Fetch withdrawals from `withdrawals` table (admin-created legacy)
       if (transactionType === 'all' || transactionType === 'withdrawal') {
         let withdrawalsQuery = supabase
           .from('withdrawals')
@@ -147,7 +147,9 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
         }
 
         const { data: withdrawals, error: withdrawalsError } = await withdrawalsQuery.limit(limit);
-        if (withdrawalsError) throw withdrawalsError;
+        if (withdrawalsError) {
+          console.error('Error fetching withdrawals:', withdrawalsError);
+        }
         
         if (withdrawals) {
           results.push(...withdrawals.map((w: any) => ({
@@ -167,6 +169,60 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
             to_address: w.to_address,
             fee: w.fee ? parseFloat(w.fee) : null,
             completed_at: w.approved_at
+          })));
+        }
+
+        // Also fetch from escrow_withdrawals (on-chain withdrawals made via wallet)
+        let escrowQuery = supabase
+          .from('escrow_withdrawals')
+          .select(`
+            id,
+            user_id,
+            created_at,
+            amount,
+            status,
+            tx_hash,
+            to_address,
+            asset_symbol,
+            processed_at
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        // Apply status filter
+        if (status !== 'all') {
+          if (status === 'pending') {
+            escrowQuery = escrowQuery.in('status', ['pending', 'processing', 'pending_user_action']);
+          } else if (status === 'completed') {
+            escrowQuery = escrowQuery.eq('status', 'completed');
+          } else if (status === 'failed') {
+            escrowQuery = escrowQuery.in('status', ['failed', 'rejected']);
+          }
+        }
+
+        const { data: escrowWithdrawals, error: escrowError } = await escrowQuery.limit(limit);
+        if (escrowError) {
+          console.error('Error fetching escrow withdrawals:', escrowError);
+        }
+
+        if (escrowWithdrawals) {
+          results.push(...escrowWithdrawals.map((w: any) => ({
+            id: w.id,
+            user_id: w.user_id,
+            created_at: w.created_at,
+            amount: parseFloat(w.amount),
+            symbol: w.asset_symbol || 'Unknown',
+            asset_name: w.asset_symbol || 'Unknown',
+            logo_url: null,
+            transaction_type: 'withdrawal' as const,
+            status: w.status,
+            tx_hash: w.tx_hash,
+            network: 'BEP20',
+            confirmations: null,
+            required_confirmations: 12,
+            to_address: w.to_address,
+            fee: null,
+            completed_at: w.processed_at
           })));
         }
       }
