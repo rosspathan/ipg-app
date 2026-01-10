@@ -38,6 +38,12 @@ const fetchCryptoPrices = async (): Promise<Record<string, number>> => {
     console.error('Failed to fetch internal market prices:', error);
   }
   
+  // Stablecoins are always $1 - override any incorrect values
+  prices['USDT'] = 1;
+  prices['USDC'] = 1;
+  prices['DAI'] = 1;
+  prices['BUSD'] = 1;
+  
   return prices;
 };
 

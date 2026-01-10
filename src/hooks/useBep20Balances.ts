@@ -246,6 +246,12 @@ export function useBep20Balances() {
         console.warn('Failed to fetch prices:', err)
       }
 
+      // Stablecoins are always $1 - don't rely on market_prices
+      prices['USDT'] = 1;
+      prices['USDC'] = 1;
+      prices['DAI'] = 1;
+      prices['BUSD'] = 1;
+
       const results: Record<string, { onchainBalance: number; priceUsd: number }> = {}
       
       await Promise.all(
