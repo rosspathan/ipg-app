@@ -293,3 +293,6 @@ verify_jwt = true
 
 [functions.admin-cleanup-trading-ledger]
 verify_jwt = true
+
+[functions.credit-trading-deposit]
+verify_jwt = true

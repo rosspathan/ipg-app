@@ -122,20 +122,33 @@ export function useDirectTradingDeposit() {
       setStatus('pending');
       setTxHash(result.txHash || null);
 
-      // Record the deposit for faster detection by monitor
+      console.log('[DirectDeposit] On-chain transfer successful, tx:', result.txHash);
+
+      // Credit the trading balance immediately via edge function
       if (result.txHash) {
         try {
-          await supabase.from('custodial_deposits').insert({
-            user_id: user.id,
-            tx_hash: result.txHash,
-            asset_id: request.assetId,
-            amount: request.amount,
-            from_address: userWalletAddress,
-            status: 'detected',
-          });
-        } catch (recordErr) {
+          console.log('[DirectDeposit] Calling credit-trading-deposit edge function...');
+          
+          const { data: creditResult, error: creditError } = await supabase.functions.invoke(
+            'credit-trading-deposit',
+            {
+              body: {
+                tx_hash: result.txHash,
+                asset_id: request.assetId,
+                amount: request.amount,
+                from_address: userWalletAddress,
+              },
+            }
+          );
+
+          if (creditError) {
+            console.warn('[DirectDeposit] Credit failed, monitor will retry:', creditError);
+          } else {
+            console.log('[DirectDeposit] Balance credited immediately:', creditResult);
+          }
+        } catch (creditErr) {
           // Non-fatal - monitor will pick it up anyway
-          console.warn('[DirectDeposit] Failed to pre-record deposit:', recordErr);
+          console.warn('[DirectDeposit] Failed to credit deposit:', creditErr);
         }
       }
 
@@ -147,8 +160,8 @@ export function useDirectTradingDeposit() {
       queryClient.invalidateQueries({ queryKey: ['trading-balances'] });
 
       toast({
-        title: 'Transfer Sent!',
-        description: `${request.amount} ${request.symbol} is on its way. Balance will update shortly.`,
+        title: 'Deposit Complete!',
+        description: `${request.amount} ${request.symbol} has been credited to your trading balance.`,
       });
 
       return {
