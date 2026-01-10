@@ -130,6 +130,17 @@ export function useWalletBalances() {
       console.warn('Failed to fetch prices:', err);
     }
 
+    // Stablecoins are always $1 - hardcode these values
+    prices['USDT'] = 1;
+    prices['USDC'] = 1;
+    prices['DAI'] = 1;
+    prices['BUSD'] = 1;
+
+    // Handle BNB (market_prices may use "BNB ORIGINAL/USDT" instead of "BNB")
+    if (!prices['BNB'] && prices['BNB ORIGINAL']) {
+      prices['BNB'] = prices['BNB ORIGINAL'];
+    }
+
     return prices;
   }, []);
 
