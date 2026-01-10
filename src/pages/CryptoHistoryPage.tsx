@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { 
-  ArrowLeft, Loader2, ArrowDownLeft, ArrowUpRight, ExternalLink, 
+  ArrowLeft, Loader2, ArrowDownLeft, ArrowUpRight,
   CheckCircle2, Clock, XCircle, RefreshCw, Search, Plus
 } from "lucide-react";
 import { useCryptoTransactionHistory, TransactionFilter, StatusFilter, CryptoTransaction } from '@/hooks/useCryptoTransactionHistory';
@@ -23,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { CryptoTransactionDetailSheet } from '@/components/history/CryptoTransactionDetailSheet';
 
 const getStatusConfig = (status: string) => {
   switch (status) {
@@ -46,19 +45,9 @@ const formatAddress = (address: string | null) => {
   return `${address.slice(0, 8)}...${address.slice(-6)}`;
 };
 
-const getBscScanUrl = (txHash: string | null, network: string | null) => {
-  if (!txHash) return null;
-  if (network?.toLowerCase().includes('bsc') || network?.toLowerCase().includes('bep')) {
-    return `https://bscscan.com/tx/${txHash}`;
-  }
-  return `https://etherscan.io/tx/${txHash}`;
-};
-
 // Trust Wallet-like Transaction Item
-function TrustWalletTransactionItem({ tx }: { tx: CryptoTransaction }) {
+function TrustWalletTransactionItem({ tx, onClick }: { tx: CryptoTransaction; onClick: () => void }) {
   const statusConfig = getStatusConfig(tx.status);
-  const StatusIcon = statusConfig.icon;
-  const explorerUrl = getBscScanUrl(tx.tx_hash, tx.network);
   const isIncoming = tx.transaction_type === 'deposit' || tx.transaction_type === 'transfer_in';
   const isTransfer = tx.transaction_type === 'transfer_in' || tx.transaction_type === 'transfer_out';
 
@@ -95,7 +84,7 @@ function TrustWalletTransactionItem({ tx }: { tx: CryptoTransaction }) {
     >
       <div 
         className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 active:bg-muted/70 transition-colors cursor-pointer rounded-xl"
-        onClick={() => explorerUrl && window.open(explorerUrl, '_blank')}
+        onClick={onClick}
       >
         {/* Asset Icon with Direction Badge */}
         <div className="relative flex-shrink-0">
@@ -138,11 +127,6 @@ function TrustWalletTransactionItem({ tx }: { tx: CryptoTransaction }) {
             {formatDistanceToNow(new Date(tx.created_at), { addSuffix: true })}
           </p>
         </div>
-
-        {/* External Link Icon */}
-        {explorerUrl && (
-          <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-        )}
       </div>
     </motion.div>
   );
@@ -172,6 +156,7 @@ const CryptoHistoryPage = () => {
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [txHash, setTxHash] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<CryptoTransaction | null>(null);
 
   const { transactions, loading, refetch } = useCryptoTransactionHistory({
     transactionType: typeFilter,
@@ -314,7 +299,11 @@ const CryptoHistoryPage = () => {
                   {/* Transactions for this date */}
                   <div className="space-y-0.5">
                     {txs.map((tx) => (
-                      <TrustWalletTransactionItem key={tx.id} tx={tx} />
+                      <TrustWalletTransactionItem 
+                        key={tx.id} 
+                        tx={tx} 
+                        onClick={() => setSelectedTransaction(tx)} 
+                      />
                     ))}
                   </div>
                 </div>
@@ -373,6 +362,13 @@ const CryptoHistoryPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Transaction Detail Sheet */}
+      <CryptoTransactionDetailSheet
+        transaction={selectedTransaction}
+        open={!!selectedTransaction}
+        onOpenChange={(open) => !open && setSelectedTransaction(null)}
+      />
     </div>
   );
 };
