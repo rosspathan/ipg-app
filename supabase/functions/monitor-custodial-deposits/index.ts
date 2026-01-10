@@ -293,29 +293,26 @@ async function creditDeposit(
     .single();
 
   if (existingBalance) {
-    // Update existing balance
+    // Update existing balance (total is auto-calculated from available + locked)
     const newAvailable = (existingBalance.available || 0) + amount;
-    const newTotal = newAvailable + (existingBalance.locked || 0);
     
     await supabase
       .from('wallet_balances')
       .update({
         available: newAvailable,
-        total: newTotal,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', deposit.user_id)
       .eq('asset_id', assetId);
   } else {
-    // Insert new balance record
+    // Insert new balance record (total is auto-calculated)
     await supabase
       .from('wallet_balances')
       .insert({
         user_id: deposit.user_id,
         asset_id: assetId,
         available: amount,
-        locked: 0,
-        total: amount
+        locked: 0
       });
   }
 

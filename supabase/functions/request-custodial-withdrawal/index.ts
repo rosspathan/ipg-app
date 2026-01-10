@@ -179,16 +179,14 @@ Deno.serve(async (req) => {
 
     console.log(`[request-custodial-withdrawal] Destination: ${destinationAddress}`);
 
-    // Calculate new balances
+    // Calculate new balance
     const newAvailable = available - totalRequired;
-    const newTotal = (balance.total || 0) - totalRequired;
 
-    // Deduct from wallet_balances
+    // Deduct from wallet_balances (total is auto-calculated from available + locked)
     const { error: deductError } = await adminClient
       .from('wallet_balances')
       .update({
         available: newAvailable,
-        total: newTotal,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id)
@@ -219,12 +217,11 @@ Deno.serve(async (req) => {
     if (withdrawalError) {
       console.error('[request-custodial-withdrawal] Create error:', withdrawalError);
       
-      // Refund to wallet_balances
+      // Refund to wallet_balances (total is auto-calculated)
       await adminClient
         .from('wallet_balances')
         .update({
           available: available,
-          total: balance.total,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)

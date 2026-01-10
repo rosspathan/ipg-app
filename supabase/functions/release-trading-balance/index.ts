@@ -104,13 +104,12 @@ Deno.serve(async (req) => {
 
     // Reduce the trading balance (release back to on-chain control)
     const newAvailable = available - amount;
-    const newTotal = newAvailable + (balance.locked || 0);
 
+    // Update balance (total is auto-calculated from available + locked)
     const { error: updateError } = await supabase
       .from('wallet_balances')
       .update({
         available: newAvailable,
-        total: newTotal,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id)
