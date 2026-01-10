@@ -4,14 +4,40 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTradingManagement } from "@/hooks/useTradingManagement";
-import { TrendingUp, Plus, Power, Edit, Trash2 } from "lucide-react";
+import { useTradingEngineStatus } from "@/hooks/useTradingEngineStatus";
+import { TrendingUp, Plus, Power, Edit, Trash2, AlertTriangle, ShieldCheck, RefreshCw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function TradingControlPanel() {
   const { pairs, isLoading } = useTradingManagement();
+  const { data: engineStatus, isLoading: statusLoading, refetch: refetchStatus } = useTradingEngineStatus();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [resettingCircuitBreaker, setResettingCircuitBreaker] = useState(false);
 
-  if (isLoading) {
+  const handleResetCircuitBreaker = async () => {
+    setResettingCircuitBreaker(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-reset-circuit-breaker');
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success("Circuit breaker reset successfully - trading resumed");
+        refetchStatus();
+      } else {
+        throw new Error(data?.error || "Failed to reset circuit breaker");
+      }
+    } catch (error: any) {
+      console.error("Failed to reset circuit breaker:", error);
+      toast.error(error.message || "Failed to reset circuit breaker");
+    } finally {
+      setResettingCircuitBreaker(false);
+    }
+  };
+
+  if (isLoading || statusLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
@@ -128,21 +154,82 @@ export default function TradingControlPanel() {
 
         {/* Market Controls Tab */}
         <TabsContent value="controls">
-          <Card>
-            <CardHeader>
-              <CardTitle>Emergency Controls</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button variant="destructive" className="w-full">
-                  Halt All Trading
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Resume All Trading
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            {/* Circuit Breaker Status Card */}
+            <Card className={engineStatus?.circuitBreakerActive ? "border-destructive" : "border-success"}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    {engineStatus?.circuitBreakerActive ? (
+                      <AlertTriangle className="w-5 h-5 text-destructive" />
+                    ) : (
+                      <ShieldCheck className="w-5 h-5 text-success" />
+                    )}
+                    Circuit Breaker Status
+                  </CardTitle>
+                  <Badge variant={engineStatus?.circuitBreakerActive ? "destructive" : "default"}>
+                    {engineStatus?.circuitBreakerActive ? "ACTIVE - Trading Halted" : "Normal"}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Auto Matching</p>
+                      <p className="font-semibold">{engineStatus?.autoMatchingEnabled ? "Enabled" : "Disabled"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Trading Status</p>
+                      <p className="font-semibold">{engineStatus?.isHalted ? "Halted" : "Active"}</p>
+                    </div>
+                  </div>
+                  
+                  {engineStatus?.circuitBreakerActive && (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                      <p className="text-sm text-destructive font-medium mb-2">
+                        ⚠️ Circuit breaker has been triggered
+                      </p>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Order matching is suspended. Click below to reset and resume trading.
+                      </p>
+                      <Button 
+                        onClick={handleResetCircuitBreaker}
+                        disabled={resettingCircuitBreaker}
+                        variant="destructive"
+                      >
+                        {resettingCircuitBreaker ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Resetting...
+                          </>
+                        ) : (
+                          "Reset Circuit Breaker"
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Emergency Controls Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Emergency Controls</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button variant="destructive" className="w-full">
+                    Halt All Trading
+                  </Button>
+                  <Button variant="outline" className="w-full">
+                    Resume All Trading
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
