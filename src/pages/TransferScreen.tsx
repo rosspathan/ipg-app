@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, Info, ExternalLink, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { SuccessAnimation } from "@/components/wallet/SuccessAnimation";
 import { BalanceCardSkeleton } from "@/components/wallet/SkeletonLoader";
@@ -14,7 +14,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useOnchainBalances } from "@/hooks/useOnchainBalances";
-import { useDirectTradingDeposit, DepositStatus } from "@/hooks/useDirectTradingDeposit";
+import { useDirectTradingDeposit, DepositStatus, DirectDepositRequest } from "@/hooks/useDirectTradingDeposit";
+import { useWeb3 } from "@/contexts/Web3Context";
+import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
+import { getStoredWallet, setWalletStorageUserId, storeWallet } from "@/utils/walletStorage";
+import PinEntryDialog from "@/components/profile/PinEntryDialog";
+import { ethers } from "ethers";
 
 type TransferDirection = "to_trading" | "to_wallet";
 
@@ -43,6 +48,10 @@ const TransferScreen = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Web3 context and encrypted backup
+  const { wallet, refreshWallet } = useWeb3();
+  const { checkBackupExists, retrieveBackup } = useEncryptedWalletBackup();
+  
   // On-chain balances for deposits
   const { balances: onchainBalances, isLoading: onchainLoading, refetch: refetchOnchain } = useOnchainBalances();
   
@@ -61,6 +70,16 @@ const TransferScreen = () => {
   const [amount, setAmount] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [isPreparingSigner, setIsPreparingSigner] = useState(false);
+  
+  // Store pending request for PIN unlock flow
+  const pendingRequestRef = useRef<DirectDepositRequest | null>(null);
+  
+  // Ensure wallet is loaded from storage on mount
+  useEffect(() => {
+    refreshWallet();
+  }, []);
 
   // Fetch assets with trading balances only (for withdrawals)
   const { data: tradingAssets = [], isLoading: tradingLoading, refetch: refetchTrading } = useQuery({
@@ -163,8 +182,154 @@ const TransferScreen = () => {
   const bnbBalance = onchainBalances.find(a => a.symbol === 'BNB')?.balance || 0;
   const hasEnoughGas = bnbBalance > 0.001;
 
+  // Resolve private key from all possible storage locations (same as WithdrawScreen)
+  const resolvePrivateKey = async (): Promise<string | null> => {
+    const deriveFromSeed = (seedPhrase: string): string | null => {
+      try {
+        return ethers.Wallet.fromPhrase(seedPhrase.trim()).privateKey;
+      } catch {
+        return null;
+      }
+    };
+
+    // 1) If Web3 context has a real private key, use it
+    if (wallet?.privateKey && wallet.privateKey.length > 0) {
+      console.log("[TransferScreen] Using privateKey from Web3Context");
+      return wallet.privateKey;
+    }
+
+    // 1b) If we have a seedPhrase in context, derive the private key
+    if (wallet?.seedPhrase) {
+      const derived = deriveFromSeed(wallet.seedPhrase);
+      if (derived) {
+        console.log("[TransferScreen] Derived privateKey from Web3Context seedPhrase");
+        return derived;
+      }
+    }
+
+    // 2) Get user ID first, then try user-scoped storage
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const stored = getStoredWallet(user.id);
+        if (stored?.privateKey) {
+          console.log("[TransferScreen] Using privateKey from user-scoped storage");
+          return stored.privateKey;
+        }
+        if (stored?.seedPhrase) {
+          const derived = deriveFromSeed(stored.seedPhrase);
+          if (derived) {
+            console.log("[TransferScreen] Derived privateKey from user-scoped seedPhrase");
+            return derived;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[TransferScreen] Failed to get user for wallet lookup", e);
+    }
+
+    // 3) Fallback: try without user scope (legacy/anonymous)
+    const storedAnyScope = getStoredWallet();
+    if (storedAnyScope?.privateKey) {
+      console.log("[TransferScreen] Using privateKey from unscoped storage");
+      return storedAnyScope.privateKey;
+    }
+    if (storedAnyScope?.seedPhrase) {
+      const derived = deriveFromSeed(storedAnyScope.seedPhrase);
+      if (derived) {
+        console.log("[TransferScreen] Derived privateKey from unscoped seedPhrase");
+        return derived;
+      }
+    }
+
+    // 4) Legacy fallback: base64 JSON (ipg_wallet_data)
+    try {
+      const raw = localStorage.getItem("ipg_wallet_data");
+      if (raw) {
+        const parsed = JSON.parse(atob(raw));
+        if (parsed?.privateKey) {
+          console.log("[TransferScreen] Using privateKey from legacy ipg_wallet_data");
+          return parsed.privateKey;
+        }
+        if (parsed?.seedPhrase || parsed?.mnemonic) {
+          const seed = (parsed.seedPhrase || parsed.mnemonic) as string;
+          const derived = deriveFromSeed(seed);
+          if (derived) {
+            console.log("[TransferScreen] Derived privateKey from legacy ipg_wallet_data seed");
+            return derived;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    console.warn("[TransferScreen] No privateKey found in any storage location");
+    return null;
+  };
+
+  // Unlock wallet from encrypted backup and complete deposit
+  const unlockFromBackupAndDeposit = async (pin: string): Promise<boolean> => {
+    const phrase = await retrieveBackup(pin);
+    if (!phrase) return false;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const normalized = phrase.trim().toLowerCase().replace(/\s+/g, " ");
+    const derivedWallet = ethers.Wallet.fromPhrase(normalized);
+
+    // Safety: ensure this backup belongs to this account's registered wallet
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("wallet_address")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (
+      profile?.wallet_address &&
+      derivedWallet.address.toLowerCase() !== profile.wallet_address.toLowerCase()
+    ) {
+      toast({
+        title: "Wallet Mismatch",
+        description: "This PIN unlocked a recovery phrase that doesn't match your wallet address.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Persist phrase locally so internal signing works smoothly going forward
+    setWalletStorageUserId(user.id);
+    storeWallet(
+      {
+        address: profile?.wallet_address || derivedWallet.address,
+        seedPhrase: normalized,
+        privateKey: "",
+        network: "mainnet",
+        balance: "0",
+      },
+      user.id
+    );
+    await refreshWallet();
+
+    // Execute the pending deposit with the derived key
+    if (pendingRequestRef.current) {
+      const result = await executeDeposit(pendingRequestRef.current, derivedWallet.privateKey);
+      if (result.success) {
+        setShowSuccess(true);
+        refetchOnchain();
+        refetchTrading();
+      }
+      pendingRequestRef.current = null;
+    }
+    
+    return true;
+  };
+
   // Handle deposit (wallet → trading)
   const handleDeposit = async () => {
+    if (isPreparingSigner) return;
+    
     if (!amount || !currentOnchainAsset) {
       toast({ title: "Invalid Request", description: "Please enter an amount", variant: "destructive" });
       return;
@@ -189,18 +354,61 @@ const TransferScreen = () => {
       return;
     }
 
-    const result = await executeDeposit({
+    const request: DirectDepositRequest = {
       symbol: selectedAsset,
       amount: amountNum,
       contractAddress: currentOnchainAsset.contractAddress,
       decimals: currentOnchainAsset.decimals,
       assetId,
-    });
+    };
 
-    if (result.success) {
-      setShowSuccess(true);
-      refetchOnchain();
-      refetchTrading();
+    setIsPreparingSigner(true);
+    try {
+      // Refresh wallet in case it was imported after context loaded
+      await refreshWallet();
+
+      // Resolve private key from all storage locations
+      const privateKey = await resolvePrivateKey();
+
+      if (privateKey) {
+        // Execute deposit with internal wallet
+        const result = await executeDeposit(request, privateKey);
+        if (result.success) {
+          setShowSuccess(true);
+          refetchOnchain();
+          refetchTrading();
+        }
+        return;
+      }
+
+      // Only use MetaMask if the active wallet is MetaMask (no private key or seed)
+      const isMetaMaskWallet = !!wallet && !wallet.privateKey && !wallet.seedPhrase;
+      if (isMetaMaskWallet && typeof window !== "undefined" && typeof window.ethereum !== "undefined") {
+        const result = await executeDeposit(request);
+        if (result.success) {
+          setShowSuccess(true);
+          refetchOnchain();
+          refetchTrading();
+        }
+        return;
+      }
+
+      // Check if user has encrypted backup
+      const backupStatus = await checkBackupExists();
+      if (backupStatus.exists) {
+        pendingRequestRef.current = request;
+        setShowPinDialog(true);
+        return;
+      }
+
+      // No wallet available
+      toast({
+        title: "Cannot Sign Transaction",
+        description: "Your wallet key isn't available on this device. Please re-import your wallet (Profile → Security) to sign inside the app.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPreparingSigner(false);
     }
   };
 
@@ -530,6 +738,7 @@ const TransferScreen = () => {
                     onClick={handleDeposit}
                     disabled={
                       isDepositing || 
+                      isPreparingSigner ||
                       !amount || 
                       parseFloat(amount) <= 0 || 
                       parseFloat(amount) > availableBalance ||
@@ -537,7 +746,12 @@ const TransferScreen = () => {
                       (!hasEnoughGas && selectedAsset !== 'BNB')
                     }
                   >
-                    {isDepositing ? (
+                    {isPreparingSigner ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Preparing...
+                      </>
+                    ) : isDepositing ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         {getStatusMessage(depositStatus)}
@@ -700,6 +914,18 @@ const TransferScreen = () => {
           )}
         </AnimatePresence>
       </div>
+      
+      {/* PIN Dialog for encrypted backup unlock */}
+      <PinEntryDialog
+        open={showPinDialog}
+        onOpenChange={setShowPinDialog}
+        onSubmit={async (pin) => {
+          const success = await unlockFromBackupAndDeposit(pin);
+          return success;
+        }}
+        title="Enter PIN"
+        description="Enter your 6-digit PIN to sign this transaction."
+      />
     </div>
   );
 };
