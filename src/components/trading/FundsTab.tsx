@@ -1,10 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, Loader2, ArrowDownToLine, ArrowUpFromLine, Copy, Check, ExternalLink } from 'lucide-react';
+import { Wallet, Loader2, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import { useHotWalletAddress } from '@/hooks/useTradingBalances';
 
 interface AssetBalance {
   symbol: string;
@@ -29,10 +26,6 @@ interface FundsTabProps {
 
 export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
   const navigate = useNavigate();
-  const { data: hotWalletAddress } = useHotWalletAddress();
-  const [copied, setCopied] = useState(false);
-  const [showDepositInfo, setShowDepositInfo] = useState(false);
-
   // Only show assets with actual TRADING balance (funds in hot wallet)
   // NOT on-chain balances which are just for display
   const assetsWithTradingBalance = balances?.filter(b => {
@@ -49,17 +42,6 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
     return sum + (tradingBalance * pricePerUnit);
   }, 0);
 
-  const handleCopyAddress = async () => {
-    if (!hotWalletAddress) return;
-    try {
-      await navigator.clipboard.writeText(hotWalletAddress);
-      setCopied(true);
-      toast.success("Address copied!");
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Failed to copy address");
-    }
-  };
 
   if (loading) {
     return (
@@ -91,77 +73,16 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
         </p>
       </div>
 
-      {/* Deposit Instructions */}
-      {showDepositInfo && hotWalletAddress && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-amber-400">Deposit to Trading</h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs"
-              onClick={() => setShowDepositInfo(false)}
-            >
-              Close
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Send BEP-20 tokens to this address. Your trading balance will be credited automatically after 15 confirmations.
-          </p>
-          <div className="flex items-center gap-2 bg-background/50 rounded-lg p-2">
-            <code className="text-xs font-mono text-foreground flex-1 truncate">
-              {hotWalletAddress}
-            </code>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={handleCopyAddress}
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => window.open(`https://bscscan.com/address/${hotWalletAddress}`, '_blank')}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-          <div className="flex gap-2 text-[10px] text-amber-400/80">
-            <span>• BSC (BEP-20) only</span>
-            <span>• ~45 seconds</span>
-          </div>
-        </div>
-      )}
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-10"
-          onClick={() => setShowDepositInfo(!showDepositInfo)}
-        >
-          <ArrowDownToLine className="h-4 w-4 mr-1.5" />
-          Deposit
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-10"
-          onClick={() => navigate('/app/wallet/withdraw')}
-          disabled={assetsWithTradingBalance.length === 0}
-        >
-          <ArrowUpFromLine className="h-4 w-4 mr-1.5" />
-          Withdraw
-        </Button>
-      </div>
+      {/* Transfer Action */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-10 w-full"
+        onClick={() => navigate('/app/wallet/transfer')}
+      >
+        <ArrowLeftRight className="h-4 w-4 mr-1.5" />
+        Transfer
+      </Button>
 
       {/* Asset List - Trading balances only */}
       {assetsWithTradingBalance.length === 0 ? (
@@ -174,10 +95,10 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
           <Button 
             variant="default" 
             size="sm"
-            onClick={() => setShowDepositInfo(true)}
+            onClick={() => navigate('/app/wallet/transfer')}
           >
-            <ArrowDownToLine className="h-4 w-4 mr-1.5" />
-            Get Deposit Address
+            <ArrowLeftRight className="h-4 w-4 mr-1.5" />
+            Transfer Funds
           </Button>
         </div>
       ) : (
