@@ -232,12 +232,11 @@ Deno.serve(async (req) => {
         const refundAmount = withdrawal.amount + (withdrawal.fee_amount || 0);
 
         if (balance) {
-          // Update existing balance
+          // Update existing balance (total is auto-calculated from available + locked)
           await supabase
             .from('wallet_balances')
             .update({
               available: (balance.available || 0) + refundAmount,
-              total: (balance.total || 0) + refundAmount,
               updated_at: new Date().toISOString()
             })
             .eq('user_id', withdrawal.user_id)
@@ -245,15 +244,14 @@ Deno.serve(async (req) => {
 
           console.log(`[process-custodial-withdrawal] Refunded ${refundAmount} to wallet_balances`);
         } else {
-          // Insert new balance row if none exists
+          // Insert new balance row if none exists (total is auto-calculated)
           await supabase
             .from('wallet_balances')
             .insert({
               user_id: withdrawal.user_id,
               asset_id: withdrawal.asset_id,
               available: refundAmount,
-              locked: 0,
-              total: refundAmount
+              locked: 0
             });
 
           console.log(`[process-custodial-withdrawal] Created new wallet_balance with refund ${refundAmount}`);
