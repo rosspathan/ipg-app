@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { X, Camera } from 'lucide-react';
+import { X, Camera, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 
 interface QRScannerProps {
   isOpen: boolean;
@@ -12,8 +13,11 @@ interface QRScannerProps {
 
 export function QRScanner({ isOpen, onClose, onScan }: QRScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [error, setError] = useState<string>('');
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!isOpen) {
@@ -75,6 +79,46 @@ export function QRScanner({ isOpen, onClose, onScan }: QRScannerProps) {
     }
   };
 
+  const handleGalleryClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingFile(true);
+    setError('');
+
+    try {
+      // Create a temporary scanner instance for file scanning
+      const tempScanner = new Html5Qrcode('qr-file-scanner');
+      
+      const decodedText = await tempScanner.scanFile(file, true);
+      
+      toast({
+        title: "QR Code Detected",
+        description: "Address extracted successfully",
+      });
+      
+      onScan(decodedText);
+      onClose();
+    } catch (err: any) {
+      console.error('File scan error:', err);
+      toast({
+        title: "No QR Code Found",
+        description: "Could not detect a QR code in the selected image",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingFile(false);
+      // Reset file input so same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -101,6 +145,8 @@ export function QRScanner({ isOpen, onClose, onScan }: QRScannerProps) {
           <Card className="w-full max-w-md border-2 border-primary/20 overflow-hidden">
             <CardContent className="p-0">
               <div id="qr-reader" className="w-full" />
+              {/* Hidden element for file scanning */}
+              <div id="qr-file-scanner" className="hidden" />
             </CardContent>
           </Card>
 
@@ -117,6 +163,34 @@ export function QRScanner({ isOpen, onClose, onScan }: QRScannerProps) {
             <p className="text-xs text-muted-foreground">
               The scanner will automatically detect the wallet address
             </p>
+          </div>
+
+          {/* Gallery Upload Option */}
+          <div className="w-full max-w-md space-y-3 pt-4">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs text-muted-foreground">or</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+            
+            <Button
+              variant="outline"
+              onClick={handleGalleryClick}
+              disabled={isProcessingFile}
+              className="w-full gap-2"
+            >
+              <ImagePlus className="h-4 w-4" />
+              {isProcessingFile ? 'Processing...' : 'Select from Gallery'}
+            </Button>
+            
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
           </div>
         </div>
 
