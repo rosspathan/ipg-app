@@ -56,7 +56,11 @@ const getTransactionColor = (isCredit: boolean) => {
 };
 
 const getTransactionBgColor = (isCredit: boolean) => {
-  return isCredit ? 'bg-success/10' : 'bg-destructive/10';
+  return isCredit ? 'bg-success/15' : 'bg-orange-500/20';
+};
+
+const getIconColor = (isCredit: boolean) => {
+  return isCredit ? 'text-success' : 'text-orange-500';
 };
 
 const getBalanceTypeBadge = (balanceType: string) => {
@@ -84,7 +88,7 @@ export function TrustWalletHistoryItem({ transaction, onClick }: TrustWalletHist
           "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110",
           getTransactionBgColor(transaction.is_credit)
         )}>
-          <Icon className={cn("w-5 h-5", getTransactionColor(transaction.is_credit))} />
+          <Icon className={cn("w-5 h-5", getIconColor(transaction.is_credit))} />
         </div>
         
         <div className="flex-1 min-w-0">
