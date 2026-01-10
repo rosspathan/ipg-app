@@ -67,7 +67,7 @@ export function TradingBalancesCard({ balances, loading, onTransfer }: TradingBa
             </div>
             <p className="text-sm text-muted-foreground mb-1">No trading balances</p>
             <p className="text-xs text-muted-foreground/70">
-              Transfer funds from your on-chain wallet to start trading
+              Deposit funds to the platform hot wallet to start trading
             </p>
           </div>
         ) : (
