@@ -4,6 +4,7 @@
  * Phase 2.2: Fixed fee calculation (fees in correct assets)
  * Phase 3.4: BigNumber precision-safe calculations
  * Phase 4.3: Implemented circuit breaker logic
+ * Phase 5.0: Dynamic fees from settings, fees credited to platform account (no on-chain transfer)
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
@@ -27,9 +28,6 @@ interface EngineSettings {
   taker_fee_percent: number;
   admin_fee_wallet: string;
 }
-
-const ADMIN_FEE_PERCENT = new BigNumber('0.5'); // 0.5% fee on each side (buy and sell)
-const ADMIN_FEE_WALLET = '0x68e5bbd91c9b3bc74cbe47f649c6c58bd6aaae33';
 
 const MAX_PRICE_DEVIATION = new BigNumber('0.50'); // 50% price deviation triggers circuit breaker (high for low-liquidity pairs)
 const MIN_TRADES_FOR_CIRCUIT_BREAKER = 5; // Require at least 5 trades before enabling circuit breaker
@@ -59,6 +57,12 @@ Deno.serve(async (req) => {
     }
 
     const engineSettings = settings as EngineSettings;
+
+    // Get dynamic fee percentages from settings (default to 0.5% if not set)
+    const makerFeePercent = new BigNumber(String(engineSettings.maker_fee_percent ?? 0.5));
+    const takerFeePercent = new BigNumber(String(engineSettings.taker_fee_percent ?? 0.5));
+    
+    console.log(`[Matching Engine] Fee config: Maker=${makerFeePercent.toString()}%, Taker=${takerFeePercent.toString()}%`);
 
     // Check if matching is enabled
     if (!engineSettings.auto_matching_enabled || engineSettings.circuit_breaker_active) {
@@ -192,22 +196,28 @@ Deno.serve(async (req) => {
           // PHASE 2.1 FIX: Determine if orders can match without infinite prices
           let canMatch = false;
           let executionPrice = new BigNumber(0);
+          let buyerIsTaker = false; // Track who is the taker for fee purposes
 
           if (buyOrder.order_type === 'market' && sellOrder.order_type === 'market') {
             // Both market orders - should not match (no price reference)
             continue;
           } else if (buyOrder.order_type === 'market') {
-            // Buy market order takes seller's limit price
+            // Buy market order takes seller's limit price (buyer is taker)
             canMatch = true;
             executionPrice = new BigNumber(String(sellOrder.price));
+            buyerIsTaker = true;
           } else if (sellOrder.order_type === 'market') {
-            // Sell market order takes buyer's limit price
+            // Sell market order takes buyer's limit price (seller is taker)
             canMatch = true;
             executionPrice = new BigNumber(String(buyOrder.price));
+            buyerIsTaker = false;
           } else {
             // Both limit orders: match if buy price >= sell price
+            // The order that was placed first is the maker
             canMatch = buyOrder.price >= sellOrder.price;
-            executionPrice = new BigNumber(String(sellOrder.price)); // Maker (seller) sets the price
+            executionPrice = new BigNumber(String(sellOrder.price)); // Maker (seller who had resting order) sets the price
+            // Determine taker: the order placed later is the taker
+            buyerIsTaker = new Date(buyOrder.created_at) > new Date(sellOrder.created_at);
           }
 
           if (canMatch && executionPrice.isGreaterThan(0)) {
@@ -244,22 +254,22 @@ Deno.serve(async (req) => {
 
             console.log(`[Matching Engine] Matching ${matchedQuantity.toFixed(8)} ${symbol} at ${executionPrice.toFixed(8)}`);
 
-            // ADMIN FEE: 0.5% on each side (buyer and seller)
-            // Both fees calculated in quote asset for simplicity
+            // PHASE 5.0: Dynamic fees from settings
+            // Buyer fee: taker fee if buyer is taker, maker fee otherwise
+            // Seller fee: taker fee if seller is taker, maker fee otherwise
             const quoteAmount = matchedQuantity.times(executionPrice).decimalPlaces(8, BigNumber.ROUND_DOWN);
-            const buyerFee = quoteAmount.times(ADMIN_FEE_PERCENT).dividedBy(100).decimalPlaces(8, BigNumber.ROUND_DOWN);
-            const sellerFee = quoteAmount.times(ADMIN_FEE_PERCENT).dividedBy(100).decimalPlaces(8, BigNumber.ROUND_DOWN);
-            const adminWallet = engineSettings.admin_fee_wallet || ADMIN_FEE_WALLET;
+            const buyerFee = quoteAmount.times(buyerIsTaker ? takerFeePercent : makerFeePercent).dividedBy(100).decimalPlaces(8, BigNumber.ROUND_DOWN);
+            const sellerFee = quoteAmount.times(buyerIsTaker ? makerFeePercent : takerFeePercent).dividedBy(100).decimalPlaces(8, BigNumber.ROUND_DOWN);
 
             // Parse symbol (e.g., BTC/USDT -> base: BTC, quote: USDT)
             const [baseSymbol, quoteSymbol] = symbol.split('/');
 
-            console.log(`[Matching Engine] Fee calculation: Buyer fee=${buyerFee.toFixed(8)} ${quoteSymbol}, Seller fee=${sellerFee.toFixed(8)} ${quoteSymbol}, Admin wallet=${adminWallet}`);
+            console.log(`[Matching Engine] Fee calculation: Buyer fee=${buyerFee.toFixed(8)} ${quoteSymbol} (${buyerIsTaker ? 'taker' : 'maker'}), Seller fee=${sellerFee.toFixed(8)} ${quoteSymbol} (${buyerIsTaker ? 'maker' : 'taker'})`);
 
             try {
               console.log(`[Matching Engine] Executing atomic trade: buyer=${buyOrder.id}, seller=${sellOrder.id}, base=${matchedQuantity.toFixed(8)} ${baseSymbol}, quote=${quoteAmount.toFixed(8)} ${quoteSymbol}`);
 
-              // Use atomic execute_trade RPC that handles settle + trade record + order updates in one transaction
+              // Use atomic execute_trade RPC that handles settle + trade record + order updates + fee credit in one transaction
               const { data: tradeId, error: executeError } = await supabase.rpc('execute_trade', {
                 p_buy_order_id: buyOrder.id,
                 p_sell_order_id: sellOrder.id,
@@ -283,80 +293,46 @@ Deno.serve(async (req) => {
 
               console.log('[Matching Engine] Trade executed successfully, trade_id:', tradeId);
 
-              // Record fees in trading_fees_collected ledger and transfer on-chain
+              // Record fees in trading_fees_collected ledger (status: collected - no on-chain transfer needed)
               if (tradeId) {
-                const feeRecordIds: string[] = [];
-
-                // Buyer fee
-                const { data: buyerFeeRecord } = await supabase
+                // Buyer fee record
+                await supabase
                   .from('trading_fees_collected')
                   .insert({
                     trade_id: tradeId,
                     symbol,
                     fee_asset: quoteSymbol,
                     fee_amount: buyerFee.toNumber(),
-                    fee_percent: ADMIN_FEE_PERCENT.toNumber(),
+                    fee_percent: (buyerIsTaker ? takerFeePercent : makerFeePercent).toNumber(),
                     user_id: buyOrder.user_id,
                     side: 'buy',
-                    admin_wallet: adminWallet,
-                    status: 'pending'
-                  })
-                  .select('id')
-                  .single();
+                    admin_wallet: 'platform_account',
+                    status: 'collected' // Fees credited to platform account internally
+                  });
 
-                if (buyerFeeRecord) feeRecordIds.push(buyerFeeRecord.id);
-
-                // Seller fee
-                const { data: sellerFeeRecord } = await supabase
+                // Seller fee record
+                await supabase
                   .from('trading_fees_collected')
                   .insert({
                     trade_id: tradeId,
                     symbol,
                     fee_asset: quoteSymbol,
                     fee_amount: sellerFee.toNumber(),
-                    fee_percent: ADMIN_FEE_PERCENT.toNumber(),
+                    fee_percent: (buyerIsTaker ? makerFeePercent : takerFeePercent).toNumber(),
                     user_id: sellOrder.user_id,
                     side: 'sell',
-                    admin_wallet: adminWallet,
-                    status: 'pending'
-                  })
-                  .select('id')
-                  .single();
+                    admin_wallet: 'platform_account',
+                    status: 'collected' // Fees credited to platform account internally
+                  });
 
-                if (sellerFeeRecord) feeRecordIds.push(sellerFeeRecord.id);
-
-                console.log(`[Matching Engine] ✓ Fees recorded: Buyer=${buyerFee.toString()}, Seller=${sellerFee.toString()}`);
-
-                // Transfer combined fees on-chain
                 const totalFee = buyerFee.plus(sellerFee);
-                if (totalFee.isGreaterThan(0)) {
-                  try {
-                    console.log(`[Matching Engine] Initiating on-chain fee transfer: ${totalFee.toString()} ${quoteSymbol}`);
-                    
-                    const { data: feeTransfer, error: feeError } = await supabase.functions.invoke('transfer-trading-fee', {
-                      body: {
-                        amount: totalFee.toString(),
-                        asset: quoteSymbol,
-                        trade_id: tradeId,
-                        fee_record_ids: feeRecordIds
-                      }
-                    });
-
-                    if (feeError) {
-                      console.error(`[Matching Engine] Fee transfer error:`, feeError);
-                    } else if (feeTransfer?.tx_hash) {
-                      console.log(`[Matching Engine] ✓ Fees transferred on-chain: ${totalFee.toString()} ${quoteSymbol} -> tx: ${feeTransfer.tx_hash}`);
-                    }
-                  } catch (feeTransferError) {
-                    // Log error but don't fail the trade - fees are still recorded in DB
-                    console.error(`[Matching Engine] Fee transfer failed (non-fatal):`, feeTransferError);
-                  }
-                }
+                console.log(`[Matching Engine] ✓ Fees collected: Total=${totalFee.toString()} ${quoteSymbol} (credited to platform account)`);
 
                 // HYBRID MODEL: No P2P on-chain settlement needed
                 // Trades are settled internally via execute_trade RPC
+                // Fees are credited to platform account (user_id: 00000000-0000-0000-0000-000000000001)
                 // On-chain transfers only happen during user-initiated withdrawals
-                console.log(`[Matching Engine] ✓ Trade settled internally (hybrid model)`)
+                console.log(`[Matching Engine] ✓ Trade settled internally (hybrid model)`);
               }
 
               totalMatches++;
