@@ -11684,6 +11684,39 @@ export type Database = {
           },
         ]
       }
+      wallet_balances_cleanup_audit: {
+        Row: {
+          asset_id: string
+          available: number
+          cleaned_at: string | null
+          id: string
+          locked: number
+          original_created_at: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          available: number
+          cleaned_at?: string | null
+          id?: string
+          locked: number
+          original_created_at: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          available?: number
+          cleaned_at?: string | null
+          id?: string
+          locked?: number
+          original_created_at?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_bonus_balances: {
         Row: {
           asset_id: string
