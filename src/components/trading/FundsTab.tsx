@@ -43,8 +43,9 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
   // Calculate total USD value from trading balances only
   const totalUsdValue = assetsWithTradingBalance.reduce((sum, b) => {
     const tradingBalance = (b.appAvailable || 0) + (b.appLocked || 0);
-    // Estimate USD value based on the balance ratio
-    const pricePerUnit = b.usd_value && b.balance > 0 ? b.usd_value / b.balance : 0;
+    // Stablecoins are always $1
+    const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD'].includes(b.symbol);
+    const pricePerUnit = isStablecoin ? 1 : (b.usd_value && b.balance > 0 ? b.usd_value / b.balance : 0);
     return sum + (tradingBalance * pricePerUnit);
   }, 0);
 
@@ -187,8 +188,9 @@ export const FundsTab: React.FC<FundsTabProps> = ({ balances, loading }) => {
             const tradingLocked = asset.appLocked ?? 0;
             const tradingTotal = tradingAvailable + tradingLocked;
             
-            // Estimate USD value
-            const pricePerUnit = asset.usd_value && asset.balance > 0 ? asset.usd_value / asset.balance : 0;
+            // Stablecoins are always $1
+            const isStablecoin = ['USDT', 'USDC', 'DAI', 'BUSD'].includes(asset.symbol);
+            const pricePerUnit = isStablecoin ? 1 : (asset.usd_value && asset.balance > 0 ? asset.usd_value / asset.balance : 0);
             const usdValue = tradingTotal * pricePerUnit;
 
             return (

@@ -64,6 +64,12 @@ export function useTradingBalances() {
         prices?.map((p) => [p.symbol?.split('/')[0], p.current_price]) || []
       );
 
+      // Stablecoins are always $1 - don't rely on market_prices
+      priceMap.set('USDT', 1);
+      priceMap.set('USDC', 1);
+      priceMap.set('DAI', 1);
+      priceMap.set('BUSD', 1);
+
       return (balances || []).map((b) => {
         const asset = b.assets as { symbol: string; name: string; logo_url?: string } | null;
         const price = priceMap.get(asset?.symbol || "") || 0;
