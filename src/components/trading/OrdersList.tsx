@@ -80,7 +80,7 @@ export const OrdersList = ({ orders, onCancel, showCancelButton = true }: Orders
             </div>
           </div>
 
-          {showCancelButton && order.status === 'pending' && onCancel && (
+          {showCancelButton && (order.status === 'pending' || order.status === 'partially_filled') && onCancel && (
             <Button
               variant="ghost"
               size="sm"

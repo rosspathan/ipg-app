@@ -61,8 +61,17 @@ export class ExternalAdapter extends ExchangeAdapter {
     console.log("[ExternalAdapter] Cancelling order:", orderId);
 
     try {
+      // Get current session for auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Session expired. Please log in again.");
+      }
+
       const { data, error } = await supabase.functions.invoke('cancel-order', {
-        body: { orderId }
+        body: { order_id: orderId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;

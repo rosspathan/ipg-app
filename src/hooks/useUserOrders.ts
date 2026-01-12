@@ -114,9 +114,18 @@ export const useUserOrders = (symbol?: string) => {
 
   const cancelOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
+      // Get current session to ensure we have a valid token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Session expired. Please log in again.');
+      }
+
       // Use the cancel-order edge function which handles balance unlocking atomically
       const { data: result, error } = await supabase.functions.invoke('cancel-order', {
-        body: { order_id: orderId }
+        body: { order_id: orderId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) {
