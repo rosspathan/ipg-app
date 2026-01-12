@@ -114,48 +114,41 @@ export const useUserOrders = (symbol?: string) => {
 
   const cancelOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      // Use the cancel-order edge function which handles balance unlocking atomically
+      const { data: result, error } = await supabase.functions.invoke('cancel-order', {
+        body: { order_id: orderId }
+      });
 
-      // Get order details first
-      const { data: order, error: fetchError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Unlock balance if it's a pending limit order (include fee buffer for buy orders)
-      if (order.status === 'pending' && order.order_type === 'limit') {
-        const [baseSymbol, quoteSymbol] = order.symbol.split('/');
-        const assetToUnlock = order.side === 'buy' ? quoteSymbol : baseSymbol;
-        const FEE_PERCENT = 0.005; // 0.5% fee
-        const amountToUnlock = order.side === 'buy' 
-          ? order.remaining_amount * order.price * (1 + FEE_PERCENT)
-          : order.remaining_amount;
-
-        await supabase.rpc('unlock_balance_for_order', {
-          p_user_id: user.id,
-          p_asset_symbol: assetToUnlock,
-          p_amount: amountToUnlock
-        });
+      if (error) {
+        let errorMessage = error.message || 'Failed to cancel order';
+        
+        // Try to parse error body for detailed message
+        if (error.context?.body) {
+          try {
+            const bodyText = await error.context.body.text?.() || error.context.body;
+            const parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
+            if (parsed?.error) {
+              errorMessage = parsed.error;
+            }
+          } catch {
+            // Keep original error message if parsing fails
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      // Update order status
-      const { error } = await supabase
-        .from('orders')
-        .update({ 
-          status: 'cancelled',
-          cancelled_at: new Date().toISOString(),
-        })
-        .eq('id', orderId);
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to cancel order');
+      }
 
-      if (error) throw error;
+      return result;
     },
     onSuccess: () => {
       toast.success('Order cancelled');
       queryClient.invalidateQueries({ queryKey: ['user-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['user-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['trading-balances'] });
     },
     onError: (error: any) => {
       toast.error('Cancel failed', {
