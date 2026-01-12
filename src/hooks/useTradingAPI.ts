@@ -100,15 +100,39 @@ export const useTradingAPI = () => {
   const cancelOrder = async (orderId: string, clientOrderId?: string) => {
     setLoading(true);
     try {
+      // Get current session to ensure we have a valid token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Session expired. Please log in again.');
+      }
+
       const { data, error } = await supabase.functions.invoke('cancel-order', {
         body: {
           order_id: orderId,
           client_order_id: clientOrderId
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
       if (error) {
-        throw error;
+        let errorMessage = error.message || 'Failed to cancel order';
+        
+        // Try to parse error body for detailed message
+        if (error.context?.body) {
+          try {
+            const bodyText = await error.context.body.text?.() || error.context.body;
+            const parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
+            if (parsed?.error) {
+              errorMessage = parsed.error;
+            }
+          } catch {
+            // Keep original error message if parsing fails
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (!data.success) {

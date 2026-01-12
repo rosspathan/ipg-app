@@ -23,22 +23,43 @@ serve(async (req) => {
   }
 
   try {
+    // Extract and validate authorization header
+    const authHeader = req.headers.get('Authorization');
+    console.log('[cancel-order] Auth header present:', !!authHeader);
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('[cancel-order] Missing or invalid Authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: No valid token provided' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
-      throw new Error('Unauthorized');
+      console.error('[cancel-order] User auth failed:', userError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Invalid or expired session' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const { order_id, client_order_id } = await req.json();
+    const body = await req.json();
+    // Accept both order_id and orderId for backward compatibility
+    const order_id = body.order_id || body.orderId;
+    const client_order_id = body.client_order_id || body.clientOrderId;
 
     console.log('[cancel-order] Request:', { user_id: user.id, order_id, client_order_id });
 
