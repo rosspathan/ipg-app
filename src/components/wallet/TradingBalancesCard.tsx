@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
-import { ArrowLeftRight, Loader2 } from "lucide-react"
+import { ArrowLeftRight, Loader2, RefreshCw } from "lucide-react"
 import AssetLogo from "@/components/AssetLogo"
+import { useBalanceReconciliation } from "@/hooks/useBalanceReconciliation"
 
 interface TradingBalance {
   symbol: string
@@ -19,8 +20,13 @@ interface TradingBalancesCardProps {
 }
 
 export function TradingBalancesCard({ balances, loading, onTransfer }: TradingBalancesCardProps) {
+  const { reconcileBalances, isReconciling } = useBalanceReconciliation()
+  
   // Filter to only show assets with trading balance > 0
   const activeBalances = balances.filter(b => b.balance > 0.000001)
+  
+  // Check if any asset has locked balance
+  const hasLockedBalance = activeBalances.some(b => b.locked > 0.000001)
   
   // Calculate total USD value
   const totalUsd = activeBalances.reduce((sum, b) => sum + (b.usd_value || 0), 0)
@@ -37,7 +43,7 @@ export function TradingBalancesCard({ balances, loading, onTransfer }: TradingBa
 
   return (
     <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl overflow-hidden">
-      {/* Header with Transfer Button */}
+      {/* Header with Action Buttons */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <div>
           <h2 className="text-sm font-semibold text-foreground">Trading Balances</h2>
@@ -45,17 +51,36 @@ export function TradingBalancesCard({ balances, loading, onTransfer }: TradingBa
             Funds available for placing orders
           </p>
         </div>
-        {onTransfer && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onTransfer}
-            className="h-9 px-4 bg-primary/10 hover:bg-primary/20 border-primary/40 hover:border-primary/60 text-primary rounded-lg transition-all duration-200"
-          >
-            <ArrowLeftRight className="h-3.5 w-3.5 mr-1.5" />
-            Transfer
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Reconcile Button - only show if there's locked balance */}
+          {hasLockedBalance && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => reconcileBalances()}
+              disabled={isReconciling}
+              className="h-9 px-3 text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg transition-all duration-200"
+              title="Fix locked balance if orders were cancelled"
+            >
+              {isReconciling ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          )}
+          {onTransfer && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onTransfer}
+              className="h-9 px-4 bg-primary/10 hover:bg-primary/20 border-primary/40 hover:border-primary/60 text-primary rounded-lg transition-all duration-200"
+            >
+              <ArrowLeftRight className="h-3.5 w-3.5 mr-1.5" />
+              Transfer
+            </Button>
+          )}
+        </div>
       </div>
       
       {/* Content */}

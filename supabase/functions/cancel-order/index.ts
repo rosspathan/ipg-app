@@ -1,6 +1,6 @@
 /**
- * Cancel Order Edge Function - IMPROVED
- * Proper balance unlock for all pending/partially_filled orders
+ * Cancel Order Edge Function - IMPROVED v2
+ * Always reconciles balance after cancel to ensure consistency
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -89,6 +89,7 @@ serve(async (req) => {
       type: order.order_type,
       amount: order.amount,
       filled_amount: order.filled_amount,
+      remaining_amount: order.remaining_amount,
       price: order.price
     });
 
@@ -101,81 +102,10 @@ serve(async (req) => {
       throw new Error('Order already cancelled');
     }
 
-    // Calculate remaining amount to unlock
+    // Parse trading pair
     const [base_symbol, quote_symbol] = order.symbol.split('/');
-    const filled = new BigNumber(String(order.filled_amount || 0));
-    const total = new BigNumber(String(order.amount));
-    const remaining = total.minus(filled);
-    
-    if (remaining.isGreaterThan(0)) {
-      const price = new BigNumber(String(order.price || 0));
-      const FEE_BUFFER = new BigNumber('1.005'); // 0.5% fee buffer (same as place-order)
-      
-      let unlock_asset: string;
-      let unlock_amount: BigNumber;
-      
-      if (order.side === 'buy') {
-        // Buyer locked quote asset (e.g., USDT)
-        unlock_asset = quote_symbol;
-        // Must match the locked amount from place-order (including fee buffer)
-        unlock_amount = remaining.times(price).times(FEE_BUFFER).decimalPlaces(8, BigNumber.ROUND_UP);
-      } else {
-        // Seller locked base asset (e.g., BTC)
-        unlock_asset = base_symbol;
-        unlock_amount = remaining.decimalPlaces(8, BigNumber.ROUND_DOWN);
-      }
 
-      console.log('[cancel-order] Unlocking balance:', { 
-        unlock_asset, 
-        unlock_amount: unlock_amount.toFixed(8),
-        remaining: remaining.toString()
-      });
-
-      const { data: unlockSuccess, error: unlockError } = await supabaseClient.rpc(
-        'unlock_balance_for_order',
-        {
-          p_user_id: user.id,
-          p_asset_symbol: unlock_asset,
-          p_amount: unlock_amount.toFixed(8),
-        }
-      );
-
-      if (unlockError) {
-        console.error('[cancel-order] Unlock error:', unlockError);
-        // Try reconciliation as fallback
-        console.log('[cancel-order] Attempting balance reconciliation as fallback...');
-        const { error: reconcileError } = await supabaseClient.rpc(
-          'reconcile_locked_balance',
-          {
-            p_user_id: user.id,
-            p_asset_symbol: unlock_asset,
-          }
-        );
-        if (reconcileError) {
-          console.error('[cancel-order] Reconciliation also failed:', reconcileError);
-        } else {
-          console.log('[cancel-order] Balance reconciled via fallback');
-        }
-      } else if (!unlockSuccess) {
-        console.warn('[cancel-order] Unlock returned false - attempting reconciliation fallback');
-        const { error: reconcileError } = await supabaseClient.rpc(
-          'reconcile_locked_balance',
-          {
-            p_user_id: user.id,
-            p_asset_symbol: unlock_asset,
-          }
-        );
-        if (reconcileError) {
-          console.error('[cancel-order] Reconciliation fallback failed:', reconcileError);
-        } else {
-          console.log('[cancel-order] Balance reconciled via fallback after unlock returned false');
-        }
-      } else {
-        console.log('[cancel-order] Balance unlocked successfully');
-      }
-    }
-
-    // Update order status
+    // Update order status FIRST (so reconcile sees correct state)
     const { error: updateError } = await supabaseClient
       .from('orders')
       .update({
@@ -189,7 +119,31 @@ serve(async (req) => {
       throw new Error('Failed to cancel order');
     }
 
-    console.log('[cancel-order] Order cancelled:', order.id);
+    console.log('[cancel-order] Order status updated to cancelled:', order.id);
+
+    // ALWAYS run reconciliation after cancel to ensure correct balance state
+    // This is the source of truth - it recalculates locked from remaining open orders
+    const assetsToReconcile = [base_symbol, quote_symbol];
+    
+    for (const asset of assetsToReconcile) {
+      console.log(`[cancel-order] Reconciling ${asset} balance for user ${user.id}`);
+      const { error: reconcileError } = await supabaseClient.rpc(
+        'reconcile_locked_balance',
+        {
+          p_user_id: user.id,
+          p_asset_symbol: asset,
+        }
+      );
+      
+      if (reconcileError) {
+        // Log but don't fail - order is already cancelled
+        console.warn(`[cancel-order] Reconciliation warning for ${asset}:`, reconcileError.message);
+      } else {
+        console.log(`[cancel-order] Successfully reconciled ${asset} balance`);
+      }
+    }
+
+    console.log('[cancel-order] Order cancelled and balances reconciled:', order.id);
 
     return new Response(
       JSON.stringify({
