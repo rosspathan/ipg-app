@@ -3,9 +3,11 @@
  * 
  * Scans the platform hot wallet for incoming token transfers.
  * When a deposit is detected:
- * 1. Identifies the sender (user) by matching from_address to profiles
- * 2. Creates a custodial_deposits record
+ * 1. Identifies the sender (user) by matching tx.from to registered wallets
+ * 2. Creates a custodial_deposits record with ACTUAL tx.from address
  * 3. Credits the user's wallet_balances (trading balance) when confirmed
+ * 
+ * SECURITY: Only credits deposits where tx.from EXACTLY matches a registered user wallet.
  * 
  * This function should be called periodically (e.g., every 1-2 minutes via cron)
  */
@@ -27,6 +29,12 @@ interface BscScanTokenTransfer {
   timeStamp: string;
   contractAddress: string;
   tokenSymbol: string;
+}
+
+interface MatchedUser {
+  user_id: string;
+  matched_address: string;
+  match_source: 'profiles_wallet' | 'profiles_bsc' | 'wallets_user';
 }
 
 const REQUIRED_CONFIRMATIONS = 15;
@@ -96,6 +104,7 @@ Deno.serve(async (req) => {
 
     let totalDiscovered = 0;
     let totalCredited = 0;
+    let totalSkippedUnknown = 0;
     const results: any[] = [];
 
     // Process each asset
@@ -127,7 +136,7 @@ Deno.serve(async (req) => {
 
         for (const tx of inboundTransfers) {
           const txHash = tx.hash.toLowerCase();
-          const fromAddress = tx.from.toLowerCase();
+          const actualSender = tx.from.toLowerCase(); // ACTUAL blockchain sender
           const amount = parseInt(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
           const txBlock = parseInt(tx.blockNumber);
           const confirmations = currentBlock - txBlock;
@@ -135,11 +144,25 @@ Deno.serve(async (req) => {
           // Check if already processed
           const { data: existing } = await supabase
             .from('custodial_deposits')
-            .select('id, status, confirmations')
+            .select('id, status, confirmations, from_address, user_id')
             .eq('tx_hash', txHash)
             .single();
 
           if (existing) {
+            // SECURITY: Verify the stored from_address matches actual tx sender
+            if (existing.from_address?.toLowerCase() !== actualSender) {
+              console.error(`[monitor-custodial-deposits] SECURITY ALERT: from_address mismatch for ${txHash}`);
+              console.error(`  Stored: ${existing.from_address}, Actual: ${actualSender}`);
+              // Log this security event
+              await logDepositAudit(supabase, 'FROM_ADDRESS_MISMATCH', {
+                tx_hash: txHash,
+                stored_from: existing.from_address,
+                actual_from: actualSender,
+                user_id: existing.user_id
+              });
+              continue;
+            }
+
             // Update confirmations if needed
             if (existing.status === 'pending' || existing.status === 'confirmed') {
               if (confirmations >= REQUIRED_CONFIRMATIONS && existing.status !== 'credited') {
@@ -161,33 +184,61 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Find user by wallet address
-          const { data: userProfile } = await supabase
-            .from('profiles')
-            .select('user_id')
-            .or(`wallet_address.ilike.${fromAddress},bsc_wallet_address.ilike.${fromAddress}`)
-            .single();
+          // SECURITY: Find user by ACTUAL tx.from address (strict matching)
+          const matchedUser = await findUserByWalletAddress(supabase, actualSender);
 
-          if (!userProfile) {
-            // Check wallets_user table
-            const { data: userWallet } = await supabase
-              .from('wallets_user')
-              .select('user_id')
-              .ilike('address', fromAddress)
-              .single();
-
-            if (!userWallet) {
-              console.log(`[monitor-custodial-deposits] Unknown sender: ${fromAddress}`);
-              continue;
-            }
-
-            // Use wallet user_id
-            await createDepositRecord(supabase, userWallet.user_id, asset.id, amount, txHash, fromAddress, confirmations);
-          } else {
-            await createDepositRecord(supabase, userProfile.user_id, asset.id, amount, txHash, fromAddress, confirmations);
+          if (!matchedUser) {
+            console.log(`[monitor-custodial-deposits] ⚠️ Unknown sender (not registered): ${actualSender}`);
+            console.log(`  TX: ${txHash}, Amount: ${amount} ${asset.symbol}`);
+            totalSkippedUnknown++;
+            
+            // Log unknown deposit for admin review
+            await logDepositAudit(supabase, 'UNKNOWN_SENDER', {
+              tx_hash: txHash,
+              from_address: actualSender,
+              amount,
+              symbol: asset.symbol
+            });
+            
+            results.push({ 
+              tx_hash: txHash, 
+              action: 'skipped_unknown_sender', 
+              symbol: asset.symbol, 
+              amount, 
+              from: actualSender 
+            });
+            continue;
           }
 
-          results.push({ tx_hash: txHash, action: 'discovered', symbol: asset.symbol, amount, from: fromAddress });
+          // SECURITY: Verify the matched address is exactly the tx sender
+          if (matchedUser.matched_address.toLowerCase() !== actualSender) {
+            console.error(`[monitor-custodial-deposits] CRITICAL: Address match verification failed!`);
+            console.error(`  Expected: ${actualSender}, Matched: ${matchedUser.matched_address}`);
+            continue;
+          }
+
+          console.log(`[monitor-custodial-deposits] ✓ Matched sender ${actualSender} to user ${matchedUser.user_id} via ${matchedUser.match_source}`);
+
+          // Create deposit record with ACTUAL sender address
+          await createDepositRecord(
+            supabase, 
+            matchedUser.user_id, 
+            asset.id, 
+            amount, 
+            txHash, 
+            actualSender, // Store the ACTUAL tx.from, not the user's registered wallet
+            confirmations,
+            matchedUser.match_source
+          );
+
+          results.push({ 
+            tx_hash: txHash, 
+            action: 'discovered', 
+            symbol: asset.symbol, 
+            amount, 
+            from: actualSender,
+            user_id: matchedUser.user_id
+          });
         }
 
       } catch (assetError: any) {
@@ -195,13 +246,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`[monitor-custodial-deposits] Complete. Discovered: ${totalDiscovered}, Credited: ${totalCredited}`);
+    console.log(`[monitor-custodial-deposits] Complete. Discovered: ${totalDiscovered}, Credited: ${totalCredited}, Unknown: ${totalSkippedUnknown}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         discovered: totalDiscovered,
         credited: totalCredited,
+        skipped_unknown: totalSkippedUnknown,
         results
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -216,14 +268,88 @@ Deno.serve(async (req) => {
   }
 });
 
+/**
+ * Find a user by their registered wallet address (strict exact match)
+ */
+async function findUserByWalletAddress(supabase: any, address: string): Promise<MatchedUser | null> {
+  const normalizedAddress = address.toLowerCase();
+
+  // Check profiles.wallet_address
+  const { data: profileWallet } = await supabase
+    .from('profiles')
+    .select('user_id, wallet_address')
+    .ilike('wallet_address', normalizedAddress)
+    .single();
+
+  if (profileWallet && profileWallet.wallet_address?.toLowerCase() === normalizedAddress) {
+    return {
+      user_id: profileWallet.user_id,
+      matched_address: profileWallet.wallet_address,
+      match_source: 'profiles_wallet'
+    };
+  }
+
+  // Check profiles.bsc_wallet_address
+  const { data: profileBsc } = await supabase
+    .from('profiles')
+    .select('user_id, bsc_wallet_address')
+    .ilike('bsc_wallet_address', normalizedAddress)
+    .single();
+
+  if (profileBsc && profileBsc.bsc_wallet_address?.toLowerCase() === normalizedAddress) {
+    return {
+      user_id: profileBsc.user_id,
+      matched_address: profileBsc.bsc_wallet_address,
+      match_source: 'profiles_bsc'
+    };
+  }
+
+  // Check wallets_user table
+  const { data: userWallet } = await supabase
+    .from('wallets_user')
+    .select('user_id, address')
+    .ilike('address', normalizedAddress)
+    .single();
+
+  if (userWallet && userWallet.address?.toLowerCase() === normalizedAddress) {
+    return {
+      user_id: userWallet.user_id,
+      matched_address: userWallet.address,
+      match_source: 'wallets_user'
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Log deposit audit events for security monitoring
+ */
+async function logDepositAudit(supabase: any, eventType: string, details: any) {
+  try {
+    await supabase
+      .from('admin_notifications')
+      .insert({
+        type: 'deposit_audit',
+        title: `Deposit Audit: ${eventType}`,
+        message: JSON.stringify(details),
+        priority: eventType === 'FROM_ADDRESS_MISMATCH' ? 'high' : 'normal',
+        metadata: { event_type: eventType, ...details }
+      });
+  } catch (e) {
+    console.error('[monitor-custodial-deposits] Failed to log audit event:', e);
+  }
+}
+
 async function createDepositRecord(
   supabase: any,
   userId: string,
   assetId: string,
   amount: number,
   txHash: string,
-  fromAddress: string,
-  confirmations: number
+  actualFromAddress: string, // This MUST be the actual tx.from
+  confirmations: number,
+  matchSource: string
 ) {
   const status = confirmations >= REQUIRED_CONFIRMATIONS ? 'confirmed' : 'pending';
   
@@ -234,7 +360,7 @@ async function createDepositRecord(
       asset_id: assetId,
       amount,
       tx_hash: txHash,
-      from_address: fromAddress,
+      from_address: actualFromAddress, // Store ACTUAL sender, not registered wallet
       status,
       confirmations,
       required_confirmations: REQUIRED_CONFIRMATIONS
@@ -245,7 +371,7 @@ async function createDepositRecord(
     return;
   }
 
-  console.log(`[monitor-custodial-deposits] Created deposit record for ${amount} (${confirmations} confirmations)`);
+  console.log(`[monitor-custodial-deposits] Created deposit record: ${amount} from ${actualFromAddress} (${matchSource}, ${confirmations} confirmations)`);
 
   // If already confirmed, credit immediately
   if (status === 'confirmed') {
@@ -267,10 +393,10 @@ async function creditDeposit(
   assetId: string,
   amount: number
 ) {
-  // Get the deposit to find user_id
+  // Get the deposit to find user_id and verify from_address
   const { data: deposit, error: depositError } = await supabase
     .from('custodial_deposits')
-    .select('user_id, status')
+    .select('user_id, status, from_address')
     .eq('id', depositId)
     .single();
 
@@ -281,6 +407,49 @@ async function creditDeposit(
 
   if (deposit.status === 'credited') {
     console.log('[monitor-custodial-deposits] Deposit already credited');
+    return;
+  }
+
+  // SECURITY: Final verification - ensure from_address matches a registered wallet for this user
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('wallet_address, bsc_wallet_address')
+    .eq('user_id', deposit.user_id)
+    .single();
+
+  const { data: userWallets } = await supabase
+    .from('wallets_user')
+    .select('address')
+    .eq('user_id', deposit.user_id);
+
+  const registeredAddresses = [
+    profile?.wallet_address?.toLowerCase(),
+    profile?.bsc_wallet_address?.toLowerCase(),
+    ...(userWallets || []).map((w: any) => w.address?.toLowerCase())
+  ].filter(Boolean);
+
+  const fromAddressLower = deposit.from_address?.toLowerCase();
+  
+  if (!registeredAddresses.includes(fromAddressLower)) {
+    console.error(`[monitor-custodial-deposits] SECURITY: from_address ${fromAddressLower} not in user's registered wallets!`);
+    console.error(`  Registered: ${registeredAddresses.join(', ')}`);
+    
+    // Mark as suspicious and don't credit
+    await supabase
+      .from('custodial_deposits')
+      .update({
+        status: 'suspicious',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', depositId);
+
+    await logDepositAudit(supabase, 'CREDIT_BLOCKED_UNREGISTERED_ADDRESS', {
+      deposit_id: depositId,
+      user_id: deposit.user_id,
+      from_address: deposit.from_address,
+      registered_addresses: registeredAddresses
+    });
+
     return;
   }
 
