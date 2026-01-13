@@ -164,7 +164,7 @@ export const BSKBalanceCard: React.FC<BSKBalanceCardProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/app/wallet/history')}
+            onClick={() => navigate('/app/wallet/history/bsk')}
           >
             <History className="h-4 w-4 mr-1" />
             History
