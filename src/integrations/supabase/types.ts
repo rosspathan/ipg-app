@@ -12332,6 +12332,10 @@ export type Database = {
           status: string
         }[]
       }
+      force_reconcile_all_balances: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       generate_referral_code: {
         Args: { code_length?: number }
         Returns: string
