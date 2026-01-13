@@ -277,7 +277,7 @@ export function BSKTransferForm() {
             <Button variant="outline" onClick={handleReset}>
               New Transfer
             </Button>
-            <Button onClick={() => navigate("/app/wallet/history")}>
+            <Button onClick={() => navigate("/app/wallet/history/bsk")}>
               View History
             </Button>
           </div>

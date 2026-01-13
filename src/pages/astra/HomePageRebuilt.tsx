@@ -164,7 +164,7 @@ export function HomePageRebuilt() {
             }}
             onWithdraw={() => navigate("/app/programs/bsk-withdraw")}
             onTransfer={() => navigate("/app/programs/bsk-transfer")}
-            onHistory={() => navigate("/app/wallet/history")}
+            onHistory={() => navigate("/app/wallet/history/bsk")}
             onViewBreakdown={() => setShowRewardsBreakdown(true)}
             onRefresh={handleRefresh}
           />
@@ -183,7 +183,7 @@ export function HomePageRebuilt() {
           <Button
             variant="outline"
             className="w-full rounded-xl"
-            onClick={() => navigate("/app/wallet/history")}
+            onClick={() => navigate("/app/wallet/history/bsk")}
           >
             <History className="w-4 h-4 mr-2" />
             View Full History

@@ -98,7 +98,7 @@ export function BSKWithdrawableCard({ balance = 0, className }: BSKWithdrawableC
           </Button>
 
           <Button
-            onClick={() => navigate("/app/wallet/history")}
+            onClick={() => navigate("/app/wallet/history/bsk")}
             size="sm"
             variant="outline"
             className={cn(
