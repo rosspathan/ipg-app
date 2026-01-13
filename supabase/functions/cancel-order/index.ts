@@ -142,10 +142,34 @@ serve(async (req) => {
 
       if (unlockError) {
         console.error('[cancel-order] Unlock error:', unlockError);
-        // Log but don't fail - order should still be cancelled
-        console.warn('[cancel-order] Could not unlock balance, continuing with cancellation');
+        // Try reconciliation as fallback
+        console.log('[cancel-order] Attempting balance reconciliation as fallback...');
+        const { error: reconcileError } = await supabaseClient.rpc(
+          'reconcile_locked_balance',
+          {
+            p_user_id: user.id,
+            p_asset_symbol: unlock_asset,
+          }
+        );
+        if (reconcileError) {
+          console.error('[cancel-order] Reconciliation also failed:', reconcileError);
+        } else {
+          console.log('[cancel-order] Balance reconciled via fallback');
+        }
       } else if (!unlockSuccess) {
-        console.warn('[cancel-order] Unlock returned false - possibly already unlocked');
+        console.warn('[cancel-order] Unlock returned false - attempting reconciliation fallback');
+        const { error: reconcileError } = await supabaseClient.rpc(
+          'reconcile_locked_balance',
+          {
+            p_user_id: user.id,
+            p_asset_symbol: unlock_asset,
+          }
+        );
+        if (reconcileError) {
+          console.error('[cancel-order] Reconciliation fallback failed:', reconcileError);
+        } else {
+          console.log('[cancel-order] Balance reconciled via fallback after unlock returned false');
+        }
       } else {
         console.log('[cancel-order] Balance unlocked successfully');
       }
