@@ -129,19 +129,44 @@ Deno.serve(async (req) => {
       }
 
       let referencePrice: BigNumber | null = null;
-      let referenceSource: 'market_prices' | 'last_trade' | 'none' = 'none';
+      let referenceSource: 'market_prices' | 'last_trade' | 'order_book_midpoint' | 'none' = 'none';
+
+      // Calculate order book midpoint as a dynamic fallback reference
+      const limitBuys = orders.buys.filter(o => o.order_type === 'limit' && o.price > 0);
+      const limitSells = orders.sells.filter(o => o.order_type === 'limit' && o.price > 0);
+      const bestBidPrice = limitBuys.length > 0 ? Math.max(...limitBuys.map(o => o.price)) : null;
+      const bestAskPrice = limitSells.length > 0 ? Math.min(...limitSells.map(o => o.price)) : null;
+      const orderBookMidpoint = bestBidPrice && bestAskPrice ? new BigNumber(bestBidPrice).plus(bestAskPrice).dividedBy(2) : null;
+
+      console.log(`[Matching Engine] Order book for ${symbol}: bestBid=${bestBidPrice}, bestAsk=${bestAskPrice}, midpoint=${orderBookMidpoint?.toFixed(2) || 'N/A'}`);
 
       if (!tradeCountError && tradeCount && tradeCount >= MIN_TRADES_FOR_CIRCUIT_BREAKER) {
         // Prefer current market reference price (admin-set / internal price) over the last executed trade.
         const { data: marketRef, error: marketRefError } = await supabase
           .from('market_prices')
-          .select('current_price')
+          .select('current_price, last_updated')
           .eq('symbol', symbol)
           .single();
 
-        if (!marketRefError && marketRef?.current_price && Number(marketRef.current_price) > 0) {
+        // Check if market price is stale (older than 1 hour)
+        const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
+        const isMarketPriceStale = marketRef?.last_updated && 
+          (Date.now() - new Date(marketRef.last_updated).getTime()) > STALE_THRESHOLD_MS;
+
+        if (!marketRefError && marketRef?.current_price && Number(marketRef.current_price) > 0 && !isMarketPriceStale) {
           referencePrice = new BigNumber(String(marketRef.current_price));
           referenceSource = 'market_prices';
+          console.log(`[Matching Engine] Using market_prices reference: ${referencePrice.toFixed(2)}`);
+        } else if (isMarketPriceStale && orderBookMidpoint) {
+          // Market price is stale - use order book midpoint instead
+          referencePrice = orderBookMidpoint;
+          referenceSource = 'order_book_midpoint';
+          console.log(`[Matching Engine] Market price stale (last_updated: ${marketRef?.last_updated}), using order book midpoint: ${referencePrice.toFixed(2)}`);
+        } else if (orderBookMidpoint) {
+          // No market price available - use order book midpoint
+          referencePrice = orderBookMidpoint;
+          referenceSource = 'order_book_midpoint';
+          console.log(`[Matching Engine] No market price, using order book midpoint: ${referencePrice.toFixed(2)}`);
         } else {
           const { data: lastTrade } = await supabase
             .from('trades')
@@ -154,6 +179,7 @@ Deno.serve(async (req) => {
           if (lastTrade?.price && Number(lastTrade.price) > 0) {
             referencePrice = new BigNumber(String(lastTrade.price));
             referenceSource = 'last_trade';
+            console.log(`[Matching Engine] Using last trade reference: ${referencePrice.toFixed(2)}`);
           }
         }
       }
@@ -333,6 +359,23 @@ Deno.serve(async (req) => {
                 // Fees are credited to platform account (user_id: 00000000-0000-0000-0000-000000000001)
                 // On-chain transfers only happen during user-initiated withdrawals
                 console.log(`[Matching Engine] ✓ Trade settled internally (hybrid model)`);
+
+                // Update market_prices with the latest execution price to keep reference in sync
+                const { error: updatePriceError } = await supabase
+                  .from('market_prices')
+                  .upsert({
+                    symbol: symbol,
+                    current_price: executionPrice.toNumber(),
+                    last_updated: new Date().toISOString()
+                  }, { 
+                    onConflict: 'symbol' 
+                  });
+
+                if (updatePriceError) {
+                  console.warn(`[Matching Engine] Failed to update market_prices for ${symbol}:`, updatePriceError);
+                } else {
+                  console.log(`[Matching Engine] ✓ Updated market_prices.current_price to ${executionPrice.toFixed(8)} for ${symbol}`);
+                }
               }
 
               totalMatches++;

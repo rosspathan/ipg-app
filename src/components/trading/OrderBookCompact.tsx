@@ -99,7 +99,11 @@ export const OrderBookCompact: React.FC<OrderBookCompactProps> = ({
   const bestBid = displayBids.length > 0 ? displayBids[0]?.price : null;
   const spread = bestAsk && bestBid ? ((bestAsk - bestBid) / bestBid * 100) : null;
   
-  const displayPrice = currentPrice || marketPrice || 0;
+  // Calculate order book midpoint as fallback when no current price available
+  const spreadMidpoint = bestAsk && bestBid ? (bestAsk + bestBid) / 2 : null;
+  
+  // Priority: currentPrice > marketPrice > spreadMidpoint > 0
+  const displayPrice = currentPrice || marketPrice || spreadMidpoint || 0;
   const isPositive = priceChange >= 0;
 
   if (isLoading) {
