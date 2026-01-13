@@ -157,6 +157,19 @@ serve(async (req) => {
 
     console.log('[place-order] Balance locked:', required_amount.toFixed(8), required_asset);
 
+    // Audit log: Balance locked
+    await supabaseClient.from('trading_audit_log').insert({
+      user_id: user.id,
+      event_type: 'BALANCE_LOCKED',
+      payload: {
+        asset: required_asset,
+        amount: required_amount.toFixed(8),
+        symbol,
+        side,
+        type
+      }
+    }).catch(e => console.warn('[place-order] Audit log insert failed:', e));
+
     // Insert order
     const { data: order, error: insertError } = await supabaseClient
       .from('orders')
@@ -187,6 +200,22 @@ serve(async (req) => {
     }
 
     console.log('[place-order] Order created:', order.id);
+
+    // Audit log: Order created
+    await supabaseClient.from('trading_audit_log').insert({
+      user_id: user.id,
+      order_id: order.id,
+      event_type: 'ORDER_CREATED',
+      payload: {
+        symbol,
+        side,
+        type,
+        quantity: quantityBN.toNumber(),
+        price: order_price,
+        locked_amount: required_amount.toFixed(8),
+        locked_asset: required_asset
+      }
+    }).catch(e => console.warn('[place-order] Audit log insert failed:', e));
 
     // Trigger matching engine using admin client with functions.invoke
     const matchingAdminClient = createClient(

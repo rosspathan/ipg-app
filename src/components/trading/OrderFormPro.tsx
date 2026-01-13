@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Info, ChevronDown, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Plus, Info, ChevronDown, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 import { PriceStepperInput } from './PriceStepperInput';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -30,6 +31,8 @@ interface OrderFormProProps {
     quantity: number;
   }) => void;
   isPlacingOrder?: boolean;
+  bestBid?: number;
+  bestAsk?: number;
 }
 
 type OrderSide = 'buy' | 'sell';
@@ -51,7 +54,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   lotSize = 0.0001,
   onPlaceOrder,
   isPlacingOrder = false,
+  bestBid = 0,
+  bestAsk = 0,
 }) => {
+  const navigate = useNavigate();
   const [side, setSide] = useState<OrderSide>('buy');
   const [orderType, setOrderType] = useState<OrderType>('limit');
   const [price, setPrice] = useState(currentPrice.toFixed(2));
@@ -163,10 +169,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </button>
       </div>
 
-      {/* Available Balance with Locked indicator */}
+      {/* Trading Balance with Deposit CTA */}
       <div className="bg-muted/30 border border-border rounded-xl px-3 py-2">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] sm:text-xs text-muted-foreground">Available</span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground">Trading Balance</span>
           <div className="flex items-center gap-2">
             <span className={cn(
               "text-xs sm:text-sm font-mono font-medium",
@@ -174,7 +180,11 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             )}>
               {availableBalance.toFixed(4)} {balanceCurrency}
             </span>
-            <button className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors">
+            <button 
+              onClick={() => navigate(`/app/wallet/transfer?asset=${balanceCurrency}&direction=to_trading`)}
+              className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
+              title={`Deposit ${balanceCurrency} to Trading`}
+            >
               <Plus className="h-3 w-3" />
             </button>
           </div>
@@ -182,7 +192,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         {/* Show locked balance if any */}
         {((isBuy && lockedQuote > 0) || (!isBuy && lockedBase > 0)) && (
           <div className="flex items-center justify-between mt-1 pt-1 border-t border-border/50">
-            <span className="text-[10px] text-muted-foreground">In Orders</span>
+            <span className="text-[10px] text-muted-foreground">In Orders (Locked)</span>
             <span className="text-[10px] font-mono text-amber-400">
               {(isBuy ? lockedQuote : lockedBase).toFixed(4)} {balanceCurrency}
             </span>
@@ -190,16 +200,28 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         )}
       </div>
 
-      {/* Zero Balance Helper */}
+      {/* Zero Balance Helper with Deposit CTA */}
       {hasZeroBalance && (
-        <div className="flex items-center gap-2 text-amber-400 text-[10px] sm:text-xs bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-          <span>
-            {isBuy 
-              ? `No ${quoteCurrency} balance. Deposit ${quoteCurrency} or switch to Sell.`
-              : `No ${baseCurrency} balance. Deposit ${baseCurrency} or switch to Buy.`
-            }
-          </span>
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 space-y-2">
+          <div className="flex items-center gap-2 text-amber-400 text-[10px] sm:text-xs">
+            <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+            <span>
+              {isBuy 
+                ? `No ${quoteCurrency} in Trading Balance.`
+                : `No ${baseCurrency} in Trading Balance.`
+              }
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-8 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+            onClick={() => navigate(`/app/wallet/transfer?asset=${balanceCurrency}&direction=to_trading`)}
+          >
+            <Plus className="h-3 w-3 mr-1.5" />
+            Deposit {balanceCurrency} to Trading
+            <ArrowRight className="h-3 w-3 ml-1.5" />
+          </Button>
         </div>
       )}
 
@@ -237,13 +259,45 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* Price Input */}
       {orderType !== 'market' && (
-        <PriceStepperInput
-          label={`Price (${quoteCurrency})`}
-          value={price}
-          onChange={setPrice}
-          step={tickSize}
-          min={0}
-        />
+        <>
+          <PriceStepperInput
+            label={`Price (${quoteCurrency})`}
+            value={price}
+            onChange={setPrice}
+            step={tickSize}
+            min={0}
+          />
+          {/* Execution Helper */}
+          {numPrice > 0 && (
+            <div className="text-[9px] sm:text-[10px] px-1">
+              {isBuy ? (
+                bestAsk > 0 ? (
+                  numPrice >= bestAsk ? (
+                    <span className="text-emerald-400">✓ Should execute immediately (taker) at ~{bestAsk}</span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      Will wait as open order. Best ask: {bestAsk.toFixed(2)}. Set price ≥ {bestAsk.toFixed(2)} or use Market to fill now.
+                    </span>
+                  )
+                ) : (
+                  <span className="text-muted-foreground">No sellers in order book. Order will wait.</span>
+                )
+              ) : (
+                bestBid > 0 ? (
+                  numPrice <= bestBid ? (
+                    <span className="text-emerald-400">✓ Should execute immediately (taker) at ~{bestBid}</span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      Will wait as open order. Best bid: {bestBid.toFixed(2)}. Set price ≤ {bestBid.toFixed(2)} or use Market to fill now.
+                    </span>
+                  )
+                ) : (
+                  <span className="text-muted-foreground">No buyers in order book. Order will wait.</span>
+                )
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* Amount Input */}
