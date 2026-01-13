@@ -10002,6 +10002,33 @@ export type Database = {
           },
         ]
       }
+      trading_audit_log: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          order_id: string | null
+          payload: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          order_id?: string | null
+          payload?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          order_id?: string | null
+          payload?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       trading_balance_transfers: {
         Row: {
           amount: number
@@ -12620,6 +12647,15 @@ export type Database = {
       reconcile_locked_balance: {
         Args: { p_asset_symbol: string; p_user_id: string }
         Returns: undefined
+      }
+      reconcile_locked_balances: {
+        Args: { p_user_id: string }
+        Returns: {
+          actual_locked: number
+          asset_symbol: string
+          expected_locked: number
+          unlocked_amount: number
+        }[]
       }
       record_bsk_transaction: {
         Args: {
