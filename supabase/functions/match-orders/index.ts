@@ -314,10 +314,60 @@ Deno.serve(async (req) => {
               if (executeError) {
                 console.error('[Matching Engine] Execute trade error:', executeError);
                 console.error('[Matching Engine] Execute trade error message:', executeError.message);
+                
+                // Audit log: Trade execution failed
+                await supabase.from('trading_audit_log').insert({
+                  user_id: buyOrder.user_id,
+                  order_id: buyOrder.id,
+                  event_type: 'TRADE_EXECUTION_FAILED',
+                  payload: {
+                    error: executeError.message,
+                    buy_order_id: buyOrder.id,
+                    sell_order_id: sellOrder.id,
+                    symbol,
+                    execution_price: executionPrice.toNumber(),
+                    matched_quantity: matchedQuantity.toNumber()
+                  }
+                }).catch(e => console.warn('Audit log insert failed:', e));
+                
                 continue;
               }
 
               console.log('[Matching Engine] Trade executed successfully, trade_id:', tradeId);
+              
+              // Audit log: Trade executed successfully
+              await supabase.from('trading_audit_log').insert([
+                {
+                  user_id: buyOrder.user_id,
+                  order_id: buyOrder.id,
+                  event_type: 'TRADE_EXECUTED',
+                  payload: {
+                    trade_id: tradeId,
+                    symbol,
+                    side: 'buy',
+                    execution_price: executionPrice.toNumber(),
+                    quantity: matchedQuantity.toNumber(),
+                    quote_amount: quoteAmount.toNumber(),
+                    fee: buyerFee.toNumber(),
+                    counterparty_order_id: sellOrder.id
+                  }
+                },
+                {
+                  user_id: sellOrder.user_id,
+                  order_id: sellOrder.id,
+                  event_type: 'TRADE_EXECUTED',
+                  payload: {
+                    trade_id: tradeId,
+                    symbol,
+                    side: 'sell',
+                    execution_price: executionPrice.toNumber(),
+                    quantity: matchedQuantity.toNumber(),
+                    quote_amount: quoteAmount.toNumber(),
+                    fee: sellerFee.toNumber(),
+                    counterparty_order_id: buyOrder.id
+                  }
+                }
+              ]).catch(e => console.warn('Audit log insert failed:', e));
 
               // Record fees in trading_fees_collected ledger (status: collected - no on-chain transfer needed)
               if (tradeId) {

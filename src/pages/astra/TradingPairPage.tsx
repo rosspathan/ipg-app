@@ -378,18 +378,34 @@ function TradingPairPageContent() {
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {/* Order Form */}
             <div className="relative overflow-hidden isolate">
-              <OrderFormPro
-                baseCurrency={pair.baseAsset}
-                quoteCurrency={pair.quoteAsset}
-                availableBase={baseBalance.available}
-                availableQuote={quoteBalance.available}
-                lockedBase={baseBalance.locked}
-                lockedQuote={quoteBalance.locked}
-                availableBaseUsd={baseBalance.total * pair.price}
-                availableQuoteUsd={quoteBalance.total}
-                currentPrice={pair.price}
-                onPlaceOrder={handlePlaceOrder}
-              />
+              {(() => {
+                // Extract best bid/ask safely
+                const bestBidEntry = orderBook?.bids?.[0];
+                const bestAskEntry = orderBook?.asks?.[0];
+                const bestBidPrice = bestBidEntry 
+                  ? (typeof bestBidEntry === 'object' && 'price' in bestBidEntry ? bestBidEntry.price : Array.isArray(bestBidEntry) ? bestBidEntry[0] : 0)
+                  : 0;
+                const bestAskPrice = bestAskEntry 
+                  ? (typeof bestAskEntry === 'object' && 'price' in bestAskEntry ? bestAskEntry.price : Array.isArray(bestAskEntry) ? bestAskEntry[0] : 0)
+                  : 0;
+                
+                return (
+                  <OrderFormPro
+                    baseCurrency={pair.baseAsset}
+                    quoteCurrency={pair.quoteAsset}
+                    availableBase={baseBalance.available}
+                    availableQuote={quoteBalance.available}
+                    lockedBase={baseBalance.locked}
+                    lockedQuote={quoteBalance.locked}
+                    availableBaseUsd={baseBalance.total * pair.price}
+                    availableQuoteUsd={quoteBalance.total}
+                    currentPrice={pair.price}
+                    onPlaceOrder={handlePlaceOrder}
+                    bestBid={bestBidPrice}
+                    bestAsk={bestAskPrice}
+                  />
+                );
+              })()}
             </div>
 
             {/* Order Book */}
