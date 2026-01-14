@@ -1,11 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Info, ChevronDown, AlertCircle, Loader2, ArrowRight, RefreshCw } from 'lucide-react';
+import { Plus, Info, ChevronDown, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { PriceStepperInput } from './PriceStepperInput';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,77 +39,6 @@ type OrderSide = 'buy' | 'sell';
 type OrderType = 'limit' | 'market' | 'stop-limit';
 
 const QUICK_PERCENTAGES = [25, 50, 75, 100];
-
-// Component for showing locked balance with reconcile button
-const LockedBalanceRow: React.FC<{
-  lockedAmount: number;
-  availableAmount: number;
-  balanceCurrency: string;
-}> = ({ lockedAmount, availableAmount, balanceCurrency }) => {
-  const [isReconciling, setIsReconciling] = useState(false);
-
-  const handleReconcile = async () => {
-    setIsReconciling(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('reconcile-balance', {
-        body: { asset_symbol: balanceCurrency }
-      });
-      
-      if (error) throw error;
-      
-      if (data?.discrepancy && Math.abs(data.discrepancy) > 0.00001) {
-        toast.success('Balance reconciled!', {
-          description: `Released ${Math.abs(data.discrepancy).toFixed(4)} ${balanceCurrency} from locked to available.`,
-        });
-        // Refresh the page to show updated balance
-        window.location.reload();
-      } else {
-        toast.info('Balance verified', {
-          description: 'Your locked balance matches open orders. Funds are reserved for pending orders.',
-        });
-      }
-    } catch (err) {
-      console.error('[LockedBalanceRow] Reconcile error:', err);
-      toast.error('Failed to reconcile balance', {
-        description: 'Please try again or contact support.',
-      });
-    } finally {
-      setIsReconciling(false);
-    }
-  };
-
-  // Show reconcile button whenever there's a locked amount (not just when available = 0)
-  // This helps users check their locked funds anytime
-  const showReconcileButton = lockedAmount > 0;
-
-  return (
-    <div className="flex items-center justify-between mt-1 pt-1 border-t border-border/50">
-      <span className="text-[10px] text-muted-foreground">In Orders (Locked)</span>
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] font-mono text-amber-400">
-          {lockedAmount.toFixed(4)} {balanceCurrency}
-        </span>
-        {showReconcileButton && (
-          <button
-            onClick={handleReconcile}
-            disabled={isReconciling}
-            className="h-4 px-1.5 rounded bg-amber-500/10 text-amber-400 text-[9px] hover:bg-amber-500/20 transition-colors flex items-center gap-0.5 disabled:opacity-50"
-            title="Check if locked funds match open orders. Click to verify and release any orphaned locks."
-          >
-            {isReconciling ? (
-              <Loader2 className="h-2.5 w-2.5 animate-spin" />
-            ) : (
-              <>
-                <RefreshCw className="h-2.5 w-2.5" />
-                Check
-              </>
-            )}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-};
 
 export const OrderFormPro: React.FC<OrderFormProProps> = ({
   baseCurrency,
@@ -261,13 +189,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             </button>
           </div>
         </div>
-      {/* Show locked balance if any */}
+        {/* Show locked balance - informational only */}
         {((isBuy && lockedQuote > 0) || (!isBuy && lockedBase > 0)) && (
-          <LockedBalanceRow 
-            lockedAmount={isBuy ? lockedQuote : lockedBase}
-            availableAmount={availableBalance}
-            balanceCurrency={balanceCurrency}
-          />
+          <div className="flex items-center justify-between mt-1 pt-1 border-t border-border/50">
+            <span className="text-[10px] text-muted-foreground">In Orders (Locked)</span>
+            <span className="text-[10px] font-mono text-amber-400">
+              {(isBuy ? lockedQuote : lockedBase).toFixed(4)} {balanceCurrency}
+            </span>
+          </div>
         )}
       </div>
 
