@@ -267,36 +267,6 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             step={tickSize}
             min={0}
           />
-          {/* Execution Helper */}
-          {numPrice > 0 && (
-            <div className="text-[9px] sm:text-[10px] px-1">
-              {isBuy ? (
-                bestAsk > 0 ? (
-                  numPrice >= bestAsk ? (
-                    <span className="text-emerald-400">✓ Should execute immediately (taker) at ~{bestAsk}</span>
-                  ) : (
-                    <span className="text-muted-foreground">
-                      Will wait as open order. Best ask: {bestAsk.toFixed(2)}. Set price ≥ {bestAsk.toFixed(2)} or use Market to fill now.
-                    </span>
-                  )
-                ) : (
-                  <span className="text-muted-foreground">No sellers in order book. Order will wait.</span>
-                )
-              ) : (
-                bestBid > 0 ? (
-                  numPrice <= bestBid ? (
-                    <span className="text-emerald-400">✓ Should execute immediately (taker) at ~{bestBid}</span>
-                  ) : (
-                    <span className="text-muted-foreground">
-                      Will wait as open order. Best bid: {bestBid.toFixed(2)}. Set price ≤ {bestBid.toFixed(2)} or use Market to fill now.
-                    </span>
-                  )
-                ) : (
-                  <span className="text-muted-foreground">No buyers in order book. Order will wait.</span>
-                )
-              )}
-            </div>
-          )}
         </>
       )}
 
