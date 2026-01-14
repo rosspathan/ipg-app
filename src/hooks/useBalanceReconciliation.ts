@@ -6,18 +6,36 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ReconciliationResult {
   success: boolean;
+  reconciled: boolean;
+  discrepancy?: number;
+  previous_locked?: number;
+  new_locked?: number;
+  message?: string;
+  error?: string;
+}
+
+interface FixResult {
+  success: boolean;
+  fixed_count: number;
+}
+
+interface IntegrityResult {
   user_id: string;
-  reconciled_assets: Array<{
+  has_issues: boolean;
+  issue_count: number;
+  issues: Array<{
     asset: string;
-    old_locked: number;
-    new_locked: number;
-    released: number;
+    issue: string;
+    value?: number;
+    current_locked?: number;
+    expected_locked?: number;
+    discrepancy?: number;
   }>;
 }
 
 /**
  * Hook to reconcile user's locked trading balances
- * This ensures locked amounts match actual open orders
+ * Uses the new atomic database functions for reliability
  */
 export function useBalanceReconciliation() {
   const { user } = useAuthUser();
@@ -25,7 +43,59 @@ export function useBalanceReconciliation() {
   const queryClient = useQueryClient();
   const [isReconciling, setIsReconciling] = useState(false);
 
-  const reconcileBalances = async (): Promise<ReconciliationResult | null> => {
+  const invalidateAllBalanceQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['bep20-balances'] });
+    queryClient.invalidateQueries({ queryKey: ['wallet-balances'] });
+    queryClient.invalidateQueries({ queryKey: ['user-balance'] });
+    queryClient.invalidateQueries({ queryKey: ['transfer-assets'] });
+    queryClient.invalidateQueries({ queryKey: ['trading-balances'] });
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
+  };
+
+  /**
+   * Check balance integrity - identifies issues without fixing them
+   */
+  const checkIntegrity = async (): Promise<IntegrityResult | null> => {
+    if (!user?.id) {
+      toast({
+        title: "Not authenticated",
+        description: "Please log in to check balance integrity",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    try {
+      console.log('[BalanceReconciliation] Checking integrity for user:', user.id);
+
+      const { data, error } = await supabase.rpc('check_balance_integrity', {
+        p_user_id: user.id,
+      });
+
+      if (error) {
+        console.error('[BalanceReconciliation] Integrity check error:', error);
+        throw new Error(error.message);
+      }
+
+      const result = data as unknown as IntegrityResult;
+      console.log('[BalanceReconciliation] Integrity result:', result);
+
+      return result;
+    } catch (error: any) {
+      console.error('[BalanceReconciliation] Error:', error);
+      toast({
+        title: "Integrity Check Failed",
+        description: error.message || "Failed to check balance integrity",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  /**
+   * Fix all balance issues for the user
+   */
+  const reconcileBalances = async (): Promise<FixResult | null> => {
     if (!user?.id) {
       toast({
         title: "Not authenticated",
@@ -38,32 +108,28 @@ export function useBalanceReconciliation() {
     setIsReconciling(true);
 
     try {
-      console.log('[ReconcileBalances] Starting reconciliation for user:', user.id);
+      console.log('[BalanceReconciliation] Starting full reconciliation for user:', user.id);
 
-      const { data, error } = await supabase.rpc('force_reconcile_all_balances', {
+      const { data, error } = await supabase.rpc('force_fix_user_balances', {
         p_user_id: user.id,
       });
 
       if (error) {
-        console.error('[ReconcileBalances] RPC error:', error);
+        console.error('[BalanceReconciliation] Fix error:', error);
         throw new Error(error.message);
       }
 
-      const result = data as unknown as ReconciliationResult;
-      console.log('[ReconcileBalances] Result:', result);
+      const result = data as unknown as FixResult;
+      console.log('[BalanceReconciliation] Fix result:', result);
 
       // Invalidate all balance-related queries
-      queryClient.invalidateQueries({ queryKey: ['bep20-balances'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet-balances'] });
-      queryClient.invalidateQueries({ queryKey: ['user-balance'] });
-      queryClient.invalidateQueries({ queryKey: ['transfer-assets'] });
+      invalidateAllBalanceQueries();
 
       // Show result
-      if (result.reconciled_assets && result.reconciled_assets.length > 0) {
-        const totalReleased = result.reconciled_assets.reduce((sum, a) => sum + a.released, 0);
+      if (result.fixed_count > 0) {
         toast({
-          title: "Balances Reconciled",
-          description: `Released ${totalReleased.toFixed(4)} from locked across ${result.reconciled_assets.length} asset(s)`,
+          title: "Balances Fixed",
+          description: `Corrected ${result.fixed_count} balance discrepancy(ies)`,
         });
       } else {
         toast({
@@ -74,7 +140,7 @@ export function useBalanceReconciliation() {
 
       return result;
     } catch (error: any) {
-      console.error('[ReconcileBalances] Error:', error);
+      console.error('[BalanceReconciliation] Error:', error);
       toast({
         title: "Reconciliation Failed",
         description: error.message || "Failed to reconcile balances",
@@ -86,57 +152,68 @@ export function useBalanceReconciliation() {
     }
   };
 
-  const reconcileSingleAsset = async (assetSymbol: string): Promise<boolean> => {
+  /**
+   * Reconcile a single asset's balance
+   */
+  const reconcileSingleAsset = async (assetSymbol: string): Promise<ReconciliationResult | null> => {
     if (!user?.id) {
       toast({
         title: "Not authenticated",
         description: "Please log in to reconcile balances",
         variant: "destructive",
       });
-      return false;
+      return null;
     }
 
     setIsReconciling(true);
 
     try {
-      console.log('[ReconcileBalances] Reconciling single asset:', assetSymbol);
+      console.log('[BalanceReconciliation] Reconciling single asset:', assetSymbol);
 
-      const { error } = await supabase.rpc('reconcile_locked_balance', {
+      const { data, error } = await supabase.rpc('reconcile_locked_balance', {
         p_user_id: user.id,
         p_asset_symbol: assetSymbol,
       });
 
       if (error) {
-        console.error('[ReconcileBalances] RPC error:', error);
+        console.error('[BalanceReconciliation] RPC error:', error);
         throw new Error(error.message);
       }
 
+      const result = data as unknown as ReconciliationResult;
+      console.log('[BalanceReconciliation] Result:', result);
+
       // Invalidate all balance-related queries
-      queryClient.invalidateQueries({ queryKey: ['bep20-balances'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet-balances'] });
-      queryClient.invalidateQueries({ queryKey: ['user-balance'] });
-      queryClient.invalidateQueries({ queryKey: ['transfer-assets'] });
+      invalidateAllBalanceQueries();
 
-      toast({
-        title: "Balance Reconciled",
-        description: `${assetSymbol} balance has been updated`,
-      });
+      if (result.reconciled) {
+        toast({
+          title: "Balance Corrected",
+          description: `${assetSymbol}: Released ${Math.abs(result.discrepancy || 0).toFixed(8)} from locked`,
+        });
+      } else {
+        toast({
+          title: "Balance OK",
+          description: `${assetSymbol} balance is correct`,
+        });
+      }
 
-      return true;
+      return result;
     } catch (error: any) {
-      console.error('[ReconcileBalances] Error:', error);
+      console.error('[BalanceReconciliation] Error:', error);
       toast({
         title: "Reconciliation Failed",
         description: error.message || "Failed to reconcile balance",
         variant: "destructive",
       });
-      return false;
+      return null;
     } finally {
       setIsReconciling(false);
     }
   };
 
   return {
+    checkIntegrity,
     reconcileBalances,
     reconcileSingleAsset,
     isReconciling,

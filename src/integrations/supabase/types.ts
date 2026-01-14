@@ -12224,6 +12224,7 @@ export type Database = {
         Args: { required_badge: string; sponsor_badge: string }
         Returns: boolean
       }
+      check_balance_integrity: { Args: { p_user_id: string }; Returns: Json }
       check_bsk_balance_reconciliation: {
         Args: { p_user_id: string }
         Returns: {
@@ -12296,6 +12297,10 @@ export type Database = {
         }
         Returns: Json
       }
+      execute_order_cancel: {
+        Args: { p_order_id: string; p_user_id: string }
+        Returns: Json
+      }
       execute_trade: {
         Args: {
           p_base_amount: number
@@ -12332,6 +12337,7 @@ export type Database = {
           status: string
         }[]
       }
+      force_fix_user_balances: { Args: { p_user_id: string }; Returns: Json }
       force_reconcile_all_balances: {
         Args: { p_user_id: string }
         Returns: Json
@@ -12650,7 +12656,7 @@ export type Database = {
       }
       reconcile_locked_balance: {
         Args: { p_asset_symbol: string; p_user_id: string }
-        Returns: undefined
+        Returns: Json
       }
       reconcile_locked_balances: {
         Args: { p_user_id: string }
@@ -12769,6 +12775,10 @@ export type Database = {
           }
       unlock_banking_details: {
         Args: { p_reason: string; p_user_id: string }
+        Returns: undefined
+      }
+      update_last_traded_price: {
+        Args: { p_price: number; p_symbol: string }
         Returns: undefined
       }
       update_user_referral_state: {
