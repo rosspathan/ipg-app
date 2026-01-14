@@ -6762,6 +6762,8 @@ export type Database = {
           filled_at: string | null
           id: string
           leverage: number | null
+          locked_amount: number | null
+          locked_asset_symbol: string | null
           metadata: Json | null
           order_source: string | null
           order_type: string
@@ -6791,6 +6793,8 @@ export type Database = {
           filled_at?: string | null
           id?: string
           leverage?: number | null
+          locked_amount?: number | null
+          locked_asset_symbol?: string | null
           metadata?: Json | null
           order_source?: string | null
           order_type: string
@@ -6820,6 +6824,8 @@ export type Database = {
           filled_at?: string | null
           id?: string
           leverage?: number | null
+          locked_amount?: number | null
+          locked_asset_symbol?: string | null
           metadata?: Json | null
           order_source?: string | null
           order_type?: string
@@ -12614,6 +12620,18 @@ export type Database = {
           total_entries_created: number
           total_sponsors_credited: number
         }[]
+      }
+      place_order_atomic: {
+        Args: {
+          p_amount: number
+          p_order_type: string
+          p_price?: number
+          p_side: string
+          p_symbol: string
+          p_trading_type?: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       process_badge_qualification: {
         Args: {
