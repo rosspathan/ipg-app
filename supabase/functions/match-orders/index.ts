@@ -410,16 +410,11 @@ Deno.serve(async (req) => {
                 // On-chain transfers only happen during user-initiated withdrawals
                 console.log(`[Matching Engine] ✓ Trade settled internally (hybrid model)`);
 
-                // Update market_prices with the latest execution price to keep reference in sync
-                const { error: updatePriceError } = await supabase
-                  .from('market_prices')
-                  .upsert({
-                    symbol: symbol,
-                    current_price: executionPrice.toNumber(),
-                    last_updated: new Date().toISOString()
-                  }, { 
-                    onConflict: 'symbol' 
-                  });
+                // Update market_prices with the latest execution price using RPC for reliability
+                const { error: updatePriceError } = await supabase.rpc('update_last_traded_price', {
+                  p_symbol: symbol,
+                  p_price: executionPrice.toNumber()
+                });
 
                 if (updatePriceError) {
                   console.warn(`[Matching Engine] Failed to update market_prices for ${symbol}:`, updatePriceError);
