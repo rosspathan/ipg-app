@@ -316,7 +316,7 @@ Deno.serve(async (req) => {
                 console.error('[Matching Engine] Execute trade error message:', executeError.message);
                 
                 // Audit log: Trade execution failed
-                await supabase.from('trading_audit_log').insert({
+                const { error: auditError } = await supabase.from('trading_audit_log').insert({
                   user_id: buyOrder.user_id,
                   order_id: buyOrder.id,
                   event_type: 'TRADE_EXECUTION_FAILED',
@@ -328,7 +328,8 @@ Deno.serve(async (req) => {
                     execution_price: executionPrice.toNumber(),
                     matched_quantity: matchedQuantity.toNumber()
                   }
-                }).catch(e => console.warn('Audit log insert failed:', e));
+                });
+                if (auditError) console.warn('Audit log insert failed:', auditError);
                 
                 continue;
               }
@@ -336,7 +337,7 @@ Deno.serve(async (req) => {
               console.log('[Matching Engine] Trade executed successfully, trade_id:', tradeId);
               
               // Audit log: Trade executed successfully
-              await supabase.from('trading_audit_log').insert([
+              const { error: auditLogError } = await supabase.from('trading_audit_log').insert([
                 {
                   user_id: buyOrder.user_id,
                   order_id: buyOrder.id,
@@ -367,7 +368,8 @@ Deno.serve(async (req) => {
                     counterparty_order_id: buyOrder.id
                   }
                 }
-              ]).catch(e => console.warn('Audit log insert failed:', e));
+              ]);
+              if (auditLogError) console.warn('Audit log insert failed:', auditLogError);
 
               // Record fees in trading_fees_collected ledger (status: collected - no on-chain transfer needed)
               if (tradeId) {
