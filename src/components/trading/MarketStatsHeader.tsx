@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Activity, Wifi, WifiOff } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Wifi, WifiOff, Database } from 'lucide-react';
 import { PriceDisplay } from './PriceDisplay';
 
 interface MarketStatsHeaderProps {
@@ -12,6 +12,7 @@ interface MarketStatsHeaderProps {
   volume24h?: number;
   isConnected?: boolean;
   quoteCurrency?: string;
+  isInternalPair?: boolean;
 }
 
 export const MarketStatsHeader: React.FC<MarketStatsHeaderProps> = ({
@@ -23,6 +24,7 @@ export const MarketStatsHeader: React.FC<MarketStatsHeaderProps> = ({
   volume24h,
   isConnected = true,
   quoteCurrency = 'USDT',
+  isInternalPair = false,
 }) => {
   const isPositive = priceChange24h >= 0;
   const formatVolume = (vol: number) => {
@@ -30,6 +32,10 @@ export const MarketStatsHeader: React.FC<MarketStatsHeaderProps> = ({
     if (vol >= 1000) return `${(vol / 1000).toFixed(2)}K`;
     return vol.toFixed(2);
   };
+
+  // For internal pairs (like IPG/USDT), always show as "Live" since they use database data
+  // Only external pairs (Binance) rely on WebSocket connection
+  const showLiveStatus = isInternalPair || isConnected;
 
   return (
     <div className="bg-gradient-to-r from-card via-card to-muted/30 border-b border-border">
@@ -87,15 +93,20 @@ export const MarketStatsHeader: React.FC<MarketStatsHeaderProps> = ({
         
         {/* Connection Status */}
         <div className="ml-auto flex items-center gap-1">
-          {isConnected ? (
+          {isInternalPair ? (
+            <>
+              <Database className="h-3 w-3 text-primary" />
+              <span className="text-[10px] text-primary">Internal</span>
+            </>
+          ) : showLiveStatus ? (
             <>
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-[10px] text-emerald-400">Live</span>
             </>
           ) : (
             <>
-              <WifiOff className="h-3 w-3 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground">Offline</span>
+              <WifiOff className="h-3 w-3 text-amber-500" />
+              <span className="text-[10px] text-amber-500">Reconnecting...</span>
             </>
           )}
         </div>
