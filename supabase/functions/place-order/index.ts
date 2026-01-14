@@ -1,17 +1,11 @@
 /**
- * Place Order Edge Function - SIMPLIFIED
- * Uses wallet_balances as single source of truth
- * No on-chain verification during order placement
+ * Place Order Edge Function - ATOMIC VERSION
+ * Uses place_order_atomic RPC for guaranteed consistency
+ * No orphan locks possible - lock + order creation in single transaction
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import BigNumber from "https://esm.sh/bignumber.js@9.1.2";
-
-BigNumber.config({
-  DECIMAL_PLACES: 8,
-  ROUNDING_MODE: BigNumber.ROUND_DOWN,
-});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -70,7 +64,6 @@ serve(async (req) => {
     }
 
     const { symbol, side, type, quantity, price, trading_type } = await req.json();
-    const FEE_BUFFER = new BigNumber('1.005'); // 0.5% fee buffer
 
     console.log('[place-order] Order request:', { user_id: user.id, symbol, side, type, quantity, price });
 
@@ -83,141 +76,65 @@ serve(async (req) => {
       throw new Error('Limit orders require a valid price');
     }
 
-    // Parse symbol (e.g., "BTC/USDT" -> base: "BTC", quote: "USDT")
-    const [base_symbol, quote_symbol] = symbol.split('/');
-    if (!base_symbol || !quote_symbol) {
-      throw new Error('Invalid symbol format. Expected: BASE/QUOTE');
-    }
-
-    // For market orders, fetch market price
-    let order_price = price;
-    if (type === 'market' && !price) {
-      const { data: marketPriceData } = await supabaseClient
-        .from('market_prices')
-        .select('current_price')
-        .eq('symbol', symbol)
-        .single();
-      
-      order_price = marketPriceData?.current_price || 0;
-      console.log('[place-order] Fetched market price:', order_price);
-      
-      if (!order_price || order_price <= 0) {
-        throw new Error('Unable to fetch current market price');
-      }
-    }
-
-    // Calculate required amount using BigNumber
-    const quantityBN = new BigNumber(String(quantity));
-    const priceBN = new BigNumber(String(order_price));
-    const order_value = quantityBN.times(priceBN);
-    
-    const required_asset = side === 'buy' ? quote_symbol : base_symbol;
-    
-    // Add fee buffer for buy orders
-    const required_amount = side === 'buy' 
-      ? order_value.times(FEE_BUFFER).decimalPlaces(8, BigNumber.ROUND_UP)
-      : quantityBN.decimalPlaces(8, BigNumber.ROUND_DOWN);
-
-    console.log('[place-order] Required:', { 
-      asset: required_asset, 
-      amount: required_amount.toString()
-    });
-
-    // SIMPLIFIED: Lock balance using wallet_balances only
-    const { data: lockSuccess, error: lockError } = await supabaseClient.rpc(
-      'lock_balance_for_order',
+    // Use atomic RPC - single transaction guarantees no orphan locks
+    const { data: result, error: rpcError } = await supabaseClient.rpc(
+      'place_order_atomic',
       {
         p_user_id: user.id,
-        p_asset_symbol: required_asset,
-        p_amount: required_amount.toFixed(8),
+        p_symbol: symbol,
+        p_side: side,
+        p_order_type: type,
+        p_amount: quantity,
+        p_price: price || null,
+        p_trading_type: trading_type || 'spot'
       }
     );
 
-    if (lockError) {
-      console.error('[place-order] Lock balance error:', lockError);
-      throw new Error(`Failed to lock balance: ${lockError.message}`);
+    if (rpcError) {
+      console.error('[place-order] RPC error:', rpcError);
+      throw new Error(`Order placement failed: ${rpcError.message}`);
     }
 
-    if (!lockSuccess) {
-      // Get current balance for error message
-      const { data: balance } = await supabaseClient
-        .from('wallet_balances')
-        .select('available, asset:assets(symbol)')
-        .eq('user_id', user.id)
-        .eq('assets.symbol', required_asset)
-        .single();
+    console.log('[place-order] Atomic RPC result:', result);
+
+    if (!result?.success) {
+      throw new Error(result?.error || 'Order placement failed');
+    }
+
+    // Fetch the created order details
+    const { data: order, error: fetchError } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .eq('id', result.order_id)
+      .single();
+
+    if (fetchError || !order) {
+      console.error('[place-order] Failed to fetch order:', fetchError);
+      // Order was created, return minimal response
+      const responseData = {
+        success: true,
+        order: {
+          id: result.order_id,
+          symbol,
+          side,
+          type,
+          quantity,
+          price: price || null,
+          status: 'pending',
+          locked_asset: result.locked_asset,
+          locked_amount: result.locked_amount,
+        },
+      };
       
-      const available = balance?.available || 0;
-      throw new Error(
-        `Insufficient ${required_asset} balance. ` +
-        `Available: ${available} ${required_asset}, ` +
-        `Required: ${required_amount.toFixed(8)} ${required_asset}`
+      return new Response(
+        JSON.stringify(responseData),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('[place-order] Balance locked:', required_amount.toFixed(8), required_asset);
+    console.log('[place-order] Order created successfully:', order.id);
 
-    // Audit log: Balance locked
-    await supabaseClient.from('trading_audit_log').insert({
-      user_id: user.id,
-      event_type: 'BALANCE_LOCKED',
-      payload: {
-        asset: required_asset,
-        amount: required_amount.toFixed(8),
-        symbol,
-        side,
-        type
-      }
-    }).catch(e => console.warn('[place-order] Audit log insert failed:', e));
-
-    // Insert order
-    const { data: order, error: insertError } = await supabaseClient
-      .from('orders')
-      .insert({
-        user_id: user.id,
-        symbol,
-        side,
-        order_type: type,
-        amount: quantityBN.toNumber(),
-        price: order_price ? priceBN.toNumber() : null,
-        status: 'pending',
-        trading_type: trading_type || 'spot',
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('[place-order] Insert failed:', insertError);
-      
-      // Rollback: unlock balance
-      await supabaseClient.rpc('unlock_balance_for_order', {
-        p_user_id: user.id,
-        p_asset_symbol: required_asset,
-        p_amount: required_amount.toFixed(8),
-      });
-      
-      throw new Error('Failed to create order');
-    }
-
-    console.log('[place-order] Order created:', order.id);
-
-    // Audit log: Order created
-    await supabaseClient.from('trading_audit_log').insert({
-      user_id: user.id,
-      order_id: order.id,
-      event_type: 'ORDER_CREATED',
-      payload: {
-        symbol,
-        side,
-        type,
-        quantity: quantityBN.toNumber(),
-        price: order_price,
-        locked_amount: required_amount.toFixed(8),
-        locked_asset: required_asset
-      }
-    }).catch(e => console.warn('[place-order] Audit log insert failed:', e));
-
-    // Trigger matching engine using admin client with functions.invoke
+    // Trigger matching engine
     const matchingAdminClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -233,19 +150,17 @@ serve(async (req) => {
       console.log('[place-order] Engine settings:', settings);
       
       if (settings?.auto_matching_enabled && !settings?.circuit_breaker_active) {
-        console.log('[place-order] Triggering matching engine via functions.invoke...');
+        console.log('[place-order] Triggering matching engine...');
         
         const { data: matchResult, error: matchError } = await matchingAdminClient.functions.invoke('match-orders', {
           body: {}
         });
         
         if (matchError) {
-          console.error('[place-order] Matching engine invoke error:', matchError);
+          console.error('[place-order] Matching engine error:', matchError);
         } else {
           console.log('[place-order] Matching result:', matchResult);
         }
-      } else {
-        console.log('[place-order] Matching skipped - auto_matching:', settings?.auto_matching_enabled, 'circuit_breaker:', settings?.circuit_breaker_active);
       }
     } catch (matchErr) {
       console.error('[place-order] Matching engine call failed:', matchErr);
@@ -262,6 +177,8 @@ serve(async (req) => {
         price: order.price,
         status: order.status,
         created_at: order.created_at,
+        locked_asset: result.locked_asset,
+        locked_amount: result.locked_amount,
       },
     };
 
