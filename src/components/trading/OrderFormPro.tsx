@@ -62,21 +62,26 @@ const LockedBalanceRow: React.FC<{
         toast.success('Balance reconciled!', {
           description: `Released ${Math.abs(data.discrepancy).toFixed(4)} ${balanceCurrency} from locked to available.`,
         });
+        // Refresh the page to show updated balance
+        window.location.reload();
       } else {
         toast.info('Balance verified', {
-          description: 'Your locked balance matches open orders.',
+          description: 'Your locked balance matches open orders. Funds are reserved for pending orders.',
         });
       }
     } catch (err) {
       console.error('[LockedBalanceRow] Reconcile error:', err);
-      toast.error('Failed to reconcile balance');
+      toast.error('Failed to reconcile balance', {
+        description: 'Please try again or contact support.',
+      });
     } finally {
       setIsReconciling(false);
     }
   };
 
-  // Show reconcile button if locked > 0 but available = 0 (potential stuck funds)
-  const showReconcileButton = lockedAmount > 0 && availableAmount === 0;
+  // Show reconcile button whenever there's a locked amount (not just when available = 0)
+  // This helps users check their locked funds anytime
+  const showReconcileButton = lockedAmount > 0;
 
   return (
     <div className="flex items-center justify-between mt-1 pt-1 border-t border-border/50">
@@ -90,14 +95,14 @@ const LockedBalanceRow: React.FC<{
             onClick={handleReconcile}
             disabled={isReconciling}
             className="h-4 px-1.5 rounded bg-amber-500/10 text-amber-400 text-[9px] hover:bg-amber-500/20 transition-colors flex items-center gap-0.5 disabled:opacity-50"
-            title="Check and release incorrectly locked funds"
+            title="Check if locked funds match open orders. Click to verify and release any orphaned locks."
           >
             {isReconciling ? (
               <Loader2 className="h-2.5 w-2.5 animate-spin" />
             ) : (
               <>
                 <RefreshCw className="h-2.5 w-2.5" />
-                Fix
+                Check
               </>
             )}
           </button>

@@ -67,13 +67,21 @@ serve(async (req) => {
 
     console.log('[place-order] Order request:', { user_id: user.id, symbol, side, type, quantity, price });
 
-    // Validate inputs
-    if (!symbol || !side || !type || !quantity || quantity <= 0) {
-      throw new Error('Invalid order parameters');
+    // Validate inputs with user-friendly messages
+    if (!symbol) {
+      throw new Error('Please select a trading pair.');
     }
-
-    if (type === 'limit' && (!price || price <= 0)) {
-      throw new Error('Limit orders require a valid price');
+    if (!side || (side !== 'buy' && side !== 'sell')) {
+      throw new Error('Please select Buy or Sell.');
+    }
+    if (!type || (type !== 'market' && type !== 'limit')) {
+      throw new Error('Please select order type (Market or Limit).');
+    }
+    if (!quantity || isNaN(quantity) || quantity <= 0) {
+      throw new Error('Please enter a valid quantity greater than 0.');
+    }
+    if (type === 'limit' && (!price || isNaN(price) || price <= 0)) {
+      throw new Error('Limit orders require a price. Please enter a valid price.');
     }
 
     // Use atomic RPC - single transaction guarantees no orphan locks
