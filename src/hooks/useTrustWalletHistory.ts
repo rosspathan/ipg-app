@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TrustWalletTransaction } from '@/components/history/TrustWalletHistoryItem';
+import { useEffect, useMemo } from 'react';
 
 interface UseTrustWalletHistoryOptions {
   userId?: string;
@@ -21,8 +22,44 @@ export function useTrustWalletHistory(options: UseTrustWalletHistoryOptions = {}
     dateTo,
   } = options;
 
+  const queryClient = useQueryClient();
+  
+  // Memoize query key to prevent unnecessary effect re-runs
+  const queryKey = useMemo(
+    () => ['trust-wallet-history', userId, limit, transactionTypes, balanceTypes, dateFrom, dateTo],
+    [userId, limit, transactionTypes, balanceTypes, dateFrom, dateTo]
+  );
+
+  // Set up real-time subscription for instant updates
+  useEffect(() => {
+    if (!userId) return;
+
+    // Subscribe to changes in unified_bsk_ledger for this user
+    // This ensures both sender AND receiver see transfers instantly
+    const channel = supabase
+      .channel(`history-realtime-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'unified_bsk_ledger',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          // Invalidate and refetch on any new transaction
+          queryClient.invalidateQueries({ queryKey });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, queryClient, queryKey]);
+
   return useQuery({
-    queryKey: ['trust-wallet-history', userId, limit, transactionTypes, balanceTypes, dateFrom, dateTo],
+    queryKey,
     queryFn: async () => {
       let query = supabase
         .from('unified_bsk_transactions')
