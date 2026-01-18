@@ -391,14 +391,31 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
       )
       .subscribe();
 
-    const transfersChannel = supabase
-      .channel('crypto-transfers-updates')
+    // Subscribe to transfers where user is SENDER
+    const transfersSentChannel = supabase
+      .channel(`crypto-transfers-sent-${user.id}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'crypto_internal_transfers'
+          table: 'crypto_internal_transfers',
+          filter: `sender_id=eq.${user.id}`
+        },
+        () => fetchTransactions()
+      )
+      .subscribe();
+
+    // Subscribe to transfers where user is RECEIVER - this is the key fix!
+    const transfersReceivedChannel = supabase
+      .channel(`crypto-transfers-received-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'crypto_internal_transfers',
+          filter: `recipient_id=eq.${user.id}`
         },
         () => fetchTransactions()
       )
@@ -407,7 +424,8 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
     return () => {
       supabase.removeChannel(depositsChannel);
       supabase.removeChannel(withdrawalsChannel);
-      supabase.removeChannel(transfersChannel);
+      supabase.removeChannel(transfersSentChannel);
+      supabase.removeChannel(transfersReceivedChannel);
     };
   }, [user, fetchTransactions]);
 
