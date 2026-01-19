@@ -60,21 +60,38 @@ serve(async (req: Request) => {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     });
 
-    // Validate JWT and get the user id
+    // Extract user id from JWT.
+    // We intentionally avoid calling supabaseClient.auth.getUser()/getClaims() here because
+    // the Auth endpoint can occasionally respond with non-JSON (HTML) in the Edge runtime.
     const token = bearerMatch[1];
 
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    const decodeJwtSub = (jwt: string): string | null => {
+      try {
+        const parts = jwt.split('.');
+        if (parts.length < 2) return null;
 
-    if (userError || !userData?.user?.id) {
-      console.error('[discover-deposits] getUser failed:', userError);
+        const payload = parts[1];
+        const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4);
+        const json = JSON.parse(
+          atob(padded.replace(/-/g, '+').replace(/_/g, '/'))
+        );
+
+        return typeof json?.sub === 'string' ? json.sub : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const userId = decodeJwtSub(token);
+    if (!userId) {
+      console.error('[discover-deposits] Invalid JWT: missing sub claim');
       return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
     }
 
-
-    const user = userData.user;
+    const user = { id: userId };
 
     const { symbol = '*', network = 'bsc', lookbackHours = 336 }: DiscoverRequest = await req.json();
     const scanAllTokens = symbol === '*';
