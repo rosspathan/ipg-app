@@ -1,11 +1,13 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { User, Calendar, Phone, MapPin } from "lucide-react";
+import { User, Calendar, Phone, MapPin, AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
+import { usePhoneValidation } from "@/hooks/usePhoneValidation";
 
 const personalSchema = z.object({
   full_name: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -33,6 +35,34 @@ export const KYCStepPersonal = ({ initialData, onNext }: KYCStepPersonalProps) =
     defaultValues: initialData,
   });
 
+  const { isChecking, validationResult, validatePhone, resetValidation } = usePhoneValidation();
+  
+  const phoneValue = form.watch("phone");
+  
+  // Validate phone on change
+  useEffect(() => {
+    if (phoneValue && phoneValue.length >= 8) {
+      validatePhone(phoneValue);
+    } else {
+      resetValidation();
+    }
+  }, [phoneValue, validatePhone, resetValidation]);
+
+  const isPhoneInvalid = validationResult && !validationResult.available;
+  const isPhoneValid = validationResult && validationResult.available && !isChecking;
+
+  const handleSubmit = (data: PersonalData) => {
+    // Block submission if phone is taken
+    if (isPhoneInvalid) {
+      form.setError("phone", {
+        type: "manual",
+        message: validationResult.error || "This mobile number is already used for KYC."
+      });
+      return;
+    }
+    onNext(data);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="text-center mb-6">
@@ -44,7 +74,7 @@ export const KYCStepPersonal = ({ initialData, onNext }: KYCStepPersonalProps) =
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onNext)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <FormField
             control={form.control}
             name="full_name"
@@ -127,23 +157,57 @@ export const KYCStepPersonal = ({ initialData, onNext }: KYCStepPersonalProps) =
                   Phone Number
                 </FormLabel>
                 <FormControl>
-                  <Input 
-                    type="tel" 
-                    placeholder="+91 9876543210" 
-                    className="h-12 text-base"
-                    {...field} 
-                  />
+                  <div className="relative">
+                    <Input 
+                      type="tel" 
+                      placeholder="+91 9876543210" 
+                      className={`h-12 text-base pr-10 ${
+                        isPhoneInvalid ? 'border-destructive focus-visible:ring-destructive' : 
+                        isPhoneValid ? 'border-emerald-500 focus-visible:ring-emerald-500' : ''
+                      }`}
+                      {...field} 
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {isChecking && (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      )}
+                      {isPhoneValid && (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      )}
+                      {isPhoneInvalid && (
+                        <AlertCircle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+                  </div>
                 </FormControl>
                 <p className="text-xs text-muted-foreground">
                   Format: +CountryCode PhoneNumber (e.g., +91 9876543210, +1 5551234567)
                 </p>
+                {isPhoneInvalid && (
+                  <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    {validationResult.error || "This mobile number is already used for KYC. Please contact support."}
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <Button type="submit" size="lg" className="w-full h-12 text-base">
-            Continue to Address
+          <Button 
+            type="submit" 
+            size="lg" 
+            className="w-full h-12 text-base"
+            disabled={isChecking || isPhoneInvalid}
+          >
+            {isChecking ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Checking...
+              </>
+            ) : (
+              'Continue to Address'
+            )}
           </Button>
         </form>
       </Form>

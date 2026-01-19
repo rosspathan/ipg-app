@@ -6143,6 +6143,39 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_phone_override_log: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          id: string
+          new_user_id: string | null
+          old_user_id: string | null
+          phone_number: string
+          reason: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          id?: string
+          new_user_id?: string | null
+          old_user_id?: string | null
+          phone_number: string
+          reason: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          id?: string
+          new_user_id?: string | null
+          old_user_id?: string | null
+          phone_number?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       kyc_profiles: {
         Row: {
           created_at: string | null
@@ -12262,6 +12295,10 @@ export type Database = {
         Returns: Json
       }
       admin_reset_all_user_balances: { Args: never; Returns: Json }
+      admin_reset_kyc_phone: {
+        Args: { p_action?: string; p_phone_number: string; p_reason: string }
+        Returns: Json
+      }
       admin_seed_market_order: {
         Args: {
           p_admin_id: string
@@ -12394,6 +12431,10 @@ export type Database = {
           is_reconciled: boolean
           ledger_sum: number
         }[]
+      }
+      check_kyc_phone_available: {
+        Args: { p_phone_number: string; p_user_id?: string }
+        Returns: Json
       }
       cleanup_expired_idempotency_keys: { Args: never; Returns: number }
       clone_program_module: {
