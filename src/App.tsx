@@ -110,6 +110,7 @@ const AdminBadgeSystem = React.lazy(() => import("./pages/admin/AdminBadgeSystem
 const AdminBSKManagement = React.lazy(() => import("./pages/admin/AdminBSKManagement"));
 const VIPMilestoneMonitor = React.lazy(() => import("./pages/admin/VIPMilestoneMonitor"));
 const BSKLedgerViewer = React.lazy(() => import("./pages/admin/BSKLedgerViewer"));
+const AdminBSKLedgerComplete = React.lazy(() => import("./pages/admin/AdminBSKLedgerComplete"));
 const BSKReconciliation = React.lazy(() => import("./pages/admin/BSKReconciliation"));
 const AdminBSKWalletAdjustment = React.lazy(() => import("./pages/admin/AdminBSKWalletAdjustment"));
 const AdminUserCleanup = React.lazy(() => import("./pages/admin/AdminUserCleanup"));
@@ -681,6 +682,7 @@ function AppContent() {
                 <Route path="bsk" element={<React.Suspense fallback={<LoadingFallback />}><AdminBSKManagement /></React.Suspense>} />
                 <Route path="bsk-wallet-adjustment" element={<React.Suspense fallback={<LoadingFallback />}><AdminBSKWalletAdjustment /></React.Suspense>} />
                 <Route path="bsk-ledger" element={<React.Suspense fallback={<LoadingFallback />}><BSKLedgerViewer /></React.Suspense>} />
+                <Route path="bsk-ledger-complete" element={<React.Suspense fallback={<LoadingFallback />}><AdminBSKLedgerComplete /></React.Suspense>} />
                 <Route path="bsk-reconciliation" element={<React.Suspense fallback={<LoadingFallback />}><BSKReconciliation /></React.Suspense>} />
                 <Route path="vip-milestones" element={<React.Suspense fallback={<LoadingFallback />}><VIPMilestoneMonitor /></React.Suspense>} />
                 

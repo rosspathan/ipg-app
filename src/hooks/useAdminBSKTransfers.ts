@@ -10,6 +10,8 @@ export interface TransferFilters {
   maxAmount?: number;
   balanceType?: 'withdrawable' | 'holding' | null;
   search?: string;
+  referenceId?: string;
+  status?: string;
 }
 
 export interface TransferStats {
@@ -46,12 +48,11 @@ export function useAdminBSKTransfers(
             avatar_url
           )
         `, { count: 'exact' })
-        .in('transaction_type', ['transfer_in', 'transfer_out', 'admin_credit', 'admin_debit', 'manual_credit', 'manual_debit', 'purchase', 'purchase_bonus'])
         .order('created_at', { ascending: false });
 
       // Apply filters
       if (filters.transferTypes?.length) {
-        query = query.in('transaction_type', filters.transferTypes);
+        query = query.in('transaction_subtype', filters.transferTypes);
       }
 
       if (filters.startDate) {
@@ -59,11 +60,11 @@ export function useAdminBSKTransfers(
       }
 
       if (filters.endDate) {
-        query = query.lte('created_at', filters.endDate);
+        query = query.lte('created_at', `${filters.endDate}T23:59:59`);
       }
 
       if (filters.userId) {
-        query = query.eq('user_id', filters.userId);
+        query = query.or(`user_id.eq.${filters.userId},from_user_id.eq.${filters.userId},to_user_id.eq.${filters.userId}`);
       }
 
       if (filters.minAmount !== undefined) {
@@ -76,6 +77,19 @@ export function useAdminBSKTransfers(
 
       if (filters.balanceType) {
         query = query.eq('balance_type', filters.balanceType);
+      }
+
+      if (filters.referenceId) {
+        query = query.ilike('reference_id', `%${filters.referenceId}%`);
+      }
+
+      if (filters.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+
+      if (filters.search) {
+        // Search in reference_id or user profiles
+        query = query.or(`reference_id.ilike.%${filters.search}%`);
       }
 
       // Pagination
