@@ -100,6 +100,12 @@ export function OnchainWalletPage() {
       // Wallet address should already be set correctly from onboarding
       // Auto-persisting here can overwrite the correct address with an incorrect one
 
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        throw new Error('Please sign in again to sync deposits')
+      }
+      const authHeaders = { Authorization: `Bearer ${session.access_token}` }
+
       // Discover deposits for all tokens (USDT, IPG, BNB)
       const tokensToSync = ['USDT', 'IPG']
       let totalDiscovered = 0
@@ -112,8 +118,10 @@ export function OnchainWalletPage() {
               symbol,
               network: 'bsc',
               lookbackHours: 168
-            }
+            },
+            headers: authHeaders,
           })
+
 
           if (discoverError) {
             console.warn(`Error discovering ${symbol}:`, discoverError)
