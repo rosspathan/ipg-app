@@ -31,7 +31,8 @@ serve(async (req: Request) => {
 
   try {
     const authHeader = req.headers.get('authorization') ?? req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const bearerMatch = authHeader?.match(/^Bearer\s+(.+)$/i);
+    if (!bearerMatch) {
       return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
@@ -48,25 +49,32 @@ serve(async (req: Request) => {
       });
     }
 
+    const globalHeaders = {
+      authorization: authHeader!,
+      Authorization: authHeader!,
+    };
+
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: globalHeaders },
+      // Edge Functions should not persist sessions
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     });
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    // Validate JWT and get the user id
+    const token = bearerMatch[1];
 
-    if (claimsError || !claimsData?.claims?.sub) {
-      console.error('[discover-deposits] getClaims failed:', claimsError);
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+
+    if (userError || !userData?.user?.id) {
+      console.error('[discover-deposits] getUser failed:', userError);
       return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
     }
 
-    const userId = claimsData.claims.sub;
-    const user = { id: userId };
 
+    const user = userData.user;
 
     const { symbol = '*', network = 'bsc', lookbackHours = 336 }: DiscoverRequest = await req.json();
     const scanAllTokens = symbol === '*';
