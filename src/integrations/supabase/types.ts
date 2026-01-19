@@ -6047,6 +6047,13 @@ export type Database = {
             foreignKeyName: "kyc_admin_notifications_kyc_profile_id_fkey"
             columns: ["kyc_profile_id"]
             isOneToOne: false
+            referencedRelation: "kyc_admin_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kyc_admin_notifications_kyc_profile_id_fkey"
+            columns: ["kyc_profile_id"]
+            isOneToOne: false
             referencedRelation: "kyc_profiles_new"
             referencedColumns: ["id"]
           },
@@ -6084,6 +6091,13 @@ export type Database = {
           submission_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "kyc_audit_log_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "kyc_admin_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "kyc_audit_log_submission_id_fkey"
             columns: ["submission_id"]
@@ -6187,6 +6201,7 @@ export type Database = {
           level: string
           phone_computed: string | null
           rejection_reason: string | null
+          review_notes: string | null
           reviewed_at: string | null
           reviewer_id: string | null
           status: string
@@ -6203,6 +6218,7 @@ export type Database = {
           level: string
           phone_computed?: string | null
           rejection_reason?: string | null
+          review_notes?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           status?: string
@@ -6219,6 +6235,7 @@ export type Database = {
           level?: string
           phone_computed?: string | null
           rejection_reason?: string | null
+          review_notes?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           status?: string
@@ -12015,6 +12032,29 @@ export type Database = {
           transaction_type: string | null
           tx_hash: string | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      kyc_admin_summary: {
+        Row: {
+          created_at: string | null
+          data_json: Json | null
+          display_name: string | null
+          email_computed: string | null
+          full_name_computed: string | null
+          id: string | null
+          level: string | null
+          phone_computed: string | null
+          profile_email: string | null
+          rejection_reason: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: string | null
+          submitted_at: string | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
         }
         Relationships: []
       }
