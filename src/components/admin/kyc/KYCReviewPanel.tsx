@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { KYCSubmissionWithUser } from '@/hooks/useAdminKYC';
-import { ImageViewer } from './ImageViewer';
+import { KYCDocumentViewer } from './KYCDocumentViewer';
 import { RejectModal } from './RejectModal';
-import { CheckCircle, XCircle, User, MapPin, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, User, MapPin, FileText, Clock, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface KYCReviewPanelProps {
@@ -22,35 +21,18 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const getStatusColor = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
       case 'submitted':
       case 'pending':
-        return 'default';
+      case 'in_review':
+        return { variant: 'default' as const, label: 'Pending Review', icon: Clock };
       case 'approved':
-        return 'outline';
+        return { variant: 'outline' as const, label: 'Approved', icon: CheckCircle };
       case 'rejected':
-        return 'destructive';
-      case 'needs_info':
-        return 'secondary';
+        return { variant: 'destructive' as const, label: 'Rejected', icon: XCircle };
       default:
-        return 'default';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'submitted':
-      case 'pending':
-        return 'Pending Review';
-      case 'approved':
-        return 'Approved';
-      case 'rejected':
-        return 'Rejected';
-      case 'needs_info':
-        return 'Needs Info';
-      default:
-        return status;
+        return { variant: 'default' as const, label: status, icon: Shield };
     }
   };
 
@@ -67,40 +49,45 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
     setLoading(false);
   };
 
-  // Use flat data structure from data_json
-  const dataJson = submission.data_json as any;
-  const fullName = submission.full_name_computed || dataJson?.full_name;
-  const email = submission.profiles?.email || submission.email_computed || dataJson?.email;
-  const phone = submission.phone_computed || dataJson?.phone;
-  const username = (submission.profiles && 'username' in submission.profiles) ? submission.profiles.username : '';
-  const displayName = (submission.profiles && 'display_name' in submission.profiles) ? submission.profiles.display_name : fullName;
-  const avatarUrl = (submission.profiles && 'avatar_url' in submission.profiles) ? submission.profiles.avatar_url : dataJson?.selfie_url || dataJson?.documents?.selfie;
+  // Use flat data structure - the view already joins profiles
+  const dataJson = submission.data_json || {};
+  const fullName = submission.full_name_computed || submission.display_name || dataJson?.full_name || 'Unknown User';
+  const email = submission.profile_email || submission.email_computed || dataJson?.email || '';
+  const phone = submission.phone_computed || dataJson?.phone || '';
+  const username = submission.username || '';
+  const displayName = submission.display_name || fullName;
+  const selfieUrl = dataJson?.selfie_url || dataJson?.documents?.selfie || '';
+  const statusConfig = getStatusConfig(submission.status);
+  const StatusIcon = statusConfig.icon;
+
+  const isPending = ['pending', 'submitted', 'in_review'].includes(submission.status);
 
   return (
     <div className="space-y-6">
       {/* Enhanced Header with Avatar */}
-      <Card className="border-l-4 border-l-primary">
+      <Card className="border-l-4 border-l-primary overflow-hidden">
         <CardContent className="p-6">
           <div className="flex items-start gap-4 mb-4">
-            <div className="relative">
+            <div className="relative shrink-0">
               <img
-                src={avatarUrl || ''}
-                alt={fullName || 'User'}
-                className="h-20 w-20 rounded-full object-cover border-4 border-border"
+                src={selfieUrl || ''}
+                alt={fullName}
+                className="h-20 w-20 rounded-full object-cover border-4 border-border bg-muted"
                 onError={(e) => {
                   e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"%3E%3Cpath d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"%3E%3C/path%3E%3Ccircle cx="12" cy="7" r="4"%3E%3C/circle%3E%3C/svg%3E';
                 }}
               />
               <Badge 
-                variant={getStatusColor(submission.status)} 
-                className="absolute -bottom-1 -right-1 text-xs"
+                variant={statusConfig.variant} 
+                className="absolute -bottom-1 -right-1 text-xs flex items-center gap-1"
               >
-                {getStatusLabel(submission.status)}
+                <StatusIcon className="h-3 w-3" />
+                {statusConfig.label}
               </Badge>
             </div>
             
             <div className="flex-1 min-w-0">
-              <h2 className="text-2xl font-bold mb-1">{displayName || 'Unknown User'}</h2>
+              <h2 className="text-2xl font-bold mb-1 truncate">{displayName}</h2>
               <div className="space-y-1 text-sm">
                 <p className="text-muted-foreground flex items-center gap-2">
                   📧 {email || 'No email'}
@@ -131,20 +118,18 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
               </p>
             </div>
             {submission.reviewed_at && (
-              <>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Reviewed</Label>
-                  <p className="text-sm mt-1">
-                    {format(new Date(submission.reviewed_at), 'PPpp')}
-                  </p>
-                </div>
-              </>
+              <div className="col-span-2">
+                <Label className="text-xs text-muted-foreground">Reviewed</Label>
+                <p className="text-sm mt-1">
+                  {format(new Date(submission.reviewed_at), 'PPpp')}
+                </p>
+              </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Personal Details - Using flat structure */}
+      {/* Personal Details */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -155,7 +140,7 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
         <CardContent className="grid grid-cols-2 gap-4">
           <div>
             <Label className="text-muted-foreground">Full Name</Label>
-            <p className="font-medium">{fullName || 'N/A'}</p>
+            <p className="font-medium">{fullName}</p>
           </div>
           <div>
             <Label className="text-muted-foreground">Date of Birth</Label>
@@ -180,7 +165,7 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
         </CardContent>
       </Card>
 
-      {/* Address Details - Using flat structure */}
+      {/* Address Details */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -218,7 +203,7 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
         </CardContent>
       </Card>
 
-      {/* ID Document Details - Using flat structure */}
+      {/* ID Document Details */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -246,57 +231,26 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
         </CardContent>
       </Card>
 
-      {/* Document Images */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Uploaded Documents</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="front" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="front">ID Front</TabsTrigger>
-              <TabsTrigger value="back">ID Back</TabsTrigger>
-              <TabsTrigger value="selfie">Selfie</TabsTrigger>
-            </TabsList>
-            <TabsContent value="front" className="mt-4">
-              {(dataJson?.id_front_url || dataJson?.documents?.id_front) ? (
-                <ImageViewer
-                  imageUrl={dataJson?.id_front_url || dataJson?.documents?.id_front}
-                  alt="ID Front"
-                  className="h-[400px]"
-                />
-              ) : (
-                <p className="text-center py-12 text-muted-foreground">No image uploaded</p>
-              )}
-            </TabsContent>
-            <TabsContent value="back" className="mt-4">
-              {(dataJson?.id_back_url || dataJson?.documents?.id_back) ? (
-                <ImageViewer
-                  imageUrl={dataJson?.id_back_url || dataJson?.documents?.id_back}
-                  alt="ID Back"
-                  className="h-[400px]"
-                />
-              ) : (
-                <p className="text-center py-12 text-muted-foreground">No image uploaded</p>
-              )}
-            </TabsContent>
-            <TabsContent value="selfie" className="mt-4">
-              {(dataJson?.selfie_url || dataJson?.documents?.selfie) ? (
-                <ImageViewer
-                  imageUrl={dataJson?.selfie_url || dataJson?.documents?.selfie}
-                  alt="Selfie"
-                  className="h-[400px]"
-                />
-              ) : (
-                <p className="text-center py-12 text-muted-foreground">No image uploaded</p>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+      {/* Document Viewer with enhanced preview */}
+      <KYCDocumentViewer dataJson={dataJson} />
 
-      {/* BSK Reward Info */}
-      {(submission.status === 'pending' || submission.status === 'submitted') && (
+      {/* Rejection reason if rejected */}
+      {submission.status === 'rejected' && submission.rejection_reason && (
+        <Card className="border-red-500/50 bg-red-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2 text-base">
+              <XCircle className="h-4 w-4" />
+              Rejection Reason
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">{submission.rejection_reason}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* BSK Reward Info for pending submissions */}
+      {isPending && (
         <Card className="bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 border-primary/30 shadow-lg">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -332,22 +286,24 @@ export function KYCReviewPanel({ submission, onApprove, onReject }: KYCReviewPan
       )}
 
       {/* Admin Notes */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Admin Notes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={adminNotes}
-            onChange={(e) => setAdminNotes(e.target.value)}
-            placeholder="Add notes about this review (optional)..."
-            className="min-h-[100px]"
-          />
-        </CardContent>
-      </Card>
+      {isPending && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Admin Notes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={adminNotes}
+              onChange={(e) => setAdminNotes(e.target.value)}
+              placeholder="Add notes about this review (optional)..."
+              className="min-h-[100px]"
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Action Buttons - Sticky on mobile */}
-      {(submission.status === 'pending' || submission.status === 'submitted') && (
+      {isPending && (
         <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm pt-6 pb-4 -mb-2 border-t-2 border-border lg:border-t-0 lg:static lg:pb-0 lg:bg-transparent">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <Button
