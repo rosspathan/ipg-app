@@ -30,19 +30,43 @@ serve(async (req: Request) => {
   }
 
   try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
+    const authHeader = req.headers.get('authorization') ?? req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[discover-deposits] Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+      return new Response(JSON.stringify({ success: false, error: 'Server misconfigured' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) throw new Error('Unauthorized');
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error('[discover-deposits] getClaims failed:', claimsError);
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+    const user = { id: userId };
+
 
     const { symbol = '*', network = 'bsc', lookbackHours = 336 }: DiscoverRequest = await req.json();
     const scanAllTokens = symbol === '*';

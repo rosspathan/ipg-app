@@ -145,7 +145,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.discover-deposits]
-verify_jwt = true
+verify_jwt = false
 
 [functions.fix-badge-bonus]
 verify_jwt = false
