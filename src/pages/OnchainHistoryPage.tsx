@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Loader2, RefreshCw, Search, Filter,
-  Clock, ArrowDownLeft, ArrowUpRight, X
+  Clock, ArrowDownLeft, ArrowUpRight, X, AlertCircle, Wallet
 } from "lucide-react";
 import { 
   useOnchainTransactionHistory, 
@@ -15,9 +15,9 @@ import {
 } from '@/hooks/useOnchainTransactionHistory';
 import { OnchainTransactionItem } from '@/components/history/OnchainTransactionItem';
 import { OnchainTransactionDetailSheet } from '@/components/history/OnchainTransactionDetailSheet';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   Select,
   SelectContent,
@@ -28,8 +28,12 @@ import {
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import AssetLogo from '@/components/AssetLogo';
 
 // Group transactions by date
@@ -55,11 +59,12 @@ const OnchainHistoryPage = () => {
   const [searchHash, setSearchHash] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<OnchainTransaction | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   const { 
     transactions, 
     isLoading, 
-    isIndexing, 
+    indexingStatus, 
     refetch, 
     indexTransactions 
   } = useOnchainTransactionHistory({
@@ -80,6 +85,16 @@ const OnchainHistoryPage = () => {
     setTokenFilter('');
     setSearchHash('');
   };
+
+  const handleRetry = () => {
+    indexTransactions(true);
+  };
+
+  // Determine what state to show
+  const hasError = indexingStatus.lastError && !indexingStatus.isIndexing;
+  const isNoWallet = indexingStatus.lastResult?.error_code === 'NO_WALLET_ADDRESS';
+  const showLoading = isLoading && transactions.length === 0 && !hasError;
+  const showSyncing = indexingStatus.isIndexing && transactions.length === 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -109,11 +124,11 @@ const OnchainHistoryPage = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => indexTransactions()}
-              disabled={isLoading || isIndexing}
+              onClick={() => indexTransactions(true)}
+              disabled={isLoading || indexingStatus.isIndexing}
               className="h-9 w-9"
             >
-              <RefreshCw className={cn("w-5 h-5", (isLoading || isIndexing) && "animate-spin")} />
+              <RefreshCw className={cn("w-5 h-5", (isLoading || indexingStatus.isIndexing) && "animate-spin")} />
             </Button>
           </div>
         </div>
@@ -203,21 +218,122 @@ const OnchainHistoryPage = () => {
         </Collapsible>
       </div>
 
-      {/* Indexing indicator */}
-      {isIndexing && (
+      {/* Syncing indicator (only when loading data) */}
+      {indexingStatus.isIndexing && transactions.length > 0 && (
         <div className="px-4 py-2 bg-primary/10 text-primary text-sm flex items-center justify-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" />
           Syncing blockchain data...
         </div>
       )}
 
-      {/* Transaction List */}
-      <div className="px-2 py-2">
-        {isLoading && !isIndexing ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      {/* Last sync status bar */}
+      {indexingStatus.lastIndexedAt && !indexingStatus.isIndexing && (
+        <button 
+          onClick={() => setShowDebug(!showDebug)}
+          className="w-full px-4 py-1.5 bg-muted/50 text-xs text-muted-foreground flex items-center justify-center gap-2 hover:bg-muted transition-colors"
+        >
+          <Clock className="w-3 h-3" />
+          Last sync: {formatDistanceToNow(indexingStatus.lastIndexedAt, { addSuffix: true })}
+          {indexingStatus.lastResult?.provider && ` via ${indexingStatus.lastResult.provider}`}
+        </button>
+      )}
+
+      {/* Debug panel (dev mode) */}
+      {showDebug && indexingStatus.lastResult && (
+        <div className="mx-4 mt-2 p-3 bg-muted rounded-lg text-xs font-mono">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-semibold">Debug Info</span>
+            <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => setShowDebug(false)}>
+              <X className="w-3 h-3" />
+            </Button>
           </div>
-        ) : transactions.length === 0 ? (
+          <div className="space-y-1 text-muted-foreground">
+            <p>Provider: {indexingStatus.lastResult.provider || 'unknown'}</p>
+            <p>Wallet: {indexingStatus.lastResult.wallet || 'N/A'}</p>
+            <p>Indexed: {indexingStatus.lastResult.indexed || 0}</p>
+            <p>Created: {indexingStatus.lastResult.created || 0}</p>
+            <p>Skipped: {indexingStatus.lastResult.skipped || 0}</p>
+            <p>Duration: {indexingStatus.lastResult.duration_ms || 0}ms</p>
+            {indexingStatus.lastError && (
+              <p className="text-destructive">Error: {indexingStatus.lastError}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Content Area */}
+      <div className="px-2 py-2">
+        {/* No Wallet Address Error */}
+        {isNoWallet && (
+          <div className="px-2 py-8">
+            <Alert variant="destructive" className="border-none bg-destructive/10">
+              <Wallet className="h-5 w-5" />
+              <AlertTitle>No Wallet Connected</AlertTitle>
+              <AlertDescription className="mt-2">
+                <p className="mb-3">
+                  You need to set up a BSC wallet address to view your on-chain transaction history.
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/app/wallet')}
+                  className="gap-2"
+                >
+                  Set Up Wallet
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {/* Error State (non-wallet errors) */}
+        {hasError && !isNoWallet && (
+          <div className="px-2 py-8">
+            <Alert variant="destructive" className="border-none bg-destructive/10">
+              <AlertCircle className="h-5 w-5" />
+              <AlertTitle>Sync Error</AlertTitle>
+              <AlertDescription className="mt-2">
+                <p className="mb-3">{indexingStatus.lastError}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleRetry}
+                  disabled={indexingStatus.isIndexing}
+                  className="gap-2"
+                >
+                  {indexingStatus.isIndexing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {showLoading && !hasError && !isNoWallet && (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading transactions...</p>
+          </div>
+        )}
+
+        {/* Syncing State (first load) */}
+        {showSyncing && !hasError && !isNoWallet && (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-foreground">Syncing blockchain data...</p>
+              <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State (after successful load) */}
+        {!showLoading && !showSyncing && !hasError && !isNoWallet && transactions.length === 0 && (
           <div className="text-center py-16 px-4">
             <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Clock className="w-10 h-10 text-muted-foreground" />
@@ -230,14 +346,29 @@ const OnchainHistoryPage = () => {
                 ? 'Try adjusting your filters'
                 : 'Your BEP-20 token transfers will appear here'}
             </p>
-            {hasActiveFilters && (
-              <Button variant="outline" onClick={clearFilters} className="gap-2">
-                <X className="w-4 h-4" />
-                Clear Filters
+            <div className="flex flex-col gap-2 items-center">
+              {hasActiveFilters && (
+                <Button variant="outline" onClick={clearFilters} className="gap-2">
+                  <X className="w-4 h-4" />
+                  Clear Filters
+                </Button>
+              )}
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => indexTransactions(true)}
+                disabled={indexingStatus.isIndexing}
+                className="gap-2 text-muted-foreground"
+              >
+                <RefreshCw className={cn("w-4 h-4", indexingStatus.isIndexing && "animate-spin")} />
+                Refresh
               </Button>
-            )}
+            </div>
           </div>
-        ) : (
+        )}
+
+        {/* Transaction List */}
+        {transactions.length > 0 && (
           <div className="space-y-4">
             <AnimatePresence mode="popLayout">
               {Object.entries(groupedTransactions).map(([date, txs]) => (
