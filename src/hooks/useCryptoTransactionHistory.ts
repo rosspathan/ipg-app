@@ -376,6 +376,9 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
         console.log('[auto-scan] Scanning for new on-chain deposits...');
         const { error } = await supabase.functions.invoke('discover-deposits', {
           body: { symbol: '*', network: 'bsc', lookbackHours: 24 },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         });
         
         if (error) {
