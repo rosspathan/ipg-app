@@ -6747,6 +6747,96 @@ export type Database = {
           },
         ]
       }
+      onchain_transactions: {
+        Row: {
+          amount_formatted: number
+          amount_raw: string
+          block_number: number | null
+          chain_id: number
+          confirmations: number
+          confirmed_at: string | null
+          counterparty_address: string
+          created_at: string
+          direction: string
+          error_message: string | null
+          gas_fee_formatted: number | null
+          gas_fee_wei: string | null
+          id: string
+          log_index: number | null
+          nonce: number | null
+          required_confirmations: number
+          source: string
+          status: string
+          token_contract: string
+          token_decimals: number
+          token_logo_url: string | null
+          token_name: string | null
+          token_symbol: string
+          tx_hash: string
+          updated_at: string
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          amount_formatted: number
+          amount_raw: string
+          block_number?: number | null
+          chain_id?: number
+          confirmations?: number
+          confirmed_at?: string | null
+          counterparty_address: string
+          created_at?: string
+          direction: string
+          error_message?: string | null
+          gas_fee_formatted?: number | null
+          gas_fee_wei?: string | null
+          id?: string
+          log_index?: number | null
+          nonce?: number | null
+          required_confirmations?: number
+          source?: string
+          status?: string
+          token_contract: string
+          token_decimals?: number
+          token_logo_url?: string | null
+          token_name?: string | null
+          token_symbol: string
+          tx_hash: string
+          updated_at?: string
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          amount_formatted?: number
+          amount_raw?: string
+          block_number?: number | null
+          chain_id?: number
+          confirmations?: number
+          confirmed_at?: string | null
+          counterparty_address?: string
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          gas_fee_formatted?: number | null
+          gas_fee_wei?: string | null
+          id?: string
+          log_index?: number | null
+          nonce?: number | null
+          required_confirmations?: number
+          source?: string
+          status?: string
+          token_contract?: string
+          token_decimals?: number
+          token_logo_url?: string | null
+          token_name?: string | null
+          token_symbol?: string
+          tx_hash?: string
+          updated_at?: string
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           amount: number
