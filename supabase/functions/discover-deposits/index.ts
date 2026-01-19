@@ -98,28 +98,28 @@ serve(async (req: Request) => {
 
     console.log(`[discover-deposits] User ${user.id} discovering ${scanAllTokens ? 'ALL TOKENS' : symbol} on ${network}, lookback: ${lookbackHours}h`);
 
-    // Fetch user's EVM address
+    // Fetch user's EVM address (best-effort)
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('wallet_address, wallet_addresses, bsc_wallet_address')
-      .eq('user_id', user.id)
-      .single();
+      .or(`user_id.eq.${user.id},id.eq.${user.id}`)
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      throw new Error('Profile not found. Please complete wallet setup.');
+    if (profileError) {
+      console.warn('[discover-deposits] profiles lookup error:', profileError);
     }
 
     const isAddress = (val: unknown) => typeof val === 'string' && val.startsWith('0x') && val.length >= 42;
 
     // Check multiple possible locations for BSC wallet address (profiles)
     let evmAddress: string | null = (
-      profile.bsc_wallet_address ||
-      profile.wallet_addresses?.['bsc-mainnet'] ||
-      profile.wallet_addresses?.['bsc'] ||
-      profile.wallet_addresses?.['evm-mainnet'] ||
-      profile.wallet_addresses?.evm?.mainnet ||
-      profile.wallet_addresses?.evm?.bsc ||
-      profile.wallet_address
+      profile?.bsc_wallet_address ||
+      profile?.wallet_addresses?.['bsc-mainnet'] ||
+      profile?.wallet_addresses?.['bsc'] ||
+      profile?.wallet_addresses?.['evm-mainnet'] ||
+      profile?.wallet_addresses?.evm?.mainnet ||
+      profile?.wallet_addresses?.evm?.bsc ||
+      profile?.wallet_address
     ) ?? null;
 
     // Fallback: user_wallets table

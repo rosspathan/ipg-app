@@ -60,13 +60,22 @@ export function AssetBalanceCard({
 
     onSyncStart()
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        throw new Error('Please sign in again to sync deposits')
+      }
+
       const { data, error } = await supabase.functions.invoke("discover-deposits", {
         body: {
           symbol: asset.symbol,
           network: "bsc",
           lookbackHours: 168, // 1 week
         },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       })
+
 
       if (error) throw error
 

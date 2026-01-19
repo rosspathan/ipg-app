@@ -65,6 +65,12 @@ export function PendingDepositsAlert() {
     try {
       toast.info('Scanning recent deposits (7 days)...');
 
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Please sign in again to sync deposits');
+      }
+      const authHeaders = { Authorization: `Bearer ${session.access_token}` };
+
       let totalCreated = 0;
 
       // First pass: 7-day lookback
@@ -75,6 +81,7 @@ export function PendingDepositsAlert() {
             network: deposit.network,
             lookbackHours: 168, // 7 days
           },
+          headers: authHeaders,
         });
         if (error) throw error;
         const created = Number(data?.created ?? (Array.isArray(data?.deposits) ? data.deposits.length : 0) ?? 0);
@@ -91,6 +98,7 @@ export function PendingDepositsAlert() {
               network: deposit.network,
               lookbackHours: 720, // 30 days
             },
+            headers: authHeaders,
           });
           if (error) throw error;
           const created = Number(data?.created ?? (Array.isArray(data?.deposits) ? data.deposits.length : 0) ?? 0);
