@@ -29,13 +29,6 @@ interface BscScanTokenTransfer {
   transactionIndex: string;
 }
 
-interface TokenInfo {
-  symbol: string;
-  name: string;
-  decimals: number;
-  logo_url: string | null;
-}
-
 // Helper to decode JWT without calling auth endpoint
 const decodeJwtSub = (jwt: string): string | null => {
   try {
@@ -53,175 +46,6 @@ const decodeJwtSub = (jwt: string): string | null => {
 const isAddress = (val: unknown): val is string => 
   typeof val === 'string' && /^0x[a-fA-F0-9]{40}$/.test(val);
 
-// BSC RPC Endpoints (fallback chain)
-const RPC_ENDPOINTS = [
-  'https://bsc-dataseed1.binance.org',
-  'https://bsc-dataseed2.binance.org',
-  'https://bsc-dataseed3.binance.org',
-  'https://bsc-dataseed4.binance.org',
-  'https://bsc-dataseed1.defibit.io',
-  'https://bsc-dataseed2.defibit.io',
-];
-
-// Transfer event signature: keccak256("Transfer(address,address,uint256)")
-const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-
-// Pad address to 32 bytes for topic filtering
-const padAddress = (address: string): string => {
-  return '0x' + address.toLowerCase().replace('0x', '').padStart(64, '0');
-};
-
-// Call RPC with retry
-async function callRpc(method: string, params: any[], timeout = 10000): Promise<any> {
-  const errors: string[] = [];
-  
-  for (const rpc of RPC_ENDPOINTS) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-      
-      const response = await fetch(rpc, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        errors.push(`${rpc}: HTTP ${response.status}`);
-        continue;
-      }
-      
-      const data = await response.json();
-      if (data.error) {
-        errors.push(`${rpc}: ${data.error.message || JSON.stringify(data.error)}`);
-        continue;
-      }
-      
-      return data.result;
-    } catch (e: any) {
-      errors.push(`${rpc}: ${e.message}`);
-    }
-  }
-  
-  throw new Error(`All RPC endpoints failed: ${errors.join('; ')}`);
-}
-
-// Get current block number
-async function getBlockNumber(): Promise<number> {
-  const hex = await callRpc('eth_blockNumber', []);
-  return parseInt(hex, 16);
-}
-
-// Fetch logs with chunking to avoid "response too large"
-async function fetchLogsChunked(
-  fromBlock: number,
-  toBlock: number,
-  topics: (string | string[] | null)[],
-  maxChunkSize = 5000
-): Promise<any[]> {
-  const allLogs: any[] = [];
-  let currentFrom = fromBlock;
-  
-  while (currentFrom <= toBlock) {
-    const currentTo = Math.min(currentFrom + maxChunkSize - 1, toBlock);
-    
-    try {
-      const logs = await callRpc('eth_getLogs', [{
-        fromBlock: '0x' + currentFrom.toString(16),
-        toBlock: '0x' + currentTo.toString(16),
-        topics,
-      }]);
-      
-      if (Array.isArray(logs)) {
-        allLogs.push(...logs);
-      }
-    } catch (e: any) {
-      // If chunk too large, reduce size
-      if (e.message?.includes('too large') || e.message?.includes('limit')) {
-        if (maxChunkSize > 500) {
-          console.log(`[index-bep20] Reducing chunk size from ${maxChunkSize} to ${Math.floor(maxChunkSize / 2)}`);
-          const smallerLogs = await fetchLogsChunked(currentFrom, currentTo, topics, Math.floor(maxChunkSize / 2));
-          allLogs.push(...smallerLogs);
-        } else {
-          console.warn(`[index-bep20] Could not fetch blocks ${currentFrom}-${currentTo}: ${e.message}`);
-        }
-      } else {
-        console.warn(`[index-bep20] Error fetching blocks ${currentFrom}-${currentTo}: ${e.message}`);
-      }
-    }
-    
-    currentFrom = currentTo + 1;
-  }
-  
-  return allLogs;
-}
-
-// Fetch ERC20 token info from contract
-async function getTokenInfo(contractAddress: string): Promise<TokenInfo | null> {
-  try {
-    // symbol()
-    const symbolData = await callRpc('eth_call', [{
-      to: contractAddress,
-      data: '0x95d89b41', // symbol()
-    }, 'latest'], 5000);
-    
-    // decimals()
-    const decimalsData = await callRpc('eth_call', [{
-      to: contractAddress,
-      data: '0x313ce567', // decimals()
-    }, 'latest'], 5000);
-    
-    // name()
-    const nameData = await callRpc('eth_call', [{
-      to: contractAddress,
-      data: '0x06fdde03', // name()
-    }, 'latest'], 5000);
-    
-    // Decode responses
-    const symbol = decodeStringResult(symbolData) || 'UNKNOWN';
-    const name = decodeStringResult(nameData) || 'Unknown Token';
-    const decimals = parseInt(decimalsData, 16) || 18;
-    
-    return { symbol, name, decimals, logo_url: null };
-  } catch (e) {
-    console.warn(`[index-bep20] Could not fetch token info for ${contractAddress}`);
-    return null;
-  }
-}
-
-// Decode string from ABI-encoded return value
-function decodeStringResult(hex: string): string | null {
-  if (!hex || hex === '0x' || hex.length < 66) return null;
-  
-  try {
-    // Try as dynamic string first
-    const offset = parseInt(hex.slice(2, 66), 16);
-    if (offset === 32) {
-      // Dynamic string
-      const length = parseInt(hex.slice(66, 130), 16);
-      if (length > 0 && length < 100) {
-        const strHex = hex.slice(130, 130 + length * 2);
-        return Buffer.from(strHex, 'hex').toString('utf8').replace(/\0/g, '');
-      }
-    }
-    
-    // Try as fixed bytes32
-    const raw = hex.slice(2, 66);
-    let str = '';
-    for (let i = 0; i < 64; i += 2) {
-      const charCode = parseInt(raw.substr(i, 2), 16);
-      if (charCode === 0) break;
-      str += String.fromCharCode(charCode);
-    }
-    return str || null;
-  } catch {
-    return null;
-  }
-}
-
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -229,7 +53,7 @@ serve(async (req: Request) => {
 
   const startTime = Date.now();
   let wallet = '';
-  let provider = 'unknown';
+  let provider = 'none';
   
   try {
     const authHeader = req.headers.get('authorization') ?? req.headers.get('Authorization');
@@ -286,9 +110,9 @@ serve(async (req: Request) => {
       });
     }
 
-    const { lookbackHours = 168, forceRefresh = false }: IndexRequest = await req.json().catch(() => ({}));
+    const { lookbackHours = 168 }: IndexRequest = await req.json().catch(() => ({}));
 
-    console.log(`[index-bep20] User ${userId} indexing BEP-20 history, lookback: ${lookbackHours}h`);
+    console.log(`[index-bep20] User ${userId} indexing BEP-20, lookback: ${lookbackHours}h`);
 
     // Get user's wallet address
     const { data: profile } = await supabaseClient
@@ -340,162 +164,88 @@ serve(async (req: Request) => {
         error_code: 'NO_WALLET_ADDRESS',
         error: 'No BSC wallet address found. Please set up your wallet first.',
         indexed: 0,
-        debug: {
-          checked_tables: ['profiles', 'user_wallets', 'wallets_user'],
-          user_id: userId,
-        }
+        duration_ms: Date.now() - startTime,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
 
-    wallet = evmAddress;
-    console.log(`[index-bep20] Wallet: ${evmAddress.slice(0, 10)}...`);
+    wallet = evmAddress.toLowerCase();
+    console.log(`[index-bep20] Wallet: ${wallet.slice(0, 10)}...`);
 
-    // Fetch active BEP-20 assets
+    // Fetch active BEP-20 assets for enrichment
     const { data: assets } = await supabaseClient
       .from('assets')
       .select('id, symbol, name, contract_address, decimals, network, logo_url')
       .not('contract_address', 'is', null)
       .eq('is_active', true);
 
-    // Build asset lookup map by contract address
     const assetMap = new Map<string, any>((assets || []).map(a => [a.contract_address?.toLowerCase(), a]));
-    const tokenInfoCache = new Map<string, TokenInfo>();
-
+    
     const bscscanApiKey = Deno.env.get('BSCSCAN_API_KEY');
     const lookbackTimestamp = Math.floor(Date.now() / 1000) - (lookbackHours * 3600);
     
     let transfers: BscScanTokenTransfer[] = [];
-    let usedProvider = 'none';
 
-    // Try BscScan API first (if API key exists)
-    if (bscscanApiKey) {
-      try {
-        console.log('[index-bep20] Attempting BscScan API...');
-        const bscscanUrl = `https://api.bscscan.com/api?module=account&action=tokentx&address=${evmAddress}&startblock=0&endblock=999999999&page=1&offset=100&sort=desc&apikey=${bscscanApiKey}`;
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-        
-        const bscResponse = await fetch(bscscanUrl, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
-        const bscData = await bscResponse.json();
-        console.log(`[index-bep20] BscScan response status: ${bscData.status}, message: ${bscData.message}`);
-        
-        if (bscData.status === '1' && Array.isArray(bscData.result)) {
-          transfers = bscData.result;
-          usedProvider = 'bscscan';
-          provider = 'bscscan';
-          console.log(`[index-bep20] BscScan returned ${transfers.length} transfers`);
-        } else if (bscData.message === 'No transactions found') {
-          // Valid response, just no transactions
-          usedProvider = 'bscscan';
-          provider = 'bscscan';
-          console.log('[index-bep20] BscScan: No transactions found (valid response)');
-        } else {
-          console.warn(`[index-bep20] BscScan API error: ${bscData.message}`);
-        }
-      } catch (e: any) {
-        console.warn(`[index-bep20] BscScan API failed: ${e.message}`);
-      }
+    // === Use BscScan API only (fast + reliable) ===
+    if (!bscscanApiKey) {
+      console.warn('[index-bep20] No BSCSCAN_API_KEY configured');
+      return new Response(JSON.stringify({
+        success: false,
+        error_code: 'NO_API_KEY',
+        error: 'BscScan API key not configured. Please contact support.',
+        indexed: 0,
+        wallet: wallet.slice(0, 10) + '...',
+        duration_ms: Date.now() - startTime,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
-    // Fallback to RPC eth_getLogs if BscScan failed or unavailable
-    if (usedProvider === 'none') {
-      try {
-        console.log('[index-bep20] Using RPC eth_getLogs fallback...');
-        provider = 'rpc';
-        
-        const currentBlock = await getBlockNumber();
-        // ~3 seconds per block on BSC, calculate blocks for lookback hours
-        const blocksPerHour = 1200;
-        const lookbackBlocks = Math.min(lookbackHours * blocksPerHour, 200000); // Cap at ~7 days
-        const fromBlock = Math.max(currentBlock - lookbackBlocks, 0);
-        
-        console.log(`[index-bep20] Fetching logs from block ${fromBlock} to ${currentBlock} (${currentBlock - fromBlock} blocks)`);
-        
-        const paddedAddress = padAddress(evmAddress);
-        
-        // Fetch RECEIVED transfers (where address is in topic2/to)
-        console.log('[index-bep20] Fetching received transfers...');
-        const receivedLogs = await fetchLogsChunked(fromBlock, currentBlock, [
-          TRANSFER_TOPIC,
-          null, // any from address
-          paddedAddress, // to = our address
-        ]);
-        
-        // Fetch SENT transfers (where address is in topic1/from)
-        console.log('[index-bep20] Fetching sent transfers...');
-        const sentLogs = await fetchLogsChunked(fromBlock, currentBlock, [
-          TRANSFER_TOPIC,
-          paddedAddress, // from = our address
-          null, // any to address
-        ]);
-        
-        console.log(`[index-bep20] RPC returned ${receivedLogs.length} received + ${sentLogs.length} sent logs`);
-        
-        // Convert RPC logs to BscScan-like format
-        const allLogs = [...receivedLogs, ...sentLogs];
-        
-        // Get block timestamps for a few blocks (for rough timestamp estimation)
-        const blockTimestamps = new Map<number, number>();
-        
-        for (const log of allLogs) {
-          const blockNum = parseInt(log.blockNumber, 16);
-          const txIndex = parseInt(log.transactionIndex || '0', 16);
-          const logIndex = parseInt(log.logIndex || '0', 16);
-          
-          // Get block timestamp if not cached
-          if (!blockTimestamps.has(blockNum)) {
-            try {
-              const block = await callRpc('eth_getBlockByNumber', ['0x' + blockNum.toString(16), false], 5000);
-              if (block?.timestamp) {
-                blockTimestamps.set(blockNum, parseInt(block.timestamp, 16));
-              }
-            } catch {
-              // Estimate timestamp based on block number
-              const secondsSinceGenesis = (currentBlock - blockNum) * 3;
-              blockTimestamps.set(blockNum, Math.floor(Date.now() / 1000) - secondsSinceGenesis);
-            }
-          }
-          
-          const timestamp = blockTimestamps.get(blockNum) || Math.floor(Date.now() / 1000);
-          
-          // Parse Transfer event data
-          const from = '0x' + log.topics[1].slice(26);
-          const to = '0x' + log.topics[2].slice(26);
-          const value = log.data || '0x0';
-          
-          transfers.push({
-            hash: log.transactionHash,
-            from,
-            to,
-            value: BigInt(value).toString(),
-            tokenDecimal: '18', // Will be looked up later
-            blockNumber: blockNum.toString(),
-            timeStamp: timestamp.toString(),
-            contractAddress: log.address,
-            tokenSymbol: '',
-            tokenName: '',
-            gas: '0',
-            gasPrice: '0',
-            gasUsed: '0',
-            nonce: '0',
-            transactionIndex: txIndex.toString(),
-          });
-        }
-        
-        usedProvider = 'rpc';
-      } catch (e: any) {
-        console.error(`[index-bep20] RPC fallback failed: ${e.message}`);
+    try {
+      console.log('[index-bep20] Fetching from BscScan API...');
+      const bscscanUrl = `https://api.bscscan.com/api?module=account&action=tokentx&address=${wallet}&startblock=0&endblock=999999999&page=1&offset=100&sort=desc&apikey=${bscscanApiKey}`;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      
+      const bscResponse = await fetch(bscscanUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      const bscData = await bscResponse.json();
+      console.log(`[index-bep20] BscScan status: ${bscData.status}, message: ${bscData.message}`);
+      
+      if (bscData.status === '1' && Array.isArray(bscData.result)) {
+        transfers = bscData.result;
+        provider = 'bscscan';
+        console.log(`[index-bep20] Got ${transfers.length} transfers from BscScan`);
+      } else if (bscData.message === 'No transactions found') {
+        provider = 'bscscan';
+        console.log('[index-bep20] BscScan: No transactions (valid)');
+      } else if (bscData.message?.includes('rate limit') || bscData.result?.includes('rate')) {
+        console.warn('[index-bep20] BscScan rate limited');
         return new Response(JSON.stringify({
           success: false,
-          error_code: 'RPC_ERROR',
-          error: `Failed to fetch transactions: ${e.message}`,
-          provider: 'rpc',
+          error_code: 'RATE_LIMITED',
+          error: 'API rate limited. Please try again in a few seconds.',
+          indexed: 0,
+          provider: 'bscscan',
+          wallet: wallet.slice(0, 10) + '...',
+          duration_ms: Date.now() - startTime,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      } else {
+        console.warn(`[index-bep20] BscScan error: ${bscData.message || bscData.result}`);
+        return new Response(JSON.stringify({
+          success: false,
+          error_code: 'API_ERROR',
+          error: `BscScan API error: ${bscData.message || 'Unknown error'}`,
+          indexed: 0,
+          provider: 'bscscan',
           wallet: wallet.slice(0, 10) + '...',
           duration_ms: Date.now() - startTime,
         }), {
@@ -503,178 +253,152 @@ serve(async (req: Request) => {
           status: 200,
         });
       }
-    }
-
-    // Filter transfers by lookback window
-    const filteredTransfers = transfers.filter((tx: BscScanTokenTransfer) => {
-      const timestamp = parseInt(tx.timeStamp);
-      return timestamp >= lookbackTimestamp;
-    });
-
-    console.log(`[index-bep20] ${filteredTransfers.length} transfers within lookback window`);
-
-    if (filteredTransfers.length === 0) {
+    } catch (e: any) {
+      console.error(`[index-bep20] BscScan fetch failed: ${e.message}`);
       return new Response(JSON.stringify({
-        success: true,
+        success: false,
+        error_code: 'NETWORK_ERROR',
+        error: `Network error: ${e.name === 'AbortError' ? 'Request timed out' : e.message}`,
         indexed: 0,
-        created: 0,
-        message: 'No recent transactions found',
-        provider: usedProvider,
+        provider: 'bscscan',
         wallet: wallet.slice(0, 10) + '...',
         duration_ms: Date.now() - startTime,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
+        status: 200,
       });
     }
 
-    // Fetch all existing tx_hashes to avoid duplicates
-    const txHashes = [...new Set(filteredTransfers.map(tx => tx.hash.toLowerCase()))];
-    const { data: existingTxs } = await adminClient
-      .from('onchain_transactions')
-      .select('tx_hash, log_index, direction')
-      .eq('user_id', userId)
-      .in('tx_hash', txHashes);
+    // Filter by lookback time
+    transfers = transfers.filter(tx => parseInt(tx.timeStamp) >= lookbackTimestamp);
+    console.log(`[index-bep20] ${transfers.length} transfers in lookback window`);
 
-    const existingSet = new Set(
-      (existingTxs || []).map((t: any) => `${t.tx_hash}-${t.log_index ?? 0}-${t.direction}`)
-    );
-
-    let totalIndexed = 0;
-    let totalCreated = 0;
-    let totalSkipped = 0;
-    const errors: string[] = [];
-
-    // Process each transfer
-    for (const tx of filteredTransfers) {
-      const fromLower = tx.from.toLowerCase();
-      const toLower = tx.to.toLowerCase();
-      const walletLower = evmAddress.toLowerCase();
-      const contractLower = tx.contractAddress?.toLowerCase();
-
-      // Get token info from DB or fetch from chain
-      let tokenInfo: TokenInfo | null = assetMap.get(contractLower);
-      
-      if (!tokenInfo) {
-        // Check cache
-        if (tokenInfoCache.has(contractLower)) {
-          tokenInfo = tokenInfoCache.get(contractLower)!;
-        } else {
-          // Fetch from chain
-          tokenInfo = await getTokenInfo(contractLower);
-          if (tokenInfo) {
-            tokenInfoCache.set(contractLower, tokenInfo);
-          }
-        }
-      }
-
-      // If still no token info, use values from tx or defaults
-      if (!tokenInfo) {
-        tokenInfo = {
-          symbol: tx.tokenSymbol || 'UNKNOWN',
-          name: tx.tokenName || 'Unknown Token',
-          decimals: parseInt(tx.tokenDecimal) || 18,
-          logo_url: null,
-        };
-      }
-
-      const isSend = fromLower === walletLower;
-      const isReceive = toLower === walletLower;
-      const isSelf = isSend && isReceive;
-
-      const direction = isSelf ? 'SELF' : (isSend ? 'SEND' : 'RECEIVE');
-      const counterparty = isSend ? tx.to : tx.from;
-      const logIndex = parseInt(tx.transactionIndex) || 0;
-      const uniqueKey = `${tx.hash.toLowerCase()}-${logIndex}-${direction}`;
-
-      if (existingSet.has(uniqueKey)) {
-        totalSkipped++;
-        continue;
-      }
-
-      // Calculate formatted amount
-      const decimals = tokenInfo.decimals || parseInt(tx.tokenDecimal) || 18;
-      const amountFormatted = parseFloat(tx.value) / Math.pow(10, decimals);
-
-      // Calculate gas fee (if available)
-      const gasUsed = parseInt(tx.gasUsed) || 0;
-      const gasPrice = parseInt(tx.gasPrice) || 0;
-      const gasFeeWei = BigInt(gasUsed) * BigInt(gasPrice);
-      const gasFeeFormatted = Number(gasFeeWei) / 1e18;
-
-      const record = {
-        user_id: userId,
-        wallet_address: evmAddress.toLowerCase(),
-        chain_id: 56,
-        token_contract: contractLower,
-        token_symbol: tokenInfo.symbol || tx.tokenSymbol || 'UNKNOWN',
-        token_name: tokenInfo.name || tx.tokenName || 'Unknown Token',
-        token_decimals: decimals,
-        token_logo_url: tokenInfo.logo_url,
-        direction,
-        counterparty_address: counterparty.toLowerCase(),
-        amount_raw: tx.value,
-        amount_formatted: amountFormatted,
-        status: 'CONFIRMED', // BscScan and RPC only return confirmed txs
-        confirmations: 12,
-        required_confirmations: 12,
-        block_number: parseInt(tx.blockNumber),
-        tx_hash: tx.hash.toLowerCase(),
-        log_index: logIndex,
-        gas_fee_wei: gasFeeWei.toString(),
-        gas_fee_formatted: gasFeeFormatted,
-        nonce: parseInt(tx.nonce) || null,
-        source: 'ONCHAIN',
-        confirmed_at: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
-        created_at: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
-      };
-
-      const { error: insertError } = await adminClient
-        .from('onchain_transactions')
-        .upsert(record, { onConflict: 'tx_hash,log_index,user_id,direction' });
-
-      if (insertError) {
-        console.error(`[index-bep20] Insert error for ${tx.hash}:`, insertError.message);
-        errors.push(`${tx.hash.slice(0, 10)}...: ${insertError.message}`);
-      } else {
-        totalCreated++;
-        console.log(`[index-bep20] Indexed ${direction} ${amountFormatted.toFixed(4)} ${tokenInfo.symbol}`);
-      }
-
-      totalIndexed++;
+    if (transfers.length === 0) {
+      return new Response(JSON.stringify({
+        success: true,
+        indexed: 0,
+        provider,
+        wallet: wallet.slice(0, 10) + '...',
+        duration_ms: Date.now() - startTime,
+        message: 'No transactions found in time range',
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
-    console.log(`[index-bep20] COMPLETE - Indexed: ${totalIndexed}, Created: ${totalCreated}, Skipped: ${totalSkipped}, Provider: ${usedProvider}`);
+    // Process and upsert transfers
+    const records: any[] = [];
+    
+    for (const tx of transfers) {
+      const fromAddr = tx.from.toLowerCase();
+      const toAddr = tx.to.toLowerCase();
+      const contractAddr = tx.contractAddress.toLowerCase();
+      
+      // Determine direction
+      let direction: 'SEND' | 'RECEIVE' | 'SELF' = 'RECEIVE';
+      if (fromAddr === wallet && toAddr === wallet) {
+        direction = 'SELF';
+      } else if (fromAddr === wallet) {
+        direction = 'SEND';
+      } else if (toAddr === wallet) {
+        direction = 'RECEIVE';
+      }
+      
+      // Get token info from asset map or use BscScan data
+      const asset = assetMap.get(contractAddr);
+      const decimals = asset?.decimals ?? parseInt(tx.tokenDecimal) || 18;
+      const symbol = asset?.symbol || tx.tokenSymbol || 'UNKNOWN';
+      const tokenName = asset?.name || tx.tokenName || 'Unknown Token';
+      const logoUrl = asset?.logo_url || null;
+      
+      // Calculate formatted amount
+      const rawValue = BigInt(tx.value || '0');
+      const formattedAmount = Number(rawValue) / Math.pow(10, decimals);
+      
+      // Calculate gas fee in BNB
+      const gasUsed = BigInt(tx.gasUsed || '0');
+      const gasPrice = BigInt(tx.gasPrice || '0');
+      const gasFeeWei = gasUsed * gasPrice;
+      const gasFee = Number(gasFeeWei) / 1e18;
+      
+      records.push({
+        user_id: userId,
+        tx_hash: tx.hash.toLowerCase(),
+        chain: 'bsc',
+        chain_id: 56,
+        direction,
+        status: 'CONFIRMED',
+        token_symbol: symbol,
+        token_name: tokenName,
+        token_contract: tx.contractAddress,
+        token_decimals: decimals,
+        token_logo_url: logoUrl,
+        amount_raw: tx.value,
+        amount_formatted: formattedAmount,
+        from_address: tx.from,
+        to_address: tx.to,
+        block_number: parseInt(tx.blockNumber),
+        block_timestamp: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
+        gas_used: tx.gasUsed,
+        gas_price: tx.gasPrice,
+        gas_fee_native: gasFee,
+        nonce: parseInt(tx.nonce) || 0,
+        tx_index: parseInt(tx.transactionIndex) || 0,
+        indexed_at: new Date().toISOString(),
+      });
+    }
+
+    // Upsert to database
+    const { error: upsertError, count } = await adminClient
+      .from('onchain_transactions')
+      .upsert(records, {
+        onConflict: 'user_id,tx_hash,chain',
+        ignoreDuplicates: false,
+      });
+
+    if (upsertError) {
+      console.error(`[index-bep20] Upsert error: ${upsertError.message}`);
+      return new Response(JSON.stringify({
+        success: false,
+        error_code: 'DB_ERROR',
+        error: `Database error: ${upsertError.message}`,
+        indexed: 0,
+        provider,
+        wallet: wallet.slice(0, 10) + '...',
+        duration_ms: Date.now() - startTime,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    console.log(`[index-bep20] Successfully indexed ${records.length} transactions in ${Date.now() - startTime}ms`);
 
     return new Response(JSON.stringify({
       success: true,
-      indexed: totalIndexed,
-      created: totalCreated,
-      skipped: totalSkipped,
-      errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
-      message: totalCreated > 0 
-        ? `Indexed ${totalCreated} new transaction(s)`
-        : (totalSkipped > 0 ? 'All transactions already indexed' : 'No transactions found'),
-      provider: usedProvider,
+      indexed: records.length,
+      provider,
       wallet: wallet.slice(0, 10) + '...',
       duration_ms: Date.now() - startTime,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
+      status: 200,
     });
 
-  } catch (error: any) {
-    console.error('[index-bep20] Error:', error);
+  } catch (e: any) {
+    console.error(`[index-bep20] Unhandled error: ${e.message}`);
     return new Response(JSON.stringify({
       success: false,
-      error_code: 'UNEXPECTED_ERROR',
-      error: error.message,
+      error_code: 'INTERNAL_ERROR',
+      error: e.message || 'Internal server error',
+      indexed: 0,
       provider,
-      wallet: wallet ? wallet.slice(0, 10) + '...' : undefined,
+      wallet: wallet ? wallet.slice(0, 10) + '...' : 'unknown',
       duration_ms: Date.now() - startTime,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400
+      status: 200,
     });
   }
 });
