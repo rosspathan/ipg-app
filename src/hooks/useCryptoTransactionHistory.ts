@@ -360,6 +360,30 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
   }, [fetchTransactions]);
 
   // Real-time subscriptions
+  // Auto-scan for on-chain deposits every 30 seconds
+  useEffect(() => {
+    if (!user) return;
+
+    const scanForDeposits = async () => {
+      try {
+        console.log('[auto-scan] Scanning for new on-chain deposits...');
+        await supabase.functions.invoke('discover-deposits', {
+          body: { symbol: '*', network: 'bsc', lookbackHours: 24 }
+        });
+      } catch (error) {
+        console.warn('[auto-scan] Deposit scan failed:', error);
+      }
+    };
+
+    // Initial scan on mount
+    scanForDeposits();
+
+    // Repeat every 30 seconds
+    const interval = setInterval(scanForDeposits, 30000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
 
