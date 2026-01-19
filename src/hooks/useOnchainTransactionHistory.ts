@@ -70,10 +70,10 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
     lastError: null,
     lastResult: null,
   });
-  
   const indexingRef = useRef(false);
   const timeoutRef = useRef<number | null>(null);
-  
+  const hasInitialIndexAttemptRef = useRef(false);
+  const lastIndexAttemptAtRef = useRef(0);
   const { 
     direction = 'all', 
     status = 'all', 
@@ -145,28 +145,44 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       return;
     }
 
+    // Throttle to avoid hammering the edge function (prevents WORKER_LIMIT)
+    const now = Date.now();
+    if (!forceRefresh && now - lastIndexAttemptAtRef.current < 30_000) {
+      console.log('[onchain-history] Skipping index: throttled');
+      return;
+    }
+    lastIndexAttemptAtRef.current = now;
+
     indexingRef.current = true;
     setIndexingStatus(prev => ({ ...prev, isIndexing: true, lastError: null }));
 
-    // Set timeout for 15 seconds max
+    // Hard cap UI loading at 10 seconds (requirement)
+    let didTimeout = false;
     const indexTimeout = setTimeout(() => {
-      console.warn('[onchain-history] Index timed out after 15 seconds');
-      indexingRef.current = false;
+      didTimeout = true;
+      console.warn('[onchain-history] Index timed out after 10 seconds');
       setIndexingStatus(prev => ({
         ...prev,
         isIndexing: false,
         lastError: 'Request timed out. Please try again.',
+        lastResult: {
+          success: false,
+          indexed: 0,
+          created: 0,
+          error_code: 'TIMEOUT',
+          error: 'Request timed out',
+        },
       }));
-    }, 15000);
+      indexingRef.current = false;
+    }, 10_000);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        console.warn('[onchain-history] No session, skipping index');
         clearTimeout(indexTimeout);
         indexingRef.current = false;
-        setIndexingStatus(prev => ({ 
-          ...prev, 
+        setIndexingStatus(prev => ({
+          ...prev,
           isIndexing: false,
           lastError: 'Not authenticated. Please log in again.',
         }));
@@ -175,7 +191,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
 
       console.log('[onchain-history] Calling index-bep20-history edge function...');
       const startTime = Date.now();
-      
+
       const { data, error } = await supabase.functions.invoke('index-bep20-history', {
         body: { lookbackHours: 168, forceRefresh },
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -185,79 +201,83 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const duration = Date.now() - startTime;
       console.log(`[onchain-history] Index response in ${duration}ms:`, data);
 
+      // If we already timed out on the client, don't overwrite UI state with a late response.
+      if (didTimeout) return;
+
       if (error) {
+        const msg = error.message || 'Failed to sync blockchain data';
+        const userMsg = msg.includes('WORKER_LIMIT') || msg.includes('546')
+          ? 'Server is busy (worker limit). Please wait 30 seconds and retry.'
+          : msg;
+
         console.error('[onchain-history] Index function error:', error);
         setIndexingStatus(prev => ({
           ...prev,
           isIndexing: false,
-          lastError: error.message || 'Failed to sync blockchain data',
-          lastResult: null,
+          lastError: userMsg,
+          lastResult: {
+            success: false,
+            indexed: 0,
+            created: 0,
+            error: msg,
+            error_code: msg.includes('WORKER_LIMIT') ? 'WORKER_LIMIT' : 'FUNCTION_ERROR',
+            duration_ms: duration,
+          },
         }));
-      } else if (data) {
+        return;
+      }
+
+      if (data) {
         const result = data as IndexingStatus['lastResult'];
-        
-        if (result?.success === false) {
-          console.warn('[onchain-history] Index returned error:', result.error);
-          setIndexingStatus(prev => ({
-            ...prev,
-            isIndexing: false,
-            lastIndexedAt: new Date(),
-            lastError: result.error || null,
-            lastResult: result,
-          }));
-        } else {
-          setIndexingStatus(prev => ({
-            ...prev,
-            isIndexing: false,
-            lastIndexedAt: new Date(),
-            lastError: null,
-            lastResult: result,
-          }));
-          
-          // Refetch transactions if new ones were created
-          if (result?.created && result.created > 0) {
-            console.log(`[onchain-history] Indexed ${result.created} new transactions, refetching...`);
-            await refetch();
-          }
-        }
+        setIndexingStatus(prev => ({
+          ...prev,
+          isIndexing: false,
+          lastIndexedAt: new Date(),
+          lastError: (result as any)?.success === false ? (result as any)?.error ?? null : null,
+          lastResult: result,
+        }));
+
+        // Always refetch after an index attempt so UI updates immediately.
+        await refetch();
       }
     } catch (err: any) {
       clearTimeout(indexTimeout);
+      if (didTimeout) return;
+
       console.error('[onchain-history] Index failed:', err);
       setIndexingStatus(prev => ({
         ...prev,
         isIndexing: false,
-        lastError: err.message || 'Network error. Please check your connection.',
+        lastError: err?.message || 'Network error. Please check your connection.',
+        lastResult: {
+          success: false,
+          indexed: 0,
+          created: 0,
+          error_code: 'NETWORK_ERROR',
+          error: err?.message || 'Network error',
+        },
       }));
     } finally {
+      clearTimeout(indexTimeout);
       indexingRef.current = false;
     }
   }, [user, refetch]);
 
-  // Index on mount (debounced)
+  // Index on mount (debounced) — guarded for StrictMode/dev double-invoke
   useEffect(() => {
     if (!user) return;
+    if (hasInitialIndexAttemptRef.current) return;
+    hasInitialIndexAttemptRef.current = true;
 
-    // Small delay to avoid multiple rapid calls
     const timer = setTimeout(() => {
-      indexTransactions();
+      indexTransactions(false);
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [user?.id]); // Only re-run if user changes
+  }, [user?.id, indexTransactions]);
 
-  // Periodic indexing (every 60 seconds)
-  useEffect(() => {
-    if (!user) return;
-
-    const interval = setInterval(() => {
-      if (!indexingRef.current) {
-        indexTransactions();
-      }
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [user, indexTransactions]);
+  // NOTE: Removed periodic edge-function indexing to avoid WORKER_LIMIT.
+  // Users can always pull-to-refresh / tap Refresh to resync.
 
   // Real-time subscription for instant updates
   useEffect(() => {
