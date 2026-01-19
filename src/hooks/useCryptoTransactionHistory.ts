@@ -366,10 +366,21 @@ export function useCryptoTransactionHistory(options: UseCryptoTransactionHistory
 
     const scanForDeposits = async () => {
       try {
+        // Get current session for auth token
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          console.warn('[auto-scan] No session, skipping deposit scan');
+          return;
+        }
+
         console.log('[auto-scan] Scanning for new on-chain deposits...');
-        await supabase.functions.invoke('discover-deposits', {
-          body: { symbol: '*', network: 'bsc', lookbackHours: 24 }
+        const { error } = await supabase.functions.invoke('discover-deposits', {
+          body: { symbol: '*', network: 'bsc', lookbackHours: 24 },
         });
+        
+        if (error) {
+          console.warn('[auto-scan] Deposit scan returned error:', error);
+        }
       } catch (error) {
         console.warn('[auto-scan] Deposit scan failed:', error);
       }
