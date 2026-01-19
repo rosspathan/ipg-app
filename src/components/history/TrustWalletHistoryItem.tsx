@@ -14,9 +14,14 @@ export interface TrustWalletTransaction {
   description?: string;
   sender_recipient?: string;
   transaction_id?: string;
+  reference_id?: string;
   metadata?: any;
   notes?: string;
   is_credit: boolean;
+  status?: 'pending' | 'completed' | 'reversed' | 'failed';
+  from_user_id?: string;
+  to_user_id?: string;
+  transfer_category?: string;
 }
 
 interface TrustWalletHistoryItemProps {
@@ -109,9 +114,19 @@ export function TrustWalletHistoryItem({ transaction, onClick }: TrustWalletHist
             <p className="text-xs text-muted-foreground">
               {format(new Date(transaction.created_at), 'MMM d, yyyy • h:mm a')}
             </p>
+            {transaction.status && transaction.status !== 'completed' && (
+              <span className={cn(
+                "text-xs px-1.5 py-0.5 rounded font-medium",
+                transaction.status === 'pending' && 'bg-warning/10 text-warning',
+                transaction.status === 'reversed' && 'bg-muted text-muted-foreground',
+                transaction.status === 'failed' && 'bg-destructive/10 text-destructive'
+              )}>
+                {transaction.status}
+              </span>
+            )}
             {transaction.transaction_subtype && (
               <span className="text-xs px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground">
-                {transaction.transaction_subtype}
+                {transaction.transaction_subtype.replace(/_/g, ' ')}
               </span>
             )}
           </div>

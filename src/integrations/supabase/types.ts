@@ -10449,6 +10449,7 @@ export type Database = {
           processed_at: string
           related_transaction_id: string | null
           related_user_id: string | null
+          status: string | null
           tx_subtype: string
           tx_type: string
           user_id: string
@@ -10465,6 +10466,7 @@ export type Database = {
           processed_at?: string
           related_transaction_id?: string | null
           related_user_id?: string | null
+          status?: string | null
           tx_subtype: string
           tx_type: string
           user_id: string
@@ -10481,6 +10483,7 @@ export type Database = {
           processed_at?: string
           related_transaction_id?: string | null
           related_user_id?: string | null
+          status?: string | null
           tx_subtype?: string
           tx_type?: string
           user_id?: string
@@ -12090,47 +12093,68 @@ export type Database = {
           balance_after: number | null
           balance_type: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
+          from_user_id: string | null
           id: string | null
           is_credit: boolean | null
           metadata: Json | null
           notes: string | null
+          reference_id: string | null
+          related_user_id: string | null
           sender_recipient: string | null
+          status: string | null
+          to_user_id: string | null
           transaction_id: string | null
           transaction_subtype: string | null
           transaction_type: string | null
+          transfer_category: string | null
           user_id: string | null
         }
         Insert: {
-          amount?: number | null
+          amount?: never
           balance_after?: never
           balance_type?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: never
+          from_user_id?: never
           id?: string | null
           is_credit?: never
           metadata?: Json | null
           notes?: string | null
+          reference_id?: string | null
+          related_user_id?: string | null
           sender_recipient?: never
-          transaction_id?: never
+          status?: string | null
+          to_user_id?: never
+          transaction_id?: string | null
           transaction_subtype?: string | null
           transaction_type?: string | null
+          transfer_category?: never
           user_id?: string | null
         }
         Update: {
-          amount?: number | null
+          amount?: never
           balance_after?: never
           balance_type?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: never
+          from_user_id?: never
           id?: string | null
           is_credit?: never
           metadata?: Json | null
           notes?: string | null
+          reference_id?: string | null
+          related_user_id?: string | null
           sender_recipient?: never
-          transaction_id?: never
+          status?: string | null
+          to_user_id?: never
+          transaction_id?: string | null
           transaction_subtype?: string | null
           transaction_type?: string | null
+          transfer_category?: never
           user_id?: string | null
         }
         Relationships: []

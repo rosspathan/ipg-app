@@ -192,14 +192,34 @@ export function TransactionDetailSheet({ transaction, open, onOpenChange }: Tran
             />
 
             <DetailRow
+              label="Status"
+              value={
+                <Badge variant={
+                  transaction.status === 'completed' ? 'default' :
+                  transaction.status === 'pending' ? 'secondary' :
+                  transaction.status === 'reversed' ? 'outline' : 'destructive'
+                }>
+                  {transaction.status || 'Completed'}
+                </Badge>
+              }
+            />
+
+            <DetailRow
               label="Balance After"
               value={`${transaction.balance_after.toFixed(2)} BSK`}
             />
 
             {transaction.transaction_subtype && (
               <DetailRow
-                label="Transaction Subtype"
-                value={transaction.transaction_subtype}
+                label="Transaction Type"
+                value={transaction.transaction_subtype.replace(/_/g, ' ')}
+              />
+            )}
+
+            {transaction.transfer_category && (
+              <DetailRow
+                label="Category"
+                value={transaction.transfer_category.replace(/_/g, ' ')}
               />
             )}
 
@@ -207,6 +227,28 @@ export function TransactionDetailSheet({ transaction, open, onOpenChange }: Tran
               <DetailRow
                 label="Notes"
                 value={transaction.notes}
+              />
+            )}
+
+            {/* Reference ID - important for tracking */}
+            {transaction.reference_id && (
+              <DetailRow
+                label="Reference ID"
+                value={
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs truncate max-w-[180px]">
+                      {transaction.reference_id}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => copyToClipboard(transaction.reference_id!)}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                }
               />
             )}
 
