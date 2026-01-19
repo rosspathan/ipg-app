@@ -49,13 +49,11 @@ serve(async (req: Request) => {
       });
     }
 
-    const globalHeaders = {
-      authorization: authHeader!,
-      Authorization: authHeader!,
-    };
-
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: globalHeaders },
+      // IMPORTANT: only set a single Authorization header.
+      // Setting both `authorization` and `Authorization` can get merged into a single header value,
+      // producing an invalid JWT like: "Bearer <jwt>, Bearer <jwt>".
+      global: { headers: { Authorization: authHeader! } },
       // Edge Functions should not persist sessions
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     });
@@ -124,13 +122,17 @@ serve(async (req: Request) => {
 
     // Fallback: user_wallets table
     if (!isAddress(evmAddress)) {
-      const { data: uw } = await supabaseClient
+      const { data: uw, error: uwError } = await supabaseClient
         .from('user_wallets')
         .select('wallet_address')
         .eq('user_id', user.id)
         .order('last_used_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      if (uwError) {
+        console.warn('[discover-deposits] user_wallets lookup error:', uwError);
+      }
 
       if (isAddress(uw?.wallet_address)) {
         evmAddress = uw!.wallet_address;
@@ -140,12 +142,16 @@ serve(async (req: Request) => {
 
     // Fallback: wallets_user table (primary wallet)
     if (!isAddress(evmAddress)) {
-      const { data: wu } = await supabaseClient
+      const { data: wu, error: wuError } = await supabaseClient
         .from('wallets_user')
         .select('address, chain, is_primary')
         .eq('user_id', user.id)
         .order('is_primary', { ascending: false })
         .limit(10);
+
+      if (wuError) {
+        console.warn('[discover-deposits] wallets_user lookup error:', wuError);
+      }
 
       const preferred = (wu || []).find((w: any) => {
         const chain = String(w?.chain || '').toLowerCase();
@@ -161,8 +167,26 @@ serve(async (req: Request) => {
       }
     }
 
+    // If the user isn't fully set up, don't treat it as an infrastructure/runtime failure.
+    // Return 200 so callers don't surface it as a thrown error/blank screen.
     if (!isAddress(evmAddress)) {
-      throw new Error('No EVM wallet address found. Please set up your wallet.');
+      const missingProfile = !profile && !profileError;
+      const message = missingProfile
+        ? 'Profile not found. Please complete wallet setup.'
+        : 'No EVM wallet address found. Please set up your wallet.';
+
+      console.warn('[discover-deposits] Skipping discovery:', message);
+      return new Response(JSON.stringify({
+        success: false,
+        error: message,
+        error_code: missingProfile ? 'PROFILE_NOT_FOUND' : 'NO_WALLET_ADDRESS',
+        discovered: 0,
+        created: 0,
+        ignored: 0,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
     console.log(`[discover-deposits] EVM address: ${evmAddress.slice(0, 6)}...`);
