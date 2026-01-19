@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Best-effort in-memory caching/dedup to reduce repeated heavy calls (per warm worker)
+const CACHE_TTL_MS = 30_000;
+const lastResultCache = new Map<string, { ts: number; payload: any }>();
+
 interface IndexRequest {
   lookbackHours?: number;
   forceRefresh?: boolean;
@@ -110,7 +114,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const { lookbackHours = 168 }: IndexRequest = await req.json().catch(() => ({}));
+    const { lookbackHours = 168, forceRefresh = false }: IndexRequest = await req.json().catch(() => ({}));
 
     console.log(`[index-bep20] User ${userId} indexing BEP-20, lookback: ${lookbackHours}h`);
 
@@ -174,6 +178,21 @@ serve(async (req: Request) => {
     wallet = evmAddress.toLowerCase();
     console.log(`[index-bep20] Wallet: ${wallet.slice(0, 10)}...`);
 
+    // Cache (avoid repeated upstream calls when the UI retries/polls)
+    const cacheKey = `${userId}:${wallet}:${lookbackHours}`;
+    const cached = lastResultCache.get(cacheKey);
+    if (!forceRefresh && cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+      console.log('[index-bep20] Cache hit (recent sync)');
+      return new Response(JSON.stringify({
+        ...cached.payload,
+        cached: true,
+        duration_ms: Date.now() - startTime,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     // Fetch active BEP-20 assets for enrichment
     const { data: assets } = await supabaseClient
       .from('assets')
@@ -206,7 +225,7 @@ serve(async (req: Request) => {
 
     try {
       console.log('[index-bep20] Fetching from BscScan API...');
-      const bscscanUrl = `https://api.bscscan.com/api?module=account&action=tokentx&address=${wallet}&startblock=0&endblock=999999999&page=1&offset=100&sort=desc&apikey=${bscscanApiKey}`;
+      const bscscanUrl = `https://api.bscscan.com/api?module=account&action=tokentx&address=${wallet}&startblock=0&endblock=999999999&page=1&offset=50&sort=desc&apikey=${bscscanApiKey}`;
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -322,38 +341,57 @@ serve(async (req: Request) => {
       const gasFeeWei = gasUsed * gasPrice;
       const gasFee = Number(gasFeeWei) / 1e18;
       
+      // Best-effort event index for uniqueness (BscScan may not always include logIndex)
+      const rawLogIndex = (tx as any).logIndex ?? (tx as any).log_index ?? tx.transactionIndex;
+      const logIndex = Number.isFinite(parseInt(String(rawLogIndex))) ? parseInt(String(rawLogIndex)) : null;
+
+      // Calculate gas fee
+      const gasUsed = BigInt(tx.gasUsed || '0');
+      const gasPrice = BigInt(tx.gasPrice || '0');
+      const gasFeeWei = gasUsed * gasPrice;
+      const gasFeeNative = Number(gasFeeWei) / 1e18;
+
       records.push({
         user_id: userId,
-        tx_hash: tx.hash.toLowerCase(),
-        chain: 'bsc',
+        wallet_address: wallet,
         chain_id: 56,
-        direction,
-        status: 'CONFIRMED',
+
+        token_contract: tx.contractAddress,
         token_symbol: symbol,
         token_name: tokenName,
-        token_contract: tx.contractAddress,
         token_decimals: decimals,
         token_logo_url: logoUrl,
+
+        direction,
+        counterparty_address:
+          direction === 'SEND' ? tx.to : direction === 'RECEIVE' ? tx.from : tx.to,
+
         amount_raw: tx.value,
         amount_formatted: formattedAmount,
-        from_address: tx.from,
-        to_address: tx.to,
-        block_number: parseInt(tx.blockNumber),
-        block_timestamp: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
-        gas_used: tx.gasUsed,
-        gas_price: tx.gasPrice,
-        gas_fee_native: gasFee,
-        nonce: parseInt(tx.nonce) || 0,
-        tx_index: parseInt(tx.transactionIndex) || 0,
-        indexed_at: new Date().toISOString(),
+
+        status: 'CONFIRMED',
+        confirmations: 0,
+        required_confirmations: 12,
+
+        block_number: parseInt(tx.blockNumber) || null,
+        tx_hash: tx.hash.toLowerCase(),
+        log_index: logIndex,
+
+        gas_fee_wei: gasFeeWei.toString(),
+        gas_fee_formatted: gasFeeNative,
+        nonce: parseInt(tx.nonce) || null,
+
+        source: 'ONCHAIN',
+        error_message: null,
+        confirmed_at: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
       });
     }
 
     // Upsert to database
-    const { error: upsertError, count } = await adminClient
+    const { error: upsertError } = await adminClient
       .from('onchain_transactions')
       .upsert(records, {
-        onConflict: 'user_id,tx_hash,chain',
+        onConflict: 'tx_hash,log_index,user_id,direction',
         ignoreDuplicates: false,
       });
 
