@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
@@ -36,6 +36,23 @@ export interface OnchainTransaction {
 export type DirectionFilter = 'all' | 'SEND' | 'RECEIVE';
 export type StatusFilter = 'all' | 'PENDING' | 'CONFIRMED' | 'FAILED';
 
+export interface IndexingStatus {
+  isIndexing: boolean;
+  lastIndexedAt: Date | null;
+  lastError: string | null;
+  lastResult: {
+    success: boolean;
+    indexed: number;
+    created: number;
+    skipped?: number;
+    provider?: string;
+    wallet?: string;
+    duration_ms?: number;
+    error?: string;
+    error_code?: string;
+  } | null;
+}
+
 interface UseOnchainTransactionHistoryOptions {
   direction?: DirectionFilter;
   status?: StatusFilter;
@@ -47,7 +64,15 @@ interface UseOnchainTransactionHistoryOptions {
 export function useOnchainTransactionHistory(options: UseOnchainTransactionHistoryOptions = {}) {
   const { user } = useAuthUser();
   const queryClient = useQueryClient();
-  const [isIndexing, setIsIndexing] = useState(false);
+  const [indexingStatus, setIndexingStatus] = useState<IndexingStatus>({
+    isIndexing: false,
+    lastIndexedAt: null,
+    lastError: null,
+    lastResult: null,
+  });
+  
+  const indexingRef = useRef(false);
+  const timeoutRef = useRef<number | null>(null);
   
   const { 
     direction = 'all', 
@@ -57,11 +82,13 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
     limit = 100 
   } = options;
 
-  // Fetch transactions from the new onchain_transactions table
+  // Fetch transactions from the onchain_transactions table
   const { data: transactions = [], isLoading, error, refetch } = useQuery({
     queryKey: ['onchain-transactions', user?.id, direction, status, tokenSymbol, searchHash, limit],
     queryFn: async () => {
       if (!user) return [];
+
+      console.log('[onchain-history] Fetching transactions from DB...');
 
       let query = supabase
         .from('onchain_transactions')
@@ -99,56 +126,136 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
       const { data, error } = await query;
       
       if (error) {
-        console.error('[useOnchainTransactionHistory] Query error:', error);
+        console.error('[onchain-history] Query error:', error);
         throw error;
       }
 
+      console.log(`[onchain-history] Loaded ${data?.length || 0} transactions from DB`);
       return (data || []) as OnchainTransaction[];
     },
     enabled: !!user,
     refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 10000, // Consider data fresh for 10 seconds
   });
 
-  // Index new transactions from blockchain
-  const indexTransactions = useCallback(async () => {
-    if (!user || isIndexing) return;
+  // Index new transactions from blockchain with timeout
+  const indexTransactions = useCallback(async (forceRefresh = false) => {
+    if (!user || indexingRef.current) {
+      console.log('[onchain-history] Skipping index: no user or already indexing');
+      return;
+    }
 
-    setIsIndexing(true);
+    indexingRef.current = true;
+    setIndexingStatus(prev => ({ ...prev, isIndexing: true, lastError: null }));
+
+    // Set timeout for 15 seconds max
+    const indexTimeout = setTimeout(() => {
+      console.warn('[onchain-history] Index timed out after 15 seconds');
+      indexingRef.current = false;
+      setIndexingStatus(prev => ({
+        ...prev,
+        isIndexing: false,
+        lastError: 'Request timed out. Please try again.',
+      }));
+    }, 15000);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         console.warn('[onchain-history] No session, skipping index');
+        clearTimeout(indexTimeout);
+        indexingRef.current = false;
+        setIndexingStatus(prev => ({ 
+          ...prev, 
+          isIndexing: false,
+          lastError: 'Not authenticated. Please log in again.',
+        }));
         return;
       }
 
-      console.log('[onchain-history] Indexing BEP-20 transactions...');
+      console.log('[onchain-history] Calling index-bep20-history edge function...');
+      const startTime = Date.now();
+      
       const { data, error } = await supabase.functions.invoke('index-bep20-history', {
-        body: { lookbackHours: 168 }, // 7 days
+        body: { lookbackHours: 168, forceRefresh },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
-      if (error) {
-        console.warn('[onchain-history] Index error:', error);
-      } else if (data?.created > 0) {
-        console.log(`[onchain-history] Indexed ${data.created} new transactions`);
-        await refetch();
-      }
-    } catch (err) {
-      console.warn('[onchain-history] Index failed:', err);
-    } finally {
-      setIsIndexing(false);
-    }
-  }, [user, isIndexing, refetch]);
+      clearTimeout(indexTimeout);
+      const duration = Date.now() - startTime;
+      console.log(`[onchain-history] Index response in ${duration}ms:`, data);
 
-  // Index on mount and periodically
+      if (error) {
+        console.error('[onchain-history] Index function error:', error);
+        setIndexingStatus(prev => ({
+          ...prev,
+          isIndexing: false,
+          lastError: error.message || 'Failed to sync blockchain data',
+          lastResult: null,
+        }));
+      } else if (data) {
+        const result = data as IndexingStatus['lastResult'];
+        
+        if (result?.success === false) {
+          console.warn('[onchain-history] Index returned error:', result.error);
+          setIndexingStatus(prev => ({
+            ...prev,
+            isIndexing: false,
+            lastIndexedAt: new Date(),
+            lastError: result.error || null,
+            lastResult: result,
+          }));
+        } else {
+          setIndexingStatus(prev => ({
+            ...prev,
+            isIndexing: false,
+            lastIndexedAt: new Date(),
+            lastError: null,
+            lastResult: result,
+          }));
+          
+          // Refetch transactions if new ones were created
+          if (result?.created && result.created > 0) {
+            console.log(`[onchain-history] Indexed ${result.created} new transactions, refetching...`);
+            await refetch();
+          }
+        }
+      }
+    } catch (err: any) {
+      clearTimeout(indexTimeout);
+      console.error('[onchain-history] Index failed:', err);
+      setIndexingStatus(prev => ({
+        ...prev,
+        isIndexing: false,
+        lastError: err.message || 'Network error. Please check your connection.',
+      }));
+    } finally {
+      indexingRef.current = false;
+    }
+  }, [user, refetch]);
+
+  // Index on mount (debounced)
   useEffect(() => {
     if (!user) return;
 
-    // Index immediately on mount
-    indexTransactions();
+    // Small delay to avoid multiple rapid calls
+    const timer = setTimeout(() => {
+      indexTransactions();
+    }, 500);
 
-    // Then every 60 seconds
-    const interval = setInterval(indexTransactions, 60000);
+    return () => clearTimeout(timer);
+  }, [user?.id]); // Only re-run if user changes
+
+  // Periodic indexing (every 60 seconds)
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      if (!indexingRef.current) {
+        indexTransactions();
+      }
+    }, 60000);
+
     return () => clearInterval(interval);
   }, [user, indexTransactions]);
 
@@ -156,6 +263,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
   useEffect(() => {
     if (!user) return;
 
+    console.log('[onchain-history] Setting up realtime subscription...');
     const channel = supabase
       .channel(`onchain-tx-${user.id}`)
       .on(
@@ -171,9 +279,12 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
           queryClient.invalidateQueries({ queryKey: ['onchain-transactions'] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[onchain-history] Realtime subscription status:', status);
+      });
 
     return () => {
+      console.log('[onchain-history] Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
   }, [user, queryClient]);
@@ -181,7 +292,7 @@ export function useOnchainTransactionHistory(options: UseOnchainTransactionHisto
   return {
     transactions,
     isLoading,
-    isIndexing,
+    indexingStatus,
     error,
     refetch,
     indexTransactions
