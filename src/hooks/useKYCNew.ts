@@ -247,13 +247,23 @@ export const useKYCNew = () => {
       console.error('[KYC] Error updating KYC level:', error);
       const errorDetail = error?.code ? ` (${error.code})` : '';
       const errorMsg = error?.message || 'Failed to update KYC';
-      toast({
-        title: "Update Failed",
-        description: errorMsg.includes('authenticated') 
-          ? "Please sign in to update your KYC" 
-          : `Failed to save your information. Please try again.${errorDetail}`,
-        variant: "destructive",
-      });
+      
+      // Check for phone uniqueness violation
+      if (errorMsg.includes('PHONE_ALREADY_USED')) {
+        toast({
+          title: "Phone Number Already Used",
+          description: "This mobile number is already registered for KYC. Please contact support.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Update Failed",
+          description: errorMsg.includes('authenticated') 
+            ? "Please sign in to update your KYC" 
+            : `Failed to save your information. Please try again.${errorDetail}`,
+          variant: "destructive",
+        });
+      }
       throw error;
     }
   };
