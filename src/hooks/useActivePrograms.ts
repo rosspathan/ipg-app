@@ -200,16 +200,6 @@ export function useActivePrograms() {
       order_index: 6
     },
     {
-      id: "loans",
-      key: "loans",
-      name: "Loans",
-      description: "0% interest",
-      icon: "TrendingUp",
-      route: "/app/programs/loans",
-      category: "finance",
-      order_index: 7
-    },
-    {
       id: "insurance",
       key: "insurance",
       name: "Insurance",

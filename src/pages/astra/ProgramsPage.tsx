@@ -89,20 +89,6 @@ const allPrograms = [
 
   // FINANCE  
   {
-    id: "bsk-loans",
-    title: "BSK Loans",
-    subtitle: "Borrow ₹100 to ₹50,000 with 0% interest for 16 weeks",
-    icon: <Coins className="h-6 w-6" />,
-    category: "finance" as CategoryFilter,
-    status: "available" as const,
-    metrics: [
-      { label: "Interest Rate", value: "0%", type: "percentage" as const },
-      { label: "Max Amount", value: "₹50,000", type: "currency" as const },
-      { label: "Repayment", value: "16 weeks", type: "count" as const }
-    ],
-    onPress: () => console.log("Navigate to loans")
-  },
-  {
     id: "insurance-plans",
     title: "Insurance Plans",
     subtitle: "Protect your assets with comprehensive insurance coverage",
