@@ -59,14 +59,6 @@ export function ProgramsPageRebuilt() {
       onPress: () => navigate("/app/programs/spin")
     },
     {
-      id: "loans",
-      title: "BSK Loans",
-      subtitle: "0% interest\n16 weeks term",
-      icon: <Coins className="h-6 w-6 text-success" />,
-      status: "available" as const,
-      onPress: () => navigate("/app/programs/loans")
-    },
-    {
       id: "insurance",
       title: "Insurance Plans",
       subtitle: "Protect assets\n3 plans available",

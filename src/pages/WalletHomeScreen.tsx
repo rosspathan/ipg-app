@@ -125,15 +125,6 @@ const WalletHomeScreen = () => {
           />
         </div>
 
-        {/* BSK Loan Card */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold text-foreground tracking-tight">BSK Loans</h3>
-          <BSKLoanCard 
-            variant="compact"
-            className="animate-fade-in-scale"
-            style={{ animationDelay: "280ms", animationFillMode: "both" }}
-          />
-        </div>
 
         {/* BSK Balances */}
         <div className="space-y-4">
