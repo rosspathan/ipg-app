@@ -14,7 +14,7 @@ import { BSKBalanceCard } from "@/components/BSKBalanceCard";
 import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import { AdCarousel } from "@/components/AdCarousel";
 import InsuranceCard from "@/components/InsuranceCard";
-import BSKLoanCard from "@/components/BSKLoanCard";
+
 import { Bell, Star, Zap, Activity, Users, Gift, Coins, TrendingUp, Gamepad2, Plus, MessageCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/utils/clipboard";
@@ -195,23 +195,6 @@ const AppHomeScreen = () => {
         {/* Balance Display - Now Connected to Real Data */}
         <BalanceDisplay onAddFunds={handleAddFunds} />
 
-        {/* Promotional Banner - 0% interest loan */}
-        <div 
-          onClick={() => navigate("/app-legacy/loans")}
-          className="relative rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 p-4 cursor-pointer hover:border-primary/50 overflow-hidden"
-        >
-          <div className="relative flex items-center justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground leading-snug">
-                0% interest for 16 weeks on amounts up to ₹50,000
-              </p>
-            </div>
-            <div className="shrink-0 px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30">
-              <span className="text-xs font-bold text-primary tracking-wide">Trading</span>
-            </div>
-          </div>
-        </div>
-
         {/* BSK Promotion Banner */}
         <BSKPromotionBanner />
 
@@ -221,14 +204,6 @@ const AppHomeScreen = () => {
           <InsuranceCard 
             variant="compact"
             className="border-2 border-primary/30"
-          />
-        </div>
-
-        {/* BSK Loan Card */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold text-foreground tracking-tight">BSK Loans</h3>
-          <BSKLoanCard 
-            variant="compact"
           />
         </div>
 

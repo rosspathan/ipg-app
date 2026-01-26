@@ -100,7 +100,7 @@ export function HomePageRebuilt() {
   }))
 
   const announcementItems = [
-    { id: "1", text: "BSK Loans: 0% interest for 16 weeks on amounts up to ₹50,000", type: "promotion" as const },
+    { id: "1", text: "🎉 Welcome to IPG i-SMART! Earn rewards daily through programs", type: "promotion" as const },
     { id: "2", text: "Trading competition starts Monday - Win up to ₹25,000 in prizes", type: "info" as const },
     { id: "3", text: "New insurance plans available with 24/7 claim support", type: "success" as const }
   ]
