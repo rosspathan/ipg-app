@@ -15,7 +15,6 @@ import BonusBalanceCard from "@/components/BonusBalanceCard";
 import { BSKBalanceCard } from "@/components/BSKBalanceCard";
 import { BSKPromotionBanner } from '@/components/BSKPromotionBanner';
 import InsuranceCard from "@/components/InsuranceCard";
-import BSKLoanCard from "@/components/BSKLoanCard";
 import { cn } from "@/lib/utils";
 
 const WalletHomeScreen = () => {

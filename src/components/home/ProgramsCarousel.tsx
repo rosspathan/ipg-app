@@ -5,8 +5,7 @@ import {
   Target, 
   Shield, 
   TrendingUp, 
-  Users, 
-  CreditCard, 
+  Users,
   Sparkles 
 } from "lucide-react"
 import { ProgramTile } from "@/components/ui/program-tile"
@@ -55,15 +54,6 @@ const programs = [
     icon: <Sparkles className="h-6 w-6" />,
     category: "finance" as const,
     route: "/app/programs/staking"
-  },
-  {
-    id: "loans",
-    title: "BSK Loans",
-    description: "Borrow BSK, 16-week terms",
-    icon: <CreditCard className="h-6 w-6" />,
-    category: "finance" as const,
-    route: "/app-legacy/loans",
-    badge: { type: "new" as const, text: "NEW" }
   },
   {
     id: "insurance",

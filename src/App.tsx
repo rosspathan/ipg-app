@@ -540,18 +540,18 @@ function AppContent() {
                 <Route path="programs/staking" element={<React.Suspense fallback={<LoadingFallback />}><StakingPage /></React.Suspense>} />
                 <Route path="programs/trading" element={<React.Suspense fallback={<LoadingFallback />}><TradingPageNew /></React.Suspense>} />
                 <Route path="programs/insurance" element={<React.Suspense fallback={<LoadingFallback />}><InsurancePage /></React.Suspense>} />
-                <Route path="programs/bsk-loans" element={<Navigate to="/app/loans" replace />} />
+                <Route path="programs/bsk-loans" element={<Navigate to="/app/programs" replace />} />
                 <Route path="programs/bsk-promotions" element={<React.Suspense fallback={<LoadingFallback />}><BSKPromotionsPage /></React.Suspense>} />
                 
                 {/* Legacy program routes */}
                 <Route path="programs/ads" element={<React.Suspense fallback={<LoadingFallback />}><AdvertisingPage /></React.Suspense>} />
                 <Route path="programs/referrals" element={<Navigate to="/app/programs/team-referrals" replace />} />
-                <Route path="programs/loans" element={<React.Suspense fallback={<LoadingFallback />}><LoansPageNew /></React.Suspense>} />
+                <Route path="programs/loans" element={<Navigate to="/app/programs" replace />} />
                 
-                {/* Loan Management Routes */}
-                <Route path="loans" element={<React.Suspense fallback={<LoadingFallback />}><BSKLoansScreen /></React.Suspense>} />
-                <Route path="loans/details" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/programs/LoanDetailsPage')))}</React.Suspense>} />
-                <Route path="loans/history" element={<React.Suspense fallback={<LoadingFallback />}><LoansHistoryPage /></React.Suspense>} />
+                {/* Loans are decommissioned (keep admin routes only) */}
+                <Route path="loans" element={<Navigate to="/app/programs" replace />} />
+                <Route path="loans/details" element={<Navigate to="/app/programs" replace />} />
+                <Route path="loans/history" element={<Navigate to="/app/programs" replace />} />
                 
                 <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<LoadingFallback />}><OneTimePurchasePage /></React.Suspense>} />
                 <Route path="programs/bsk-purchase-history" element={<React.Suspense fallback={<LoadingFallback />}><PurchaseHistoryPage /></React.Suspense>} />
