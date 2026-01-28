@@ -26,6 +26,13 @@ export function useActivePrograms() {
   const queryClient = useQueryClient();
   const offerStatus = useActivePurchaseOffersStatus();
   
+  const isLoanProgramModule = (module: any) => {
+    const key = String(module?.key || '').toLowerCase();
+    const name = String(module?.name || '').toLowerCase();
+    const route = String(module?.route || '').toLowerCase();
+    return key.includes('loan') || name.includes('loan') || route.includes('/loans');
+  };
+  
   const { data: programs, isLoading, error } = useQuery({
     queryKey: ['active-programs'],
     queryFn: async () => {
@@ -63,8 +70,11 @@ export function useActivePrograms() {
           configs?.map(config => [config.module_id, config.config_json]) || []
         );
 
+        // Hard-remove decommissioned loans from user-facing program lists
+        const safeModules = modules.filter((m) => !isLoanProgramModule(m));
+
         // Transform modules to UI format, using configs when available
-        const programList = modules.map(module => {
+        const programList = safeModules.map(module => {
           const config = configMap.get(module.id) as any || {};
           
           return {
