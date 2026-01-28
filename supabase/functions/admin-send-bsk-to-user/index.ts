@@ -56,19 +56,22 @@ Deno.serve(async (req) => {
     const { recipient_user_id, amount, balance_type, reason } = body;
 
     // Validation
-    if (!recipient_user_id || !amount || !balance_type || !reason) {
+    if (!recipient_user_id || amount === undefined || amount === null || !balance_type || !reason) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (amount <= 0) {
+    if (amount === 0) {
       return new Response(
-        JSON.stringify({ error: 'Amount must be positive' }),
+        JSON.stringify({ error: 'Amount cannot be zero' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const isDebit = amount < 0;
+    const absoluteAmount = Math.abs(amount);
 
     // Check recipient exists
     const { data: recipient, error: recipientError } = await supabaseClient
@@ -84,44 +87,63 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[admin-send-bsk] Admin ${user.id} sending ${amount} BSK (${balance_type}) to user ${recipient_user_id}`);
+    console.log(`[admin-send-bsk] Admin ${user.id} ${isDebit ? 'debiting' : 'crediting'} ${absoluteAmount} BSK (${balance_type}) ${isDebit ? 'from' : 'to'} user ${recipient_user_id}`);
+
+    // For debits, verify user has sufficient balance
+    if (isDebit) {
+      const { data: balanceData } = await supabaseClient
+        .rpc('get_user_bsk_balance', { target_user_id: recipient_user_id })
+        .single();
+      
+      const currentBalance = balance_type === 'withdrawable' 
+        ? balanceData?.withdrawable_balance || 0
+        : balanceData?.holding_balance || 0;
+      
+      if (currentBalance < absoluteAmount) {
+        return new Response(
+          JSON.stringify({ error: `Insufficient ${balance_type} balance. Current: ${currentBalance} BSK` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Generate idempotency key
-    const idempotencyKey = `admin_credit_${user.id}_${recipient_user_id}_${Date.now()}_${Math.random().toString(36)}`;
+    const idempotencyKey = `admin_${isDebit ? 'debit' : 'credit'}_${user.id}_${recipient_user_id}_${Date.now()}_${Math.random().toString(36)}`;
 
     console.log(`[admin-send-bsk] Idempotency key: ${idempotencyKey}`);
 
-    // ATOMIC TRANSACTION: Credit BSK using record_bsk_transaction()
+    // ATOMIC TRANSACTION: Credit/Debit BSK using record_bsk_transaction()
     try {
       const { data: creditResult, error: creditError } = await supabaseClient.rpc(
         'record_bsk_transaction',
         {
           p_user_id: recipient_user_id,
           p_idempotency_key: idempotencyKey,
-          p_tx_type: 'credit',
-          p_tx_subtype: 'admin_credit',
+          p_tx_type: isDebit ? 'debit' : 'credit',
+          p_tx_subtype: isDebit ? 'admin_debit' : 'admin_credit',
           p_balance_type: balance_type,
-          p_amount_bsk: amount,
+          p_amount_bsk: absoluteAmount,
           p_notes: reason,
           p_meta_json: {
             admin_user_id: user.id,
             reason: reason,
             recipient_display_name: recipient.display_name,
+            operation: isDebit ? 'debit' : 'credit',
             timestamp: new Date().toISOString(),
           },
         }
       );
 
       if (creditError) {
-        console.error('[admin-send-bsk] Credit error:', creditError);
-        throw new Error(creditError.message || 'Failed to credit BSK');
+        console.error('[admin-send-bsk] Transaction error:', creditError);
+        throw new Error(creditError.message || `Failed to ${isDebit ? 'debit' : 'credit'} BSK`);
       }
 
       if (!creditResult) {
-        throw new Error('Failed to credit BSK');
+        throw new Error(`Failed to ${isDebit ? 'debit' : 'credit'} BSK`);
       }
 
-      console.log(`[admin-send-bsk] ✅ Atomically credited ${amount} BSK (tx: ${creditResult})`);
+      console.log(`[admin-send-bsk] ✅ Atomically ${isDebit ? 'debited' : 'credited'} ${absoluteAmount} BSK (tx: ${creditResult})`);
 
       // Get updated balance for the recipient
       const { data: balanceData } = await supabaseClient
@@ -137,12 +159,12 @@ Deno.serve(async (req) => {
         .from('audit_logs')
         .insert({
           user_id: user.id,
-          action: 'admin_bsk_transfer',
-          resource_type: 'bsk_transfer',
+          action: isDebit ? 'admin_bsk_debit' : 'admin_bsk_credit',
+          resource_type: 'bsk_balance',
           resource_id: recipient_user_id,
           new_values: {
             recipient_user_id,
-            amount,
+            amount: isDebit ? -absoluteAmount : absoluteAmount,
             balance_type,
             reason,
             transaction_id: creditResult,
@@ -150,16 +172,17 @@ Deno.serve(async (req) => {
           }
         });
 
-      console.log(`[admin-send-bsk] ✅ Successfully credited ${amount} BSK to user ${recipient_user_id}`);
+      console.log(`[admin-send-bsk] ✅ Successfully ${isDebit ? 'debited' : 'credited'} ${absoluteAmount} BSK ${isDebit ? 'from' : 'to'} user ${recipient_user_id}`);
 
       return new Response(
         JSON.stringify({
           success: true,
           transaction_id: creditResult,
           recipient_user_id,
-          amount,
+          amount: isDebit ? -absoluteAmount : absoluteAmount,
           balance_type,
           new_balance: newBalance,
+          operation: isDebit ? 'debit' : 'credit',
           timestamp: new Date().toISOString(),
           idempotency_key: idempotencyKey,
         }),
