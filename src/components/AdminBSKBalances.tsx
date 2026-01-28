@@ -152,11 +152,8 @@ const AdminBSKBalances = ({ balanceType }: AdminBSKBalancesProps) => {
         ? selectedUser.withdrawable_balance 
         : selectedUser.holding_balance;
       
-      const newBalance = type === 'add' 
-        ? currentBalance + amount 
-        : currentBalance - amount;
-
-      if (newBalance < 0) {
+      // For subtract, check if balance will go negative
+      if (type === 'subtract' && currentBalance < amount) {
         toast({
           title: "Error",
           description: "Balance cannot be negative",
@@ -165,43 +162,36 @@ const AdminBSKBalances = ({ balanceType }: AdminBSKBalancesProps) => {
         return;
       }
 
-      const updateField = balanceType === 'withdrawable' 
-        ? 'withdrawable_balance' 
-        : 'holding_balance';
-
-      const { error } = await supabase
-        .from('user_bsk_balances')
-        .update({ [updateField]: newBalance })
-        .eq('user_id', selectedUser.user_id);
+      // Use the edge function to properly record in unified ledger
+      const { data, error } = await supabase.functions.invoke('admin-send-bsk-to-user', {
+        body: {
+          recipient_user_id: selectedUser.user_id,
+          amount: type === 'add' ? amount : -amount, // Negative for deduction
+          balance_type: balanceType,
+          reason: adjustNote || `Admin ${type === 'add' ? 'credit' : 'debit'} - ${balanceType} balance`,
+        }
+      });
 
       if (error) throw error;
-
-      // Log the adjustment
-      await supabase.rpc('log_admin_action', {
-        p_action: `bsk_${balanceType}_${type}`,
-        p_resource_type: 'user_bsk_balances',
-        p_resource_id: selectedUser.id,
-        p_new_values: {
-          amount,
-          note: adjustNote,
-          new_balance: newBalance
-        },
-      });
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "Success",
-        description: `BSK ${balanceType} balance adjusted successfully`,
+        description: `BSK ${balanceType} balance ${type === 'add' ? 'credited' : 'debited'} successfully`,
       });
 
       setSelectedUser(null);
       setAdjustAmount('');
       setAdjustNote('');
       loadBalances();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adjusting balance:', error);
       toast({
         title: "Error",
-        description: "Failed to adjust balance",
+        description: error.message || "Failed to adjust balance",
         variant: "destructive",
       });
     }
