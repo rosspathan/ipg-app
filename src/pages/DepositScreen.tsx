@@ -12,7 +12,6 @@ import { useCatalog } from "@/hooks/useCatalog";
 import { useDepositTracking } from "@/hooks/useDepositTracking";
 import AssetLogo from "@/components/AssetLogo";
 import QRCode from "qrcode";
-import INRDepositScreen from "./INRDepositScreen";
 import { copyToClipboard } from "@/utils/clipboard";
 import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress";
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill";
@@ -300,14 +299,8 @@ const DepositScreen = () => {
           </Button>
         </motion.div>
 
-        {/* Tabs for Crypto and INR */}
-        <Tabs defaultValue="crypto" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="crypto">Crypto</TabsTrigger>
-            <TabsTrigger value="inr">INR (Bank/UPI)</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="crypto" className="space-y-6">
+        {/* Crypto Deposit */}
+        <div className="space-y-6">
 
         {/* Asset Selection */}
         <Card className="bg-gradient-card shadow-card border-0">
@@ -564,12 +557,7 @@ const DepositScreen = () => {
             </p>
           </CardContent>
         </Card>
-          </TabsContent>
-
-          <TabsContent value="inr">
-            <INRDepositScreen />
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
     </div>
   );

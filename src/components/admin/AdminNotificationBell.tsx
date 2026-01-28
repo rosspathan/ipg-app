@@ -15,41 +15,21 @@ import { format } from 'date-fns';
 export const AdminNotificationBell = () => {
   const [notificationCount, setNotificationCount] = useState(0);
 
-  const { data: pendingTransactions, refetch } = useQuery({
-    queryKey: ['pending-transactions-count'],
+  const { data: pendingItems, refetch } = useQuery({
+    queryKey: ['admin-pending-items'],
     queryFn: async () => {
-      const { data: stats } = await supabase.rpc('get_transaction_stats');
-      if (!stats) return null;
-      
-      const total = (stats as any).pending_deposits_count + (stats as any).pending_withdrawals_count;
-      setNotificationCount(total);
-      
-      // Fetch recent pending items for display
-      const { data: deposits } = await supabase
-        .from('fiat_deposits')
-        .select('id, amount, created_at, user_id')
-        .eq('status', 'pending')
+      // Fetch unread admin notifications
+      const { data: notifications, count: notifCount } = await supabase
+        .from('admin_notifications')
+        .select('id, title, message, created_at, type', { count: 'exact' })
+        .eq('is_read', false)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
 
-      const { data: cryptoToInr } = await supabase
-        .from('crypto_to_inr_requests')
-        .select('id, net_inr_credit, created_at, user_id')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      const { data: withdrawals } = await supabase
-        .from('fiat_withdrawals')
-        .select('id, amount, created_at, user_id')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      setNotificationCount(notifCount || 0);
 
       return {
-        deposits: deposits || [],
-        cryptoToInr: cryptoToInr || [],
-        withdrawals: withdrawals || [],
+        notifications: notifications || [],
       };
     },
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -61,14 +41,6 @@ export const AdminNotificationBell = () => {
       Notification.requestPermission();
     }
   }, []);
-
-  // Show desktop notification for new transactions
-  useEffect(() => {
-    if (notificationCount > 0 && 'Notification' in window && Notification.permission === 'granted') {
-      // This would need more sophisticated logic to only notify on NEW transactions
-      // For now, it's just a placeholder
-    }
-  }, [notificationCount]);
 
   return (
     <Popover>
@@ -87,62 +59,26 @@ export const AdminNotificationBell = () => {
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-3">
-          <h4 className="font-semibold text-sm">Pending Approvals</h4>
+          <h4 className="font-semibold text-sm">Notifications</h4>
           
           {notificationCount === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No pending transactions
+              No new notifications
             </p>
           ) : (
             <ScrollArea className="h-[300px]">
               <div className="space-y-2">
-                {/* INR Deposits */}
-                {pendingTransactions?.deposits.map((deposit) => (
+                {pendingItems?.notifications.map((notif) => (
                   <div 
-                    key={`deposit-${deposit.id}`}
+                    key={`notif-${notif.id}`}
                     className="p-3 rounded-lg bg-accent/50 hover:bg-accent cursor-pointer transition-colors"
-                    onClick={() => window.location.href = '/app/admin/funding#inr-deposits'}
                   >
-                    <p className="text-sm font-medium">New INR Deposit</p>
-                    <p className="text-xs text-muted-foreground">
-                      ₹{deposit.amount.toLocaleString()}
+                    <p className="text-sm font-medium">{notif.title}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {notif.message}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(deposit.created_at), 'MMM dd, HH:mm')}
-                    </p>
-                  </div>
-                ))}
-
-                {/* Crypto to INR */}
-                {pendingTransactions?.cryptoToInr.map((request) => (
-                  <div 
-                    key={`crypto-inr-${request.id}`}
-                    className="p-3 rounded-lg bg-accent/50 hover:bg-accent cursor-pointer transition-colors"
-                    onClick={() => window.location.href = '/app/admin/funding#crypto-inr'}
-                  >
-                    <p className="text-sm font-medium">Crypto→INR Deposit</p>
-                    <p className="text-xs text-muted-foreground">
-                      ₹{request.net_inr_credit.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(request.created_at), 'MMM dd, HH:mm')}
-                    </p>
-                  </div>
-                ))}
-
-                {/* Withdrawals */}
-                {pendingTransactions?.withdrawals.map((withdrawal) => (
-                  <div 
-                    key={`withdrawal-${withdrawal.id}`}
-                    className="p-3 rounded-lg bg-accent/50 hover:bg-accent cursor-pointer transition-colors"
-                    onClick={() => window.location.href = '/app/admin/funding#inr-withdrawals'}
-                  >
-                    <p className="text-sm font-medium">INR Withdrawal</p>
-                    <p className="text-xs text-muted-foreground">
-                      ₹{withdrawal.amount.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(withdrawal.created_at), 'MMM dd, HH:mm')}
+                      {format(new Date(notif.created_at!), 'MMM dd, HH:mm')}
                     </p>
                   </div>
                 ))}
