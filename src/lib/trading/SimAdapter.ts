@@ -11,7 +11,8 @@ export class SimAdapter extends ExchangeAdapter {
     
     // Initialize mock balances
     this.balances.set("BSK", { asset: "BSK", available: 1000, locked: 0 });
-    this.balances.set("INR", { asset: "INR", available: 100000, locked: 0 });
+    this.balances.set("USDT", { asset: "USDT", available: 10000, locked: 0 });
+    this.balances.set("USDI", { asset: "USDI", available: 10000, locked: 0 });
     this.balances.set("BTC", { asset: "BTC", available: 0.5, locked: 0 });
     this.balances.set("ETH", { asset: "ETH", available: 5, locked: 0 });
   }
@@ -75,15 +76,16 @@ export class SimAdapter extends ExchangeAdapter {
   }
 
   private getMockPrice(pair: string): number {
-    // Mock prices for common pairs
+    // Mock prices for common pairs (all in USD)
     const prices: Record<string, number> = {
-      "BTC/INR": 3625000,
-      "ETH/INR": 222500,
-      "BSK/INR": 12.45,
+      "BSK/USDT": 0.012,
+      "BSK/USDI": 0.012,
+      "USDI/USDT": 1,
       "BTC/USDT": 43250,
-      "ETH/USDT": 2650
+      "ETH/USDT": 2650,
+      "BNB/USDT": 315
     };
-    return prices[pair] || 100;
+    return prices[pair] || 1;
   }
 
   private updateBalancesAfterFill(order: OrderRequest, response: OrderResponse): void {

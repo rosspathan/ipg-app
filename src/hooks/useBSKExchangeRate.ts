@@ -1,24 +1,30 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+
+// BSK rate: 1 BSK = $0.012 USD
+const BSK_USD_RATE = 0.012;
 
 export const useBSKExchangeRate = () => {
   return useQuery({
     queryKey: ['bsk-exchange-rate'],
     queryFn: async () => {
-      // Default rate: 1 INR per BSK
-      // In production, fetch from your price feed
-      return 1;
+      // Fixed rate: 1 BSK = $0.012 USD
+      return BSK_USD_RATE;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
   });
 };
 
-export const formatBSKtoINR = (bskAmount: number, rate: number) => {
-  const inrAmount = bskAmount * rate;
-  return new Intl.NumberFormat('en-IN', {
+export const formatBSKtoUSD = (bskAmount: number, rate: number = BSK_USD_RATE) => {
+  const usdAmount = bskAmount * rate;
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(inrAmount);
+    currency: 'USD',
+    maximumFractionDigits: 2,
+  }).format(usdAmount);
 };
+
+// Legacy function name for compatibility - now returns USD
+export const formatBSKtoINR = formatBSKtoUSD;
+
+export const BSK_RATE = BSK_USD_RATE;

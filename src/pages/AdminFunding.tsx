@@ -1,13 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import AdminINRAccounts from "@/components/AdminINRAccounts";
-import AdminINRDeposits from "@/components/AdminINRDeposits";
-import AdminINRWithdrawals from "@/components/AdminINRWithdrawals";
 import AdminCryptoControls from "@/components/AdminCryptoControls";
 import AdminBSKBalances from "@/components/AdminBSKBalances";
-import AdminINRSettings from "@/components/AdminINRSettings";
 import { AdminBSKRelease } from "@/components/admin/AdminBSKRelease";
-import AdminCryptoINRDeposits from "@/components/admin/AdminCryptoINRDeposits";
 import AdminDepositFeeManager from "@/components/admin/AdminDepositFeeManager";
 import { AdminTransactionDashboard } from "@/components/admin/AdminTransactionDashboard";
 import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
@@ -25,14 +20,7 @@ const AdminFunding = () => {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => navigate('/debug/funding')}
-          >
-            🔍 Debug Funding
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate('/app/deposit/inr')}
+            onClick={() => navigate('/app/wallet/deposit')}
           >
             👁️ User View
           </Button>
@@ -40,13 +28,8 @@ const AdminFunding = () => {
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="w-full grid grid-cols-3 md:grid-cols-11 gap-1 h-auto">
+        <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 gap-1 h-auto">
           <TabsTrigger value="dashboard" className="text-xs md:text-sm py-2">Dashboard</TabsTrigger>
-          <TabsTrigger value="inr-settings" className="text-xs md:text-sm py-2">Settings</TabsTrigger>
-          <TabsTrigger value="inr-accounts" className="text-xs md:text-sm py-2">INR Accounts</TabsTrigger>
-          <TabsTrigger value="inr-deposits" id="inr-deposits" className="text-xs md:text-sm py-2">INR Deposits</TabsTrigger>
-          <TabsTrigger value="inr-withdrawals" id="inr-withdrawals" className="text-xs md:text-sm py-2">INR Withdrawals</TabsTrigger>
-          <TabsTrigger value="crypto-inr" id="crypto-inr" className="text-xs md:text-sm py-2">Crypto→INR</TabsTrigger>
           <TabsTrigger value="deposit-fees" className="text-xs md:text-sm py-2">Deposit Fees</TabsTrigger>
           <TabsTrigger value="crypto" className="text-xs md:text-sm py-2">Crypto Controls</TabsTrigger>
           <TabsTrigger value="bsk-withdrawable" className="text-xs md:text-sm py-2">BSK Withdrawable</TabsTrigger>
@@ -56,26 +39,6 @@ const AdminFunding = () => {
 
         <TabsContent value="dashboard">
           <AdminTransactionDashboard />
-        </TabsContent>
-
-        <TabsContent value="inr-settings" className="mt-4">
-          <AdminINRSettings />
-        </TabsContent>
-
-        <TabsContent value="inr-accounts" className="mt-4">
-          <AdminINRAccounts />
-        </TabsContent>
-
-        <TabsContent value="inr-deposits" className="mt-4">
-          <AdminINRDeposits />
-        </TabsContent>
-
-        <TabsContent value="inr-withdrawals" className="mt-4">
-          <AdminINRWithdrawals />
-        </TabsContent>
-
-        <TabsContent value="crypto-inr" className="mt-4">
-          <AdminCryptoINRDeposits />
         </TabsContent>
 
         <TabsContent value="deposit-fees" className="mt-4">

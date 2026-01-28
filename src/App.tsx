@@ -192,8 +192,6 @@ import BSKLoansScreen from "./pages/BSKLoansScreen";
 import FileClaimScreen from "./pages/FileClaimScreen";
 import HistoryScreen from "./pages/HistoryScreen";
 import GamificationScreen from "./pages/GamificationScreen";
-import INRDepositScreen from "./pages/INRDepositScreen";
-import INRWithdrawScreen from "./pages/INRWithdrawScreen";
 import ProfileScreen from "./pages/ProfileScreen";
 
 // New Program Pages (All wrapped with ProgramAccessGate)
@@ -238,7 +236,6 @@ import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
 import { AdminTradingFeesSimple } from "./components/AdminTradingFeesSimple";
 import AdminPurchaseBonusScreen from "./pages/AdminPurchaseBonusScreen";
-import AdminINRFundingScreen from "./pages/AdminINRFundingScreen";
 import AdminCredentialsTest from "./pages/AdminCredentialsTest";
 import AdminSystemScreen from "./pages/AdminSystemScreen";
 import CurrencyControlCenter from "./pages/admin/CurrencyControlCenter";
@@ -258,8 +255,7 @@ import { AdminNotificationsScreen } from "@/pages/AdminNotificationsScreen";
 import { NotificationsScreen } from "@/pages/NotificationsScreen";
 import NotFound from "@/pages/NotFound";
 import RemovedPage from "@/pages/RemovedPage";
-import DebugFunding from "@/pages/DebugFunding";
-import SpinVerifyScreen from "@/pages/SpinVerifyScreen"; 
+import SpinVerifyScreen from "@/pages/SpinVerifyScreen";
 import BSKVestingScreen from "@/pages/BSKVestingScreen";
 import { BSKWalletPage } from "@/pages/astra/BSKWalletPage";
 import { WalletPage } from "@/pages/astra/WalletPage";
@@ -659,7 +655,6 @@ function AppContent() {
                 <Route path="missing-referrals" element={<MissingReferralsManager />} />
                 <Route path="referral-debugger" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/ReferralDebugger')))}</React.Suspense>} />
                 <Route path="funding" element={<AdminFunding />} />
-                <Route path="funding/inr" element={<AdminINRFundingScreen />} />
                 <Route path="currency" element={<CurrencyControlCenter />} />
                 <Route path="transactions" element={<TransactionControlCenter />} />
                 <Route path="users/financial" element={<UserFinancialManagement />} />
@@ -706,7 +701,6 @@ function AppContent() {
 
               {/* Utility Routes */}
               <Route path="/reset-password" element={<ResetPasswordScreen />} />
-              <Route path="/debug/funding" element={<DebugFunding />} />
               <Route path="/debug/admin-test" element={<AdminCredentialsTest />} />
 
 
