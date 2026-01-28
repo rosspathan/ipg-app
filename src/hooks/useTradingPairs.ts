@@ -61,6 +61,9 @@ export function useTradingPairs(type?: 'listed' | 'all') {
         }
       });
 
+      // Priority pairs to show at the top
+      const priorityPairs = ['BSK/USDT', 'BSK/USDI', 'USDI/USDT'];
+      
       // Transform to trading pairs with real market data
       // Use ONLY market_prices for consistency across all users
       const pairs: TradingPair[] = (markets || []).map((market: any) => {
@@ -96,6 +99,23 @@ export function useTradingPairs(type?: 'listed' | 'all') {
           high24h: high24h,
           low24h: low24h,
         };
+      });
+
+      // Sort pairs: priority pairs first (in order), then the rest
+      pairs.sort((a, b) => {
+        const aIndex = priorityPairs.indexOf(a.symbol);
+        const bIndex = priorityPairs.indexOf(b.symbol);
+        
+        // Both are priority pairs - sort by priority order
+        if (aIndex !== -1 && bIndex !== -1) {
+          return aIndex - bIndex;
+        }
+        // Only a is priority - a comes first
+        if (aIndex !== -1) return -1;
+        // Only b is priority - b comes first
+        if (bIndex !== -1) return 1;
+        // Neither is priority - keep original order
+        return 0;
       });
 
       return pairs;
