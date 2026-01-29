@@ -1,16 +1,19 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { Calendar, ChevronRight, Landmark } from "lucide-react";
+import { Calendar, ChevronRight, Landmark, FileCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AstraCard } from "@/components/astra/AstraCard";
 import { LoanStatusPill } from "@/components/loans/LoanStatusPill";
+import { LoanForeclosureDialog } from "@/components/loans/LoanForeclosureDialog";
 import { ProgramPageTemplate } from "@/components/programs-pro/ProgramPageTemplate";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useLoansOverview } from "@/hooks/useLoansOverview";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 function dueLabel(dueDate: string) {
@@ -22,6 +25,9 @@ function dueLabel(dueDate: string) {
 
 export default function LoansOverviewPage() {
   const { user } = useAuthUser();
+  const queryClient = useQueryClient();
+  const [foreclosureOpen, setForeclosureOpen] = useState(false);
+  
   const {
     activeLoan,
     loanHistory,
@@ -31,11 +37,32 @@ export default function LoansOverviewPage() {
     isInstallmentsLoading,
   } = useLoansOverview(user?.id);
 
+  // Fetch user's BSK balance for foreclosure dialog
+  const { data: userBalance } = useQuery({
+    queryKey: ["bsk-balance-for-foreclosure", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { data } = await supabase
+        .from("user_bsk_balances")
+        .select("withdrawable_balance")
+        .eq("user_id", user.id)
+        .single();
+      return Number(data?.withdrawable_balance) || 0;
+    },
+    enabled: !!user?.id,
+  });
+
   const progressPct = useMemo(() => {
     const paid = activeLoan?.paid_bsk ?? 0;
     const total = (activeLoan as any)?.total_due_bsk ?? 0;
     if (!activeLoan || !total) return 0;
     return Math.max(0, Math.min(100, (paid / total) * 100));
+  }, [activeLoan]);
+
+  // Calculate outstanding for foreclosure
+  const outstandingBsk = useMemo(() => {
+    if (!activeLoan) return 0;
+    return Number((activeLoan as any)?.outstanding_bsk) || 0;
   }, [activeLoan]);
 
   return (
@@ -125,6 +152,32 @@ export default function LoansOverviewPage() {
                 </div>
               </div>
 
+              {/* SETTLE LOAN BUTTON - Prominent CTA */}
+              {outstandingBsk > 0 && (
+                <div className="rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Outstanding Balance</p>
+                      <p className="text-lg font-bold text-foreground">{outstandingBsk.toFixed(2)} BSK</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">2% discount</p>
+                      <p className="text-xs text-muted-foreground">on early settlement</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setForeclosureOpen(true)}
+                    className="w-full h-12 gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold shadow-lg"
+                  >
+                    <FileCheck className="w-5 h-5" />
+                    Settle Loan (Foreclose)
+                  </Button>
+                  <p className="text-[10px] text-center text-muted-foreground">
+                    Pay off your entire loan now and close it immediately
+                  </p>
+                </div>
+              )}
+
               {/* Upcoming EMIs */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -196,6 +249,26 @@ export default function LoansOverviewPage() {
           )}
         </AstraCard>
       </div>
+
+      {/* Foreclosure Dialog */}
+      {activeLoan && (
+        <LoanForeclosureDialog
+          open={foreclosureOpen}
+          onOpenChange={setForeclosureOpen}
+          loan={{
+            id: activeLoan.id,
+            loan_number: activeLoan.loan_number ?? activeLoan.id.slice(0, 8),
+            outstanding_bsk: outstandingBsk,
+            principal_bsk: Number(activeLoan.principal_bsk) || 0,
+            paid_bsk: Number(activeLoan.paid_bsk) || 0,
+          }}
+          userBalance={userBalance || 0}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["loans-overview"] });
+            queryClient.invalidateQueries({ queryKey: ["bsk-balance-for-foreclosure"] });
+          }}
+        />
+      )}
     </ProgramPageTemplate>
   );
 }
