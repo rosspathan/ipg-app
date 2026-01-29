@@ -1,7 +1,7 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
-import { useNavigation } from "@/hooks/useNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,7 @@ import {
   CreditCard,
   TrendingDown
 } from "lucide-react";
-import { format, formatDistanceToNow, differenceInDays } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface LoanInstallment {
@@ -45,7 +45,7 @@ interface ActiveLoan {
 
 export function UserLoanSummary() {
   const { user } = useAuthUser();
-  const { navigate } = useNavigation();
+  const [showFullHistory, setShowFullHistory] = useState(false);
 
   // Fetch active loans for the user
   const { data: loans, isLoading } = useQuery({
@@ -93,7 +93,7 @@ export function UserLoanSummary() {
       
       const { data, error } = await supabase
         .from("bsk_loans")
-        .select("id, status, principal_bsk, paid_bsk")
+        .select("id, loan_number, status, principal_bsk, paid_bsk, applied_at")
         .eq("user_id", user.id)
         .order("applied_at", { ascending: false });
 
@@ -159,7 +159,7 @@ export function UserLoanSummary() {
   const totalLoans = loanHistory.length;
   const completedLoans = loanHistory.filter(l => l.status === 'completed').length;
   const totalBorrowed = loanHistory.reduce((sum, l) => sum + (l.principal_bsk || 0), 0);
-  const totalPaid = loanHistory.reduce((sum, l) => sum + (l.paid_bsk || 0), 0);
+  const historyToShow = showFullHistory ? loanHistory : loanHistory.slice(0, 3);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -199,11 +199,11 @@ export function UserLoanSummary() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/app/loans")}
+            onClick={() => setShowFullHistory((v) => !v)}
             className="text-primary text-xs h-7 px-2"
           >
-            View All
-            <ChevronRight className="w-3 h-3 ml-1" />
+            {showFullHistory ? "Show Less" : "View All"}
+            <ChevronRight className={cn("w-3 h-3 ml-1 transition-transform", showFullHistory && "rotate-90")} />
           </Button>
         </div>
       </CardHeader>
@@ -213,7 +213,7 @@ export function UserLoanSummary() {
         {activeLoan ? (
           <div 
             className="space-y-3 cursor-pointer"
-            onClick={() => navigate("/app/loans")}
+            onClick={() => setShowFullHistory(true)}
           >
             {/* Loan Info Row */}
             <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border/40">
@@ -321,17 +321,55 @@ export function UserLoanSummary() {
           </div>
         </div>
 
-        {/* View History Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full rounded-lg text-xs h-8"
-          onClick={() => navigate("/app/loans/history")}
-        >
-          <Landmark className="w-3 h-3 mr-1" />
-          View Loan History
-          <ChevronRight className="w-3 h-3 ml-auto" />
-        </Button>
+        {/* Loan History (inside the tile) */}
+        <div className="pt-2 border-t border-border/30">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground">Loan History</p>
+            {loanHistory.length > 3 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-primary"
+                onClick={() => setShowFullHistory((v) => !v)}
+              >
+                {showFullHistory ? "Show Less" : "View All"}
+                <ChevronRight className={cn("w-3 h-3 ml-1 transition-transform", showFullHistory && "rotate-90")} />
+              </Button>
+            )}
+          </div>
+          <div className="space-y-2">
+            {historyToShow.map((loan: any) => (
+              <div
+                key={loan.id}
+                className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40"
+              >
+                <div className="min-w-0">
+                  <p className="text-xs font-medium truncate">
+                    #{loan.loan_number || String(loan.id).substring(0, 8)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {(loan.principal_bsk || 0).toFixed(0)} BSK
+                    {loan.applied_at ? ` • ${format(new Date(loan.applied_at), "dd MMM yyyy")}` : ""}
+                  </p>
+                </div>
+                {getStatusBadge(loan.status)}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {loanHistory.length > 3 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full rounded-lg text-xs h-8"
+            onClick={() => setShowFullHistory((v) => !v)}
+          >
+            <Landmark className="w-3 h-3 mr-1" />
+            {showFullHistory ? "Hide Loan History" : "View Full Loan History"}
+            <ChevronRight className={cn("w-3 h-3 ml-auto transition-transform", showFullHistory && "rotate-90")} />
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
