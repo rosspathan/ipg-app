@@ -1,0 +1,188 @@
+import { useMemo } from "react";
+import { format, differenceInDays } from "date-fns";
+import { Calendar, ChevronRight, Landmark } from "lucide-react";
+import { Link } from "react-router-dom";
+
+import { AstraCard } from "@/components/astra/AstraCard";
+import { LoanStatusPill } from "@/components/loans/LoanStatusPill";
+import { ProgramPageTemplate } from "@/components/programs-pro/ProgramPageTemplate";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuthUser } from "@/hooks/useAuthUser";
+import { useLoansOverview } from "@/hooks/useLoansOverview";
+import { cn } from "@/lib/utils";
+
+function dueLabel(dueDate: string) {
+  const days = differenceInDays(new Date(dueDate), new Date());
+  if (days < 0) return `${Math.abs(days)}d overdue`;
+  if (days === 0) return "Due today";
+  return `Due in ${days}d`;
+}
+
+export default function LoansOverviewPage() {
+  const { user } = useAuthUser();
+  const {
+    activeLoan,
+    loanHistory,
+    dueInstallments,
+    nextInstallment,
+    isLoading,
+    isInstallmentsLoading,
+  } = useLoansOverview(user?.id);
+
+  const progressPct = useMemo(() => {
+    const paid = activeLoan?.paid_bsk ?? 0;
+    const total = (activeLoan as any)?.total_due_bsk ?? 0;
+    if (!activeLoan || !total) return 0;
+    return Math.max(0, Math.min(100, (paid / total) * 100));
+  }, [activeLoan]);
+
+  return (
+    <ProgramPageTemplate title="Loans" subtitle="Your EMIs, progress and history">
+      <div className="space-y-6 pb-24" data-testid="loans-overview-page">
+        <AstraCard variant="elevated" size="md" className="p-4">
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ) : !user?.id ? (
+            <p className="text-sm text-muted-foreground">Please sign in to view your loans.</p>
+          ) : !activeLoan ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
+                  <Landmark className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-[var(--font-heading)] font-bold text-foreground">No active loan</p>
+                  <p className="text-xs text-muted-foreground">If you already have a loan, it will appear here.</p>
+                </div>
+              </div>
+
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/app/programs">Back to Programs</Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Active loan</p>
+                  <p className="text-base font-semibold text-foreground truncate">
+                    #{activeLoan.loan_number ?? activeLoan.id.slice(0, 8)}
+                  </p>
+                  {nextInstallment ? (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Next EMI {(nextInstallment.total_due_bsk ?? 0).toFixed(0)} BSK •{" "}
+                      {format(new Date(nextInstallment.due_date), "dd MMM yyyy")} ({dueLabel(nextInstallment.due_date)})
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">No upcoming dues.</p>
+                  )}
+                </div>
+                <LoanStatusPill status={activeLoan.status} />
+              </div>
+
+              {/* Progress */}
+              <div className="rounded-xl bg-card border border-border/50 p-3 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Repayment progress</span>
+                  <span className="font-medium text-foreground tabular-nums">{Math.round(progressPct)}%</span>
+                </div>
+                <Progress value={progressPct} className="h-2" />
+              </div>
+
+              {/* Quick stats */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-card border border-border/50 p-3">
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> Next EMI
+                  </p>
+                  <p className="text-sm font-bold text-foreground tabular-nums">
+                    {(nextInstallment?.total_due_bsk ?? 0).toFixed(0)} BSK
+                  </p>
+                </div>
+                <div className="rounded-xl bg-card border border-border/50 p-3">
+                  <p className="text-[10px] text-muted-foreground">Loan history</p>
+                  <p className="text-sm font-bold text-foreground tabular-nums">{loanHistory.length}</p>
+                </div>
+              </div>
+
+              {/* Upcoming EMIs */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">Upcoming EMIs</p>
+                  {isInstallmentsLoading ? (
+                    <span className="text-[10px] text-muted-foreground">Loading…</span>
+                  ) : null}
+                </div>
+
+                {dueInstallments.slice(0, 8).map((inst) => (
+                  <div
+                    key={inst.id}
+                    className="flex items-center justify-between rounded-xl bg-muted/30 border border-border/40 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-foreground">EMI {inst.installment_number ?? "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {format(new Date(inst.due_date), "dd MMM yyyy")} • {dueLabel(inst.due_date)}
+                      </p>
+                    </div>
+                    <p className="text-xs font-semibold text-foreground tabular-nums">
+                      {(inst.total_due_bsk ?? 0).toFixed(0)}
+                    </p>
+                  </div>
+                ))}
+
+                {dueInstallments.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No upcoming dues.</p>
+                ) : null}
+              </div>
+
+              {/* Recent loans */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">Recent loans</p>
+                  <Button asChild variant="ghost" size="sm" className="h-7 px-2">
+                    <Link to="/app/loans/history" className="flex items-center gap-1">
+                      View all <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
+
+                {loanHistory.slice(0, 10).map((loan) => (
+                  <Link
+                    key={loan.id}
+                    to={`/app/loans/details?id=${loan.id}`}
+                    className={cn(
+                      "block",
+                      "rounded-xl bg-card border border-border/50 px-3 py-2",
+                      "hover:bg-muted/20 transition-colors"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-foreground truncate">
+                          #{loan.loan_number ?? loan.id.slice(0, 8)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {(loan.principal_bsk ?? 0).toFixed(0)} BSK
+                          {loan.applied_at ? ` • ${format(new Date(loan.applied_at), "dd MMM yyyy")}` : ""}
+                        </p>
+                      </div>
+                      <LoanStatusPill status={loan.status} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </AstraCard>
+      </div>
+    </ProgramPageTemplate>
+  );
+}

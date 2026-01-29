@@ -298,6 +298,8 @@ const InsurancePageNewV2 = React.lazy(() => import("./pages/programs/InsurancePa
 const BSKLoansPageNew = React.lazy(() => import("./pages/programs/BSKLoansPageNew"));
 const BSKPromotionsPageNew = React.lazy(() => import("./pages/programs/BSKPromotionsPageNew"));
 const LoansPage = React.lazy(() => import("./pages/astra/LoansPage"));
+const LoansOverviewPage = React.lazy(() => import("./pages/LoansOverviewPage"));
+const LoanDetailsPageUser = React.lazy(() => import("./pages/programs/LoanDetailsPage"));
 
 // ✅ V3 Spin Wheel with SpinWheel3D (4 segments, premium design)
 const ISmartSpinScreen = React.lazy(() => import("@/pages/ISmartSpinScreen"));
@@ -544,10 +546,31 @@ function AppContent() {
                 <Route path="programs/referrals" element={<Navigate to="/app/programs/team-referrals" replace />} />
                 <Route path="programs/loans" element={<Navigate to="/app/programs" replace />} />
                 
-                {/* Loans are decommissioned (keep admin routes only) */}
-                <Route path="loans" element={<Navigate to="/app/programs" replace />} />
-                <Route path="loans/details" element={<Navigate to="/app/programs" replace />} />
-                <Route path="loans/history" element={<Navigate to="/app/programs" replace />} />
+                {/* Loans (user portfolio) */}
+                <Route
+                  path="loans/*"
+                  element={
+                    <React.Suspense fallback={<LoadingFallback />}>
+                      <LoansOverviewPage />
+                    </React.Suspense>
+                  }
+                />
+                <Route
+                  path="loans/details"
+                  element={
+                    <React.Suspense fallback={<LoadingFallback />}>
+                      <LoanDetailsPageUser />
+                    </React.Suspense>
+                  }
+                />
+                <Route
+                  path="loans/history"
+                  element={
+                    <React.Suspense fallback={<LoadingFallback />}>
+                      <LoansHistoryPage />
+                    </React.Suspense>
+                  }
+                />
                 
                 <Route path="programs/bsk-bonus" element={<React.Suspense fallback={<LoadingFallback />}><OneTimePurchasePage /></React.Suspense>} />
                 <Route path="programs/bsk-purchase-history" element={<React.Suspense fallback={<LoadingFallback />}><PurchaseHistoryPage /></React.Suspense>} />
