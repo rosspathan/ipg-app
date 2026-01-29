@@ -12,20 +12,21 @@ import {
   DollarSign,
   CreditCard,
   Archive,
+  FileCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
-import { PrepaymentDialog } from "@/components/loans/PrepaymentDialog";
+import { LoanForeclosureDialog } from "@/components/loans/LoanForeclosureDialog";
 import { NotificationPreferences } from "@/components/loans/NotificationPreferences";
 import { cn } from "@/lib/utils";
 
 export default function LoansPage() {
   const { user } = useAuthUser();
   const queryClient = useQueryClient();
-  const [prepayDialog, setPrepayDialog] = useState(false);
+  const [foreclosureDialog, setForeclosureDialog] = useState(false);
 
   // Fetch active loans
   const { data: loans, isLoading } = useQuery({
@@ -285,14 +286,14 @@ export default function LoansPage() {
           </Card>
         )}
 
-        {/* Action Buttons - Only prepay available for active loans */}
+        {/* Action Buttons - Settlement option for active loans */}
         {activeLoan && (
           <Button
-            onClick={() => setPrepayDialog(true)}
-            className="w-full gap-2 bg-gradient-to-r from-warning to-warning/80 h-12 text-lg"
+            onClick={() => setForeclosureDialog(true)}
+            className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 h-12 text-lg"
           >
-            <CreditCard className="w-5 h-5" />
-            Prepay Loan
+            <FileCheck className="w-5 h-5" />
+            Settle Loan Early
           </Button>
         )}
 
@@ -354,15 +355,23 @@ export default function LoansPage() {
         )}
       </div>
 
-      {/* Prepayment Dialog */}
+      {/* Foreclosure Dialog */}
       {activeLoan && (
-        <PrepaymentDialog
-          open={prepayDialog}
-          onOpenChange={setPrepayDialog}
-          loan={activeLoan}
+        <LoanForeclosureDialog
+          open={foreclosureDialog}
+          onOpenChange={setForeclosureDialog}
+          loan={{
+            id: activeLoan.id,
+            loan_number: activeLoan.loan_number,
+            outstanding_bsk: Number(activeLoan.outstanding_bsk) || 0,
+            principal_bsk: Number(activeLoan.principal_bsk) || 0,
+            paid_bsk: Number(activeLoan.paid_bsk) || 0,
+          }}
+          userBalance={Number(balance?.withdrawable_balance) || 0}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ["bsk-loans"] });
             queryClient.invalidateQueries({ queryKey: ["loan-installments"] });
+            queryClient.invalidateQueries({ queryKey: ["bsk-balance"] });
           }}
         />
       )}
