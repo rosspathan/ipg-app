@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, Info, ExternalLink, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, Info, ExternalLink, AlertTriangle, CheckCircle2, TrendingUp, Coins } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { SuccessAnimation } from "@/components/wallet/SuccessAnimation";
@@ -22,6 +22,7 @@ import PinEntryDialog from "@/components/profile/PinEntryDialog";
 import { ethers } from "ethers";
 
 type TransferDirection = "to_trading" | "to_wallet";
+type TransferDestination = "trading" | "staking";
 
 interface AssetBalance {
   symbol: string;
@@ -66,6 +67,7 @@ const TransferScreen = () => {
   } = useDirectTradingDeposit();
   
   const [selectedAsset, setSelectedAsset] = useState("");
+  const [destination, setDestination] = useState<TransferDestination>("trading");
   const [direction, setDirection] = useState<TransferDirection>("to_trading");
   const [amount, setAmount] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -571,14 +573,44 @@ const TransferScreen = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-foreground">Trading Funds</h1>
+          <h1 className="text-2xl font-bold text-foreground">Transfer Funds</h1>
         </motion.div>
+
+        {/* Destination Selector - Trading vs Staking */}
+        <div className="flex bg-muted rounded-lg p-1">
+          <button
+            onClick={() => setDestination("trading")}
+            className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+              destination === "trading"
+                ? "bg-background shadow text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Trading
+          </button>
+          <button
+            onClick={() => setDestination("staking")}
+            className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+              destination === "staking"
+                ? "bg-background shadow text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Coins className="w-4 h-4" />
+            Staking
+          </button>
+        </div>
 
         {/* Info Alert */}
         <Alert className="bg-primary/10 border-primary/20">
           <Info className="h-4 w-4 text-primary" />
           <AlertDescription className="text-xs space-y-1">
-            <p><strong>One-Click Transfer</strong>: Move funds directly between your wallet and trading balance.</p>
+            {destination === "trading" ? (
+              <p><strong>One-Click Transfer</strong>: Move funds directly between your wallet and trading balance.</p>
+            ) : (
+              <p><strong>Staking Transfer</strong>: Move funds between your wallet and staking account to earn rewards.</p>
+            )}
           </AlertDescription>
         </Alert>
 
@@ -601,31 +633,33 @@ const TransferScreen = () => {
               animate={{ opacity: 1 }}
               className="space-y-4"
             >
-              {/* Direction Tabs */}
-              <div className="flex bg-muted rounded-lg p-1">
-                <button
-                  onClick={() => setDirection("to_trading")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                    direction === "to_trading"
-                      ? "bg-background shadow text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <ArrowDownToLine className="w-4 h-4 inline mr-2" />
-                  Deposit
-                </button>
-                <button
-                  onClick={() => setDirection("to_wallet")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                    direction === "to_wallet"
-                      ? "bg-background shadow text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <ArrowUpFromLine className="w-4 h-4 inline mr-2" />
-                  Withdraw
-                </button>
-              </div>
+              {destination === "trading" ? (
+                <>
+                  {/* Direction Tabs - Trading */}
+                  <div className="flex bg-muted rounded-lg p-1">
+                    <button
+                      onClick={() => setDirection("to_trading")}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                        direction === "to_trading"
+                          ? "bg-background shadow text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <ArrowDownToLine className="w-4 h-4 inline mr-2" />
+                      Deposit
+                    </button>
+                    <button
+                      onClick={() => setDirection("to_wallet")}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                        direction === "to_wallet"
+                          ? "bg-background shadow text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <ArrowUpFromLine className="w-4 h-4 inline mr-2" />
+                      Withdraw
+                    </button>
+                  </div>
 
               {direction === "to_trading" ? (
                 /* DEPOSIT SECTION - One-Click Transfer */
@@ -873,43 +907,134 @@ const TransferScreen = () => {
                 </>
               )}
 
-              {/* Current Trading Balances */}
-              <Card className="bg-card shadow-lg border border-border">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">Your Trading Balances</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {tradingAssets.filter(a => a.tradingTotal > 0.000001).length === 0 ? (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-muted-foreground">No trading balance</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Deposit funds to start trading
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {tradingAssets.filter(a => a.tradingTotal > 0.000001).map(asset => (
-                        <div key={asset.symbol} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                          <div className="flex items-center gap-2">
-                            <AssetLogo symbol={asset.symbol} logoUrl={asset.logoUrl} size="sm" />
-                            <span className="font-medium text-foreground">{asset.symbol}</span>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-mono text-sm text-foreground">
-                              {asset.tradingTotal.toFixed(4)}
-                            </div>
-                            {asset.tradingLocked > 0 && (
-                              <div className="text-xs text-amber-400">
-                                {asset.tradingLocked.toFixed(4)} locked
-                              </div>
-                            )}
-                          </div>
+                  {/* Current Trading Balances */}
+                  <Card className="bg-card shadow-lg border border-border">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm text-muted-foreground">Your Trading Balances</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {tradingAssets.filter(a => a.tradingTotal > 0.000001).length === 0 ? (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-muted-foreground">No trading balance</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Deposit funds to start trading
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                      ) : (
+                        <div className="space-y-2">
+                          {tradingAssets.filter(a => a.tradingTotal > 0.000001).map(asset => (
+                            <div key={asset.symbol} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                              <div className="flex items-center gap-2">
+                                <AssetLogo symbol={asset.symbol} logoUrl={asset.logoUrl} size="sm" />
+                                <span className="font-medium text-foreground">{asset.symbol}</span>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-mono text-sm text-foreground">
+                                  {asset.tradingTotal.toFixed(4)}
+                                </div>
+                                {asset.tradingLocked > 0 && (
+                                  <div className="text-xs text-amber-400">
+                                    {asset.tradingLocked.toFixed(4)} locked
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              ) : (
+                /* STAKING DESTINATION */
+                <>
+                  {/* Direction Tabs - Staking */}
+                  <div className="flex bg-muted rounded-lg p-1">
+                    <button
+                      onClick={() => setDirection("to_trading")}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                        direction === "to_trading"
+                          ? "bg-background shadow text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <ArrowDownToLine className="w-4 h-4 inline mr-2" />
+                      Fund
+                    </button>
+                    <button
+                      onClick={() => setDirection("to_wallet")}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                        direction === "to_wallet"
+                          ? "bg-background shadow text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <ArrowUpFromLine className="w-4 h-4 inline mr-2" />
+                      Withdraw
+                    </button>
+                  </div>
+
+                  {/* Staking Fund Section */}
+                  <Card className="bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base text-foreground flex items-center gap-2">
+                        <Coins className="w-4 h-4 text-primary" />
+                        {direction === "to_trading" ? "Fund Staking Account" : "Withdraw from Staking"}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        {direction === "to_trading" 
+                          ? "Transfer IPG tokens from your wallet to your staking account to start earning rewards."
+                          : "Withdraw your available balance from staking back to your wallet. 0.5% fee applies."}
+                      </p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="text-center p-3 bg-muted/50 rounded-lg flex-1">
+                          <p className="text-xl font-bold text-primary">4-10%</p>
+                          <p className="text-xs text-muted-foreground">Monthly</p>
+                        </div>
+                        <div className="text-center p-3 bg-muted/50 rounded-lg flex-1">
+                          <p className="text-xl font-bold text-foreground">30</p>
+                          <p className="text-xs text-muted-foreground">Days Lock</p>
+                        </div>
+                        <div className="text-center p-3 bg-muted/50 rounded-lg flex-1">
+                          <p className="text-xl font-bold text-foreground">0.5%</p>
+                          <p className="text-xs text-muted-foreground">Fee</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Staking Action Button */}
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={() => navigate(direction === "to_trading" ? "/app/staking/deposit" : "/app/staking/withdraw")}
+                  >
+                    {direction === "to_trading" ? (
+                      <>
+                        <ArrowDownToLine className="w-4 h-4 mr-2" />
+                        Go to Staking Deposit
+                      </>
+                    ) : (
+                      <>
+                        <ArrowUpFromLine className="w-4 h-4 mr-2" />
+                        Go to Staking Withdraw
+                      </>
+                    )}
+                  </Button>
+
+                  {/* View Full Staking */}
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate("/app/staking")}
+                  >
+                    <Coins className="w-4 h-4 mr-2" />
+                    View Staking Plans & Rewards
+                  </Button>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
