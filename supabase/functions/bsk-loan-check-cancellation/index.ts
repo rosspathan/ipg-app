@@ -42,8 +42,10 @@ Deno.serve(async (req) => {
       throw new Error('Failed to fetch loan settings');
     }
 
-    const threshold = settings.consecutive_missed_weeks_for_cancel || 4;
-    console.log(`[LOAN-CANCEL] Using threshold: ${threshold} consecutive weeks`);
+    // HARDCODED: 3 consecutive missed installments triggers termination
+    // This overrides any database setting to ensure strict enforcement
+    const threshold = 3;
+    console.log(`[LOAN-CANCEL] Using hardcoded threshold: ${threshold} consecutive weeks (strict policy)`);
 
     // Get all active loans
     const { data: activeLoans, error: loansError } = await supabase
