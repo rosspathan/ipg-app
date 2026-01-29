@@ -3660,6 +3660,191 @@ export type Database = {
           },
         ]
       }
+      crypto_staking_config: {
+        Row: {
+          admin_hot_wallet_address: string
+          created_at: string
+          id: string
+          is_active: boolean
+          min_stake_amount: number
+          staking_fee_percent: number
+          unstaking_fee_percent: number
+          updated_at: string
+        }
+        Insert: {
+          admin_hot_wallet_address: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_stake_amount?: number
+          staking_fee_percent?: number
+          unstaking_fee_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_hot_wallet_address?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_stake_amount?: number
+          staking_fee_percent?: number
+          unstaking_fee_percent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crypto_staking_ledger: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          balance_before: number | null
+          created_at: string
+          currency: string
+          fee_amount: number | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          stake_id: string | null
+          staking_account_id: string | null
+          tx_hash: string | null
+          tx_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          balance_before?: number | null
+          created_at?: string
+          currency?: string
+          fee_amount?: number | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          stake_id?: string | null
+          staking_account_id?: string | null
+          tx_hash?: string | null
+          tx_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          balance_before?: number | null
+          created_at?: string
+          currency?: string
+          fee_amount?: number | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          stake_id?: string | null
+          staking_account_id?: string | null
+          tx_hash?: string | null
+          tx_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_staking_ledger_stake_id_fkey"
+            columns: ["stake_id"]
+            isOneToOne: false
+            referencedRelation: "user_crypto_stakes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crypto_staking_ledger_staking_account_id_fkey"
+            columns: ["staking_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_staking_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crypto_staking_plans: {
+        Row: {
+          created_at: string
+          currency: string
+          display_order: number | null
+          id: string
+          is_active: boolean
+          lock_period_days: number
+          max_amount: number | null
+          min_amount: number
+          monthly_reward_percent: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          lock_period_days?: number
+          max_amount?: number | null
+          min_amount: number
+          monthly_reward_percent: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          lock_period_days?: number
+          max_amount?: number | null
+          min_amount?: number
+          monthly_reward_percent?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crypto_staking_reward_log: {
+        Row: {
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          processed_at: string
+          reward_amount: number
+          reward_percent: number
+          stake_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          processed_at?: string
+          reward_amount: number
+          reward_percent: number
+          stake_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          processed_at?: string
+          reward_amount?: number
+          reward_percent?: number
+          stake_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_staking_reward_log_stake_id_fkey"
+            columns: ["stake_id"]
+            isOneToOne: false
+            referencedRelation: "user_crypto_stakes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crypto_supply_ledger: {
         Row: {
           amount: number
@@ -10872,6 +11057,78 @@ export type Database = {
         }
         Relationships: []
       }
+      user_crypto_stakes: {
+        Row: {
+          created_at: string
+          currency: string
+          fee_paid: number
+          id: string
+          last_reward_at: string | null
+          lock_until: string
+          monthly_reward_percent: number
+          plan_id: string
+          stake_amount: number
+          staked_at: string
+          staking_account_id: string
+          status: string
+          total_rewards: number
+          updated_at: string
+          user_id: string
+          withdrawn_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          fee_paid?: number
+          id?: string
+          last_reward_at?: string | null
+          lock_until: string
+          monthly_reward_percent: number
+          plan_id: string
+          stake_amount: number
+          staked_at?: string
+          staking_account_id: string
+          status?: string
+          total_rewards?: number
+          updated_at?: string
+          user_id: string
+          withdrawn_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          fee_paid?: number
+          id?: string
+          last_reward_at?: string | null
+          lock_until?: string
+          monthly_reward_percent?: number
+          plan_id?: string
+          stake_amount?: number
+          staked_at?: string
+          staking_account_id?: string
+          status?: string
+          total_rewards?: number
+          updated_at?: string
+          user_id?: string
+          withdrawn_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_crypto_stakes_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "crypto_staking_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_crypto_stakes_staking_account_id_fkey"
+            columns: ["staking_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_staking_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_daily_ad_views: {
         Row: {
           created_at: string
@@ -11472,6 +11729,39 @@ export type Database = {
           created_at?: string
           display_currency?: string
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_staking_accounts: {
+        Row: {
+          available_balance: number
+          created_at: string
+          currency: string
+          id: string
+          staked_balance: number
+          total_rewards_earned: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          staked_balance?: number
+          total_rewards_earned?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          staked_balance?: number
+          total_rewards_earned?: number
           updated_at?: string
           user_id?: string
         }
