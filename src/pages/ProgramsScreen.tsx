@@ -8,7 +8,7 @@ import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms";
 import { useFilteredPrograms } from "@/hooks/useFilteredPrograms";
 import { ProgramLockBadge } from "@/components/programs/ProgramLockBadge";
 import { ProgramUnlockDialog } from "@/components/programs/ProgramUnlockDialog";
-import { UserLoanSummary } from "@/components/home/UserLoanSummary";
+import { LoansProgramTile } from "@/components/loans/LoansProgramTile";
 // BacklinkBar component will be inlined
 
 const ProgramsScreen = () => {
@@ -84,10 +84,8 @@ const ProgramsScreen = () => {
         )}
         
         <ProgramGridCompact>
-          {/* Loan Tile (full width, first tile) */}
-          <div className="col-span-full">
-            <UserLoanSummary />
-          </div>
+          {/* Loan Tile (compact; expands inline) */}
+          <LoansProgramTile />
 
           {programs.map((program) => {
             const IconComponent = getLucideIcon(program.icon || "Box");
