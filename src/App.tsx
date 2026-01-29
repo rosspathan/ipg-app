@@ -512,6 +512,11 @@ function AppContent() {
               <Route path="trading" element={<Navigate to="/app/trade" replace />} />
               <Route path="swap" element={<SwapScreen />} />
               
+              {/* On-chain Crypto Staking */}
+              <Route path="staking" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoStakingScreen')))}</React.Suspense>} />
+              <Route path="staking/:planId" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoStakingScreen')))}</React.Suspense>} />
+              <Route path="staking/deposit" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoStakingScreen')))}</React.Suspense>} />
+              
               {/* Profile Hub */}
               <Route path="profile" element={<ProfileHub />} />
               <Route path="profile/kyc" element={<KYCSubmissionSimple />} />

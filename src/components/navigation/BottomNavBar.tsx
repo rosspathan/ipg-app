@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Home, Wallet, TrendingUp, Gift, User } from "lucide-react"
+import { Home, Wallet, Coins, Gift, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLocation } from "react-router-dom"
 import { useNavigation } from "@/hooks/useNavigation"
@@ -18,10 +18,10 @@ const navItems = [
     route: "/app/wallet"
   },
   {
-    id: "trading",
-    label: "Trading", 
-    icon: TrendingUp,
-    route: "/app/trading"
+    id: "staking",
+    label: "Staking", 
+    icon: Coins,
+    route: "/app/staking"
   },
   {
     id: "programs",

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { createPortal } from "react-dom"
-import { Home, Wallet, TrendingUp, Grid3x3, User } from "lucide-react"
+import { Home, Wallet, Coins, Grid3x3, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLocation } from "react-router-dom"
 import { LogoDockButton } from "./LogoDockButton"
@@ -15,7 +15,7 @@ const navItems = [
   { id: "home", label: "Home", icon: Home, path: "/app/home" },
   { id: "wallet", label: "Wallet", icon: Wallet, path: "/app/wallet" },
   { id: "center", label: "Quick", icon: null, path: null }, // Center button placeholder
-  { id: "programs", label: "Programs", icon: Grid3x3, path: "/app/programs" },
+  { id: "staking", label: "Staking", icon: Coins, path: "/app/staking" },
   { id: "profile", label: "Profile", icon: User, path: "/app/profile" }
 ]
 
