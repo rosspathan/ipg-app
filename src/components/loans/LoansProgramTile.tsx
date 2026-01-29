@@ -1,89 +1,21 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { format, differenceInDays } from "date-fns";
 import {
   AlertCircle,
   Calendar,
-  CheckCircle2,
   ChevronDown,
-  Clock,
   Landmark,
 } from "lucide-react";
 
 import { AstraCard } from "@/components/astra/AstraCard";
-import { Badge } from "@/components/ui/badge";
+import { LoanStatusPill } from "@/components/loans/LoanStatusPill";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthUser } from "@/hooks/useAuthUser";
-import { supabase } from "@/integrations/supabase/client";
+import { useLoansOverview } from "@/hooks/useLoansOverview";
 import { cn } from "@/lib/utils";
-
-type LoanStatus = "active" | "overdue" | "in_arrears" | "completed" | string;
-
-interface LoanRow {
-  id: string;
-  loan_number: string | null;
-  status: LoanStatus;
-  principal_bsk: number | null;
-  paid_bsk: number | null;
-  total_due_bsk?: number | null;
-  outstanding_bsk?: number | null;
-  tenor_weeks?: number | null;
-  applied_at: string | null;
-}
-
-interface InstallmentRow {
-  id: string;
-  loan_id: string;
-  installment_number: number | null;
-  due_date: string;
-  total_due_bsk: number | null;
-  status: string;
-}
-
-function StatusPill({ status }: { status: LoanStatus }) {
-  if (status === "active") {
-    return (
-      <Badge
-        variant="outline"
-        className="bg-primary/10 text-primary border-primary/30 text-[10px] px-2 py-0.5"
-      >
-        <Clock className="w-3 h-3 mr-1" />
-        Active
-      </Badge>
-    );
-  }
-
-  if (status === "overdue" || status === "in_arrears") {
-    return (
-      <Badge
-        variant="outline"
-        className="bg-warning/10 text-warning border-warning/30 text-[10px] px-2 py-0.5"
-      >
-        <AlertCircle className="w-3 h-3 mr-1" />
-        Overdue
-      </Badge>
-    );
-  }
-
-  if (status === "completed") {
-    return (
-      <Badge
-        variant="outline"
-        className="bg-success/10 text-success border-success/30 text-[10px] px-2 py-0.5"
-      >
-        <CheckCircle2 className="w-3 h-3 mr-1" />
-        Completed
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge variant="outline" className="text-[10px] px-2 py-0.5">
-      {String(status)}
-    </Badge>
-  );
-}
+import { Link } from "react-router-dom";
 
 function dueLabel(dueDate: string) {
   const days = differenceInDays(new Date(dueDate), new Date());
@@ -96,62 +28,16 @@ export function LoansProgramTile() {
   const { user } = useAuthUser();
   const [expanded, setExpanded] = useState(false);
 
-  const { data: activeLoans, isLoading: isActiveLoading } = useQuery({
-    queryKey: ["loans-program-tile", "active", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [] as LoanRow[];
-      const { data, error } = await supabase
-        .from("bsk_loans")
-        .select("*")
-        .eq("user_id", user.id)
-        .in("status", ["active", "overdue", "in_arrears"])
-        .order("applied_at", { ascending: false });
+  const {
+    activeLoan,
+    loanHistory,
+    dueInstallments,
+    nextInstallment,
+    isLoading,
+    isInstallmentsLoading,
+  } = useLoansOverview(user?.id);
 
-      if (error) throw error;
-      return (data || []) as LoanRow[];
-    },
-    enabled: !!user?.id,
-  });
-
-  const { data: loanHistory, isLoading: isHistoryLoading } = useQuery({
-    queryKey: ["loans-program-tile", "history", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [] as LoanRow[];
-      const { data, error } = await supabase
-        .from("bsk_loans")
-        .select("id, loan_number, status, principal_bsk, paid_bsk, applied_at")
-        .eq("user_id", user.id)
-        .order("applied_at", { ascending: false });
-
-      if (error) throw error;
-      return (data || []) as LoanRow[];
-    },
-    enabled: !!user?.id,
-  });
-
-  const activeLoan = activeLoans?.[0] ?? null;
-  const activeLoanIds = useMemo(() => (activeLoans ?? []).map((l) => l.id), [activeLoans]);
-
-  const { data: dueInstallments, isLoading: isInstallmentsLoading } = useQuery({
-    queryKey: ["loans-program-tile", "installments", activeLoanIds],
-    queryFn: async () => {
-      if (!activeLoanIds.length) return [] as InstallmentRow[];
-      const { data, error } = await supabase
-        .from("bsk_loan_installments")
-        .select("*")
-        .in("loan_id", activeLoanIds)
-        .in("status", ["due", "overdue"])
-        .order("due_date", { ascending: true });
-
-      if (error) throw error;
-      return (data || []) as InstallmentRow[];
-    },
-    enabled: activeLoanIds.length > 0,
-  });
-
-  const nextInstallment = dueInstallments?.[0] ?? null;
-  const recentHistory = (loanHistory ?? []).slice(0, 3);
-  const isLoading = isActiveLoading || isHistoryLoading;
+  const recentHistory = loanHistory.slice(0, 3);
 
   const progressPct = useMemo(() => {
     const paid = activeLoan?.paid_bsk ?? 0;
@@ -214,7 +100,7 @@ export function LoansProgramTile() {
           </div>
 
           <div className="flex items-center gap-2">
-            {activeLoan ? <StatusPill status={activeLoan.status} /> : null}
+            {activeLoan ? <LoanStatusPill status={activeLoan.status} /> : null}
             <ChevronDown
               className={cn(
                 "w-4 h-4 text-muted-foreground transition-transform",
@@ -253,7 +139,7 @@ export function LoansProgramTile() {
                         #{activeLoan.loan_number ?? activeLoan.id.slice(0, 8)}
                       </p>
                     </div>
-                    <StatusPill status={activeLoan.status} />
+                    <LoanStatusPill status={activeLoan.status} />
                   </div>
 
                   <div className="mt-3 space-y-2">
@@ -335,9 +221,18 @@ export function LoansProgramTile() {
                           {loan.applied_at ? ` • ${format(new Date(loan.applied_at), "dd MMM yyyy")}` : ""}
                         </p>
                       </div>
-                      <StatusPill status={loan.status} />
+                      <LoanStatusPill status={loan.status} />
                     </div>
                   ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <Button asChild size="sm" variant="outline" className="w-full">
+                    <Link to="/app/loans">Open</Link>
+                  </Button>
+                  <Button asChild size="sm" variant="ghost" className="w-full">
+                    <Link to="/app/loans/history">History</Link>
+                  </Button>
                 </div>
               </>
             )}
