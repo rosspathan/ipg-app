@@ -24,8 +24,8 @@ export function LoansProgramTile() {
   // Subline text
   const subtitle = useMemo(() => {
     if (isLoading) return "Loading...";
-    if (!user?.id) return "0% interest loans";
-    if (!activeLoan) return "0% interest loans";
+    if (!user?.id) return "Program archived";
+    if (!activeLoan) return "Program archived";
     if (nextInstallment) {
       return `Next: ${(nextInstallment.total_due_bsk ?? 0).toFixed(0)} BSK`;
     }
@@ -65,12 +65,12 @@ export function LoansProgramTile() {
 
   // Status badge config
   const statusBadge = useMemo(() => {
-    if (!activeLoan) return null;
+    if (!activeLoan) return { label: "ARCHIVED", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" };
     const status = activeLoan.status;
     if (status === "active") return { label: "ACTIVE", color: "bg-success/20 text-success border-success/30" };
     if (status === "overdue" || status === "in_arrears") return { label: "DUE", color: "bg-danger/20 text-danger border-danger/30" };
     if (status === "completed") return { label: "PAID", color: "bg-primary/20 text-primary border-primary/30" };
-    return null;
+    return { label: "ARCHIVED", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" };
   }, [activeLoan]);
 
   return (
@@ -106,20 +106,16 @@ export function LoansProgramTile() {
         >
           {/* Top row: Badge */}
           <div className="flex items-start justify-between mb-3">
-            {statusBadge ? (
-              <div
-                className={cn(
-                  "px-2 py-0.5 rounded-full",
-                  "text-[9px] font-[Inter] font-bold uppercase tracking-wider",
-                  "border backdrop-blur-sm",
-                  statusBadge.color
-                )}
-              >
-                {statusBadge.label}
-              </div>
-            ) : (
-              <div className="flex-1" />
-            )}
+            <div
+              className={cn(
+                "px-2 py-0.5 rounded-full",
+                "text-[9px] font-[Inter] font-bold uppercase tracking-wider",
+                "border backdrop-blur-sm",
+                statusBadge.color
+              )}
+            >
+              {statusBadge.label}
+            </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </div>
 
@@ -168,8 +164,8 @@ export function LoansProgramTile() {
                 </p>
               </div>
             ) : (
-              <p className="text-[10px] text-muted-foreground font-[Inter] text-center">
-                Collateralize BSK
+              <p className="text-[10px] text-amber-500/80 font-[Inter] text-center">
+                Manage existing loans only
               </p>
             )}
           </div>

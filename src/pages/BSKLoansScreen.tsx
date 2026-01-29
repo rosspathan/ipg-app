@@ -66,7 +66,7 @@ const BSKLoansScreen = () => {
   const [bskRate, setBskRate] = useState(1.0);
   const [userBalance, setUserBalance] = useState(0);
   const [accepting, setAccepting] = useState(false);
-  const [activeTab, setActiveTab] = useState("apply");
+  const [activeTab, setActiveTab] = useState("active");
 
   useEffect(() => {
     if (user) {
@@ -278,179 +278,29 @@ const BSKLoansScreen = () => {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="apply">Apply Loan</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="active">
             Active Loans ({userLoans.filter(l => ['active', 'pending', 'in_arrears', 'approved'].includes(l.status)).length})
           </TabsTrigger>
           <TabsTrigger value="history">
-            History ({userLoans.filter(l => ['closed', 'written_off'].includes(l.status)).length})
+            History ({userLoans.filter(l => ['closed', 'written_off', 'cancelled'].includes(l.status)).length})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="apply" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Commitment Savings Plan</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Save {loanSettings.min_amount_bsk.toLocaleString()} - {loanSettings.max_amount_bsk.toLocaleString()} BSK over {loanSettings.default_tenor_weeks} weeks • 
-                Receive full amount after completion • 0% interest
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Amount Selector */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="loan-amount">Maturity Amount (BSK)</Label>
-                  <Input
-                    id="loan-amount"
-                    type="number"
-                    min={loanSettings.min_amount_bsk}
-                    max={loanSettings.max_amount_bsk}
-                    value={loanAmount}
-                    onChange={(e) => setLoanAmount(Number(e.target.value))}
-                    className="w-32 text-right"
-                  />
-                </div>
-                
-                <Slider
-                  value={[loanAmount]}
-                  onValueChange={([value]) => setLoanAmount(value)}
-                  min={loanSettings.min_amount_bsk}
-                  max={loanSettings.max_amount_bsk}
-                  step={100}
-                  className="w-full"
-                />
-                
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>{loanSettings.min_amount_bsk.toLocaleString()} BSK</span>
-                  <span>{loanSettings.max_amount_bsk.toLocaleString()} BSK</span>
-                </div>
+        {/* Archived Notice Banner */}
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-amber-600 dark:text-amber-400">Loan Program Archived</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  New loan applications are no longer accepted. Existing loans will continue to be processed normally with automatic EMI deductions.
+                </p>
               </div>
-
-              {/* Loan Preview */}
-              {preview && (
-                <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Calculator className="h-5 w-5" />
-                      Loan Breakdown
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center p-3 bg-background/50 rounded-lg">
-                        <span className="text-sm text-muted-foreground">Maturity Amount</span>
-                        <span className="font-bold text-lg">{preview.principalBsk} BSK</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
-                        <div>
-                          <span className="text-sm font-medium text-red-600 dark:text-red-400">Processing Fee (3%)</span>
-                          <p className="text-xs text-muted-foreground">Deducted immediately</p>
-                        </div>
-                        <span className="font-bold text-lg text-red-600 dark:text-red-400">-{preview.originationFeeBsk} BSK</span>
-                      </div>
-
-                      <div className="my-2 border-t border-border" />
-
-                      <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg border border-primary/20">
-                        <div>
-                          <span className="text-sm font-medium text-primary">Weekly Savings</span>
-                          <p className="text-xs text-muted-foreground">Deducted from Withdrawable</p>
-                        </div>
-                        <span className="font-bold text-xl text-primary">{preview.weeklyEmiBsk} BSK</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 mt-4">
-                        <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                          <p className="text-xs text-muted-foreground mb-1">Total Savings</p>
-                          <p className="font-bold text-lg">{preview.totalDueBsk} BSK</p>
-                          <p className="text-xs text-muted-foreground">over {loanSettings.default_tenor_weeks} weeks</p>
-                        </div>
-                        <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                          <p className="text-xs text-muted-foreground mb-1">You'll Receive</p>
-                          <p className="font-bold text-lg text-green-600 dark:text-green-400">{preview.principalBsk} BSK</p>
-                          <p className="text-xs text-success">To Withdrawable</p>
-                        </div>
-                      </div>
-
-                      {loanSettings.completion_bonus_enabled && (
-                        <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-primary">🎁 Completion Bonus</p>
-                              <p className="text-xs text-muted-foreground">Earn on timely completion</p>
-                            </div>
-                            <span className="font-bold text-lg text-success">
-                              +{((loanAmount * (loanSettings.completion_bonus_percent || 5)) / 100).toFixed(2)} BSK
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pt-3 border-t border-border space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
-                        <span>Save weekly, receive full amount at completion</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span>First deduction 1 week after approval</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <AlertCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span className="font-medium">Complete all {loanSettings.default_tenor_weeks} payments to receive {preview.principalBsk} BSK to your Withdrawable Balance</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Terms and Apply */}
-              <div className="space-y-4">
-                <div className="p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div className="text-sm">
-                      <p className="font-medium">Commitment Savings Terms</p>
-                      <ul className="text-muted-foreground mt-1 space-y-1">
-                        <li>• Pay-first model: Save weekly, receive funds after completion</li>
-                        <li>• Weekly deductions from your Withdrawable Balance</li>
-                        <li>• Full maturity amount credited to Withdrawable Balance upon completion</li>
-                        <li>• BSK is an in-app token valued by administrators</li>
-                        {loanSettings.kyc_required ? (
-                          <li>• KYC verification required before approval</li>
-                        ) : (
-                          <li className="text-success">• ✓ No KYC required - fast approval process</li>
-                        )}
-                        <li>• One active plan per user maximum</li>
-                        <li>• Manual admin approval required</li>
-                        <li>• Missing 4 consecutive weeks cancels the plan (funds forfeited)</li>
-                        {loanSettings.completion_bonus_enabled && (
-                          <li className="text-success font-medium">
-                            • 🎁 Earn {loanSettings.completion_bonus_percent}% bonus ({((loanAmount * (loanSettings.completion_bonus_percent || 5)) / 100).toFixed(2)} BSK) on timely completion!
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={handleApplyLoan}
-                  disabled={accepting || !user || loanAmount < loanSettings.min_amount_bsk || loanAmount > loanSettings.max_amount_bsk}
-                  className="w-full bg-primary hover:bg-primary/90"
-                  size="lg"
-                >
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  {accepting ? "Submitting..." : `Start ${loanAmount.toLocaleString()} BSK Savings Plan`}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </CardContent>
+        </Card>
 
         <TabsContent value="active" className="space-y-4">
           {userLoans.filter(l => ['pending', 'active', 'in_arrears', 'approved'].includes(l.status)).map((loan) => (
@@ -462,10 +312,7 @@ const BSKLoansScreen = () => {
               <CardContent className="text-center py-8">
                 <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">No Active Loans</h3>
-                <p className="text-muted-foreground mb-4">Apply for a BSK loan to get started</p>
-                <Button onClick={() => setActiveTab("apply")}>
-                  Apply for Loan
-                </Button>
+                <p className="text-muted-foreground">You don't have any active loans. The loan program is currently archived.</p>
               </CardContent>
             </Card>
           )}
