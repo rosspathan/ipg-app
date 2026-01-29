@@ -63,10 +63,11 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
     }
   };
 
-  // Filter crypto assets (exclude BSK and INR, and show only non-zero balances)
+  // Filter crypto assets (exclude INR, show only non-zero balances)
+  // NOTE: BSK on-chain balance IS shown here (actual wallet tokens)
+  // The BSK cards below show OFF-CHAIN balances from the internal ledger
   const filteredCryptoAssets = onchainBalances
     .filter(asset => 
-      asset.symbol !== 'BSK' && 
       asset.symbol !== 'INR' &&
       asset.balance > 0  // Only show assets with on-chain balance
     )
