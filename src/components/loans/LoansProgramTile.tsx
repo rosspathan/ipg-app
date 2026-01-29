@@ -1,44 +1,19 @@
-import { useMemo, useState } from "react";
-import { format, differenceInDays } from "date-fns";
-import {
-  AlertCircle,
-  Calendar,
-  ChevronDown,
-  Landmark,
-} from "lucide-react";
-
-import { AstraCard } from "@/components/astra/AstraCard";
-import { LoanStatusPill } from "@/components/loans/LoanStatusPill";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { Landmark, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useLoansOverview } from "@/hooks/useLoansOverview";
-import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
-
-function dueLabel(dueDate: string) {
-  const days = differenceInDays(new Date(dueDate), new Date());
-  if (days < 0) return `${Math.abs(days)}d overdue`;
-  if (days === 0) return "Due today";
-  return `Due in ${days}d`;
-}
 
 export function LoansProgramTile() {
   const { user } = useAuthUser();
-  const [expanded, setExpanded] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
+  const [showGlow, setShowGlow] = useState(false);
+  const longPressTimer = useRef<NodeJS.Timeout>();
 
-  const {
-    activeLoan,
-    loanHistory,
-    dueInstallments,
-    nextInstallment,
-    isLoading,
-    isInstallmentsLoading,
-  } = useLoansOverview(user?.id);
+  const { activeLoan, nextInstallment, isLoading } = useLoansOverview(user?.id);
 
-  const recentHistory = loanHistory.slice(0, 3);
-
+  // Calculate progress
   const progressPct = useMemo(() => {
     const paid = activeLoan?.paid_bsk ?? 0;
     const total = (activeLoan as any)?.total_due_bsk ?? 0;
@@ -46,211 +21,172 @@ export function LoansProgramTile() {
     return Math.max(0, Math.min(100, (paid / total) * 100));
   }, [activeLoan]);
 
-  const collapsedSubline = useMemo(() => {
-    if (!user?.id) return "Sign in to view";
-    if (!activeLoan) return "No active loan";
+  // Subline text
+  const subtitle = useMemo(() => {
+    if (isLoading) return "Loading...";
+    if (!user?.id) return "0% interest loans";
+    if (!activeLoan) return "0% interest loans";
     if (nextInstallment) {
-      return `Next EMI: ${(nextInstallment.total_due_bsk ?? 0).toFixed(0)} BSK`;
+      return `Next: ${(nextInstallment.total_due_bsk ?? 0).toFixed(0)} BSK`;
     }
-
     const outstanding = (activeLoan as any)?.outstanding_bsk;
-    if (typeof outstanding === "number") return `Outstanding: ${outstanding.toFixed(0)} BSK`;
+    if (typeof outstanding === "number") return `${outstanding.toFixed(0)} BSK due`;
     return "Active loan";
-  }, [activeLoan, nextInstallment, user?.id]);
+  }, [activeLoan, nextInstallment, user?.id, isLoading]);
+
+  // Breathing glow animation
+  useEffect(() => {
+    const glowInterval = setInterval(() => {
+      setShowGlow((prev) => !prev);
+    }, 6000);
+    return () => clearInterval(glowInterval);
+  }, []);
+
+  const handlePointerDown = () => {
+    setIsPressed(true);
+    longPressTimer.current = setTimeout(() => {
+      setIsPressed(false);
+    }, 500);
+  };
+
+  const handlePointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+    setIsPressed(false);
+  };
+
+  const handlePointerLeave = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+    setIsPressed(false);
+  };
+
+  // Status badge config
+  const statusBadge = useMemo(() => {
+    if (!activeLoan) return null;
+    const status = activeLoan.status;
+    if (status === "active") return { label: "ACTIVE", color: "bg-success/20 text-success border-success/30" };
+    if (status === "overdue" || status === "in_arrears") return { label: "DUE", color: "bg-danger/20 text-danger border-danger/30" };
+    if (status === "completed") return { label: "PAID", color: "bg-primary/20 text-primary border-primary/30" };
+    return null;
+  }, [activeLoan]);
 
   return (
-    <div
-      className={cn(
-        "col-span-1",
-        expanded && "col-span-full",
-        "transition-[grid-column]"
-      )}
+    <Link
+      to="/app/loans"
+      className="col-span-1"
       data-testid="loans-program-tile"
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      style={{ WebkitUserSelect: "none", userSelect: "none" }}
     >
-      <AstraCard
-        variant="elevated"
-        size="md"
+      <div
         className={cn(
-          "h-full",
-          "p-3",
-          "select-none",
-          "transition-all",
-          expanded ? "shadow-elevated" : "shadow-card"
+          "relative rounded-2xl overflow-hidden transition-all",
+          "duration-[120ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+          isPressed ? "scale-[1.03]" : "scale-100",
+          "cursor-pointer"
         )}
       >
-        {/* Compact header */}
-        <div className="w-full flex items-start justify-between gap-2">
-          <Link
-            to="/app/loans"
-            className="flex-1 flex items-start justify-between gap-3 text-left"
-            aria-label="Open loans"
-          >
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
-                  <Landmark className="w-5 h-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-[var(--font-heading)] font-bold text-foreground leading-tight">
-                    Loans
-                  </p>
-                  <p className="text-[11px] text-muted-foreground truncate">{collapsedSubline}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {activeLoan ? <LoanStatusPill status={activeLoan.status} /> : null}
-            </div>
-          </Link>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 mt-0.5"
-            onClick={() => setExpanded((v) => !v)}
-            aria-label={expanded ? "Collapse loan details" : "Expand loan details"}
-            aria-expanded={expanded}
-          >
-            <ChevronDown
-              className={cn(
-                "w-4 h-4 text-muted-foreground transition-transform",
-                expanded && "rotate-180"
-              )}
-            />
-          </Button>
-        </div>
-
-        {/* Expanded content */}
+        {/* Card background with glow */}
         <div
           className={cn(
-            "overflow-hidden",
-            "transition-[max-height,opacity] duration-200",
-            expanded ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"
+            "relative h-full min-h-[180px] p-4 rounded-2xl",
+            "bg-gradient-to-br from-[#161A2C] to-[#1B2036]",
+            "border border-[#2A2F42]/30",
+            "transition-all duration-[320ms]",
+            showGlow && !isPressed && "shadow-[0_0_24px_rgba(124,77,255,0.08)]"
           )}
+          style={{
+            boxShadow: isPressed ? "0 8px 32px rgba(124, 77, 255, 0.3)" : undefined,
+          }}
         >
-          <div className="pt-3 mt-3 border-t border-border/40 space-y-3">
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-16 w-full" />
+          {/* Top row: Badge */}
+          <div className="flex items-start justify-between mb-3">
+            {statusBadge ? (
+              <div
+                className={cn(
+                  "px-2 py-0.5 rounded-full",
+                  "text-[9px] font-[Inter] font-bold uppercase tracking-wider",
+                  "border backdrop-blur-sm",
+                  statusBadge.color
+                )}
+              >
+                {statusBadge.label}
               </div>
-            ) : !user?.id ? (
-              <p className="text-xs text-muted-foreground">Please sign in to view your loans.</p>
-            ) : !activeLoan ? (
-              <p className="text-xs text-muted-foreground">No active loans right now.</p>
             ) : (
-              <>
-                {/* Active loan block */}
-                <div className="rounded-xl bg-card border border-border/50 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">Active loan</p>
-                      <p className="text-sm font-semibold text-foreground truncate">
-                        #{activeLoan.loan_number ?? activeLoan.id.slice(0, 8)}
-                      </p>
-                    </div>
-                    <LoanStatusPill status={activeLoan.status} />
-                  </div>
+              <div className="flex-1" />
+            )}
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </div>
 
-                  <div className="mt-3 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Repayment</span>
-                      <span className="font-medium text-foreground tabular-nums">
-                        {Math.round(progressPct)}%
-                      </span>
-                    </div>
-                    <Progress value={progressPct} className="h-2" />
-                  </div>
+          {/* Icon */}
+          <div className="flex justify-center mb-4">
+            <div
+              className={cn(
+                "h-11 w-11 rounded-full flex items-center justify-center",
+                "bg-gradient-to-br from-primary/20 to-accent/20",
+                "text-primary transition-all duration-[220ms]",
+                "ring-2 ring-primary/20",
+                isPressed && "scale-110 rotate-6 ring-primary/40"
+              )}
+              style={{
+                boxShadow: isPressed
+                  ? "0 0 20px rgba(124, 77, 255, 0.4)"
+                  : "0 0 12px rgba(124, 77, 255, 0.2)",
+              }}
+            >
+              <Landmark className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* Title & Subtitle */}
+          <div className="text-center mb-4">
+            <h3 className="font-[Space_Grotesk] font-bold text-xs text-foreground mb-1 line-clamp-1">
+              Loans
+            </h3>
+            <p className="font-[Inter] text-[10px] text-muted-foreground leading-tight line-clamp-2">
+              {subtitle}
+            </p>
+          </div>
+
+          {/* Footer: Progress bar if active loan */}
+          <div className="mt-auto">
+            {activeLoan && progressPct > 0 ? (
+              <div className="space-y-1">
+                <div className="h-1.5 w-full bg-background/40 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-accent to-primary transition-all duration-[320ms]"
+                    style={{ width: `${progressPct}%` }}
+                  />
                 </div>
-
-                {/* Next EMI */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-xl bg-card border border-border/50 p-3">
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <Calendar className="w-3 h-3" /> Next EMI
-                    </p>
-                    <p className="text-sm font-bold text-foreground tabular-nums">
-                      {(nextInstallment?.total_due_bsk ?? 0).toFixed(0)} BSK
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-card border border-border/50 p-3">
-                    <p className="text-[10px] text-muted-foreground">History</p>
-                    <p className="text-sm font-bold text-foreground tabular-nums">
-                      {(loanHistory ?? []).length}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Due installments */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-muted-foreground">Upcoming EMIs</p>
-                    {isInstallmentsLoading ? (
-                      <span className="text-[10px] text-muted-foreground">Loading…</span>
-                    ) : null}
-                  </div>
-
-                  {(dueInstallments ?? []).slice(0, 3).map((inst) => (
-                    <div
-                      key={inst.id}
-                      className="flex items-center justify-between rounded-xl bg-muted/30 border border-border/40 px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-foreground">
-                          EMI {inst.installment_number ?? "—"}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {format(new Date(inst.due_date), "dd MMM yyyy")} • {dueLabel(inst.due_date)}
-                        </p>
-                      </div>
-                      <p className="text-xs font-semibold text-foreground tabular-nums">
-                        {(inst.total_due_bsk ?? 0).toFixed(0)}
-                      </p>
-                    </div>
-                  ))}
-
-                  {(dueInstallments ?? []).length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No upcoming dues.</p>
-                  ) : null}
-                </div>
-
-                {/* Recent history */}
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Recent loans</p>
-                  {recentHistory.map((loan) => (
-                    <div
-                      key={loan.id}
-                      className="flex items-center justify-between rounded-xl bg-card border border-border/50 px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-foreground truncate">
-                          #{loan.loan_number ?? loan.id.slice(0, 8)}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {(loan.principal_bsk ?? 0).toFixed(0)} BSK
-                          {loan.applied_at ? ` • ${format(new Date(loan.applied_at), "dd MMM yyyy")}` : ""}
-                        </p>
-                      </div>
-                      <LoanStatusPill status={loan.status} />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <Button asChild size="sm" variant="outline" className="w-full">
-                    <Link to="/app/loans">Open</Link>
-                  </Button>
-                  <Button asChild size="sm" variant="ghost" className="w-full">
-                    <Link to="/app/loans/history">History</Link>
-                  </Button>
-                </div>
-              </>
+                <p className="text-[10px] text-muted-foreground font-[Inter] text-center">
+                  {Math.round(progressPct)}% repaid
+                </p>
+              </div>
+            ) : (
+              <p className="text-[10px] text-muted-foreground font-[Inter] text-center">
+                Collateralize BSK
+              </p>
             )}
           </div>
+
+          {/* Rim-light sweep effect on press */}
+          {isPressed && (
+            <div
+              className="absolute inset-0 pointer-events-none rounded-2xl"
+              style={{
+                background:
+                  "linear-gradient(135deg, transparent 30%, rgba(124, 77, 255, 0.3) 50%, rgba(0, 229, 255, 0.3) 70%, transparent)",
+                animation: "sweep 320ms ease-out",
+              }}
+            />
+          )}
         </div>
-      </AstraCard>
-    </div>
+      </div>
+    </Link>
   );
 }
