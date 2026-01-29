@@ -9,7 +9,6 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   Coins, 
-  Percent,
   ArrowRight,
   Loader2
 } from "lucide-react";
@@ -41,9 +40,7 @@ export function LoanForeclosureDialog({
   const [confirmed, setConfirmed] = useState(false);
 
   const outstanding = Number(loan.outstanding_bsk) || 0;
-  const discountPercent = 2;
-  const discount = outstanding * (discountPercent / 100);
-  const settlementAmount = outstanding - discount;
+  const settlementAmount = outstanding;
   const hasEnoughBalance = userBalance >= settlementAmount;
   const paidSoFar = Number(loan.paid_bsk) || 0;
   const progressPercent = loan.principal_bsk > 0 
@@ -66,7 +63,7 @@ export function LoanForeclosureDialog({
       if (!data?.success) throw new Error(data?.error || "Foreclosure failed");
 
       toast.success(
-        `Loan settled! You saved ${discount.toFixed(2)} BSK with early settlement discount.`,
+        `Loan settled successfully!`,
         { duration: 5000 }
       );
       onSuccess();
@@ -120,25 +117,10 @@ export function LoanForeclosureDialog({
           <div className="space-y-3">
             <h4 className="text-sm font-semibold flex items-center gap-2">
               <Coins className="w-4 h-4" />
-              Settlement Breakdown
+              Settlement Amount
             </h4>
             
             <div className="p-4 bg-card border rounded-lg space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Outstanding Balance</span>
-                <span className="font-medium">{outstanding.toFixed(2)} BSK</span>
-              </div>
-              
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <Percent className="w-3 h-3" />
-                  Early Settlement Discount ({discountPercent}%)
-                </span>
-                <span className="font-medium text-success">-{discount.toFixed(2)} BSK</span>
-              </div>
-              
-              <Separator className="my-2" />
-              
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Amount to Pay</span>
                 <span className="text-xl font-bold text-primary">
@@ -182,7 +164,6 @@ export function LoanForeclosureDialog({
                 <div className="text-xs text-muted-foreground">
                   <strong className="text-success">Benefits of Early Settlement:</strong>
                   <ul className="mt-1 space-y-1">
-                    <li>• Save {discount.toFixed(2)} BSK with {discountPercent}% discount</li>
                     <li>• Loan closed immediately</li>
                     <li>• No more weekly EMI deductions</li>
                   </ul>

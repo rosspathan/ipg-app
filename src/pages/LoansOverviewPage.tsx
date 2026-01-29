@@ -155,15 +155,9 @@ export default function LoansOverviewPage() {
               {/* SETTLE LOAN BUTTON - Prominent CTA */}
               {outstandingBsk > 0 && (
                 <div className="rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Outstanding Balance</p>
-                      <p className="text-lg font-bold text-foreground">{outstandingBsk.toFixed(2)} BSK</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">2% discount</p>
-                      <p className="text-xs text-muted-foreground">on early settlement</p>
-                    </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Outstanding Balance</p>
+                    <p className="text-lg font-bold text-foreground">{outstandingBsk.toFixed(2)} BSK</p>
                   </div>
                   <Button
                     onClick={() => setForeclosureOpen(true)}

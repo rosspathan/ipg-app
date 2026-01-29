@@ -80,12 +80,10 @@ serve(async (req) => {
       throw new Error("No outstanding balance to settle");
     }
 
-    // Calculate early settlement discount (2%)
-    const discountPercent = 2;
-    const discount = outstanding * (discountPercent / 100);
-    const settlementAmount = outstanding - discount;
+    // No discount - full settlement amount
+    const settlementAmount = outstanding;
 
-    console.log(`[FORECLOSE] Outstanding: ${outstanding} BSK, Discount: ${discount} BSK, Settlement: ${settlementAmount} BSK`);
+    console.log(`[FORECLOSE] Outstanding: ${outstanding} BSK, Settlement: ${settlementAmount} BSK`);
 
     // Check user's withdrawable balance via ledger
     const { data: balanceData, error: balanceQueryError } = await supabase
@@ -123,8 +121,6 @@ serve(async (req) => {
           loan_id: loan.id,
           loan_number: loan.loan_number,
           original_outstanding: outstanding,
-          discount_percent: discountPercent,
-          discount_bsk: discount,
           settlement_amount: settlementAmount,
           action: "loan_foreclosure"
         }
@@ -164,8 +160,7 @@ serve(async (req) => {
         paid_bsk: (Number(loan.paid_bsk) || 0) + settlementAmount,
         closed_at: new Date().toISOString(),
         prepaid_at: new Date().toISOString(),
-        prepayment_discount_bsk: discount,
-        admin_notes: `Foreclosed by user on ${new Date().toISOString()}. Settlement: ${settlementAmount} BSK (${discountPercent}% discount applied)`
+        admin_notes: `Foreclosed by user on ${new Date().toISOString()}. Settlement: ${settlementAmount} BSK`
       })
       .eq("id", loan_id);
 
@@ -182,7 +177,7 @@ serve(async (req) => {
         user_id: user.id,
         prepayment_amount_bsk: settlementAmount,
         outstanding_before_bsk: outstanding,
-        discount_applied_bsk: discount,
+        discount_applied_bsk: 0,
         installments_cleared: installmentsCleared,
         is_foreclosure: true
       })
@@ -196,8 +191,6 @@ serve(async (req) => {
         message: "Loan successfully settled",
         loan_number: loan.loan_number,
         original_outstanding: outstanding,
-        discount_applied: discount,
-        discount_percent: discountPercent,
         settlement_amount: settlementAmount,
         installments_cleared: installmentsCleared,
         new_status: "closed"
