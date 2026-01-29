@@ -305,3 +305,9 @@ verify_jwt = true
 
 [functions.index-bep20-history]
 verify_jwt = false
+
+[functions.bsk-loan-foreclose]
+verify_jwt = true
+
+[functions.bsk-loan-prepay]
+verify_jwt = true

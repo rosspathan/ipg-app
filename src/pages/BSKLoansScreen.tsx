@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft, CreditCard, Calculator, Clock, AlertCircle, CheckCircle, Calendar } from "lucide-react";
+import { ChevronLeft, CreditCard, Calculator, Clock, AlertCircle, CheckCircle, Calendar, FileCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useToast } from "@/hooks/use-toast";
+import { LoanForeclosureDialog } from "@/components/loans/LoanForeclosureDialog";
 
 interface LoanSettings {
   min_amount_bsk: number;
@@ -304,7 +305,7 @@ const BSKLoansScreen = () => {
 
         <TabsContent value="active" className="space-y-4">
           {userLoans.filter(l => ['pending', 'active', 'in_arrears', 'approved'].includes(l.status)).map((loan) => (
-            <LoanCard key={loan.id} loan={loan} onUpdate={loadLoanData} getStatusColor={getStatusColor} />
+            <LoanCard key={loan.id} loan={loan} onUpdate={loadLoanData} getStatusColor={getStatusColor} userBalance={userBalance} />
           ))}
           
           {userLoans.filter(l => ['pending', 'active', 'in_arrears', 'approved'].includes(l.status)).length === 0 && (
@@ -343,15 +344,18 @@ const LoanCard = ({
   loan, 
   onUpdate, 
   showHistory = false, 
-  getStatusColor 
+  getStatusColor,
+  userBalance = 0,
 }: { 
   loan: Loan; 
   onUpdate: () => void; 
   showHistory?: boolean;
   getStatusColor: (status: string) => string;
+  userBalance?: number;
 }) => {
   const navigate = useNavigate();
   const [installments, setInstallments] = useState<Installment[]>([]);
+  const [foreclosureDialog, setForeclosureDialog] = useState(false);
 
   useEffect(() => {
     loadInstallments();
@@ -433,7 +437,7 @@ const LoanCard = ({
               <p className="text-xl font-bold">{nextDueInstallment.total_due_bsk.toFixed(2)} BSK</p>
               <p className="text-sm">EMI #{nextDueInstallment.installment_number} of {loan.tenor_weeks}</p>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 mb-2">
               <Button
                 size="sm"
                 onClick={() => navigate(`/app/loans/pay?installment=${nextDueInstallment.id}`)}
@@ -445,12 +449,24 @@ const LoanCard = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => navigate(`/app/loans/prepay?loan=${loan.id}`)}
+                onClick={() => setForeclosureDialog(true)}
               >
-                Pay Full
+                <FileCheck className="h-4 w-4 mr-1" />
+                Settle Early
               </Button>
             </div>
           </div>
+        )}
+
+        {/* Settlement Button for active loans without next installment shown */}
+        {loan.status === 'active' && !nextDueInstallment && (
+          <Button
+            onClick={() => setForeclosureDialog(true)}
+            className="w-full bg-primary"
+          >
+            <FileCheck className="h-4 w-4 mr-2" />
+            Settle Loan Early
+          </Button>
         )}
 
         {loan.status === 'pending' && (
@@ -482,6 +498,21 @@ const LoanCard = ({
         >
           View Details & Schedule
         </Button>
+
+        {/* Foreclosure Dialog */}
+        <LoanForeclosureDialog
+          open={foreclosureDialog}
+          onOpenChange={setForeclosureDialog}
+          loan={{
+            id: loan.id,
+            loan_number: loan.loan_number,
+            outstanding_bsk: loan.outstanding_bsk,
+            principal_bsk: loan.principal_bsk,
+            paid_bsk: loan.paid_bsk,
+          }}
+          userBalance={userBalance}
+          onSuccess={onUpdate}
+        />
       </CardContent>
     </Card>
   );
