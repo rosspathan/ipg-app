@@ -26,6 +26,7 @@ import { TradingBalancesCard } from "@/components/wallet/TradingBalancesCard"
 import { getStoredWallet } from "@/utils/walletStorage"
 import { useWalletIntegrity } from "@/lib/wallet/useWalletIntegrity"
 import { WalletIntegrityBanner } from "@/components/wallet/WalletIntegrityBanner"
+import { USDILoanCard } from "@/components/wallet/USDILoanCard"
 
 export function WalletPage() {
   const { navigate } = useNavigation()
@@ -361,6 +362,9 @@ export function WalletPage() {
           loading={tradingLoading}
           onTransfer={() => navigate('/app/wallet/transfer')}
         />
+
+        {/* USDI Collateral Loan Card */}
+        <USDILoanCard />
 
         {/* Pending Deposits */}
         <PendingDepositsCard />

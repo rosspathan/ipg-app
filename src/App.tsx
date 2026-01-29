@@ -503,6 +503,7 @@ function AppContent() {
               <Route path="wallet/history/onchain" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/OnchainHistoryPage')))}</React.Suspense>} />
               <Route path="wallet/history/crypto" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoHistoryPage')))}</React.Suspense>} />
               <Route path="wallet/history/bsk" element={<HistoryScreen />} />
+              <Route path="wallet/loan" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/wallet/USDILoanPage').then(m => ({ default: m.USDILoanPage }))))}</React.Suspense>} />
               <Route path="history/crypto" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoHistoryPage')))}</React.Suspense>} />
               <Route path="programs" element={<ProgramsScreen />} />
               <Route path="programs/:programKey" element={<ProgramDetailPage />} />
