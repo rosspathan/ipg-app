@@ -18,31 +18,50 @@ export function RefreshControl({
   const [refreshing, setRefreshing] = React.useState(false);
   const [pullDistance, setPullDistance] = React.useState(0);
   const [startY, setStartY] = React.useState(0);
+  const [isPulling, setIsPulling] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   const isRefreshing = externalRefreshing ?? refreshing;
   const threshold = 80;
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (containerRef.current?.scrollTop === 0) {
+    // Only start pull-to-refresh if at top of scroll
+    const scrollContainer = containerRef.current?.closest('.app-main') || containerRef.current;
+    if (scrollContainer && scrollContainer.scrollTop <= 0) {
       setStartY(e.touches[0].clientY);
+      setIsPulling(false);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (startY === 0 || containerRef.current!.scrollTop > 0) return;
+    if (startY === 0) return;
+    
+    // Check if we're at the top of the scroll container
+    const scrollContainer = containerRef.current?.closest('.app-main') || containerRef.current;
+    if (scrollContainer && scrollContainer.scrollTop > 0) {
+      // User is scrolling content, reset pull state
+      setStartY(0);
+      setPullDistance(0);
+      setIsPulling(false);
+      return;
+    }
 
     const currentY = e.touches[0].clientY;
-    const distance = Math.max(0, currentY - startY);
+    const distance = currentY - startY;
     
-    if (distance > 0) {
-      e.preventDefault();
+    // Only activate pull-to-refresh on downward pull
+    if (distance > 10) {
+      setIsPulling(true);
       setPullDistance(Math.min(distance * 0.5, threshold + 20));
+    } else if (distance < -10) {
+      // User is scrolling up, don't interfere
+      setStartY(0);
+      setIsPulling(false);
     }
   };
 
   const handleTouchEnd = async () => {
-    if (pullDistance > threshold && !isRefreshing) {
+    if (isPulling && pullDistance > threshold && !isRefreshing) {
       setRefreshing(true);
       setPullDistance(threshold);
       try {
@@ -55,6 +74,7 @@ export function RefreshControl({
       setPullDistance(0);
     }
     setStartY(0);
+    setIsPulling(false);
   };
 
   const refreshOpacity = Math.min(pullDistance / threshold, 1);
@@ -63,35 +83,36 @@ export function RefreshControl({
   return (
     <div
       ref={containerRef}
-      className={cn("relative overflow-auto", className)}
+      className={cn("relative", className)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ overscrollBehavior: 'none' }}
     >
       {/* Pull-to-refresh indicator */}
-      <div
-        className="absolute top-0 left-0 right-0 flex items-center justify-center transition-all duration-200 z-50"
-        style={{
-          height: pullDistance,
-          opacity: showRefreshIndicator ? refreshOpacity : 0,
-          transform: isRefreshing ? 'translateY(0)' : `translateY(${-20 + pullDistance}px)`
-        }}
-      >
-        <div className="bg-background/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
-          <Loader2 
-            className={cn(
-              "w-5 h-5 text-primary",
-              isRefreshing && "animate-spin"
-            )} 
-          />
+      {showRefreshIndicator && (
+        <div
+          className="absolute top-0 left-0 right-0 flex items-center justify-center transition-all duration-200 z-50 pointer-events-none"
+          style={{
+            height: pullDistance,
+            opacity: refreshOpacity,
+            transform: isRefreshing ? 'translateY(0)' : `translateY(${-20 + pullDistance}px)`
+          }}
+        >
+          <div className="bg-background/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
+            <Loader2 
+              className={cn(
+                "w-5 h-5 text-primary",
+                isRefreshing && "animate-spin"
+              )} 
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Content */}
       <div
         style={{
-          transform: isRefreshing ? `translateY(${threshold}px)` : `translateY(${pullDistance}px)`,
+          transform: isRefreshing ? `translateY(${threshold}px)` : (isPulling ? `translateY(${pullDistance}px)` : 'none'),
           transition: isRefreshing || pullDistance === 0 ? 'transform 0.2s ease-out' : 'none'
         }}
       >
