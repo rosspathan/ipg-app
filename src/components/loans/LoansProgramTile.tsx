@@ -79,36 +79,48 @@ export function LoansProgramTile() {
         )}
       >
         {/* Compact header */}
-        <button
-          type="button"
-          className="w-full flex items-start justify-between gap-3 text-left"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-        >
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
-                <Landmark className="w-5 h-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-[var(--font-heading)] font-bold text-foreground leading-tight">
-                  Loans
-                </p>
-                <p className="text-[11px] text-muted-foreground truncate">{collapsedSubline}</p>
+        <div className="w-full flex items-start justify-between gap-2">
+          <Link
+            to="/app/loans"
+            className="flex-1 flex items-start justify-between gap-3 text-left"
+            aria-label="Open loans"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
+                  <Landmark className="w-5 h-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-[var(--font-heading)] font-bold text-foreground leading-tight">
+                    Loans
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate">{collapsedSubline}</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            {activeLoan ? <LoanStatusPill status={activeLoan.status} /> : null}
+            <div className="flex items-center gap-2">
+              {activeLoan ? <LoanStatusPill status={activeLoan.status} /> : null}
+            </div>
+          </Link>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 mt-0.5"
+            onClick={() => setExpanded((v) => !v)}
+            aria-label={expanded ? "Collapse loan details" : "Expand loan details"}
+            aria-expanded={expanded}
+          >
             <ChevronDown
               className={cn(
                 "w-4 h-4 text-muted-foreground transition-transform",
                 expanded && "rotate-180"
               )}
             />
-          </div>
-        </button>
+          </Button>
+        </div>
 
         {/* Expanded content */}
         <div
