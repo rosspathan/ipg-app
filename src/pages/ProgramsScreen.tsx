@@ -73,11 +73,6 @@ const ProgramsScreen = () => {
         </div>
       </div>
 
-      {/* Loans Summary (legacy loans) */}
-      <div className="mx-4 mt-4">
-        <UserLoanSummary />
-      </div>
-
       {/* Programs Grid */}
       <div className="px-4 py-6 flex-1">
         {isUsingDefaults && (
@@ -89,6 +84,11 @@ const ProgramsScreen = () => {
         )}
         
         <ProgramGridCompact>
+          {/* Loan Tile (full width, first tile) */}
+          <div className="col-span-full">
+            <UserLoanSummary />
+          </div>
+
           {programs.map((program) => {
             const IconComponent = getLucideIcon(program.icon || "Box");
             
