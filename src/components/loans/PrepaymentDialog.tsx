@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { DollarSign, AlertCircle, CheckCircle } from "lucide-react";
+import { DollarSign, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -29,9 +29,7 @@ export const PrepaymentDialog = ({
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const isFullPayment = amount && Number(amount) === loan.outstanding_bsk;
-  const discount = isFullPayment ? loan.outstanding_bsk * 0.02 : 0;
-  const effectivePayment = amount ? Number(amount) - discount : 0;
+  const effectivePayment = amount ? Number(amount) : 0;
 
   const handlePrepay = async () => {
     if (!amount || Number(amount) <= 0) {
@@ -55,11 +53,7 @@ export const PrepaymentDialog = ({
 
       if (error) throw error;
 
-      toast.success(
-        `Successfully prepaid ${amount} BSK${
-          discount > 0 ? ` (${discount.toFixed(2)} BSK discount applied)` : ""
-        }`
-      );
+      toast.success(`Successfully prepaid ${amount} BSK`);
       onSuccess();
       onOpenChange(false);
       setAmount("");
@@ -112,33 +106,11 @@ export const PrepaymentDialog = ({
             </Button>
           </div>
 
-          {isFullPayment && (
-            <Alert className="bg-success/10 border-success/20">
-              <CheckCircle className="w-4 h-4 text-success" />
-              <AlertDescription className="text-success">
-                <strong>2% Early Repayment Discount!</strong>
-                <br />
-                Pay only {effectivePayment.toFixed(2)} BSK (Save {discount.toFixed(2)} BSK)
-              </AlertDescription>
-            </Alert>
-          )}
 
           <div className="p-4 bg-primary/5 rounded-lg space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Amount to Pay</span>
-              <span className="font-medium">{amount || "0.00"} BSK</span>
-            </div>
-            {discount > 0 && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Discount (2%)</span>
-                <span className="font-medium text-success">-{discount.toFixed(2)} BSK</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between text-sm border-t pt-2">
-              <span className="font-medium">Effective Payment</span>
-              <span className="font-bold text-primary">
-                {effectivePayment.toFixed(2)} BSK
-              </span>
+              <span className="font-bold text-primary">{amount || "0.00"} BSK</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Remaining Balance</span>
