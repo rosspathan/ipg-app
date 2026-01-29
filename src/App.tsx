@@ -515,7 +515,8 @@ function AppContent() {
               {/* On-chain Crypto Staking */}
               <Route path="staking" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoStakingScreen')))}</React.Suspense>} />
               <Route path="staking/:planId" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoStakingScreen')))}</React.Suspense>} />
-              <Route path="staking/deposit" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoStakingScreen')))}</React.Suspense>} />
+              <Route path="staking/deposit" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/StakingDepositScreen')))}</React.Suspense>} />
+              <Route path="staking/withdraw" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/StakingWithdrawScreen')))}</React.Suspense>} />
               
               {/* Profile Hub */}
               <Route path="profile" element={<ProfileHub />} />
@@ -722,6 +723,7 @@ function AppContent() {
                 <Route path="test-user-generator" element={<React.Suspense fallback={<LoadingFallback />}><AdminTestUserGenerator /></React.Suspense>} />
                 <Route path="mobile-linking" element={<React.Suspense fallback={<LoadingFallback />}><AdminMobileLinking /></React.Suspense>} />
                 <Route path="generate-hot-wallet" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/GenerateHotWallet')))}</React.Suspense>} />
+                <Route path="staking-wallet" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/StakingHotWalletAdmin')))}</React.Suspense>} />
               </Route>
 
               {/* Legacy Admin Console removed */}
