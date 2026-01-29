@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import {
@@ -11,25 +11,21 @@ import {
   CheckCircle2,
   DollarSign,
   CreditCard,
+  Archive,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { PrepaymentDialog } from "@/components/loans/PrepaymentDialog";
 import { NotificationPreferences } from "@/components/loans/NotificationPreferences";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export default function LoansPage() {
   const { user } = useAuthUser();
   const queryClient = useQueryClient();
-  const [applyDialog, setApplyDialog] = useState(false);
   const [prepayDialog, setPrepayDialog] = useState(false);
-  const [loanAmount, setLoanAmount] = useState("");
 
   // Fetch active loans
   const { data: loans, isLoading } = useQuery({
@@ -72,10 +68,6 @@ export default function LoansPage() {
     ?.filter((l: any) => l.status === "active")
     .reduce((sum: number, l: any) => sum + Number(l.loan_amount_bsk), 0) || 0;
 
-  const maxLoanAmount = balance?.holding_balance
-    ? Number(balance.holding_balance) * 0.5
-    : 0;
-
   // Fetch installments for active loan
   const { data: installments } = useQuery({
     queryKey: ["loan-installments", activeLoan?.id],
@@ -94,62 +86,36 @@ export default function LoansPage() {
     enabled: !!activeLoan?.id,
   });
 
-
-  const handleApplyLoan = async () => {
-    if (!user || !loanAmount) return;
-
-    const amount = Number(loanAmount);
-    if (amount > maxLoanAmount) {
-      toast.error(`Maximum loan amount is ${maxLoanAmount.toFixed(2)} BSK`);
-      return;
-    }
-
-    try {
-      toast.success("Loan application submitted!");
-      setApplyDialog(false);
-      setLoanAmount("");
-      queryClient.invalidateQueries({ queryKey: ["bsk-loans"] });
-    } catch (error) {
-      toast.error("Failed to apply for loan");
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 pb-24">
       {/* Backlink */}
       <BacklinkBar programName="BSK Loans" />
       
       <div className="p-4 space-y-4">
-        {/* Subtitle */}
-        <p className="text-sm text-muted-foreground mb-4">
-          Borrow against your holdings at 0% interest
-        </p>
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Coins className="w-4 h-4 text-primary" />
-                <span className="text-xs text-muted-foreground">Available</span>
-              </div>
-              <p className="text-2xl font-bold text-foreground">
-                {maxLoanAmount.toFixed(2)} BSK
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingDown className="w-4 h-4 text-success" />
-                <span className="text-xs text-muted-foreground">Borrowed</span>
-              </div>
-              <p className="text-2xl font-bold text-foreground">
-                {totalBorrowed.toFixed(2)} BSK
-              </p>
-            </CardContent>
-          </Card>
+        {/* Archived Notice */}
+        <div className="rounded-lg bg-warning/10 border border-warning/30 p-4 flex items-start gap-3">
+          <Archive className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-warning">Program Archived</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              The BSK Loan program is no longer accepting new applications. 
+              Existing loans will continue to be serviced normally.
+            </p>
+          </div>
         </div>
+
+        {/* Stats - Only show borrowed for existing loans */}
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingDown className="w-4 h-4 text-primary" />
+              <span className="text-xs text-muted-foreground">Active Borrowed</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {totalBorrowed.toFixed(2)} BSK
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Loan Info */}
         <Card className="bg-gradient-to-br from-card to-card/50 border-border/50">
@@ -319,23 +285,14 @@ export default function LoansPage() {
           </Card>
         )}
 
-        {/* Action Buttons */}
-        {activeLoan ? (
+        {/* Action Buttons - Only prepay available for active loans */}
+        {activeLoan && (
           <Button
             onClick={() => setPrepayDialog(true)}
             className="w-full gap-2 bg-gradient-to-r from-warning to-warning/80 h-12 text-lg"
           >
             <CreditCard className="w-5 h-5" />
             Prepay Loan
-          </Button>
-        ) : (
-          <Button
-            onClick={() => setApplyDialog(true)}
-            className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 h-12 text-lg"
-            disabled={maxLoanAmount === 0}
-          >
-            <Coins className="w-5 h-5" />
-            Apply for Loan
           </Button>
         )}
 
@@ -396,53 +353,6 @@ export default function LoansPage() {
           </Card>
         )}
       </div>
-
-      {/* Apply Dialog */}
-      <Dialog open={applyDialog} onOpenChange={setApplyDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Apply for BSK Loan</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Loan Amount (BSK)
-              </label>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={loanAmount}
-                onChange={(e) => setLoanAmount(e.target.value)}
-                max={maxLoanAmount}
-              />
-              <p className="text-xs text-muted-foreground">
-                Maximum: {maxLoanAmount.toFixed(2)} BSK (50% of holding balance)
-              </p>
-            </div>
-
-            <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Interest Rate</span>
-                <span className="font-medium text-success">0%</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Duration</span>
-                <span className="font-medium">16 Weeks</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Weekly Repayment</span>
-                <span className="font-medium">
-                  {loanAmount ? (Number(loanAmount) / 16).toFixed(2) : "0.00"} BSK
-                </span>
-              </div>
-            </div>
-
-            <Button onClick={handleApplyLoan} className="w-full bg-primary">
-              Confirm Application
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Prepayment Dialog */}
       {activeLoan && (
