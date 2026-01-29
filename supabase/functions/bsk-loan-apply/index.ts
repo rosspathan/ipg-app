@@ -22,6 +22,22 @@ serve(async (req: Request) => {
   );
 
   try {
+    // ====================================================================
+    // NEW LOAN APPLICATIONS ARE PERMANENTLY BLOCKED
+    // The loan program is archived. Only existing loans continue to work.
+    // ====================================================================
+    console.log('BSK Loan Application BLOCKED: New applications are no longer accepted');
+    
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'The BSK Loan program is now archived. New applications are no longer accepted. Existing loans will continue to be processed normally.',
+        archived: true
+      }),
+      { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders }}
+    );
+
+    // Legacy code below is preserved but unreachable
     const { amount_bsk, region = 'IN' }: LoanApplicationRequest = await req.json();
     
     const authHeader = req.headers.get('Authorization');

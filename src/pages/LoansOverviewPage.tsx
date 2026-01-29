@@ -51,14 +51,27 @@ export default function LoansOverviewPage() {
           ) : !user?.id ? (
             <p className="text-sm text-muted-foreground">Please sign in to view your loans.</p>
           ) : !activeLoan ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* Archived Notice */}
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3">
+                <div className="flex items-start gap-2">
+                  <Landmark className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400">Program Archived</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      New loan applications are no longer accepted. Existing loans continue processing normally.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
-                  <Landmark className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted/50 border border-border/50">
+                  <Landmark className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-[var(--font-heading)] font-bold text-foreground">No active loan</p>
-                  <p className="text-xs text-muted-foreground">If you already have a loan, it will appear here.</p>
+                  <p className="text-xs text-muted-foreground">If you had a loan, it would appear here.</p>
                 </div>
               </div>
 
