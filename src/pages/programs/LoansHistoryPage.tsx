@@ -207,11 +207,7 @@ export default function LoansHistoryPage() {
               <Card className="p-12 text-center">
                 <Wallet className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">No Loans Found</h3>
-                <p className="text-muted-foreground mb-4">You haven't applied for any loans yet.</p>
-                <Button onClick={() => navigate('/app/loans')}>
-                  <Wallet className="w-4 h-4 mr-2" />
-                  Apply for Loan
-                </Button>
+                <p className="text-muted-foreground">You don't have any loan history.</p>
               </Card>
             )}
           </TabsContent>

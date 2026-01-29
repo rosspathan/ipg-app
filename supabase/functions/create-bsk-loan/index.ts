@@ -11,6 +11,23 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // ============================================
+  // LOAN PROGRAM ARCHIVED - NO NEW APPLICATIONS
+  // ============================================
+  // The BSK loan program has been archived. New applications are permanently blocked.
+  // Existing loans continue to be serviced (EMI payments, auto-debit, completion).
+  // This block is a hard stop - do not remove without explicit business approval.
+  console.log('[create-bsk-loan] BLOCKED: Loan program is archived. No new applications accepted.');
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: 'Loan program archived',
+      message: 'The BSK Loan program is no longer accepting new applications. Existing loans will continue to be serviced normally.'
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 410 }
+  );
+
+  // Original code below is preserved but unreachable for reference
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
