@@ -17,7 +17,6 @@ import { RefreshControl } from "@/components/ui/refresh-control"
 import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms"
 import { useHomePageData } from "@/hooks/useHomePageData"
 import { HomePageSkeleton } from "@/components/home/HomePageSkeleton"
-import { UserLoanSummary } from "@/components/home/UserLoanSummary"
 /**
  * HomePageRebuilt - World-class mobile-first home screen
  * DO NOT MODIFY THE FOOTER - DockNav remains untouched
@@ -194,9 +193,6 @@ export function HomePageRebuilt() {
 
         {/* Scrolling Announcement */}
         <ScrollingAnnouncement />
-
-        {/* User Loan Summary - Shows if user has loans */}
-        <UserLoanSummary />
 
         {/* Image Carousel - Admin uploaded banners */}
         <ImageCarousel />

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { DockNav } from "@/components/navigation/DockNav"
 import { QuickSwitch } from "@/components/astra/QuickSwitch"
 import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms"
+import { UserLoanSummary } from "@/components/home/UserLoanSummary"
 
 /**
  * ProgramsPagePro - Full grid view of all programs (database-driven)
@@ -29,6 +30,9 @@ export function ProgramsPagePro() {
 
   return (
     <div className="space-y-4" data-testid="page-programs">
+        {/* User Loan Summary - Shows if user has loans */}
+        <UserLoanSummary />
+
         {/* Default Programs Notice */}
         {isUsingDefaults && (
           <div className="p-3 rounded-lg bg-muted/50 border border-border/50">

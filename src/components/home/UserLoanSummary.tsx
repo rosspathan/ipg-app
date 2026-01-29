@@ -105,19 +105,17 @@ export function UserLoanSummary() {
 
   if (isLoading) {
     return (
-      <div className="px-4">
-        <Card className="border-border/40">
-          <CardHeader className="pb-2">
-            <Skeleton className="h-5 w-32" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="border-border/40">
+        <CardHeader className="pb-2">
+          <Skeleton className="h-5 w-32" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -158,7 +156,7 @@ export function UserLoanSummary() {
   };
 
   return (
-    <div className="px-4 space-y-3">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
