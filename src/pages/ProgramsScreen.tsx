@@ -8,6 +8,7 @@ import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms";
 import { useFilteredPrograms } from "@/hooks/useFilteredPrograms";
 import { ProgramLockBadge } from "@/components/programs/ProgramLockBadge";
 import { ProgramUnlockDialog } from "@/components/programs/ProgramUnlockDialog";
+import { UserLoanSummary } from "@/components/home/UserLoanSummary";
 // BacklinkBar component will be inlined
 
 const ProgramsScreen = () => {
@@ -70,6 +71,11 @@ const ProgramsScreen = () => {
             <span className="font-bold">New:</span> BSK Purchase Bonus - Get 50% extra!
           </p>
         </div>
+      </div>
+
+      {/* Loans Summary (legacy loans) */}
+      <div className="mx-4 mt-4">
+        <UserLoanSummary />
       </div>
 
       {/* Programs Grid */}
