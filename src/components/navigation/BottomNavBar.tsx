@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Home, Wallet, Coins, Gift, User } from "lucide-react"
+import { Home, Wallet, Coins, Gift, TrendingUp, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLocation } from "react-router-dom"
 import { useNavigation } from "@/hooks/useNavigation"
@@ -28,6 +28,12 @@ const navItems = [
     label: "Programs",
     icon: Gift,
     route: "/app/programs"
+  },
+  {
+    id: "trading",
+    label: "Trading",
+    icon: TrendingUp,
+    route: "/app/trade"
   },
   {
     id: "profile",
@@ -82,12 +88,12 @@ export function BottomNavBar() {
                 navigate(item.route);
               }}
               className={cn(
-                "flex flex-col items-center justify-center px-2 py-1 rounded-md min-w-[56px]",
+                "flex flex-col items-center justify-center px-1 py-1 rounded-md min-w-[48px]",
                 active ? "text-accent" : "text-muted-foreground"
               )}
             >
-              <Icon className="h-5 w-5" />
-              <span className="text-[11px] font-medium mt-0.5">
+              <Icon className="h-4 w-4" />
+              <span className="text-[9px] font-medium mt-0.5">
                 {item.label}
               </span>
             </button>
