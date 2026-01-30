@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAssetLogos } from '@/hooks/useAssetLogos';
+import { getCryptoLogoUrl } from '@/config/cryptoLogos';
 
 interface CryptoLogoProps {
   symbol: string;
@@ -17,7 +18,12 @@ const CryptoLogo: React.FC<CryptoLogoProps> = ({
   className = ""
 }) => {
   const { getLogoUrl } = useAssetLogos();
-  const logoUrl = getLogoUrl(logoFilePath, fallbackUrl);
+  
+  // Custom logos take priority
+  const customLogo = getCryptoLogoUrl(symbol, null);
+  const logoUrl = customLogo !== '/placeholder-crypto.svg' 
+    ? customLogo 
+    : getLogoUrl(logoFilePath, fallbackUrl);
 
   return (
     <div 
