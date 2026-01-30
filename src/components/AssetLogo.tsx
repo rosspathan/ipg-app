@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getCryptoLogoUrl } from '@/config/cryptoLogos';
 
 interface AssetLogoProps {
   symbol: string;
@@ -18,12 +19,15 @@ const AssetLogo = ({ symbol, logoUrl, size = 'md', className = '' }: AssetLogoPr
   };
 
   const fallbackText = symbol.slice(0, 2).toUpperCase();
+  
+  // Get the appropriate logo URL (custom logos take priority)
+  const resolvedLogoUrl = getCryptoLogoUrl(symbol, logoUrl);
 
   return (
     <Avatar className={`${sizeClasses[size]} ${className}`}>
-      {logoUrl && !imageError ? (
+      {resolvedLogoUrl && !imageError ? (
         <AvatarImage
-          src={logoUrl}
+          src={resolvedLogoUrl}
           alt={`${symbol} logo`}
           onError={() => setImageError(true)}
         />
