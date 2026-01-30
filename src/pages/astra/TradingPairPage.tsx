@@ -13,6 +13,7 @@ import { useTradingPairs } from "@/hooks/useTradingPairs";
 import { useBep20Balances } from "@/hooks/useBep20Balances";
 import { useTradingAPI } from "@/hooks/useTradingAPI";
 import { useUserOrders } from "@/hooks/useUserOrders";
+import { useAllOpenOrders } from "@/hooks/useAllOpenOrders";
 import { useRealtimeOrderBook } from "@/hooks/useRealtimeOrderBook";
 import { useRealtimeTradingBalances } from "@/hooks/useRealtimeTradingBalances";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
@@ -81,8 +82,11 @@ function TradingPairPageContent() {
   const [showChart, setShowChart] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
 
-  // Get user orders
+  // Get user orders for this pair (for order placement)
   const { orders, cancelOrder, refetch: refetchOrders } = useUserOrders(symbol);
+  
+  // Get ALL open orders across all pairs (critical: users need to see orders from other pairs too)
+  const { orders: allOpenOrders, cancelOrder: cancelAnyOrder, isLoading: allOrdersLoading } = useAllOpenOrders();
 
   // Real-time order book from database (auto-updates on changes)
   const { data: internalOrderBookData, refetch: refetchOrderBook } = useRealtimeOrderBook(symbol);
@@ -240,7 +244,8 @@ function TradingPairPageContent() {
 
   const handleCancelOrder = async (orderId: string) => {
     try {
-      await cancelOrder(orderId);
+      // Use cancelAnyOrder which works for orders from any trading pair
+      await cancelAnyOrder(orderId);
     } catch (error: any) {
       toast({
         title: "Cancel failed",
@@ -250,7 +255,9 @@ function TradingPairPageContent() {
     }
   };
 
-  const openOrders = orders?.filter(o => o.status === 'pending' || o.status === 'partially_filled') || [];
+  // CRITICAL: Show ALL open orders across ALL pairs, not just the current pair
+  // This fixes the issue where users couldn't see/cancel orders from other pairs
+  const openOrders = allOpenOrders || [];
   const priceChangeColor = pair.change24h >= 0 ? "text-emerald-400" : "text-destructive";
 
   return (
