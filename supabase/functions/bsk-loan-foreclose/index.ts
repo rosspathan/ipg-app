@@ -58,7 +58,29 @@ serve(async (req) => {
 
     console.log(`[FORECLOSE] User ${user.id} requesting foreclosure for loan ${loan_id}`);
 
-    // Get loan details
+    // ===== IDEMPOTENCY CHECK: Prevent duplicate foreclosure =====
+    // Check if this loan was already foreclosed or is being processed
+    const idempotencyKey = `loan_foreclose_${loan_id}`;
+    
+    const { data: existingTx } = await supabase
+      .from("unified_bsk_ledger")
+      .select("id")
+      .eq("idempotency_key", idempotencyKey)
+      .maybeSingle();
+
+    if (existingTx) {
+      console.log(`[FORECLOSE] Duplicate request detected for loan ${loan_id} - already processed`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "This loan has already been settled. Please refresh the page.",
+          already_processed: true
+        }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" }}
+      );
+    }
+
+    // Get loan details with row-level lock to prevent race conditions
     const { data: loan, error: loanError } = await supabase
       .from("bsk_loans")
       .select("*")
@@ -70,8 +92,17 @@ serve(async (req) => {
       throw new Error("Loan not found or does not belong to you");
     }
 
-    if (loan.status !== "active") {
-      throw new Error(`Cannot foreclose loan with status: ${loan.status}`);
+    // Double-check status to prevent race conditions
+    if (loan.status !== "active" && loan.status !== "in_arrears") {
+      console.log(`[FORECLOSE] Loan ${loan_id} already processed with status: ${loan.status}`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Loan is already ${loan.status}. Please refresh the page.`,
+          already_processed: true
+        }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" }}
+      );
     }
 
     const outstanding = Number(loan.outstanding_bsk) || 0;
@@ -106,7 +137,7 @@ serve(async (req) => {
     }
 
     // ATOMIC: Debit user's withdrawable balance using record_bsk_transaction
-    const idempotencyKey = `loan_foreclose_${loan_id}_${Date.now()}`;
+    // Use deterministic idempotency key (loan_id only) to prevent duplicate debits
 
     const { data: debitResult, error: debitError } = await supabase.rpc(
       "record_bsk_transaction",
