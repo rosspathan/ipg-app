@@ -38,6 +38,10 @@ export function LoanForeclosureDialog({
 }: LoanForeclosureDialogProps) {
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [isProcessed, setIsProcessed] = useState(false);
+  
+  // Track if we've already initiated a request for this loan to prevent double-clicks
+  const [processedLoanId, setProcessedLoanId] = useState<string | null>(null);
 
   const outstanding = Number(loan.outstanding_bsk) || 0;
   const settlementAmount = outstanding;
@@ -48,20 +52,40 @@ export function LoanForeclosureDialog({
     : 0;
 
   const handleForeclose = async () => {
+    // Two-step confirmation: first click shows warning, second confirms
     if (!confirmed) {
       setConfirmed(true);
       return;
     }
 
+    // CRITICAL: Prevent duplicate submissions
+    if (loading || isProcessed || processedLoanId === loan.id) {
+      console.log("[FORECLOSE UI] Blocked duplicate submission");
+      return;
+    }
+
     setLoading(true);
+    setProcessedLoanId(loan.id);
+    
     try {
       const { data, error } = await supabase.functions.invoke("bsk-loan-foreclose", {
         body: { loan_id: loan.id }
       });
 
       if (error) throw error;
+      
+      // Handle already processed case (409 from backend)
+      if (data?.already_processed) {
+        toast.info("This loan has already been settled. Refreshing...");
+        setIsProcessed(true);
+        onSuccess();
+        onOpenChange(false);
+        return;
+      }
+      
       if (!data?.success) throw new Error(data?.error || "Foreclosure failed");
 
+      setIsProcessed(true);
       toast.success(
         `Loan settled successfully!`,
         { duration: 5000 }
@@ -71,8 +95,17 @@ export function LoanForeclosureDialog({
       setConfirmed(false);
     } catch (error: any) {
       console.error("Foreclosure error:", error);
-      toast.error(error.message || "Failed to settle loan");
-      setConfirmed(false);
+      // Check if it's an "already processed" error
+      if (error.message?.includes("already")) {
+        toast.info(error.message);
+        setIsProcessed(true);
+        onSuccess();
+        onOpenChange(false);
+      } else {
+        toast.error(error.message || "Failed to settle loan");
+        setConfirmed(false);
+        setProcessedLoanId(null); // Allow retry on actual errors
+      }
     } finally {
       setLoading(false);
     }
@@ -185,7 +218,7 @@ export function LoanForeclosureDialog({
             <Button
               onClick={handleForeclose}
               className={`flex-1 gap-2 ${confirmed ? 'bg-warning hover:bg-warning/90' : ''}`}
-              disabled={loading || !hasEnoughBalance}
+              disabled={loading || !hasEnoughBalance || isProcessed || processedLoanId === loan.id}
             >
               {loading ? (
                 <>
