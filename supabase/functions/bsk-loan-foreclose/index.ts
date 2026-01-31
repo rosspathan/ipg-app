@@ -191,6 +191,7 @@ serve(async (req) => {
         paid_bsk: (Number(loan.paid_bsk) || 0) + settlementAmount,
         closed_at: new Date().toISOString(),
         prepaid_at: new Date().toISOString(),
+        disbursed_at: new Date().toISOString(),
         admin_notes: `Foreclosed by user on ${new Date().toISOString()}. Settlement: ${settlementAmount} BSK`
       })
       .eq("id", loan_id);
@@ -198,6 +199,38 @@ serve(async (req) => {
     if (loanUpdateError) {
       console.error("[FORECLOSE] Loan update error:", loanUpdateError);
       // Don't throw - payment already processed, just log
+    }
+
+    // CRITICAL: Disburse the full principal amount to user's withdrawable balance
+    // This is the payout the user receives after completing all installments
+    const principalBsk = Number(loan.principal_bsk) || 0;
+    const disbursementKey = `loan_foreclose_disbursal_${loan_id}`;
+    
+    const { data: disbursalResult, error: disbursalError } = await supabase.rpc(
+      "record_bsk_transaction",
+      {
+        p_user_id: user.id,
+        p_tx_type: "credit",
+        p_tx_subtype: "loan_foreclosure_disbursal",
+        p_balance_type: "withdrawable",
+        p_amount_bsk: principalBsk,
+        p_idempotency_key: disbursementKey,
+        p_meta_json: {
+          loan_id: loan.id,
+          loan_number: loan.loan_number,
+          principal_bsk: principalBsk,
+          settlement_amount: settlementAmount,
+          action: "loan_foreclosure_disbursal",
+          notes: `Principal disbursed after loan foreclosure: ${loan.loan_number}`
+        }
+      }
+    );
+
+    if (disbursalError) {
+      console.error("[FORECLOSE] Disbursal error:", disbursalError);
+      // Log but don't throw - the settlement was successful, disbursal needs manual attention
+    } else {
+      console.log(`[FORECLOSE] ✅ Disbursed ${principalBsk} BSK principal to user (tx: ${disbursalResult})`);
     }
 
     // Log foreclosure event
@@ -214,15 +247,17 @@ serve(async (req) => {
       })
       .catch(err => console.error("[FORECLOSE] Failed to log prepayment:", err));
 
-    console.log(`[FORECLOSE] ✅ Loan ${loan.loan_number} successfully foreclosed`);
+    console.log(`[FORECLOSE] ✅ Loan ${loan.loan_number} successfully foreclosed. Disbursed ${principalBsk} BSK principal`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Loan successfully settled",
+        message: "Loan successfully settled and principal disbursed",
         loan_number: loan.loan_number,
         original_outstanding: outstanding,
         settlement_amount: settlementAmount,
+        principal_disbursed: principalBsk,
+        net_received: principalBsk - settlementAmount,
         installments_cleared: installmentsCleared,
         new_status: "closed"
       }),
