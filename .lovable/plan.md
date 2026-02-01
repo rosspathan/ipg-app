@@ -1,187 +1,304 @@
 
-# Crypto Staking System: Wallet Transfer & Admin Hot Wallet Setup
 
-## Overview
+# BSK On-Chain Migration: Deep Analysis & Enhanced Plan
 
-This plan implements the complete wallet-to-staking-account transfer flow and a dedicated admin interface for managing the staking hot wallet. The staking system will have its own separate hot wallet (distinct from the trading hot wallet) to maintain clear fund separation.
+## Executive Summary
 
-## Architecture
+### Current State: Data Analysis
 
-```text
-┌─────────────────────┐    On-chain Transfer    ┌────────────────────────┐
-│   User's Wallet     │ ────────────────────────▶ │  Staking Hot Wallet   │
-│  (Personal BEP-20)  │    IPG Tokens           │  (Admin 24-word seed)  │
-└─────────────────────┘                          └────────────────────────┘
-                                                           │
-                                                           ▼
-                                                   ┌───────────────────┐
-                                                   │  user_staking_    │
-                                                   │  accounts         │
-                                                   │  (available_bal)  │
-                                                   └───────────────────┘
-                                                           │
-                                               Choose Plan │ 0.5% Fee
-                                                           ▼
-                                                   ┌───────────────────┐
-                                                   │  user_crypto_     │
-                                                   │  stakes           │
-                                                   │  (locked 30 days) │
-                                                   └───────────────────┘
+| Metric | Value |
+|--------|-------|
+| **Total Eligible Users** | 479 users with ≥100 BSK |
+| **Total BSK to Migrate** | 5,901,469.65 BSK |
+| **Users WITH Wallet** | 274 users (4,393,482.15 BSK) |
+| **Users WITHOUT Wallet** | 205 users (1,507,987.50 BSK) |
+| **Average Balance** | 12,320.40 BSK |
+| **Largest Balance** | 951,700 BSK (single user) |
+| **Minimum Threshold** | 100 BSK |
+
+### Balance Distribution
+
+| Range | Users | Total BSK |
+|-------|-------|-----------|
+| 100-500 BSK | 49 | 9,192.50 |
+| 500-1,000 BSK | 60 | 35,511.85 |
+| 1,000-5,000 BSK | 190 | 318,820.30 |
+| 5,000-10,000 BSK | 63 | 403,730.65 |
+| 10,000-50,000 BSK | 89 | 1,673,562.90 |
+| 50,000+ BSK | 28 | 3,460,651.45 |
+
+---
+
+## Critical Issues Identified
+
+### Issue 1: Wallet Coverage Gap
+- **Problem**: 205 users (43%) with 1.5M BSK have NO linked wallet
+- **Impact**: Cannot migrate these users until they link a wallet
+- **Solution**: Either require wallet linking OR allow claiming later
+
+### Issue 2: Current Hot Wallet Risk
+- **Problem**: The system uses `ADMIN_WALLET_PRIVATE_KEY` which is the general admin wallet
+- **Risk**: Mixing operational funds with migration funds is dangerous
+- **Solution**: Create a dedicated migration hot wallet
+
+### Issue 3: Gas Cost Calculation
+- **Current**: Uses hardcoded BNB/BSK rate (1 BNB = 10,000 BSK)
+- **Problem**: If BSK price changes, gas deductions become unfair
+- **Solution**: Fetch real-time price or use system setting
+
+### Issue 4: Precision Handling
+- **Risk**: JavaScript floating-point errors on large numbers
+- **Example**: 951,700 BSK could have rounding issues
+- **Solution**: Use BigInt/string arithmetic throughout
+
+---
+
+## Proposed Enhanced Architecture
+
+### A. Dedicated Migration Hot Wallet
+
+Create a **separate** hot wallet specifically for migrations:
+
+```
+Purpose: Hold only BSK tokens for migration
+Fund it with: Exactly the amount needed for current batch
+Benefits:
+  - Isolated risk (if compromised, only migration funds at risk)
+  - Clear audit trail (all transactions are migration-related)
+  - Easier reconciliation (wallet balance = remaining migrations)
 ```
 
-## Deliverables
+**Implementation:**
+1. Generate new BSC wallet (admin does this externally)
+2. Store private key as new secret: `MIGRATION_WALLET_PRIVATE_KEY`
+3. Fund wallet with required BSK before starting batch
+4. Edge function uses this wallet for transfers
 
-### 1. Admin Staking Hot Wallet Generator Page
+### B. Pre-Migration Funding Calculator
 
-A new admin page at `/admin/staking-wallet` to generate and manage the dedicated staking hot wallet.
+Add a new action to calculate exact funding requirements:
 
-**Features:**
-- Generate new 24-word BIP39 mnemonic seed phrase
-- Display/copy wallet address, private key, and recovery phrase
-- Download credentials as secure file
-- Save wallet address to `crypto_staking_config.admin_hot_wallet_address`
-- Show current staking wallet status and BNB gas balance
-- Instructions for storing private key as Supabase secret (`STAKING_WALLET_PRIVATE_KEY`)
+```typescript
+action: 'calculate_funding' => {
+  total_bsk_needed: 4,393,482.15,  // For users with wallets
+  estimated_gas_bsk: ~5,000,       // 274 users × ~18 BSK gas each
+  net_bsk_to_transfer: 4,388,482,  // After gas deductions
+  bnb_for_gas: ~0.195 BNB,         // 274 × 65,000 gas × 3 gwei
+  funding_address: "0x...",
+  bscscan_link: "https://..."
+}
+```
 
-**UI Components:**
-- Warning banner about security (credentials shown once)
-- Current wallet status card with gas balance indicator
-- Generation form with reveal/hide toggles
-- Copy-to-clipboard buttons for all fields
-- Save to database confirmation
+### C. Balance Reconciliation Check
 
-### 2. Wallet to Staking Account Transfer Flow
+Before ANY migration, verify:
 
-**New Components:**
+```sql
+-- Each user's withdrawable_balance MUST match ledger sum
+SELECT 
+  ub.user_id,
+  ub.withdrawable_balance as table_balance,
+  (SELECT SUM(CASE WHEN tx_type='credit' THEN amount_bsk ELSE -amount_bsk END)
+   FROM unified_bsk_ledger 
+   WHERE user_id = ub.user_id 
+   AND balance_type = 'withdrawable' 
+   AND status = 'completed') as ledger_balance,
+  ABS(ub.withdrawable_balance - ledger_balance) as drift
+FROM user_bsk_balances ub
+WHERE ub.withdrawable_balance >= 100
+HAVING drift > 0.01;  -- Flag any mismatch > 0.01 BSK
+```
 
-**`StakingDepositScreen.tsx`** (`/app/staking/deposit`)
-- Shows user's current on-chain IPG balance
-- Displays staking hot wallet address for deposit
-- QR code for easy mobile wallet scanning
-- Amount input with "Max" button
-- Clear instructions: "Send IPG to this address to fund your staking account"
-- Real-time deposit detection status
+---
 
-**Transfer Process:**
-1. User views their on-chain IPG balance
-2. User clicks "Fund" → goes to deposit screen
-3. User sends IPG from their wallet to the staking hot wallet address
-4. Edge function detects the deposit via blockchain monitoring
-5. User's `user_staking_accounts.available_balance` is credited
-6. Transaction recorded in `crypto_staking_ledger` with `tx_type='deposit'`
+## Implementation Plan
 
-### 3. Staking Account to Wallet Withdrawal Flow
+### Phase 1: Infrastructure Setup
 
-**New Component: `StakingWithdrawScreen.tsx`**
-- Shows available (unlocked) staking balance
-- 0.5% withdrawal fee display
-- Confirmation dialog
-- Initiates on-chain transfer from staking hot wallet back to user
+**1.1 Add Migration Wallet Secret**
+- Admin generates new BSC wallet (MetaMask/hardware wallet)
+- Store `MIGRATION_WALLET_PRIVATE_KEY` as new secret
+- Keep backup of private key securely offline
 
-### 4. Edge Functions
+**1.2 Create Funding Calculator Endpoint**
+Add new action to existing edge function:
+```typescript
+case 'calculate_funding':
+  return await calculateFundingRequirements(supabase);
+```
 
-**`staking-deposit-monitor/index.ts`**
-- Monitors staking hot wallet for incoming IPG transfers
-- Matches deposits to users via their registered wallet addresses
-- Credits `user_staking_accounts.available_balance`
-- Creates ledger entry in `crypto_staking_ledger`
+Returns:
+- Exact BSK needed
+- Estimated BNB for gas
+- Migration wallet address
+- Link to fund via BscScan
 
-**`process-staking-deposit/index.ts`**
-- Manual deposit crediting (admin use)
-- Validates transaction hash on BSCScan
-- Prevents double-crediting
+**1.3 Update Edge Function for New Wallet**
+- Add fallback: Use `MIGRATION_WALLET_PRIVATE_KEY` if set, else `ADMIN_WALLET_PRIVATE_KEY`
+- Add wallet balance pre-check before creating batch
 
-**`process-staking-withdrawal/index.ts`**
-- Validates available balance
-- Deducts 0.5% unstaking fee
-- Signs and broadcasts on-chain transfer using `STAKING_WALLET_PRIVATE_KEY`
-- Updates `crypto_staking_ledger`
+### Phase 2: Pre-Migration Safeguards
 
-### 5. Staking Account Hook
+**2.1 Balance Integrity Audit**
+New action: `action: 'audit_balances'`
+- Compares every eligible user's `withdrawable_balance` vs ledger sum
+- Flags any drift > 0.01 BSK
+- BLOCKS batch creation if mismatches found
+- Provides fix command for admins
 
-**`useCryptoStakingAccount.ts`**
-- Fetches user's staking account balance
-- Fetches staking plans from database
-- Fetches user's active stakes
-- Fetches staking history/ledger
-- Provides deposit address (from config)
-- Real-time subscription for balance updates
+**2.2 Precision-Safe Arithmetic**
+Replace all balance calculations with string/BigInt:
+```typescript
+// BEFORE (risky)
+const netAmount = amountBsk - gasDeduction;
 
-### 6. Updated Staking Screen
+// AFTER (safe)
+import BigNumber from 'bignumber.js';
+const netAmount = new BigNumber(amountBsk).minus(gasDeduction).toFixed(8);
+```
 
-**Updates to `CryptoStakingScreen.tsx`:**
-- Fetch real staking account balance from database
-- Fetch staking plans from `crypto_staking_plans` table (not hardcoded)
-- Show "Fund" button linking to deposit page
-- Display pending deposits status
-- Show real-time available balance
+**2.3 Dynamic Gas Pricing**
+Fetch current BSK/BNB rate from:
+- Option A: Add to `system_settings` table (admin-controlled)
+- Option B: Query from trading pair on-chain
+- Option C: Use CMC/CoinGecko API (requires new secret)
+
+### Phase 3: Enhanced Migration Flow
+
+**Step-by-Step Process:**
+
+```text
+1. CALCULATE FUNDING
+   └─> Admin calls 'calculate_funding'
+   └─> Shows: 274 users, 4,393,482 BSK, ~0.2 BNB gas
+
+2. FUND MIGRATION WALLET
+   └─> Admin sends BSK + BNB to migration wallet
+   └─> System verifies sufficient balance
+
+3. AUDIT BALANCES
+   └─> Admin calls 'audit_balances'
+   └─> System checks all users' balances match ledger
+   └─> If mismatches: STOP and reconcile first
+
+4. CREATE BATCH
+   └─> Snapshots all balances
+   └─> Records idempotency keys
+   └─> Marks batch as 'pending'
+
+5. PROCESS MIGRATIONS (one-by-one or bulk)
+   └─> For each user:
+       ├─> Validate current balance
+       ├─> Calculate gas deduction (precision-safe)
+       ├─> Debit internal ledger (idempotent)
+       ├─> Sign & broadcast on-chain transfer
+       ├─> Wait for confirmation
+       └─> Update status to 'completed'
+
+6. POST-MIGRATION VERIFICATION
+   └─> Compare expected vs actual on-chain transfers
+   └─> Generate audit report
+   └─> Handle any failures (rollback or retry)
+```
+
+### Phase 4: UI Enhancements
+
+**4.1 Add Funding Status Card**
+Show migration wallet status:
+- Current BSK balance
+- Current BNB balance (for gas)
+- Expected remaining after batch
+
+**4.2 Add Audit Tab**
+- Run balance integrity check
+- Show any mismatches
+- One-click reconciliation
+
+**4.3 Add Funding Calculator**
+- Show exact requirements before batch creation
+- Deep link to fund via BscScan
 
 ---
 
 ## Technical Details
 
-### Database Tables Already Exist
+### New System Settings
 
-| Table | Purpose |
-|-------|---------|
-| `crypto_staking_config` | Global config: hot wallet address, 0.5% fees |
-| `crypto_staking_plans` | 4 tiers already seeded |
-| `user_staking_accounts` | Per-user: available_balance, staked_balance |
-| `user_crypto_stakes` | Individual locked stake positions |
-| `crypto_staking_ledger` | Full audit trail of all transactions |
+| Key | Value | Purpose |
+|-----|-------|---------|
+| `bsk_migration_enabled` | true/false | Global kill switch |
+| `bsk_migration_min_amount` | 100 | Minimum BSK to migrate |
+| `bsk_to_bnb_rate` | 10000 | 1 BNB = X BSK for gas calc |
+| `bsk_migration_gas_buffer` | 1.2 | 20% gas price buffer |
+| `bsk_contract_address` | 0x742... | BSK BEP-20 contract |
 
-### Secret Required
+### Edge Function Updates
 
-You will need to add **`STAKING_WALLET_PRIVATE_KEY`** as a Supabase secret after generating the hot wallet. This is used by the withdrawal edge function to sign on-chain transactions.
-
-### File Structure
-
-```text
-src/
-├── pages/
-│   ├── CryptoStakingScreen.tsx (update)
-│   ├── StakingDepositScreen.tsx (new)
-│   ├── StakingWithdrawScreen.tsx (new)
-│   └── admin/
-│       └── StakingHotWalletAdmin.tsx (new)
-├── hooks/
-│   └── useCryptoStakingAccount.ts (new)
-└── components/
-    └── staking/
-        ├── StakingAccountCard.tsx (new)
-        ├── StakingPlanCard.tsx (new)
-        └── StakingHistory.tsx (new)
-
-supabase/functions/
-├── staking-deposit-monitor/index.ts (new)
-├── process-staking-deposit/index.ts (new)
-├── process-staking-withdrawal/index.ts (new)
-└── distribute-staking-rewards/index.ts (already exists - for monthly rewards)
+```typescript
+// New actions to add:
+'calculate_funding'    // Calculate exact BSK + BNB needed
+'audit_balances'       // Check all balances match ledger
+'get_wallet_status'    // Show migration wallet balances
+'reconcile_user'       // Fix single user's balance drift
 ```
 
-### Security Considerations
+### Database Additions
 
-1. **Separate hot wallet** from trading to isolate staking funds
-2. **Private key stored as secret** - never exposed to frontend
-3. **RLS policies** already in place for staking tables
-4. **Ledger-based auditing** for all balance changes
-5. **Fee enforcement** on both entry (0.5%) and exit (0.5%)
+Add columns to `bsk_onchain_migrations`:
+- `balance_verified_at` - When ledger match was confirmed
+- `precision_amount_wei` - Full precision amount as string
+- `gas_rate_used` - BSK/BNB rate used for this transfer
 
 ---
 
-## Implementation Sequence
+## Risk Mitigation
 
-1. **Create Admin Staking Wallet Page** - Generate and save the staking hot wallet
-2. **Create useCryptoStakingAccount hook** - Database integration
-3. **Update CryptoStakingScreen** - Connect to real database
-4. **Create StakingDepositScreen** - Deposit flow UI
-5. **Create staking-deposit-monitor edge function** - On-chain detection
-6. **Create process-staking-withdrawal edge function** - Withdrawal handling
-7. **Add routing** - Register new pages in App.tsx
+### What Could Go Wrong?
 
-After implementation, you will:
-1. Navigate to `/admin/staking-wallet`
-2. Generate or enter your 24-word seed phrase
-3. Save the wallet address to the database
-4. Store the private key as `STAKING_WALLET_PRIVATE_KEY` secret
-5. Fund the wallet with a small amount of BNB for gas fees
+| Risk | Mitigation |
+|------|------------|
+| User withdraws during migration | Lock withdrawals for users in batch |
+| Hot wallet hacked | Use separate wallet with only required funds |
+| BSC network congestion | Dynamic gas pricing + retry mechanism |
+| Double debit | Idempotency keys prevent this |
+| Partial batch failure | Rollback mechanism restores internal balance |
+| Precision loss | BigNumber.js for all calculations |
+
+### Rollback Strategy
+
+If migration fails AFTER internal debit:
+1. System automatically credits back via `migration_rollback` tx_subtype
+2. Uses unique idempotency key: `migrate_rollback_{migration_id}`
+3. Updates status to `rolled_back`
+4. Batch marked as `partial` (not `completed`)
+
+---
+
+## Summary: What Will Be Built
+
+1. **New Secret**: `MIGRATION_WALLET_PRIVATE_KEY` for dedicated hot wallet
+2. **Edge Function Updates**:
+   - `calculate_funding` action - shows exact requirements
+   - `audit_balances` action - verifies ledger integrity
+   - `get_wallet_status` action - shows hot wallet balances
+   - Dynamic gas rate from system settings
+   - BigNumber.js for precision-safe arithmetic
+3. **UI Enhancements**:
+   - Funding calculator panel
+   - Balance audit tab
+   - Migration wallet status display
+4. **System Settings**: Gas rate, minimum amount, contract address
+
+---
+
+## Next Steps After Approval
+
+1. Admin generates new BSC wallet externally
+2. Add `MIGRATION_WALLET_PRIVATE_KEY` secret
+3. I implement the enhanced edge function
+4. I update the admin UI
+5. Admin funds the migration wallet
+6. Run audit to verify all balances
+7. Create first batch and test with small users (100-500 BSK range)
+8. If successful, proceed with larger batches
+
