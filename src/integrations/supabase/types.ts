@@ -2673,6 +2673,185 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_onchain_migration_batches: {
+        Row: {
+          batch_number: string
+          bsk_per_gas_unit: number | null
+          completed_at: string | null
+          created_at: string
+          failed_users: number
+          gas_price_gwei: number | null
+          id: string
+          initiated_by: string
+          min_amount_bsk: number
+          notes: string | null
+          processed_users: number
+          started_at: string | null
+          status: string
+          successful_users: number
+          total_bsk_migrated: number
+          total_bsk_requested: number
+          total_gas_deducted_bsk: number
+          total_gas_spent_bnb: number
+          total_users: number
+        }
+        Insert: {
+          batch_number: string
+          bsk_per_gas_unit?: number | null
+          completed_at?: string | null
+          created_at?: string
+          failed_users?: number
+          gas_price_gwei?: number | null
+          id?: string
+          initiated_by: string
+          min_amount_bsk?: number
+          notes?: string | null
+          processed_users?: number
+          started_at?: string | null
+          status?: string
+          successful_users?: number
+          total_bsk_migrated?: number
+          total_bsk_requested?: number
+          total_gas_deducted_bsk?: number
+          total_gas_spent_bnb?: number
+          total_users?: number
+        }
+        Update: {
+          batch_number?: string
+          bsk_per_gas_unit?: number | null
+          completed_at?: string | null
+          created_at?: string
+          failed_users?: number
+          gas_price_gwei?: number | null
+          id?: string
+          initiated_by?: string
+          min_amount_bsk?: number
+          notes?: string | null
+          processed_users?: number
+          started_at?: string | null
+          status?: string
+          successful_users?: number
+          total_bsk_migrated?: number
+          total_bsk_requested?: number
+          total_gas_deducted_bsk?: number
+          total_gas_spent_bnb?: number
+          total_users?: number
+        }
+        Relationships: []
+      }
+      bsk_onchain_migrations: {
+        Row: {
+          actual_gas_cost_bnb: number | null
+          admin_notes: string | null
+          amount_requested: number
+          balance_matches_ledger: boolean | null
+          batch_id: string
+          block_number: number | null
+          broadcasted_at: string | null
+          completed_at: string | null
+          confirmations: number | null
+          confirmed_at: string | null
+          created_at: string
+          debited_at: string | null
+          error_message: string | null
+          failed_at: string | null
+          gas_deduction_bsk: number
+          gas_price_gwei: number | null
+          gas_used: number | null
+          id: string
+          idempotency_key: string
+          internal_balance_snapshot: number
+          ledger_debit_tx_id: string | null
+          ledger_sum_at_snapshot: number | null
+          max_retries: number
+          net_amount_migrated: number
+          retry_count: number
+          rolled_back_at: string | null
+          signed_at: string | null
+          status: string
+          tx_hash: string | null
+          user_id: string
+          validated_at: string | null
+          wallet_address: string
+        }
+        Insert: {
+          actual_gas_cost_bnb?: number | null
+          admin_notes?: string | null
+          amount_requested: number
+          balance_matches_ledger?: boolean | null
+          batch_id: string
+          block_number?: number | null
+          broadcasted_at?: string | null
+          completed_at?: string | null
+          confirmations?: number | null
+          confirmed_at?: string | null
+          created_at?: string
+          debited_at?: string | null
+          error_message?: string | null
+          failed_at?: string | null
+          gas_deduction_bsk?: number
+          gas_price_gwei?: number | null
+          gas_used?: number | null
+          id?: string
+          idempotency_key: string
+          internal_balance_snapshot: number
+          ledger_debit_tx_id?: string | null
+          ledger_sum_at_snapshot?: number | null
+          max_retries?: number
+          net_amount_migrated?: number
+          retry_count?: number
+          rolled_back_at?: string | null
+          signed_at?: string | null
+          status?: string
+          tx_hash?: string | null
+          user_id: string
+          validated_at?: string | null
+          wallet_address: string
+        }
+        Update: {
+          actual_gas_cost_bnb?: number | null
+          admin_notes?: string | null
+          amount_requested?: number
+          balance_matches_ledger?: boolean | null
+          batch_id?: string
+          block_number?: number | null
+          broadcasted_at?: string | null
+          completed_at?: string | null
+          confirmations?: number | null
+          confirmed_at?: string | null
+          created_at?: string
+          debited_at?: string | null
+          error_message?: string | null
+          failed_at?: string | null
+          gas_deduction_bsk?: number
+          gas_price_gwei?: number | null
+          gas_used?: number | null
+          id?: string
+          idempotency_key?: string
+          internal_balance_snapshot?: number
+          ledger_debit_tx_id?: string | null
+          ledger_sum_at_snapshot?: number | null
+          max_retries?: number
+          net_amount_migrated?: number
+          retry_count?: number
+          rolled_back_at?: string | null
+          signed_at?: string | null
+          status?: string
+          tx_hash?: string | null
+          user_id?: string
+          validated_at?: string | null
+          wallet_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsk_onchain_migrations_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "bsk_onchain_migration_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bsk_purchase_bonuses: {
         Row: {
           campaign_name: string
@@ -9949,6 +10128,10 @@ export type Database = {
       }
       system_settings: {
         Row: {
+          bsk_contract_address: string | null
+          bsk_migration_enabled: boolean | null
+          bsk_migration_gas_multiplier: number | null
+          bsk_migration_min_amount: number | null
           created_at: string | null
           description: string | null
           id: string
@@ -9957,6 +10140,10 @@ export type Database = {
           value: string
         }
         Insert: {
+          bsk_contract_address?: string | null
+          bsk_migration_enabled?: boolean | null
+          bsk_migration_gas_multiplier?: number | null
+          bsk_migration_min_amount?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -9965,6 +10152,10 @@ export type Database = {
           value: string
         }
         Update: {
+          bsk_contract_address?: string | null
+          bsk_migration_enabled?: boolean | null
+          bsk_migration_gas_multiplier?: number | null
+          bsk_migration_min_amount?: number | null
           created_at?: string | null
           description?: string | null
           id?: string

@@ -317,3 +317,6 @@ verify_jwt = false
 
 [functions.process-staking-withdrawal]
 verify_jwt = true
+
+[functions.admin-migrate-bsk-onchain]
+verify_jwt = true
