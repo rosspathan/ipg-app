@@ -18,6 +18,7 @@ import {
   Link as LinkIcon,
   Activity,
   ClipboardList,
+  Key,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -70,6 +71,7 @@ const systemNav: NavItem[] = [
   { title: "System Health", url: "/admin/system-health", icon: Database },
   { title: "Audit Logs", url: "/admin/audit-logs", icon: FileText },
   { title: "Orphaned Users", url: "/admin/orphaned-users-cleanup", icon: AlertTriangle },
+  { title: "Hot Wallet", url: "/admin/generate-hot-wallet", icon: Key },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
