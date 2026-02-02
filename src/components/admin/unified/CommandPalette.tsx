@@ -22,6 +22,7 @@ import {
   BarChart3,
   UserPlus,
   Search,
+  Key,
 } from "lucide-react";
 
 interface Command {
@@ -160,6 +161,17 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       category: "System",
       action: () => {
         navigate("/admin/system-health");
+        onOpenChange(false);
+      },
+    },
+    {
+      id: "hot-wallet",
+      title: "Hot Wallet Generator",
+      description: "Generate or view migration hot wallet",
+      icon: Key,
+      category: "System",
+      action: () => {
+        navigate("/admin/generate-hot-wallet");
         onOpenChange(false);
       },
     },
