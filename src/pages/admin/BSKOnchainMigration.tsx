@@ -20,10 +20,22 @@ import {
   Loader2,
   Users,
   Coins,
-  Fuel
+  Fuel,
+  Download,
+  FileText,
+  FileSpreadsheet,
+  Wallet,
+  WalletCards
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { 
+  BSKUserExportData, 
+  BSKMigrationReportStats, 
+  generateBSKMigrationPDF, 
+  generateBSKMigrationCSV,
+  calculateStats 
+} from '@/utils/bskMigrationPdfExport';
 
 interface MigrationBatch {
   id: string;
@@ -90,10 +102,17 @@ export default function BSKOnchainMigration() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [minAmount, setMinAmount] = useState(100);
+  
+  // Export states
+  const [exportLoading, setExportLoading] = useState(false);
+  const [allUsersExportData, setAllUsersExportData] = useState<BSKUserExportData[]>([]);
+  const [exportStats, setExportStats] = useState<BSKMigrationReportStats | null>(null);
+  const [walletFilter, setWalletFilter] = useState<'all' | 'with' | 'without'>('all');
 
   useEffect(() => {
     fetchBatches();
     fetchEligibleUsers();
+    fetchAllUsersForExport();
   }, []);
 
   const fetchBatches = async () => {
@@ -146,6 +165,154 @@ export default function BSKOnchainMigration() {
     });
 
     setEligibleUsers(eligible.sort((a, b) => b.withdrawable_balance - a.withdrawable_balance));
+  };
+
+  // Fetch ALL users with 100+ BSK for comprehensive export (with and without wallets)
+  const fetchAllUsersForExport = async () => {
+    try {
+      // 1. Get all users with 100+ BSK withdrawable
+      const { data: balances, error: balanceError } = await supabase
+        .from('user_bsk_balances')
+        .select('user_id, withdrawable_balance, holding_balance')
+        .gte('withdrawable_balance', 100)
+        .order('withdrawable_balance', { ascending: false });
+
+      if (balanceError) {
+        console.error('Balance fetch error:', balanceError);
+        return;
+      }
+
+      const userIds = balances?.map(b => b.user_id) || [];
+
+      // 2. Get profiles for all these users
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select(`
+          user_id, email, username, display_name, full_name, phone,
+          bsc_wallet_address, wallet_address,
+          kyc_status, account_status, created_at
+        `)
+        .in('user_id', userIds);
+
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        return;
+      }
+
+      // 3. Get sponsor relationships
+      const { data: referrals, error: refError } = await supabase
+        .from('referral_tree')
+        .select('user_id, direct_sponsor_id')
+        .in('user_id', userIds)
+        .eq('level', 1);
+
+      // 4. Get sponsor profiles
+      const sponsorIds = referrals
+        ?.map(r => r.direct_sponsor_id)
+        .filter((id): id is string => !!id) || [];
+      
+      let sponsors: { user_id: string; username: string | null; email: string | null }[] = [];
+      if (sponsorIds.length > 0) {
+        const { data: sponsorData } = await supabase
+          .from('profiles')
+          .select('user_id, username, email')
+          .in('user_id', sponsorIds);
+        sponsors = sponsorData || [];
+      }
+
+      // 5. Merge all data
+      const exportData: BSKUserExportData[] = [];
+      balances?.forEach((balance, index) => {
+        const profile = profiles?.find(p => p.user_id === balance.user_id);
+        const referral = referrals?.find(r => r.user_id === balance.user_id);
+        const sponsor = referral?.direct_sponsor_id 
+          ? sponsors.find(s => s.user_id === referral.direct_sponsor_id)
+          : null;
+
+        exportData.push({
+          row_number: index + 1,
+          user_id: balance.user_id,
+          username: profile?.username || null,
+          email: profile?.email || null,
+          full_name: profile?.full_name || null,
+          phone: profile?.phone || null,
+          wallet_address: profile?.bsc_wallet_address || profile?.wallet_address || null,
+          withdrawable_balance: Number(balance.withdrawable_balance),
+          holding_balance: Number(balance.holding_balance || 0),
+          kyc_status: profile?.kyc_status || null,
+          account_status: profile?.account_status || null,
+          sponsor_username: sponsor?.username || null,
+          sponsor_email: sponsor?.email || null,
+          created_at: profile?.created_at || '',
+        });
+      });
+
+      setAllUsersExportData(exportData);
+      setExportStats(calculateStats(exportData));
+
+      console.log(`[Export] Loaded ${exportData.length} users for export`);
+    } catch (err) {
+      console.error('Error fetching export data:', err);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (allUsersExportData.length === 0) {
+      toast.error('No data to export. Please wait for data to load.');
+      return;
+    }
+
+    setExportLoading(true);
+    try {
+      // Filter data based on wallet filter
+      let dataToExport = allUsersExportData;
+      if (walletFilter === 'with') {
+        dataToExport = allUsersExportData.filter(u => u.wallet_address);
+      } else if (walletFilter === 'without') {
+        dataToExport = allUsersExportData.filter(u => !u.wallet_address);
+      }
+
+      // Recalculate row numbers
+      dataToExport = dataToExport.map((u, i) => ({ ...u, row_number: i + 1 }));
+      
+      const stats = calculateStats(dataToExport);
+      generateBSKMigrationPDF(dataToExport, stats);
+      toast.success(`PDF exported with ${dataToExport.length} users`);
+    } catch (err) {
+      console.error('Export error:', err);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    if (allUsersExportData.length === 0) {
+      toast.error('No data to export. Please wait for data to load.');
+      return;
+    }
+
+    setExportLoading(true);
+    try {
+      // Filter data based on wallet filter
+      let dataToExport = allUsersExportData;
+      if (walletFilter === 'with') {
+        dataToExport = allUsersExportData.filter(u => u.wallet_address);
+      } else if (walletFilter === 'without') {
+        dataToExport = allUsersExportData.filter(u => !u.wallet_address);
+      }
+
+      // Recalculate row numbers
+      dataToExport = dataToExport.map((u, i) => ({ ...u, row_number: i + 1 }));
+      
+      generateBSKMigrationCSV(dataToExport);
+      toast.success(`CSV exported with ${dataToExport.length} users`);
+    } catch (err) {
+      console.error('Export error:', err);
+      toast.error('Failed to generate CSV');
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const fetchBatchMigrations = async (batchId: string) => {
@@ -554,38 +721,190 @@ export default function BSKOnchainMigration() {
           </div>
         </TabsContent>
 
-        <TabsContent value="eligible">
+        <TabsContent value="eligible" className="space-y-4">
+          {/* Export Stats Summary */}
+          {exportStats && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Total Users (100+ BSK)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{exportStats.total_users}</div>
+                  <p className="text-xs text-muted-foreground">{exportStats.total_bsk.toLocaleString()} BSK total</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-green-500" />
+                    With Wallet
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-500">{exportStats.users_with_wallet}</div>
+                  <p className="text-xs text-muted-foreground">{exportStats.bsk_with_wallet.toLocaleString()} BSK ({((exportStats.users_with_wallet / exportStats.total_users) * 100).toFixed(1)}%)</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <WalletCards className="w-4 h-4 text-orange-500" />
+                    Without Wallet
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-500">{exportStats.users_without_wallet}</div>
+                  <p className="text-xs text-muted-foreground">{exportStats.bsk_without_wallet.toLocaleString()} BSK ({((exportStats.users_without_wallet / exportStats.total_users) * 100).toFixed(1)}%)</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-500" />
+                    KYC Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-lg font-bold">
+                    <span className="text-green-500">{exportStats.kyc_approved}</span>
+                    <span className="text-muted-foreground"> / </span>
+                    <span className="text-orange-500">{exportStats.kyc_pending}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Approved / Pending</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           <Card>
             <CardHeader>
-              <CardTitle>Eligible Users for Migration</CardTitle>
-              <CardDescription>
-                Users with ≥100 BSK withdrawable balance and linked wallet
-              </CardDescription>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <CardTitle>All Users with ≥100 BSK</CardTitle>
+                  <CardDescription>
+                    Complete list of all users with 100+ BSK for export and analysis
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Wallet Filter */}
+                  <div className="flex items-center border rounded-lg overflow-hidden">
+                    <Button
+                      variant={walletFilter === 'all' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="rounded-none"
+                      onClick={() => setWalletFilter('all')}
+                    >
+                      All
+                    </Button>
+                    <Button
+                      variant={walletFilter === 'with' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="rounded-none"
+                      onClick={() => setWalletFilter('with')}
+                    >
+                      With Wallet
+                    </Button>
+                    <Button
+                      variant={walletFilter === 'without' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="rounded-none"
+                      onClick={() => setWalletFilter('without')}
+                    >
+                      No Wallet
+                    </Button>
+                  </div>
+                  
+                  {/* Export Buttons */}
+                  <Button
+                    onClick={handleExportPDF}
+                    disabled={exportLoading || allUsersExportData.length === 0}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {exportLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4 mr-2" />
+                    )}
+                    Export PDF
+                  </Button>
+                  <Button
+                    onClick={handleExportCSV}
+                    disabled={exportLoading || allUsersExportData.length === 0}
+                    variant="outline"
+                  >
+                    {exportLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    )}
+                    Export CSV
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[600px]">
+              <ScrollArea className="h-[500px]">
                 <div className="space-y-2">
-                  {eligibleUsers.map((user) => (
+                  {allUsersExportData
+                    .filter(user => {
+                      if (walletFilter === 'with') return !!user.wallet_address;
+                      if (walletFilter === 'without') return !user.wallet_address;
+                      return true;
+                    })
+                    .map((user, index) => (
                     <div
                       key={user.user_id}
-                      className="p-3 rounded-lg border border-border flex items-center justify-between"
+                      className="p-3 rounded-lg border border-border flex items-center justify-between hover:bg-muted/50"
                     >
-                      <div>
-                        <div className="font-medium">
-                          {user.display_name || user.email || user.user_id.slice(0, 8)}
-                        </div>
-                        <div className="text-xs text-muted-foreground font-mono">
-                          {user.wallet_address}
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground w-8">{index + 1}</span>
+                        <div>
+                          <div className="font-medium flex items-center gap-2">
+                            {user.username || user.email?.split('@')[0] || user.user_id.slice(0, 8)}
+                            {user.kyc_status === 'approved' ? (
+                              <Badge variant="outline" className="text-green-500 border-green-500/50 text-xs">KYC</Badge>
+                            ) : null}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{user.email}</div>
+                          {user.wallet_address ? (
+                            <div className="text-xs text-muted-foreground font-mono flex items-center gap-1">
+                              <Wallet className="w-3 h-3 text-green-500" />
+                              {user.wallet_address.slice(0, 10)}...{user.wallet_address.slice(-6)}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-orange-500 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              No wallet linked
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-lg">
                           {user.withdrawable_balance.toLocaleString()}
                         </div>
-                        <div className="text-xs text-muted-foreground">BSK</div>
+                        <div className="text-xs text-muted-foreground">BSK (withdrawable)</div>
+                        {user.sponsor_username && (
+                          <div className="text-xs text-muted-foreground">
+                            Sponsor: {user.sponsor_username}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
+                  {allUsersExportData.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                      Loading user data...
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>
