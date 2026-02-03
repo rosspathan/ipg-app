@@ -1,304 +1,298 @@
 
 
-# BSK On-Chain Migration: Deep Analysis & Enhanced Plan
+# PDF Export Feature for BSK Migration Report
 
-## Executive Summary
+## Overview
 
-### Current State: Data Analysis
-
-| Metric | Value |
-|--------|-------|
-| **Total Eligible Users** | 479 users with ≥100 BSK |
-| **Total BSK to Migrate** | 5,901,469.65 BSK |
-| **Users WITH Wallet** | 274 users (4,393,482.15 BSK) |
-| **Users WITHOUT Wallet** | 205 users (1,507,987.50 BSK) |
-| **Average Balance** | 12,320.40 BSK |
-| **Largest Balance** | 951,700 BSK (single user) |
-| **Minimum Threshold** | 100 BSK |
-
-### Balance Distribution
-
-| Range | Users | Total BSK |
-|-------|-------|-----------|
-| 100-500 BSK | 49 | 9,192.50 |
-| 500-1,000 BSK | 60 | 35,511.85 |
-| 1,000-5,000 BSK | 190 | 318,820.30 |
-| 5,000-10,000 BSK | 63 | 403,730.65 |
-| 10,000-50,000 BSK | 89 | 1,673,562.90 |
-| 50,000+ BSK | 28 | 3,460,651.45 |
+Create a comprehensive PDF export functionality for the BSK Migration admin page that generates a professional, multi-page report containing all 476+ eligible users (100+ BSK) with complete details for release planning.
 
 ---
 
-## Critical Issues Identified
+## What Will Be Built
 
-### Issue 1: Wallet Coverage Gap
-- **Problem**: 205 users (43%) with 1.5M BSK have NO linked wallet
-- **Impact**: Cannot migrate these users until they link a wallet
-- **Solution**: Either require wallet linking OR allow claiming later
+### 1. New Utility File: `src/utils/bskMigrationPdfExport.ts`
 
-### Issue 2: Current Hot Wallet Risk
-- **Problem**: The system uses `ADMIN_WALLET_PRIVATE_KEY` which is the general admin wallet
-- **Risk**: Mixing operational funds with migration funds is dangerous
-- **Solution**: Create a dedicated migration hot wallet
+A dedicated PDF generation utility using jsPDF (already installed) that creates:
 
-### Issue 3: Gas Cost Calculation
-- **Current**: Uses hardcoded BNB/BSK rate (1 BNB = 10,000 BSK)
-- **Problem**: If BSK price changes, gas deductions become unfair
-- **Solution**: Fetch real-time price or use system setting
+**Page 1: Executive Summary**
+- Report title and generation date
+- Total eligible users count
+- Total BSK to migrate
+- Breakdown by wallet status (with/without wallet)
+- Breakdown by KYC status (approved/pending)
+- Balance distribution table
 
-### Issue 4: Precision Handling
-- **Risk**: JavaScript floating-point errors on large numbers
-- **Example**: 951,700 BSK could have rounding issues
-- **Solution**: Use BigInt/string arithmetic throughout
+**Pages 2+: User Data Table (Landscape)**
+Each row contains:
+- Row number
+- Username
+- Email (full)
+- Full Name
+- Phone
+- Wallet Address
+- BSK Withdrawable Balance
+- BSK Holding Balance
+- KYC Status
+- Account Status
+- Sponsor Username
+- Sponsor Email
+- Registration Date
+
+### 2. Enhanced Data Fetching
+
+Update the `BSKOnchainMigration.tsx` to fetch comprehensive user data including:
+- All profile fields (email, username, display_name, full_name, phone)
+- Both wallet types (bsc_wallet_address, wallet_address)
+- Both balance types (withdrawable_balance, holding_balance)
+- KYC and account status
+- Sponsor information from referral_tree (direct_sponsor_id -> profiles)
+
+### 3. UI Updates to `BSKOnchainMigration.tsx`
+
+**Add Export Buttons in "Eligible Users" Tab:**
+- "Export PDF" button with loading state
+- "Export CSV" button with loading state
+- Filter toggles (All / With Wallet / Without Wallet)
+
+**Add Statistics Summary Card:**
+- Visual breakdown of users by wallet status
+- KYC status distribution
 
 ---
 
-## Proposed Enhanced Architecture
+## Technical Implementation
 
-### A. Dedicated Migration Hot Wallet
-
-Create a **separate** hot wallet specifically for migrations:
-
-```
-Purpose: Hold only BSK tokens for migration
-Fund it with: Exactly the amount needed for current batch
-Benefits:
-  - Isolated risk (if compromised, only migration funds at risk)
-  - Clear audit trail (all transactions are migration-related)
-  - Easier reconciliation (wallet balance = remaining migrations)
-```
-
-**Implementation:**
-1. Generate new BSC wallet (admin does this externally)
-2. Store private key as new secret: `MIGRATION_WALLET_PRIVATE_KEY`
-3. Fund wallet with required BSK before starting batch
-4. Edge function uses this wallet for transfers
-
-### B. Pre-Migration Funding Calculator
-
-Add a new action to calculate exact funding requirements:
+### File: `src/utils/bskMigrationPdfExport.ts`
 
 ```typescript
-action: 'calculate_funding' => {
-  total_bsk_needed: 4,393,482.15,  // For users with wallets
-  estimated_gas_bsk: ~5,000,       // 274 users × ~18 BSK gas each
-  net_bsk_to_transfer: 4,388,482,  // After gas deductions
-  bnb_for_gas: ~0.195 BNB,         // 274 × 65,000 gas × 3 gwei
-  funding_address: "0x...",
-  bscscan_link: "https://..."
+// Structure:
+export interface BSKUserExportData {
+  row_number: number;
+  user_id: string;
+  username: string | null;
+  email: string | null;
+  full_name: string | null;
+  phone: string | null;
+  wallet_address: string | null;
+  withdrawable_balance: number;
+  holding_balance: number;
+  kyc_status: string | null;
+  account_status: string | null;
+  sponsor_username: string | null;
+  sponsor_email: string | null;
+  created_at: string;
 }
+
+export interface BSKMigrationReportStats {
+  total_users: number;
+  total_bsk: number;
+  users_with_wallet: number;
+  users_without_wallet: number;
+  bsk_with_wallet: number;
+  bsk_without_wallet: number;
+  kyc_approved: number;
+  kyc_pending: number;
+  balance_distribution: {
+    range: string;
+    count: number;
+    total_bsk: number;
+  }[];
+}
+
+export function generateBSKMigrationPDF(
+  users: BSKUserExportData[],
+  stats: BSKMigrationReportStats
+): void;
+
+export function generateBSKMigrationCSV(
+  users: BSKUserExportData[]
+): void;
 ```
 
-### C. Balance Reconciliation Check
+### PDF Layout Design
 
-Before ANY migration, verify:
-
-```sql
--- Each user's withdrawable_balance MUST match ledger sum
-SELECT 
-  ub.user_id,
-  ub.withdrawable_balance as table_balance,
-  (SELECT SUM(CASE WHEN tx_type='credit' THEN amount_bsk ELSE -amount_bsk END)
-   FROM unified_bsk_ledger 
-   WHERE user_id = ub.user_id 
-   AND balance_type = 'withdrawable' 
-   AND status = 'completed') as ledger_balance,
-  ABS(ub.withdrawable_balance - ledger_balance) as drift
-FROM user_bsk_balances ub
-WHERE ub.withdrawable_balance >= 100
-HAVING drift > 0.01;  -- Flag any mismatch > 0.01 BSK
+**Page 1 (Portrait):**
+```
+┌─────────────────────────────────────────────────┐
+│                                                 │
+│     [LOGO] i-SMART BSK Migration Report        │
+│        Generated: February 2, 2026              │
+│                                                 │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  EXECUTIVE SUMMARY                              │
+│  ──────────────────                            │
+│  Total Eligible Users:    476                   │
+│  Total BSK to Migrate:    5,882,938.15         │
+│                                                 │
+│  WALLET STATUS                                  │
+│  ├── With Wallet:    295 users (4,393,482 BSK) │
+│  └── Without Wallet: 181 users (1,489,456 BSK) │
+│                                                 │
+│  KYC STATUS                                     │
+│  ├── Approved:  56 users (12%)                 │
+│  └── Pending:  420 users (88%)                 │
+│                                                 │
+│  BALANCE DISTRIBUTION                           │
+│  ┌──────────────────────────────────┐          │
+│  │ Range         │ Users │ BSK     │          │
+│  ├──────────────────────────────────┤          │
+│  │ 100-500       │ 49    │ 9,192   │          │
+│  │ 500-1,000     │ 60    │ 35,512  │          │
+│  │ 1,000-5,000   │ 186   │ 318,820 │          │
+│  │ 5,000-10,000  │ 63    │ 403,731 │          │
+│  │ 10,000-50,000 │ 89    │ 1,673K  │          │
+│  │ 50,000+       │ 28    │ 3,461K  │          │
+│  └──────────────────────────────────┘          │
+│                                                 │
+└─────────────────────────────────────────────────┘
 ```
 
----
-
-## Implementation Plan
-
-### Phase 1: Infrastructure Setup
-
-**1.1 Add Migration Wallet Secret**
-- Admin generates new BSC wallet (MetaMask/hardware wallet)
-- Store `MIGRATION_WALLET_PRIVATE_KEY` as new secret
-- Keep backup of private key securely offline
-
-**1.2 Create Funding Calculator Endpoint**
-Add new action to existing edge function:
-```typescript
-case 'calculate_funding':
-  return await calculateFundingRequirements(supabase);
+**Pages 2+ (Landscape):**
+```
+┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ BSK Migration Report - User Details                                                    Page 2  │
+├────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ # │ Username │ Email          │ BSK      │ Wallet      │ KYC     │ Sponsor   │ Registered    │
+├────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 1 │ mangamma │ man***@gm.com  │ 951,700  │ 0xDAe4...   │ pending │ keerthi   │ 2025-12-14   │
+│ 2 │ samendar │ sam***@gm.com  │ 220,000  │ 0x3180...   │ pending │ akshitha  │ 2025-11-09   │
+│ 3 │ sivaaksh │ siv***@gm.com  │ 170,100  │ 0x86bD...   │ pending │ keerthi   │ 2025-08-08   │
+│ ...                                                                                           │
+└────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Returns:
-- Exact BSK needed
-- Estimated BNB for gas
-- Migration wallet address
-- Link to fund via BscScan
-
-**1.3 Update Edge Function for New Wallet**
-- Add fallback: Use `MIGRATION_WALLET_PRIVATE_KEY` if set, else `ADMIN_WALLET_PRIVATE_KEY`
-- Add wallet balance pre-check before creating batch
-
-### Phase 2: Pre-Migration Safeguards
-
-**2.1 Balance Integrity Audit**
-New action: `action: 'audit_balances'`
-- Compares every eligible user's `withdrawable_balance` vs ledger sum
-- Flags any drift > 0.01 BSK
-- BLOCKS batch creation if mismatches found
-- Provides fix command for admins
-
-**2.2 Precision-Safe Arithmetic**
-Replace all balance calculations with string/BigInt:
-```typescript
-// BEFORE (risky)
-const netAmount = amountBsk - gasDeduction;
-
-// AFTER (safe)
-import BigNumber from 'bignumber.js';
-const netAmount = new BigNumber(amountBsk).minus(gasDeduction).toFixed(8);
-```
-
-**2.3 Dynamic Gas Pricing**
-Fetch current BSK/BNB rate from:
-- Option A: Add to `system_settings` table (admin-controlled)
-- Option B: Query from trading pair on-chain
-- Option C: Use CMC/CoinGecko API (requires new secret)
-
-### Phase 3: Enhanced Migration Flow
-
-**Step-by-Step Process:**
-
-```text
-1. CALCULATE FUNDING
-   └─> Admin calls 'calculate_funding'
-   └─> Shows: 274 users, 4,393,482 BSK, ~0.2 BNB gas
-
-2. FUND MIGRATION WALLET
-   └─> Admin sends BSK + BNB to migration wallet
-   └─> System verifies sufficient balance
-
-3. AUDIT BALANCES
-   └─> Admin calls 'audit_balances'
-   └─> System checks all users' balances match ledger
-   └─> If mismatches: STOP and reconcile first
-
-4. CREATE BATCH
-   └─> Snapshots all balances
-   └─> Records idempotency keys
-   └─> Marks batch as 'pending'
-
-5. PROCESS MIGRATIONS (one-by-one or bulk)
-   └─> For each user:
-       ├─> Validate current balance
-       ├─> Calculate gas deduction (precision-safe)
-       ├─> Debit internal ledger (idempotent)
-       ├─> Sign & broadcast on-chain transfer
-       ├─> Wait for confirmation
-       └─> Update status to 'completed'
-
-6. POST-MIGRATION VERIFICATION
-   └─> Compare expected vs actual on-chain transfers
-   └─> Generate audit report
-   └─> Handle any failures (rollback or retry)
-```
-
-### Phase 4: UI Enhancements
-
-**4.1 Add Funding Status Card**
-Show migration wallet status:
-- Current BSK balance
-- Current BNB balance (for gas)
-- Expected remaining after batch
-
-**4.2 Add Audit Tab**
-- Run balance integrity check
-- Show any mismatches
-- One-click reconciliation
-
-**4.3 Add Funding Calculator**
-- Show exact requirements before batch creation
-- Deep link to fund via BscScan
-
----
-
-## Technical Details
-
-### New System Settings
-
-| Key | Value | Purpose |
-|-----|-------|---------|
-| `bsk_migration_enabled` | true/false | Global kill switch |
-| `bsk_migration_min_amount` | 100 | Minimum BSK to migrate |
-| `bsk_to_bnb_rate` | 10000 | 1 BNB = X BSK for gas calc |
-| `bsk_migration_gas_buffer` | 1.2 | 20% gas price buffer |
-| `bsk_contract_address` | 0x742... | BSK BEP-20 contract |
-
-### Edge Function Updates
+### Enhanced Data Query
 
 ```typescript
-// New actions to add:
-'calculate_funding'    // Calculate exact BSK + BNB needed
-'audit_balances'       // Check all balances match ledger
-'get_wallet_status'    // Show migration wallet balances
-'reconcile_user'       // Fix single user's balance drift
+// Fetch comprehensive user data with sponsor info
+const fetchCompleteUserData = async () => {
+  // 1. Get all users with 100+ BSK
+  const { data: balances } = await supabase
+    .from('user_bsk_balances')
+    .select('user_id, withdrawable_balance, holding_balance')
+    .gte('withdrawable_balance', 100)
+    .order('withdrawable_balance', { ascending: false });
+
+  const userIds = balances?.map(b => b.user_id) || [];
+
+  // 2. Get profiles with all fields
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select(`
+      user_id, email, username, display_name, full_name, phone,
+      bsc_wallet_address, wallet_address,
+      kyc_status, account_status, created_at
+    `)
+    .in('user_id', userIds);
+
+  // 3. Get sponsor relationships
+  const { data: referrals } = await supabase
+    .from('referral_tree')
+    .select('user_id, direct_sponsor_id')
+    .in('user_id', userIds)
+    .eq('level', 1);
+
+  // 4. Get sponsor profiles
+  const sponsorIds = referrals
+    ?.map(r => r.direct_sponsor_id)
+    .filter(Boolean) || [];
+  
+  const { data: sponsors } = await supabase
+    .from('profiles')
+    .select('user_id, username, email')
+    .in('user_id', sponsorIds);
+
+  // 5. Merge all data
+  return mergeUserData(balances, profiles, referrals, sponsors);
+};
 ```
 
-### Database Additions
+---
 
-Add columns to `bsk_onchain_migrations`:
-- `balance_verified_at` - When ledger match was confirmed
-- `precision_amount_wei` - Full precision amount as string
-- `gas_rate_used` - BSK/BNB rate used for this transfer
+## Files to Create/Modify
+
+### New Files:
+1. **`src/utils/bskMigrationPdfExport.ts`**
+   - PDF generation with jsPDF
+   - Summary page + paginated user table
+   - CSV export function
+   - Data preparation utilities
+
+### Modified Files:
+1. **`src/pages/admin/BSKOnchainMigration.tsx`**
+   - Add export buttons with loading states
+   - Add comprehensive data fetching function
+   - Add filter controls (wallet status)
+   - Add summary statistics display
+   - Import and use new export utilities
 
 ---
 
-## Risk Mitigation
+## Implementation Steps
 
-### What Could Go Wrong?
+### Step 1: Create PDF Export Utility
+- Create `src/utils/bskMigrationPdfExport.ts`
+- Implement `generateBSKMigrationPDF()` with:
+  - Summary page (portrait) with statistics
+  - User detail pages (landscape) with table
+  - Proper pagination (40-50 users per page)
+  - Footer with page numbers
+  - Header with report title
+- Implement `generateBSKMigrationCSV()` for raw data export
 
-| Risk | Mitigation |
-|------|------------|
-| User withdraws during migration | Lock withdrawals for users in batch |
-| Hot wallet hacked | Use separate wallet with only required funds |
-| BSC network congestion | Dynamic gas pricing + retry mechanism |
-| Double debit | Idempotency keys prevent this |
-| Partial batch failure | Rollback mechanism restores internal balance |
-| Precision loss | BigNumber.js for all calculations |
+### Step 2: Update BSKOnchainMigration.tsx
+- Add new interface for complete user data
+- Create `fetchCompleteUserData()` function
+- Add export buttons in the "Eligible Users" tab header
+- Add loading states for export operations
+- Add filter toggles (All / With Wallet / Without Wallet)
+- Add statistics summary cards
 
-### Rollback Strategy
-
-If migration fails AFTER internal debit:
-1. System automatically credits back via `migration_rollback` tx_subtype
-2. Uses unique idempotency key: `migrate_rollback_{migration_id}`
-3. Updates status to `rolled_back`
-4. Batch marked as `partial` (not `completed`)
-
----
-
-## Summary: What Will Be Built
-
-1. **New Secret**: `MIGRATION_WALLET_PRIVATE_KEY` for dedicated hot wallet
-2. **Edge Function Updates**:
-   - `calculate_funding` action - shows exact requirements
-   - `audit_balances` action - verifies ledger integrity
-   - `get_wallet_status` action - shows hot wallet balances
-   - Dynamic gas rate from system settings
-   - BigNumber.js for precision-safe arithmetic
-3. **UI Enhancements**:
-   - Funding calculator panel
-   - Balance audit tab
-   - Migration wallet status display
-4. **System Settings**: Gas rate, minimum amount, contract address
+### Step 3: Calculate Statistics
+- Total users and BSK amounts
+- Wallet status breakdown
+- KYC status breakdown
+- Balance distribution by range
 
 ---
 
-## Next Steps After Approval
+## Output Files
 
-1. Admin generates new BSC wallet externally
-2. Add `MIGRATION_WALLET_PRIVATE_KEY` secret
-3. I implement the enhanced edge function
-4. I update the admin UI
-5. Admin funds the migration wallet
-6. Run audit to verify all balances
-7. Create first batch and test with small users (100-500 BSK range)
-8. If successful, proceed with larger batches
+When user clicks "Export PDF":
+- **File**: `BSK_Migration_Report_2026-02-02.pdf`
+- **Size**: Approximately 15-20 pages (for 476 users)
+- **Orientation**: Page 1 Portrait, Pages 2+ Landscape
+
+When user clicks "Export CSV":
+- **File**: `BSK_Migration_Users_2026-02-02.csv`
+- **Contains**: All raw data for spreadsheet analysis
+
+---
+
+## Technical Notes
+
+1. **jsPDF is already installed** - Version 3.0.3 available
+2. **date-fns is available** for date formatting
+3. **Pagination**: ~40 users per landscape page to fit columns
+4. **Privacy**: Full emails shown (admin-only access)
+5. **Performance**: Client-side generation handles 500+ users without issues
+6. **Precision**: Use `.toFixed(2)` for BSK amounts
+
+---
+
+## Summary
+
+This implementation will provide a professional PDF report that includes:
+- Executive summary with key metrics
+- Complete user listing with all relevant fields
+- Sponsor relationship information
+- Proper pagination and formatting
+- Companion CSV export for data analysis
+
+The admin can use this report for:
+- Release planning and fund allocation
+- Wallet coverage gap analysis
+- KYC prioritization
+- Sponsor network analysis
 
