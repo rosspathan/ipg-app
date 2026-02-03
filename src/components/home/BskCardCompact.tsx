@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Eye, EyeOff, Lock, ArrowDownToLine, ArrowRightLeft, History, Calendar, Info, RefreshCw } from "lucide-react"
+import { Eye, EyeOff, Lock, ArrowDownToLine, ArrowRightLeft, History, Calendar, Info, RefreshCw, Zap } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -25,6 +25,7 @@ interface BskCardCompactProps {
   isLoading?: boolean
   onWithdraw?: () => void
   onTransfer?: () => void
+  onMigrate?: () => void
   onHistory?: () => void
   onViewBreakdown?: () => void
   onViewSchedule?: () => void
@@ -54,6 +55,7 @@ const BskCardCompactComponent = ({
   isLoading = false,
   onWithdraw,
   onTransfer,
+  onMigrate,
   onHistory,
   onViewBreakdown,
   onViewSchedule,
@@ -167,41 +169,65 @@ const BskCardCompactComponent = ({
 
       {/* Actions Row */}
       {isWithdrawable ? (
-        <div className="flex items-center gap-1">
-          <Button
-            onClick={onWithdraw}
-            variant="outline"
-            size="sm"
-            className={cn(
-              "flex-1 h-11 px-3 min-w-0",
-              "border-success/40 hover:border-success/60 hover:bg-success/15",
-              "text-success font-body font-semibold text-xs",
-              "focus:ring-2 focus:ring-success/30",
-              "transition-colors duration-200",
-              "touch-manipulation"
-            )}
-            aria-label="Withdraw BSK"
-          >
-            <ArrowDownToLine className="h-4 w-4 mr-1.5 flex-shrink-0" aria-hidden="true" />
-            <span className="truncate">Withdraw</span>
-          </Button>
-          <Button
-            onClick={onTransfer}
-            variant="outline"
-            size="sm"
-            className={cn(
-              "flex-1 h-11 px-3 min-w-0",
-              "border-primary/40 hover:border-primary/60 hover:bg-primary/15",
-              "text-primary font-body font-semibold text-xs",
-              "focus:ring-2 focus:ring-primary/30",
-              "transition-colors duration-200",
-              "touch-manipulation"
-            )}
-            aria-label="Transfer BSK"
-          >
-            <ArrowRightLeft className="h-4 w-4 mr-1.5 flex-shrink-0" aria-hidden="true" />
-            <span className="truncate">Transfer</span>
-          </Button>
+        <div className="space-y-2">
+          {/* Primary Actions Row */}
+          <div className="flex items-center gap-1">
+            <Button
+              onClick={onWithdraw}
+              variant="outline"
+              size="sm"
+              className={cn(
+                "flex-1 h-10 px-2 min-w-0",
+                "border-success/40 hover:border-success/60 hover:bg-success/15",
+                "text-success font-body font-semibold text-xs",
+                "focus:ring-2 focus:ring-success/30",
+                "transition-colors duration-200",
+                "touch-manipulation"
+              )}
+              aria-label="Withdraw BSK"
+            >
+              <ArrowDownToLine className="h-3.5 w-3.5 mr-1 flex-shrink-0" aria-hidden="true" />
+              <span className="truncate">Withdraw</span>
+            </Button>
+            <Button
+              onClick={onTransfer}
+              variant="outline"
+              size="sm"
+              className={cn(
+                "flex-1 h-10 px-2 min-w-0",
+                "border-primary/40 hover:border-primary/60 hover:bg-primary/15",
+                "text-primary font-body font-semibold text-xs",
+                "focus:ring-2 focus:ring-primary/30",
+                "transition-colors duration-200",
+                "touch-manipulation"
+              )}
+              aria-label="Transfer BSK"
+            >
+              <ArrowRightLeft className="h-3.5 w-3.5 mr-1 flex-shrink-0" aria-hidden="true" />
+              <span className="truncate">Transfer</span>
+            </Button>
+          </div>
+          {/* Migrate to On-Chain Button */}
+          {onMigrate && (
+            <Button
+              onClick={onMigrate}
+              variant="outline"
+              size="sm"
+              className={cn(
+                "w-full h-9",
+                "border-amber-500/40 hover:border-amber-500/60 hover:bg-amber-500/15",
+                "text-amber-600 dark:text-amber-400 font-body font-semibold text-xs",
+                "focus:ring-2 focus:ring-amber-500/30",
+                "transition-colors duration-200",
+                "touch-manipulation",
+                "bg-gradient-to-r from-amber-500/5 to-orange-500/5"
+              )}
+              aria-label="Migrate BSK to on-chain"
+            >
+              <Zap className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" aria-hidden="true" />
+              <span>Migrate to On-Chain</span>
+            </Button>
+          )}
         </div>
       ) : (
         <Button

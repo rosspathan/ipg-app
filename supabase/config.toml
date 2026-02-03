@@ -320,3 +320,6 @@ verify_jwt = true
 
 [functions.admin-migrate-bsk-onchain]
 verify_jwt = true
+
+[functions.user-migrate-bsk-onchain]
+verify_jwt = true
