@@ -72,6 +72,7 @@ const systemNav: NavItem[] = [
   { title: "Audit Logs", url: "/admin/audit-logs", icon: FileText },
   { title: "Orphaned Users", url: "/admin/orphaned-users-cleanup", icon: AlertTriangle },
   { title: "Hot Wallet", url: "/admin/generate-hot-wallet", icon: Key },
+  { title: "Migration Wallet", url: "/admin/migration-hot-wallet", icon: Coins },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
