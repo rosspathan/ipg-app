@@ -164,6 +164,7 @@ export function HomePageRebuilt() {
             }}
             onWithdraw={() => navigate("/app/programs/bsk-withdraw")}
             onTransfer={() => navigate("/app/programs/bsk-transfer")}
+            onMigrate={() => navigate("/app/programs/bsk-migrate")}
             onHistory={() => navigate("/app/wallet/history/bsk")}
             onViewBreakdown={() => setShowRewardsBreakdown(true)}
             onRefresh={handleRefresh}

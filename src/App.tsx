@@ -589,6 +589,7 @@ function AppContent() {
                 <Route path="programs/crypto-conversion" element={<CryptoConversionScreen />} />
                 <Route path="programs/bsk-withdraw" element={<BSKWithdrawScreen />} />
                 <Route path="programs/bsk-transfer" element={<BSKTransferScreen />} />
+                <Route path="programs/bsk-migrate" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/astra/BSKMigratePage').then(m => ({ default: m.BSKMigratePage }))))}</React.Suspense>} />
                 <Route path="programs/achievements" element={<GamificationScreen />} />
                 <Route path="programs/badge-subscription" element={<BadgeSubscriptionScreen />} />
                 <Route path="badge-subscription" element={<BadgeSubscriptionScreen />} />
