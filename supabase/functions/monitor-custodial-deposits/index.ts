@@ -39,6 +39,53 @@ interface MatchedUser {
 
 const REQUIRED_CONFIRMATIONS = 15;
 
+function toLowerHexAddress(addr: string | null | undefined): string {
+  return (addr || '').trim().toLowerCase();
+}
+
+function formatTokenAmount(rawValue: string, decimals: number): number {
+  try {
+    const v = BigInt(rawValue);
+    const d = Math.max(0, Math.min(36, Number.isFinite(decimals) ? decimals : 18));
+    if (d === 0) return Number(v);
+
+    const s = v.toString();
+    const padded = s.padStart(d + 1, '0');
+    const intPart = padded.slice(0, -d);
+    let fracPart = padded.slice(-d);
+    fracPart = fracPart.replace(/0+$/, '');
+    return parseFloat(fracPart ? `${intPart}.${fracPart}` : intPart);
+  } catch {
+    // Fallback (lossy) if BigInt fails for some reason
+    return Number(rawValue) / Math.pow(10, decimals || 18);
+  }
+}
+
+async function fetchHotWalletTokenTransfers(params: {
+  bscscanApiKey: string;
+  hotWalletAddress: string;
+}): Promise<BscScanTokenTransfer[]> {
+  const { bscscanApiKey, hotWalletAddress } = params;
+
+  // NOTE: We intentionally do NOT pass contractaddress here.
+  // BscScan occasionally returns inconsistent results for contract-filtered tokentx,
+  // so we fetch once for the address and filter locally by contract.
+  const url = `https://api.etherscan.io/v2/api?chainid=56&module=account&action=tokentx&address=${hotWalletAddress}&startblock=0&endblock=999999999&sort=desc&apikey=${bscscanApiKey}`;
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (data?.status !== '1' || !Array.isArray(data?.result)) {
+    console.error('[monitor-custodial-deposits] BscScan tokentx failed:', {
+      status: data?.status,
+      message: data?.message,
+      result: typeof data?.result === 'string' ? data?.result : undefined,
+    });
+    return [];
+  }
+
+  return data.result as BscScanTokenTransfer[];
+}
+
 async function getCurrentBlockNumber(params: {
   bscRpcUrl: string | null;
   bscscanApiKey: string;
@@ -68,7 +115,7 @@ async function getCurrentBlockNumber(params: {
 
   // 2) Fallback: BscScan proxy
   const blockResponse = await fetch(
-    `https://api.bscscan.com/api?module=proxy&action=eth_blockNumber&apikey=${bscscanApiKey}`
+    `https://api.etherscan.io/v2/api?chainid=56&module=proxy&action=eth_blockNumber&apikey=${bscscanApiKey}`
   );
   const blockData = await blockResponse.json();
   const result = blockData?.result;
@@ -175,29 +222,41 @@ Deno.serve(async (req) => {
     let totalSkippedUnknown = 0;
     const results: any[] = [];
 
+    // Fetch hot-wallet token transfers ONCE, then filter by contract locally.
+    const allHotWalletTransfers = await fetchHotWalletTokenTransfers({
+      bscscanApiKey,
+      hotWalletAddress,
+    });
+
+    // Pre-filter to relevant inbound transfers within lookback window, then group by contract.
+    const inboundTransfersByContract = new Map<string, BscScanTokenTransfer[]>();
+    for (const tx of allHotWalletTransfers) {
+      if (!tx?.to || !tx?.contractAddress) continue;
+      if (toLowerHexAddress(tx.to) !== hotWalletAddress) continue;
+
+      const ts = parseInt(String(tx.timeStamp || '0'));
+      if (!Number.isFinite(ts) || ts < lookbackTimestamp) continue;
+
+      const contract = toLowerHexAddress(tx.contractAddress);
+      if (!contract) continue;
+
+      const list = inboundTransfersByContract.get(contract) || [];
+      list.push(tx);
+      inboundTransfersByContract.set(contract, list);
+    }
+
     // Process each asset
     for (const asset of assets) {
       try {
         console.log(`[monitor-custodial-deposits] Scanning ${asset.symbol}...`);
 
-        // Fetch token transfers TO the hot wallet
-        const url = `https://api.bscscan.com/api?module=account&action=tokentx&contractaddress=${asset.contract_address}&address=${hotWalletAddress}&startblock=0&endblock=999999999&sort=desc&apikey=${bscscanApiKey}`;
-        
-        const response = await fetch(url);
-        const data = await response.json();
+        const contract = toLowerHexAddress(asset.contract_address);
+        const inboundTransfers = contract ? (inboundTransfersByContract.get(contract) || []) : [];
 
-        if (data.status !== '1' || !data.result) {
+        if (inboundTransfers.length === 0) {
           console.log(`[monitor-custodial-deposits] No transfers found for ${asset.symbol}`);
           continue;
         }
-
-        const transfers: BscScanTokenTransfer[] = data.result;
-
-        // Filter inbound transfers to hot wallet within lookback period
-        const inboundTransfers = transfers.filter((tx: BscScanTokenTransfer) => 
-          tx.to.toLowerCase() === hotWalletAddress &&
-          parseInt(tx.timeStamp) >= lookbackTimestamp
-        );
 
         console.log(`[monitor-custodial-deposits] ${asset.symbol}: ${inboundTransfers.length} inbound transfers`);
         totalDiscovered += inboundTransfers.length;
@@ -205,7 +264,10 @@ Deno.serve(async (req) => {
         for (const tx of inboundTransfers) {
           const txHash = tx.hash.toLowerCase();
           const actualSender = tx.from.toLowerCase(); // ACTUAL blockchain sender
-          const amount = parseInt(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
+          const decimals = Number.isFinite(parseInt(String(tx.tokenDecimal)))
+            ? parseInt(String(tx.tokenDecimal))
+            : (asset.decimals || 18);
+          const amount = formatTokenAmount(String(tx.value || '0'), decimals);
           const txBlock = parseInt(tx.blockNumber);
           const confirmations = currentBlock - txBlock;
 
@@ -214,7 +276,7 @@ Deno.serve(async (req) => {
             .from('custodial_deposits')
             .select('id, status, confirmations, from_address, user_id')
             .eq('tx_hash', txHash)
-            .single();
+            .maybeSingle();
 
           if (existing) {
             // SECURITY: Verify the stored from_address matches actual tx sender
