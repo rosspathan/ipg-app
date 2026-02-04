@@ -1,30 +1,33 @@
 /**
  * Monitor Custodial Deposits Edge Function
- * 
- * Scans the platform hot wallet for incoming token transfers using RPC eth_getLogs.
- * NO BSCSCAN API DEPENDENCY - uses direct RPC calls only.
- * 
+ *
+ * Scans the platform hot wallet for incoming token transfers using pure RPC eth_getLogs.
+ * NO BSCSCAN API DEPENDENCY – uses direct RPC calls only.
+ *
  * When a deposit is detected:
  * 1. Identifies the sender (user) by matching tx.from to registered wallets
- * 2. Creates a custodial_deposits record with ACTUAL tx.from address
- * 3. Credits the user's wallet_balances (trading balance) when confirmed
- * 
- * SECURITY: Only credits deposits where tx.from EXACTLY matches a registered user wallet.
- * 
- * This function should be called periodically (e.g., every 1-2 minutes via cron)
+ * 2. Creates a custodial_deposits record (pending)
+ * 3. Credits the user's trading balance atomically via credit_custodial_deposit RPC
+ *
+ * Persistent scan state is stored in custodial_deposit_scan_state to ensure
+ * no deposits are missed even if the monitor is down for a period.
+ *
+ * Call this function periodically (e.g. every 60s via cron).
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// ERC20 Transfer event signature: Transfer(address,address,uint256)
-const TRANSFER_EVENT_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+// ERC20 Transfer event signature
+const TRANSFER_EVENT_TOPIC =
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 
-// Default BSC RPC endpoints (public, no API key needed)
+// Public BSC RPC endpoints (no API key)
 const DEFAULT_BSC_RPC_URLS = [
   'https://bsc-dataseed1.binance.org',
   'https://bsc-dataseed2.binance.org',
@@ -33,6 +36,12 @@ const DEFAULT_BSC_RPC_URLS = [
   'https://bsc-dataseed1.defibit.io',
   'https://bsc-dataseed2.defibit.io',
 ];
+
+const REQUIRED_CONFIRMATIONS = 15;
+const BLOCKS_PER_2_HOURS = 2400;
+const BLOCKS_PER_BATCH = 500; // Smaller batches to avoid public RPC limits
+
+// --------------- Helpers ---------------
 
 interface TokenTransfer {
   hash: string;
@@ -50,10 +59,7 @@ interface MatchedUser {
   match_source: 'profiles_wallet' | 'profiles_bsc' | 'wallets_user';
 }
 
-const REQUIRED_CONFIRMATIONS = 15;
-const BLOCKS_PER_2_HOURS = 2400; // BSC ~3 sec blocks, 2 hours ≈ 2400 blocks
-
-function toLowerHexAddress(addr: string | null | undefined): string {
+function toLower(addr: string | null | undefined): string {
   return (addr || '').trim().toLowerCase();
 }
 
@@ -62,12 +68,10 @@ function formatTokenAmount(rawValue: string, decimals: number): number {
     const v = BigInt(rawValue);
     const d = Math.max(0, Math.min(36, Number.isFinite(decimals) ? decimals : 18));
     if (d === 0) return Number(v);
-
     const s = v.toString();
     const padded = s.padStart(d + 1, '0');
     const intPart = padded.slice(0, -d);
-    let fracPart = padded.slice(-d);
-    fracPart = fracPart.replace(/0+$/, '');
+    let fracPart = padded.slice(-d).replace(/0+$/, '');
     return parseFloat(fracPart ? `${intPart}.${fracPart}` : intPart);
   } catch {
     return Number(rawValue) / Math.pow(10, decimals || 18);
@@ -75,7 +79,6 @@ function formatTokenAmount(rawValue: string, decimals: number): number {
 }
 
 function hexToAddress(hex: string): string {
-  // Convert 32-byte padded address topic to 20-byte address
   return '0x' + hex.slice(-40).toLowerCase();
 }
 
@@ -83,57 +86,39 @@ function hexToBigInt(hex: string): bigint {
   return BigInt(hex);
 }
 
-async function rpcCall(rpcUrl: string, method: string, params: any[]): Promise<any> {
-  const response = await fetch(rpcUrl, {
+async function rpcCall(url: string, method: string, params: any[]): Promise<any> {
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method,
-      params,
-    }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
   });
-
-  if (!response.ok) {
-    throw new Error(`RPC request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  if (data.error) {
-    throw new Error(`RPC error: ${data.error.message || JSON.stringify(data.error)}`);
-  }
-
+  if (!res.ok) throw new Error(`RPC request failed: ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(`RPC error: ${data.error.message || JSON.stringify(data.error)}`);
   return data.result;
 }
 
-async function tryRpcCall(rpcUrls: string[], method: string, params: any[]): Promise<any> {
-  let lastError: Error | null = null;
-
-  for (const url of rpcUrls) {
+async function tryRpc(urls: string[], method: string, params: any[]): Promise<any> {
+  let lastErr: Error | null = null;
+  for (const url of urls) {
     try {
       return await rpcCall(url, method, params);
     } catch (e: any) {
-      lastError = e;
+      lastErr = e;
       console.warn(`[RPC] ${url} failed for ${method}:`, e?.message);
     }
   }
-
-  throw lastError || new Error('All RPC endpoints failed');
+  throw lastErr || new Error('All RPC endpoints failed');
 }
 
-async function getCurrentBlockNumber(rpcUrls: string[]): Promise<number> {
-  const hex = await tryRpcCall(rpcUrls, 'eth_blockNumber', []);
+async function getCurrentBlockNumber(urls: string[]): Promise<number> {
+  const hex = await tryRpc(urls, 'eth_blockNumber', []);
   return parseInt(hex, 16);
 }
 
-async function getTransactionByHash(rpcUrls: string[], txHash: string): Promise<any> {
-  return await tryRpcCall(rpcUrls, 'eth_getTransactionByHash', [txHash]);
-}
-
 /**
- * Fetch ERC20 Transfer events to the hot wallet using eth_getLogs
- * This replaces BscScan API entirely
+ * Fetch ERC20 Transfer events to the hot wallet using eth_getLogs with block batching.
+ * We split the range into BLOCKS_PER_BATCH-sized chunks to avoid public RPC limits.
  */
 async function fetchTransferEventsViaRpc(params: {
   rpcUrls: string[];
@@ -143,52 +128,56 @@ async function fetchTransferEventsViaRpc(params: {
   toBlock: number;
 }): Promise<TokenTransfer[]> {
   const { rpcUrls, hotWalletAddress, contractAddresses, fromBlock, toBlock } = params;
-
-  // Pad the hot wallet address for topic matching (32 bytes)
   const paddedTo = '0x000000000000000000000000' + hotWalletAddress.slice(2).toLowerCase();
-
   const transfers: TokenTransfer[] = [];
 
-  // Query logs for each contract (could batch but safer individually for large lists)
-  for (const contractAddress of contractAddresses) {
+  // Helper: query single batch
+  async function queryBatch(contract: string, batchFrom: number, batchTo: number): Promise<any[]> {
     try {
-      const logs = await tryRpcCall(rpcUrls, 'eth_getLogs', [{
-        address: contractAddress.toLowerCase(),
-        topics: [
-          TRANSFER_EVENT_TOPIC,  // Transfer event
-          null,                   // from: any
-          paddedTo,               // to: hot wallet
-        ],
-        fromBlock: '0x' + fromBlock.toString(16),
-        toBlock: '0x' + toBlock.toString(16),
-      }]);
-
-      if (!Array.isArray(logs)) continue;
-
-      for (const log of logs) {
-        if (!log.topics || log.topics.length < 3) continue;
-
-        const transfer: TokenTransfer = {
-          hash: log.transactionHash,
-          from: hexToAddress(log.topics[1]),
-          to: hexToAddress(log.topics[2]),
-          value: hexToBigInt(log.data || '0x0').toString(),
-          blockNumber: parseInt(log.blockNumber, 16),
-          contractAddress: log.address.toLowerCase(),
-          logIndex: parseInt(log.logIndex, 16),
-        };
-
-        transfers.push(transfer);
-      }
-
-      console.log(`[monitor-custodial-deposits] ${contractAddress.slice(0, 10)}... : ${logs.length} Transfer logs`);
+      const logs = await tryRpc(rpcUrls, 'eth_getLogs', [
+        {
+          address: contract.toLowerCase(),
+          topics: [TRANSFER_EVENT_TOPIC, null, paddedTo],
+          fromBlock: '0x' + batchFrom.toString(16),
+          toBlock: '0x' + batchTo.toString(16),
+        },
+      ]);
+      return Array.isArray(logs) ? logs : [];
     } catch (e: any) {
-      console.error(`[monitor-custodial-deposits] eth_getLogs failed for ${contractAddress}:`, e?.message);
+      console.error(`[monitor-custodial-deposits] eth_getLogs failed for ${contract} [${batchFrom}-${batchTo}]:`, e?.message);
+      return [];
     }
   }
 
+  for (const contract of contractAddresses) {
+    let contractLogs: any[] = [];
+    let cursor = fromBlock;
+
+    while (cursor <= toBlock) {
+      const batchEnd = Math.min(cursor + BLOCKS_PER_BATCH - 1, toBlock);
+      const logs = await queryBatch(contract, cursor, batchEnd);
+      contractLogs = contractLogs.concat(logs);
+      cursor = batchEnd + 1;
+    }
+
+    for (const log of contractLogs) {
+      if (!log.topics || log.topics.length < 3) continue;
+      transfers.push({
+        hash: log.transactionHash,
+        from: hexToAddress(log.topics[1]),
+        to: hexToAddress(log.topics[2]),
+        value: hexToBigInt(log.data || '0x0').toString(),
+        blockNumber: parseInt(log.blockNumber, 16),
+        contractAddress: log.address.toLowerCase(),
+        logIndex: parseInt(log.logIndex, 16),
+      });
+    }
+    console.log(`[monitor-custodial-deposits] ${contract.slice(0, 10)}...: ${contractLogs.length} Transfer logs`);
+  }
   return transfers;
 }
+
+// --------------- Main Handler ---------------
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -203,41 +192,38 @@ Deno.serve(async (req) => {
   try {
     console.log('[monitor-custodial-deposits] Starting RPC-based hot wallet deposit scan...');
 
-    // Build RPC URL list (custom first, then defaults)
     const customRpc = Deno.env.get('BSC_RPC_URL')?.trim();
     const rpcUrls = customRpc ? [customRpc, ...DEFAULT_BSC_RPC_URLS] : DEFAULT_BSC_RPC_URLS;
     console.log(`[monitor-custodial-deposits] Using ${rpcUrls.length} RPC endpoints`);
 
-    // Get active Trading hot wallet
-    let hotWallet = null;
-    
-    const { data: tradingWallet } = await supabase
-      .from('platform_hot_wallet')
-      .select('address, chain, label')
-      .eq('is_active', true)
-      .eq('chain', 'BSC')
-      .ilike('label', '%Trading%')
-      .limit(1)
-      .maybeSingle();
-
-    if (tradingWallet?.address) {
-      hotWallet = tradingWallet;
-      console.log(`[monitor-custodial-deposits] Using Trading Hot Wallet: ${tradingWallet.address}`);
-    } else {
-      const { data: anyWallet } = await supabase
+    // 1. Resolve Trading hot wallet
+    let hotWallet: { address: string; label?: string } | null = null;
+    {
+      const { data: tradingWallet } = await supabase
         .from('platform_hot_wallet')
-        .select('address, chain, label')
+        .select('address, label')
         .eq('is_active', true)
         .eq('chain', 'BSC')
+        .ilike('label', '%Trading%')
         .limit(1)
         .maybeSingle();
-      
-      if (anyWallet?.address) {
-        hotWallet = anyWallet;
-        console.log(`[monitor-custodial-deposits] Using fallback wallet: ${anyWallet.label} - ${anyWallet.address}`);
+      if (tradingWallet?.address) {
+        hotWallet = tradingWallet;
+        console.log(`[monitor-custodial-deposits] Using Trading Hot Wallet: ${tradingWallet.address}`);
+      } else {
+        const { data: any2 } = await supabase
+          .from('platform_hot_wallet')
+          .select('address, label')
+          .eq('is_active', true)
+          .eq('chain', 'BSC')
+          .limit(1)
+          .maybeSingle();
+        if (any2?.address) {
+          hotWallet = any2;
+          console.log(`[monitor-custodial-deposits] Using fallback wallet: ${any2.label} - ${any2.address}`);
+        }
       }
     }
-
     if (!hotWallet) {
       console.error('[monitor-custodial-deposits] No active BSC hot wallet found');
       return new Response(
@@ -245,18 +231,16 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
     const hotWalletAddress = hotWallet.address.toLowerCase();
     console.log(`[monitor-custodial-deposits] Hot wallet: ${hotWalletAddress}`);
 
-    // Fetch assets with deposit enabled
+    // 2. Assets with deposit enabled
     const { data: assets, error: assetsError } = await supabase
       .from('assets')
       .select('id, symbol, contract_address, decimals')
       .eq('is_active', true)
       .eq('deposit_enabled', true)
       .not('contract_address', 'is', null);
-
     if (assetsError || !assets || assets.length === 0) {
       console.log('[monitor-custodial-deposits] No deposit-enabled assets found');
       return new Response(
@@ -264,23 +248,34 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
     console.log(`[monitor-custodial-deposits] Monitoring ${assets.length} assets`);
 
-    // Get current block number
+    // 3. Determine block range (persisted scan state)
     const currentBlock = await getCurrentBlockNumber(rpcUrls);
     console.log(`[monitor-custodial-deposits] Current block: ${currentBlock}`);
 
-    // Calculate block range (last 2 hours)
-    const fromBlock = Math.max(1, currentBlock - BLOCKS_PER_2_HOURS);
+    const { data: scanState } = await supabase
+      .from('custodial_deposit_scan_state')
+      .select('id, last_scanned_block')
+      .eq('chain', 'BSC')
+      .eq('hot_wallet_address', hotWalletAddress)
+      .maybeSingle();
+
+    let fromBlock: number;
+    if (scanState && scanState.last_scanned_block > 0) {
+      // Continue from last scanned block + 1
+      fromBlock = scanState.last_scanned_block + 1;
+    } else {
+      // First run – look back 2 hours
+      fromBlock = Math.max(1, currentBlock - BLOCKS_PER_2_HOURS);
+    }
+    // Safety cap
+    if (fromBlock > currentBlock) fromBlock = currentBlock;
     console.log(`[monitor-custodial-deposits] Scanning blocks ${fromBlock} to ${currentBlock}`);
 
-    // Get contract addresses
-    const contractAddresses = assets
-      .map(a => a.contract_address?.toLowerCase())
-      .filter(Boolean) as string[];
+    const contractAddresses = assets.map((a) => a.contract_address?.toLowerCase()).filter(Boolean) as string[];
 
-    // Fetch all Transfer events via RPC
+    // 4. Fetch Transfer events
     const allTransfers = await fetchTransferEventsViaRpc({
       rpcUrls,
       hotWalletAddress,
@@ -288,16 +283,13 @@ Deno.serve(async (req) => {
       fromBlock,
       toBlock: currentBlock,
     });
+    console.log(`[monitor-custodial-deposits] Found ${allTransfers.length} inbound transfers`);
 
-    console.log(`[monitor-custodial-deposits] Found ${allTransfers.length} total inbound transfers`);
-
-    // Group transfers by contract for processing
-    const transfersByContract = new Map<string, TokenTransfer[]>();
+    // Group by contract
+    const byContract = new Map<string, TokenTransfer[]>();
     for (const tx of allTransfers) {
-      const contract = tx.contractAddress.toLowerCase();
-      const list = transfersByContract.get(contract) || [];
-      list.push(tx);
-      transfersByContract.set(contract, list);
+      const c = tx.contractAddress;
+      byContract.set(c, [...(byContract.get(c) || []), tx]);
     }
 
     let totalDiscovered = 0;
@@ -305,125 +297,153 @@ Deno.serve(async (req) => {
     let totalSkippedUnknown = 0;
     const results: any[] = [];
 
-    // Process each asset
+    // 5. Process transfers per asset
     for (const asset of assets) {
-      try {
-        const contract = toLowerHexAddress(asset.contract_address);
-        const inboundTransfers = contract ? (transfersByContract.get(contract) || []) : [];
+      const contract = toLower(asset.contract_address);
+      const inbound = byContract.get(contract) || [];
+      if (inbound.length === 0) continue;
+      console.log(`[monitor-custodial-deposits] ${asset.symbol}: ${inbound.length} inbound transfers`);
+      totalDiscovered += inbound.length;
 
-        if (inboundTransfers.length === 0) {
+      for (const tx of inbound) {
+        const txHash = tx.hash.toLowerCase();
+        const actualSender = tx.from.toLowerCase();
+        const decimals = asset.decimals || 18;
+        const amount = formatTokenAmount(tx.value, decimals);
+        const confirmations = currentBlock - tx.blockNumber;
+
+        // Check existing record
+        const { data: existing } = await supabase
+          .from('custodial_deposits')
+          .select('id, status, confirmations, from_address, user_id')
+          .eq('tx_hash', txHash)
+          .maybeSingle();
+
+        if (existing) {
+          // Verify from_address integrity
+          if (existing.from_address?.toLowerCase() !== actualSender) {
+            console.error(`[monitor-custodial-deposits] SECURITY ALERT: from_address mismatch for ${txHash}`);
+            await logAudit(supabase, 'FROM_ADDRESS_MISMATCH', {
+              tx_hash: txHash,
+              stored_from: existing.from_address,
+              actual_from: actualSender,
+              user_id: existing.user_id,
+            });
+            continue;
+          }
+
+          // Credit if confirmed
+          if (existing.status !== 'credited' && confirmations >= REQUIRED_CONFIRMATIONS) {
+            const creditResult = await creditDeposit(supabase, existing.id);
+            if (creditResult.success) {
+              totalCredited++;
+              results.push({ tx_hash: txHash, action: 'credited', symbol: asset.symbol, amount });
+            }
+          } else if (existing.confirmations !== confirmations && existing.status !== 'credited') {
+            await supabase
+              .from('custodial_deposits')
+              .update({
+                confirmations,
+                status: confirmations >= REQUIRED_CONFIRMATIONS ? 'confirmed' : 'pending',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', existing.id);
+          }
           continue;
         }
 
-        console.log(`[monitor-custodial-deposits] ${asset.symbol}: ${inboundTransfers.length} inbound transfers`);
-        totalDiscovered += inboundTransfers.length;
-
-        for (const tx of inboundTransfers) {
-          const txHash = tx.hash.toLowerCase();
-          const actualSender = tx.from.toLowerCase();
-          const decimals = asset.decimals || 18;
-          const amount = formatTokenAmount(tx.value, decimals);
-          const confirmations = currentBlock - tx.blockNumber;
-
-          // Check if already processed
-          const { data: existing } = await supabase
-            .from('custodial_deposits')
-            .select('id, status, confirmations, from_address, user_id')
-            .eq('tx_hash', txHash)
-            .maybeSingle();
-
-          if (existing) {
-            // SECURITY: Verify the stored from_address matches actual tx sender
-            if (existing.from_address?.toLowerCase() !== actualSender) {
-              console.error(`[monitor-custodial-deposits] SECURITY ALERT: from_address mismatch for ${txHash}`);
-              await logDepositAudit(supabase, 'FROM_ADDRESS_MISMATCH', {
-                tx_hash: txHash,
-                stored_from: existing.from_address,
-                actual_from: actualSender,
-                user_id: existing.user_id
-              });
-              continue;
-            }
-
-            // Update confirmations if needed
-            if (existing.status === 'pending' || existing.status === 'confirmed') {
-              if (confirmations >= REQUIRED_CONFIRMATIONS && existing.status !== 'credited') {
-                await creditDeposit(supabase, existing.id, asset.id, amount);
-                totalCredited++;
-                results.push({ tx_hash: txHash, action: 'credited', symbol: asset.symbol, amount });
-              } else if (confirmations !== existing.confirmations) {
-                await supabase
-                  .from('custodial_deposits')
-                  .update({ 
-                    confirmations,
-                    status: confirmations >= REQUIRED_CONFIRMATIONS ? 'confirmed' : 'pending'
-                  })
-                  .eq('id', existing.id);
-              }
-            }
-            continue;
-          }
-
-          // SECURITY: Find user by ACTUAL tx.from address (strict matching)
-          const matchedUser = await findUserByWalletAddress(supabase, actualSender);
-
-          if (!matchedUser) {
-            console.log(`[monitor-custodial-deposits] ⚠️ Unknown sender (not registered): ${actualSender}`);
-            totalSkippedUnknown++;
-            
-            await logDepositAudit(supabase, 'UNKNOWN_SENDER', {
-              tx_hash: txHash,
-              from_address: actualSender,
-              amount,
-              symbol: asset.symbol
-            });
-            
-            results.push({ 
-              tx_hash: txHash, 
-              action: 'skipped_unknown_sender', 
-              symbol: asset.symbol, 
-              amount, 
-              from: actualSender 
-            });
-            continue;
-          }
-
-          // SECURITY: Verify the matched address is exactly the tx sender
-          if (matchedUser.matched_address.toLowerCase() !== actualSender) {
-            console.error(`[monitor-custodial-deposits] CRITICAL: Address match verification failed!`);
-            continue;
-          }
-
-          console.log(`[monitor-custodial-deposits] ✓ Matched sender ${actualSender} to user ${matchedUser.user_id} via ${matchedUser.match_source}`);
-
-          // Create deposit record with ACTUAL sender address
-          await createDepositRecord(
-            supabase, 
-            matchedUser.user_id, 
-            asset.id, 
-            amount, 
-            txHash, 
-            actualSender,
-            confirmations,
-            matchedUser.match_source
-          );
-
-          results.push({ 
-            tx_hash: txHash, 
-            action: 'discovered', 
-            symbol: asset.symbol, 
-            amount, 
-            from: actualSender,
-            user_id: matchedUser.user_id
+        // New deposit: find user by strict wallet match
+        const matchedUser = await findUserByWallet(supabase, actualSender);
+        if (!matchedUser) {
+          console.log(`[monitor-custodial-deposits] ⚠️ Unknown sender (not registered): ${actualSender}`);
+          totalSkippedUnknown++;
+          await logAudit(supabase, 'UNKNOWN_SENDER', {
+            tx_hash: txHash,
+            from_address: actualSender,
+            amount,
+            symbol: asset.symbol,
           });
+          results.push({
+            tx_hash: txHash,
+            action: 'skipped_unknown_sender',
+            symbol: asset.symbol,
+            amount,
+            from: actualSender,
+          });
+          continue;
         }
 
-      } catch (assetError: any) {
-        console.error(`[monitor-custodial-deposits] Error processing ${asset.symbol}:`, assetError);
+        if (matchedUser.matched_address.toLowerCase() !== actualSender) {
+          console.error(`[monitor-custodial-deposits] CRITICAL: Address match verification failed!`);
+          continue;
+        }
+
+        console.log(`[monitor-custodial-deposits] ✓ Matched sender ${actualSender} to user ${matchedUser.user_id} via ${matchedUser.match_source}`);
+
+        // Insert deposit record
+        const { data: newDeposit, error: insertError } = await supabase
+          .from('custodial_deposits')
+          .insert({
+            user_id: matchedUser.user_id,
+            asset_id: asset.id,
+            amount,
+            tx_hash: txHash,
+            from_address: actualSender,
+            confirmations,
+            status: confirmations >= REQUIRED_CONFIRMATIONS ? 'confirmed' : 'pending',
+            required_confirmations: REQUIRED_CONFIRMATIONS,
+            credited_at: null,
+          })
+          .select('id')
+          .single();
+
+        if (insertError) {
+          // Unique constraint -> already recorded
+          if (insertError.code === '23505') {
+            console.warn(`[monitor-custodial-deposits] Duplicate insert for ${txHash}, skipping`);
+          } else {
+            console.error(`[monitor-custodial-deposits] Insert error for ${txHash}:`, insertError);
+          }
+          continue;
+        }
+
+        results.push({
+          tx_hash: txHash,
+          action: 'discovered',
+          symbol: asset.symbol,
+          amount,
+          from: actualSender,
+          user_id: matchedUser.user_id,
+        });
+
+        // Credit immediately if confirmed
+        if (confirmations >= REQUIRED_CONFIRMATIONS && newDeposit?.id) {
+          const creditResult = await creditDeposit(supabase, newDeposit.id);
+          if (creditResult.success && creditResult.status === 'credited') {
+            totalCredited++;
+            results.push({ tx_hash: txHash, action: 'credited', symbol: asset.symbol, amount });
+          }
+        }
       }
     }
 
-    console.log(`[monitor-custodial-deposits] Complete. Discovered: ${totalDiscovered}, Credited: ${totalCredited}, Unknown: ${totalSkippedUnknown}`);
+    // 6. Update scan state
+    if (scanState?.id) {
+      await supabase
+        .from('custodial_deposit_scan_state')
+        .update({ last_scanned_block: currentBlock, updated_at: new Date().toISOString() })
+        .eq('id', scanState.id);
+    } else {
+      await supabase.from('custodial_deposit_scan_state').insert({
+        chain: 'BSC',
+        hot_wallet_address: hotWalletAddress,
+        last_scanned_block: currentBlock,
+      });
+    }
+
+    console.log(
+      `[monitor-custodial-deposits] Complete. Discovered: ${totalDiscovered}, Credited: ${totalCredited}, Unknown: ${totalSkippedUnknown}`
+    );
 
     return new Response(
       JSON.stringify({
@@ -437,192 +457,88 @@ Deno.serve(async (req) => {
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error: any) {
     console.error('[monitor-custodial-deposits] Error:', error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
 
-/**
- * Find a user by their registered wallet address (strict exact match)
- */
-async function findUserByWalletAddress(supabase: any, address: string): Promise<MatchedUser | null> {
-  const normalizedAddress = address.toLowerCase();
+// --------------- DB Helpers ---------------
 
-  // Check profiles.wallet_address
-  const { data: profileWallet } = await supabase
+async function findUserByWallet(supabase: any, address: string): Promise<MatchedUser | null> {
+  const norm = address.toLowerCase();
+
+  // profiles.wallet_address
+  const { data: p1 } = await supabase
     .from('profiles')
     .select('user_id, wallet_address')
-    .ilike('wallet_address', normalizedAddress)
+    .ilike('wallet_address', norm)
     .maybeSingle();
-
-  if (profileWallet && profileWallet.wallet_address?.toLowerCase() === normalizedAddress) {
-    return {
-      user_id: profileWallet.user_id,
-      matched_address: profileWallet.wallet_address,
-      match_source: 'profiles_wallet'
-    };
+  if (p1 && p1.wallet_address?.toLowerCase() === norm) {
+    return { user_id: p1.user_id, matched_address: p1.wallet_address, match_source: 'profiles_wallet' };
   }
 
-  // Check profiles.bsc_wallet_address
-  const { data: profileBsc } = await supabase
+  // profiles.bsc_wallet_address
+  const { data: p2 } = await supabase
     .from('profiles')
     .select('user_id, bsc_wallet_address')
-    .ilike('bsc_wallet_address', normalizedAddress)
+    .ilike('bsc_wallet_address', norm)
     .maybeSingle();
-
-  if (profileBsc && profileBsc.bsc_wallet_address?.toLowerCase() === normalizedAddress) {
-    return {
-      user_id: profileBsc.user_id,
-      matched_address: profileBsc.bsc_wallet_address,
-      match_source: 'profiles_bsc'
-    };
+  if (p2 && p2.bsc_wallet_address?.toLowerCase() === norm) {
+    return { user_id: p2.user_id, matched_address: p2.bsc_wallet_address, match_source: 'profiles_bsc' };
   }
 
-  // Check wallets_user table
-  const { data: userWallet } = await supabase
+  // wallets_user table
+  const { data: w } = await supabase
     .from('wallets_user')
     .select('user_id, address')
-    .ilike('address', normalizedAddress)
+    .ilike('address', norm)
     .maybeSingle();
-
-  if (userWallet && userWallet.address?.toLowerCase() === normalizedAddress) {
-    return {
-      user_id: userWallet.user_id,
-      matched_address: userWallet.address,
-      match_source: 'wallets_user'
-    };
+  if (w && w.address?.toLowerCase() === norm) {
+    return { user_id: w.user_id, matched_address: w.address, match_source: 'wallets_user' };
   }
 
   return null;
 }
 
-/**
- * Log deposit audit events for security monitoring
- */
-async function logDepositAudit(supabase: any, eventType: string, details: any) {
+async function logAudit(supabase: any, eventType: string, details: any) {
   try {
-    await supabase
-      .from('admin_notifications')
-      .insert({
-        type: 'deposit_audit',
-        title: `Deposit Audit: ${eventType}`,
-        message: JSON.stringify(details),
-        priority: eventType === 'FROM_ADDRESS_MISMATCH' ? 'high' : 'normal',
-        metadata: { event_type: eventType, ...details }
-      });
+    await supabase.from('admin_notifications').insert({
+      type: 'deposit_audit',
+      title: `Deposit Audit: ${eventType}`,
+      message: JSON.stringify(details),
+      priority: eventType === 'FROM_ADDRESS_MISMATCH' ? 'high' : 'normal',
+      metadata: { event_type: eventType, ...details },
+    });
   } catch (e) {
     console.error('[monitor-custodial-deposits] Failed to log audit event:', e);
   }
 }
 
-async function createDepositRecord(
+async function creditDeposit(
   supabase: any,
-  userId: string,
-  assetId: string,
-  amount: number,
-  txHash: string,
-  actualFromAddress: string,
-  confirmations: number,
-  matchSource: string
-) {
-  const status = confirmations >= REQUIRED_CONFIRMATIONS ? 'confirmed' : 'pending';
-  
-  const { error } = await supabase
-    .from('custodial_deposits')
-    .insert({
-      user_id: userId,
-      asset_id: assetId,
-      amount,
-      tx_hash: txHash,
-      from_address: actualFromAddress,
-      confirmations,
-      status,
-      network: 'BSC',
-      credited_at: null,
-      metadata: {
-        match_source: matchSource,
-        detected_via: 'rpc_eth_getLogs',
-        detected_at: new Date().toISOString()
-      }
-    });
+  depositId: string
+): Promise<{ success: boolean; status?: string; error?: string }> {
+  const { data, error } = await supabase.rpc('credit_custodial_deposit', { p_deposit_id: depositId });
 
   if (error) {
-    console.error('[monitor-custodial-deposits] Insert error:', error);
-    throw error;
-  }
-}
-
-async function creditDeposit(supabase: any, depositId: string, assetId: string, amount: number) {
-  // Get deposit details
-  const { data: deposit, error: depositError } = await supabase
-    .from('custodial_deposits')
-    .select('user_id, status')
-    .eq('id', depositId)
-    .single();
-
-  if (depositError || !deposit) {
-    console.error('[monitor-custodial-deposits] Failed to fetch deposit for crediting:', depositError);
-    return;
+    console.error(`[monitor-custodial-deposits] credit_custodial_deposit RPC failed:`, error);
+    return { success: false, error: error.message };
   }
 
-  if (deposit.status === 'credited') {
-    console.log(`[monitor-custodial-deposits] Deposit ${depositId} already credited, skipping`);
-    return;
+  const result = data as { success: boolean; status?: string; error?: string } | null;
+  if (!result) {
+    return { success: false, error: 'No result from RPC' };
   }
 
-  // Update wallet balance (trading balance)
-  const { data: existingBalance } = await supabase
-    .from('wallet_balances')
-    .select('id, balance')
-    .eq('user_id', deposit.user_id)
-    .eq('asset_id', assetId)
-    .maybeSingle();
-
-  if (existingBalance) {
-    await supabase
-      .from('wallet_balances')
-      .update({ 
-        balance: existingBalance.balance + amount,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existingBalance.id);
+  if (result.success) {
+    console.log(`[monitor-custodial-deposits] ✓ Credited deposit ${depositId} (status: ${result.status})`);
   } else {
-    await supabase
-      .from('wallet_balances')
-      .insert({
-        user_id: deposit.user_id,
-        asset_id: assetId,
-        balance: amount
-      });
+    console.warn(`[monitor-custodial-deposits] Credit failed for ${depositId}:`, result.error);
   }
 
-  // Create ledger entry
-  await supabase
-    .from('trading_balance_ledger')
-    .insert({
-      user_id: deposit.user_id,
-      asset_id: assetId,
-      amount,
-      balance_after: (existingBalance?.balance || 0) + amount,
-      tx_type: 'deposit',
-      reference_type: 'custodial_deposit',
-      reference_id: depositId,
-      notes: 'Auto-credited from on-chain deposit (RPC detected)'
-    });
-
-  // Mark deposit as credited
-  await supabase
-    .from('custodial_deposits')
-    .update({ 
-      status: 'credited',
-      credited_at: new Date().toISOString()
-    })
-    .eq('id', depositId);
-
-  console.log(`[monitor-custodial-deposits] ✓ Credited ${amount} to user ${deposit.user_id}`);
+  return result;
 }
