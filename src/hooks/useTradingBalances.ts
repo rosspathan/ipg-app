@@ -163,24 +163,48 @@ export function useTradingTransfer() {
 
 /**
  * Hook to get the platform hot wallet address for deposits
+ * Prioritizes the Trading Hot Wallet (label includes "Trading")
  */
 export function useHotWalletAddress() {
   return useQuery({
     queryKey: ["hot-wallet-address"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First try to get the Trading Hot Wallet specifically
+      const { data: tradingWallet, error: tradingError } = await supabase
         .from("platform_hot_wallet")
-        .select("address")
+        .select("address, label")
         .eq("is_active", true)
         .eq("chain", "BSC")
-        .single();
+        .ilike("label", "%Trading%")
+        .limit(1)
+        .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching hot wallet:", error);
+      if (!tradingError && tradingWallet?.address) {
+        console.log("[useHotWalletAddress] Using Trading Hot Wallet:", tradingWallet.address);
+        return tradingWallet.address;
+      }
+
+      // Fallback: get any active BSC wallet
+      const { data: anyWallet, error: anyError } = await supabase
+        .from("platform_hot_wallet")
+        .select("address, label")
+        .eq("is_active", true)
+        .eq("chain", "BSC")
+        .limit(1)
+        .maybeSingle();
+
+      if (anyError) {
+        console.error("Error fetching hot wallet:", anyError);
         return null;
       }
 
-      return data?.address || null;
+      if (anyWallet?.address) {
+        console.log("[useHotWalletAddress] Using fallback wallet:", anyWallet.label, anyWallet.address);
+        return anyWallet.address;
+      }
+
+      console.warn("[useHotWalletAddress] No active BSC hot wallet found");
+      return null;
     },
     staleTime: 60000, // Cache for 1 minute
   });
