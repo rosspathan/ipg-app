@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,12 +25,18 @@ import {
   AlertTriangle,
   Loader2,
   Save,
-  ExternalLink
+  ExternalLink,
+  Key,
+  Clock,
+  Wrench
 } from 'lucide-react';
 
 interface MigrationSettings {
   id: string;
   migration_enabled: boolean;
+  maintenance_mode: boolean;
+  maintenance_message: string | null;
+  migration_wallet_address: string | null;
   migration_fee_percent: number;
   gas_fee_model: 'fixed' | 'dynamic';
   fixed_gas_fee_bsk: number;
@@ -49,12 +56,18 @@ interface MigrationSettings {
 interface HealthStatus {
   healthy: boolean;
   wallet_configured: boolean;
+  private_key_configured: boolean;
   wallet_address: string | null;
   migration_enabled: boolean;
+  maintenance_mode: boolean;
+  maintenance_message: string | null;
   hot_wallet_bsk_balance: number;
   gas_balance_bnb: number;
   rpc_status: 'ok' | 'error';
+  rpc_latency_ms: number | null;
   issues: string[];
+  warnings: string[];
+  last_migration?: { id: string; tx_hash: string | null; completed_at: string | null } | null;
 }
 
 export default function BSKMigrationSettings() {
@@ -89,7 +102,7 @@ export default function BSKMigrationSettings() {
       if (error) throw error;
       return data as HealthStatus;
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
   });
 
   // Update settings mutation
@@ -130,6 +143,9 @@ export default function BSKMigrationSettings() {
     
     const updates: Partial<MigrationSettings> = {
       migration_enabled: formData.migration_enabled,
+      maintenance_mode: formData.maintenance_mode,
+      maintenance_message: formData.maintenance_message || null,
+      migration_wallet_address: formData.migration_wallet_address || null,
       migration_fee_percent: Number(formData.migration_fee_percent),
       gas_fee_model: formData.gas_fee_model,
       fixed_gas_fee_bsk: Number(formData.fixed_gas_fee_bsk),
@@ -223,11 +239,11 @@ export default function BSKMigrationSettings() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Health Metrics Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="p-4 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                   <Wallet className="h-4 w-4" />
-                  Wallet
+                  Wallet Address
                 </div>
                 <div className="flex items-center gap-2">
                   {health?.wallet_configured ? (
@@ -237,6 +253,23 @@ export default function BSKMigrationSettings() {
                   )}
                   <span className="text-sm font-medium">
                     {health?.wallet_configured ? 'Configured' : 'Not Set'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <Key className="h-4 w-4" />
+                  Private Key
+                </div>
+                <div className="flex items-center gap-2">
+                  {health?.private_key_configured ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {health?.private_key_configured ? 'Configured' : 'Missing'}
                   </span>
                 </div>
               </div>
@@ -277,6 +310,11 @@ export default function BSKMigrationSettings() {
                   <span className="font-medium">
                     {health?.rpc_status === 'ok' ? 'Connected' : 'Error'}
                   </span>
+                  {health?.rpc_latency_ms && (
+                    <span className="text-xs text-muted-foreground">
+                      ({health.rpc_latency_ms}ms)
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -284,8 +322,8 @@ export default function BSKMigrationSettings() {
             {/* Issues List */}
             {health?.issues && health.issues.length > 0 && (
               <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Issues Detected</AlertTitle>
+                <XCircle className="h-4 w-4" />
+                <AlertTitle>Critical Issues (Blocking)</AlertTitle>
                 <AlertDescription>
                   <ul className="list-disc list-inside mt-2 space-y-1">
                     {health.issues.map((issue, i) => (
@@ -296,11 +334,26 @@ export default function BSKMigrationSettings() {
               </Alert>
             )}
 
+            {/* Warnings List */}
+            {health?.warnings && health.warnings.length > 0 && (
+              <Alert className="border-warning/50 bg-warning/5">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <AlertTitle className="text-warning">Warnings (Non-blocking)</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    {health.warnings.map((warning, i) => (
+                      <li key={i} className="text-sm">{warning}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Wallet Address */}
             {health?.wallet_address && (
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                 <div>
-                  <span className="text-sm text-muted-foreground">Migration Wallet:</span>
+                  <span className="text-sm text-muted-foreground">Hot Wallet:</span>
                   <span className="font-mono text-sm ml-2">{health.wallet_address}</span>
                 </div>
                 <a
@@ -314,6 +367,32 @@ export default function BSKMigrationSettings() {
                 </a>
               </div>
             )}
+
+            {/* Last Migration */}
+            {health?.last_migration && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Last Migration:</span>
+                  <span className="text-sm">
+                    {health.last_migration.completed_at 
+                      ? new Date(health.last_migration.completed_at).toLocaleString()
+                      : 'In progress'}
+                  </span>
+                </div>
+                {health.last_migration.tx_hash && (
+                  <a
+                    href={`https://bscscan.com/tx/${health.last_migration.tx_hash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline flex items-center gap-1 text-sm"
+                  >
+                    View TX
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -325,7 +404,7 @@ export default function BSKMigrationSettings() {
               Enable or disable the migration feature for all users
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
               <div>
                 <Label className="text-base font-medium">Migration Enabled</Label>
@@ -338,6 +417,78 @@ export default function BSKMigrationSettings() {
                 onCheckedChange={(checked) => handleChange('migration_enabled', checked)}
               />
             </div>
+
+            <Separator />
+
+            <div className="flex items-center justify-between p-4 rounded-lg bg-warning/5 border border-warning/20">
+              <div>
+                <Label className="text-base font-medium flex items-center gap-2">
+                  <Wrench className="h-4 w-4 text-warning" />
+                  Maintenance Mode
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Shows maintenance message to users
+                </p>
+              </div>
+              <Switch
+                checked={formData.maintenance_mode ?? false}
+                onCheckedChange={(checked) => handleChange('maintenance_mode', checked)}
+              />
+            </div>
+
+            {formData.maintenance_mode && (
+              <div className="space-y-2">
+                <Label>Maintenance Message</Label>
+                <Textarea
+                  value={formData.maintenance_message ?? ''}
+                  onChange={(e) => handleChange('maintenance_message', e.target.value)}
+                  placeholder="Migration is temporarily unavailable for scheduled maintenance. Please check back in a few hours."
+                  rows={3}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Wallet Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Wallet Configuration</CardTitle>
+            <CardDescription>
+              Configure the migration hot wallet address
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Migration Wallet Address</Label>
+              <Input
+                value={formData.migration_wallet_address ?? ''}
+                onChange={(e) => handleChange('migration_wallet_address', e.target.value)}
+                placeholder="0x..."
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                This wallet address will be used to send BSK tokens to users
+              </p>
+            </div>
+
+            <Alert>
+              <Key className="h-4 w-4" />
+              <AlertTitle>Private Key Configuration</AlertTitle>
+              <AlertDescription>
+                <p className="text-sm">
+                  The private key for this wallet must be set as a Supabase secret named{' '}
+                  <code className="bg-muted px-1 py-0.5 rounded">MIGRATION_WALLET_PRIVATE_KEY</code>.
+                </p>
+                <p className="text-sm mt-2">
+                  Status: {health?.private_key_configured ? (
+                    <span className="text-green-500 font-medium">✓ Configured</span>
+                  ) : (
+                    <span className="text-destructive font-medium">✗ Missing</span>
+                  )}
+                </p>
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
 
@@ -465,6 +616,47 @@ export default function BSKMigrationSettings() {
           </CardContent>
         </Card>
 
+        {/* Thresholds */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Balance Thresholds</CardTitle>
+            <CardDescription>
+              Minimum balances required for the system to operate
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label>Minimum Hot Wallet BSK</Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={formData.min_hot_wallet_bsk ?? 1000}
+                  onChange={(e) => handleChange('min_hot_wallet_bsk', e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Warning shown when BSK balance falls below this
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Minimum Gas Balance (BNB)</Label>
+                <Input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  value={formData.min_gas_balance_bnb ?? 0.05}
+                  onChange={(e) => handleChange('min_gas_balance_bnb', e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Warning shown when BNB balance falls below this
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Blockchain Configuration */}
         <Card>
           <CardHeader>
@@ -476,119 +668,38 @@ export default function BSKMigrationSettings() {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label>Required Confirmations</Label>
-                <Input
-                  type="number"
-                  step="1"
-                  min="1"
-                  max="50"
-                  value={formData.required_confirmations ?? 3}
-                  onChange={(e) => handleChange('required_confirmations', e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Blocks to wait before marking complete (1-50)
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Token Decimals</Label>
-                <Input
-                  type="number"
-                  value={formData.token_decimals ?? 18}
-                  disabled
-                />
-                <p className="text-xs text-muted-foreground">
-                  BSK uses 18 decimals (fixed)
-                </p>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <div className="space-y-2">
                 <Label>Primary RPC URL</Label>
                 <Input
-                  type="text"
                   value={formData.primary_rpc_url ?? 'https://bsc-dataseed.binance.org'}
                   onChange={(e) => handleChange('primary_rpc_url', e.target.value)}
+                  placeholder="https://bsc-dataseed.binance.org"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Fallback RPC URL</Label>
                 <Input
-                  type="text"
-                  placeholder="Optional fallback RPC"
                   value={formData.fallback_rpc_url ?? ''}
-                  onChange={(e) => handleChange('fallback_rpc_url', e.target.value || null)}
+                  onChange={(e) => handleChange('fallback_rpc_url', e.target.value)}
+                  placeholder="https://bsc-dataseed1.binance.org"
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Health Thresholds */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Health Thresholds</CardTitle>
-            <CardDescription>
-              Set minimum balances to keep the system healthy
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Min Hot Wallet BSK Balance</Label>
-                <Input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={formData.min_hot_wallet_bsk ?? 1000}
-                  onChange={(e) => handleChange('min_hot_wallet_bsk', e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Warn when BSK balance falls below this
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Min Gas Balance (BNB)</Label>
-                <Input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  value={formData.min_gas_balance_bnb ?? 0.05}
-                  onChange={(e) => handleChange('min_gas_balance_bnb', e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Warn when BNB balance falls below this
-                </p>
-              </div>
+            <div className="space-y-2">
+              <Label>Required Confirmations</Label>
+              <Input
+                type="number"
+                step="1"
+                min="1"
+                max="100"
+                value={formData.required_confirmations ?? 3}
+                onChange={(e) => handleChange('required_confirmations', e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Number of block confirmations to wait before marking migration as complete
+              </p>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Links */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Links</CardTitle>
-          </CardHeader>
-          <CardContent className="flex gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/admin/migration-hot-wallet')}
-            >
-              <Wallet className="h-4 w-4 mr-2" />
-              Manage Hot Wallet
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/admin/bsk-onchain-migration')}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              View Migrations
-            </Button>
           </CardContent>
         </Card>
       </div>

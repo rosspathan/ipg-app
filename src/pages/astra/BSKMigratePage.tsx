@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, Zap, Shield, AlertTriangle, Check, ExternalLink, Loader2, Wallet, CheckCircle2, Info, ArrowRight, History, Clock, XCircle } from "lucide-react"
+import { ArrowLeft, Zap, Shield, AlertTriangle, Check, ExternalLink, Loader2, Wallet, CheckCircle2, Info, ArrowRight, History, Clock, XCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useBSKMigration, MigrationHistoryItem } from "@/hooks/useBSKMigration"
+import { useBSKMigration, MigrationHistoryItem, ReasonCode } from "@/hooks/useBSKMigration"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
@@ -29,6 +29,23 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   completed: { label: 'Completed', variant: 'default', icon: CheckCircle2 },
   failed: { label: 'Failed', variant: 'destructive', icon: XCircle },
   rolled_back: { label: 'Refunded', variant: 'outline', icon: ArrowLeft },
+}
+
+// Alert variant based on reason code
+function getAlertVariant(reasonCode: ReasonCode): 'default' | 'destructive' {
+  switch (reasonCode) {
+    case 'MIGRATION_DISABLED':
+    case 'WALLET_NOT_CONFIGURED':
+    case 'PRIVATE_KEY_MISSING':
+      return 'destructive';
+    default:
+      return 'default';
+  }
+}
+
+// Whether to hide the amount input based on reason code
+function shouldHideAmountInput(reasonCode: ReasonCode): boolean {
+  return reasonCode === 'MIGRATION_DISABLED' || reasonCode === 'MAINTENANCE_MODE';
 }
 
 /**
@@ -55,6 +72,7 @@ export function BSKMigratePage() {
   const [confirmed, setConfirmed] = useState(false)
   const [understands, setUnderstands] = useState(false)
   const [activeTab, setActiveTab] = useState('migrate')
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     checkEligibility()
@@ -69,34 +87,46 @@ export function BSKMigratePage() {
         if (['validating', 'debiting', 'signing', 'broadcasting', 'confirming'].includes(pendingStatus)) {
           setStep('processing');
         }
-      } else if (eligibility.eligible || eligibility.system_available) {
+      } else {
+        // Always go to input step - availability is checked separately
         setStep('input');
       }
     }
   }, [eligibility])
 
-  // Check if system is unavailable
+  const handleRetryCheck = async () => {
+    setRefreshing(true)
+    await checkEligibility()
+    setRefreshing(false)
+  }
+
+  // Derived state
   const systemUnavailable = eligibility && !eligibility.system_available;
+  const reasonCode = eligibility?.system_reason_code || 'OK';
+  const systemMessage = eligibility?.system_message || 'Migration temporarily unavailable.';
+  const hideAmountInput = systemUnavailable && shouldHideAmountInput(reasonCode);
 
   const gasEstimate = eligibility?.gas_estimate_bsk || 5
   const migrationFeePercent = eligibility?.migration_fee_percent || 5
   const amountNum = parseFloat(amount) || 0
-  // Use same calculation as server for consistency
   const migrationFee = Math.ceil(amountNum * migrationFeePercent / 100)
   const netAmount = Math.max(0, amountNum - gasEstimate - migrationFee)
   const minAmount = eligibility?.min_amount || 100
   const maxAmount = eligibility?.max_amount || eligibility?.withdrawable_balance || 0
   const isValidAmount = amountNum >= minAmount && amountNum <= maxAmount && netAmount > 0
 
+  // Check if user has user-specific blockers (wallet, balance, etc)
+  const userBlockers = eligibility?.reasons?.filter(r => r !== systemMessage) || [];
+  const hasUserBlockers = userBlockers.length > 0;
+
   const handleMaxAmount = () => {
     if (eligibility) {
-      // Use the max_amount which accounts for fees
       setAmount(eligibility.max_amount?.toString() || eligibility.withdrawable_balance.toString())
     }
   }
 
   const handleProceed = () => {
-    if (isValidAmount && eligibility?.eligible) {
+    if (isValidAmount && !hasUserBlockers && !systemUnavailable) {
       setStep('confirm')
     }
   }
@@ -180,27 +210,48 @@ export function BSKMigratePage() {
               </CardContent>
             </Card>
 
-            {/* System Unavailable Alert */}
+            {/* System Unavailable Alert with specific reason */}
             {systemUnavailable && (
-              <Alert className="border-warning/50 bg-warning/5">
-                <AlertTriangle className="h-4 w-4 text-warning" />
-                <AlertTitle className="text-warning">Migration Temporarily Unavailable</AlertTitle>
+              <Alert variant={getAlertVariant(reasonCode)} className="border-warning/50 bg-warning/5">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle className="flex items-center justify-between">
+                  <span>
+                    {reasonCode === 'MIGRATION_DISABLED' && 'Migration Disabled'}
+                    {reasonCode === 'MAINTENANCE_MODE' && 'Maintenance Mode'}
+                    {reasonCode === 'WALLET_NOT_CONFIGURED' && 'System Issue'}
+                    {reasonCode === 'PRIVATE_KEY_MISSING' && 'System Issue'}
+                    {reasonCode === 'RPC_DOWN' && 'Network Issue'}
+                    {reasonCode === 'INSUFFICIENT_BSK' && 'Liquidity Issue'}
+                    {reasonCode === 'INSUFFICIENT_BNB' && 'Gas Issue'}
+                    {!['MIGRATION_DISABLED', 'MAINTENANCE_MODE', 'WALLET_NOT_CONFIGURED', 'PRIVATE_KEY_MISSING', 'RPC_DOWN', 'INSUFFICIENT_BSK', 'INSUFFICIENT_BNB'].includes(reasonCode) && 'Temporarily Unavailable'}
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleRetryCheck}
+                    disabled={refreshing}
+                    className="h-8 px-2"
+                  >
+                    <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+                    <span className="ml-1">Retry</span>
+                  </Button>
+                </AlertTitle>
                 <AlertDescription>
                   <p className="text-sm text-muted-foreground mt-1">
-                    The migration service is currently undergoing maintenance. Please try again later.
+                    {systemMessage}
                   </p>
                 </AlertDescription>
               </Alert>
             )}
 
-            {/* Not Eligible Alert (only show if system is available) */}
-            {eligibility && !eligibility.eligible && !systemUnavailable && (
+            {/* User-specific Not Eligible Alert (show even if system unavailable for user to fix) */}
+            {eligibility && hasUserBlockers && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Not Eligible</AlertTitle>
+                <AlertTitle>Cannot Migrate</AlertTitle>
                 <AlertDescription>
                   <ul className="list-disc list-inside space-y-1 mt-2">
-                    {eligibility.reasons.map((reason, i) => (
+                    {userBlockers.map((reason, i) => (
                       <li key={i}>{reason}</li>
                     ))}
                   </ul>
@@ -238,8 +289,8 @@ export function BSKMigratePage() {
               </Card>
             )}
 
-            {/* Step: Input Amount */}
-            {step === 'input' && eligibility && !systemUnavailable && (
+            {/* Step: Input Amount - Show unless migration is globally disabled/maintenance */}
+            {step === 'input' && eligibility && !hideAmountInput && (
               <Card>
                 <CardHeader>
                   <CardTitle>Enter Amount</CardTitle>
@@ -266,12 +317,14 @@ export function BSKMigratePage() {
                         onChange={(e) => setAmount(e.target.value)}
                         placeholder={`Min ${eligibility.min_amount} BSK`}
                         className="pr-20 text-lg h-14"
+                        disabled={systemUnavailable || hasUserBlockers}
                       />
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={handleMaxAmount}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-primary"
+                        disabled={systemUnavailable || hasUserBlockers}
                       >
                         MAX
                       </Button>
@@ -305,30 +358,33 @@ export function BSKMigratePage() {
                   )}
 
                   {/* Destination */}
-                  <div className="p-4 rounded-xl bg-success/5 border border-success/20">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium">Destination Wallet</p>
-                        <p className="text-xs text-muted-foreground font-mono break-all mt-1">
-                          {eligibility.wallet_address}
-                        </p>
+                  {eligibility.wallet_address && (
+                    <div className="p-4 rounded-xl bg-success/5 border border-success/20">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Destination Wallet</p>
+                          <p className="text-xs text-muted-foreground font-mono break-all mt-1">
+                            {eligibility.wallet_address}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   <Button
                     onClick={handleProceed}
-                    disabled={!isValidAmount || !eligibility?.eligible}
+                    disabled={!isValidAmount || systemUnavailable || hasUserBlockers}
                     className="w-full h-12"
                   >
                     Continue
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
 
-                  {!eligibility?.eligible && eligibility?.reasons && eligibility.reasons.length > 0 && (
+                  {/* Show specific blocker message */}
+                  {(systemUnavailable || hasUserBlockers) && !eligibility.has_pending_migration && (
                     <p className="text-sm text-destructive text-center mt-2">
-                      {eligibility.reasons[0]}
+                      {systemUnavailable ? systemMessage : userBlockers[0]}
                     </p>
                   )}
                 </CardContent>
@@ -404,8 +460,8 @@ export function BSKMigratePage() {
                   </div>
 
                   <div className="flex gap-3">
-                    <Button
-                      variant="outline"
+                    <Button 
+                      variant="outline" 
                       onClick={() => setStep('input')}
                       className="flex-1"
                     >
@@ -413,11 +469,20 @@ export function BSKMigratePage() {
                     </Button>
                     <Button
                       onClick={handleMigrate}
-                      disabled={!confirmed || !understands}
-                      className="flex-1 bg-primary hover:bg-primary/90"
+                      disabled={!confirmed || !understands || migrating}
+                      className="flex-1 bg-gradient-to-r from-primary to-primary/80"
                     >
-                      <Zap className="h-4 w-4 mr-2" />
-                      Migrate Now
+                      {migrating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Migrating...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4 mr-2" />
+                          Migrate Now
+                        </>
+                      )}
                     </Button>
                   </div>
                 </CardContent>
@@ -427,26 +492,22 @@ export function BSKMigratePage() {
             {/* Step: Processing */}
             {step === 'processing' && (
               <Card>
-                <CardContent className="pt-8 pb-8">
-                  <div className="flex flex-col items-center text-center space-y-6">
+                <CardContent className="py-12">
+                  <div className="flex flex-col items-center text-center space-y-4">
                     <div className="relative">
-                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                      <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+                      <div className="relative p-4 rounded-full bg-primary/10 border border-primary/20">
+                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
                       </div>
-                      <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse" />
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-2">Processing Migration</h3>
-                      <p className="text-muted-foreground">
-                        Your BSK is being transferred to the blockchain...
-                      </p>
-                    </div>
-                    <div className="w-full max-w-xs space-y-2">
-                      <MigrationProgressStep label="Validating" done />
-                      <MigrationProgressStep label="Debiting Internal Balance" done={migrating} />
-                      <MigrationProgressStep label="Signing Transaction" active={migrating} />
-                      <MigrationProgressStep label="Broadcasting to BSC" />
-                      <MigrationProgressStep label="Confirming" />
+                    <h3 className="text-lg font-bold">Processing Migration</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs">
+                      Your BSK is being migrated to the blockchain. This may take a few moments...
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-center mt-4">
+                      <Badge variant="secondary">Validating</Badge>
+                      <Badge variant="secondary">Signing</Badge>
+                      <Badge variant="secondary">Broadcasting</Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -456,157 +517,99 @@ export function BSKMigratePage() {
             {/* Step: Success */}
             {step === 'success' && result && (
               <Card className="border-success/30 bg-success/5">
-                <CardContent className="pt-8 pb-8">
-                  <div className="flex flex-col items-center text-center space-y-6">
-                    <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center">
-                      <CheckCircle2 className="h-12 w-12 text-success" />
+                <CardContent className="py-8">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="p-4 rounded-full bg-success/20 border border-success/30">
+                      <CheckCircle2 className="h-10 w-10 text-success" />
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-2 text-success">Migration Complete!</h3>
-                      <p className="text-muted-foreground">
-                        Your BSK has been successfully transferred to your wallet
-                      </p>
-                    </div>
+                    <h3 className="text-xl font-bold text-success">Migration Successful!</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your BSK has been migrated to the blockchain
+                    </p>
 
-                    <div className="w-full space-y-3 p-4 rounded-xl bg-background border">
+                    <div className="w-full space-y-3 p-4 rounded-xl bg-background/50 text-left">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Amount Received</span>
-                        <span className="font-bold text-success">{result.net_amount.toLocaleString()} BSK</span>
+                        <span className="text-muted-foreground">Amount Migrated</span>
+                        <span className="font-bold">{result.net_amount.toLocaleString()} BSK</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Block Number</span>
                         <span className="font-mono">{result.block_number}</span>
                       </div>
-                      <div className="flex justify-between text-sm items-center">
-                        <span className="text-muted-foreground">Transaction</span>
-                        <button
-                          onClick={handleViewTx}
-                          className="text-primary hover:underline flex items-center gap-1 font-mono text-xs"
-                        >
-                          {result.tx_hash.slice(0, 10)}...{result.tx_hash.slice(-8)}
-                          <ExternalLink className="h-3 w-3" />
-                        </button>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Confirmations</span>
+                        <span>{result.confirmations}</span>
                       </div>
                     </div>
 
                     <div className="flex gap-3 w-full">
-                      <Button
-                        variant="outline"
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setStep('input')
+                          setAmount('')
+                          setConfirmed(false)
+                          setUnderstands(false)
+                          setResult(null)
+                          checkEligibility()
+                        }}
+                        className="flex-1"
+                      >
+                        New Migration
+                      </Button>
+                      <Button 
                         onClick={handleViewTx}
                         className="flex-1"
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
                         View on BSCScan
                       </Button>
-                      <Button
-                        onClick={() => {
-                          setActiveTab('history')
-                          fetchHistory()
-                        }}
-                        className="flex-1"
-                      >
-                        View History
-                      </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Info Section */}
-            {(step === 'input' || step === 'check') && (
-              <Card className="bg-muted/30">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                    How It Works
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary">1</div>
-                    <div>
-                      <p className="font-medium text-sm">Enter Amount</p>
-                      <p className="text-xs text-muted-foreground">Choose how much BSK to convert</p>
-                    </div>
+            {/* Info Box */}
+            <Card className="bg-muted/30">
+              <CardContent className="py-4">
+                <div className="flex gap-3">
+                  <Info className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div className="text-sm text-muted-foreground space-y-2">
+                    <p><strong>What is On-Chain Migration?</strong></p>
+                    <p>This feature converts your internal BSK balance to real BEP-20 tokens on Binance Smart Chain that you can hold in any wallet, trade on DEXs, or transfer freely.</p>
+                    <p>A {migrationFeePercent}% fee and gas costs apply. This is a one-way process.</p>
                   </div>
-                  <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary">2</div>
-                    <div>
-                      <p className="font-medium text-sm">Confirm & Migrate</p>
-                      <p className="text-xs text-muted-foreground">Your internal balance is locked</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-sm font-bold text-primary">3</div>
-                    <div>
-                      <p className="font-medium text-sm">Receive On-Chain BSK</p>
-                      <p className="text-xs text-muted-foreground">Real BEP-20 tokens in your wallet</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* History Tab */}
-          <TabsContent value="history" className="space-y-4 mt-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <History className="h-5 w-5" />
-                      Migration History
-                    </CardTitle>
-                    <CardDescription>
-                      All your on-chain migration transactions
-                    </CardDescription>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={fetchHistory}
-                    disabled={historyLoading}
-                  >
-                    {historyLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ArrowRight className="h-4 w-4 rotate-45" />
-                    )}
-                  </Button>
+          <TabsContent value="history" className="mt-4">
+            {historyLoading ? (
+              <div className="flex justify-center py-12">
+                <LoadingSpinner label="Loading history..." />
+              </div>
+            ) : history.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-medium mb-2">No Migration History</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your migration transactions will appear here
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-3">
+                  {history.map((item) => (
+                    <MigrationHistoryCard key={item.id} item={item} />
+                  ))}
                 </div>
-              </CardHeader>
-              <CardContent>
-                {historyLoading && history.length === 0 ? (
-                  <div className="flex items-center justify-center py-8">
-                    <LoadingSpinner label="Loading history..." />
-                  </div>
-                ) : history.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                      <History className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-muted-foreground">No migrations yet</p>
-                    <Button 
-                      variant="link" 
-                      onClick={() => setActiveTab('migrate')}
-                      className="mt-2"
-                    >
-                      Start your first migration
-                    </Button>
-                  </div>
-                ) : (
-                  <ScrollArea className="h-[500px] pr-4">
-                    <div className="space-y-3">
-                      {history.map((item) => (
-                        <MigrationHistoryCard key={item.id} item={item} />
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
+              </ScrollArea>
+            )}
           </TabsContent>
         </Tabs>
       </div>
@@ -614,143 +617,65 @@ export function BSKMigratePage() {
   )
 }
 
-function MigrationProgressStep({ label, done, active }: { label: string; done?: boolean; active?: boolean }) {
-  return (
-    <div className={cn(
-      "flex items-center gap-3 p-2 rounded-lg transition-colors",
-      done && "bg-success/10",
-      active && "bg-primary/10"
-    )}>
-      <div className={cn(
-        "w-5 h-5 rounded-full flex items-center justify-center",
-        done && "bg-success text-success-foreground",
-        active && "bg-primary text-primary-foreground",
-        !done && !active && "bg-muted"
-      )}>
-        {done ? (
-          <Check className="h-3 w-3" />
-        ) : active ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
-        ) : (
-          <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
-        )}
-      </div>
-      <span className={cn(
-        "text-sm",
-        done && "text-success",
-        active && "text-primary font-medium",
-        !done && !active && "text-muted-foreground"
-      )}>
-        {label}
-      </span>
-    </div>
-  )
-}
-
 function MigrationHistoryCard({ item }: { item: MigrationHistoryItem }) {
-  const config = statusConfig[item.status] || statusConfig.pending
-  const StatusIcon = config.icon
-
-  const handleViewTx = () => {
-    if (item.tx_hash) {
-      window.open(`https://bscscan.com/tx/${item.tx_hash}`, '_blank')
-    }
-  }
+  const config = statusConfig[item.status] || statusConfig.pending;
+  const StatusIcon = config.icon;
 
   return (
-    <div className="p-4 rounded-xl border bg-card hover:bg-muted/30 transition-colors">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
+    <Card>
+      <CardContent className="py-4">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <p className="font-bold text-lg">{item.amount_requested.toLocaleString()} BSK</p>
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(item.created_at), 'MMM d, yyyy HH:mm')}
+            </p>
+          </div>
           <Badge variant={config.variant} className="flex items-center gap-1">
-            <StatusIcon className={cn("h-3 w-3", item.status !== 'completed' && item.status !== 'failed' && item.status !== 'rolled_back' && "animate-spin")} />
+            <StatusIcon className={cn("h-3 w-3", config.icon === Loader2 && "animate-spin")} />
             {config.label}
           </Badge>
         </div>
-        <span className="text-xs text-muted-foreground">
-          {format(new Date(item.created_at), 'MMM d, yyyy HH:mm')}
-        </span>
-      </div>
 
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Amount Requested</span>
-          <span className="font-semibold">{Number(item.amount_requested).toLocaleString()} BSK</span>
-        </div>
-        
-        {item.net_amount_migrated && (
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Net Received</span>
-            <span className="font-semibold text-success">{Number(item.net_amount_migrated).toLocaleString()} BSK</span>
-          </div>
-        )}
-
-        {item.migration_fee_bsk != null && item.migration_fee_bsk > 0 && (
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Migration Fee ({item.migration_fee_percent || 5}%)</span>
-            <span className="text-sm text-destructive">-{Number(item.migration_fee_bsk).toFixed(2)} BSK</span>
-          </div>
-        )}
-
-        {item.gas_deduction_bsk && (
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Gas Fee</span>
-            <span className="text-sm text-destructive">-{Number(item.gas_deduction_bsk).toFixed(2)} BSK</span>
-          </div>
-        )}
-
-        <Separator className="my-2" />
-
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Wallet</span>
-          <span className="font-mono text-xs text-muted-foreground">
-            {item.wallet_address.slice(0, 8)}...{item.wallet_address.slice(-6)}
-          </span>
-        </div>
-
-        {item.tx_hash && (
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">TX Hash</span>
-            <button
-              onClick={handleViewTx}
-              className="text-primary hover:underline flex items-center gap-1 font-mono text-xs"
-            >
-              {item.tx_hash.slice(0, 8)}...{item.tx_hash.slice(-6)}
-              <ExternalLink className="h-3 w-3" />
-            </button>
-          </div>
-        )}
-
-        {item.block_number && (
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Block</span>
-            <span className="font-mono text-xs">{item.block_number}</span>
+        {item.net_amount_migrated !== null && (
+          <div className="text-sm space-y-1 mb-3">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Net Amount</span>
+              <span className="font-medium">{item.net_amount_migrated.toLocaleString()} BSK</span>
+            </div>
+            {item.migration_fee_bsk !== null && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Fee ({item.migration_fee_percent}%)</span>
+                <span>{item.migration_fee_bsk.toLocaleString()} BSK</span>
+              </div>
+            )}
+            {item.gas_deduction_bsk !== null && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Gas</span>
+                <span>{item.gas_deduction_bsk} BSK</span>
+              </div>
+            )}
           </div>
         )}
 
         {item.error_message && (
-          <div className="mt-2 p-2 rounded bg-destructive/10 border border-destructive/20">
-            <p className="text-xs text-destructive">{item.error_message}</p>
-          </div>
+          <p className="text-xs text-destructive mb-2">{item.error_message}</p>
         )}
 
-        {(item as any).refunded_at && (
-          <div className="flex justify-between items-center pt-1">
-            <span className="text-xs text-muted-foreground">Refunded</span>
-            <span className="text-xs text-success">
-              {format(new Date((item as any).refunded_at), 'MMM d, yyyy HH:mm')}
-            </span>
-          </div>
+        {item.tx_hash && (
+          <a
+            href={`https://bscscan.com/tx/${item.tx_hash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            <ExternalLink className="h-3 w-3" />
+            View Transaction
+          </a>
         )}
-
-        {item.completed_at && (
-          <div className="flex justify-between items-center pt-1">
-            <span className="text-xs text-muted-foreground">Completed</span>
-            <span className="text-xs text-muted-foreground">
-              {format(new Date(item.completed_at), 'MMM d, yyyy HH:mm')}
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
+
+export default BSKMigratePage;

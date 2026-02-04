@@ -15,16 +15,31 @@ const BSK_ABI = [
 ];
 
 // Version for debugging
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
+
+// Reason codes for availability
+type ReasonCode = 
+  | 'OK'
+  | 'MIGRATION_DISABLED'
+  | 'MAINTENANCE_MODE'
+  | 'WALLET_NOT_CONFIGURED'
+  | 'PRIVATE_KEY_MISSING'
+  | 'RPC_DOWN'
+  | 'INSUFFICIENT_BSK'
+  | 'INSUFFICIENT_BNB'
+  | 'INTERNAL_ERROR';
 
 interface MigrationRequest {
-  action: 'check_eligibility' | 'initiate_migration' | 'get_status' | 'get_health';
+  action: 'check_eligibility' | 'check_availability' | 'initiate_migration' | 'get_status' | 'get_health';
   amount?: number;
   migration_id?: string;
 }
 
 interface MigrationSettings {
   migration_enabled: boolean;
+  maintenance_mode: boolean;
+  maintenance_message: string | null;
+  migration_wallet_address: string | null;
   migration_fee_percent: number;
   gas_fee_model: 'fixed' | 'dynamic';
   fixed_gas_fee_bsk: number;
@@ -38,16 +53,42 @@ interface MigrationSettings {
   min_gas_balance_bnb: number;
 }
 
+interface AvailabilityResult {
+  available: boolean;
+  reason_code: ReasonCode;
+  user_message: string;
+  debug_details?: Record<string, any>;
+}
+
 interface HealthStatus {
   healthy: boolean;
   wallet_configured: boolean;
+  private_key_configured: boolean;
   wallet_address: string | null;
   migration_enabled: boolean;
+  maintenance_mode: boolean;
+  maintenance_message: string | null;
   hot_wallet_bsk_balance: number;
   gas_balance_bnb: number;
   rpc_status: 'ok' | 'error';
+  rpc_latency_ms: number | null;
   issues: string[];
+  warnings: string[];
+  last_migration?: { id: string; tx_hash: string | null; completed_at: string | null } | null;
 }
+
+// User-friendly messages for each reason code
+const REASON_MESSAGES: Record<ReasonCode, string> = {
+  'OK': 'Migration is available.',
+  'MIGRATION_DISABLED': 'Migration is currently disabled by the administrator.',
+  'MAINTENANCE_MODE': 'Migration is under maintenance. Please try again later.',
+  'WALLET_NOT_CONFIGURED': 'Migration is temporarily unavailable. Please contact support.',
+  'PRIVATE_KEY_MISSING': 'Migration is temporarily unavailable. Please contact support.',
+  'RPC_DOWN': 'Network connection issue. Please try again in a few minutes.',
+  'INSUFFICIENT_BSK': 'Migration is temporarily unavailable due to liquidity. Please try again later.',
+  'INSUFFICIENT_BNB': 'Migration is temporarily unavailable due to gas. Please try again later.',
+  'INTERNAL_ERROR': 'An unexpected error occurred. Please try again.',
+};
 
 // ============================================
 // MAIN HANDLER
@@ -86,6 +127,9 @@ Deno.serve(async (req) => {
     console.log(`[USER-MIGRATE-BSK v${VERSION}] User ${user.id} action: ${action}`);
 
     switch (action) {
+      case 'check_availability':
+        return await checkAvailability(supabase, user.id);
+      
       case 'check_eligibility':
         return await checkEligibility(supabase, user.id);
       
@@ -122,9 +166,13 @@ async function getSettings(supabase: any): Promise<MigrationSettings> {
     .single();
   
   if (error || !data) {
-    // Return defaults if no settings
+    // Return defaults if no settings - but log it
+    console.warn('[USER-MIGRATE-BSK] No settings found, using defaults');
     return {
       migration_enabled: true,
+      maintenance_mode: false,
+      maintenance_message: null,
+      migration_wallet_address: null,
       migration_fee_percent: 5,
       gas_fee_model: 'dynamic',
       fixed_gas_fee_bsk: 5,
@@ -143,46 +191,152 @@ async function getSettings(supabase: any): Promise<MigrationSettings> {
 }
 
 // ============================================
-// GET HEALTH STATUS
+// CHECK AVAILABILITY (STRUCTURED REASON CODES)
+// ============================================
+async function checkAvailability(supabase: any, userId: string): Promise<Response> {
+  const settings = await getSettings(supabase);
+  const privateKeyConfigured = !!Deno.env.get('MIGRATION_WALLET_PRIVATE_KEY');
+  
+  let reasonCode: ReasonCode = 'OK';
+  let debugDetails: Record<string, any> = {};
+
+  // Check blockers in priority order
+  if (!settings.migration_enabled) {
+    reasonCode = 'MIGRATION_DISABLED';
+    debugDetails = { migration_enabled: false };
+    logUnavailability(userId, reasonCode, settings);
+    return createAvailabilityResponse(reasonCode, settings.maintenance_message, debugDetails);
+  }
+
+  if (settings.maintenance_mode) {
+    reasonCode = 'MAINTENANCE_MODE';
+    debugDetails = { maintenance_mode: true };
+    logUnavailability(userId, reasonCode, settings);
+    return createAvailabilityResponse(reasonCode, settings.maintenance_message, debugDetails);
+  }
+
+  if (!settings.migration_wallet_address) {
+    reasonCode = 'WALLET_NOT_CONFIGURED';
+    debugDetails = { wallet_address: null };
+    logUnavailability(userId, reasonCode, settings);
+    return createAvailabilityResponse(reasonCode, null, debugDetails);
+  }
+
+  if (!privateKeyConfigured) {
+    reasonCode = 'PRIVATE_KEY_MISSING';
+    debugDetails = { private_key_configured: false };
+    logUnavailability(userId, reasonCode, settings);
+    return createAvailabilityResponse(reasonCode, null, debugDetails);
+  }
+
+  // Check RPC connection
+  let rpcOk = false;
+  try {
+    const provider = new ethers.JsonRpcProvider(settings.primary_rpc_url);
+    await provider.getBlockNumber();
+    rpcOk = true;
+  } catch (e) {
+    // Try fallback
+    if (settings.fallback_rpc_url) {
+      try {
+        const fallback = new ethers.JsonRpcProvider(settings.fallback_rpc_url);
+        await fallback.getBlockNumber();
+        rpcOk = true;
+      } catch (e2) {
+        // Both failed
+      }
+    }
+  }
+
+  if (!rpcOk) {
+    reasonCode = 'RPC_DOWN';
+    debugDetails = { primary_rpc: settings.primary_rpc_url, fallback_rpc: settings.fallback_rpc_url };
+    logUnavailability(userId, reasonCode, settings);
+    return createAvailabilityResponse(reasonCode, null, debugDetails);
+  }
+
+  // System is available - balance checks happen on confirm
+  return createAvailabilityResponse('OK', null, { 
+    migration_enabled: true,
+    wallet_configured: true,
+    rpc_status: 'ok'
+  });
+}
+
+function createAvailabilityResponse(
+  reasonCode: ReasonCode, 
+  customMessage: string | null,
+  debugDetails: Record<string, any>
+): Response {
+  const available = reasonCode === 'OK';
+  const userMessage = reasonCode === 'MAINTENANCE_MODE' && customMessage 
+    ? customMessage 
+    : REASON_MESSAGES[reasonCode];
+
+  const result: AvailabilityResult = {
+    available,
+    reason_code: reasonCode,
+    user_message: userMessage,
+    debug_details: debugDetails
+  };
+
+  return new Response(
+    JSON.stringify(result),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+function logUnavailability(userId: string, reasonCode: ReasonCode, settings: MigrationSettings) {
+  console.log(`[USER-MIGRATE-BSK] Unavailable - user: ${userId}, reason: ${reasonCode}, config: ${JSON.stringify({
+    migration_enabled: settings.migration_enabled,
+    maintenance_mode: settings.maintenance_mode,
+    wallet_configured: !!settings.migration_wallet_address,
+    timestamp: new Date().toISOString()
+  })}`);
+}
+
+// ============================================
+// GET HEALTH STATUS (ADMIN)
 // ============================================
 async function getHealthStatus(supabase: any): Promise<Response> {
   const settings = await getSettings(supabase);
   const issues: string[] = [];
+  const warnings: string[] = [];
   
-  // Check if migration wallet is configured
-  const { data: wallet } = await supabase
-    .from('platform_hot_wallet')
-    .select('address')
-    .eq('label', 'Migration Hot Wallet')
-    .eq('is_active', true)
-    .maybeSingle();
-  
-  const walletConfigured = !!wallet?.address;
+  // Check wallet configuration
+  const walletAddress = settings.migration_wallet_address;
   const privateKeyConfigured = !!Deno.env.get('MIGRATION_WALLET_PRIVATE_KEY');
   
-  if (!walletConfigured) {
-    issues.push('Migration wallet address not configured in database');
+  const walletConfigured = !!walletAddress && privateKeyConfigured;
+
+  if (!walletAddress) {
+    issues.push('Migration wallet address not configured in settings');
   }
   if (!privateKeyConfigured) {
     issues.push('MIGRATION_WALLET_PRIVATE_KEY secret not configured');
   }
   if (!settings.migration_enabled) {
-    issues.push('Migration feature is disabled by admin');
+    issues.push('Migration feature is disabled');
+  }
+  if (settings.maintenance_mode) {
+    warnings.push(`Maintenance mode is ON: ${settings.maintenance_message || '(no message)'}`);
   }
   
   let hotWalletBskBalance = 0;
   let gasBalanceBnb = 0;
   let rpcStatus: 'ok' | 'error' = 'error';
+  let rpcLatencyMs: number | null = null;
   
-  if (walletConfigured && privateKeyConfigured) {
+  if (walletConfigured) {
     try {
+      const startTime = Date.now();
       const provider = new ethers.JsonRpcProvider(settings.primary_rpc_url);
       const privateKey = Deno.env.get('MIGRATION_WALLET_PRIVATE_KEY')!;
       const walletInstance = new ethers.Wallet(privateKey, provider);
       
       // Verify wallet address matches
-      if (walletInstance.address.toLowerCase() !== wallet.address.toLowerCase()) {
-        issues.push('Private key does not match configured wallet address');
+      if (walletInstance.address.toLowerCase() !== walletAddress!.toLowerCase()) {
+        issues.push(`Private key does not match configured wallet address (key: ${walletInstance.address.slice(0,10)}..., config: ${walletAddress!.slice(0,10)}...)`);
       }
       
       // Check BNB balance
@@ -195,28 +349,45 @@ async function getHealthStatus(supabase: any): Promise<Response> {
       hotWalletBskBalance = Number(ethers.formatUnits(bskBalance, BSK_DECIMALS));
       
       rpcStatus = 'ok';
+      rpcLatencyMs = Date.now() - startTime;
       
+      // Warnings for low balances (not blockers)
       if (gasBalanceBnb < Number(settings.min_gas_balance_bnb)) {
-        issues.push(`Low gas balance: ${gasBalanceBnb.toFixed(4)} BNB (min: ${settings.min_gas_balance_bnb})`);
+        warnings.push(`Low gas balance: ${gasBalanceBnb.toFixed(4)} BNB (min: ${settings.min_gas_balance_bnb})`);
       }
       if (hotWalletBskBalance < Number(settings.min_hot_wallet_bsk)) {
-        issues.push(`Low BSK balance: ${hotWalletBskBalance.toFixed(2)} BSK (min: ${settings.min_hot_wallet_bsk})`);
+        warnings.push(`Low BSK balance: ${hotWalletBskBalance.toFixed(2)} BSK (min: ${settings.min_hot_wallet_bsk})`);
       }
     } catch (e: any) {
       console.error('[USER-MIGRATE-BSK] Health check RPC error:', e.message);
       issues.push(`RPC connection failed: ${e.message}`);
     }
   }
+
+  // Get last migration
+  const { data: lastMigration } = await supabase
+    .from('bsk_onchain_migrations')
+    .select('id, tx_hash, completed_at')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
   
+  // System is healthy if there are NO issues (warnings are okay)
   const health: HealthStatus = {
     healthy: issues.length === 0,
-    wallet_configured: walletConfigured && privateKeyConfigured,
-    wallet_address: wallet?.address || null,
+    wallet_configured: !!walletAddress,
+    private_key_configured: privateKeyConfigured,
+    wallet_address: walletAddress || null,
     migration_enabled: settings.migration_enabled,
+    maintenance_mode: settings.maintenance_mode,
+    maintenance_message: settings.maintenance_message,
     hot_wallet_bsk_balance: hotWalletBskBalance,
     gas_balance_bnb: gasBalanceBnb,
     rpc_status: rpcStatus,
+    rpc_latency_ms: rpcLatencyMs,
     issues,
+    warnings,
+    last_migration: lastMigration || null,
   };
   
   return new Response(
@@ -231,9 +402,9 @@ async function getHealthStatus(supabase: any): Promise<Response> {
 async function checkEligibility(supabase: any, userId: string) {
   const settings = await getSettings(supabase);
   
-  // Check system health first
-  const healthResponse = await getHealthStatus(supabase);
-  const health = await healthResponse.json() as HealthStatus;
+  // Check availability first
+  const availabilityResponse = await checkAvailability(supabase, userId);
+  const availability = await availabilityResponse.clone().json() as AvailabilityResult;
   
   // Get user profile
   const { data: profile, error: profileError } = await supabase
@@ -276,7 +447,7 @@ async function checkEligibility(supabase: any, userId: string) {
 
   // Estimate gas cost using settings
   let gasEstimateBsk = Number(settings.fixed_gas_fee_bsk);
-  if (settings.gas_fee_model === 'dynamic' && health.rpc_status === 'ok') {
+  if (settings.gas_fee_model === 'dynamic' && availability.available) {
     try {
       const provider = new ethers.JsonRpcProvider(settings.primary_rpc_url);
       const feeData = await provider.getFeeData();
@@ -290,19 +461,17 @@ async function checkEligibility(supabase: any, userId: string) {
     }
   }
 
-  // Calculate max valid amount (where net_receive > 0)
-  // net = amount - (amount * fee_percent / 100) - gas
-  // net > 0 => amount - amount * fee_percent / 100 > gas
-  // amount * (1 - fee_percent / 100) > gas
-  // amount > gas / (1 - fee_percent / 100)
+  // Calculate min valid amount (where net_receive > 0)
   const feeMultiplier = 1 - Number(settings.migration_fee_percent) / 100;
   const minValidAmount = Math.ceil(gasEstimateBsk / feeMultiplier) + 1;
 
   const eligibility = {
     eligible: false,
     reasons: [] as string[],
-    system_available: health.healthy,
-    system_issues: health.issues,
+    // CRITICAL: system_available should be true when available
+    system_available: availability.available,
+    system_reason_code: availability.reason_code,
+    system_message: availability.user_message,
     wallet_linked: !!walletAddress,
     wallet_address: walletAddress || null,
     kyc_approved: profile.kyc_status === 'approved',
@@ -318,10 +487,12 @@ async function checkEligibility(supabase: any, userId: string) {
     required_confirmations: settings.required_confirmations,
   };
 
-  // Determine eligibility
-  if (!health.healthy) {
-    eligibility.reasons.push('Migration temporarily unavailable. Please try later.');
+  // Determine eligibility - system blockers first
+  if (!availability.available) {
+    eligibility.reasons.push(availability.user_message);
   }
+  
+  // User-specific blockers (show even if system unavailable so user can fix)
   if (!walletAddress) {
     eligibility.reasons.push('Please link a BSC wallet address first');
   }
@@ -335,7 +506,10 @@ async function checkEligibility(supabase: any, userId: string) {
     eligibility.reasons.push('You have a pending migration');
   }
 
-  eligibility.eligible = eligibility.reasons.length === 0;
+  // User is eligible only if system is available AND no user blockers
+  eligibility.eligible = availability.available && eligibility.reasons.filter(r => 
+    r !== availability.user_message
+  ).length === 0;
 
   return new Response(
     JSON.stringify(eligibility),
@@ -349,16 +523,17 @@ async function checkEligibility(supabase: any, userId: string) {
 async function initiateMigration(supabase: any, userId: string, amountBsk: number) {
   const settings = await getSettings(supabase);
   
-  // Check system health first
-  const healthResponse = await getHealthStatus(supabase);
-  const health = await healthResponse.json() as HealthStatus;
+  // Check availability first
+  const availabilityResponse = await checkAvailability(supabase, userId);
+  const availability = await availabilityResponse.clone().json() as AvailabilityResult;
   
-  if (!health.healthy) {
+  if (!availability.available) {
+    logUnavailability(userId, availability.reason_code, settings);
     return new Response(
       JSON.stringify({
         success: false,
-        error: 'system_unavailable',
-        message: 'Migration temporarily unavailable. Please try later.',
+        error: availability.reason_code.toLowerCase(),
+        message: availability.user_message,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -403,7 +578,6 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     .maybeSingle();
 
   if (existingMigration) {
-    // Return the existing migration - idempotent behavior
     console.log(`[USER-MIGRATE-BSK] User ${userId} has existing migration ${existingMigration.id}, returning it`);
     return new Response(
       JSON.stringify({
@@ -413,6 +587,66 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
         migration_id: existingMigration.id,
         status: existingMigration.status,
         tx_hash: existingMigration.tx_hash,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // NOW check hot wallet balances (only on confirm, not initial page)
+  const privateKey = Deno.env.get('MIGRATION_WALLET_PRIVATE_KEY')!;
+  const provider = new ethers.JsonRpcProvider(settings.primary_rpc_url);
+  const walletInstance = new ethers.Wallet(privateKey, provider);
+  const bskContract = new ethers.Contract(BSK_CONTRACT, BSK_ABI, provider);
+  
+  // Calculate fees
+  const SCALE = 100000000;
+  const amountScaled = Math.round(amountBsk * SCALE);
+  const feePercent = Number(settings.migration_fee_percent);
+  const migrationFeeScaled = Math.ceil(amountScaled * feePercent / 100);
+  const migrationFeeBsk = migrationFeeScaled / SCALE;
+  
+  let gasDeductionBsk = Number(settings.fixed_gas_fee_bsk);
+  if (settings.gas_fee_model === 'dynamic') {
+    try {
+      const feeData = await provider.getFeeData();
+      const gasPrice = feeData.gasPrice || ethers.parseUnits('3', 'gwei');
+      const estimatedGas = 65000n;
+      const gasCostBnb = Number(ethers.formatEther(gasPrice * estimatedGas));
+      const bnbToBsk = 10000;
+      gasDeductionBsk = Math.ceil(gasCostBnb * bnbToBsk * 1.2);
+    } catch (e) {
+      console.log('[USER-MIGRATE-BSK] Gas estimation failed, using fixed');
+    }
+  }
+
+  const netAmount = amountBsk - gasDeductionBsk - migrationFeeBsk;
+  if (netAmount <= 0) {
+    throw new Error('Amount too small after fees and gas deduction');
+  }
+
+  // Check hot wallet has enough BSK
+  const hotWalletBsk = await bskContract.balanceOf(walletInstance.address);
+  const requiredBsk = ethers.parseUnits(netAmount.toFixed(8), BSK_DECIMALS);
+  if (hotWalletBsk < requiredBsk) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'insufficient_bsk',
+        message: 'Migration is temporarily unavailable due to liquidity. Please try again later.',
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Check hot wallet has enough BNB for gas
+  const bnbBalance = await provider.getBalance(walletInstance.address);
+  const minBnb = ethers.parseEther(settings.min_gas_balance_bnb.toString());
+  if (bnbBalance < minBnb) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'insufficient_bnb',
+        message: 'Migration is temporarily unavailable due to gas. Please try again later.',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -437,34 +671,6 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     });
   }
 
-  // Calculate fees using integer math (scaled by 8 decimals)
-  const SCALE = 100000000; // 10^8 for precision
-  const amountScaled = Math.round(amountBsk * SCALE);
-  const feePercent = Number(settings.migration_fee_percent);
-  const migrationFeeScaled = Math.ceil(amountScaled * feePercent / 100);
-  const migrationFeeBsk = migrationFeeScaled / SCALE;
-  
-  // Estimate gas
-  let gasDeductionBsk = Number(settings.fixed_gas_fee_bsk);
-  if (settings.gas_fee_model === 'dynamic') {
-    try {
-      const provider = new ethers.JsonRpcProvider(settings.primary_rpc_url);
-      const feeData = await provider.getFeeData();
-      const gasPrice = feeData.gasPrice || ethers.parseUnits('3', 'gwei');
-      const estimatedGas = 65000n;
-      const gasCostBnb = Number(ethers.formatEther(gasPrice * estimatedGas));
-      const bnbToBsk = 10000;
-      gasDeductionBsk = Math.ceil(gasCostBnb * bnbToBsk * 1.2);
-    } catch (e) {
-      console.log('[USER-MIGRATE-BSK] Gas estimation failed, using fixed');
-    }
-  }
-
-  const netAmount = amountBsk - gasDeductionBsk - migrationFeeBsk;
-  if (netAmount <= 0) {
-    throw new Error('Amount too small after fees and gas deduction');
-  }
-
   // Create a unique batch for this request
   const { data: newBatch, error: batchError } = await supabase
     .from('bsk_onchain_migration_batches')
@@ -486,7 +692,7 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
   
   const batchId = newBatch.id;
 
-  // Create migration record with unique idempotency key
+  // Create migration record
   const idempotencyKey = `user_migrate_${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   const { data: migration, error: migrationError } = await supabase
@@ -597,7 +803,6 @@ async function processMigration(supabase: any, migrationId: string, settings: Mi
   // ===== STEP 3: SIGN =====
   const privateKey = Deno.env.get('MIGRATION_WALLET_PRIVATE_KEY');
   if (!privateKey) {
-    // Rollback
     await rollbackMigration(supabase, migrationId, userId, amountBsk, 'wallet_not_configured');
     throw new Error('Migration system not configured');
   }
@@ -610,7 +815,6 @@ async function processMigration(supabase: any, migrationId: string, settings: Mi
   try {
     provider = new ethers.JsonRpcProvider(rpcUrl);
   } catch (e: any) {
-    // Try fallback RPC
     if (settings.fallback_rpc_url) {
       try {
         provider = new ethers.JsonRpcProvider(settings.fallback_rpc_url);
@@ -627,10 +831,8 @@ async function processMigration(supabase: any, migrationId: string, settings: Mi
   const wallet = new ethers.Wallet(privateKey, provider);
   const bskContract = new ethers.Contract(BSK_CONTRACT, BSK_ABI, wallet);
   
-  // Use integer math for amount (wei)
   const amountWei = ethers.parseUnits(netAmountBsk.toFixed(8), BSK_DECIMALS);
 
-  // Check hot wallet balance
   const hotWalletBalance = await bskContract.balanceOf(wallet.address);
   if (hotWalletBalance < amountWei) {
     await rollbackMigration(supabase, migrationId, userId, amountBsk, 'insufficient_hot_wallet');
@@ -652,7 +854,6 @@ async function processMigration(supabase: any, migrationId: string, settings: Mi
     
     console.log(`[USER-MIGRATE-BSK] TX sent: ${tx.hash}`);
     
-    // Save tx hash immediately
     await supabase
       .from('bsk_onchain_migrations')
       .update({ tx_hash: tx.hash })
@@ -661,10 +862,8 @@ async function processMigration(supabase: any, migrationId: string, settings: Mi
   } catch (txError: any) {
     console.error('[USER-MIGRATE-BSK] TX error:', txError);
     
-    // Check if this is a nonce issue or other recoverable error
     if (txError.message?.includes('nonce') || txError.message?.includes('replacement')) {
       await updateMigrationFailed(supabase, migrationId, `Transaction failed: ${txError.message}. Please retry.`);
-      // Don't refund - let admin investigate
     } else {
       await rollbackMigration(supabase, migrationId, userId, amountBsk, 'tx_failed');
     }
@@ -677,7 +876,6 @@ async function processMigration(supabase: any, migrationId: string, settings: Mi
   const receipt = await tx.wait(settings.required_confirmations);
 
   if (!receipt || receipt.status !== 1) {
-    // TX reverted on-chain - this is rare after broadcast
     await rollbackMigration(supabase, migrationId, userId, amountBsk, 'tx_reverted');
     throw new Error('Transaction failed on-chain');
   }
@@ -705,7 +903,6 @@ async function processMigration(supabase: any, migrationId: string, settings: Mi
     })
     .eq('id', migrationId);
 
-  // Update batch
   await supabase
     .from('bsk_onchain_migration_batches')
     .update({
@@ -748,7 +945,6 @@ async function rollbackMigration(
 ) {
   console.log(`[USER-MIGRATE-BSK] Rolling back migration ${migrationId}: ${reason}`);
   
-  // Credit back the amount
   const refundKey = `migrate_refund_${migrationId}`;
   const { error: refundError } = await supabase.rpc('record_bsk_transaction', {
     p_user_id: userId,
@@ -762,7 +958,6 @@ async function rollbackMigration(
 
   if (refundError && !refundError.message?.includes('duplicate')) {
     console.error('[USER-MIGRATE-BSK] Refund failed:', refundError);
-    // Mark as failed but not refunded - needs admin intervention
     await supabase
       .from('bsk_onchain_migrations')
       .update({
@@ -774,7 +969,6 @@ async function rollbackMigration(
     return;
   }
 
-  // Mark migration as refunded
   await supabase
     .from('bsk_onchain_migrations')
     .update({
