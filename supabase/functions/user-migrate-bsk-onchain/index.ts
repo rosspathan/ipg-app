@@ -268,7 +268,9 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     .from('bsk_onchain_migrations')
     .select('id, status, amount_requested')
     .eq('user_id', userId)
-    .in('status', ['pending', 'validating', 'debiting', 'signing', 'broadcasting'])
+    .in('status', ['pending', 'validating', 'debiting', 'signing', 'broadcasting', 'failed'])
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (existingMigration) {
@@ -337,6 +339,8 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
         .select('id')
         .eq('user_id', userId)
         .eq('batch_id', batchId)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
       
       if (existingMig) {
