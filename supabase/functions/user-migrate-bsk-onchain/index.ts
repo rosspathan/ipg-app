@@ -263,14 +263,29 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     throw new Error('Amount too small after fees and gas deduction');
   }
 
+  // Check for existing pending/processing migrations for this user
+  const { data: existingMigration } = await supabase
+    .from('bsk_onchain_migrations')
+    .select('id, status, amount_requested')
+    .eq('user_id', userId)
+    .in('status', ['pending', 'validating', 'debiting', 'signing', 'broadcasting'])
+    .maybeSingle();
+
+  if (existingMigration) {
+    // Resume the existing migration instead of creating a new one
+    console.log(`[USER-MIGRATE-BSK] Found existing migration ${existingMigration.id}, resuming...`);
+    const result = await processMigration(supabase, existingMigration.id);
+    return result;
+  }
+
   // Create or get batch for user-initiated migrations
   let batchId: string;
   const { data: existingBatch } = await supabase
     .from('bsk_onchain_migration_batches')
     .select('id')
     .eq('batch_number', 'USER-INITIATED')
-    .eq('status', 'pending')
-    .single();
+    .in('status', ['pending', 'processing'])
+    .maybeSingle();
 
   if (existingBatch) {
     batchId = existingBatch.id;
@@ -292,7 +307,7 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     batchId = newBatch.id;
   }
 
-  // Create migration record
+  // Create migration record with unique constraint handling
   const idempotencyKey = `user_migrate_${userId}_${Date.now()}`;
   const { data: migration, error: migrationError } = await supabase
     .from('bsk_onchain_migrations')
@@ -314,7 +329,24 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     .select()
     .single();
 
-  if (migrationError) throw migrationError;
+  if (migrationError) {
+    // If duplicate key error, try to find and resume existing
+    if (migrationError.code === '23505') {
+      const { data: existingMig } = await supabase
+        .from('bsk_onchain_migrations')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('batch_id', batchId)
+        .maybeSingle();
+      
+      if (existingMig) {
+        console.log(`[USER-MIGRATE-BSK] Resuming existing migration ${existingMig.id}`);
+        const result = await processMigration(supabase, existingMig.id);
+        return result;
+      }
+    }
+    throw migrationError;
+  }
 
   console.log(`[USER-MIGRATE-BSK] Created migration ${migration.id} for ${amountBsk} BSK`);
 
