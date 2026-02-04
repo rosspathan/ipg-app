@@ -193,7 +193,7 @@ export function WalletPage() {
   )
 
   return (
-    <div className="space-y-4 pb-24" data-testid="page-wallet" data-version="usr-wallet-link-v3">
+    <div className="space-y-4 pb-32" data-testid="page-wallet" data-version="usr-wallet-link-v3">
         {/* Wallet Integrity Warning Banner */}
         {walletIntegrity.hasMismatch && !integrityDismissed && walletIntegrity.mismatchType && (
           <WalletIntegrityBanner
@@ -356,21 +356,21 @@ export function WalletPage() {
           loading={portfolioLoading || onchainLoading}
         />
 
-        {/* Trading Balances Section with integrated Transfer */}
+        {/* A) On-Chain Balances - Full token list */}
+        <BalanceCluster />
+
+        {/* B) Trading Balances Section with integrated Transfer */}
         <TradingBalancesCard 
           balances={tradingBalances || []} 
           loading={tradingLoading}
           onTransfer={() => navigate('/app/wallet/transfer')}
         />
 
-        {/* USDI Collateral Loan Card */}
+        {/* C) USDI Collateral Loan Card */}
         <USDILoanCard />
 
-        {/* Pending Deposits */}
+        {/* D) Pending Deposits and other modules */}
         <PendingDepositsCard />
-
-        {/* Balance Cluster with Crypto Assets Grid */}
-        <BalanceCluster />
 
       {/* QR Code Dialog */}
       <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
