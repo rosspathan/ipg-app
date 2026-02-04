@@ -167,17 +167,23 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
       // Build events from installments
       for (const inst of installmentsData) {
         if (inst.status === "paid" && inst.paid_at) {
-          const isSettlement = inst.payment_method === "settlement";
+          // Check if this was part of a settlement by looking at paid_amount_bsk === emi_bsk
+          // and many installments paid at the same time
+          const isLikelySettlement = inst.paid_amount_bsk != null && 
+            installmentsData.filter(i => 
+              i.paid_at === inst.paid_at && i.status === "paid"
+            ).length > 2;
+
           events.push({
             id: `emi-paid-${inst.id}`,
             loan_id: inst.loan_id,
             user_id: inst.user_id || "",
             created_at: inst.paid_at,
-            event_type: isSettlement ? "settlement_paid" : "emi_paid",
-            title: isSettlement
+            event_type: isLikelySettlement ? "settlement_paid" : "emi_paid",
+            title: isLikelySettlement
               ? `Settlement - EMI #${inst.installment_number}`
               : `EMI #${inst.installment_number} Paid`,
-            description: isSettlement
+            description: isLikelySettlement
               ? `Paid via early settlement`
               : `Weekly payment of ${Number(inst.emi_bsk || inst.total_due_bsk).toFixed(2)} BSK`,
             amount_bsk: Number(inst.emi_bsk || inst.total_due_bsk),
