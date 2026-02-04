@@ -438,10 +438,20 @@ function UserDetailDrawer({
       <Sheet open={!!user} onOpenChange={onClose}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0">
           <SheetHeader className="p-4 border-b sticky top-0 bg-background z-10">
-            <SheetTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              User Migration Audit
-            </SheetTitle>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onClose()}
+                className="h-8 w-8 rounded-full"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+              <SheetTitle className="text-base flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                User Migration Audit
+              </SheetTitle>
+            </div>
           </SheetHeader>
           
           <div className="p-4 space-y-4">
