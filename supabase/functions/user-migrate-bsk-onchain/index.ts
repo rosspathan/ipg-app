@@ -157,9 +157,7 @@ async function checkEligibility(supabase: any, userId: string) {
   if (!walletAddress) {
     eligibility.reasons.push('Please link a BSC wallet address first');
   }
-  if (profile.kyc_status !== 'approved') {
-    eligibility.reasons.push('KYC verification required');
-  }
+  // KYC not required for on-chain migration
   if (profile.account_status !== 'active') {
     eligibility.reasons.push('Account must be active');
   }
@@ -193,7 +191,7 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
 
   const walletAddress = profile.bsc_wallet_address || profile.wallet_address;
   if (!walletAddress) throw new Error('No wallet linked');
-  if (profile.kyc_status !== 'approved') throw new Error('KYC required');
+  // KYC not required for on-chain migration
   if (profile.account_status !== 'active') throw new Error('Account not active');
 
   // Verify balance
