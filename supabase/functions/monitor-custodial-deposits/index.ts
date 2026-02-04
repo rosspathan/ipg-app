@@ -1,8 +1,9 @@
 /**
  * Monitor Custodial Deposits Edge Function
  *
- * Scans the platform hot wallet for incoming token transfers using pure RPC eth_getLogs.
- * NO BSCSCAN API DEPENDENCY – uses direct RPC calls only.
+ * Scans the platform hot wallet for incoming token transfers using RPC eth_getLogs.
+ * If public RPC endpoints rate-limit, it can fall back to BscScan (requires BSCSCAN_API_KEY)
+ * for the affected batch so scan state never advances past missing blocks.
  *
  * When a deposit is detected:
  * 1. Identifies the sender (user) by matching tx.from to registered wallets
@@ -40,6 +41,8 @@ const DEFAULT_BSC_RPC_URLS = [
 const REQUIRED_CONFIRMATIONS = 15;
 const BLOCKS_PER_2_HOURS = 2400;
 const BLOCKS_PER_BATCH = 500; // Smaller batches to avoid public RPC limits
+const MAX_BLOCKS_PER_RUN = 2400; // cap normal scanning per invocation (2h) to avoid spikes
+const MAX_BACKFILL_BLOCKS = 200_000; // safety cap for manual backfill (~7 days on BSC)
 
 // --------------- Helpers ---------------
 
@@ -57,6 +60,18 @@ interface MatchedUser {
   user_id: string;
   matched_address: string;
   match_source: 'profiles_wallet' | 'profiles_bsc' | 'wallets_user';
+}
+
+type ScanMode = 'normal' | 'backfill' | 'replay_tx';
+
+interface MonitorRequestBody {
+  // Scan controls
+  backfill_lookback_blocks?: number;
+  backfill_from_block?: number;
+  backfill_to_block?: number;
+
+  // Targeted recovery
+  replay_tx_hashes?: string[];
 }
 
 function toLower(addr: string | null | undefined): string {
@@ -126,54 +141,197 @@ async function fetchTransferEventsViaRpc(params: {
   contractAddresses: string[];
   fromBlock: number;
   toBlock: number;
-}): Promise<TokenTransfer[]> {
+}): Promise<{ transfers: TokenTransfer[]; lastSuccessfulBlock: number; complete: boolean }> {
   const { rpcUrls, hotWalletAddress, contractAddresses, fromBlock, toBlock } = params;
   const paddedTo = '0x000000000000000000000000' + hotWalletAddress.slice(2).toLowerCase();
   const transfers: TokenTransfer[] = [];
 
-  // Helper: query single batch
-  async function queryBatch(contract: string, batchFrom: number, batchTo: number): Promise<any[]> {
-    try {
-      const logs = await tryRpc(rpcUrls, 'eth_getLogs', [
-        {
-          address: contract.toLowerCase(),
-          topics: [TRANSFER_EVENT_TOPIC, null, paddedTo],
-          fromBlock: '0x' + batchFrom.toString(16),
-          toBlock: '0x' + batchTo.toString(16),
-        },
-      ]);
-      return Array.isArray(logs) ? logs : [];
-    } catch (e: any) {
-      console.error(`[monitor-custodial-deposits] eth_getLogs failed for ${contract} [${batchFrom}-${batchTo}]:`, e?.message);
-      return [];
-    }
-  }
+  // Some RPC providers support address: string[] in eth_getLogs, which drastically reduces calls.
+  // We'll try it first and fall back to per-contract if not supported.
+  let multiAddressSupported = true;
+  let lastSuccessfulBlock = fromBlock - 1;
 
-  for (const contract of contractAddresses) {
-    let contractLogs: any[] = [];
-    let cursor = fromBlock;
-
-    while (cursor <= toBlock) {
-      const batchEnd = Math.min(cursor + BLOCKS_PER_BATCH - 1, toBlock);
-      const logs = await queryBatch(contract, cursor, batchEnd);
-      contractLogs = contractLogs.concat(logs);
-      cursor = batchEnd + 1;
-    }
-
-    for (const log of contractLogs) {
-      if (!log.topics || log.topics.length < 3) continue;
+  async function parseAndAccumulate(logs: any[]) {
+    for (const log of logs) {
+      if (!log?.topics || log.topics.length < 3) continue;
       transfers.push({
         hash: log.transactionHash,
         from: hexToAddress(log.topics[1]),
         to: hexToAddress(log.topics[2]),
         value: hexToBigInt(log.data || '0x0').toString(),
         blockNumber: parseInt(log.blockNumber, 16),
-        contractAddress: log.address.toLowerCase(),
+        contractAddress: (log.address || '').toLowerCase(),
         logIndex: parseInt(log.logIndex, 16),
       });
     }
-    console.log(`[monitor-custodial-deposits] ${contract.slice(0, 10)}...: ${contractLogs.length} Transfer logs`);
   }
+
+  async function queryBatchMulti(batchFrom: number, batchTo: number): Promise<any[]> {
+    const logs = await tryRpc(rpcUrls, 'eth_getLogs', [
+      {
+        address: contractAddresses.map((a) => a.toLowerCase()),
+        topics: [TRANSFER_EVENT_TOPIC, null, paddedTo],
+        fromBlock: '0x' + batchFrom.toString(16),
+        toBlock: '0x' + batchTo.toString(16),
+      },
+    ]);
+    return Array.isArray(logs) ? logs : [];
+  }
+
+  async function queryBatchSingle(contract: string, batchFrom: number, batchTo: number): Promise<any[]> {
+    const logs = await tryRpc(rpcUrls, 'eth_getLogs', [
+      {
+        address: contract.toLowerCase(),
+        topics: [TRANSFER_EVENT_TOPIC, null, paddedTo],
+        fromBlock: '0x' + batchFrom.toString(16),
+        toBlock: '0x' + batchTo.toString(16),
+      },
+    ]);
+    return Array.isArray(logs) ? logs : [];
+  }
+
+  let cursor = fromBlock;
+  while (cursor <= toBlock) {
+    const batchEnd = Math.min(cursor + BLOCKS_PER_BATCH - 1, toBlock);
+    try {
+      if (multiAddressSupported) {
+        const logs = await queryBatchMulti(cursor, batchEnd);
+        await parseAndAccumulate(logs);
+      } else {
+        for (const contract of contractAddresses) {
+          const logs = await queryBatchSingle(contract, cursor, batchEnd);
+          await parseAndAccumulate(logs);
+        }
+      }
+
+      lastSuccessfulBlock = batchEnd;
+      cursor = batchEnd + 1;
+    } catch (e: any) {
+      const msg = e?.message || String(e);
+
+      // If multi-address isn't supported by the RPC provider, fall back and retry this same batch once.
+      if (multiAddressSupported && /unmarshal|invalid|array|address/i.test(msg)) {
+        console.warn('[monitor-custodial-deposits] RPC does not support multi-address eth_getLogs, falling back to per-contract batching');
+        multiAddressSupported = false;
+        continue;
+      }
+
+      console.error(
+        `[monitor-custodial-deposits] eth_getLogs failed for batch [${cursor}-${batchEnd}] (${multiAddressSupported ? 'multi' : 'single'}):`,
+        msg
+      );
+
+      // Attempt fallback for rate-limits using BscScan.
+      if (/limit exceeded|rate limit|429/i.test(msg)) {
+        const bscscanKey = Deno.env.get('BSCSCAN_API_KEY')?.trim();
+        if (bscscanKey) {
+          try {
+            const failedFrom = cursor;
+            const bscTransfers = await fetchTransferEventsViaBscScanBatch({
+              apiKey: bscscanKey,
+              hotWalletAddress,
+              contractAddresses,
+              fromBlock: failedFrom,
+              toBlock: batchEnd,
+            });
+            transfers.push(...bscTransfers);
+            lastSuccessfulBlock = batchEnd;
+            cursor = batchEnd + 1;
+            console.warn(
+              `[monitor-custodial-deposits] BscScan fallback succeeded for batch [${failedFrom}-${batchEnd}] (${bscTransfers.length} transfers)`
+            );
+            continue;
+          } catch (fallbackErr: any) {
+            console.error(
+              `[monitor-custodial-deposits] BscScan fallback failed for batch [${cursor}-${batchEnd}]:`,
+              fallbackErr?.message
+            );
+          }
+        }
+      }
+
+      // Hard stop – we must NOT advance scan state past a failed batch.
+      return { transfers, lastSuccessfulBlock, complete: false };
+    }
+  }
+
+  return { transfers, lastSuccessfulBlock, complete: true };
+}
+
+async function fetchTransferEventsViaBscScanBatch(params: {
+  apiKey: string;
+  hotWalletAddress: string;
+  contractAddresses: string[];
+  fromBlock: number;
+  toBlock: number;
+}): Promise<TokenTransfer[]> {
+  const { apiKey, hotWalletAddress, contractAddresses, fromBlock, toBlock } = params;
+  const addr = hotWalletAddress.toLowerCase();
+  const contracts = new Set(contractAddresses.map((c) => c.toLowerCase()));
+
+  const url = `https://api.bscscan.com/api?module=account&action=tokentx&address=${addr}&startblock=${fromBlock}&endblock=${toBlock}&sort=asc&apikey=${apiKey}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`BscScan request failed: ${res.status}`);
+  const data = await res.json();
+
+  // Etherscan-style APIs return status='0' with message 'No transactions found'
+  if (data?.status !== '1') {
+    if ((data?.message || '').toLowerCase().includes('no transactions')) return [];
+    throw new Error(data?.result || data?.message || 'BscScan error');
+  }
+
+  const result = Array.isArray(data?.result) ? data.result : [];
+  const transfers: TokenTransfer[] = [];
+  for (const tx of result) {
+    const contract = String(tx?.contractAddress || '').toLowerCase();
+    const to = String(tx?.to || '').toLowerCase();
+    if (!contracts.has(contract)) continue;
+    if (to !== addr) continue;
+    const hash = String(tx?.hash || '').toLowerCase();
+    if (!/^0x[0-9a-f]{64}$/.test(hash)) continue;
+
+    transfers.push({
+      hash,
+      from: String(tx?.from || '').toLowerCase(),
+      to: String(tx?.to || '').toLowerCase(),
+      value: String(tx?.value || '0'),
+      blockNumber: parseInt(String(tx?.blockNumber || '0'), 10) || 0,
+      contractAddress: contract,
+      logIndex: parseInt(String(tx?.logIndex || '0'), 10) || 0,
+    });
+  }
+  return transfers;
+}
+
+async function fetchReceiptTransfers(params: {
+  rpcUrls: string[];
+  hotWalletAddress: string;
+  txHash: string;
+}): Promise<TokenTransfer[]> {
+  const { rpcUrls, hotWalletAddress, txHash } = params;
+  const receipt = await tryRpc(rpcUrls, 'eth_getTransactionReceipt', [txHash]);
+  if (!receipt) return [];
+  const logs = Array.isArray(receipt.logs) ? receipt.logs : [];
+  const hot = hotWalletAddress.toLowerCase();
+  const transfers: TokenTransfer[] = [];
+
+  for (const log of logs) {
+    const topics = log?.topics;
+    if (!topics || topics.length < 3) continue;
+    if ((topics[0] || '').toLowerCase() !== TRANSFER_EVENT_TOPIC) continue;
+    const to = hexToAddress(topics[2]);
+    if (to.toLowerCase() !== hot) continue;
+    transfers.push({
+      hash: (log.transactionHash || txHash) as string,
+      from: hexToAddress(topics[1]),
+      to,
+      value: hexToBigInt(log.data || '0x0').toString(),
+      blockNumber: parseInt(log.blockNumber, 16),
+      contractAddress: (log.address || '').toLowerCase(),
+      logIndex: parseInt(log.logIndex, 16),
+    });
+  }
+
   return transfers;
 }
 
@@ -191,6 +349,15 @@ Deno.serve(async (req) => {
 
   try {
     console.log('[monitor-custodial-deposits] Starting RPC-based hot wallet deposit scan...');
+
+    let body: MonitorRequestBody | null = null;
+    if (req.method !== 'GET') {
+      try {
+        body = (await req.json()) as MonitorRequestBody;
+      } catch {
+        body = null;
+      }
+    }
 
     const customRpc = Deno.env.get('BSC_RPC_URL')?.trim();
     const rpcUrls = customRpc ? [customRpc, ...DEFAULT_BSC_RPC_URLS] : DEFAULT_BSC_RPC_URLS;
@@ -237,9 +404,10 @@ Deno.serve(async (req) => {
     // 2. Assets with deposit enabled
     const { data: assets, error: assetsError } = await supabase
       .from('assets')
-      .select('id, symbol, contract_address, decimals')
+      .select('id, symbol, contract_address, decimals, auto_deposit_enabled')
       .eq('is_active', true)
       .eq('deposit_enabled', true)
+      .eq('auto_deposit_enabled', true)
       .not('contract_address', 'is', null);
     if (assetsError || !assets || assets.length === 0) {
       console.log('[monitor-custodial-deposits] No deposit-enabled assets found');
@@ -254,6 +422,30 @@ Deno.serve(async (req) => {
     const currentBlock = await getCurrentBlockNumber(rpcUrls);
     console.log(`[monitor-custodial-deposits] Current block: ${currentBlock}`);
 
+    // Determine scan mode
+    const replayTxHashes = Array.isArray(body?.replay_tx_hashes)
+      ? body!.replay_tx_hashes
+          .map((h) => String(h).trim().toLowerCase())
+          .filter((h) => /^0x[0-9a-f]{64}$/.test(h))
+      : [];
+
+    const backfillFrom =
+      typeof body?.backfill_from_block === 'number' && Number.isFinite(body.backfill_from_block)
+        ? Math.max(1, Math.floor(body.backfill_from_block))
+        : null;
+    const backfillTo =
+      typeof body?.backfill_to_block === 'number' && Number.isFinite(body.backfill_to_block)
+        ? Math.max(1, Math.floor(body.backfill_to_block))
+        : null;
+    const backfillLookback =
+      typeof body?.backfill_lookback_blocks === 'number' && Number.isFinite(body.backfill_lookback_blocks)
+        ? Math.max(0, Math.floor(body.backfill_lookback_blocks))
+        : null;
+
+    let mode: ScanMode = 'normal';
+    if (replayTxHashes.length > 0) mode = 'replay_tx';
+    else if (backfillFrom !== null || backfillTo !== null || backfillLookback !== null) mode = 'backfill';
+
     const { data: scanState } = await supabase
       .from('custodial_deposit_scan_state')
       .select('id, last_scanned_block')
@@ -262,27 +454,64 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     let fromBlock: number;
-    if (scanState && scanState.last_scanned_block > 0) {
-      // Continue from last scanned block + 1
-      fromBlock = scanState.last_scanned_block + 1;
+    let toBlock: number;
+
+    if (mode === 'backfill') {
+      const lookback = Math.min(MAX_BACKFILL_BLOCKS, backfillLookback ?? BLOCKS_PER_2_HOURS);
+      fromBlock = backfillFrom ?? Math.max(1, currentBlock - lookback);
+      toBlock = backfillTo ?? currentBlock;
+      if (toBlock > currentBlock) toBlock = currentBlock;
+      if (fromBlock > toBlock) fromBlock = toBlock;
+      console.log(`[monitor-custodial-deposits] Backfill scan blocks ${fromBlock} to ${toBlock}`);
     } else {
-      // First run – look back 2 hours
-      fromBlock = Math.max(1, currentBlock - BLOCKS_PER_2_HOURS);
+      if (scanState && scanState.last_scanned_block > 0) {
+        // Continue from last scanned block + 1
+        fromBlock = scanState.last_scanned_block + 1;
+      } else {
+        // First run – look back 2 hours
+        fromBlock = Math.max(1, currentBlock - BLOCKS_PER_2_HOURS);
+      }
+      // Safety cap
+      if (fromBlock > currentBlock) fromBlock = currentBlock;
+      toBlock = Math.min(currentBlock, fromBlock + MAX_BLOCKS_PER_RUN - 1);
+      console.log(`[monitor-custodial-deposits] Scanning blocks ${fromBlock} to ${toBlock}`);
     }
-    // Safety cap
-    if (fromBlock > currentBlock) fromBlock = currentBlock;
-    console.log(`[monitor-custodial-deposits] Scanning blocks ${fromBlock} to ${currentBlock}`);
 
     const contractAddresses = assets.map((a) => a.contract_address?.toLowerCase()).filter(Boolean) as string[];
 
     // 4. Fetch Transfer events
-    const allTransfers = await fetchTransferEventsViaRpc({
-      rpcUrls,
-      hotWalletAddress,
-      contractAddresses,
-      fromBlock,
-      toBlock: currentBlock,
-    });
+    let allTransfers: TokenTransfer[] = [];
+    let lastSuccessfulBlock = fromBlock - 1;
+    let complete = true;
+
+    if (mode === 'replay_tx') {
+      console.log(`[monitor-custodial-deposits] Replay mode: ${replayTxHashes.length} tx hashes`);
+      for (const txHash of replayTxHashes) {
+        try {
+          const recTransfers = await fetchReceiptTransfers({
+            rpcUrls,
+            hotWalletAddress,
+            txHash,
+          });
+          allTransfers = allTransfers.concat(recTransfers);
+        } catch (e: any) {
+          console.error(`[monitor-custodial-deposits] Failed to fetch receipt for ${txHash}:`, e?.message);
+        }
+      }
+      // Replay does not influence scan state.
+    } else {
+      const scanResult = await fetchTransferEventsViaRpc({
+        rpcUrls,
+        hotWalletAddress,
+        contractAddresses,
+        fromBlock,
+        toBlock,
+      });
+      allTransfers = scanResult.transfers;
+      lastSuccessfulBlock = scanResult.lastSuccessfulBlock;
+      complete = scanResult.complete;
+    }
+
     console.log(`[monitor-custodial-deposits] Found ${allTransfers.length} inbound transfers`);
 
     // Group by contract
@@ -428,17 +657,26 @@ Deno.serve(async (req) => {
     }
 
     // 6. Update scan state
-    if (scanState?.id) {
-      await supabase
-        .from('custodial_deposit_scan_state')
-        .update({ last_scanned_block: currentBlock, updated_at: new Date().toISOString() })
-        .eq('id', scanState.id);
-    } else {
-      await supabase.from('custodial_deposit_scan_state').insert({
-        chain: 'BSC',
-        hot_wallet_address: hotWalletAddress,
-        last_scanned_block: currentBlock,
-      });
+    let scanStateUpdated = false;
+    if (mode === 'normal') {
+      // Only advance scan state to the last *successfully* scanned block.
+      // NEVER advance past a failed eth_getLogs batch, or deposits will be permanently missed.
+      const newLast = Math.max(0, lastSuccessfulBlock);
+      if (newLast >= fromBlock) {
+        if (scanState?.id) {
+          await supabase
+            .from('custodial_deposit_scan_state')
+            .update({ last_scanned_block: newLast, updated_at: new Date().toISOString() })
+            .eq('id', scanState.id);
+        } else {
+          await supabase.from('custodial_deposit_scan_state').insert({
+            chain: 'BSC',
+            hot_wallet_address: hotWalletAddress,
+            last_scanned_block: newLast,
+          });
+        }
+        scanStateUpdated = true;
+      }
     }
 
     console.log(
@@ -448,12 +686,18 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        mode,
         discovered: totalDiscovered,
         credited: totalCredited,
         skipped_unknown: totalSkippedUnknown,
         results,
         rpc_used: true,
-        blocks_scanned: currentBlock - fromBlock,
+        complete,
+        scan_state_updated: scanStateUpdated,
+        scanned_from_block: fromBlock,
+        scanned_to_block: mode === 'replay_tx' ? null : lastSuccessfulBlock,
+        requested_to_block: mode === 'replay_tx' ? null : toBlock,
+        blocks_scanned: mode === 'replay_tx' ? null : Math.max(0, lastSuccessfulBlock - fromBlock),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
