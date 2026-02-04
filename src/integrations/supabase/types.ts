@@ -2681,9 +2681,12 @@ export type Database = {
           fixed_gas_fee_bsk: number
           gas_fee_model: string
           id: string
+          maintenance_message: string | null
+          maintenance_mode: boolean
           max_amount_bsk: number | null
           migration_enabled: boolean
           migration_fee_percent: number
+          migration_wallet_address: string | null
           min_amount_bsk: number
           min_gas_balance_bnb: number
           min_hot_wallet_bsk: number
@@ -2701,9 +2704,12 @@ export type Database = {
           fixed_gas_fee_bsk?: number
           gas_fee_model?: string
           id?: string
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
           max_amount_bsk?: number | null
           migration_enabled?: boolean
           migration_fee_percent?: number
+          migration_wallet_address?: string | null
           min_amount_bsk?: number
           min_gas_balance_bnb?: number
           min_hot_wallet_bsk?: number
@@ -2721,9 +2727,12 @@ export type Database = {
           fixed_gas_fee_bsk?: number
           gas_fee_model?: string
           id?: string
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
           max_amount_bsk?: number | null
           migration_enabled?: boolean
           migration_fee_percent?: number
+          migration_wallet_address?: string | null
           min_amount_bsk?: number
           min_gas_balance_bnb?: number
           min_hot_wallet_bsk?: number
