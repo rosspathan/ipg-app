@@ -75,6 +75,7 @@ interface MigrationRecord {
   user?: {
     email: string | null;
     username: string | null;
+    full_name?: string | null;
     phone: string | null;
     display_name: string | null;
   };
@@ -84,8 +85,10 @@ interface UserBSKSummary {
   user_id: string;
   email: string | null;
   username: string | null;
+  full_name?: string | null;
   phone: string | null;
   display_name: string | null;
+  identity_linked?: boolean;
   withdrawable_balance: number;
   holding_balance: number;
   total_migrated_requested: number;
@@ -143,6 +146,116 @@ const StatusIcon = ({ status }: { status: string }) => {
 };
 
 // ============= Utilities =============
+const IN_QUERY_CHUNK_SIZE = 100;
+
+type ProfileIdentity = {
+  id: string;
+  user_id: string;
+  email: string | null;
+  username: string | null;
+  full_name: string | null;
+  phone: string | null;
+  display_name: string | null;
+};
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  if (size <= 0) return [arr];
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    out.push(arr.slice(i, i + size));
+  }
+  return out;
+}
+
+function normalizeStatus(raw: unknown): 'completed' | 'failed' | 'pending' {
+  const s = String(raw || '').trim().toLowerCase();
+
+  const completed = new Set(['completed', 'success', 'done', 'finished', 'confirmed_final']);
+  const failed = new Set([
+    'failed',
+    'error',
+    'rolled_back',
+    'rollback',
+    'refunded',
+    'reversed',
+  ]);
+
+  if (completed.has(s)) return 'completed';
+  if (failed.has(s)) return 'failed';
+  return 'pending';
+}
+
+function statusKeyForColor(raw: unknown): string {
+  const s = String(raw || '').trim().toLowerCase();
+  if (statusColors[s]) return s;
+  return normalizeStatus(s);
+}
+
+function displayNameForUser(identity: Partial<ProfileIdentity> | null | undefined, userId: string): string {
+  const username = identity?.username?.trim();
+  const fullName = identity?.full_name?.trim();
+  const displayName = identity?.display_name?.trim();
+  const emailPrefix = identity?.email ? identity.email.split('@')[0]?.trim() : undefined;
+
+  return (
+    username ||
+    fullName ||
+    displayName ||
+    emailPrefix ||
+    `user${userId.slice(0, 6)}`
+  );
+}
+
+async function fetchProfilesForUserIds(userIds: string[]): Promise<Map<string, ProfileIdentity>> {
+  const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
+  const map = new Map<string, ProfileIdentity>();
+  if (uniqueIds.length === 0) return map;
+
+  // 1) Try match on profiles.user_id
+  const chunks = chunkArray(uniqueIds, IN_QUERY_CHUNK_SIZE);
+  const userIdResults = await Promise.all(
+    chunks.map(async (chunk) => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, user_id, email, username, full_name, phone, display_name')
+        .in('user_id', chunk);
+      if (error) throw error;
+      return (data || []) as ProfileIdentity[];
+    })
+  );
+
+  const foundByUserId = new Set<string>();
+  userIdResults.flat().forEach((p) => {
+    foundByUserId.add(p.user_id);
+    map.set(p.user_id, p);
+    // also index by profile id in case the app uses that
+    map.set(p.id, p);
+  });
+
+  // 2) Fallback: match on profiles.id for any missing ids
+  const missing = uniqueIds.filter((id) => !foundByUserId.has(id));
+  if (missing.length === 0) return map;
+
+  const missingChunks = chunkArray(missing, IN_QUERY_CHUNK_SIZE);
+  const idResults = await Promise.all(
+    missingChunks.map(async (chunk) => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, user_id, email, username, full_name, phone, display_name')
+        .in('id', chunk);
+      if (error) throw error;
+      return (data || []) as ProfileIdentity[];
+    })
+  );
+
+  idResults.flat().forEach((p) => {
+    map.set(p.user_id, p);
+    map.set(p.id, p);
+  });
+
+  return map;
+}
+
 function formatBSK(value: number, short = false): string {
   if (short) {
     if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
@@ -221,8 +334,8 @@ function MigrationDetailDrawer({
         <SheetHeader className="p-4 border-b sticky top-0 bg-background z-10">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-base">Migration Details</SheetTitle>
-            <Badge className={cn("text-xs", statusColors[migration.status])}>
-              <StatusIcon status={migration.status} />
+            <Badge className={cn("text-xs", statusColors[statusKeyForColor(migration.status)])}>
+              <StatusIcon status={statusKeyForColor(migration.status)} />
               <span className="ml-1">{migration.status.toUpperCase()}</span>
             </Badge>
           </div>
@@ -235,7 +348,19 @@ function MigrationDetailDrawer({
             <div className="bg-muted/30 rounded-lg p-3 space-y-2 text-sm">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Name</span>
-                <span className="font-medium">{migration.user?.display_name || migration.user?.username || 'N/A'}</span>
+                <span className="font-medium">
+                  {migration.user
+                    ? displayNameForUser(
+                        {
+                          username: migration.user.username,
+                          full_name: migration.user.full_name,
+                          display_name: migration.user.display_name,
+                          email: migration.user.email,
+                        },
+                        migration.user_id
+                      )
+                    : 'User not linked'}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Email</span>
@@ -423,7 +548,12 @@ function UserDetailDrawer({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMigrations(data || []);
+      setMigrations(
+        (data || []).map((m: any) => ({
+          ...m,
+          status: String(m.status || '').toLowerCase(),
+        }))
+      );
     } catch (err) {
       console.error('Error fetching user migrations:', err);
     } finally {
@@ -460,12 +590,29 @@ function UserDetailDrawer({
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold text-lg">
-                    {user.display_name || user.username || 'Unknown User'}
+                    {user.identity_linked
+                      ? displayNameForUser(
+                          {
+                            username: user.username,
+                            full_name: user.full_name,
+                            display_name: user.display_name,
+                            email: user.email,
+                          },
+                          user.user_id
+                        )
+                      : 'User not linked'}
                   </h3>
-                  <p className="text-sm text-muted-foreground">{user.email || 'No email'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {user.email || (!user.identity_linked ? 'No profile match' : 'No email')}
+                  </p>
                   {user.phone && <p className="text-xs text-muted-foreground">{user.phone}</p>}
                 </div>
                 <div className="flex gap-1">
+                  {!user.identity_linked && (
+                    <Badge variant="outline" className="text-[10px]">
+                      Unlinked User ID
+                    </Badge>
+                  )}
                   {user.flags.high_balance && (
                     <Badge variant="outline" className="text-yellow-400 border-yellow-400/50 text-[10px]">
                       High Balance
@@ -541,12 +688,23 @@ function UserDetailDrawer({
                   {migrations.map((m) => (
                     <div
                       key={m.id}
-                      onClick={() => setSelectedMigration({ ...m, user: { email: user.email, username: user.username, phone: user.phone, display_name: user.display_name } })}
+                      onClick={() =>
+                        setSelectedMigration({
+                          ...m,
+                          user: {
+                            email: user.email,
+                            username: user.username,
+                            full_name: user.full_name,
+                            phone: user.phone,
+                            display_name: user.display_name,
+                          },
+                        })
+                      }
                       className="bg-muted/20 hover:bg-muted/40 rounded-lg p-3 cursor-pointer transition-colors"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <Badge className={cn("text-[10px]", statusColors[m.status])}>
-                          <StatusIcon status={m.status} />
+                        <Badge className={cn("text-[10px]", statusColors[statusKeyForColor(m.status)])}>
+                          <StatusIcon status={statusKeyForColor(m.status)} />
                           <span className="ml-1">{m.status}</span>
                         </Badge>
                         <span className="text-xs text-muted-foreground">
@@ -609,15 +767,25 @@ function AllMigrationsTab() {
       if (error) throw error;
 
       const userIds = [...new Set(migrationsData?.map(m => m.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, email, username, phone, display_name')
-        .in('user_id', userIds);
+      const profilesMap = await fetchProfilesForUserIds(userIds);
 
-      const enriched: MigrationRecord[] = migrationsData?.map(m => ({
-        ...m,
-        user: profiles?.find(p => p.user_id === m.user_id) || null
-      })) || [];
+      const enriched: MigrationRecord[] = migrationsData?.map(m => {
+        const statusKey = String((m as any).status || '').toLowerCase();
+        const identity = profilesMap.get(m.user_id) || null;
+        return {
+          ...(m as any),
+          status: statusKey,
+          user: identity
+            ? {
+                email: identity.email,
+                username: identity.username,
+                full_name: identity.full_name,
+                phone: identity.phone,
+                display_name: identity.display_name,
+              }
+            : null,
+        };
+      }) || [];
 
       setMigrations(enriched);
     } catch (err) {
@@ -648,25 +816,19 @@ function AllMigrationsTab() {
     }
 
     if (statusFilter !== 'all') {
-      if (statusFilter === 'failed') {
-        result = result.filter(m => ['failed', 'rolled_back'].includes(m.status));
-      } else if (statusFilter === 'pending') {
-        result = result.filter(m => !['completed', 'failed', 'rolled_back', 'refunded'].includes(m.status));
-      } else {
-        result = result.filter(m => m.status === statusFilter);
-      }
+      result = result.filter(m => normalizeStatus(m.status) === statusFilter);
     }
 
     return result;
   }, [migrations, searchQuery, statusFilter]);
 
   const stats = useMemo(() => {
-    const completed = migrations.filter(m => m.status === 'completed');
+    const completed = migrations.filter(m => normalizeStatus(m.status) === 'completed');
     return {
       total: migrations.length,
       completed: completed.length,
-      failed: migrations.filter(m => ['failed', 'rolled_back'].includes(m.status)).length,
-      pending: migrations.filter(m => !['completed', 'failed', 'rolled_back', 'refunded'].includes(m.status)).length,
+      failed: migrations.filter(m => normalizeStatus(m.status) === 'failed').length,
+      pending: migrations.filter(m => normalizeStatus(m.status) === 'pending').length,
       totalBsk: completed.reduce((sum, m) => sum + Number(m.net_amount_migrated || 0), 0),
       totalFees: completed.reduce((sum, m) => sum + Number(m.migration_fee_bsk || 0) + Number(m.gas_deduction_bsk || 0), 0),
     };
@@ -677,7 +839,17 @@ function AllMigrationsTab() {
     const rows = filteredMigrations.map(m => [
       format(new Date(m.created_at), 'yyyy-MM-dd HH:mm'),
       m.id,
-      m.user?.username || m.user?.display_name || '',
+      m.user
+        ? displayNameForUser(
+            {
+              username: m.user.username,
+              full_name: m.user.full_name,
+              display_name: m.user.display_name,
+              email: m.user.email,
+            },
+            m.user_id
+          )
+        : `user${m.user_id.slice(0, 6)}`,
       m.user?.email || '',
       Number(m.amount_requested).toFixed(4),
       Number(m.migration_fee_bsk || 0).toFixed(4),
@@ -763,9 +935,19 @@ function AllMigrationsTab() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium text-sm truncate">
-                      {m.user?.display_name || m.user?.username || m.user?.email?.split('@')[0] || 'Unknown'}
+                      {m.user
+                        ? displayNameForUser(
+                            {
+                              username: m.user.username,
+                              full_name: m.user.full_name,
+                              display_name: m.user.display_name,
+                              email: m.user.email,
+                            },
+                            m.user_id
+                          )
+                        : `user${m.user_id.slice(0, 6)}`}
                     </span>
-                    <Badge className={cn("text-[10px] shrink-0", statusColors[m.status])}>
+                    <Badge className={cn("text-[10px] shrink-0", statusColors[statusKeyForColor(m.status)])}>
                       {m.status}
                     </Badge>
                   </div>
@@ -776,7 +958,7 @@ function AllMigrationsTab() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-bold text-sm">{formatBSK(Number(m.amount_requested))} BSK</p>
-                  {m.status === 'completed' && (
+                  {normalizeStatus(m.status) === 'completed' && (
                     <p className="text-xs text-green-500">→ {formatBSK(Number(m.net_amount_migrated))}</p>
                   )}
                   {m.tx_hash && (
@@ -844,9 +1026,9 @@ function UsersRemainingTab() {
 
       if (migrationError) throw migrationError;
 
-      const completed = migrationData?.filter(m => m.status === 'completed') || [];
-      const failed = migrationData?.filter(m => ['failed', 'rolled_back'].includes(m.status)) || [];
-      const pending = migrationData?.filter(m => !['completed', 'failed', 'rolled_back', 'refunded'].includes(m.status)) || [];
+      const completed = migrationData?.filter(m => normalizeStatus(m.status) === 'completed') || [];
+      const failed = migrationData?.filter(m => normalizeStatus(m.status) === 'failed') || [];
+      const pending = migrationData?.filter(m => normalizeStatus(m.status) === 'pending') || [];
 
       const usersWithFailures = new Set(failed.map(m => m.user_id)).size;
 
@@ -882,36 +1064,55 @@ function UsersRemainingTab() {
 
       if (balanceError) throw balanceError;
 
-      const userIds = balances?.map(b => b.user_id) || [];
+      const userIds = balances?.map(b => b.user_id).filter(Boolean) || [];
 
-      // Get profiles
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, email, username, phone, display_name')
-        .in('user_id', userIds);
+      // Profiles (chunked to avoid URL-too-long when userIds is large)
+      const profilesMap = await fetchProfilesForUserIds(userIds);
 
-      // Get all migrations for these users
-      const { data: migrations } = await supabase
-        .from('bsk_onchain_migrations')
-        .select('user_id, status, amount_requested, net_amount_migrated, migration_fee_bsk, gas_deduction_bsk, wallet_address, created_at')
-        .in('user_id', userIds);
+      // Migrations (chunked)
+      const uniqueUserIds = Array.from(new Set(userIds));
+      const migrationChunks = chunkArray(uniqueUserIds, IN_QUERY_CHUNK_SIZE);
+      const migrationResults = await Promise.all(
+        migrationChunks.map(async (chunk) => {
+          const { data, error } = await supabase
+            .from('bsk_onchain_migrations')
+            .select('user_id, status, amount_requested, net_amount_migrated, migration_fee_bsk, gas_deduction_bsk, wallet_address, created_at')
+            .in('user_id', chunk);
+          if (error) throw error;
+          return (data || []) as any[];
+        })
+      );
+      const migrations = migrationResults.flat();
+
+      // Group migrations by user_id once (avoid O(n^2) filtering)
+      const migrationsByUser = new Map<string, any[]>();
+      for (const m of migrations) {
+        const uid = m.user_id;
+        if (!uid) continue;
+        const arr = migrationsByUser.get(uid) || [];
+        arr.push({ ...m, status: String(m.status || '').toLowerCase() });
+        migrationsByUser.set(uid, arr);
+      }
 
       // Build summary
       const summary: UserBSKSummary[] = balances?.map(balance => {
-        const profile = profiles?.find(p => p.user_id === balance.user_id);
-        const userMigrations = migrations?.filter(m => m.user_id === balance.user_id) || [];
-        const completed = userMigrations.filter(m => m.status === 'completed');
-        const failed = userMigrations.filter(m => ['failed', 'rolled_back'].includes(m.status));
-        const pending = userMigrations.filter(m => !['completed', 'failed', 'rolled_back', 'refunded'].includes(m.status));
+        const identity = profilesMap.get(balance.user_id) || null;
+        const userMigrations = migrationsByUser.get(balance.user_id) || [];
+
+        const completed = userMigrations.filter(m => normalizeStatus(m.status) === 'completed');
+        const failed = userMigrations.filter(m => normalizeStatus(m.status) === 'failed');
+        const pending = userMigrations.filter(m => normalizeStatus(m.status) === 'pending');
 
         const sorted = [...userMigrations].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
         return {
           user_id: balance.user_id,
-          email: profile?.email || null,
-          username: profile?.username || null,
-          phone: profile?.phone || null,
-          display_name: profile?.display_name || null,
+          email: identity?.email || null,
+          username: identity?.username || null,
+          full_name: identity?.full_name || null,
+          phone: identity?.phone || null,
+          display_name: identity?.display_name || null,
+          identity_linked: !!identity,
           withdrawable_balance: Math.max(0, Number(balance.withdrawable_balance)),
           holding_balance: Math.max(0, Number(balance.holding_balance || 0)),
           total_migrated_requested: completed.reduce((sum, m) => sum + Number(m.amount_requested || 0), 0),
@@ -930,6 +1131,11 @@ function UsersRemainingTab() {
           }
         };
       }) || [];
+
+      const unlinked = summary.filter(s => !s.identity_linked).slice(0, 10).map(s => s.user_id);
+      if (unlinked.length > 0) {
+        console.warn(`[BSKMigrationAudit] ${summary.filter(s => !s.identity_linked).length} users have no matching profile (sample):`, unlinked);
+      }
 
       setUsers(summary);
     } catch (err) {
@@ -1142,8 +1348,23 @@ function UsersRemainingTab() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="font-medium text-sm truncate">
-                      {u.display_name || u.username || u.email?.split('@')[0] || 'Unknown'}
+                      {u.identity_linked
+                        ? displayNameForUser(
+                            {
+                              username: u.username,
+                              full_name: u.full_name,
+                              display_name: u.display_name,
+                              email: u.email,
+                            },
+                            u.user_id
+                          )
+                        : `User not linked`}
                     </span>
+                    {!u.identity_linked && (
+                      <Badge variant="outline" className="text-[9px] py-0 px-1.5">
+                        Unlinked
+                      </Badge>
+                    )}
                     {u.flags.high_balance && (
                       <Badge variant="outline" className="text-yellow-400 border-yellow-400/50 text-[9px] py-0 px-1.5">
                         High
@@ -1155,7 +1376,10 @@ function UsersRemainingTab() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{u.email || 'No email'}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {(u.email || (!u.identity_linked ? `No profile match` : 'No email'))}
+                    {u.phone ? ` • ${u.phone}` : ''}
+                  </p>
                   <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground font-mono">
                     <span>ID: {u.user_id.slice(0, 8)}...</span>
                     <CopyButton value={u.user_id} />
