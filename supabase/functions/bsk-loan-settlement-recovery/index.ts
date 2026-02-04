@@ -43,19 +43,22 @@ serve(async (req) => {
 
     console.log(`[RECOVERY] Starting settlement recovery. loan_id: ${loan_id || 'ALL'}, dry_run: ${dry_run}`);
 
-    // Find all settlement debits
-    let settlementsQuery = supabase
+    // Find all settlement/foreclosure debits (handle both old and new naming)
+    const { data: allSettlements, error: settlementsError } = await supabase
       .from("unified_bsk_ledger")
       .select("*")
-      .eq("tx_subtype", "loan_settlement")
+      .in("tx_subtype", ["loan_settlement", "loan_foreclosure"])
       .eq("tx_type", "debit")
       .order("created_at", { ascending: false });
 
+    // Filter by loan_id if provided (need to extract from idempotency_key for old format)
+    let settlements = allSettlements || [];
     if (loan_id) {
-      settlementsQuery = settlementsQuery.eq("meta_json->>loan_id", loan_id);
+      settlements = settlements.filter(s => 
+        s.meta_json?.loan_id === loan_id || 
+        s.idempotency_key?.includes(loan_id)
+      );
     }
-
-    const { data: settlements, error: settlementsError } = await settlementsQuery;
 
     if (settlementsError) {
       throw new Error("Failed to fetch settlements: " + settlementsError.message);
@@ -63,21 +66,64 @@ serve(async (req) => {
 
     const recoveryResults: any[] = [];
 
+  // Track which loans we've already processed (dedupe multiple settlement attempts)
+    const processedLoans = new Set<string>();
+
     for (const settlement of settlements || []) {
-      const settlementLoanId = settlement.meta_json?.loan_id;
+      // Extract loan_id from meta_json OR from idempotency_key
+      let settlementLoanId = settlement.meta_json?.loan_id;
+      
+      // For old format: loan_foreclose_{loan_id}_{timestamp}
+      if (!settlementLoanId && settlement.idempotency_key) {
+        const match = settlement.idempotency_key.match(/loan_(?:foreclose|settle)_([a-f0-9-]{36})/);
+        if (match) {
+          settlementLoanId = match[1];
+        }
+      }
+      
       if (!settlementLoanId) continue;
+      
+      // Skip if already processed this loan
+      if (processedLoans.has(settlementLoanId)) continue;
+      processedLoans.add(settlementLoanId);
 
-      const disbursalKey = `loan_settle_disbursal_${settlementLoanId}`;
+      // Check both old and new disbursal key formats
+      const disbursalKeyNew = `loan_settle_disbursal_${settlementLoanId}`;
+      const disbursalKeyOld = `loan_foreclosure_disbursal_${settlementLoanId}`;
 
-      // Check if disbursal exists
-      const { data: existingDisbursal } = await supabase
+      // Check if disbursal exists with either key
+      const { data: existingDisbursalNew } = await supabase
         .from("unified_bsk_ledger")
         .select("id")
-        .eq("idempotency_key", disbursalKey)
+        .eq("idempotency_key", disbursalKeyNew)
         .maybeSingle();
 
-      if (existingDisbursal) {
-        // Already recovered/complete
+      const { data: existingDisbursalOld } = await supabase
+        .from("unified_bsk_ledger")
+        .select("id")
+        .eq("idempotency_key", disbursalKeyOld)
+        .maybeSingle();
+
+      if (existingDisbursalNew || existingDisbursalOld) {
+        // Already recovered/complete - but still check if loan needs status update
+        const { data: loanCheck } = await supabase
+          .from("bsk_loans")
+          .select("id, status")
+          .eq("id", settlementLoanId)
+          .single();
+        
+        if (loanCheck && loanCheck.status !== 'closed') {
+          // Loan status is out of sync - fix it
+          console.log(`[RECOVERY] Loan ${settlementLoanId} has disbursal but status is ${loanCheck.status}. Fixing...`);
+          await supabase
+            .from("bsk_loans")
+            .update({
+              status: "closed",
+              outstanding_bsk: 0,
+              closed_at: new Date().toISOString()
+            })
+            .eq("id", settlementLoanId);
+        }
         continue;
       }
 
@@ -116,7 +162,7 @@ serve(async (req) => {
         continue;
       }
 
-      // RECOVER: Credit the disbursal
+      // RECOVER: Credit the disbursal (use new key format)
       const { data: disbursalResult, error: disbursalError } = await supabase.rpc(
         "record_bsk_transaction",
         {
@@ -125,7 +171,7 @@ serve(async (req) => {
           p_tx_subtype: "loan_settlement_disbursal",
           p_balance_type: "withdrawable",
           p_amount_bsk: principalBsk.toNumber(),
-          p_idempotency_key: disbursalKey,
+          p_idempotency_key: disbursalKeyNew,
           p_meta_json: {
             loan_id: loan.id,
             loan_number: loan.loan_number,
