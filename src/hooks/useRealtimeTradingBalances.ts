@@ -20,6 +20,8 @@ export function useRealtimeTradingBalances() {
     queryClient.invalidateQueries({ queryKey: ['wallet-balances'] });
     queryClient.invalidateQueries({ queryKey: ['user-balance'] });
     queryClient.invalidateQueries({ queryKey: ['transfer-assets'] });
+    // Trading balances are fetched from wallet_balances but use a separate query key
+    queryClient.invalidateQueries({ queryKey: ['trading-balances'] });
   }, [queryClient]);
 
   const invalidateOrderQueries = useCallback(() => {
