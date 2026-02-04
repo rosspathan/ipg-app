@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.55.0";
+import Decimal from "https://esm.sh/decimal.js@10.4.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,14 +9,19 @@ const corsHeaders = {
 };
 
 /**
- * BSK Loan Foreclosure/Settlement
+ * BSK Loan Settlement (Settle Plan / Foreclose)
  * 
- * Allows users to settle their entire loan by paying the outstanding balance.
- * Features:
- * - 2% early settlement discount on full payoff
- * - Atomic ledger transaction for audit trail
- * - Marks all remaining installments as paid
- * - Closes the loan immediately
+ * Business Rules:
+ * 1. User pays all remaining unpaid EMIs at once (calculated from installments table)
+ * 2. All installments marked as paid
+ * 3. Loan status changed to COMPLETED (closed)
+ * 4. Full payout (principal_bsk) released exactly once
+ * 5. Uses decimal-safe math (no JS floats)
+ * 6. Idempotency: deterministic keys prevent double debit/payout
+ * 
+ * NOT ALLOWED:
+ * - Cannot settle a cancelled/foreclosed loan (user lost their EMIs)
+ * - Cannot settle if already closed
  */
 
 interface ForeclosureRequest {
@@ -56,20 +62,21 @@ serve(async (req) => {
       throw new Error("loan_id is required");
     }
 
-    console.log(`[FORECLOSE] User ${user.id} requesting foreclosure for loan ${loan_id}`);
+    console.log(`[SETTLE] User ${user.id} requesting settlement for loan ${loan_id}`);
 
-    // ===== IDEMPOTENCY CHECK: Prevent duplicate foreclosure =====
-    // Check if this loan was already foreclosed or is being processed
-    const idempotencyKey = `loan_foreclose_${loan_id}`;
-    
+    // DETERMINISTIC IDEMPOTENCY KEYS (no timestamps!)
+    const settlementIdempotencyKey = `loan_settle_${loan_id}`;
+    const disbursalIdempotencyKey = `loan_settle_disbursal_${loan_id}`;
+
+    // ===== IDEMPOTENCY CHECK: Prevent duplicate settlement =====
     const { data: existingTx } = await supabase
       .from("unified_bsk_ledger")
       .select("id")
-      .eq("idempotency_key", idempotencyKey)
+      .eq("idempotency_key", settlementIdempotencyKey)
       .maybeSingle();
 
     if (existingTx) {
-      console.log(`[FORECLOSE] Duplicate request detected for loan ${loan_id} - already processed`);
+      console.log(`[SETTLE] Duplicate request detected for loan ${loan_id} - already processed`);
       return new Response(
         JSON.stringify({
           success: false,
@@ -80,7 +87,7 @@ serve(async (req) => {
       );
     }
 
-    // Get loan details with row-level lock to prevent race conditions
+    // Get loan details
     const { data: loan, error: loanError } = await supabase
       .from("bsk_loans")
       .select("*")
@@ -92,31 +99,85 @@ serve(async (req) => {
       throw new Error("Loan not found or does not belong to you");
     }
 
-    // Double-check status to prevent race conditions
-    if (loan.status !== "active" && loan.status !== "in_arrears") {
-      console.log(`[FORECLOSE] Loan ${loan_id} already processed with status: ${loan.status}`);
+    // STRICT STATUS CHECK: Only active or in_arrears can be settled
+    if (loan.status === 'cancelled') {
       return new Response(
         JSON.stringify({
           success: false,
-          error: `Loan is already ${loan.status}. Please refresh the page.`,
+          error: "This loan was cancelled due to missed payments. Paid EMIs have been forfeited.",
+          forfeited: true
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }}
+      );
+    }
+
+    if (loan.status === 'closed') {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "This loan is already closed. Please refresh the page.",
           already_processed: true
         }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" }}
       );
     }
 
-    const outstanding = Number(loan.outstanding_bsk) || 0;
-
-    if (outstanding <= 0) {
-      throw new Error("No outstanding balance to settle");
+    if (loan.status !== "active" && loan.status !== "in_arrears") {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Loan is in ${loan.status} status and cannot be settled.`,
+          already_processed: true
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }}
+      );
     }
 
-    // No discount - full settlement amount
-    const settlementAmount = outstanding;
+    // CALCULATE SETTLEMENT FROM INSTALLMENTS (not outstanding_bsk field)
+    // This ensures accuracy even if outstanding_bsk is out of sync
+    const { data: unpaidInstallments, error: installmentsError } = await supabase
+      .from("bsk_loan_installments")
+      .select("id, installment_number, emi_bsk, status")
+      .eq("loan_id", loan_id)
+      .in("status", ["due", "overdue"]);
 
-    console.log(`[FORECLOSE] Outstanding: ${outstanding} BSK, Settlement: ${settlementAmount} BSK`);
+    if (installmentsError) {
+      throw new Error("Failed to fetch installments");
+    }
 
-    // Check user's withdrawable balance via ledger
+    if (!unpaidInstallments || unpaidInstallments.length === 0) {
+      // All installments already paid - trigger completion instead
+      console.log(`[SETTLE] All installments already paid for loan ${loan_id}. Triggering completion...`);
+      
+      // Call the completion function
+      const { data: completeResult, error: completeError } = await supabase.functions.invoke(
+        'bsk-loan-complete',
+        { body: { loan_id, triggered_by: 'settlement_all_paid' } }
+      );
+
+      if (completeError) {
+        throw new Error("Failed to complete loan: " + completeError.message);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "All installments were already paid. Loan completed.",
+          ...completeResult
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }}
+      );
+    }
+
+    // DECIMAL-SAFE CALCULATION: Sum unpaid EMIs
+    const settlementAmount = unpaidInstallments.reduce(
+      (sum, inst) => sum.plus(new Decimal(inst.emi_bsk || 0)),
+      new Decimal(0)
+    );
+
+    console.log(`[SETTLE] Settlement amount: ${settlementAmount.toFixed(4)} BSK (${unpaidInstallments.length} unpaid installments)`);
+
+    // Check user's withdrawable balance
     const { data: balanceData, error: balanceQueryError } = await supabase
       .from("user_bsk_balances")
       .select("withdrawable_balance")
@@ -124,140 +185,154 @@ serve(async (req) => {
       .maybeSingle();
 
     if (balanceQueryError) {
-      console.error("[FORECLOSE] Balance query error:", balanceQueryError);
+      console.error("[SETTLE] Balance query error:", balanceQueryError);
       throw new Error("Failed to check balance");
     }
 
-    const withdrawableBalance = Number(balanceData?.withdrawable_balance) || 0;
+    const withdrawableBalance = new Decimal(balanceData?.withdrawable_balance || 0);
 
-    if (withdrawableBalance < settlementAmount) {
+    if (withdrawableBalance.lessThan(settlementAmount)) {
       throw new Error(
         `Insufficient balance. Required: ${settlementAmount.toFixed(2)} BSK, Available: ${withdrawableBalance.toFixed(2)} BSK`
       );
     }
 
-    // ATOMIC: Debit user's withdrawable balance using record_bsk_transaction
-    // Use deterministic idempotency key (loan_id only) to prevent duplicate debits
-
+    // ATOMIC: Debit user's withdrawable balance (settlement payment)
     const { data: debitResult, error: debitError } = await supabase.rpc(
       "record_bsk_transaction",
       {
         p_user_id: user.id,
         p_tx_type: "debit",
-        p_tx_subtype: "loan_foreclosure",
+        p_tx_subtype: "loan_settlement",
         p_balance_type: "withdrawable",
-        p_amount_bsk: settlementAmount,
-        p_idempotency_key: idempotencyKey,
+        p_amount_bsk: settlementAmount.toNumber(),
+        p_idempotency_key: settlementIdempotencyKey,
         p_meta_json: {
           loan_id: loan.id,
           loan_number: loan.loan_number,
-          original_outstanding: outstanding,
-          settlement_amount: settlementAmount,
-          action: "loan_foreclosure"
+          settlement_amount: settlementAmount.toString(),
+          installments_settled: unpaidInstallments.length,
+          action: "loan_settlement"
         }
       }
     );
 
     if (debitError) {
-      console.error("[FORECLOSE] Debit error:", debitError);
+      console.error("[SETTLE] Debit error:", debitError);
       throw new Error("Failed to process settlement payment: " + debitError.message);
     }
 
-    console.log(`[FORECLOSE] ✅ Debited ${settlementAmount} BSK from user (tx: ${debitResult})`);
+    console.log(`[SETTLE] ✅ Debited ${settlementAmount.toFixed(4)} BSK from user (tx: ${debitResult})`);
 
-    // Mark all remaining installments as paid
+    // Mark all unpaid installments as paid
     const { data: updatedInstallments, error: installmentError } = await supabase
       .from("bsk_loan_installments")
       .update({
         status: "paid",
         paid_at: new Date().toISOString(),
-        paid_amount_bsk: supabase.sql`total_due_bsk`, // Pay full amount for each
-        payment_method: "foreclosure",
-        notes: `Settled via foreclosure on ${new Date().toISOString()}`
+        paid_amount_bsk: supabase.sql`emi_bsk`,
+        payment_method: "settlement",
+        notes: `Settled via early settlement on ${new Date().toISOString()}`
       })
       .eq("loan_id", loan_id)
-      .in("status", ["due", "overdue", "pending"])
+      .in("status", ["due", "overdue"])
       .select("id");
 
     const installmentsCleared = updatedInstallments?.length || 0;
-    console.log(`[FORECLOSE] Marked ${installmentsCleared} installments as paid`);
+    console.log(`[SETTLE] Marked ${installmentsCleared} installments as paid`);
 
-    // Update loan status to closed
+    // Calculate new paid total using Decimal
+    const previouslyPaid = new Decimal(loan.paid_bsk || 0);
+    const totalPaidNow = previouslyPaid.plus(settlementAmount);
+
+    // Update loan status to closed (COMPLETED)
     const { error: loanUpdateError } = await supabase
       .from("bsk_loans")
       .update({
         status: "closed",
         outstanding_bsk: 0,
-        paid_bsk: (Number(loan.paid_bsk) || 0) + settlementAmount,
+        paid_bsk: totalPaidNow.toNumber(),
         closed_at: new Date().toISOString(),
         prepaid_at: new Date().toISOString(),
-        disbursed_at: new Date().toISOString(),
-        admin_notes: `Foreclosed by user on ${new Date().toISOString()}. Settlement: ${settlementAmount} BSK`
+        admin_notes: `Settled by user on ${new Date().toISOString()}. Settlement: ${settlementAmount.toFixed(4)} BSK`
       })
       .eq("id", loan_id);
 
     if (loanUpdateError) {
-      console.error("[FORECLOSE] Loan update error:", loanUpdateError);
-      // Don't throw - payment already processed, just log
+      console.error("[SETTLE] Loan update error:", loanUpdateError);
+      // Don't throw - payment already processed, continue to payout
     }
 
-    // CRITICAL: Disburse the full principal amount to user's withdrawable balance
-    // This is the payout the user receives after completing all installments
-    const principalBsk = Number(loan.principal_bsk) || 0;
-    const disbursementKey = `loan_foreclose_disbursal_${loan_id}`;
+    // CRITICAL: Disburse the full principal (payout) amount exactly ONCE
+    const principalBsk = new Decimal(loan.principal_bsk || 0);
     
     const { data: disbursalResult, error: disbursalError } = await supabase.rpc(
       "record_bsk_transaction",
       {
         p_user_id: user.id,
         p_tx_type: "credit",
-        p_tx_subtype: "loan_foreclosure_disbursal",
+        p_tx_subtype: "loan_settlement_disbursal",
         p_balance_type: "withdrawable",
-        p_amount_bsk: principalBsk,
-        p_idempotency_key: disbursementKey,
+        p_amount_bsk: principalBsk.toNumber(),
+        p_idempotency_key: disbursalIdempotencyKey,
         p_meta_json: {
           loan_id: loan.id,
           loan_number: loan.loan_number,
-          principal_bsk: principalBsk,
-          settlement_amount: settlementAmount,
-          action: "loan_foreclosure_disbursal",
-          notes: `Principal disbursed after loan foreclosure: ${loan.loan_number}`
+          principal_bsk: principalBsk.toString(),
+          settlement_amount: settlementAmount.toString(),
+          action: "loan_settlement_disbursal",
+          notes: `Full payout after loan settlement: ${loan.loan_number}`
         }
       }
     );
 
     if (disbursalError) {
-      console.error("[FORECLOSE] Disbursal error:", disbursalError);
-      // Log but don't throw - the settlement was successful, disbursal needs manual attention
+      console.error("[SETTLE] Disbursal error:", disbursalError);
+      // CRITICAL: Log this for manual follow-up but don't fail the response
+      // The settlement was successful, user paid - they MUST get their payout
+      await supabase.from("admin_notifications").insert({
+        type: "loan_disbursal_failed",
+        title: "Loan Disbursal Failed - Manual Action Required",
+        message: `User ${user.id} settled loan ${loan.loan_number} but disbursal failed. Manual credit of ${principalBsk.toFixed(4)} BSK required.`,
+        priority: "high",
+        metadata: {
+          loan_id: loan.id,
+          user_id: user.id,
+          principal_bsk: principalBsk.toString(),
+          error: disbursalError.message
+        }
+      });
     } else {
-      console.log(`[FORECLOSE] ✅ Disbursed ${principalBsk} BSK principal to user (tx: ${disbursalResult})`);
+      console.log(`[SETTLE] ✅ Disbursed ${principalBsk.toFixed(4)} BSK principal to user (tx: ${disbursalResult})`);
     }
 
-    // Log foreclosure event
+    // Log settlement event
     await supabase
       .from("bsk_loan_prepayments")
       .insert({
         loan_id,
         user_id: user.id,
-        prepayment_amount_bsk: settlementAmount,
-        outstanding_before_bsk: outstanding,
+        prepayment_amount_bsk: settlementAmount.toNumber(),
+        outstanding_before_bsk: settlementAmount.toNumber(), // Was the outstanding
         discount_applied_bsk: 0,
         installments_cleared: installmentsCleared,
-        is_foreclosure: true
+        is_foreclosure: false // This is a settlement, not auto-foreclosure
       })
-      .catch(err => console.error("[FORECLOSE] Failed to log prepayment:", err));
+      .catch(err => console.error("[SETTLE] Failed to log prepayment:", err));
 
-    console.log(`[FORECLOSE] ✅ Loan ${loan.loan_number} successfully foreclosed. Disbursed ${principalBsk} BSK principal`);
+    // Calculate net received (payout minus settlement payment)
+    const netReceived = principalBsk.minus(settlementAmount);
+
+    console.log(`[SETTLE] ✅ Loan ${loan.loan_number} successfully settled. Net received: ${netReceived.toFixed(4)} BSK`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Loan successfully settled and principal disbursed",
+        message: "Loan successfully settled and payout released",
         loan_number: loan.loan_number,
-        original_outstanding: outstanding,
-        settlement_amount: settlementAmount,
-        principal_disbursed: principalBsk,
-        net_received: principalBsk - settlementAmount,
+        settlement_payment: settlementAmount.toFixed(4),
+        payout_received: principalBsk.toFixed(4),
+        net_received: netReceived.toFixed(4),
         installments_cleared: installmentsCleared,
         new_status: "closed"
       }),
@@ -267,7 +342,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error("[FORECLOSE] Error:", error);
+    console.error("[SETTLE] Error:", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {

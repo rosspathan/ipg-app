@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
+import Decimal from 'https://esm.sh/decimal.js@10.4.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,9 +14,21 @@ interface CancellationResult {
     user_id: string;
     consecutive_overdue: number;
     threshold: number;
+    forfeited_bsk: string;
     status: string;
   }>;
 }
+
+/**
+ * BSK Loan Auto-Cancellation (Foreclosure)
+ * 
+ * Business Rules:
+ * 1. If user has 4+ consecutive overdue installments → auto-cancel loan
+ * 2. User LOSES all paid EMIs (forfeiture - they paid into plan but didn't complete)
+ * 3. User receives NO payout (principal is not disbursed)
+ * 4. All remaining installments marked as cancelled
+ * 5. A loan_forfeited ledger entry is recorded for audit trail
+ */
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -48,7 +61,7 @@ Deno.serve(async (req) => {
     // Get all active loans
     const { data: activeLoans, error: loansError } = await supabase
       .from('bsk_loans')
-      .select('id, user_id, loan_number')
+      .select('id, user_id, loan_number, paid_bsk, principal_bsk')
       .eq('status', 'active');
 
     if (loansError) {
@@ -81,12 +94,12 @@ Deno.serve(async (req) => {
     for (const loan of activeLoans) {
       result.checked++;
 
-      // Get all installments for this loan, ordered by installment number
+      // Get all installments for this loan, ordered by due_date (not installment_number)
       const { data: installments, error: installmentsError } = await supabase
         .from('bsk_loan_installments')
-        .select('id, installment_number, status, due_date')
+        .select('id, installment_number, status, due_date, emi_bsk')
         .eq('loan_id', loan.id)
-        .order('installment_number', { ascending: true });
+        .order('due_date', { ascending: true });
 
       if (installmentsError || !installments) {
         console.error(`[LOAN-CANCEL] Error fetching installments for loan ${loan.id}:`, installmentsError);
@@ -118,9 +131,28 @@ Deno.serve(async (req) => {
       if (consecutiveOverdue >= threshold) {
         console.log(`[LOAN-CANCEL] Cancelling loan ${loan.loan_number} (${consecutiveOverdue} >= ${threshold})`);
 
-        const cancellationReason = `Auto-cancelled: ${consecutiveOverdue} consecutive weeks non-payment (threshold: ${threshold})`;
+        // Calculate forfeited amount (what user already paid)
+        const forfeitedBsk = new Decimal(loan.paid_bsk || 0);
+        
+        const cancellationReason = `Auto-cancelled: ${consecutiveOverdue} consecutive weeks non-payment (threshold: ${threshold}). Forfeited: ${forfeitedBsk.toFixed(4)} BSK`;
 
-        // Update loan status to cancelled
+        // CRITICAL: Use deterministic idempotency key (loan_id only, no timestamp)
+        const cancellationIdempotencyKey = `loan_cancelled_${loan.id}`;
+        const forfeitIdempotencyKey = `loan_forfeited_${loan.id}`;
+        
+        // Check if already processed (idempotency)
+        const { data: existingCancellation } = await supabase
+          .from('unified_bsk_ledger')
+          .select('id')
+          .eq('idempotency_key', cancellationIdempotencyKey)
+          .maybeSingle();
+
+        if (existingCancellation) {
+          console.log(`[LOAN-CANCEL] Loan ${loan.loan_number} already cancelled (idempotency hit)`);
+          continue;
+        }
+
+        // Update loan status to cancelled (FORECLOSED equivalent)
         const { error: updateError } = await supabase
           .from('bsk_loans')
           .update({
@@ -128,7 +160,8 @@ Deno.serve(async (req) => {
             closed_at: new Date().toISOString(),
             admin_notes: cancellationReason,
           })
-          .eq('id', loan.id);
+          .eq('id', loan.id)
+          .eq('status', 'active'); // Only update if still active (prevent race)
 
         if (updateError) {
           console.error(`[LOAN-CANCEL] Error updating loan ${loan.id}:`, updateError);
@@ -137,14 +170,36 @@ Deno.serve(async (req) => {
             user_id: loan.user_id,
             consecutive_overdue: consecutiveOverdue,
             threshold: threshold,
+            forfeited_bsk: '0',
             status: 'error',
           });
           continue;
         }
 
-        // Create unified ledger entry for cancellation
-        const cancellationIdempotencyKey = `loan_cancelled_${loan.id}_${Date.now()}`;
-        
+        // Record FORFEITURE in unified ledger (audit trail for lost EMIs)
+        // This is a "system" entry with amount = 0 since we're not moving funds
+        // The user already paid those EMIs - they just don't get the payout
+        await supabase.rpc('record_bsk_transaction', {
+          p_user_id: loan.user_id,
+          p_idempotency_key: forfeitIdempotencyKey,
+          p_tx_type: 'system',
+          p_tx_subtype: 'loan_forfeited',
+          p_balance_type: 'withdrawable',
+          p_amount_bsk: forfeitedBsk.toNumber(), // Record the amount forfeited for audit
+          p_notes: `Loan ${loan.loan_number} auto-cancelled. ${forfeitedBsk.toFixed(4)} BSK forfeited (EMIs paid but no payout due to ${consecutiveOverdue} consecutive missed payments)`,
+          p_meta_json: {
+            loan_id: loan.id,
+            loan_number: loan.loan_number,
+            principal_bsk: loan.principal_bsk,
+            forfeited_emi_bsk: forfeitedBsk.toString(),
+            payout_released: false,
+            consecutive_overdue_weeks: consecutiveOverdue,
+            threshold_weeks: threshold,
+            cancellation_reason: 'auto_cancelled_non_payment'
+          }
+        });
+
+        // Create system event record for cancellation
         await supabase.rpc('record_bsk_transaction', {
           p_user_id: loan.user_id,
           p_idempotency_key: cancellationIdempotencyKey,
@@ -167,16 +222,23 @@ Deno.serve(async (req) => {
         await supabase.from('bsk_loan_ledger').insert({
           loan_id: loan.id,
           user_id: loan.user_id,
-          transaction_type: 'LOAN_CANCELLED',
-          amount_bsk: 0,
-          direction: 'debit',
+          transaction_type: 'LOAN_FORFEITED',
+          amount_bsk: forfeitedBsk.toNumber(),
+          direction: 'system',
           notes: cancellationReason,
+          metadata: {
+            forfeited_bsk: forfeitedBsk.toString(),
+            payout_blocked: true
+          }
         });
 
         // Mark all remaining 'due' and 'overdue' installments as cancelled
         await supabase
           .from('bsk_loan_installments')
-          .update({ status: 'cancelled' })
+          .update({ 
+            status: 'cancelled',
+            notes: `Cancelled due to loan foreclosure on ${new Date().toISOString()}`
+          })
           .eq('loan_id', loan.id)
           .in('status', ['due', 'overdue']);
 
@@ -186,10 +248,11 @@ Deno.serve(async (req) => {
           user_id: loan.user_id,
           consecutive_overdue: consecutiveOverdue,
           threshold: threshold,
+          forfeited_bsk: forfeitedBsk.toFixed(4),
           status: 'cancelled',
         });
 
-        console.log(`[LOAN-CANCEL] Successfully cancelled loan ${loan.loan_number}`);
+        console.log(`[LOAN-CANCEL] Successfully cancelled loan ${loan.loan_number}. Forfeited: ${forfeitedBsk.toFixed(4)} BSK`);
       }
     }
 
