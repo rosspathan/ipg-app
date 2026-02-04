@@ -149,10 +149,20 @@ export function useOnchainBalances(): OnchainBalancesResult {
       const balancePromises = assets.map(async (asset) => {
         let balance = 0
 
-        if (asset.symbol === 'BNB') {
-          balance = await getBNBBalance(walletAddress)
-        } else if (asset.contractAddress) {
-          balance = await getERC20Balance(asset.contractAddress, walletAddress, asset.decimals)
+        try {
+          if (asset.symbol === 'BNB') {
+            balance = await getBNBBalance(walletAddress)
+          } else if (asset.contractAddress) {
+            balance = await getERC20Balance(asset.contractAddress, walletAddress, asset.decimals)
+          }
+          
+          // Debug: log non-zero balances
+          if (balance > 0.000001) {
+            console.log(`[OnchainBalances] ${asset.symbol}: ${balance}`)
+          }
+        } catch (err) {
+          console.warn(`[OnchainBalances] Failed to fetch ${asset.symbol}:`, err)
+          balance = 0
         }
 
         return {
@@ -168,8 +178,13 @@ export function useOnchainBalances(): OnchainBalancesResult {
 
       const results = await Promise.all(balancePromises)
       
+      // Filter out dust/near-zero balances (less than 0.000001)
+      const filtered = results.filter(r => r.balance >= 0.000001 || r.symbol === 'BNB')
+      
+      console.log('[OnchainBalances] Total non-zero assets:', filtered.filter(r => r.balance > 0).length)
+      
       // Sort: non-zero balances first (highest first), then alphabetically
-      return results.sort((a, b) => {
+      return filtered.sort((a, b) => {
         if (a.balance > 0 && b.balance <= 0) return -1
         if (a.balance <= 0 && b.balance > 0) return 1
         if (a.balance > 0 && b.balance > 0) return b.balance - a.balance
@@ -178,7 +193,7 @@ export function useOnchainBalances(): OnchainBalancesResult {
     },
     enabled: !!walletAddress && assets.length > 0,
     refetchInterval: 30000,
-    staleTime: 20000
+    staleTime: 5000  // Reduced stale time to get fresher data
   })
 
   return {
