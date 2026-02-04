@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { Calendar, ChevronRight, Landmark, FileCheck, History } from "lucide-react";
+import { Calendar, ChevronRight, Landmark, FileCheck, History, CheckCircle2, PartyPopper } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -106,28 +106,78 @@ export default function LoansOverviewPage() {
                 <p className="text-sm text-muted-foreground">Please sign in to view your loans.</p>
               ) : !activeLoan ? (
                 <div className="space-y-4">
-                  {/* Archived Notice */}
-                  <div className="rounded-xl bg-warning/10 border border-warning/30 p-3">
-                    <div className="flex items-start gap-2">
-                      <Landmark className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs font-medium text-warning">Program Archived</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          New loan applications are no longer accepted. Existing loans continue processing normally.
-                        </p>
+                  {/* Check for recently completed loans */}
+                  {loanHistory.some(l => l.status === 'closed') ? (
+                    <>
+                      {/* Success Banner for Completed Loan */}
+                      <div className="rounded-xl bg-success/10 border border-success/30 p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-success/20">
+                            <PartyPopper className="w-5 h-5 text-success" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-success">Plan Completed Successfully!</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Your savings plan has been completed. The full payout has been credited to your wallet.
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted/50 border border-border/50">
-                      <Landmark className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-[var(--font-heading)] font-bold text-foreground">No active loan</p>
-                      <p className="text-xs text-muted-foreground">If you had a loan, it would appear here.</p>
-                    </div>
-                  </div>
+                      {/* Show completed loan summary */}
+                      {loanHistory.filter(l => l.status === 'closed').slice(0, 1).map(loan => (
+                        <div key={loan.id} className="rounded-xl bg-card border border-border/50 p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Completed Plan</p>
+                              <p className="text-sm font-semibold text-foreground">
+                                #{loan.loan_number ?? loan.id.slice(0, 8)}
+                              </p>
+                            </div>
+                            <LoanStatusPill status={loan.status} />
+                          </div>
+                          <div className="flex items-center justify-between rounded-lg bg-muted/30 p-3">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-success" />
+                              <span className="text-xs text-muted-foreground">Payout Received</span>
+                            </div>
+                            <span className="text-sm font-bold text-success tabular-nums">
+                              +{Number(loan.principal_bsk || 0).toFixed(2)} BSK
+                            </span>
+                          </div>
+                          <Progress value={100} className="h-2" />
+                          <p className="text-[10px] text-center text-muted-foreground">
+                            100% Complete • All 16 EMIs Paid
+                          </p>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      {/* Archived Notice */}
+                      <div className="rounded-xl bg-warning/10 border border-warning/30 p-3">
+                        <div className="flex items-start gap-2">
+                          <Landmark className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-medium text-warning">Program Archived</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              New loan applications are no longer accepted. Existing loans continue processing normally.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted/50 border border-border/50">
+                          <Landmark className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-[var(--font-heading)] font-bold text-foreground">No active loan</p>
+                          <p className="text-xs text-muted-foreground">If you had a loan, it would appear here.</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   <Button asChild variant="outline" className="w-full">
                     <Link to="/app/programs">Back to Programs</Link>

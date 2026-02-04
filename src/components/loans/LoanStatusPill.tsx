@@ -28,7 +28,7 @@ export function LoanStatusPill({ status }: { status: LoanStatus }) {
     );
   }
 
-  if (status === "completed") {
+  if (status === "completed" || status === "closed") {
     return (
       <Badge
         variant="outline"
@@ -36,6 +36,18 @@ export function LoanStatusPill({ status }: { status: LoanStatus }) {
       >
         <CheckCircle2 className="w-3 h-3 mr-1" />
         Completed
+      </Badge>
+    );
+  }
+
+  if (status === "cancelled") {
+    return (
+      <Badge
+        variant="outline"
+        className="bg-destructive/10 text-destructive border-destructive/30 text-[10px] px-2 py-0.5"
+      >
+        <AlertCircle className="w-3 h-3 mr-1" />
+        Cancelled
       </Badge>
     );
   }
