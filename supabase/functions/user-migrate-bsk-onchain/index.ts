@@ -220,7 +220,15 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     .in('status', ['pending', 'validating', 'debiting', 'signing', 'broadcasting', 'confirming']);
 
   if (pending && pending.length > 0) {
-    throw new Error('You have a pending migration');
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: 'pending_migration',
+        message: 'You have a pending migration',
+        migration_id: pending[0].id,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   // Get ledger sum for audit
@@ -263,51 +271,24 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     throw new Error('Amount too small after fees and gas deduction');
   }
 
-  // Check for existing pending/processing migrations for this user
-  const { data: existingMigration } = await supabase
-    .from('bsk_onchain_migrations')
-    .select('id, status, amount_requested')
-    .eq('user_id', userId)
-    .in('status', ['pending', 'validating', 'debiting', 'signing', 'broadcasting', 'failed'])
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (existingMigration) {
-    // Resume the existing migration instead of creating a new one
-    console.log(`[USER-MIGRATE-BSK] Found existing migration ${existingMigration.id}, resuming...`);
-    const result = await processMigration(supabase, existingMigration.id);
-    return result;
-  }
-
-  // Create or get batch for user-initiated migrations
-  let batchId: string;
-  const { data: existingBatch } = await supabase
+  // Create a NEW batch for each user-initiated migration attempt.
+  // Rationale: migrations have a unique constraint on (batch_id, user_id), so reusing the same
+  // USER-INITIATED batch would block subsequent migrations for the same user.
+  const { data: newBatch, error: batchError } = await supabase
     .from('bsk_onchain_migration_batches')
+    .insert({
+      batch_number: 'USER-INITIATED',
+      initiated_by: userId,
+      status: 'pending',
+      total_users: 0,
+      total_bsk_requested: 0,
+      notes: 'User-initiated migrations'
+    })
     .select('id')
-    .eq('batch_number', 'USER-INITIATED')
-    .in('status', ['pending', 'processing'])
-    .maybeSingle();
+    .single();
 
-  if (existingBatch) {
-    batchId = existingBatch.id;
-  } else {
-    const { data: newBatch, error: batchError } = await supabase
-      .from('bsk_onchain_migration_batches')
-      .insert({
-        batch_number: 'USER-INITIATED',
-        initiated_by: userId,
-        status: 'pending',
-        total_users: 0,
-        total_bsk_requested: 0,
-        notes: 'User-initiated migrations'
-      })
-      .select()
-      .single();
-
-    if (batchError) throw batchError;
-    batchId = newBatch.id;
-  }
+  if (batchError) throw batchError;
+  const batchId: string = newBatch.id;
 
   // Create migration record with unique constraint handling
   const idempotencyKey = `user_migrate_${userId}_${Date.now()}`;
@@ -332,11 +313,11 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     .single();
 
   if (migrationError) {
-    // If duplicate key error, try to find and resume existing
+    // If duplicate key error, return the existing migration instead of throwing.
     if (migrationError.code === '23505') {
       const { data: existingMig } = await supabase
         .from('bsk_onchain_migrations')
-        .select('id')
+        .select('id, status, tx_hash')
         .eq('user_id', userId)
         .eq('batch_id', batchId)
         .order('created_at', { ascending: false })
@@ -344,9 +325,17 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
         .maybeSingle();
       
       if (existingMig) {
-        console.log(`[USER-MIGRATE-BSK] Resuming existing migration ${existingMig.id}`);
-        const result = await processMigration(supabase, existingMig.id);
-        return result;
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'duplicate_migration',
+            message: 'Migration already exists for this request',
+            migration_id: existingMig.id,
+            status: existingMig.status,
+            tx_hash: existingMig.tx_hash,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
     }
     throw migrationError;
@@ -542,6 +531,8 @@ async function processMigration(supabase: any, migrationId: string) {
     .from('bsk_onchain_migrations')
     .update({
       status: 'completed',
+      error_message: null,
+      failed_at: null,
       block_number: receipt.blockNumber,
       gas_used: Number(actualGasUsed),
       actual_gas_cost_bnb: actualGasCostBnb,
