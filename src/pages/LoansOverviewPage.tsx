@@ -62,18 +62,20 @@ export default function LoansOverviewPage() {
     enabled: !!user?.id,
   });
 
+  // Calculate progress from INSTALLMENTS (authoritative source), not loan.paid_bsk
   const progressPct = useMemo(() => {
-    const paid = activeLoan?.paid_bsk ?? 0;
-    const total = (activeLoan as any)?.total_due_bsk ?? 0;
-    if (!activeLoan || !total) return 0;
-    return Math.max(0, Math.min(100, (paid / total) * 100));
-  }, [activeLoan]);
+    if (!activeLoan || !dueInstallments) return 0;
+    const totalInstallments = activeLoan.tenor_weeks || 16;
+    // dueInstallments contains only "due" or "overdue" - paid ones aren't in this list
+    const paidCount = totalInstallments - dueInstallments.length;
+    return Math.max(0, Math.min(100, (paidCount / totalInstallments) * 100));
+  }, [activeLoan, dueInstallments]);
 
-  // Calculate outstanding for foreclosure
+  // Calculate outstanding from due installments (authoritative)
   const outstandingBsk = useMemo(() => {
-    if (!activeLoan) return 0;
-    return Number((activeLoan as any)?.outstanding_bsk) || 0;
-  }, [activeLoan]);
+    if (!dueInstallments || dueInstallments.length === 0) return 0;
+    return dueInstallments.reduce((sum, inst) => sum + (inst.total_due_bsk || 0), 0);
+  }, [dueInstallments]);
 
   return (
     <ProgramPageTemplate title="Loans" subtitle="Your EMIs, progress and history">
