@@ -18,6 +18,8 @@ const BSK_ABI = [
 const MIN_MIGRATION_BSK = 100;
 // Gas estimation for BEP-20 transfer
 const ESTIMATED_GAS = 65000n;
+// Migration fee percentage
+const MIGRATION_FEE_PERCENT = 5;
 
 interface MigrationRequest {
   action: 'check_eligibility' | 'initiate_migration' | 'get_status';
@@ -151,6 +153,7 @@ async function checkEligibility(supabase: any, userId: string) {
     pending_migration: hasPending ? pendingMigrations[0] : null,
     recent_migrations: recentMigrations || [],
     gas_estimate_bsk: Math.ceil(gasEstimateBsk),
+    migration_fee_percent: MIGRATION_FEE_PERCENT,
   };
 
   // Determine eligibility
@@ -253,9 +256,11 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     console.log('[USER-MIGRATE-BSK] Gas estimation failed, using default');
   }
 
-  const netAmount = amountBsk - gasDeductionBsk;
+  // Calculate migration fee (5%)
+  const migrationFeeBsk = Math.ceil(amountBsk * MIGRATION_FEE_PERCENT / 100);
+  const netAmount = amountBsk - gasDeductionBsk - migrationFeeBsk;
   if (netAmount < 1) {
-    throw new Error('Amount too small after gas deduction');
+    throw new Error('Amount too small after fees and gas deduction');
   }
 
   // Create or get batch for user-initiated migrations
@@ -302,6 +307,8 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
       status: 'pending',
       idempotency_key: idempotencyKey,
       gas_deduction_bsk: gasDeductionBsk,
+      migration_fee_bsk: migrationFeeBsk,
+      migration_fee_percent: MIGRATION_FEE_PERCENT,
       admin_notes: 'User-initiated migration'
     })
     .select()
@@ -334,7 +341,8 @@ async function processMigration(supabase: any, migrationId: string) {
   const walletAddress = migration.wallet_address;
   const amountBsk = Number(migration.amount_requested);
   const gasDeductionBsk = Number(migration.gas_deduction_bsk || 5);
-  const netAmountBsk = amountBsk - gasDeductionBsk;
+  const migrationFeeBsk = Number(migration.migration_fee_bsk || 0);
+  const netAmountBsk = amountBsk - gasDeductionBsk - migrationFeeBsk;
 
   // Step 1: Validate
   await supabase
@@ -517,6 +525,7 @@ async function processMigration(supabase: any, migrationId: string) {
       tx_hash: tx.hash,
       amount_requested: amountBsk,
       gas_deducted: gasDeductionBsk,
+      migration_fee: migrationFeeBsk,
       net_amount: netAmountBsk,
       wallet_address: walletAddress,
       block_number: receipt.blockNumber
