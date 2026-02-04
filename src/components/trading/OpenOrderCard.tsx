@@ -14,6 +14,8 @@ interface OpenOrderCardProps {
     filled_amount: number;
     created_at: string;
     status: string;
+    locked_amount?: number;
+    locked_asset_symbol?: string;
   };
   index: number;
   onCancel: (orderId: string) => void;
@@ -82,6 +84,16 @@ export const OpenOrderCard: React.FC<OpenOrderCardProps> = ({ order, index, onCa
         <span className="text-xs text-muted-foreground">Price</span>
         <span className="font-mono text-foreground">{order.price?.toFixed(4) || 'Market'}</span>
       </div>
+      
+      {/* Locked Amount - shows funds reserved for this order */}
+      {order.locked_amount && order.locked_amount > 0 && (
+        <div className="flex items-center justify-between pt-1 border-t border-border">
+          <span className="text-xs text-muted-foreground">Locked</span>
+          <span className="font-mono text-amber-500 text-sm">
+            {order.locked_amount.toFixed(4)} {order.locked_asset_symbol || (isBuy ? quote : base)}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

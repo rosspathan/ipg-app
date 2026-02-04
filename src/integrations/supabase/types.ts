@@ -10632,6 +10632,51 @@ export type Database = {
         }
         Relationships: []
       }
+      trading_balance_ledger: {
+        Row: {
+          asset_symbol: string
+          balance_available_after: number
+          balance_locked_after: number
+          created_at: string
+          delta_available: number
+          delta_locked: number
+          entry_type: string
+          id: string
+          notes: string | null
+          reference_id: string | null
+          reference_type: string | null
+          user_id: string
+        }
+        Insert: {
+          asset_symbol: string
+          balance_available_after: number
+          balance_locked_after: number
+          created_at?: string
+          delta_available?: number
+          delta_locked?: number
+          entry_type: string
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id: string
+        }
+        Update: {
+          asset_symbol?: string
+          balance_available_after?: number
+          balance_locked_after?: number
+          created_at?: string
+          delta_available?: number
+          delta_locked?: number
+          entry_type?: string
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       trading_balance_transfers: {
         Row: {
           amount: number
@@ -13092,6 +13137,14 @@ export type Database = {
           username: string
         }[]
       }
+      fix_ghost_locks: {
+        Args: never
+        Returns: {
+          amount_fixed: number
+          asset_symbol: string
+          user_id: string
+        }[]
+      }
       fix_unlocked_pending_orders: {
         Args: never
         Returns: {
@@ -13441,6 +13494,17 @@ export type Database = {
           asset_symbol: string
           expected_locked: number
           unlocked_amount: number
+        }[]
+      }
+      reconcile_trading_balances: {
+        Args: { p_user_id?: string }
+        Returns: {
+          actual_locked: number
+          asset_symbol: string
+          discrepancy: number
+          expected_locked: number
+          fixed: boolean
+          user_id: string
         }[]
       }
       record_bsk_transaction: {

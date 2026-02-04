@@ -17,6 +17,7 @@ import { useAllOpenOrders } from "@/hooks/useAllOpenOrders";
 import { useRealtimeOrderBook } from "@/hooks/useRealtimeOrderBook";
 import { useRealtimeTradingBalances } from "@/hooks/useRealtimeTradingBalances";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { GhostLockWarning } from "@/components/trading/GhostLockWarning";
 
 import { useToast } from "@/hooks/use-toast";
 import { useTradingWebSocket } from "@/hooks/useTradingWebSocket";
@@ -436,6 +437,9 @@ function TradingPairPageContent() {
             </div>
           </div>
 
+          {/* Ghost Lock Warning (shows if user has stuck funds) */}
+          <GhostLockWarning />
+          
           {/* Open Orders / Funds Section */}
           <div className="mt-4">
             <div className="flex items-center border-b border-border pb-2 mb-3">
@@ -496,6 +500,8 @@ function TradingPairPageContent() {
                         filled_amount: order.filled_amount || 0,
                         created_at: order.created_at,
                         status: order.status,
+                        locked_amount: order.locked_amount,
+                        locked_asset_symbol: order.locked_asset_symbol,
                       }}
                       index={idx}
                       onCancel={handleCancelOrder}
