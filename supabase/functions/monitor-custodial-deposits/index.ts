@@ -52,16 +52,40 @@ Deno.serve(async (req) => {
   try {
     console.log('[monitor-custodial-deposits] Starting hot wallet deposit scan...');
 
-    // Get active hot wallet
-    const { data: hotWallet, error: hotWalletError } = await supabase
+    // Get active Trading hot wallet (prioritize wallets with "Trading" in label)
+    let hotWallet = null;
+    
+    // First try to get the Trading Hot Wallet specifically
+    const { data: tradingWallet } = await supabase
       .from('platform_hot_wallet')
-      .select('address, chain')
+      .select('address, chain, label')
       .eq('is_active', true)
       .eq('chain', 'BSC')
-      .single();
+      .ilike('label', '%Trading%')
+      .limit(1)
+      .maybeSingle();
 
-    if (hotWalletError || !hotWallet) {
-      console.error('[monitor-custodial-deposits] No active hot wallet found');
+    if (tradingWallet?.address) {
+      hotWallet = tradingWallet;
+      console.log(`[monitor-custodial-deposits] Using Trading Hot Wallet: ${tradingWallet.address}`);
+    } else {
+      // Fallback: get any active BSC wallet
+      const { data: anyWallet } = await supabase
+        .from('platform_hot_wallet')
+        .select('address, chain, label')
+        .eq('is_active', true)
+        .eq('chain', 'BSC')
+        .limit(1)
+        .maybeSingle();
+      
+      if (anyWallet?.address) {
+        hotWallet = anyWallet;
+        console.log(`[monitor-custodial-deposits] Using fallback wallet: ${anyWallet.label} - ${anyWallet.address}`);
+      }
+    }
+
+    if (!hotWallet) {
+      console.error('[monitor-custodial-deposits] No active BSC hot wallet found');
       return new Response(
         JSON.stringify({ success: false, error: 'No active hot wallet configured' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
