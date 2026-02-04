@@ -240,7 +240,7 @@ serve(async (req) => {
             .update({
               status: "paid",
               paid_at: now,
-              paid_amount_bsk: inst.emi_bsk,
+              paid_bsk: inst.emi_bsk,
             })
             .eq("id", inst.id);
 
