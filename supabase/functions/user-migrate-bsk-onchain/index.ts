@@ -269,7 +269,7 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
     .from('bsk_onchain_migration_batches')
     .select('id')
     .eq('batch_number', 'USER-INITIATED')
-    .eq('status', 'active')
+    .eq('status', 'pending')
     .single();
 
   if (existingBatch) {
@@ -280,7 +280,7 @@ async function initiateMigration(supabase: any, userId: string, amountBsk: numbe
       .insert({
         batch_number: 'USER-INITIATED',
         initiated_by: userId,
-        status: 'active',
+        status: 'pending',
         total_users: 0,
         total_bsk_requested: 0,
         notes: 'User-initiated migrations'
