@@ -116,6 +116,7 @@ const AdminBSKWalletAdjustment = React.lazy(() => import("./pages/admin/AdminBSK
 const AdminUserCleanup = React.lazy(() => import("./pages/admin/AdminUserCleanup"));
 const OrphanedUsersCleanup = React.lazy(() => import("./pages/admin/OrphanedUsersCleanup"));
 const AdminTestUserGenerator = React.lazy(() => import("./pages/admin/AdminTestUserGenerator"));
+const AdminLoanAuditPage = React.lazy(() => import("./pages/admin/AdminLoanAuditPage"));
 import ManualReferralAssignment from "./pages/admin/ManualReferralAssignment";
 import RetroactiveCommissionFix from "./pages/admin/RetroactiveCommissionFix";
 import TreeHealthDashboard from "./pages/admin/TreeHealthDashboard";
@@ -638,6 +639,7 @@ function AppContent() {
                 <Route path="bsk-send" element={<AdminBSKTransferSend />} />
                 <Route path="bsk-transfer-history" element={<AdminBSKTransferHistory />} />
                 <Route path="bsk-loans" element={<AdminBSKLoansNova />} />
+                <Route path="loan-audit" element={<React.Suspense fallback={<LoadingFallback />}><AdminLoanAuditPage /></React.Suspense>} />
                 <Route path="bsk-manual-purchases" element={<AdminManualPurchasesScreen />} />
                 <Route path="crypto-conversions" element={<AdminCryptoConversionsScreen />} />
                 <Route path="bsk-withdrawals" element={<AdminBSKWithdrawalsScreen />} />
