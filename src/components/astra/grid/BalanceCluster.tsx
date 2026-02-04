@@ -163,11 +163,6 @@ export function BalanceCluster({ className }: BalanceClusterProps) {
         )}
       </AstraCard>
 
-      {/* BSK Withdrawable - New Design */}
-      <BSKWithdrawableCard balance={withdrawable} />
-
-      {/* BSK Holding - New Design */}
-      <BSKHoldingCard balance={holding} />
     </div>
   )
 }
