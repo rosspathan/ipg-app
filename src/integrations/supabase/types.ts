@@ -2673,6 +2673,69 @@ export type Database = {
         }
         Relationships: []
       }
+      bsk_migration_settings: {
+        Row: {
+          created_at: string
+          daily_migration_limit_bsk: number | null
+          fallback_rpc_url: string | null
+          fixed_gas_fee_bsk: number
+          gas_fee_model: string
+          id: string
+          max_amount_bsk: number | null
+          migration_enabled: boolean
+          migration_fee_percent: number
+          min_amount_bsk: number
+          min_gas_balance_bnb: number
+          min_hot_wallet_bsk: number
+          per_user_daily_limit_bsk: number | null
+          primary_rpc_url: string
+          required_confirmations: number
+          token_decimals: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          daily_migration_limit_bsk?: number | null
+          fallback_rpc_url?: string | null
+          fixed_gas_fee_bsk?: number
+          gas_fee_model?: string
+          id?: string
+          max_amount_bsk?: number | null
+          migration_enabled?: boolean
+          migration_fee_percent?: number
+          min_amount_bsk?: number
+          min_gas_balance_bnb?: number
+          min_hot_wallet_bsk?: number
+          per_user_daily_limit_bsk?: number | null
+          primary_rpc_url?: string
+          required_confirmations?: number
+          token_decimals?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          daily_migration_limit_bsk?: number | null
+          fallback_rpc_url?: string | null
+          fixed_gas_fee_bsk?: number
+          gas_fee_model?: string
+          id?: string
+          max_amount_bsk?: number | null
+          migration_enabled?: boolean
+          migration_fee_percent?: number
+          min_amount_bsk?: number
+          min_gas_balance_bnb?: number
+          min_hot_wallet_bsk?: number
+          per_user_daily_limit_bsk?: number | null
+          primary_rpc_url?: string
+          required_confirmations?: number
+          token_decimals?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       bsk_onchain_migration_batches: {
         Row: {
           batch_number: string
@@ -2767,6 +2830,7 @@ export type Database = {
           migration_fee_bsk: number | null
           migration_fee_percent: number | null
           net_amount_migrated: number
+          refunded_at: string | null
           retry_count: number
           rolled_back_at: string | null
           signed_at: string | null
@@ -2803,6 +2867,7 @@ export type Database = {
           migration_fee_bsk?: number | null
           migration_fee_percent?: number | null
           net_amount_migrated?: number
+          refunded_at?: string | null
           retry_count?: number
           rolled_back_at?: string | null
           signed_at?: string | null
@@ -2839,6 +2904,7 @@ export type Database = {
           migration_fee_bsk?: number | null
           migration_fee_percent?: number | null
           net_amount_migrated?: number
+          refunded_at?: string | null
           retry_count?: number
           rolled_back_at?: string | null
           signed_at?: string | null
@@ -13097,6 +13163,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_migration_health_status: { Args: never; Returns: Json }
       get_missing_referrals: {
         Args: never
         Returns: {

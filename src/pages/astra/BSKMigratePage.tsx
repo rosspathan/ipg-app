@@ -62,21 +62,36 @@ export function BSKMigratePage() {
   }, [checkEligibility, fetchHistory])
 
   useEffect(() => {
-    if (eligibility && !eligibility.has_pending_migration) {
-      setStep('input')
+    if (eligibility) {
+      // Check for in-progress migration and resume stepper
+      if (eligibility.has_pending_migration && eligibility.pending_migration) {
+        const pendingStatus = eligibility.pending_migration.status;
+        if (['validating', 'debiting', 'signing', 'broadcasting', 'confirming'].includes(pendingStatus)) {
+          setStep('processing');
+        }
+      } else if (eligibility.eligible || eligibility.system_available) {
+        setStep('input');
+      }
     }
   }, [eligibility])
+
+  // Check if system is unavailable
+  const systemUnavailable = eligibility && !eligibility.system_available;
 
   const gasEstimate = eligibility?.gas_estimate_bsk || 5
   const migrationFeePercent = eligibility?.migration_fee_percent || 5
   const amountNum = parseFloat(amount) || 0
+  // Use same calculation as server for consistency
   const migrationFee = Math.ceil(amountNum * migrationFeePercent / 100)
   const netAmount = Math.max(0, amountNum - gasEstimate - migrationFee)
-  const isValidAmount = amountNum >= (eligibility?.min_amount || 100) && amountNum <= (eligibility?.withdrawable_balance || 0)
+  const minAmount = eligibility?.min_amount || 100
+  const maxAmount = eligibility?.max_amount || eligibility?.withdrawable_balance || 0
+  const isValidAmount = amountNum >= minAmount && amountNum <= maxAmount && netAmount > 0
 
   const handleMaxAmount = () => {
     if (eligibility) {
-      setAmount(eligibility.withdrawable_balance.toString())
+      // Use the max_amount which accounts for fees
+      setAmount(eligibility.max_amount?.toString() || eligibility.withdrawable_balance.toString())
     }
   }
 
@@ -165,8 +180,21 @@ export function BSKMigratePage() {
               </CardContent>
             </Card>
 
-            {/* Not Eligible Alert */}
-            {eligibility && !eligibility.eligible && (
+            {/* System Unavailable Alert */}
+            {systemUnavailable && (
+              <Alert className="border-warning/50 bg-warning/5">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <AlertTitle className="text-warning">Migration Temporarily Unavailable</AlertTitle>
+                <AlertDescription>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    The migration service is currently undergoing maintenance. Please try again later.
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Not Eligible Alert (only show if system is available) */}
+            {eligibility && !eligibility.eligible && !systemUnavailable && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Not Eligible</AlertTitle>
@@ -211,7 +239,7 @@ export function BSKMigratePage() {
             )}
 
             {/* Step: Input Amount */}
-            {step === 'input' && eligibility?.eligible && (
+            {step === 'input' && eligibility && !systemUnavailable && (
               <Card>
                 <CardHeader>
                   <CardTitle>Enter Amount</CardTitle>
@@ -291,12 +319,18 @@ export function BSKMigratePage() {
 
                   <Button
                     onClick={handleProceed}
-                    disabled={!isValidAmount}
+                    disabled={!isValidAmount || !eligibility?.eligible}
                     className="w-full h-12"
                   >
                     Continue
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
+
+                  {!eligibility?.eligible && eligibility?.reasons && eligibility.reasons.length > 0 && (
+                    <p className="text-sm text-destructive text-center mt-2">
+                      {eligibility.reasons[0]}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -696,6 +730,15 @@ function MigrationHistoryCard({ item }: { item: MigrationHistoryItem }) {
         {item.error_message && (
           <div className="mt-2 p-2 rounded bg-destructive/10 border border-destructive/20">
             <p className="text-xs text-destructive">{item.error_message}</p>
+          </div>
+        )}
+
+        {(item as any).refunded_at && (
+          <div className="flex justify-between items-center pt-1">
+            <span className="text-xs text-muted-foreground">Refunded</span>
+            <span className="text-xs text-success">
+              {format(new Date((item as any).refunded_at), 'MMM d, yyyy HH:mm')}
+            </span>
           </div>
         )}
 
