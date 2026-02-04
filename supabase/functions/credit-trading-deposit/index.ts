@@ -229,16 +229,40 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get the platform hot wallet address
-    const { data: hotWallet, error: hotWalletError } = await supabase
+    // Get the platform hot wallet address (prioritize Trading wallet)
+    let hotWallet = null;
+    
+    // First try to get the Trading Hot Wallet specifically
+    const { data: tradingWallet } = await supabase
       .from("platform_hot_wallet")
-      .select("address")
+      .select("address, label")
       .eq("chain", "BSC")
       .eq("is_active", true)
-      .single();
+      .ilike("label", "%Trading%")
+      .limit(1)
+      .maybeSingle();
+    
+    if (tradingWallet?.address) {
+      hotWallet = tradingWallet;
+      console.log(`[CreditDeposit] Using Trading Hot Wallet: ${tradingWallet.address}`);
+    } else {
+      // Fallback: get any active BSC wallet
+      const { data: anyWallet } = await supabase
+        .from("platform_hot_wallet")
+        .select("address, label")
+        .eq("chain", "BSC")
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+      
+      if (anyWallet?.address) {
+        hotWallet = anyWallet;
+        console.log(`[CreditDeposit] Using fallback wallet: ${anyWallet.label} - ${anyWallet.address}`);
+      }
+    }
 
-    if (hotWalletError || !hotWallet) {
-      console.error(`[CreditDeposit] Hot wallet not found`);
+    if (!hotWallet) {
+      console.error(`[CreditDeposit] No active BSC hot wallet found`);
       return new Response(
         JSON.stringify({ error: "Platform hot wallet not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
