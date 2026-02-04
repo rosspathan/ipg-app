@@ -218,11 +218,11 @@ export function BSKMigratePage() {
                   <span>
                     {reasonCode === 'MIGRATION_DISABLED' && 'Migration Disabled'}
                     {reasonCode === 'MAINTENANCE_MODE' && 'Maintenance Mode'}
-                    {reasonCode === 'WALLET_NOT_CONFIGURED' && 'System Issue'}
-                    {reasonCode === 'PRIVATE_KEY_MISSING' && 'System Issue'}
-                    {reasonCode === 'RPC_DOWN' && 'Network Issue'}
-                    {reasonCode === 'INSUFFICIENT_BSK' && 'Liquidity Issue'}
-                    {reasonCode === 'INSUFFICIENT_BNB' && 'Gas Issue'}
+                    {reasonCode === 'WALLET_NOT_CONFIGURED' && 'System Configuration Required'}
+                    {reasonCode === 'PRIVATE_KEY_MISSING' && 'System Configuration Required'}
+                    {reasonCode === 'RPC_DOWN' && 'Network Connectivity Issue'}
+                    {reasonCode === 'INSUFFICIENT_BSK' && 'Platform Liquidity Low'}
+                    {reasonCode === 'INSUFFICIENT_BNB' && 'Platform Gas Low'}
                     {!['MIGRATION_DISABLED', 'MAINTENANCE_MODE', 'WALLET_NOT_CONFIGURED', 'PRIVATE_KEY_MISSING', 'RPC_DOWN', 'INSUFFICIENT_BSK', 'INSUFFICIENT_BNB'].includes(reasonCode) && 'Temporarily Unavailable'}
                   </span>
                   <Button 

@@ -82,11 +82,11 @@ const REASON_MESSAGES: Record<ReasonCode, string> = {
   'OK': 'Migration is available.',
   'MIGRATION_DISABLED': 'Migration is currently disabled by the administrator.',
   'MAINTENANCE_MODE': 'Migration is under maintenance. Please try again later.',
-  'WALLET_NOT_CONFIGURED': 'Migration is temporarily unavailable. Please contact support.',
-  'PRIVATE_KEY_MISSING': 'Migration is temporarily unavailable. Please contact support.',
-  'RPC_DOWN': 'Network connection issue. Please try again in a few minutes.',
-  'INSUFFICIENT_BSK': 'Migration is temporarily unavailable due to liquidity. Please try again later.',
-  'INSUFFICIENT_BNB': 'Migration is temporarily unavailable due to gas. Please try again later.',
+  'WALLET_NOT_CONFIGURED': 'Our migration system needs configuration. Please try again later or contact support.',
+  'PRIVATE_KEY_MISSING': 'Our migration system needs configuration. Please try again later or contact support.',
+  'RPC_DOWN': 'Blockchain network connection issue. Please try again in a few minutes.',
+  'INSUFFICIENT_BSK': 'Our platform wallet needs more BSK tokens. Please try again later.',
+  'INSUFFICIENT_BNB': 'Our platform wallet needs gas for transactions. Please try again later. (You do NOT need BNB)',
   'INTERNAL_ERROR': 'An unexpected error occurred. Please try again.',
 };
 
