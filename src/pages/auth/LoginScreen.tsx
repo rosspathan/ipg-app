@@ -14,6 +14,24 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required')
 });
 
+class TimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TimeoutError';
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timeoutId: number | undefined;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new TimeoutError(message)), ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) window.clearTimeout(timeoutId);
+  });
+}
+
 // Role check with timeout to prevent hangs - increased timeout for better reliability
 async function checkAdminWithTimeout(userId: string, ms = 3000): Promise<boolean> {
   const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), ms));
@@ -103,10 +121,16 @@ const LoginScreen: React.FC = () => {
       localStorage.removeItem('biometric_cred_id');
 
       // Sign in
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password
-      });
+      const signInResult = await withTimeout(
+        supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password
+        }),
+        15000,
+        'Sign-in is taking too long (server timeout). Please try again.'
+      );
+
+      const { data, error } = signInResult;
 
       if (error) {
         let userMessage = "Invalid email or password";
@@ -122,7 +146,7 @@ const LoginScreen: React.FC = () => {
         }
         
         setInlineError(userMessage);
-        throw error;
+        throw new Error(userMessage);
       }
 
       if (!data.session) {
@@ -205,6 +229,29 @@ const LoginScreen: React.FC = () => {
       isProcessingRef.current = false;
       
       if (mountedRef.current) {
+        if (error?.name === 'TimeoutError') {
+          const msg = "Auth service is not responding right now. Please retry in a moment.";
+          setInlineError(msg);
+          toast({
+            title: 'Service Unavailable',
+            description: msg,
+            variant: 'destructive'
+          });
+          return;
+        }
+
+        const msgLower = String(error?.message ?? '').toLowerCase();
+        if (msgLower.includes('failed to fetch') || msgLower.includes('network') || msgLower.includes('fetch')) {
+          const msg = "Connection failed while contacting the sign-in server. Please check your internet and retry.";
+          setInlineError(msg);
+          toast({
+            title: 'Connection Error',
+            description: msg,
+            variant: 'destructive'
+          });
+          return;
+        }
+
         toast({
           title: "Login Failed",
           description: error.message || "Invalid email or password",
