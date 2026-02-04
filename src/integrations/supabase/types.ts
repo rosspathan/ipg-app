@@ -2764,6 +2764,8 @@ export type Database = {
           ledger_debit_tx_id: string | null
           ledger_sum_at_snapshot: number | null
           max_retries: number
+          migration_fee_bsk: number | null
+          migration_fee_percent: number | null
           net_amount_migrated: number
           retry_count: number
           rolled_back_at: string | null
@@ -2798,6 +2800,8 @@ export type Database = {
           ledger_debit_tx_id?: string | null
           ledger_sum_at_snapshot?: number | null
           max_retries?: number
+          migration_fee_bsk?: number | null
+          migration_fee_percent?: number | null
           net_amount_migrated?: number
           retry_count?: number
           rolled_back_at?: string | null
@@ -2832,6 +2836,8 @@ export type Database = {
           ledger_debit_tx_id?: string | null
           ledger_sum_at_snapshot?: number | null
           max_retries?: number
+          migration_fee_bsk?: number | null
+          migration_fee_percent?: number | null
           net_amount_migrated?: number
           retry_count?: number
           rolled_back_at?: string | null
