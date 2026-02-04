@@ -28,11 +28,27 @@ export interface MigrationResult {
   block_number: number;
 }
 
+export interface MigrationHistoryItem {
+  id: string;
+  status: string;
+  amount_requested: number;
+  net_amount_migrated: number | null;
+  gas_deduction_bsk: number | null;
+  wallet_address: string;
+  tx_hash: string | null;
+  block_number: number | null;
+  error_message: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
 export function useBSKMigration() {
   const [loading, setLoading] = useState(false);
   const [eligibility, setEligibility] = useState<MigrationEligibility | null>(null);
   const [migrating, setMigrating] = useState(false);
   const [result, setResult] = useState<MigrationResult | null>(null);
+  const [history, setHistory] = useState<MigrationHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const checkEligibility = useCallback(async () => {
     setLoading(true);
@@ -68,6 +84,8 @@ export function useBSKMigration() {
 
       setResult(data);
       toast.success(`Successfully migrated ${data.net_amount} BSK to on-chain!`);
+      // Refresh history after migration
+      fetchHistory();
       return data as MigrationResult;
     } catch (err: any) {
       console.error('[useBSKMigration] Migration error:', err);
@@ -92,14 +110,39 @@ export function useBSKMigration() {
     }
   }, []);
 
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('bsk_onchain_migrations')
+        .select('id, status, amount_requested, net_amount_migrated, gas_deduction_bsk, wallet_address, tx_hash, block_number, error_message, created_at, completed_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setHistory(data || []);
+    } catch (err: any) {
+      console.error('[useBSKMigration] Fetch history error:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     eligibility,
     migrating,
     result,
+    history,
+    historyLoading,
     checkEligibility,
     initiateMigration,
     getMigrationStatus,
+    fetchHistory,
     setResult
   };
 }

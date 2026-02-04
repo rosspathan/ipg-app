@@ -93,6 +93,206 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-gray-500/20 text-gray-400 border-gray-500/50',
 };
 
+// Component to show all migrations (user-initiated and admin batches)
+function AllMigrationsTable() {
+  const [migrations, setMigrations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'completed' | 'failed' | 'pending'>('all');
+
+  useEffect(() => {
+    fetchAllMigrations();
+  }, []);
+
+  const fetchAllMigrations = async () => {
+    setLoading(true);
+    try {
+      // Get all migrations with user info
+      const { data: migrationsData, error } = await supabase
+        .from('bsk_onchain_migrations')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+
+      // Fetch user profiles for these migrations
+      const userIds = [...new Set(migrationsData?.map(m => m.user_id) || [])];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, email, username, display_name')
+        .in('user_id', userIds);
+
+      // Merge data
+      const enriched = migrationsData?.map(m => ({
+        ...m,
+        user: profiles?.find(p => p.user_id === m.user_id)
+      })) || [];
+
+      setMigrations(enriched);
+    } catch (err) {
+      console.error('Error fetching migrations:', err);
+      toast.error('Failed to fetch migrations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredMigrations = migrations.filter(m => {
+    if (filter === 'all') return true;
+    if (filter === 'completed') return m.status === 'completed';
+    if (filter === 'failed') return m.status === 'failed' || m.status === 'rolled_back';
+    if (filter === 'pending') return !['completed', 'failed', 'rolled_back'].includes(m.status);
+    return true;
+  });
+
+  const stats = {
+    total: migrations.length,
+    completed: migrations.filter(m => m.status === 'completed').length,
+    failed: migrations.filter(m => m.status === 'failed' || m.status === 'rolled_back').length,
+    pending: migrations.filter(m => !['completed', 'failed', 'rolled_back'].includes(m.status)).length,
+    totalBsk: migrations.filter(m => m.status === 'completed').reduce((sum, m) => sum + Number(m.net_amount_migrated || 0), 0),
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card className="cursor-pointer hover:bg-muted/50" onClick={() => setFilter('all')}>
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">Total Migrations</p>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50" onClick={() => setFilter('completed')}>
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-green-500">{stats.completed}</div>
+            <p className="text-xs text-muted-foreground">Completed</p>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50" onClick={() => setFilter('failed')}>
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-red-500">{stats.failed}</div>
+            <p className="text-xs text-muted-foreground">Failed/Refunded</p>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50" onClick={() => setFilter('pending')}>
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-yellow-500">{stats.pending}</div>
+            <p className="text-xs text-muted-foreground">Pending</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-primary">{stats.totalBsk.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">BSK Migrated</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Badge variant={filter === 'all' ? 'default' : 'outline'} className="cursor-pointer" onClick={() => setFilter('all')}>All</Badge>
+          <Badge variant={filter === 'completed' ? 'default' : 'outline'} className="cursor-pointer" onClick={() => setFilter('completed')}>Completed</Badge>
+          <Badge variant={filter === 'pending' ? 'default' : 'outline'} className="cursor-pointer" onClick={() => setFilter('pending')}>Pending</Badge>
+          <Badge variant={filter === 'failed' ? 'default' : 'outline'} className="cursor-pointer" onClick={() => setFilter('failed')}>Failed</Badge>
+        </div>
+        <Button variant="outline" size="sm" onClick={fetchAllMigrations} disabled={loading}>
+          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Migrations Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Migration History</CardTitle>
+          <CardDescription>All on-chain migration transactions (user-initiated and admin batches)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin" />
+            </div>
+          ) : (
+            <ScrollArea className="h-[600px]">
+              <div className="space-y-2">
+                {filteredMigrations.map((m) => (
+                  <div 
+                    key={m.id} 
+                    className="p-4 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium truncate">
+                            {m.user?.display_name || m.user?.username || m.user?.email || 'Unknown User'}
+                          </span>
+                          <Badge className={statusColors[m.status] || statusColors.pending}>
+                            {m.status}
+                          </Badge>
+                          {m.admin_notes?.includes('User-initiated') && (
+                            <Badge variant="outline" className="text-xs">User</Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>Email: {m.user?.email || 'N/A'}</div>
+                          <div className="font-mono">Wallet: {m.wallet_address?.slice(0, 10)}...{m.wallet_address?.slice(-8)}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right space-y-1">
+                        <div className="font-bold">{Number(m.amount_requested).toLocaleString()} BSK</div>
+                        {m.net_amount_migrated && (
+                          <div className="text-sm text-green-500">
+                            Net: {Number(m.net_amount_migrated).toLocaleString()} BSK
+                          </div>
+                        )}
+                        {m.gas_deduction_bsk && (
+                          <div className="text-xs text-muted-foreground">
+                            Gas: -{Number(m.gas_deduction_bsk).toFixed(2)} BSK
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t text-xs text-muted-foreground">
+                      <span>{format(new Date(m.created_at), 'MMM d, yyyy HH:mm:ss')}</span>
+                      <div className="flex items-center gap-2">
+                        {m.tx_hash && (
+                          <a
+                            href={`https://bscscan.com/tx/${m.tx_hash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline flex items-center gap-1"
+                          >
+                            View TX <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                        {m.error_message && (
+                          <span className="text-red-400 truncate max-w-[200px]" title={m.error_message}>
+                            Error: {m.error_message}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {filteredMigrations.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No migrations found
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function BSKOnchainMigration() {
   const [batches, setBatches] = useState<MigrationBatch[]>([]);
   const [selectedBatch, setSelectedBatch] = useState<MigrationBatch | null>(null);
@@ -474,12 +674,18 @@ export default function BSKOnchainMigration() {
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs defaultValue="all-migrations" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="all-migrations">All Migrations</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="batches">Migration Batches</TabsTrigger>
           <TabsTrigger value="eligible">Eligible Users</TabsTrigger>
         </TabsList>
+
+        {/* All Migrations Tab - Shows all user and admin migrations */}
+        <TabsContent value="all-migrations" className="space-y-4">
+          <AllMigrationsTable />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
