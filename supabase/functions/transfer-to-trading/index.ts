@@ -102,16 +102,40 @@ Deno.serve(async (req) => {
       // User needs to send tokens to hot wallet
       // Return deposit instructions with hot wallet address
       
-      // Get active hot wallet
-      const { data: hotWallet, error: hotWalletError } = await adminClient
+      // Get active Trading hot wallet (prioritize wallets with "Trading" in label)
+      let hotWallet = null;
+      
+      // First try to get the Trading Hot Wallet specifically
+      const { data: tradingWallet } = await adminClient
         .from("platform_hot_wallet")
-        .select("address")
+        .select("address, label")
         .eq("is_active", true)
         .eq("chain", "BSC")
-        .single();
+        .ilike("label", "%Trading%")
+        .limit(1)
+        .maybeSingle();
 
-      if (hotWalletError || !hotWallet) {
-        console.error("No hot wallet configured:", hotWalletError);
+      if (tradingWallet?.address) {
+        hotWallet = tradingWallet;
+        console.log(`[transfer-to-trading] Using Trading Hot Wallet: ${tradingWallet.address}`);
+      } else {
+        // Fallback: get any active BSC wallet
+        const { data: anyWallet } = await adminClient
+          .from("platform_hot_wallet")
+          .select("address, label")
+          .eq("is_active", true)
+          .eq("chain", "BSC")
+          .limit(1)
+          .maybeSingle();
+        
+        if (anyWallet?.address) {
+          hotWallet = anyWallet;
+          console.log(`[transfer-to-trading] Using fallback wallet: ${anyWallet.label} - ${anyWallet.address}`);
+        }
+      }
+
+      if (!hotWallet) {
+        console.error("[transfer-to-trading] No active BSC hot wallet found");
         await adminClient
           .from("trading_balance_transfers")
           .update({ status: "failed", error_message: "No hot wallet configured" })
