@@ -68,8 +68,10 @@ export function BSKMigratePage() {
   }, [eligibility])
 
   const gasEstimate = eligibility?.gas_estimate_bsk || 5
+  const migrationFeePercent = eligibility?.migration_fee_percent || 5
   const amountNum = parseFloat(amount) || 0
-  const netAmount = Math.max(0, amountNum - gasEstimate)
+  const migrationFee = Math.ceil(amountNum * migrationFeePercent / 100)
+  const netAmount = Math.max(0, amountNum - gasEstimate - migrationFee)
   const isValidAmount = amountNum >= (eligibility?.min_amount || 100) && amountNum <= (eligibility?.withdrawable_balance || 0)
 
   const handleMaxAmount = () => {
@@ -259,6 +261,10 @@ export function BSKMigratePage() {
                         <span>{amountNum.toLocaleString()} BSK</span>
                       </div>
                       <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Migration Fee ({migrationFeePercent}%)</span>
+                        <span className="text-destructive">-{migrationFee.toLocaleString()} BSK</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Gas Fee (estimated)</span>
                         <span className="text-destructive">-{gasEstimate} BSK</span>
                       </div>
@@ -313,6 +319,10 @@ export function BSKMigratePage() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Amount</span>
                       <span className="font-bold">{amountNum.toLocaleString()} BSK</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Migration Fee ({migrationFeePercent}%)</span>
+                      <span>-{migrationFee.toLocaleString()} BSK</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Gas Fee</span>
@@ -637,6 +647,13 @@ function MigrationHistoryCard({ item }: { item: MigrationHistoryItem }) {
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Net Received</span>
             <span className="font-semibold text-success">{Number(item.net_amount_migrated).toLocaleString()} BSK</span>
+          </div>
+        )}
+
+        {item.migration_fee_bsk != null && item.migration_fee_bsk > 0 && (
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Migration Fee ({item.migration_fee_percent || 5}%)</span>
+            <span className="text-sm text-destructive">-{Number(item.migration_fee_bsk).toFixed(2)} BSK</span>
           </div>
         )}
 

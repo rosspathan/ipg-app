@@ -15,6 +15,7 @@ export interface MigrationEligibility {
   pending_migration: any;
   recent_migrations: any[];
   gas_estimate_bsk: number;
+  migration_fee_percent: number;
 }
 
 export interface MigrationResult {
@@ -34,6 +35,8 @@ export interface MigrationHistoryItem {
   amount_requested: number;
   net_amount_migrated: number | null;
   gas_deduction_bsk: number | null;
+  migration_fee_bsk: number | null;
+  migration_fee_percent: number | null;
   wallet_address: string;
   tx_hash: string | null;
   block_number: number | null;
@@ -118,7 +121,7 @@ export function useBSKMigration() {
 
       const { data, error } = await supabase
         .from('bsk_onchain_migrations')
-        .select('id, status, amount_requested, net_amount_migrated, gas_deduction_bsk, wallet_address, tx_hash, block_number, error_message, created_at, completed_at')
+        .select('id, status, amount_requested, net_amount_migrated, gas_deduction_bsk, migration_fee_bsk, migration_fee_percent, wallet_address, tx_hash, block_number, error_message, created_at, completed_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
