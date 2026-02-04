@@ -134,19 +134,35 @@ const LoginScreen: React.FC = () => {
 
       if (error) {
         let userMessage = "Invalid email or password";
+
+        const status = (error as any)?.status as number | undefined;
+        const msg = String((error as any)?.message ?? '');
+        const msgLower = msg.toLowerCase();
+
+        // Supabase service / gateway issues
+        if (
+          status === 504 ||
+          (typeof status === 'number' && status >= 500) ||
+          msgLower.includes('upstream request timeout') ||
+          msgLower.includes('context deadline exceeded') ||
+          msgLower.includes('timeout')
+        ) {
+          userMessage = 'Auth service is temporarily unavailable. Please try again in a moment.';
+        }
         
         // Check for network/fetch errors first
-        if (error.message?.toLowerCase().includes('fetch') || error.message?.toLowerCase().includes('network')) {
+        else if (msgLower.includes('fetch') || msgLower.includes('network')) {
           userMessage = "Connection failed. Please check:\n1. Your internet connection\n2. Supabase URL configuration";
           console.error('[LOGIN] Network error - check Supabase URL configuration:', error);
-        } else if (error.status === 400 || error.message?.toLowerCase().includes('invalid')) {
+        } else if (status === 400 || status === 401 || msgLower.includes('invalid')) {
           userMessage = "Invalid email or password. Please check and try again.";
         } else if (!navigator.onLine) {
           userMessage = "You're offline. Please check your connection.";
         }
         
         setInlineError(userMessage);
-        throw new Error(userMessage);
+        (error as any)._userMessage = userMessage;
+        throw error;
       }
 
       if (!data.session) {
@@ -254,7 +270,7 @@ const LoginScreen: React.FC = () => {
 
         toast({
           title: "Login Failed",
-          description: error.message || "Invalid email or password",
+          description: error?._userMessage || error.message || "Invalid email or password",
           variant: "destructive"
         });
       }
