@@ -4248,6 +4248,33 @@ export type Database = {
           },
         ]
       }
+      custodial_deposit_scan_state: {
+        Row: {
+          chain: string
+          created_at: string
+          hot_wallet_address: string
+          id: string
+          last_scanned_block: number
+          updated_at: string
+        }
+        Insert: {
+          chain?: string
+          created_at?: string
+          hot_wallet_address: string
+          id?: string
+          last_scanned_block: number
+          updated_at?: string
+        }
+        Update: {
+          chain?: string
+          created_at?: string
+          hot_wallet_address?: string
+          id?: string
+          last_scanned_block?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       custodial_deposits: {
         Row: {
           amount: number
@@ -13086,6 +13113,10 @@ export type Database = {
           p_tick_size?: number
         }
         Returns: string
+      }
+      credit_custodial_deposit: {
+        Args: { p_deposit_id: string }
+        Returns: Json
       }
       credit_deposit_balance: {
         Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
