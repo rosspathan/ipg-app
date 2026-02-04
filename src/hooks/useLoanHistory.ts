@@ -33,6 +33,7 @@ export interface LoanHistoryEvent {
     admin_notes?: string;
     forfeited_amount?: number;
     payout_amount?: number;
+    direction?: "debit" | "credit";
     [key: string]: any;
   };
   variant: "default" | "success" | "warning" | "destructive" | "info";
@@ -71,6 +72,10 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
 
       const loanIds = (loans || []).map((l) => l.id);
       const userIds = [...new Set((loans || []).map((l) => l.user_id))];
+      const loanUserIdByLoanId = new Map<string, string>();
+      for (const loan of loans || []) {
+        loanUserIdByLoanId.set(loan.id, loan.user_id);
+      }
 
       // 2. Fetch installments for all loans
       let installmentsData: any[] = [];
@@ -83,6 +88,21 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
         if (error) throw error;
         installmentsData = data || [];
       }
+
+      // Detect batch-paid installments (typically early settlement) so we don't show a misleading
+      // single "EMI #3 Paid" entry after a settlement.
+      const paidBatchCountByLoanAndPaidAt = new Map<string, number>();
+      for (const inst of installmentsData) {
+        if (inst?.status === "paid" && inst?.paid_at) {
+          const key = `${inst.loan_id}__${inst.paid_at}`;
+          paidBatchCountByLoanAndPaidAt.set(key, (paidBatchCountByLoanAndPaidAt.get(key) || 0) + 1);
+        }
+      }
+      const isBatchPaid = (inst: any) => {
+        if (!inst?.loan_id || !inst?.paid_at) return false;
+        const key = `${inst.loan_id}__${inst.paid_at}`;
+        return (paidBatchCountByLoanAndPaidAt.get(key) || 0) >= 3;
+      };
 
       // 3. Fetch ledger entries for loan-related transactions
       let ledgerData: any[] = [];
@@ -156,9 +176,8 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
             created_at: loan.closed_at,
             event_type: "loan_completed",
             title: "Plan Completed Successfully",
-            description: `All payments completed. ${Number(loan.principal_bsk).toFixed(2)} BSK payout received`,
-            amount_bsk: Number(loan.principal_bsk),
-            metadata: { payout_amount: Number(loan.principal_bsk) },
+            description: "All payments completed. Your payout has been credited to your wallet.",
+            metadata: { payout_amount: Number(loan.principal_bsk), direction: "credit" },
             variant: "success",
           });
         }
@@ -167,27 +186,21 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
       // Build events from installments
       for (const inst of installmentsData) {
         if (inst.status === "paid" && inst.paid_at) {
-          // Check if this was part of a settlement by looking at paid_amount_bsk === emi_bsk
-          // and many installments paid at the same time
-          const isLikelySettlement = inst.paid_amount_bsk != null && 
-            installmentsData.filter(i => 
-              i.paid_at === inst.paid_at && i.status === "paid"
-            ).length > 2;
+          // If many installments are marked paid at the exact same timestamp, it's almost always
+          // an early settlement batch update. We show the actual settlement debit from the ledger,
+          // so we skip generating per-installment events here.
+          if (isBatchPaid(inst)) continue;
 
           events.push({
             id: `emi-paid-${inst.id}`,
             loan_id: inst.loan_id,
-            user_id: inst.user_id || "",
+            user_id: loanUserIdByLoanId.get(inst.loan_id) || "",
             created_at: inst.paid_at,
-            event_type: isLikelySettlement ? "settlement_paid" : "emi_paid",
-            title: isLikelySettlement
-              ? `Settlement - EMI #${inst.installment_number}`
-              : `EMI #${inst.installment_number} Paid`,
-            description: isLikelySettlement
-              ? `Paid via early settlement`
-              : `Weekly payment of ${Number(inst.emi_bsk || inst.total_due_bsk).toFixed(2)} BSK`,
+            event_type: "emi_paid",
+            title: `EMI #${inst.installment_number} Paid`,
+            description: `Weekly payment of ${Number(inst.emi_bsk || inst.total_due_bsk).toFixed(2)} BSK`,
             amount_bsk: Number(inst.emi_bsk || inst.total_due_bsk),
-            metadata: { installment_number: inst.installment_number },
+            metadata: { installment_number: inst.installment_number, direction: "debit" },
             variant: "success",
           });
         }
@@ -196,7 +209,7 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
           events.push({
             id: `emi-overdue-${inst.id}`,
             loan_id: inst.loan_id,
-            user_id: inst.user_id || "",
+            user_id: loanUserIdByLoanId.get(inst.loan_id) || "",
             created_at: inst.due_date,
             event_type: "emi_overdue",
             title: `EMI #${inst.installment_number} Overdue`,
@@ -211,7 +224,7 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
           events.push({
             id: `emi-cancelled-${inst.id}`,
             loan_id: inst.loan_id,
-            user_id: inst.user_id || "",
+            user_id: loanUserIdByLoanId.get(inst.loan_id) || "",
             created_at: inst.updated_at || inst.due_date,
             event_type: "loan_forfeited",
             title: `EMI #${inst.installment_number} Forfeited`,
@@ -225,18 +238,22 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
       // Build events from ledger
       for (const entry of ledgerData) {
         const subtype = entry.tx_subtype || "";
+        const loanIdFromLedger = entry.meta_json?.loan_id || entry.metadata?.loan_id || "";
 
         if (subtype === "loan_forfeited" || subtype === "loan_forfeiture") {
           events.push({
             id: entry.id,
-            loan_id: entry.metadata?.loan_id || "",
+            loan_id: loanIdFromLedger,
             user_id: entry.user_id,
             created_at: entry.created_at,
             event_type: "loan_forfeited",
             title: "Paid EMIs Forfeited",
             description: `${Math.abs(Number(entry.amount_bsk)).toFixed(2)} BSK was forfeited due to plan cancellation`,
             amount_bsk: Math.abs(Number(entry.amount_bsk)),
-            metadata: { forfeited_amount: Math.abs(Number(entry.amount_bsk)) },
+            metadata: {
+              forfeited_amount: Math.abs(Number(entry.amount_bsk)),
+              direction: "debit",
+            },
             variant: "destructive",
           });
         }
@@ -244,14 +261,14 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
         if (subtype === "loan_settlement_disbursal" || subtype === "loan_completion_disbursal") {
           events.push({
             id: entry.id,
-            loan_id: entry.metadata?.loan_id || "",
+            loan_id: loanIdFromLedger,
             user_id: entry.user_id,
             created_at: entry.created_at,
             event_type: "settlement_disbursal",
             title: "Final Payout Received",
             description: `${Number(entry.amount_bsk).toFixed(2)} BSK credited to your wallet`,
             amount_bsk: Number(entry.amount_bsk),
-            metadata: { payout_amount: Number(entry.amount_bsk) },
+            metadata: { payout_amount: Number(entry.amount_bsk), direction: "credit" },
             variant: "success",
           });
         }
@@ -259,13 +276,14 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
         if (subtype === "loan_settlement") {
           events.push({
             id: entry.id,
-            loan_id: entry.metadata?.loan_id || "",
+            loan_id: loanIdFromLedger,
             user_id: entry.user_id,
             created_at: entry.created_at,
             event_type: "settlement_paid",
             title: "Settlement Payment",
             description: `${Math.abs(Number(entry.amount_bsk)).toFixed(2)} BSK paid to settle remaining EMIs`,
             amount_bsk: Math.abs(Number(entry.amount_bsk)),
+            metadata: { direction: "debit" },
             variant: "info",
           });
         }
@@ -273,13 +291,14 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
         if (subtype === "loan_processing_fee") {
           events.push({
             id: entry.id,
-            loan_id: entry.metadata?.loan_id || "",
+            loan_id: loanIdFromLedger,
             user_id: entry.user_id,
             created_at: entry.created_at,
             event_type: "processing_fee",
             title: "Processing Fee Deducted",
             description: `${Math.abs(Number(entry.amount_bsk)).toFixed(2)} BSK processing fee`,
             amount_bsk: Math.abs(Number(entry.amount_bsk)),
+            metadata: { direction: "debit" },
             variant: "warning",
           });
         }
@@ -287,13 +306,14 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
         if (subtype === "late_fee") {
           events.push({
             id: entry.id,
-            loan_id: entry.metadata?.loan_id || "",
+            loan_id: loanIdFromLedger,
             user_id: entry.user_id,
             created_at: entry.created_at,
             event_type: "late_fee_applied",
             title: "Late Fee Applied",
             description: `${Math.abs(Number(entry.amount_bsk)).toFixed(2)} BSK late payment fee`,
             amount_bsk: Math.abs(Number(entry.amount_bsk)),
+            metadata: { direction: "debit" },
             variant: "warning",
           });
         }
@@ -304,9 +324,8 @@ export function useLoanHistory(options: UseLoanHistoryOptions = {}) {
       const uniqueEvents = events
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .filter((e) => {
-          const key = `${e.event_type}-${e.loan_id}-${e.created_at}`;
-          if (seen.has(key)) return false;
-          seen.add(key);
+          if (seen.has(e.id)) return false;
+          seen.add(e.id);
           return true;
         })
         .slice(0, limit);

@@ -182,13 +182,23 @@ export function LoanActivityTimeline({
                           event.variant === "info" && "bg-primary/10 text-primary border-primary/30"
                         )}
                       >
-                        {event.variant === "destructive" || event.event_type.includes("fee")
-                          ? "-"
-                          : event.event_type.includes("disbursal") || event.event_type === "loan_completed"
-                          ? "+"
-                          : ""
-                        }
-                        {event.amount_bsk.toFixed(2)} BSK
+                        {(() => {
+                          const dir = (event.metadata as any)?.direction as
+                            | "debit"
+                            | "credit"
+                            | undefined;
+                          if (dir === "debit") return "-";
+                          if (dir === "credit") return "+";
+
+                          // Fallback for older events
+                          if (event.event_type.includes("fee")) return "-";
+                          if (event.event_type === "emi_paid") return "-";
+                          if (event.event_type === "settlement_paid") return "-";
+                          if (event.event_type.includes("disbursal") || event.event_type === "loan_completed")
+                            return "+";
+                          return "";
+                        })()}
+                        {Math.abs(event.amount_bsk).toFixed(2)} BSK
                       </Badge>
                     )}
                     <span className="text-[10px] text-muted-foreground whitespace-nowrap">
