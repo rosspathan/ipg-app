@@ -16,7 +16,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface BscScanTokenTransfer {
@@ -38,6 +38,49 @@ interface MatchedUser {
 }
 
 const REQUIRED_CONFIRMATIONS = 15;
+
+async function getCurrentBlockNumber(params: {
+  bscRpcUrl: string | null;
+  bscscanApiKey: string;
+}): Promise<number> {
+  const { bscRpcUrl, bscscanApiKey } = params;
+
+  // 1) Prefer RPC
+  if (bscRpcUrl) {
+    try {
+      const rpc = bscRpcUrl.trim();
+      const rpcResp = await fetch(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_blockNumber', params: [], id: 1 }),
+      });
+      const rpcJson = await rpcResp.json();
+      const hex = rpcJson?.result;
+      if (typeof hex === 'string' && hex.startsWith('0x')) {
+        const n = parseInt(hex, 16);
+        if (Number.isFinite(n)) return n;
+      }
+      console.warn('[monitor-custodial-deposits] RPC eth_blockNumber returned invalid result:', rpcJson);
+    } catch (e: any) {
+      console.warn('[monitor-custodial-deposits] RPC eth_blockNumber failed, falling back to BscScan:', e?.message || e);
+    }
+  }
+
+  // 2) Fallback: BscScan proxy
+  const blockResponse = await fetch(
+    `https://api.bscscan.com/api?module=proxy&action=eth_blockNumber&apikey=${bscscanApiKey}`
+  );
+  const blockData = await blockResponse.json();
+  const result = blockData?.result;
+
+  if (typeof result === 'string' && result.startsWith('0x')) {
+    const n = parseInt(result, 16);
+    if (Number.isFinite(n)) return n;
+  }
+
+  // BscScan may return NOTOK with a non-hex string in result
+  throw new Error(`Unable to determine current block. BscScan response: ${JSON.stringify(blockData)}`);
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -118,9 +161,10 @@ Deno.serve(async (req) => {
     }
 
     // Get current block number for confirmation calculation
-    const blockResponse = await fetch(`https://api.bscscan.com/api?module=proxy&action=eth_blockNumber&apikey=${bscscanApiKey}`);
-    const blockData = await blockResponse.json();
-    const currentBlock = parseInt(blockData.result, 16);
+    const currentBlock = await getCurrentBlockNumber({
+      bscRpcUrl: Deno.env.get('BSC_RPC_URL'),
+      bscscanApiKey,
+    });
     console.log(`[monitor-custodial-deposits] Current block: ${currentBlock}`);
 
     // Lookback 2 hours for new transactions
