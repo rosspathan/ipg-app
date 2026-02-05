@@ -4,9 +4,8 @@ import { ArrowLeft, ChevronDown, Search, Loader2, Wifi, WifiOff } from "lucide-r
 import { Card } from "@/components/ui/card";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookCompact } from "@/components/trading/OrderBookCompact";
-import { OpenOrderCard } from "@/components/trading/OpenOrderCard";
-import { FundsTab } from "@/components/trading/FundsTab";
-import { TradeHistoryTab } from "@/components/trading/TradeHistoryTab";
+ import { TradingHistoryTabs } from "@/components/trading/TradingHistoryTabs";
+ import { OrderDetailsDrawer } from "@/components/trading/OrderDetailsDrawer";
 import { MarketStatsHeader } from "@/components/trading/MarketStatsHeader";
 import { AdminMarketMakerControls } from "@/components/trading/AdminMarketMakerControls";
 import { useTradingPairs } from "@/hooks/useTradingPairs";
@@ -66,9 +65,8 @@ function TradingPairPageContent() {
   const { user } = useAuthUser();
   const { isAdmin } = useAdminCheck();
 
-  // Tab state for Open Orders / Funds / History
-  type BottomTab = 'orders' | 'funds' | 'history';
-  const [activeTab, setActiveTab] = useState<BottomTab>('orders');
+   // Order details drawer state
+   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // Pair picker state
   const [pairSearch, setPairSearch] = useState("");
@@ -440,104 +438,22 @@ function TradingPairPageContent() {
           {/* Ghost Lock Warning (shows if user has stuck funds) */}
           <GhostLockWarning />
           
-          {/* Open Orders / Funds Section */}
+           {/* Trading History Tabs - Industry Standard Layout */}
           <div className="mt-4">
-            <div className="flex items-center border-b border-border pb-2 mb-3">
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setActiveTab('orders')}
-                  className={cn(
-                    "text-sm pb-2 border-b-2",
-                    activeTab === 'orders' 
-                      ? "text-foreground font-medium border-amber-500" 
-                      : "text-muted-foreground border-transparent"
-                  )}
-                >
-                  Open Orders ({openOrders.length})
-                </button>
-                <button 
-                  onClick={() => setActiveTab('history')}
-                  className={cn(
-                    "text-sm pb-2 border-b-2",
-                    activeTab === 'history' 
-                      ? "text-foreground font-medium border-amber-500" 
-                      : "text-muted-foreground border-transparent"
-                  )}
-                >
-                  Trade History
-                </button>
-                <button 
-                  onClick={() => setActiveTab('funds')}
-                  className={cn(
-                    "text-sm pb-2 border-b-2",
-                    activeTab === 'funds' 
-                      ? "text-foreground font-medium border-amber-500" 
-                      : "text-muted-foreground border-transparent"
-                  )}
-                >
-                  Funds
-                </button>
-              </div>
-            </div>
-            
-            {activeTab === 'orders' ? (
-              openOrders.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  No open orders
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {openOrders.map((order, idx) => (
-                    <OpenOrderCard
-                      key={order.id}
-                      order={{
-                        id: order.id,
-                        symbol: order.symbol,
-                        side: order.side as 'buy' | 'sell',
-                        order_type: order.order_type,
-                        price: order.price || 0,
-                        amount: order.amount,
-                        filled_amount: order.filled_amount || 0,
-                        created_at: order.created_at,
-                        status: order.status,
-                        locked_amount: order.locked_amount,
-                        locked_asset_symbol: order.locked_asset_symbol,
-                      }}
-                      index={idx}
-                      onCancel={handleCancelOrder}
-                    />
-                  ))}
-                </div>
-              )
-            ) : activeTab === 'history' ? (
-              <TradeHistoryTab symbol={symbol} />
-            ) : (
-              <FundsTab 
-                balances={bep20Balances?.map(b => {
-                  // Use max of on-chain and app balance for accurate USD value
-                  const displayBalance = Math.max(b.onchainBalance || 0, (b.appAvailable || 0) + (b.appLocked || 0));
-                  const usdValue = displayBalance * (b.priceUsd || 0);
-                  return {
-                    symbol: b.symbol,
-                    name: b.name,
-                    balance: b.appBalance || b.onchainBalance,
-                    available: b.appAvailable || 0,
-                    locked: b.appLocked || 0,
-                    onchainBalance: b.onchainBalance,
-                    appBalance: b.appBalance,
-                    appAvailable: b.appAvailable,
-                    appLocked: b.appLocked,
-                    usd_value: usdValue,
-                    logo_url: b.logoUrl,
-                    network: (b as any).network
-                  };
-                }) || []} 
-                loading={balancesLoading} 
-              />
-            )}
+             <TradingHistoryTabs 
+               symbol={urlSymbol}
+               onOrderDetails={setSelectedOrderId}
+               onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
+             />
           </div>
         </div>
       </div>
+       
+       {/* Order Details Drawer */}
+       <OrderDetailsDrawer 
+         orderId={selectedOrderId}
+         onClose={() => setSelectedOrderId(null)}
+       />
     </ComplianceGate>
   );
 }
