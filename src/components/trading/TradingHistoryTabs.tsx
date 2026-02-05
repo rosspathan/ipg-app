@@ -1,0 +1,127 @@
+ import React, { useState } from 'react';
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+ import { OpenOrdersTab } from './history/OpenOrdersTab';
+ import { OrderHistoryTab } from './history/OrderHistoryTab';
+ import { TradeHistoryFillsTab } from './history/TradeHistoryFillsTab';
+ import { FundsLedgerTab } from './history/FundsLedgerTab';
+ import { useTradeHistory } from '@/hooks/useTradeHistory';
+ import { useAllOpenOrders } from '@/hooks/useAllOpenOrders';
+ import { Badge } from '@/components/ui/badge';
+ import { Loader2 } from 'lucide-react';
+ 
+ interface TradingHistoryTabsProps {
+   symbol?: string;
+   onOrderDetails?: (orderId: string) => void;
+   onTradeDetails?: (tradeId: string) => void;
+ }
+ 
+ export function TradingHistoryTabs({ 
+   symbol, 
+   onOrderDetails, 
+   onTradeDetails 
+ }: TradingHistoryTabsProps) {
+   const [activeTab, setActiveTab] = useState('open');
+   
+   const { 
+     fills, 
+     orders, 
+     fundsMovements,
+     isLoadingFills,
+     isLoadingOrders,
+     isLoadingFunds,
+     stats,
+     refresh
+   } = useTradeHistory({ symbol });
+ 
+   const { 
+     orders: allOpenOrders, 
+     isLoading: isLoadingAllOpen,
+     cancelOrder,
+     isCancelling
+   } = useAllOpenOrders();
+ 
+   // Filter open orders for current symbol if specified
+   const filteredOpenOrders = symbol 
+     ? allOpenOrders.filter(o => o.symbol === symbol.replace('-', '/'))
+     : allOpenOrders;
+ 
+   const openCount = allOpenOrders.length;
+ 
+   return (
+     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+       <TabsList className="w-full grid grid-cols-4 h-10">
+         <TabsTrigger value="open" className="text-xs relative">
+           Open
+           {openCount > 0 && (
+             <Badge 
+               variant="destructive" 
+               className="ml-1 h-4 min-w-4 px-1 text-[10px] absolute -top-1 -right-1"
+             >
+               {openCount}
+             </Badge>
+           )}
+         </TabsTrigger>
+         <TabsTrigger value="orders" className="text-xs">Orders</TabsTrigger>
+         <TabsTrigger value="trades" className="text-xs">Trades</TabsTrigger>
+         <TabsTrigger value="funds" className="text-xs">Funds</TabsTrigger>
+       </TabsList>
+ 
+       <TabsContent value="open" className="mt-2">
+         {isLoadingAllOpen ? (
+           <div className="flex items-center justify-center py-8">
+             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+           </div>
+         ) : (
+           <OpenOrdersTab 
+             orders={filteredOpenOrders as any}
+             allOrders={allOpenOrders as any}
+             currentSymbol={symbol?.replace('-', '/')}
+             onCancel={cancelOrder}
+             isCancelling={isCancelling}
+             onDetails={onOrderDetails}
+           />
+         )}
+       </TabsContent>
+ 
+       <TabsContent value="orders" className="mt-2">
+         {isLoadingOrders ? (
+           <div className="flex items-center justify-center py-8">
+             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+           </div>
+         ) : (
+           <OrderHistoryTab 
+             orders={orders as any}
+             currentSymbol={symbol?.replace('-', '/')}
+             onDetails={onOrderDetails}
+           />
+         )}
+       </TabsContent>
+ 
+       <TabsContent value="trades" className="mt-2">
+         {isLoadingFills ? (
+           <div className="flex items-center justify-center py-8">
+             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+           </div>
+         ) : (
+           <TradeHistoryFillsTab 
+             fills={fills as any}
+             currentSymbol={symbol?.replace('-', '/')}
+             onDetails={onTradeDetails}
+           />
+         )}
+       </TabsContent>
+ 
+       <TabsContent value="funds" className="mt-2">
+         {isLoadingFunds ? (
+           <div className="flex items-center justify-center py-8">
+             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+           </div>
+         ) : (
+           <FundsLedgerTab 
+             movements={fundsMovements}
+           />
+         )}
+       </TabsContent>
+     </Tabs>
+   );
+ }

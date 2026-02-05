@@ -12866,6 +12866,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_trade_fills: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          executed_at: string | null
+          fee: number | null
+          fee_asset: string | null
+          order_id: string | null
+          pair: string | null
+          price: number | null
+          role: string | null
+          side: string | null
+          total: number | null
+          trade_id: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_adjust_user_balance: {
