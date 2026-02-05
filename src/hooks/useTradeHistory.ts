@@ -1,6 +1,7 @@
  import { useState, useEffect, useCallback } from 'react';
  import { useQuery, useQueryClient } from '@tanstack/react-query';
  import { supabase } from '@/integrations/supabase/client';
+ import { toast } from 'sonner';
  import BigNumber from 'bignumber.js';
  
  // Configure BigNumber for financial precision
@@ -296,4 +297,74 @@
      refresh,
      userId,
    };
+ }
+ 
+ /**
+  * Hook for cancelling orders with proper balance unlock
+  */
+ export function useOrderCancel() {
+   const queryClient = useQueryClient();
+   const [isCancelling, setIsCancelling] = useState(false);
+ 
+   const cancelOrder = async (orderId: string) => {
+     setIsCancelling(true);
+     try {
+       const { data: { session } } = await supabase.auth.getSession();
+       if (!session?.access_token) {
+         throw new Error('Session expired. Please log in again.');
+       }
+ 
+       const { data: result, error } = await supabase.functions.invoke('cancel-order', {
+         body: { order_id: orderId },
+         headers: {
+           Authorization: `Bearer ${session.access_token}`
+         }
+       });
+ 
+       if (error) {
+         let errorMessage = error.message || 'Failed to cancel order';
+         if (error.context?.body) {
+           try {
+             const bodyText = await error.context.body.text?.() || error.context.body;
+             const parsed = typeof bodyText === 'string' ? JSON.parse(bodyText) : bodyText;
+             if (parsed?.error) {
+               errorMessage = parsed.error;
+             }
+           } catch {
+             // Keep original error
+           }
+         }
+         throw new Error(errorMessage);
+       }
+ 
+       if (!result?.success) {
+         throw new Error(result?.error || 'Failed to cancel order');
+       }
+ 
+       toast.success('Order cancelled', {
+         description: `${result.unlocked_amount} ${result.unlocked_asset} unlocked`
+       });
+ 
+       // Invalidate all relevant queries
+       queryClient.invalidateQueries({ queryKey: ['user-open-orders'] });
+       queryClient.invalidateQueries({ queryKey: ['user-order-history'] });
+       queryClient.invalidateQueries({ queryKey: ['user-trade-fills'] });
+       queryClient.invalidateQueries({ queryKey: ['user-funds-movements'] });
+       queryClient.invalidateQueries({ queryKey: ['all-open-orders'] });
+       queryClient.invalidateQueries({ queryKey: ['user-orders'] });
+       queryClient.invalidateQueries({ queryKey: ['user-balance'] });
+       queryClient.invalidateQueries({ queryKey: ['trading-balances'] });
+ 
+       return result;
+     } catch (error: any) {
+       toast.error('Cancel failed', {
+         description: error.message,
+       });
+       throw error;
+     } finally {
+       setIsCancelling(false);
+     }
+   };
+ 
+   return { cancelOrder, isCancelling };
  }

@@ -1,11 +1,10 @@
- import React, { useState } from 'react';
+ import React, { useState, useMemo } from 'react';
  import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
  import { OpenOrdersTab } from './history/OpenOrdersTab';
  import { OrderHistoryTab } from './history/OrderHistoryTab';
  import { TradeHistoryFillsTab } from './history/TradeHistoryFillsTab';
  import { FundsLedgerTab } from './history/FundsLedgerTab';
- import { useTradeHistory } from '@/hooks/useTradeHistory';
- import { useAllOpenOrders } from '@/hooks/useAllOpenOrders';
+ import { useTradeHistory, useOrderCancel } from '@/hooks/useTradeHistory';
  import { Badge } from '@/components/ui/badge';
  import { Loader2 } from 'lucide-react';
  
@@ -22,30 +21,29 @@
  }: TradingHistoryTabsProps) {
    const [activeTab, setActiveTab] = useState('open');
    
+   // Convert symbol format: "IPG-USDI" -> "IPG/USDI"
+   const normalizedSymbol = useMemo(() => {
+     if (!symbol) return undefined;
+     return symbol.replace('-', '/');
+   }, [symbol]);
+ 
+   // Use pair-scoped trade history hook
    const { 
      fills, 
      orders, 
+     openOrders,
      fundsMovements,
      isLoadingFills,
      isLoadingOrders,
+     isLoadingOpenOrders,
      isLoadingFunds,
      stats,
      refresh
-   } = useTradeHistory({ symbol });
+   } = useTradeHistory({ symbol: normalizedSymbol });
  
-   const { 
-     orders: allOpenOrders, 
-     isLoading: isLoadingAllOpen,
-     cancelOrder,
-     isCancelling
-   } = useAllOpenOrders();
+   const { cancelOrder, isCancelling } = useOrderCancel();
  
-   // Filter open orders for current symbol if specified
-   const filteredOpenOrders = symbol 
-     ? allOpenOrders.filter(o => o.symbol === symbol.replace('-', '/'))
-     : allOpenOrders;
- 
-   const openCount = allOpenOrders.length;
+   const openCount = openOrders.length;
  
    return (
      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -67,15 +65,14 @@
        </TabsList>
  
        <TabsContent value="open" className="mt-2">
-         {isLoadingAllOpen ? (
+         {isLoadingOpenOrders ? (
            <div className="flex items-center justify-center py-8">
              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
            </div>
          ) : (
            <OpenOrdersTab 
-             orders={filteredOpenOrders as any}
-             allOrders={allOpenOrders as any}
-             currentSymbol={symbol?.replace('-', '/')}
+             orders={openOrders}
+             currentSymbol={normalizedSymbol}
              onCancel={cancelOrder}
              isCancelling={isCancelling}
              onDetails={onOrderDetails}
@@ -90,8 +87,8 @@
            </div>
          ) : (
            <OrderHistoryTab 
-             orders={orders as any}
-             currentSymbol={symbol?.replace('-', '/')}
+             orders={orders}
+             currentSymbol={normalizedSymbol}
              onDetails={onOrderDetails}
            />
          )}
@@ -104,8 +101,8 @@
            </div>
          ) : (
            <TradeHistoryFillsTab 
-             fills={fills as any}
-             currentSymbol={symbol?.replace('-', '/')}
+             fills={fills}
+             currentSymbol={normalizedSymbol}
              onDetails={onTradeDetails}
            />
          )}
