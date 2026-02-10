@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import { useWeb3 } from '@/contexts/Web3Context';
@@ -57,27 +57,21 @@ export const useKYCNew = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  // CRITICAL: Only use Supabase auth for KYC operations (RLS requirement)
   const getUserId = (): string | null => {
     return user?.id ?? null;
   };
 
-  const fetchKYC = async () => {
-    // Wait for auth to complete before checking user
-    if (authLoading) {
-      return;
-    }
+  const fetchKYC = useCallback(async () => {
+    if (authLoading) return;
     
     const userId = getUserId();
     if (!userId) {
-      console.log('[KYC] No user ID available yet');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('[KYC] Fetching KYC data for user:', userId.slice(0, 8) + '...');
       
       // Fetch config
       const { data: configData } = await supabase
@@ -90,11 +84,15 @@ export const useKYCNew = () => {
         setConfig(configData as unknown as KYCConfig);
       }
 
-      // Fetch all KYC profiles
-      const { data: profilesData } = await supabase
+      // Fetch all KYC profiles for this user
+      const { data: profilesData, error: profilesError } = await supabase
         .from('kyc_profiles_new')
         .select('*')
         .eq('user_id', userId);
+
+      if (profilesError) {
+        console.error('[KYC] Error fetching profiles:', profilesError);
+      }
 
       if (profilesData) {
         const profilesMap: Record<KYCLevel, KYCProfile | null> = {
@@ -119,8 +117,6 @@ export const useKYCNew = () => {
       }
     } catch (error: any) {
       console.error('[KYC] Error fetching KYC:', error);
-      
-      // Don't show toast for auth-related errors (user not logged in yet)
       if (error?.code !== 'PGRST116' && error?.message?.indexOf('JWT') === -1) {
         toast({
           title: "Error",
@@ -131,7 +127,7 @@ export const useKYCNew = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, authLoading]);
 
   const uploadDocument = async (
     file: File,
@@ -140,58 +136,71 @@ export const useKYCNew = () => {
   ): Promise<string> => {
     const userId = getUserId();
     if (!userId) {
-      console.error('[KYC] Upload attempted without authentication');
       toast({
         title: "Authentication Required",
         description: "Please log in to upload documents",
         variant: "destructive",
       });
-      throw new Error('User not authenticated. Please log in to continue.');
+      throw new Error('User not authenticated');
     }
-    
-    console.log('[KYC] Uploading document:', docType, 'for level:', level);
 
     try {
       setUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/${level}/${docType}_${Date.now()}.${fileExt}`;
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const timestamp = Date.now();
+      const fileName = `${userId}/${level}/${docType}_${timestamp}.${fileExt}`;
       
-      const { error: uploadError } = await supabase.storage
+      console.log('[KYC] Uploading:', fileName, 'Size:', (file.size / 1024).toFixed(1), 'KB');
+
+      // Upload to storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('kyc')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file, { 
+          upsert: true,
+          cacheControl: '3600',
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('[KYC] Storage upload error:', uploadError);
+        throw uploadError;
+      }
 
-      const { data } = supabase.storage
+      // Get public URL
+      const { data: urlData } = supabase.storage
         .from('kyc')
         .getPublicUrl(fileName);
 
-      // Save document record
-      const { error: docError } = await supabase
-        .from('kyc_documents_new')
-        .insert({
-          user_id: userId,
-          level,
-          doc_type: docType,
-          storage_path: fileName,
-          mime_type: file.type,
-          file_size_bytes: file.size
-        });
+      const publicUrl = urlData.publicUrl;
+      console.log('[KYC] Upload success, URL:', publicUrl);
 
-      if (docError) throw docError;
+      // Save document record (best effort - don't fail the upload if this fails)
+      try {
+        await supabase
+          .from('kyc_documents_new')
+          .insert({
+            user_id: userId,
+            level,
+            doc_type: docType,
+            storage_path: fileName,
+            mime_type: file.type,
+            file_size_bytes: file.size
+          });
+      } catch (docError) {
+        console.warn('[KYC] Document record insert failed (non-critical):', docError);
+      }
 
-      return data.publicUrl;
+      return publicUrl;
     } catch (error: any) {
-      console.error('[KYC] Error uploading document:', error);
-      const errorMsg = error?.message || 'Failed to upload document';
-      toast({
-        title: "Upload Failed",
-        description: errorMsg.includes('authenticated') 
-          ? "Please log in to upload documents" 
-          : "Failed to upload document. Please try again.",
-        variant: "destructive",
-      });
-      throw error;
+      console.error('[KYC] Upload failed:', error);
+      const errorMsg = error?.message || 'Upload failed';
+      
+      if (errorMsg.includes('Payload too large') || errorMsg.includes('413')) {
+        throw new Error('File is too large. Please compress it and try again.');
+      } else if (errorMsg.includes('not allowed') || errorMsg.includes('policy')) {
+        throw new Error('Upload permission denied. Please log in again.');
+      }
+      
+      throw new Error('Upload failed. Please check your connection and try again.');
     } finally {
       setUploading(false);
     }
@@ -204,19 +213,15 @@ export const useKYCNew = () => {
   ): Promise<KYCProfile> => {
     const userId = getUserId();
     if (!userId) {
-      console.error('[KYC] Update attempted without authentication');
       toast({
         title: "Authentication Required",
         description: "Please sign in to update your KYC information",
         variant: "destructive",
       });
-      throw new Error('User not authenticated. Please sign in to continue.');
+      throw new Error('User not authenticated');
     }
-    
-    console.log('[KYC] Updating level:', level, 'userId:', userId.slice(0, 8), 'status:', status);
 
     try {
-      // Use atomic upsert to avoid RLS issues with separate insert/update
       const { data: upserted, error } = await supabase
         .from('kyc_profiles_new')
         .upsert(
@@ -245,11 +250,8 @@ export const useKYCNew = () => {
       return upserted as KYCProfile;
     } catch (error: any) {
       console.error('[KYC] Error updating KYC level:', error);
-      const errorDetail = error?.code ? ` (${error.code})` : '';
-      const errorMsg = error?.message || 'Failed to update KYC';
       
-      // Check for phone uniqueness violation
-      if (errorMsg.includes('PHONE_ALREADY_USED')) {
+      if (error?.message?.includes('PHONE_ALREADY_USED')) {
         toast({
           title: "Phone Number Already Used",
           description: "This mobile number is already registered for KYC. Please contact support.",
@@ -257,10 +259,8 @@ export const useKYCNew = () => {
         });
       } else {
         toast({
-          title: "Update Failed",
-          description: errorMsg.includes('authenticated') 
-            ? "Please sign in to update your KYC" 
-            : `Failed to save your information. Please try again.${errorDetail}`,
+          title: "Save Failed",
+          description: "Failed to save your information. Please try again.",
           variant: "destructive",
         });
       }
@@ -271,19 +271,15 @@ export const useKYCNew = () => {
   const submitKYCLevel = async (level: KYCLevel, profileId: string) => {
     const userId = getUserId();
     if (!userId) {
-      console.error('[KYC] Submit attempted without authentication');
       toast({
         title: "Authentication Required",
-        description: "Please sign in to submit your KYC for review",
+        description: "Please sign in to submit your KYC",
         variant: "destructive",
       });
-      throw new Error('User not authenticated. Please sign in to continue.');
+      throw new Error('User not authenticated');
     }
-    
-    console.log('[KYC] Submitting level:', level, 'userId:', userId.slice(0, 8), 'profileId:', profileId);
 
     try {
-      // Update with both id and user_id to satisfy RLS ownership
       const { data, error } = await supabase
         .from('kyc_profiles_new')
         .update({
@@ -296,7 +292,7 @@ export const useKYCNew = () => {
         .single();
 
       if (error) {
-        console.error('[KYC] Submit update error:', error.code, error.message);
+        console.error('[KYC] Submit error:', error.code, error.message);
         throw error;
       }
 
@@ -305,47 +301,62 @@ export const useKYCNew = () => {
         [level]: data as KYCProfile
       }));
 
+      // Refresh to get latest state
       await fetchKYC();
     } catch (error: any) {
       console.error('[KYC] Error submitting KYC:', error);
-      const errorDetail = error?.code ? ` (${error.code})` : '';
-      const errorMsg = error?.message || 'Failed to submit KYC';
       toast({
         title: "Submission Failed",
-        description: errorMsg.includes('authenticated') 
-          ? "Please sign in to submit your KYC" 
-          : `Failed to submit your KYC for review. Please try again.${errorDetail}`,
+        description: "Failed to submit your KYC. Please try again.",
         variant: "destructive",
       });
       throw error;
     }
   };
 
-  // Monitor for status changes and show in-app notifications
+  // Subscribe to realtime updates for the user's KYC status
   useEffect(() => {
-    const prevL1Status = profiles.L1?.status;
-    
-    if (profiles.L1 && prevL1Status && prevL1Status !== profiles.L1.status) {
-      if (profiles.L1.status === 'approved') {
-        toast({
-          title: "🎉 KYC Approved!",
-          description: "Your identity has been verified successfully.",
-        });
-      } else if (profiles.L1.status === 'rejected') {
-        toast({
-          title: "KYC Review Required",
-          description: profiles.L1.rejection_reason || "Please check the details and resubmit.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [profiles.L1?.status]);
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`kyc-user-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'kyc_profiles_new',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          if (updated.status === 'approved') {
+            toast({
+              title: "🎉 KYC Approved!",
+              description: "Your identity has been verified successfully.",
+            });
+          } else if (updated.status === 'rejected') {
+            toast({
+              title: "KYC Needs Revision",
+              description: updated.rejection_reason || "Please check the details and resubmit.",
+              variant: "destructive",
+            });
+          }
+          fetchKYC();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!authLoading) {
       fetchKYC();
     }
-  }, [user, wallet, authLoading]);
+  }, [fetchKYC]);
 
   return {
     profiles,

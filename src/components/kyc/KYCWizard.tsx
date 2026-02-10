@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -25,13 +25,13 @@ export const KYCWizard = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<any>({});
   const { user } = useAuthUser();
-  const { profiles, uploadDocument, updateKYCLevel, submitKYCLevel, uploading, loading } = useKYCNew();
+  const { profiles, uploadDocument, updateKYCLevel, submitKYCLevel, uploading, loading, refetch } = useKYCNew();
   const [submitting, setSubmitting] = useState(false);
+  const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
 
   const kycProfile = profiles.L1;
   const kycStatus = kycProfile?.status;
 
-  // Determine if user can edit/submit
   const isApproved = kycStatus === 'approved';
   const isRejected = kycStatus === 'rejected';
   const isPending = kycStatus === 'submitted' || kycStatus === 'in_review';
@@ -39,24 +39,38 @@ export const KYCWizard = () => {
 
   // Load existing L1 KYC data
   useEffect(() => {
-    if (kycProfile?.data_json) {
+    if (kycProfile?.data_json && Object.keys(kycProfile.data_json).length > 0) {
       setFormData(kycProfile.data_json);
+      
+      // Auto-advance to step based on existing data
+      const data = kycProfile.data_json;
+      if (data.selfie_url && data.id_front_url && data.id_back_url) {
+        // All docs uploaded, go to review if not rejected
+        if (kycStatus !== 'rejected') setCurrentStep(4);
+      } else if (data.address_line1 && data.city) {
+        setCurrentStep(3);
+      } else if (data.full_name && data.date_of_birth) {
+        setCurrentStep(2);
+      }
     }
-  }, [kycProfile]);
+  }, [kycProfile?.id]);
 
-  // Auto-save on data change (only for draft/rejected status)
+  // Auto-save draft (debounced)
   useEffect(() => {
     const isEditable = !kycStatus || kycStatus === 'draft' || kycStatus === 'none' || kycStatus === 'rejected';
     
-    if (Object.keys(formData).length > 0 && currentStep > 1 && isEditable) {
-      const timer = setTimeout(() => {
+    if (Object.keys(formData).length > 0 && isEditable && user) {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = setTimeout(() => {
         updateKYCLevel('L1', formData, 'draft').catch(err => {
-          console.error('Auto-save failed:', err);
+          console.warn('[KYC] Auto-save failed:', err);
         });
-      }, 2000);
-      return () => clearTimeout(timer);
+      }, 3000);
+      return () => {
+        if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+      };
     }
-  }, [formData, currentStep, kycStatus]);
+  }, [formData, kycStatus, user]);
 
   const handlePersonalNext = (data: any) => {
     setFormData((prev: any) => ({ ...prev, ...data }));
@@ -69,7 +83,13 @@ export const KYCWizard = () => {
   };
 
   const handleDocumentsNext = (data: any) => {
-    setFormData((prev: any) => ({ ...prev, ...data }));
+    const newFormData = { ...formData, ...data };
+    setFormData(newFormData);
+    
+    // Save immediately before going to review
+    if (user) {
+      updateKYCLevel('L1', newFormData, 'draft').catch(console.error);
+    }
     setCurrentStep(4);
   };
 
@@ -79,9 +99,8 @@ export const KYCWizard = () => {
       return;
     }
 
-    // Double-check status before submitting
     if (isPending) {
-      toast.error("Your KYC is already under review. Please wait for the result.");
+      toast.error("Your KYC is already under review.");
       return;
     }
 
@@ -90,18 +109,28 @@ export const KYCWizard = () => {
       return;
     }
 
+    // Validate all required fields are present
+    const requiredFields = ['full_name', 'date_of_birth', 'nationality', 'phone', 
+                           'address_line1', 'city', 'country', 'postal_code',
+                           'id_type', 'id_number', 'id_front_url', 'id_back_url', 'selfie_url'];
+    
+    const missing = requiredFields.filter(f => !formData[f]);
+    if (missing.length > 0) {
+      toast.error(`Missing required fields: ${missing.join(', ')}. Please go back and fill them.`);
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // First save the final form data
+      // Save final form data
       const profile = await updateKYCLevel('L1', formData, 'draft');
       
-      // Then submit for review
+      // Submit for review
       await submitKYCLevel('L1', profile.id);
       
       toast.success("KYC submitted successfully! You'll be notified once reviewed.");
     } catch (error: any) {
       console.error('KYC submission error:', error);
-      // Check for state machine violation
       if (error?.message?.includes('already has a KYC')) {
         toast.error("You already have a pending or approved KYC submission.");
       } else {
@@ -115,39 +144,34 @@ export const KYCWizard = () => {
   const handleResubmit = () => {
     if (isRejected) {
       setCurrentStep(1);
-      // Reset to draft for resubmission
-      updateKYCLevel('L1', formData, 'draft').catch(console.error);
     }
   };
 
-  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-background py-8 px-4">
-        <div className="max-w-3xl mx-auto">
-          <Card className="p-12 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">Loading your KYC status...</p>
-          </Card>
-        </div>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Card className="p-12 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading your KYC status...</p>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
+    <div className="py-6 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Auth Guard */}
         {!user && (
           <Alert className="mb-4 border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
             <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
             <AlertDescription className="text-amber-800 dark:text-amber-300">
-              Please sign in to submit your KYC application. You can fill out the form, but submission requires authentication.
+              Please sign in to submit your KYC application.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* APPROVED STATUS - Lock the form */}
+        {/* APPROVED STATUS */}
         {isApproved && (
           <Card className="mb-6 border-emerald-500/50 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30">
             <CardContent className="p-6">
@@ -179,7 +203,7 @@ export const KYCWizard = () => {
           </Card>
         )}
 
-        {/* PENDING STATUS - Lock the form and show waiting message */}
+        {/* PENDING STATUS */}
         {isPending && (
           <Card className="mb-6 border-blue-500/50 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
             <CardContent className="p-6">
@@ -198,7 +222,7 @@ export const KYCWizard = () => {
                     </Badge>
                   </div>
                   <p className="text-blue-700 dark:text-blue-400 mb-3">
-                    Your KYC submission is being reviewed by our team. You will be notified once it is approved or if any changes are needed.
+                    Your KYC submission is being reviewed. You'll be notified once it's processed.
                   </p>
                   <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-3 text-sm text-blue-800 dark:text-blue-300">
                     <p className="font-medium mb-1">⏱️ Expected Review Time: 24-48 hours</p>
@@ -211,13 +235,21 @@ export const KYCWizard = () => {
                       Submitted on {format(new Date(kycProfile.submitted_at), 'PPpp')}
                     </p>
                   )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={refetch} 
+                    className="mt-3 text-blue-600 border-blue-300"
+                  >
+                    Check Status
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* REJECTED STATUS - Allow resubmission */}
+        {/* REJECTED STATUS */}
         {isRejected && (
           <Alert className="mb-4 border-red-500/50 bg-red-50 dark:bg-red-950/20">
             <XCircle className="h-4 w-4 text-red-600 dark:text-red-500" />
@@ -233,7 +265,7 @@ export const KYCWizard = () => {
                   </div>
                 )}
                 <p className="text-sm">
-                  Please review the feedback above and resubmit with corrected information.
+                  Please review the feedback and resubmit with corrected information.
                 </p>
                 <Button 
                   onClick={handleResubmit}
@@ -248,7 +280,7 @@ export const KYCWizard = () => {
           </Alert>
         )}
 
-        {/* KYC Form - Only show if not approved and not pending */}
+        {/* KYC Form */}
         {canEdit && (
           <Card className="p-6 md:p-8">
             <KYCProgressBar 
@@ -293,7 +325,6 @@ export const KYCWizard = () => {
           </Card>
         )}
 
-        {/* Help section */}
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
             Need help? Contact support at{" "}
