@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check, ChevronLeft, User, MapPin, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Check, ChevronLeft, User, MapPin, Shield, Image, AlertTriangle } from "lucide-react";
 
 interface KYCStepReviewProps {
   formData: any;
@@ -9,7 +10,22 @@ interface KYCStepReviewProps {
   submitting: boolean;
 }
 
+const ID_TYPE_LABELS: Record<string, string> = {
+  aadhaar: 'Aadhaar Card',
+  pan_card: 'PAN Card',
+  passport: 'Passport',
+  national_id: 'National ID Card',
+  drivers_license: "Driver's License",
+};
+
 export const KYCStepReview = ({ formData, onSubmit, onBack, submitting }: KYCStepReviewProps) => {
+  const requiredFields = ['full_name', 'date_of_birth', 'nationality', 'phone',
+    'address_line1', 'city', 'country', 'postal_code',
+    'id_type', 'id_number', 'id_front_url', 'id_back_url', 'selfie_url'];
+
+  const missingFields = requiredFields.filter(f => !formData[f]);
+  const isComplete = missingFields.length === 0;
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="text-center mb-6">
@@ -19,6 +35,13 @@ export const KYCStepReview = ({ formData, onSubmit, onBack, submitting }: KYCSte
         <h2 className="text-2xl font-bold text-foreground mb-2">Review Your Information</h2>
         <p className="text-muted-foreground">Please verify all details before submitting</p>
       </div>
+
+      {!isComplete && (
+        <div className="flex items-center gap-2 text-sm bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-destructive">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>Missing: {missingFields.join(', ')}. Please go back and complete all fields.</span>
+        </div>
+      )}
 
       <div className="space-y-4">
         {/* Personal Information */}
@@ -30,22 +53,10 @@ export const KYCStepReview = ({ formData, onSubmit, onBack, submitting }: KYCSte
             <h3 className="font-semibold text-lg">Personal Information</h3>
           </div>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Full Name:</span>
-              <span className="font-medium">{formData.full_name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Date of Birth:</span>
-              <span className="font-medium">{formData.date_of_birth}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Nationality:</span>
-              <span className="font-medium">{formData.nationality}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Phone:</span>
-              <span className="font-medium">{formData.phone}</span>
-            </div>
+            <ReviewRow label="Full Name" value={formData.full_name} />
+            <ReviewRow label="Date of Birth" value={formData.date_of_birth} />
+            <ReviewRow label="Nationality" value={formData.nationality} />
+            <ReviewRow label="Phone" value={formData.phone} />
           </div>
         </Card>
 
@@ -58,29 +69,14 @@ export const KYCStepReview = ({ formData, onSubmit, onBack, submitting }: KYCSte
             <h3 className="font-semibold text-lg">Residential Address</h3>
           </div>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Address:</span>
-              <span className="font-medium text-right max-w-[60%]">
-                {formData.address_line1}
-                {formData.address_line2 && `, ${formData.address_line2}`}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">City:</span>
-              <span className="font-medium">{formData.city}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">State/Province:</span>
-              <span className="font-medium">{formData.state || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Postal Code:</span>
-              <span className="font-medium">{formData.postal_code}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Country:</span>
-              <span className="font-medium">{formData.country}</span>
-            </div>
+            <ReviewRow 
+              label="Address" 
+              value={[formData.address_line1, formData.address_line2].filter(Boolean).join(', ')} 
+            />
+            <ReviewRow label="City" value={formData.city} />
+            <ReviewRow label="State/Province" value={formData.state || 'N/A'} />
+            <ReviewRow label="Postal Code" value={formData.postal_code} />
+            <ReviewRow label="Country" value={formData.country} />
           </div>
         </Card>
 
@@ -93,25 +89,25 @@ export const KYCStepReview = ({ formData, onSubmit, onBack, submitting }: KYCSte
             <h3 className="font-semibold text-lg">Identity Documents</h3>
           </div>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Document Type:</span>
-              <span className="font-medium capitalize">{formData.id_type?.replace('_', ' ')}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Document Number:</span>
-              <span className="font-medium">{formData.id_number}</span>
-            </div>
-            <div className="flex items-center gap-2 text-green-600">
-              <Check className="w-4 h-4" />
-              <span className="text-sm">All documents uploaded ✓</span>
-            </div>
+            <ReviewRow 
+              label="Document Type" 
+              value={ID_TYPE_LABELS[formData.id_type] || formData.id_type} 
+            />
+            <ReviewRow label="Document Number" value={formData.id_number} />
+          </div>
+          
+          {/* Document thumbnails */}
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            <DocThumb url={formData.id_front_url} label="ID Front" />
+            <DocThumb url={formData.id_back_url} label="ID Back" />
+            <DocThumb url={formData.selfie_url} label="Selfie" />
           </div>
         </Card>
       </div>
 
-      <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-        <p className="text-sm text-yellow-800 dark:text-yellow-200">
-          ⚠️ <strong>Important:</strong> By submitting, you confirm that all information provided is accurate and matches your official documents. False information may result in account suspension.
+      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+        <p className="text-sm text-amber-800 dark:text-amber-200">
+          ⚠️ <strong>Important:</strong> By submitting, you confirm that all information is accurate and matches your official documents. False information may result in account suspension.
         </p>
       </div>
 
@@ -131,11 +127,43 @@ export const KYCStepReview = ({ formData, onSubmit, onBack, submitting }: KYCSte
           onClick={onSubmit}
           size="lg" 
           className="flex-1 h-12 text-base"
-          disabled={submitting}
+          disabled={submitting || !isComplete}
         >
-          {submitting ? "Submitting..." : "Submit for Review"}
+          {submitting ? "Submitting..." : !isComplete ? "Complete all fields first" : "Submit for Review"}
         </Button>
       </div>
     </div>
   );
 };
+
+function ReviewRow({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="flex justify-between py-1">
+      <span className="text-muted-foreground">{label}:</span>
+      <span className="font-medium text-right max-w-[60%]">
+        {value || <span className="text-destructive">Missing</span>}
+      </span>
+    </div>
+  );
+}
+
+function DocThumb({ url, label }: { url?: string; label: string }) {
+  if (!url) {
+    return (
+      <div className="aspect-[4/3] rounded-lg border-2 border-dashed border-destructive/30 bg-destructive/5 flex flex-col items-center justify-center text-center p-2">
+        <Image className="h-5 w-5 text-destructive/50 mb-1" />
+        <span className="text-[10px] text-destructive font-medium">{label} Missing</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative aspect-[4/3] rounded-lg overflow-hidden border-2 border-primary/30 bg-muted">
+      <img src={url} alt={label} className="w-full h-full object-cover" />
+      <Badge className="absolute bottom-1 left-1 text-[9px] px-1.5 py-0.5 bg-primary/90">
+        <Check className="h-2.5 w-2.5 mr-0.5" />
+        {label}
+      </Badge>
+    </div>
+  );
+}

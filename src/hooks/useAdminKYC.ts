@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -32,7 +32,6 @@ export function useAdminKYC() {
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
-  // Stats for the dashboard
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -40,55 +39,25 @@ export function useAdminKYC() {
     rejected: 0
   });
 
-  useEffect(() => {
-    fetchSubmissions();
-    
-    // Real-time subscription for new submissions
-    const channel = supabase
-      .channel('kyc-admin-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'kyc_profiles_new'
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            toast({
-              title: 'New KYC Submission',
-              description: 'A new KYC submission has been received.',
-            });
-            fetchSubmissions();
-          } else if (payload.eventType === 'UPDATE') {
-            fetchSubmissions();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Use the new deduplicated view - one row per user
+      // Use the admin summary view
       const { data: kycData, error: kycError } = await supabase
         .from('kyc_admin_summary')
         .select('*')
         .order('submitted_at', { ascending: false, nullsFirst: false });
 
-      if (kycError) throw kycError;
+      if (kycError) {
+        console.error('[AdminKYC] Fetch error:', kycError);
+        throw kycError;
+      }
       
       const allSubmissions = (kycData || []) as KYCSubmissionWithUser[];
       setSubmissions(allSubmissions);
 
-      // Calculate accurate stats
-      const pending = allSubmissions.filter(s => s.status === 'submitted' || s.status === 'pending' || s.status === 'in_review').length;
+      const pending = allSubmissions.filter(s => ['pending', 'submitted', 'in_review'].includes(s.status)).length;
       const approved = allSubmissions.filter(s => s.status === 'approved').length;
       const rejected = allSubmissions.filter(s => s.status === 'rejected').length;
       
@@ -99,22 +68,52 @@ export function useAdminKYC() {
         rejected
       });
     } catch (error) {
-      console.error('Error fetching KYC submissions:', error);
+      console.error('[AdminKYC] Error:', error);
       toast({
         title: 'Error',
-        description: `Failed to load KYC submissions${(error as any)?.message ? `: ${(error as any).message}` : ''}`,
+        description: `Failed to load KYC submissions`,
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchSubmissions();
+    
+    // Real-time subscription
+    const channel = supabase
+      .channel('kyc-admin-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'kyc_profiles_new'
+        },
+        (payload) => {
+          console.log('[AdminKYC] Realtime update:', payload.eventType);
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: '🆕 New KYC Submission',
+              description: 'A new KYC submission has been received.',
+            });
+          }
+          fetchSubmissions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const approveSubmission = async (submissionId: string, adminNotes?: string) => {
     try {
       const submission = submissions.find(s => s.id === submissionId);
       const userId = submission?.user_id;
-
       const currentUser = await supabase.auth.getUser();
       
       const { error: updateError } = await supabase
@@ -129,7 +128,7 @@ export function useAdminKYC() {
 
       if (updateError) throw updateError;
 
-      // Create audit log
+      // Audit log
       await supabase.from('kyc_audit_log').insert({
         submission_id: submissionId,
         action: 'approved',
@@ -137,7 +136,7 @@ export function useAdminKYC() {
         notes: adminNotes,
       });
 
-      // Update user profile kyc_status
+      // Update user profile
       if (userId) {
         await supabase
           .from('profiles')
@@ -148,40 +147,26 @@ export function useAdminKYC() {
       // Credit BSK reward
       if (userId) {
         try {
-          console.log('🎁 Crediting KYC reward to user:', userId);
-          const { data: rewardResult, error: rewardError } = await supabase.functions.invoke(
+          const { error: rewardError } = await supabase.functions.invoke(
             'process-kyc-user-reward',
-            {
-              body: {
-                user_id: userId,
-                reward_bsk: 5
-              }
-            }
+            { body: { user_id: userId, reward_bsk: 5 } }
           );
-
           if (rewardError) {
-            console.error('⚠️ KYC reward crediting failed:', rewardError);
-            toast({
-              title: "Warning",
-              description: "KYC approved but reward crediting failed. Check logs.",
-              variant: "destructive",
-            });
-          } else {
-            console.log('✅ KYC reward credited:', rewardResult);
+            console.error('KYC reward failed:', rewardError);
           }
         } catch (rewardError) {
-          console.error('⚠️ Error crediting KYC reward:', rewardError);
+          console.error('Error crediting KYC reward:', rewardError);
         }
       }
 
       toast({
-        title: 'Success',
+        title: '✅ Approved',
         description: 'KYC submission approved successfully',
       });
 
       fetchSubmissions();
     } catch (error) {
-      console.error('Error approving submission:', error);
+      console.error('Error approving:', error);
       toast({
         title: 'Error',
         description: 'Failed to approve submission',
@@ -194,7 +179,6 @@ export function useAdminKYC() {
     try {
       const submission = submissions.find(s => s.id === submissionId);
       const userId = submission?.user_id;
-
       const currentUser = await supabase.auth.getUser();
 
       const { error: updateError } = await supabase
@@ -209,7 +193,7 @@ export function useAdminKYC() {
 
       if (updateError) throw updateError;
 
-      // Create audit log
+      // Audit log
       await supabase.from('kyc_audit_log').insert({
         submission_id: submissionId,
         action: 'rejected',
@@ -217,7 +201,7 @@ export function useAdminKYC() {
         notes: reason,
       });
 
-      // Update user profile kyc_status
+      // Update user profile
       if (userId) {
         await supabase
           .from('profiles')
@@ -226,13 +210,13 @@ export function useAdminKYC() {
       }
 
       toast({
-        title: 'Submission Rejected',
-        description: 'The KYC submission has been rejected. User can resubmit with corrected documents.',
+        title: '❌ Rejected',
+        description: 'Submission rejected. User can resubmit with corrections.',
       });
 
       fetchSubmissions();
     } catch (error) {
-      console.error('Error rejecting submission:', error);
+      console.error('Error rejecting:', error);
       toast({
         title: 'Error',
         description: 'Failed to reject submission',
@@ -241,25 +225,24 @@ export function useAdminKYC() {
     }
   };
 
-  // Filter and search logic
+  // Filter and search
   const filteredSubmissions = submissions.filter((submission) => {
-    // Status filter
     if (statusFilter === 'pending') {
-      if (!['pending', 'submitted', 'in_review'].includes(submission.status)) {
-        return false;
-      }
+      if (!['pending', 'submitted', 'in_review'].includes(submission.status)) return false;
     } else if (statusFilter !== 'all' && submission.status !== statusFilter) {
       return false;
     }
 
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const email = (submission.profile_email || submission.email_computed || '').toLowerCase();
-      const fullName = (submission.full_name_computed || submission.display_name || '').toLowerCase();
-      const phone = (submission.phone_computed || '').toLowerCase();
-      const username = (submission.username || '').toLowerCase();
-      return email.includes(query) || fullName.includes(query) || phone.includes(query) || username.includes(query);
+      const searchFields = [
+        submission.profile_email, submission.email_computed,
+        submission.full_name_computed, submission.display_name,
+        submission.phone_computed, submission.username,
+        submission.data_json?.full_name, submission.data_json?.phone,
+      ].filter(Boolean).map(s => s!.toLowerCase());
+      
+      return searchFields.some(f => f.includes(query));
     }
 
     return true;

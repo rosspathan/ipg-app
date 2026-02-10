@@ -4,11 +4,12 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useAdminKYC, KYCStatusFilter, KYCSubmissionWithUser } from '@/hooks/useAdminKYC';
 import { KYCSubmissionList } from '@/components/admin/kyc/KYCSubmissionList';
 import { KYCReviewPanel } from '@/components/admin/kyc/KYCReviewPanel';
 import { KYCStatsDashboard } from '@/components/admin/kyc/KYCStatsDashboard';
-import { Search, FileText, Shield, CheckCircle } from 'lucide-react';
+import { Search, FileText, Shield, CheckCircle, RefreshCw } from 'lucide-react';
 
 export default function KYCReviewNew() {
   const {
@@ -25,6 +26,7 @@ export default function KYCReviewNew() {
   } = useAdminKYC();
 
   const [selectedSubmission, setSelectedSubmission] = useState<KYCSubmissionWithUser | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Auto-update selected submission when data refreshes
   useEffect(() => {
@@ -33,11 +35,16 @@ export default function KYCReviewNew() {
       if (updated) {
         setSelectedSubmission(updated);
       } else {
-        // Submission was filtered out or removed, deselect
         setSelectedSubmission(null);
       }
     }
   }, [submissions, selectedSubmission?.id]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
   if (loading) {
     return (
@@ -69,7 +76,7 @@ export default function KYCReviewNew() {
 
   return (
     <div className="space-y-6">
-      {/* Header with compliance badge */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
@@ -80,15 +87,24 @@ export default function KYCReviewNew() {
             </Badge>
           </div>
           <p className="text-muted-foreground">
-            Review and approve user identity verification submissions • One entry per user
+            Review and approve user identity verification submissions
           </p>
         </div>
+        <Button 
+          variant="outline" 
+          onClick={handleRefresh} 
+          disabled={refreshing}
+          className="shrink-0"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Stats Dashboard */}
       <KYCStatsDashboard onRefresh={refetch} />
 
-      {/* Filters - Sticky on mobile */}
+      {/* Filters */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 -mt-2 pt-2 border-b">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="relative flex-1">
@@ -142,9 +158,7 @@ export default function KYCReviewNew() {
         {/* Submissions List */}
         <Card className="lg:col-span-1 p-4 max-h-[calc(100vh-380px)] overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">
-              Submissions
-            </h2>
+            <h2 className="font-semibold">Submissions</h2>
             <Badge variant="outline">
               {submissions.length} {submissions.length === 1 ? 'user' : 'users'}
             </Badge>
