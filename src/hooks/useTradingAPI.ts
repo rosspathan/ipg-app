@@ -75,12 +75,8 @@ export const useTradingAPI = () => {
         throw new Error(data.error || 'Failed to place order');
       }
 
-      toast({
-        title: "Order Placed",
-        description: `${params.side.toUpperCase()} order for ${params.quantity} ${params.symbol.split('/')[0]} placed successfully`,
-      });
-
-      return { success: true, order: data.order };
+      // Return full result including post-match status
+      return { success: true, order: data.order, matched: data.matched || 0 };
 
     } catch (error: any) {
       console.error('Place order error:', error);

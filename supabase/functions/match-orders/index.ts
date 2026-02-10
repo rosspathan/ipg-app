@@ -29,8 +29,8 @@ interface EngineSettings {
   admin_fee_wallet: string;
 }
 
-const MAX_PRICE_DEVIATION = new BigNumber('0.50'); // 50% price deviation triggers circuit breaker (high for low-liquidity pairs)
-const MIN_TRADES_FOR_CIRCUIT_BREAKER = 5; // Require at least 5 trades before enabling circuit breaker
+const MAX_PRICE_DEVIATION = new BigNumber('0.90'); // 90% price deviation triggers circuit breaker (very high for low-liquidity pairs)
+const MIN_TRADES_FOR_CIRCUIT_BREAKER = 20; // Require at least 20 trades before enabling circuit breaker
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {

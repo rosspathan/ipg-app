@@ -149,6 +149,7 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    let matchResult = null;
     try {
       const { data: settings } = await matchingAdminClient
         .from('trading_engine_settings')
@@ -160,34 +161,49 @@ serve(async (req) => {
       if (settings?.auto_matching_enabled && !settings?.circuit_breaker_active) {
         console.log('[place-order] Triggering matching engine...');
         
-        const { data: matchResult, error: matchError } = await matchingAdminClient.functions.invoke('match-orders', {
+        const { data: mResult, error: matchError } = await matchingAdminClient.functions.invoke('match-orders', {
           body: {}
         });
         
         if (matchError) {
           console.error('[place-order] Matching engine error:', matchError);
         } else {
-          console.log('[place-order] Matching result:', matchResult);
+          console.log('[place-order] Matching result:', mResult);
+          matchResult = mResult;
         }
+      } else if (settings?.circuit_breaker_active) {
+        console.warn('[place-order] Circuit breaker is active - matching skipped');
       }
     } catch (matchErr) {
       console.error('[place-order] Matching engine call failed:', matchErr);
     }
 
+    // Re-fetch order to get post-match status (may have been filled by matching engine)
+    const { data: updatedOrder } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .eq('id', result.order_id)
+      .single();
+
+    const finalOrder = updatedOrder || order;
+
     const responseData = {
       success: true,
       order: {
-        id: order.id,
-        symbol: order.symbol,
-        side: order.side,
-        type: order.order_type,
-        quantity: order.amount,
-        price: order.price,
-        status: order.status,
-        created_at: order.created_at,
+        id: finalOrder.id,
+        symbol: finalOrder.symbol,
+        side: finalOrder.side,
+        type: finalOrder.order_type,
+        quantity: finalOrder.amount,
+        price: finalOrder.price,
+        status: finalOrder.status,
+        filled_amount: finalOrder.filled_amount || 0,
+        remaining_amount: finalOrder.remaining_amount || finalOrder.amount,
+        created_at: finalOrder.created_at,
         locked_asset: result.locked_asset,
         locked_amount: result.locked_amount,
       },
+      matched: matchResult?.matched || 0,
     };
 
     // Store idempotency key
@@ -196,7 +212,7 @@ serve(async (req) => {
         key: idempotencyKey,
         user_id: user.id,
         operation_type: 'order',
-        resource_id: order.id,
+        resource_id: finalOrder.id,
         response_data: responseData,
       }).catch(err => {
         console.warn('[place-order] Failed to store idempotency key:', err);
