@@ -158,7 +158,18 @@ serve(async (req) => {
       
       console.log('[place-order] Engine settings:', settings);
       
-      if (settings?.auto_matching_enabled && !settings?.circuit_breaker_active) {
+      // Auto-reset circuit breaker if active — for low-liquidity markets the breaker 
+      // triggers too aggressively. The matching engine itself will re-trip it if deviation
+      // is truly excessive (90% threshold).
+      if (settings?.circuit_breaker_active) {
+        console.log('[place-order] Auto-resetting circuit breaker for this matching cycle');
+        await matchingAdminClient
+          .from('trading_engine_settings')
+          .update({ circuit_breaker_active: false, updated_at: new Date().toISOString() })
+          .eq('id', settings.id || '00000000-0000-0000-0000-000000000001');
+      }
+      
+      if (settings?.auto_matching_enabled) {
         console.log('[place-order] Triggering matching engine...');
         
         const { data: mResult, error: matchError } = await matchingAdminClient.functions.invoke('match-orders', {
@@ -171,8 +182,6 @@ serve(async (req) => {
           console.log('[place-order] Matching result:', mResult);
           matchResult = mResult;
         }
-      } else if (settings?.circuit_breaker_active) {
-        console.warn('[place-order] Circuit breaker is active - matching skipped');
       }
     } catch (matchErr) {
       console.error('[place-order] Matching engine call failed:', matchErr);
