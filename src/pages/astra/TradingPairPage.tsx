@@ -215,10 +215,9 @@ function TradingPairPageContent() {
         type: params.type,
         quantity: params.quantity,
         price: params.price,
-        trading_mode: 'internal', // Use internal balance for trading (required for settlement)
+        trading_mode: 'internal',
       });
 
-      // Check the actual result - don't assume success
       if (!result || !result.success) {
         toast({
           title: "Order failed",
@@ -228,10 +227,42 @@ function TradingPairPageContent() {
         return;
       }
 
-      toast({
-        title: "Order placed",
-        description: `${params.side.toUpperCase()} order for ${params.quantity} ${pair.baseAsset} placed successfully`,
-      });
+      // Show status-aware toast based on post-match order state
+      const orderStatus = result.order?.status;
+      const filledAmt = result.order?.filled_amount || 0;
+      
+      if (orderStatus === 'filled') {
+        toast({
+          title: "Order Filled ✓",
+          description: `${params.side.toUpperCase()} ${params.quantity} ${pair.baseAsset} filled instantly`,
+        });
+      } else if (orderStatus === 'partially_filled' && filledAmt > 0) {
+        toast({
+          title: "Partially Filled",
+          description: `${filledAmt} of ${params.quantity} ${pair.baseAsset} filled, rest is open`,
+        });
+      } else {
+        toast({
+          title: "Order Placed",
+          description: `${params.side.toUpperCase()} order for ${params.quantity} ${pair.baseAsset} placed`,
+        });
+      }
+
+      // Invalidate all trading queries to refresh instantly
+      queryClient.invalidateQueries({ queryKey: ['bep20-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['user-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['user-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['all-open-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['internal-order-book'] });
+      queryClient.invalidateQueries({ queryKey: ['trade-history'] });
+      queryClient.invalidateQueries({ queryKey: ['user-trades'] });
+      queryClient.invalidateQueries({ queryKey: ['trading-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['user-open-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['user-order-history'] });
+      queryClient.invalidateQueries({ queryKey: ['user-trade-fills'] });
+      queryClient.invalidateQueries({ queryKey: ['trading-pairs'] });
+      
     } catch (error: any) {
       toast({
         title: "Order failed",
