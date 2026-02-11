@@ -45,12 +45,12 @@ const PremiumRow = memo(({
     <div
       onClick={() => onPriceClick?.(entry.price)}
       className={cn(
-        "relative grid grid-cols-3 items-center px-2.5 py-[3px] cursor-pointer",
+        "relative flex items-center px-2.5 py-[3px] cursor-pointer",
         "transition-colors duration-100 group",
         isAsk ? "hover:bg-red-500/8" : "hover:bg-emerald-500/8"
       )}
     >
-      {/* Depth bar background - anchored to right for visual depth */}
+      {/* Depth bar background */}
       <div
         className={cn(
           "absolute right-0 top-0 bottom-0 transition-all duration-500 ease-out",
@@ -61,7 +61,7 @@ const PremiumRow = memo(({
 
       {/* Price */}
       <span className={cn(
-        "relative text-[10px] sm:text-xs font-mono font-medium z-10",
+        "relative w-[38%] text-[10px] sm:text-xs font-mono font-medium z-10 tabular-nums text-left truncate",
         "group-hover:brightness-125 transition-all",
         isAsk ? "text-red-400" : "text-emerald-400"
       )}>
@@ -69,12 +69,12 @@ const PremiumRow = memo(({
       </span>
 
       {/* Quantity */}
-      <span className="relative text-[10px] sm:text-xs font-mono text-muted-foreground text-right z-10">
+      <span className="relative w-[32%] text-[10px] sm:text-xs font-mono text-muted-foreground text-right z-10 tabular-nums truncate">
         {formatQty(entry.quantity)}
       </span>
 
       {/* Cumulative Total */}
-      <span className="relative text-[10px] sm:text-xs font-mono text-muted-foreground/70 text-right z-10">
+      <span className="relative w-[30%] text-[10px] sm:text-xs font-mono text-muted-foreground/70 text-right z-10 tabular-nums truncate">
         {formatQty(cumTotal)}
       </span>
     </div>
@@ -124,8 +124,17 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   const maxBidCum = bidCumTotals.length > 0 ? Math.max(...bidCumTotals) : 1;
   const maxCum = Math.max(maxAskCum, maxBidCum); // Use unified scale for visual comparison
 
-  const formatPrice = (price: number) => price >= 1 ? price.toFixed(4) : price.toFixed(8);
-  const formatQty = (qty: number) => qty >= 1 ? qty.toFixed(4) : qty.toFixed(6);
+  const formatPrice = (price: number) => {
+    if (price >= 100) return price.toFixed(2);
+    if (price >= 1) return price.toFixed(4);
+    if (price >= 0.01) return price.toFixed(6);
+    return price.toFixed(8);
+  };
+  const formatQty = (qty: number) => {
+    if (qty >= 1000) return qty.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    if (qty >= 1) return qty.toFixed(4);
+    return qty.toFixed(6);
+  };
 
   const bestAsk = displayAsks.length > 0 ? displayAsks[displayAsks.length - 1]?.price : null;
   const bestBid = displayBids.length > 0 ? displayBids[0]?.price : null;
@@ -139,10 +148,10 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   if (isLoading) {
     return (
       <div className="bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col shadow-sm">
-        <div className="grid grid-cols-3 text-[10px] sm:text-xs px-2.5 py-2 border-b border-border bg-muted/30">
-          <span className="text-muted-foreground font-medium">Price</span>
-          <span className="text-muted-foreground font-medium text-right">Qty</span>
-          <span className="text-muted-foreground font-medium text-right">Total</span>
+        <div className="flex text-[10px] sm:text-xs px-2.5 py-2 border-b border-border bg-muted/30">
+          <span className="w-[38%] text-muted-foreground font-medium">Price</span>
+          <span className="w-[32%] text-muted-foreground font-medium text-right">Qty</span>
+          <span className="w-[30%] text-muted-foreground font-medium text-right">Total</span>
         </div>
         <div className="flex-1 py-1"><OrderBookSkeleton rows={8} /></div>
         <div className="px-3 py-3 border-y border-border"><div className="h-6 w-24 bg-muted animate-pulse rounded" /></div>
@@ -154,10 +163,10 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   return (
     <div className="relative bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col shadow-sm">
       {/* Header */}
-      <div className="grid grid-cols-3 text-[10px] sm:text-xs px-2.5 py-2 border-b border-border bg-muted/30">
-        <span className="text-muted-foreground font-medium">Price ({quoteCurrency})</span>
-        <span className="text-muted-foreground font-medium text-right">Qty</span>
-        <span className="text-muted-foreground font-medium text-right">Total</span>
+      <div className="flex text-[10px] sm:text-xs px-2.5 py-2 border-b border-border bg-muted/30">
+        <span className="w-[38%] text-muted-foreground font-medium">Price ({quoteCurrency})</span>
+        <span className="w-[32%] text-muted-foreground font-medium text-right">Qty</span>
+        <span className="w-[30%] text-muted-foreground font-medium text-right">Total</span>
       </div>
 
       {/* Asks (Sell orders) */}
