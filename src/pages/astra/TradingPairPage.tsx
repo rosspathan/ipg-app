@@ -3,7 +3,9 @@ import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-
 import { ArrowLeft, ChevronDown, Search, Loader2, Wifi, WifiOff } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
-import { OrderBookCompact } from "@/components/trading/OrderBookCompact";
+import { OrderBookPremium } from "@/components/trading/OrderBookPremium";
+import { TradeCandlestickChart } from "@/components/trading/TradeCandlestickChart";
+import { PositionSummary } from "@/components/trading/PositionSummary";
  import { TradingHistoryTabs } from "@/components/trading/TradingHistoryTabs";
  import { OrderDetailsDrawer } from "@/components/trading/OrderDetailsDrawer";
 import { MarketStatsHeader } from "@/components/trading/MarketStatsHeader";
@@ -78,7 +80,6 @@ function TradingPairPageContent() {
 
   const pair = pairs?.find((p) => p.symbol === symbol);
 
-  const [showChart, setShowChart] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
 
   // Get user orders for this pair (for order placement)
@@ -401,14 +402,10 @@ function TradingPairPageContent() {
           quoteCurrency={pair.quoteAsset}
         />
 
-        {/* Chart Section (Optional) */}
-        {showChart && (
-          <Card className="mx-3 mt-3 p-4 bg-muted/20 rounded-xl">
-            <div className="h-48 flex items-center justify-center text-muted-foreground">
-              Chart coming soon...
-            </div>
-          </Card>
-        )}
+        {/* Candlestick Chart */}
+        <div className="px-3 pt-3">
+          <TradeCandlestickChart symbol={pair.symbol} quoteCurrency={pair.quoteAsset} />
+        </div>
 
         {/* Main Content - Side by side layout */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
@@ -447,7 +444,7 @@ function TradingPairPageContent() {
 
             {/* Order Book */}
             <div className="h-[400px] sm:h-[480px] lg:h-[520px] relative overflow-hidden isolate">
-              <OrderBookCompact
+              <OrderBookPremium
                 asks={orderBook?.asks?.slice(0, 8).map((a: any) => ({ 
                   price: typeof a === 'object' ? a.price : a[0], 
                   quantity: typeof a === 'object' ? a.quantity : a[1] 
@@ -459,11 +456,27 @@ function TradingPairPageContent() {
                 currentPrice={pair.price}
                 priceChange={pair.change24h}
                 quoteCurrency={pair.quoteAsset}
+                baseCurrency={pair.baseAsset}
                 onPriceClick={handlePriceClick}
                 marketPrice={marketPrice}
                 isLoading={!pair}
               />
             </div>
+          </div>
+
+          {/* Position Summary */}
+          <div className="mt-3">
+            <PositionSummary
+              baseCurrency={pair.baseAsset}
+              quoteCurrency={pair.quoteAsset}
+              baseAvailable={baseBalance.available}
+              baseTotal={baseBalance.total}
+              baseLocked={baseBalance.locked}
+              quoteAvailable={quoteBalance.available}
+              quoteTotal={quoteBalance.total}
+              quoteLocked={quoteBalance.locked}
+              currentPrice={pair.price}
+            />
           </div>
 
           {/* Ghost Lock Warning (shows if user has stuck funds) */}
