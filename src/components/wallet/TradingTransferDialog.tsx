@@ -17,13 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowRight, Loader2, Wallet, TrendingUp, AlertTriangle, CheckCircle2, ExternalLink } from "lucide-react";
-import { useTradingTransfer } from "@/hooks/useTradingBalances";
-import { useOnchainBalances } from "@/hooks/useOnchainBalances";
-import { useDirectTradingDeposit, DepositStatus } from "@/hooks/useDirectTradingDeposit";
-import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Loader2, Wallet, TrendingUp, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import AssetLogo from "@/components/AssetLogo";
 
 interface Asset {
@@ -50,120 +47,77 @@ export function TradingTransferDialog({
   const [direction, setDirection] = useState<"to_trading" | "from_trading">("to_trading");
   const [selectedAsset, setSelectedAsset] = useState<string>("");
   const [amount, setAmount] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [transferSuccess, setTransferSuccess] = useState(false);
   
-  // For withdrawals (from trading to wallet)
-  const { mutate: transfer, isPending: isWithdrawPending } = useTradingTransfer();
-  
-  // For deposits (from wallet to trading) - use direct on-chain transfer
-  const { balances: onchainBalances, isLoading: onchainLoading } = useOnchainBalances();
-  const { 
-    executeDeposit, 
-    status: depositStatus, 
-    txHash, 
-    error: depositError,
-    reset: resetDeposit,
-    isLoading: isDepositPending 
-  } = useDirectTradingDeposit();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  // Get asset ID map for deposits
-  const { data: assetIdMap = new Map() } = useQuery({
-    queryKey: ['asset-id-map-dialog'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('assets')
-        .select('id, symbol, contract_address, decimals')
-        .or('network.ilike.%bep20%,network.ilike.%bsc%')
-        .eq('is_active', true);
-      
-      const map = new Map<string, { id: string; contractAddress: string | null; decimals: number }>();
-      data?.forEach(a => map.set(a.symbol.toUpperCase(), {
-        id: a.id,
-        contractAddress: a.contract_address,
-        decimals: a.decimals || 18
-      }));
-      return map;
-    },
-    staleTime: 60000,
-    enabled: open
-  });
-
-  // Use on-chain balances for deposits, trading balances for withdrawals
-  const sourceBalances = direction === "to_trading" 
-    ? onchainBalances.filter(b => b.balance > 0.000001).map(b => ({
-        symbol: b.symbol,
-        name: b.name,
-        available: b.balance,
-        asset_id: assetIdMap.get(b.symbol.toUpperCase())?.id || '',
-        logo_url: b.logoUrl
-      }))
-    : tradingBalances;
-
+  // Use trading balances for both directions (internal transfers)
+  const sourceBalances = direction === "to_trading" ? walletBalances : tradingBalances;
   const selectedBalance = sourceBalances.find((b) => b.asset_id === selectedAsset || b.symbol === selectedAsset);
-
-  // Check BNB for gas
-  const bnbBalance = onchainBalances.find(a => a.symbol === 'BNB')?.balance || 0;
-  const hasEnoughGas = bnbBalance > 0.001;
 
   // Reset when dialog closes or direction changes
   useEffect(() => {
     if (!open) {
       setAmount("");
       setSelectedAsset("");
-      resetDeposit();
+      setTransferError(null);
+      setTransferSuccess(false);
     }
   }, [open]);
 
   useEffect(() => {
     setAmount("");
     setSelectedAsset("");
-    resetDeposit();
+    setTransferError(null);
+    setTransferSuccess(false);
   }, [direction]);
 
   const handleTransfer = async () => {
     if (!selectedBalance || !amount || Number(amount) <= 0) return;
 
-    if (direction === "to_trading") {
-      // Direct on-chain deposit
-      const assetInfo = assetIdMap.get(selectedBalance.symbol.toUpperCase());
-      const onchainAsset = onchainBalances.find(b => b.symbol === selectedBalance.symbol);
-      
-      if (!assetInfo || !onchainAsset) {
-        return;
-      }
+    setIsProcessing(true);
+    setTransferError(null);
 
-      const result = await executeDeposit({
-        symbol: selectedBalance.symbol,
-        amount: Number(amount),
-        contractAddress: onchainAsset.contractAddress,
-        decimals: onchainAsset.decimals,
-        assetId: assetInfo.id,
-      });
-
-      if (result.success) {
-        // Keep dialog open to show success, then close after a delay
-        setTimeout(() => {
-          setAmount("");
-          setSelectedAsset("");
-          resetDeposit();
-          onOpenChange(false);
-        }, 2000);
-      }
-    } else {
-      // Withdrawal via edge function
-      transfer(
-        {
+    try {
+      const { data, error } = await supabase.functions.invoke('internal-balance-transfer', {
+        body: {
           asset_id: selectedBalance.asset_id,
           amount: Number(amount),
-          direction,
-        },
-        {
-          onSuccess: () => {
-            setAmount("");
-            setSelectedAsset("");
-            onOpenChange(false);
-          },
+          direction: direction === "to_trading" ? "to_trading" : "to_wallet",
         }
-      );
+      });
+
+      if (error) throw error;
+      if (data && !data.success) throw new Error(data.error || 'Transfer failed');
+
+      setTransferSuccess(true);
+      toast({
+        title: "Transfer Complete",
+        description: data?.message || `${amount} ${selectedBalance.symbol} transferred successfully`,
+      });
+
+      // Refresh balances
+      queryClient.invalidateQueries({ queryKey: ["trading-balances"] });
+      queryClient.invalidateQueries({ queryKey: ["user-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["wallet-balances"] });
+      queryClient.invalidateQueries({ queryKey: ["transfer-assets-custodial"] });
+
+      // Close after brief success display
+      setTimeout(() => {
+        setAmount("");
+        setSelectedAsset("");
+        setTransferSuccess(false);
+        onOpenChange(false);
+      }, 1500);
+    } catch (err: any) {
+      const msg = err.message || "Transfer failed";
+      setTransferError(msg);
+      toast({ title: "Transfer Failed", description: msg, variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -173,20 +127,7 @@ export function TradingTransferDialog({
     }
   };
 
-  const getStatusMessage = (status: DepositStatus) => {
-    switch (status) {
-      case 'signing': return 'Signing transaction...';
-      case 'pending': return 'Confirming on BSC...';
-      case 'confirmed': return 'Transfer complete!';
-      case 'error': return depositError || 'Transfer failed';
-      default: return '';
-    }
-  };
-
-  const isPending = direction === "to_trading" ? isDepositPending : isWithdrawPending;
-  const isDisabled = direction === "to_trading" 
-    ? (!selectedAsset || !amount || Number(amount) <= 0 || isPending || (!hasEnoughGas && selectedBalance?.symbol !== 'BNB'))
-    : (!selectedAsset || !amount || Number(amount) <= 0 || isPending);
+  const isDisabled = !selectedAsset || !amount || Number(amount) <= 0 || isProcessing || transferSuccess;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -194,7 +135,7 @@ export function TradingTransferDialog({
         <DialogHeader>
           <DialogTitle>Transfer Funds</DialogTitle>
           <DialogDescription>
-            Move funds between your wallet and trading balance
+            Move funds between your wallet and trading balance — instant &amp; gas-free
           </DialogDescription>
         </DialogHeader>
 
@@ -242,147 +183,110 @@ export function TradingTransferDialog({
               </div>
             </div>
 
-            {/* Loading state for on-chain balances */}
-            {direction === "to_trading" && onchainLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-sm text-muted-foreground">Loading wallet balances...</span>
-              </div>
-            ) : (
-              <>
-                {/* Asset selection */}
-                <div className="space-y-2">
-                  <Label>Select Asset</Label>
-                  <Select 
-                    value={selectedAsset} 
-                    onValueChange={setSelectedAsset}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose an asset" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sourceBalances.length === 0 ? (
-                        <SelectItem value="none" disabled>
-                          {direction === "to_trading" ? "No wallet balance" : "No trading balance"}
-                        </SelectItem>
-                      ) : (
-                        sourceBalances.map((asset) => (
-                          <SelectItem 
-                            key={asset.asset_id || asset.symbol} 
-                            value={asset.asset_id || asset.symbol}
-                          >
-                            <div className="flex items-center gap-2">
-                              <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} size="sm" />
-                              <span>{asset.symbol}</span>
-                              <span className="text-muted-foreground ml-auto">
-                                {asset.available.toFixed(4)}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Amount input */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Amount</Label>
-                    {selectedBalance && (
-                      <span className="text-xs text-muted-foreground">
-                        Available: {selectedBalance.available.toFixed(4)} {selectedBalance.symbol}
-                      </span>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="pr-16"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs"
-                      onClick={handleMax}
-                      disabled={!selectedBalance}
-                    >
-                      MAX
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Gas warning for deposits */}
-                {direction === "to_trading" && !hasEnoughGas && selectedBalance?.symbol !== 'BNB' && (
-                  <Alert className="bg-amber-500/10 border-amber-500/20">
-                    <AlertTriangle className="h-4 w-4 text-amber-400" />
-                    <AlertDescription className="text-xs text-amber-400">
-                      Low BNB balance ({bnbBalance.toFixed(4)} BNB). You need BNB for gas fees.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Transfer status for deposits */}
-                {direction === "to_trading" && depositStatus !== 'idle' && (
-                  <div className={`flex items-center gap-2 p-3 rounded-lg ${
-                    depositStatus === 'error' 
-                      ? 'bg-destructive/10 text-destructive' 
-                      : depositStatus === 'confirmed'
-                      ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'bg-primary/10 text-primary'
-                  }`}>
-                    {depositStatus === 'confirmed' ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : depositStatus === 'error' ? (
-                      <AlertTriangle className="h-4 w-4" />
-                    ) : (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    )}
-                    <span className="text-sm">{getStatusMessage(depositStatus)}</span>
-                    {txHash && (
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0 ml-auto text-xs"
-                        onClick={() => window.open(`https://bscscan.com/tx/${txHash}`, '_blank')}
-                      >
-                        View <ExternalLink className="h-3 w-3 ml-1" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                {/* Info notice */}
-                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                  <p className="text-xs text-blue-400">
-                    {direction === "to_trading"
-                      ? "One-click transfer: Your tokens will be sent to the platform wallet automatically."
-                      : "Funds will be transferred back to your on-chain wallet. This may take a few minutes."}
-                  </p>
-                </div>
-
-                <Button
-                  className="w-full"
-                  onClick={handleTransfer}
-                  disabled={isDisabled}
-                >
-                  {isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      {direction === "to_trading" ? getStatusMessage(depositStatus) : "Processing..."}
-                    </>
+            {/* Asset selection */}
+            <div className="space-y-2">
+              <Label>Select Asset</Label>
+              <Select value={selectedAsset} onValueChange={setSelectedAsset}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose an asset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sourceBalances.length === 0 ? (
+                    <SelectItem value="none" disabled>
+                      {direction === "to_trading" ? "No wallet balance" : "No trading balance"}
+                    </SelectItem>
                   ) : (
-                    <>
-                      Transfer {amount && selectedBalance ? `${amount} ${selectedBalance.symbol}` : ""}
-                    </>
+                    sourceBalances.map((asset) => (
+                      <SelectItem 
+                        key={asset.asset_id || asset.symbol} 
+                        value={asset.asset_id || asset.symbol}
+                      >
+                        <div className="flex items-center gap-2">
+                          <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} size="sm" />
+                          <span>{asset.symbol}</span>
+                          <span className="text-muted-foreground ml-auto">
+                            {asset.available.toFixed(4)}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))
                   )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Amount input */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Amount</Label>
+                {selectedBalance && (
+                  <span className="text-xs text-muted-foreground">
+                    Available: {selectedBalance.available.toFixed(4)} {selectedBalance.symbol}
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setTransferError(null);
+                  }}
+                  className="pr-16"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs"
+                  onClick={handleMax}
+                  disabled={!selectedBalance}
+                >
+                  MAX
                 </Button>
-              </>
+              </div>
+            </div>
+
+            {/* Status messages */}
+            {transferError && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                <span className="text-sm">{transferError}</span>
+              </div>
             )}
+
+            {transferSuccess && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 text-emerald-400">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-sm">Transfer complete!</span>
+              </div>
+            )}
+
+            {/* Info */}
+            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p className="text-xs text-blue-400">
+                Instant internal transfer — no gas fees or blockchain confirmation needed.
+              </p>
+            </div>
+
+            <Button
+              className="w-full"
+              onClick={handleTransfer}
+              disabled={isDisabled}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  Transfer {amount && selectedBalance ? `${amount} ${selectedBalance.symbol}` : ""}
+                </>
+              )}
+            </Button>
           </TabsContent>
         </Tabs>
       </DialogContent>
