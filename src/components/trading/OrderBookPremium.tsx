@@ -45,7 +45,7 @@ const PremiumRow = memo(({
     <div
       onClick={() => onPriceClick?.(entry.price)}
       className={cn(
-        "relative flex items-center px-2.5 py-[3px] cursor-pointer",
+        "relative flex items-center px-2 py-[3px] cursor-pointer",
         "transition-colors duration-100 group",
         isAsk ? "hover:bg-red-500/8" : "hover:bg-emerald-500/8"
       )}
@@ -59,22 +59,22 @@ const PremiumRow = memo(({
         style={{ width: `${Math.min(depthPercent, 100)}%` }}
       />
 
-      {/* Price */}
+      {/* Price - left aligned */}
       <span className={cn(
-        "relative w-[38%] text-[10px] sm:text-xs font-mono font-medium z-10 tabular-nums text-left truncate",
+        "relative flex-1 min-w-0 text-[10px] sm:text-xs font-mono font-medium z-10 tabular-nums text-left",
         "group-hover:brightness-125 transition-all",
         isAsk ? "text-red-400" : "text-emerald-400"
       )}>
         {formatPrice(entry.price)}
       </span>
 
-      {/* Quantity */}
-      <span className="relative w-[32%] text-[10px] sm:text-xs font-mono text-muted-foreground text-right z-10 tabular-nums truncate">
+      {/* Quantity - right aligned */}
+      <span className="relative flex-1 min-w-0 text-[10px] sm:text-xs font-mono text-muted-foreground text-right z-10 tabular-nums">
         {formatQty(entry.quantity)}
       </span>
 
-      {/* Cumulative Total */}
-      <span className="relative w-[30%] text-[10px] sm:text-xs font-mono text-muted-foreground/70 text-right z-10 tabular-nums truncate">
+      {/* Cumulative Total - right aligned */}
+      <span className="relative flex-1 min-w-0 text-[10px] sm:text-xs font-mono text-muted-foreground/70 text-right z-10 tabular-nums">
         {formatQty(cumTotal)}
       </span>
     </div>
@@ -124,16 +124,19 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   const maxBidCum = bidCumTotals.length > 0 ? Math.max(...bidCumTotals) : 1;
   const maxCum = Math.max(maxAskCum, maxBidCum); // Use unified scale for visual comparison
 
+  // Compact formatters — keep strings short so columns never overflow
   const formatPrice = (price: number) => {
-    if (price >= 100) return price.toFixed(2);
+    if (price >= 1000) return price.toFixed(2);
     if (price >= 1) return price.toFixed(4);
-    if (price >= 0.01) return price.toFixed(6);
-    return price.toFixed(8);
+    return price.toFixed(6);
   };
+
   const formatQty = (qty: number) => {
-    if (qty >= 1000) return qty.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    if (qty >= 10_000_000) return `${(qty / 1_000_000).toFixed(1)}M`;
+    if (qty >= 10_000) return `${(qty / 1_000).toFixed(1)}K`;
+    if (qty >= 100) return qty.toFixed(2);
     if (qty >= 1) return qty.toFixed(4);
-    return qty.toFixed(6);
+    return qty.toFixed(4);
   };
 
   const bestAsk = displayAsks.length > 0 ? displayAsks[displayAsks.length - 1]?.price : null;
@@ -148,10 +151,10 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   if (isLoading) {
     return (
       <div className="bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col shadow-sm">
-        <div className="flex text-[10px] sm:text-xs px-2.5 py-2 border-b border-border bg-muted/30">
-          <span className="w-[38%] text-muted-foreground font-medium">Price</span>
-          <span className="w-[32%] text-muted-foreground font-medium text-right">Qty</span>
-          <span className="w-[30%] text-muted-foreground font-medium text-right">Total</span>
+        <div className="flex text-[10px] sm:text-xs px-2 py-2 border-b border-border bg-muted/30">
+          <span className="flex-1 text-muted-foreground font-medium">Price</span>
+          <span className="flex-1 text-muted-foreground font-medium text-right">Qty</span>
+          <span className="flex-1 text-muted-foreground font-medium text-right">Total</span>
         </div>
         <div className="flex-1 py-1"><OrderBookSkeleton rows={8} /></div>
         <div className="px-3 py-3 border-y border-border"><div className="h-6 w-24 bg-muted animate-pulse rounded" /></div>
@@ -163,10 +166,10 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   return (
     <div className="relative bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col shadow-sm">
       {/* Header */}
-      <div className="flex text-[10px] sm:text-xs px-2.5 py-2 border-b border-border bg-muted/30">
-        <span className="w-[38%] text-muted-foreground font-medium">Price ({quoteCurrency})</span>
-        <span className="w-[32%] text-muted-foreground font-medium text-right">Qty</span>
-        <span className="w-[30%] text-muted-foreground font-medium text-right">Total</span>
+      <div className="flex text-[10px] sm:text-xs px-2 py-2 border-b border-border bg-muted/30">
+        <span className="flex-1 text-muted-foreground font-medium">Price ({quoteCurrency})</span>
+        <span className="flex-1 text-muted-foreground font-medium text-right">Qty</span>
+        <span className="flex-1 text-muted-foreground font-medium text-right">Total</span>
       </div>
 
       {/* Asks (Sell orders) */}
