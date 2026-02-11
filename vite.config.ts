@@ -18,6 +18,9 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Force all deps to use the app's single React instance.
+    // Prevents: "Invalid hook call" / dispatcher=null / useState of null.
+    dedupe: ["react", "react-dom"],
   },
   define: {
     global: 'globalThis',
