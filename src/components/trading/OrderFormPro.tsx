@@ -132,26 +132,16 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   };
 
   return (
-    <div className="space-y-2.5">
-      {/* Market Price Display */}
-      <div className="bg-[#0B0F1C]/50 border border-[#1F2937]/40 rounded-xl px-3 py-2.5">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">Market Price</span>
-          <span className="text-sm sm:text-base font-bold font-mono text-foreground">
-            {currentPrice.toFixed(currentPrice >= 1 ? 2 : 6)} {quoteCurrency}
-          </span>
-        </div>
-      </div>
-      
-      {/* Buy/Sell Toggle */}
-      <div className="flex bg-[#0B0F1C]/60 rounded-xl p-1 border border-[#1F2937]/40">
+    <div className="space-y-2">
+      {/* Buy/Sell Toggle - compact segmented control */}
+      <div className="flex bg-[#0B1220] rounded-lg p-0.5 border border-[#1F2937]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 py-2.5 rounded-lg font-semibold text-xs sm:text-sm transition-all duration-200",
+            "flex-1 py-2 rounded-md font-semibold text-xs transition-all duration-200",
             isBuy
-              ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-[#16C784] text-white"
+              : "text-[#9CA3AF] hover:text-[#E5E7EB]"
           )}
         >
           Buy
@@ -159,10 +149,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 py-2.5 rounded-lg font-semibold text-xs sm:text-sm transition-all duration-200",
+            "flex-1 py-2 rounded-md font-semibold text-xs transition-all duration-200",
             !isBuy
-              ? "bg-red-500 text-white shadow-lg shadow-red-500/25"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-[#EA3943] text-white"
+              : "text-[#9CA3AF] hover:text-[#E5E7EB]"
           )}
         >
           Sell
@@ -342,18 +332,18 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0 || hasInsufficientBalance}
         className={cn(
-          "w-full h-12 text-sm sm:text-base font-semibold rounded-xl",
+          "w-full h-[42px] text-sm font-semibold rounded-[10px]",
           hasInsufficientBalance
-            ? "bg-[#1F2937] text-[#64748B]"
+            ? "bg-[#1F2937] text-[#9CA3AF]"
             : isBuy
-              ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-[0_4px_16px_rgba(52,211,153,0.25)] hover:shadow-[0_4px_20px_rgba(52,211,153,0.4)]"
-              : "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-[0_4px_16px_rgba(248,113,113,0.25)] hover:shadow-[0_4px_20px_rgba(248,113,113,0.4)]"
+              ? "bg-gradient-to-r from-[#16C784] to-[#0ea36b] text-white hover:brightness-110"
+              : "bg-gradient-to-r from-[#EA3943] to-[#c9222c] text-white hover:brightness-110"
         )}
       >
         {isPlacingOrder ? (
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Placing Order...</span>
+            <span>Placing...</span>
           </div>
         ) : hasInsufficientBalance ? (
           'Insufficient Balance'

@@ -119,30 +119,25 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-b from-[#121826] to-[#0F1629] border border-[#1F2937]/50 rounded-[14px] p-4 flex items-center justify-center h-52">
-        <Loader2 className="h-5 w-5 animate-spin text-[#64748B]" />
+      <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-4 flex items-center justify-center h-[200px]">
+        <Loader2 className="h-4 w-4 animate-spin text-[#9CA3AF]" />
       </div>
     );
   }
 
   if (!candles || candles.length === 0) {
     return (
-      <div className="bg-gradient-to-b from-[#121826] to-[#0F1629] border border-[#1F2937]/50 rounded-[14px] overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#1F2937]/40">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-[#64748B]" />
-            <span className="text-xs font-medium text-[#94A3B8]">Price Chart</span>
-          </div>
-          <div className="flex gap-1">
+      <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1F2937]">
+          <span className="text-[11px] font-medium text-[#9CA3AF]">Chart</span>
+          <div className="flex gap-0.5">
             {INTERVALS.map((i) => (
               <button
                 key={i.value}
                 onClick={() => setInterval(i.value)}
                 className={cn(
-                  "px-2 py-1 text-[10px] font-medium rounded-lg",
-                  interval === i.value
-                    ? "bg-white/10 text-white"
-                    : "text-[#64748B] hover:text-[#94A3B8]"
+                  "px-2 py-1 text-[10px] font-medium rounded-md",
+                  interval === i.value ? "bg-white/10 text-[#E5E7EB]" : "text-[#9CA3AF] hover:text-[#E5E7EB]"
                 )}
               >
                 {i.label}
@@ -150,32 +145,29 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
             ))}
           </div>
         </div>
-        <div className="h-40 flex flex-col items-center justify-center gap-2">
-          <Clock className="h-5 w-5 text-[#475569]" />
-          <span className="text-[#64748B] text-xs">Waiting for first trade...</span>
+        <div className="h-[160px] flex flex-col items-center justify-center gap-1.5">
+          <Clock className="h-4 w-4 text-[#9CA3AF]" />
+          <span className="text-[#9CA3AF] text-[11px]">Waiting for first trade...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-b from-[#121826] to-[#0F1629] border border-[#1F2937]/50 rounded-[14px] overflow-hidden">
+    <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#1F2937]/40">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-[#64748B]" />
-          <span className="text-xs font-medium text-[#94A3B8]">Chart</span>
-        </div>
-        <div className="flex gap-1">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[#1F2937]">
+        <span className="text-[11px] font-medium text-[#9CA3AF]">Chart</span>
+        <div className="flex gap-0.5">
           {INTERVALS.map((i) => (
             <button
               key={i.value}
               onClick={() => setInterval(i.value)}
               className={cn(
-                "px-2 py-1 text-[10px] font-semibold rounded-lg",
+                "px-2 py-1 text-[10px] font-semibold rounded-md",
                 interval === i.value
-                  ? "bg-white/10 text-white border border-[#1F2937]"
-                  : "text-[#64748B] hover:text-[#94A3B8] hover:bg-white/5"
+                  ? "bg-white/10 text-[#E5E7EB] border border-[#1F2937]"
+                  : "text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5"
               )}
             >
               {i.label}
@@ -185,7 +177,7 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
       </div>
 
       {/* Chart */}
-      <div className="px-1 py-2 h-48 sm:h-56">
+      <div className="px-1 py-1.5 h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={candles} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" opacity={0.4} />
