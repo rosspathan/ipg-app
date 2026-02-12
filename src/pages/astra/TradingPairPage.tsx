@@ -414,59 +414,60 @@ function TradingPairPageContent() {
           </div>
         </div>
 
-        {/* ── 3. Main Content ── */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3.5">
-          
-          {/* Order Form */}
-          <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-3">
-            {(() => {
-              const bestBidEntry = orderBook?.bids?.[0];
-              const bestAskEntry = orderBook?.asks?.[0];
-              const bestBidPrice = bestBidEntry 
-                ? (typeof bestBidEntry === 'object' && 'price' in bestBidEntry ? bestBidEntry.price : Array.isArray(bestBidEntry) ? bestBidEntry[0] : 0)
-                : 0;
-              const bestAskPrice = bestAskEntry 
-                ? (typeof bestAskEntry === 'object' && 'price' in bestAskEntry ? bestAskEntry.price : Array.isArray(bestAskEntry) ? bestAskEntry[0] : 0)
-                : 0;
-              
-              return (
-                <OrderFormPro
-                  baseCurrency={pair.baseAsset}
-                  quoteCurrency={pair.quoteAsset}
-                  availableBase={baseBalance.available}
-                  availableQuote={quoteBalance.available}
-                  lockedBase={baseBalance.locked}
-                  lockedQuote={quoteBalance.locked}
-                  availableBaseUsd={baseBalance.total * pair.price}
-                  availableQuoteUsd={quoteBalance.total}
-                  currentPrice={pair.price}
-                  onPlaceOrder={handlePlaceOrder}
-                  bestBid={bestBidPrice}
-                  bestAsk={bestAskPrice}
-                />
-              );
-            })()}
-          </div>
+        {/* ── 3. Two-Column: Order Book (left) + Order Form (right) ── */}
+        <div className="flex-1 overflow-y-auto px-2 sm:px-3 py-2 space-y-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {/* Order Book - Left */}
+            <div className="h-[350px] sm:h-[450px] md:h-[500px]">
+              <OrderBookPremium
+                asks={orderBook?.asks?.slice(0, 10).map((a: any) => ({ 
+                  price: typeof a === 'object' ? a.price : a[0], 
+                  quantity: typeof a === 'object' ? a.quantity : a[1] 
+                })) || []}
+                bids={orderBook?.bids?.slice(0, 10).map((b: any) => ({ 
+                  price: typeof b === 'object' ? b.price : b[0], 
+                  quantity: typeof b === 'object' ? b.quantity : b[1] 
+                })) || []}
+                currentPrice={pair.price}
+                priceChange={pair.change24h}
+                quoteCurrency={pair.quoteAsset}
+                baseCurrency={pair.baseAsset}
+                onPriceClick={handlePriceClick}
+                marketPrice={marketPrice}
+                isLoading={!pair}
+              />
+            </div>
 
-          {/* Order Book */}
-          <div className="h-[380px] sm:h-[420px]">
-            <OrderBookPremium
-              asks={orderBook?.asks?.slice(0, 10).map((a: any) => ({ 
-                price: typeof a === 'object' ? a.price : a[0], 
-                quantity: typeof a === 'object' ? a.quantity : a[1] 
-              })) || []}
-              bids={orderBook?.bids?.slice(0, 10).map((b: any) => ({ 
-                price: typeof b === 'object' ? b.price : b[0], 
-                quantity: typeof b === 'object' ? b.quantity : b[1] 
-              })) || []}
-              currentPrice={pair.price}
-              priceChange={pair.change24h}
-              quoteCurrency={pair.quoteAsset}
-              baseCurrency={pair.baseAsset}
-              onPriceClick={handlePriceClick}
-              marketPrice={marketPrice}
-              isLoading={!pair}
-            />
+            {/* Order Form - Right */}
+            <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-2 sm:p-3 overflow-y-auto max-h-[350px] sm:max-h-[450px] md:max-h-[500px]">
+              {(() => {
+                const bestBidEntry = orderBook?.bids?.[0];
+                const bestAskEntry = orderBook?.asks?.[0];
+                const bestBidPrice = bestBidEntry 
+                  ? (typeof bestBidEntry === 'object' && 'price' in bestBidEntry ? bestBidEntry.price : Array.isArray(bestBidEntry) ? bestBidEntry[0] : 0)
+                  : 0;
+                const bestAskPrice = bestAskEntry 
+                  ? (typeof bestAskEntry === 'object' && 'price' in bestAskEntry ? bestAskEntry.price : Array.isArray(bestAskEntry) ? bestAskEntry[0] : 0)
+                  : 0;
+                
+                return (
+                  <OrderFormPro
+                    baseCurrency={pair.baseAsset}
+                    quoteCurrency={pair.quoteAsset}
+                    availableBase={baseBalance.available}
+                    availableQuote={quoteBalance.available}
+                    lockedBase={baseBalance.locked}
+                    lockedQuote={quoteBalance.locked}
+                    availableBaseUsd={baseBalance.total * pair.price}
+                    availableQuoteUsd={quoteBalance.total}
+                    currentPrice={pair.price}
+                    onPlaceOrder={handlePlaceOrder}
+                    bestBid={bestBidPrice}
+                    bestAsk={bestAskPrice}
+                  />
+                );
+              })()}
+            </div>
           </div>
 
           {/* Position Summary - collapsed by default handled inside component */}
