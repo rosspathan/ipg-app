@@ -21,21 +21,31 @@ interface OrderBookPremiumProps {
   marketPrice?: number;
 }
 
+const formatPrice = (price: number) => {
+  if (price >= 1000) return price.toFixed(2);
+  if (price >= 1) return price.toFixed(4);
+  return price.toFixed(6);
+};
+
+const formatQty = (qty: number) => {
+  if (qty >= 10_000_000) return `${(qty / 1_000_000).toFixed(1)}M`;
+  if (qty >= 10_000) return `${(qty / 1_000).toFixed(1)}K`;
+  if (qty >= 100) return qty.toFixed(2);
+  if (qty >= 1) return qty.toFixed(4);
+  return qty.toFixed(4);
+};
+
 const PremiumRow = memo(({
   entry,
   side,
   maxTotal,
   onPriceClick,
-  formatPrice,
-  formatQty,
   cumTotal,
 }: {
   entry: OrderBookEntry;
   side: 'ask' | 'bid';
   maxTotal: number;
   onPriceClick?: (price: number) => void;
-  formatPrice: (p: number) => string;
-  formatQty: (q: number) => string;
   cumTotal: number;
 }) => {
   const isAsk = side === 'ask';
@@ -45,36 +55,34 @@ const PremiumRow = memo(({
     <div
       onClick={() => onPriceClick?.(entry.price)}
       className={cn(
-        "relative flex items-center px-2 py-[3px] cursor-pointer",
-        "transition-colors duration-100 group",
-        isAsk ? "hover:bg-red-500/8" : "hover:bg-emerald-500/8"
+        "relative grid grid-cols-3 items-center px-3 py-[5px] cursor-pointer",
+        "hover:bg-white/[0.03] group"
       )}
     >
-      {/* Depth bar background */}
+      {/* Depth bar */}
       <div
         className={cn(
-          "absolute right-0 top-0 bottom-0 transition-all duration-500 ease-out",
-          isAsk ? "bg-red-500/8" : "bg-emerald-500/8"
+          "absolute right-0 top-0 bottom-0 pointer-events-none",
+          isAsk ? "bg-red-500/[0.07]" : "bg-emerald-500/[0.07]"
         )}
         style={{ width: `${Math.min(depthPercent, 100)}%` }}
       />
 
-      {/* Price - left aligned */}
+      {/* Price */}
       <span className={cn(
-        "relative flex-1 min-w-0 text-[10px] sm:text-xs font-mono font-medium z-10 tabular-nums text-left",
-        "group-hover:brightness-125 transition-all",
+        "relative z-10 text-xs font-mono font-medium tabular-nums text-left",
         isAsk ? "text-red-400" : "text-emerald-400"
       )}>
         {formatPrice(entry.price)}
       </span>
 
-      {/* Quantity - right aligned */}
-      <span className="relative flex-1 min-w-0 text-[10px] sm:text-xs font-mono text-muted-foreground text-right z-10 tabular-nums">
+      {/* Quantity */}
+      <span className="relative z-10 text-xs font-mono text-[#94A3B8] text-right tabular-nums">
         {formatQty(entry.quantity)}
       </span>
 
-      {/* Cumulative Total - right aligned */}
-      <span className="relative flex-1 min-w-0 text-[10px] sm:text-xs font-mono text-muted-foreground/70 text-right z-10 tabular-nums">
+      {/* Cumulative Total */}
+      <span className="relative z-10 text-xs font-mono text-[#64748B] text-right tabular-nums">
         {formatQty(cumTotal)}
       </span>
     </div>
@@ -94,15 +102,12 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   isLoading = false,
   marketPrice,
 }) => {
-  // Display up to 8 levels, asks reversed so lowest ask is nearest spread
-  const displayAsks = useMemo(() => asks.slice(0, 8).reverse(), [asks]);
-  const displayBids = useMemo(() => bids.slice(0, 8), [bids]);
+  const displayAsks = useMemo(() => asks.slice(0, 10).reverse(), [asks]);
+  const displayBids = useMemo(() => bids.slice(0, 10), [bids]);
 
-  // Compute cumulative totals for depth bars
   const askCumTotals = useMemo(() => {
     const totals: number[] = [];
     let cum = 0;
-    // Accumulate from lowest ask (bottom) to highest (top)
     for (let i = displayAsks.length - 1; i >= 0; i--) {
       cum += displayAsks[i].quantity;
       totals[i] = cum;
@@ -122,22 +127,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
 
   const maxAskCum = askCumTotals.length > 0 ? Math.max(...askCumTotals) : 1;
   const maxBidCum = bidCumTotals.length > 0 ? Math.max(...bidCumTotals) : 1;
-  const maxCum = Math.max(maxAskCum, maxBidCum); // Use unified scale for visual comparison
-
-  // Compact formatters — keep strings short so columns never overflow
-  const formatPrice = (price: number) => {
-    if (price >= 1000) return price.toFixed(2);
-    if (price >= 1) return price.toFixed(4);
-    return price.toFixed(6);
-  };
-
-  const formatQty = (qty: number) => {
-    if (qty >= 10_000_000) return `${(qty / 1_000_000).toFixed(1)}M`;
-    if (qty >= 10_000) return `${(qty / 1_000).toFixed(1)}K`;
-    if (qty >= 100) return qty.toFixed(2);
-    if (qty >= 1) return qty.toFixed(4);
-    return qty.toFixed(4);
-  };
+  const maxCum = Math.max(maxAskCum, maxBidCum);
 
   const bestAsk = displayAsks.length > 0 ? displayAsks[displayAsks.length - 1]?.price : null;
   const bestBid = displayBids.length > 0 ? displayBids[0]?.price : null;
@@ -150,30 +140,30 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col shadow-sm">
-        <div className="flex text-[10px] sm:text-xs px-2 py-2 border-b border-border bg-muted/30">
-          <span className="flex-1 text-muted-foreground font-medium">Price</span>
-          <span className="flex-1 text-muted-foreground font-medium text-right">Qty</span>
-          <span className="flex-1 text-muted-foreground font-medium text-right">Total</span>
+      <div className="bg-gradient-to-b from-[#121826] to-[#0F1629] border border-[#1F2937]/50 rounded-[14px] overflow-hidden h-full flex flex-col">
+        <div className="grid grid-cols-3 text-[10px] px-3 py-2.5 border-b border-[#1F2937]/40">
+          <span className="text-[#64748B] font-medium">Price</span>
+          <span className="text-[#64748B] font-medium text-right">Amount</span>
+          <span className="text-[#64748B] font-medium text-right">Total</span>
         </div>
         <div className="flex-1 py-1"><OrderBookSkeleton rows={8} /></div>
-        <div className="px-3 py-3 border-y border-border"><div className="h-6 w-24 bg-muted animate-pulse rounded" /></div>
+        <div className="px-3 py-3 border-y border-[#1F2937]/40"><div className="h-6 w-24 bg-[#1F2937] rounded" /></div>
         <div className="flex-1 py-1"><OrderBookSkeleton rows={8} /></div>
       </div>
     );
   }
 
   return (
-    <div className="relative bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col shadow-sm">
+    <div className="bg-gradient-to-b from-[#121826] to-[#0F1629] border border-[#1F2937]/50 rounded-[14px] overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="flex text-[10px] sm:text-xs px-2 py-2 border-b border-border bg-muted/30">
-        <span className="flex-1 text-muted-foreground font-medium">Price ({quoteCurrency})</span>
-        <span className="flex-1 text-muted-foreground font-medium text-right">Qty</span>
-        <span className="flex-1 text-muted-foreground font-medium text-right">Total</span>
+      <div className="grid grid-cols-3 text-[10px] sm:text-xs px-3 py-2.5 border-b border-[#1F2937]/40">
+        <span className="text-[#64748B] font-medium">Price ({quoteCurrency})</span>
+        <span className="text-[#64748B] font-medium text-right">Amount</span>
+        <span className="text-[#64748B] font-medium text-right">Total</span>
       </div>
 
-      {/* Asks (Sell orders) */}
-      <div className="flex-1 overflow-hidden flex flex-col justify-end min-h-[120px]">
+      {/* Asks */}
+      <div className="flex-1 overflow-hidden flex flex-col justify-end min-h-[100px]">
         {displayAsks.length > 0 ? (
           <div>
             {displayAsks.map((ask, idx) => (
@@ -183,46 +173,38 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
                 side="ask"
                 maxTotal={maxCum}
                 onPriceClick={onPriceClick}
-                formatPrice={formatPrice}
-                formatQty={formatQty}
                 cumTotal={askCumTotals[idx]}
               />
             ))}
           </div>
         ) : (
           <div className="flex items-end justify-center pb-3 h-full">
-            <span className="text-[10px] text-muted-foreground/60">No sell orders</span>
+            <span className="text-[10px] text-[#475569]">No sell orders</span>
           </div>
         )}
       </div>
 
-      {/* Spread & Current Price */}
-      <div className="px-3 py-2 border-y border-border bg-gradient-to-r from-card via-muted/30 to-card">
+      {/* ── Spread & Current Price ── */}
+      <div className="px-3 py-2.5 border-y border-[#1F2937]/40 bg-[#0B0F1C]/40">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={cn(
-              "p-1 rounded",
-              isPositive ? "bg-emerald-500/10" : "bg-red-500/10"
-            )}>
-              {isPositive ? (
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
-              ) : (
-                <TrendingDown className="h-3.5 w-3.5 text-red-400" />
-              )}
-            </div>
+            {isPositive ? (
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+            ) : (
+              <TrendingDown className="h-3.5 w-3.5 text-red-400" />
+            )}
             <span className={cn(
-              "text-base sm:text-lg font-bold font-mono",
+              "text-lg sm:text-xl font-semibold font-mono tracking-tight",
               isPositive ? "text-emerald-400" : "text-red-400"
             )}>
               {displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
             </span>
           </div>
 
-          {/* Spread indicator */}
           {spreadPercent !== null && spread !== null && (
             <div className="text-right">
-              <span className="text-[10px] text-muted-foreground block">Spread</span>
-              <span className="text-[10px] sm:text-xs font-mono text-foreground font-medium">
+              <span className="text-[10px] text-[#64748B] block">Spread</span>
+              <span className="text-[10px] sm:text-xs font-mono text-[#94A3B8]">
                 {formatPrice(spread)} ({spreadPercent.toFixed(3)}%)
               </span>
             </div>
@@ -230,8 +212,8 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
         </div>
       </div>
 
-      {/* Bids (Buy orders) */}
-      <div className="flex-1 overflow-hidden min-h-[120px]">
+      {/* Bids */}
+      <div className="flex-1 overflow-hidden min-h-[100px]">
         {displayBids.length > 0 ? (
           <div>
             {displayBids.map((bid, idx) => (
@@ -241,15 +223,13 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
                 side="bid"
                 maxTotal={maxCum}
                 onPriceClick={onPriceClick}
-                formatPrice={formatPrice}
-                formatQty={formatQty}
                 cumTotal={bidCumTotals[idx]}
               />
             ))}
           </div>
         ) : (
           <div className="flex items-start justify-center pt-3 h-full">
-            <span className="text-[10px] text-muted-foreground/60">No buy orders</span>
+            <span className="text-[10px] text-[#475569]">No buy orders</span>
           </div>
         )}
       </div>

@@ -132,9 +132,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   };
 
   return (
-    <div className="space-y-2 sm:space-y-3">
+    <div className="space-y-2.5">
       {/* Market Price Display */}
-      <div className="bg-gradient-to-r from-card to-muted/30 border border-border rounded-xl px-3 py-2.5 shadow-sm">
+      <div className="bg-[#0B0F1C]/50 border border-[#1F2937]/40 rounded-xl px-3 py-2.5">
         <div className="flex items-center justify-between">
           <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">Market Price</span>
           <span className="text-sm sm:text-base font-bold font-mono text-foreground">
@@ -143,8 +143,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </div>
       </div>
       
-      {/* Buy/Sell Toggle - Premium look */}
-      <div className="flex bg-muted/50 rounded-xl p-1 border border-border">
+      {/* Buy/Sell Toggle */}
+      <div className="flex bg-[#0B0F1C]/60 rounded-xl p-1 border border-[#1F2937]/40">
         <button
           onClick={() => setSide('buy')}
           className={cn(
@@ -170,7 +170,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* Trading Balance with Deposit CTA */}
-      <div className="bg-muted/30 border border-border rounded-xl px-3 py-2">
+      <div className="bg-[#0B0F1C]/40 border border-[#1F2937]/40 rounded-xl px-3 py-2">
         <div className="flex items-center justify-between">
           <span className="text-[10px] sm:text-xs text-muted-foreground">Trading Balance</span>
           <div className="flex items-center gap-2">
@@ -236,7 +236,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* Order Type Selector */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-3 py-2.5 text-xs sm:text-sm hover:bg-muted/50 transition-colors">
+          <button className="w-full flex items-center justify-between bg-[#0B0F1C]/50 border border-[#1F2937]/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm hover:bg-white/[0.03]">
             <div className="flex items-center gap-2">
               <Info className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-foreground font-medium capitalize">{orderType.replace('-', ' ')}</span>
@@ -301,7 +301,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* Total */}
-      <div className="bg-card border border-border rounded-xl px-3 py-2">
+      <div className="bg-[#0B0F1C]/50 border border-[#1F2937]/40 rounded-xl px-3 py-2">
         <div className="flex items-center justify-between">
           <label className="text-[10px] sm:text-xs text-muted-foreground">Total ({quoteCurrency})</label>
           <span className="font-mono text-foreground text-sm sm:text-base font-medium">
@@ -312,7 +312,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* Order Summary */}
       {numAmount > 0 && (
-        <div className="bg-muted/30 border border-border rounded-xl px-3 py-2.5 space-y-1.5">
+        <div className="bg-[#0B0F1C]/40 border border-[#1F2937]/40 rounded-xl px-3 py-2.5 space-y-1.5">
           <div className="flex items-center justify-between text-[10px] sm:text-xs">
             <span className="text-muted-foreground">You will pay</span>
             <span className="font-mono text-foreground font-medium">
@@ -342,12 +342,12 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0 || hasInsufficientBalance}
         className={cn(
-          "w-full h-11 sm:h-12 text-sm sm:text-base font-semibold rounded-xl transition-all duration-200",
+          "w-full h-12 text-sm sm:text-base font-semibold rounded-xl",
           hasInsufficientBalance
-            ? "bg-muted text-muted-foreground"
+            ? "bg-[#1F2937] text-[#64748B]"
             : isBuy
-              ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40"
-              : "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40"
+              ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-[0_4px_16px_rgba(52,211,153,0.25)] hover:shadow-[0_4px_20px_rgba(52,211,153,0.4)]"
+              : "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-[0_4px_16px_rgba(248,113,113,0.25)] hover:shadow-[0_4px_20px_rgba(248,113,113,0.4)]"
         )}
       >
         {isPlacingOrder ? (
