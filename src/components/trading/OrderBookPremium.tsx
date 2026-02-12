@@ -55,7 +55,7 @@ const PremiumRow = memo(({
     <div
       onClick={() => onPriceClick?.(entry.price)}
       className={cn(
-        "relative grid grid-cols-3 items-center px-3 py-[4px] cursor-pointer",
+        "relative grid grid-cols-3 items-center px-1.5 sm:px-3 py-[3px] sm:py-[4px] cursor-pointer",
         "hover:bg-white/[0.04]"
       )}
     >
@@ -70,19 +70,19 @@ const PremiumRow = memo(({
 
       {/* Price */}
       <span className={cn(
-        "relative z-10 text-[12px] font-mono font-medium tabular-nums text-left leading-tight",
+        "relative z-10 text-[10px] sm:text-[12px] font-mono font-medium tabular-nums text-left leading-tight",
         isAsk ? "text-[#EA3943]" : "text-[#16C784]"
       )}>
         {formatPrice(entry.price)}
       </span>
 
       {/* Quantity */}
-      <span className="relative z-10 text-[12px] font-mono text-[#E5E7EB] text-right tabular-nums leading-tight">
+      <span className="relative z-10 text-[10px] sm:text-[12px] font-mono text-[#E5E7EB] text-right tabular-nums leading-tight">
         {formatQty(entry.quantity)}
       </span>
 
       {/* Cumulative Total */}
-      <span className="relative z-10 text-[12px] font-mono text-[#9CA3AF] text-right tabular-nums leading-tight">
+      <span className="relative z-10 text-[10px] sm:text-[12px] font-mono text-[#9CA3AF] text-right tabular-nums leading-tight">
         {formatQty(cumTotal)}
       </span>
     </div>
@@ -156,12 +156,12 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   return (
     <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[#1F2937]/60">
-        <span className="text-[11px] font-medium text-[#9CA3AF]">Order Book</span>
-        <div className="grid grid-cols-3 flex-1 ml-4">
-          <span className="text-[10px] text-[#9CA3AF]">Price ({quoteCurrency})</span>
-          <span className="text-[10px] text-[#9CA3AF] text-right">Amount</span>
-          <span className="text-[10px] text-[#9CA3AF] text-right">Total</span>
+      <div className="flex items-center justify-between px-1.5 sm:px-3 py-1.5 sm:py-2 border-b border-[#1F2937]/60">
+        <span className="text-[9px] sm:text-[11px] font-medium text-[#9CA3AF]">Order Book</span>
+        <div className="grid grid-cols-3 flex-1 ml-2 sm:ml-4">
+          <span className="text-[8px] sm:text-[10px] text-[#9CA3AF]">Price</span>
+          <span className="text-[8px] sm:text-[10px] text-[#9CA3AF] text-right">Amt</span>
+          <span className="text-[8px] sm:text-[10px] text-[#9CA3AF] text-right">Total</span>
         </div>
       </div>
 
@@ -188,16 +188,16 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* ── Spread & Current Price ── */}
-      <div className="px-3 py-2 border-y border-[#1F2937]/60 bg-[#0B1220]/50">
+      <div className="px-1.5 sm:px-3 py-1.5 sm:py-2 border-y border-[#1F2937]/60 bg-[#0B1220]/50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {isPositive ? (
-              <TrendingUp className="h-3 w-3 text-[#16C784]" />
+              <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-[#16C784]" />
             ) : (
-              <TrendingDown className="h-3 w-3 text-[#EA3943]" />
+              <TrendingDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-[#EA3943]" />
             )}
             <span className={cn(
-              "text-sm font-bold font-mono tracking-tight",
+              "text-xs sm:text-sm font-bold font-mono tracking-tight",
               isPositive ? "text-[#16C784]" : "text-[#EA3943]"
             )}>
               {displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
@@ -205,8 +205,8 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
           </div>
 
           {spreadPercent !== null && spread !== null && (
-            <span className="text-[9px] font-mono text-[#9CA3AF]">
-              Spread {formatPrice(spread)} ({spreadPercent.toFixed(3)}%)
+            <span className="text-[7px] sm:text-[9px] font-mono text-[#9CA3AF]">
+              {spreadPercent.toFixed(2)}%
             </span>
           )}
         </div>
