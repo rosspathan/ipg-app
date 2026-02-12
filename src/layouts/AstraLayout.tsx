@@ -25,6 +25,9 @@ export function AstraLayout() {
   const [showMismatchBanner, setShowMismatchBanner] = useState(false)
   const [onboardingEmail, setOnboardingEmail] = useState<string | null>(null)
 
+  // Detect trading pages - hide shell chrome
+  const isTradingPage = location.pathname.startsWith('/app/trade/')
+
   // Build marker (helps confirm domain is on latest deployed code)
   useEffect(() => {
     console.info('[BUILD_ID]', BUILD_ID)
@@ -67,11 +70,11 @@ export function AstraLayout() {
 
   return (
     <div className="app-shell bg-background">
-      {/* Sticky Header */}
-      <AppTopBar />
+      {/* Sticky Header - hidden on trading pages */}
+      {!isTradingPage && <AppTopBar />}
 
       {/* Referral Code Claim Banner */}
-      <ReferralCodeClaimBanner />
+      {!isTradingPage && <ReferralCodeClaimBanner />}
 
       {/* Session Mismatch Banner */}
       {showMismatchBanner && onboardingEmail && (
@@ -104,15 +107,15 @@ export function AstraLayout() {
       )}
 
       {/* Main Scrollable Content */}
-      <main className="app-main with-dock">
+      <main className={isTradingPage ? "app-main" : "app-main with-dock"}>
         <Outlet />
       </main>
 
-      {/* WhatsApp Support - Fixed above dock */}
-      <SupportLinkWhatsApp variant="fab" />
+      {/* WhatsApp Support - hidden on trading pages */}
+      {!isTradingPage && <SupportLinkWhatsApp variant="fab" />}
 
-      {/* Sticky Footer Navigation */}
-      <BottomNavBar />
+      {/* Sticky Footer Navigation - hidden on trading pages */}
+      {!isTradingPage && <BottomNavBar />}
     </div>
   )
 }
