@@ -55,34 +55,34 @@ const PremiumRow = memo(({
     <div
       onClick={() => onPriceClick?.(entry.price)}
       className={cn(
-        "relative grid grid-cols-3 items-center px-3 py-[5px] cursor-pointer",
-        "hover:bg-white/[0.03] group"
+        "relative grid grid-cols-3 items-center px-3 py-[4px] cursor-pointer",
+        "hover:bg-white/[0.04]"
       )}
     >
       {/* Depth bar */}
       <div
         className={cn(
           "absolute right-0 top-0 bottom-0 pointer-events-none",
-          isAsk ? "bg-red-500/[0.07]" : "bg-emerald-500/[0.07]"
+          isAsk ? "bg-[#EA3943]/[0.06]" : "bg-[#16C784]/[0.06]"
         )}
         style={{ width: `${Math.min(depthPercent, 100)}%` }}
       />
 
       {/* Price */}
       <span className={cn(
-        "relative z-10 text-xs font-mono font-medium tabular-nums text-left",
-        isAsk ? "text-red-400" : "text-emerald-400"
+        "relative z-10 text-[12px] font-mono font-medium tabular-nums text-left leading-tight",
+        isAsk ? "text-[#EA3943]" : "text-[#16C784]"
       )}>
         {formatPrice(entry.price)}
       </span>
 
       {/* Quantity */}
-      <span className="relative z-10 text-xs font-mono text-[#94A3B8] text-right tabular-nums">
+      <span className="relative z-10 text-[12px] font-mono text-[#E5E7EB] text-right tabular-nums leading-tight">
         {formatQty(entry.quantity)}
       </span>
 
       {/* Cumulative Total */}
-      <span className="relative z-10 text-xs font-mono text-[#64748B] text-right tabular-nums">
+      <span className="relative z-10 text-[12px] font-mono text-[#9CA3AF] text-right tabular-nums leading-tight">
         {formatQty(cumTotal)}
       </span>
     </div>
@@ -140,30 +140,33 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-b from-[#121826] to-[#0F1629] border border-[#1F2937]/50 rounded-[14px] overflow-hidden h-full flex flex-col">
-        <div className="grid grid-cols-3 text-[10px] px-3 py-2.5 border-b border-[#1F2937]/40">
-          <span className="text-[#64748B] font-medium">Price</span>
-          <span className="text-[#64748B] font-medium text-right">Amount</span>
-          <span className="text-[#64748B] font-medium text-right">Total</span>
+      <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden h-full flex flex-col">
+        <div className="grid grid-cols-3 text-[10px] px-3 py-2 border-b border-[#1F2937]/60">
+          <span className="text-[#9CA3AF]">Price</span>
+          <span className="text-[#9CA3AF] text-right">Amount</span>
+          <span className="text-[#9CA3AF] text-right">Total</span>
         </div>
         <div className="flex-1 py-1"><OrderBookSkeleton rows={8} /></div>
-        <div className="px-3 py-3 border-y border-[#1F2937]/40"><div className="h-6 w-24 bg-[#1F2937] rounded" /></div>
+        <div className="px-3 py-2 border-y border-[#1F2937]/60"><div className="h-5 w-20 bg-[#1F2937] rounded" /></div>
         <div className="flex-1 py-1"><OrderBookSkeleton rows={8} /></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-b from-[#121826] to-[#0F1629] border border-[#1F2937]/50 rounded-[14px] overflow-hidden h-full flex flex-col">
+    <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="grid grid-cols-3 text-[10px] sm:text-xs px-3 py-2.5 border-b border-[#1F2937]/40">
-        <span className="text-[#64748B] font-medium">Price ({quoteCurrency})</span>
-        <span className="text-[#64748B] font-medium text-right">Amount</span>
-        <span className="text-[#64748B] font-medium text-right">Total</span>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[#1F2937]/60">
+        <span className="text-[11px] font-medium text-[#9CA3AF]">Order Book</span>
+        <div className="grid grid-cols-3 flex-1 ml-4">
+          <span className="text-[10px] text-[#9CA3AF]">Price ({quoteCurrency})</span>
+          <span className="text-[10px] text-[#9CA3AF] text-right">Amount</span>
+          <span className="text-[10px] text-[#9CA3AF] text-right">Total</span>
+        </div>
       </div>
 
       {/* Asks */}
-      <div className="flex-1 overflow-hidden flex flex-col justify-end min-h-[100px]">
+      <div className="flex-1 overflow-hidden flex flex-col justify-end min-h-[80px]">
         {displayAsks.length > 0 ? (
           <div>
             {displayAsks.map((ask, idx) => (
@@ -178,42 +181,39 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
             ))}
           </div>
         ) : (
-          <div className="flex items-end justify-center pb-3 h-full">
-            <span className="text-[10px] text-[#475569]">No sell orders</span>
+          <div className="flex items-end justify-center pb-2 h-full">
+            <span className="text-[10px] text-[#9CA3AF]">No sell orders</span>
           </div>
         )}
       </div>
 
       {/* ── Spread & Current Price ── */}
-      <div className="px-3 py-2.5 border-y border-[#1F2937]/40 bg-[#0B0F1C]/40">
+      <div className="px-3 py-2 border-y border-[#1F2937]/60 bg-[#0B1220]/50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {isPositive ? (
-              <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+              <TrendingUp className="h-3 w-3 text-[#16C784]" />
             ) : (
-              <TrendingDown className="h-3.5 w-3.5 text-red-400" />
+              <TrendingDown className="h-3 w-3 text-[#EA3943]" />
             )}
             <span className={cn(
-              "text-lg sm:text-xl font-semibold font-mono tracking-tight",
-              isPositive ? "text-emerald-400" : "text-red-400"
+              "text-sm font-bold font-mono tracking-tight",
+              isPositive ? "text-[#16C784]" : "text-[#EA3943]"
             )}>
               {displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
             </span>
           </div>
 
           {spreadPercent !== null && spread !== null && (
-            <div className="text-right">
-              <span className="text-[10px] text-[#64748B] block">Spread</span>
-              <span className="text-[10px] sm:text-xs font-mono text-[#94A3B8]">
-                {formatPrice(spread)} ({spreadPercent.toFixed(3)}%)
-              </span>
-            </div>
+            <span className="text-[9px] font-mono text-[#9CA3AF]">
+              Spread {formatPrice(spread)} ({spreadPercent.toFixed(3)}%)
+            </span>
           )}
         </div>
       </div>
 
       {/* Bids */}
-      <div className="flex-1 overflow-hidden min-h-[100px]">
+      <div className="flex-1 overflow-hidden min-h-[80px]">
         {displayBids.length > 0 ? (
           <div>
             {displayBids.map((bid, idx) => (
@@ -228,8 +228,8 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
             ))}
           </div>
         ) : (
-          <div className="flex items-start justify-center pt-3 h-full">
-            <span className="text-[10px] text-[#475569]">No buy orders</span>
+          <div className="flex items-start justify-center pt-2 h-full">
+            <span className="text-[10px] text-[#9CA3AF]">No buy orders</span>
           </div>
         )}
       </div>
