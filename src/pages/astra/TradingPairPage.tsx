@@ -65,13 +65,13 @@ function TradingPairPageContent() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [pairSearch, setPairSearch] = useState("");
   const [pairPickerOpen, setPairPickerOpen] = useState(false);
+  const urlSymbol = params.symbol || "";
+  const symbol = urlSymbol.replace('-', '/');
+
   const [isFavorite, setIsFavorite] = useState(() => {
     const favs = JSON.parse(localStorage.getItem('favorite-pairs') || '[]');
     return favs.includes(urlSymbol);
   });
-
-  const urlSymbol = params.symbol || "";
-  const symbol = urlSymbol.replace('-', '/');
   const pair = pairs?.find((p) => p.symbol === symbol);
 
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
