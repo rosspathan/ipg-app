@@ -13,7 +13,7 @@ import {
   Cell,
   Line,
 } from 'recharts';
-import { BarChart3, Loader2 } from 'lucide-react';
+import { BarChart3, Loader2, Clock } from 'lucide-react';
 
 interface CandleData {
   time: string;
@@ -22,7 +22,6 @@ interface CandleData {
   low: number;
   close: number;
   volume: number;
-  // For recharts bar rendering (wick + body)
   bodyLow: number;
   bodyHigh: number;
   wickLow: number;
@@ -30,9 +29,12 @@ interface CandleData {
   bullish: boolean;
 }
 
-type Interval = '1h' | '4h' | '1d';
+type Interval = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
 
 const INTERVALS: { value: Interval; label: string }[] = [
+  { value: '1m', label: '1m' },
+  { value: '5m', label: '5m' },
+  { value: '15m', label: '15m' },
   { value: '1h', label: '1H' },
   { value: '4h', label: '4H' },
   { value: '1d', label: '1D' },
@@ -52,8 +54,7 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
   const { data: candles, isLoading } = useQuery({
     queryKey: ['trade-candles', symbol, interval],
     queryFn: async (): Promise<CandleData[]> => {
-      // Fetch trades for this symbol
-      const hoursBack = interval === '1d' ? 720 : interval === '4h' ? 168 : 48;
+      const hoursBack = interval === '1d' ? 720 : interval === '4h' ? 168 : interval === '1h' ? 48 : interval === '15m' ? 12 : interval === '5m' ? 6 : 2;
       const since = new Date(Date.now() - hoursBack * 3600 * 1000).toISOString();
 
       const { data: trades, error } = await supabase
@@ -66,8 +67,7 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
 
       if (error || !trades || trades.length === 0) return [];
 
-      // Bucket trades into candles
-      const bucketMs = interval === '1d' ? 86400000 : interval === '4h' ? 14400000 : 3600000;
+      const bucketMs = interval === '1d' ? 86400000 : interval === '4h' ? 14400000 : interval === '1h' ? 3600000 : interval === '15m' ? 900000 : interval === '5m' ? 300000 : 60000;
       const buckets = new Map<number, { prices: number[]; volumes: number[]; first: number; last: number }>();
 
       trades.forEach((t) => {
@@ -94,11 +94,7 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
 
           return {
             time: new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            open,
-            high,
-            low,
-            close,
-            volume,
+            open, high, low, close, volume,
             bodyLow: Math.min(open, close),
             bodyHigh: Math.max(open, close),
             wickLow: low,
@@ -123,33 +119,52 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-card border border-border rounded-xl p-4 flex items-center justify-center h-48">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <div className="bg-gradient-to-b from-[#121826] to-[#0F1629] border border-[#1F2937]/50 rounded-[14px] p-4 flex items-center justify-center h-52">
+        <Loader2 className="h-5 w-5 animate-spin text-[#64748B]" />
       </div>
     );
   }
 
   if (!candles || candles.length === 0) {
     return (
-      <div className="bg-card border border-border rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-medium text-muted-foreground">Price Chart</span>
+      <div className="bg-gradient-to-b from-[#121826] to-[#0F1629] border border-[#1F2937]/50 rounded-[14px] overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#1F2937]/40">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-[#64748B]" />
+            <span className="text-xs font-medium text-[#94A3B8]">Price Chart</span>
+          </div>
+          <div className="flex gap-1">
+            {INTERVALS.map((i) => (
+              <button
+                key={i.value}
+                onClick={() => setInterval(i.value)}
+                className={cn(
+                  "px-2 py-1 text-[10px] font-medium rounded-lg",
+                  interval === i.value
+                    ? "bg-white/10 text-white"
+                    : "text-[#64748B] hover:text-[#94A3B8]"
+                )}
+              >
+                {i.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="h-36 flex items-center justify-center text-muted-foreground text-xs">
-          No trade data yet for this pair
+        <div className="h-40 flex flex-col items-center justify-center gap-2">
+          <Clock className="h-5 w-5 text-[#475569]" />
+          <span className="text-[#64748B] text-xs">Waiting for first trade...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <div className="bg-gradient-to-b from-[#121826] to-[#0F1629] border border-[#1F2937]/50 rounded-[14px] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#1F2937]/40">
         <div className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-medium text-foreground">Chart</span>
+          <BarChart3 className="h-4 w-4 text-[#64748B]" />
+          <span className="text-xs font-medium text-[#94A3B8]">Chart</span>
         </div>
         <div className="flex gap-1">
           {INTERVALS.map((i) => (
@@ -157,10 +172,10 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
               key={i.value}
               onClick={() => setInterval(i.value)}
               className={cn(
-                "px-2 py-1 text-[10px] font-semibold rounded transition-colors",
+                "px-2 py-1 text-[10px] font-semibold rounded-lg",
                 interval === i.value
-                  ? "bg-primary/15 text-primary border border-primary/30"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-white/10 text-white border border-[#1F2937]"
+                  : "text-[#64748B] hover:text-[#94A3B8] hover:bg-white/5"
               )}
             >
               {i.label}
@@ -170,20 +185,20 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
       </div>
 
       {/* Chart */}
-      <div className="px-1 py-2 h-44 sm:h-52">
+      <div className="px-1 py-2 h-48 sm:h-56">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={candles} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" opacity={0.4} />
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={{ stroke: 'hsl(var(--border))' }}
+              tick={{ fontSize: 9, fill: '#64748B' }}
+              axisLine={{ stroke: '#1F2937' }}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
               domain={yDomain}
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 9, fill: '#64748B' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={formatPrice}
@@ -191,29 +206,28 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
+                backgroundColor: '#121826',
+                border: '1px solid #1F2937',
+                borderRadius: '10px',
                 fontSize: '11px',
+                color: '#E2E8F0',
               }}
-              labelStyle={{ color: 'hsl(var(--foreground))' }}
+              labelStyle={{ color: '#94A3B8' }}
               formatter={(value: number, name: string) => [formatPrice(value), name]}
             />
-            {/* Close price line for trend visualization */}
             <Line
               type="monotone"
               dataKey="close"
-              stroke="hsl(var(--primary))"
+              stroke="#7C4DFF"
               strokeWidth={1.5}
               dot={false}
               name="Close"
             />
-            {/* Volume bars at bottom */}
             <Bar dataKey="volume" name="Volume" barSize={6} opacity={0.3} yAxisId="volume">
               {candles.map((c, i) => (
                 <Cell
                   key={i}
-                  fill={c.bullish ? 'rgb(16, 185, 129)' : 'rgb(239, 68, 68)'}
+                  fill={c.bullish ? 'rgb(52, 211, 153)' : 'rgb(248, 113, 113)'}
                 />
               ))}
             </Bar>
