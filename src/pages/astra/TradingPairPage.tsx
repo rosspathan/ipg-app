@@ -152,6 +152,8 @@ function TradingPairPageContent() {
     setPairSearch("");
   };
 
+  const [chartOpen, setChartOpen] = useState(false);
+
   if (!pair) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#0B0F1C]">
@@ -266,7 +268,7 @@ function TradingPairPageContent() {
 
   const isPositive = pair.change24h >= 0;
 
-  const [chartOpen, setChartOpen] = useState(false);
+  
 
   return (
     <ComplianceGate
