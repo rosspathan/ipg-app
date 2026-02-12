@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Info, ChevronDown, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { Plus, Info, ChevronDown, AlertCircle, Loader2, ArrowRight, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { PriceStepperInput } from './PriceStepperInput';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -37,6 +38,7 @@ interface OrderFormProProps {
 
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'limit' | 'market' | 'stop-limit';
+type TimeInForce = 'GTC' | 'IOC' | 'FOK';
 
 const QUICK_PERCENTAGES = [25, 50, 75, 100];
 
@@ -63,6 +65,16 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const [price, setPrice] = useState(currentPrice.toFixed(2));
   const [amount, setAmount] = useState('');
   const [activePercent, setActivePercent] = useState<number | null>(null);
+  
+  // Advanced options
+  const [timeInForce, setTimeInForce] = useState<TimeInForce>('GTC');
+  const [postOnly, setPostOnly] = useState(false);
+  const [reduceOnly, setReduceOnly] = useState(false);
+  
+  // Bracket order (TP/SL)
+  const [bracketOpen, setBracketOpen] = useState(false);
+  const [tpPrice, setTpPrice] = useState('');
+  const [slPrice, setSlPrice] = useState('');
 
   const isBuy = side === 'buy';
   const availableBalance = isBuy ? availableQuote : availableBase;
@@ -223,41 +235,75 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </div>
       )}
 
-      {/* Order Type Selector */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="w-full flex items-center justify-between bg-[#0B0F1C]/50 border border-[#1F2937]/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm hover:bg-white/[0.03]">
-            <div className="flex items-center gap-2">
-              <Info className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-foreground font-medium capitalize">{orderType.replace('-', ' ')}</span>
-            </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-40">
-          <DropdownMenuItem onClick={() => setOrderType('limit')} className="py-2.5">
-            Limit
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOrderType('market')} className="py-2.5">
-            Market
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOrderType('stop-limit')} className="py-2.5">
-            Stop-Limit
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* Order Type + Time-in-Force Row */}
+      <div className="flex gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex-1 flex items-center justify-between bg-[#0B0F1C]/50 border border-[#1F2937]/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm hover:bg-white/[0.03]">
+              <div className="flex items-center gap-2">
+                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-foreground font-medium capitalize">{orderType.replace('-', ' ')}</span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-40">
+            <DropdownMenuItem onClick={() => setOrderType('limit')} className="py-2.5">
+              Limit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setOrderType('market')} className="py-2.5">
+              Market
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setOrderType('stop-limit')} className="py-2.5">
+              Stop-Limit
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      {/* Price Input */}
+        {/* Time-in-Force */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1.5 bg-[#0B0F1C]/50 border border-[#1F2937]/40 rounded-xl px-3 py-2.5 text-xs hover:bg-white/[0.03]">
+              <span className="text-foreground font-medium">{timeInForce}</span>
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-32">
+            <DropdownMenuItem onClick={() => setTimeInForce('GTC')} className="py-2">
+              <div>
+                <div className="font-medium text-xs">GTC</div>
+                <div className="text-[10px] text-muted-foreground">Good Till Cancel</div>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTimeInForce('IOC')} className="py-2">
+              <div>
+                <div className="font-medium text-xs">IOC</div>
+                <div className="text-[10px] text-muted-foreground">Immediate or Cancel</div>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTimeInForce('FOK')} className="py-2">
+              <div>
+                <div className="font-medium text-xs">FOK</div>
+                <div className="text-[10px] text-muted-foreground">Fill or Kill</div>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Price Input with Best Bid/Ask */}
       {orderType !== 'market' && (
-        <>
-          <PriceStepperInput
-            label={`Price (${quoteCurrency})`}
-            value={price}
-            onChange={setPrice}
-            step={tickSize}
-            min={0}
-          />
-        </>
+        <PriceStepperInput
+          label={`Price (${quoteCurrency})`}
+          value={price}
+          onChange={setPrice}
+          step={tickSize}
+          min={0}
+          quickAction={isBuy 
+            ? { label: 'Best Ask', value: bestAsk, color: 'red' }
+            : { label: 'Best Bid', value: bestBid, color: 'green' }
+          }
+        />
       )}
 
       {/* Amount Input */}
@@ -290,13 +336,56 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         ))}
       </div>
 
-      {/* Total */}
-      <div className="bg-[#0B0F1C]/50 border border-[#1F2937]/40 rounded-xl px-3 py-2">
+      {/* Total + Funds Required */}
+      <div className="bg-[#0B0F1C]/50 border border-[#1F2937]/40 rounded-xl px-3 py-2 space-y-1.5">
         <div className="flex items-center justify-between">
           <label className="text-[10px] sm:text-xs text-muted-foreground">Total ({quoteCurrency})</label>
           <span className="font-mono text-foreground text-sm sm:text-base font-medium">
             {total.toFixed(total >= 1 ? 2 : 6)}
           </span>
+        </div>
+        {numAmount > 0 && (
+          <div className="flex items-center justify-between pt-1 border-t border-[#1F2937]/40">
+            <label className="text-[10px] text-muted-foreground">Funds req. (inc. fee)</label>
+            <span className="font-mono text-[11px] text-[#E5E7EB]">
+              ~{requiredAmount.toFixed(requiredAmount >= 1 ? 4 : 6)} {balanceCurrency}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Bracket Order (TP/SL) */}
+      <div className="border border-[#1F2937]/40 rounded-xl overflow-hidden">
+        <button
+          onClick={() => setBracketOpen(!bracketOpen)}
+          className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-white/[0.02] transition-colors"
+        >
+          <div className="flex items-center gap-1.5">
+            <Shield className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[#E5E7EB] font-medium">Bracket Order (TP/SL)</span>
+          </div>
+          <ChevronDown className={cn("h-3 w-3 text-[#9CA3AF] transition-transform duration-200", bracketOpen && "rotate-180")} />
+        </button>
+        <div className={cn(
+          "overflow-hidden transition-all duration-200 ease-in-out",
+          bracketOpen ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"
+        )}>
+          <div className="px-3 pb-3 space-y-2 border-t border-[#1F2937]/40 pt-2">
+            <PriceStepperInput
+              label="Take Profit Price"
+              value={tpPrice}
+              onChange={setTpPrice}
+              step={tickSize}
+              min={0}
+            />
+            <PriceStepperInput
+              label="Stop Loss Price"
+              value={slPrice}
+              onChange={setSlPrice}
+              step={tickSize}
+              min={0}
+            />
+          </div>
         </div>
       </div>
 
@@ -351,6 +440,26 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`
         )}
       </Button>
+
+      {/* Advanced Options Row */}
+      <div className="flex items-center gap-4 px-1">
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <Checkbox
+            checked={postOnly}
+            onCheckedChange={(checked) => setPostOnly(!!checked)}
+            className="h-3.5 w-3.5 rounded-sm border-[#1F2937]"
+          />
+          <span className="text-[10px] text-[#9CA3AF]">Post Only</span>
+        </label>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <Checkbox
+            checked={reduceOnly}
+            onCheckedChange={(checked) => setReduceOnly(!!checked)}
+            className="h-3.5 w-3.5 rounded-sm border-[#1F2937]"
+          />
+          <span className="text-[10px] text-[#9CA3AF]">Reduce Only</span>
+        </label>
+      </div>
     </div>
   );
 };
