@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-dom";
-import { ArrowLeft, ChevronDown, Search, Loader2, WifiOff } from "lucide-react";
+import { ArrowLeft, ChevronDown, Search, Loader2, WifiOff, Star, Bell } from "lucide-react";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookPremium } from "@/components/trading/OrderBookPremium";
 import { TradeCandlestickChart } from "@/components/trading/TradeCandlestickChart";
@@ -65,6 +65,10 @@ function TradingPairPageContent() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [pairSearch, setPairSearch] = useState("");
   const [pairPickerOpen, setPairPickerOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(() => {
+    const favs = JSON.parse(localStorage.getItem('favorite-pairs') || '[]');
+    return favs.includes(urlSymbol);
+  });
 
   const urlSymbol = params.symbol || "";
   const symbol = urlSymbol.replace('-', '/');
@@ -353,8 +357,27 @@ function TradingPairPageContent() {
               </span>
             </div>
 
-            {/* Right: Admin controls */}
-            <AdminMarketMakerControls isAdmin={isAdmin} />
+            {/* Right: Fav + Alert + Admin */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  const favs = JSON.parse(localStorage.getItem('favorite-pairs') || '[]');
+                  const newFavs = isFavorite ? favs.filter((f: string) => f !== urlSymbol) : [...favs, urlSymbol];
+                  localStorage.setItem('favorite-pairs', JSON.stringify(newFavs));
+                  setIsFavorite(!isFavorite);
+                }}
+                className="p-1.5 rounded-md hover:bg-white/5"
+              >
+                <Star className={cn("h-3.5 w-3.5 transition-all", isFavorite ? "fill-yellow-500 text-yellow-500" : "text-[#9CA3AF]")} />
+              </button>
+              <button
+                onClick={() => toast({ title: "Price Alerts", description: "Coming soon!" })}
+                className="p-1.5 rounded-md hover:bg-white/5"
+              >
+                <Bell className="h-3.5 w-3.5 text-[#9CA3AF]" />
+              </button>
+              <AdminMarketMakerControls isAdmin={isAdmin} />
+            </div>
           </div>
 
           {/* Mini stats row */}

@@ -2,6 +2,12 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+interface QuickAction {
+  label: string;
+  value: number;
+  color?: 'green' | 'red';
+}
+
 interface PriceStepperInputProps {
   label: string;
   value: string;
@@ -13,6 +19,7 @@ interface PriceStepperInputProps {
   disabled?: boolean;
   className?: string;
   decimals?: number;
+  quickAction?: QuickAction;
 }
 
 // Smart step calculation based on value magnitude (like Binance/KuCoin)
@@ -44,6 +51,7 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
   disabled = false,
   className,
   decimals = 8,
+  quickAction,
 }) => {
   const numValue = parseFloat(value) || 0;
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -102,7 +110,23 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
   return (
     <div className={cn("relative", className)}>
       <div className="bg-card border border-border rounded-lg px-3 py-2 relative z-0">
-        <label className="block text-xs text-muted-foreground mb-0.5">{label}</label>
+        <div className="flex items-center justify-between mb-0.5">
+          <label className="block text-xs text-muted-foreground">{label}</label>
+          {quickAction && quickAction.value > 0 && (
+            <button
+              type="button"
+              onClick={() => onChange(formatNumber(quickAction.value, decimals))}
+              className={cn(
+                "text-[9px] font-semibold px-1.5 py-0.5 rounded-full transition-colors",
+                quickAction.color === 'red'
+                  ? "bg-[#EA3943]/15 text-[#EA3943] hover:bg-[#EA3943]/25"
+                  : "bg-[#16C784]/15 text-[#16C784] hover:bg-[#16C784]/25"
+              )}
+            >
+              {quickAction.label}
+            </button>
+          )}
+        </div>
         <div className="flex items-center">
           <input
             type="text"
