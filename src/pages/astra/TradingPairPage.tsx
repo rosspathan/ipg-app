@@ -286,11 +286,9 @@ function TradingPairPageContent() {
       requireRiskDisclosure
     >
       <div className="flex flex-col h-screen bg-[#0B1220] overflow-hidden">
-        {/* ── Top Bar ── */}
+        {/* ═══ ZONE 1: Fixed Header (flex-shrink-0) ═══ */}
         <div className="flex-shrink-0 bg-[#0B1220] border-b border-[#1F2937]/50">
-          {/* Row 1: Back + Pair + Price + % + Icons */}
           <div className="flex items-center h-[40px] px-3">
-            {/* Left: Back + Pair picker */}
             <button 
               onClick={() => navigate("/app/trade")} 
               className="p-1 -ml-1 mr-1 active:bg-white/10 rounded"
@@ -305,7 +303,7 @@ function TradingPairPageContent() {
                   <ChevronDown className={cn("h-3 w-3 text-[#6B7280] ml-0.5", pairPickerOpen && "rotate-180")} />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-72 bg-[#111827] border-[#1F2937] p-2 shadow-2xl rounded-xl">
+              <DropdownMenuContent align="start" className="w-72 bg-[#111827] border-[#1F2937] p-2 shadow-2xl rounded-xl z-50">
                 <div className="relative mb-2">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#9CA3AF]" />
                   <Input
@@ -347,7 +345,6 @@ function TradingPairPageContent() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Center: Price (dominant) + Change */}
             <div className="flex items-baseline gap-1.5 flex-1 min-w-0">
               <span className={cn(
                 "text-[16px] font-bold font-mono tabular-nums tracking-tight",
@@ -366,7 +363,6 @@ function TradingPairPageContent() {
               )}
             </div>
 
-            {/* Right: Icons tight */}
             <div className="flex items-center gap-0 ml-1">
               <button
                 onClick={() => {
@@ -389,8 +385,7 @@ function TradingPairPageContent() {
             </div>
           </div>
 
-          {/* Row 2: H / L / Vol stats */}
-          <div className="flex items-center gap-4 px-3 pb-1.5 text-[10px]">
+          <div className="flex items-center gap-4 px-3 pb-1 text-[10px]">
             <div className="flex items-center gap-1">
               <span className="text-[#4B5563] font-medium">H</span>
               <span className="font-mono tabular-nums text-[#2EBD85]">{formatPrice(pair.high24h || 0)}</span>
@@ -406,72 +401,70 @@ function TradingPairPageContent() {
           </div>
         </div>
 
-        {/* ── MAIN CONTENT — flex column fills remaining space ── */}
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+        {/* ═══ ZONE 2: Trading Container (flex-1, vertical stack) ═══ */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
-          {/* ── Chart (collapsible, fixed height) ── */}
-          <div className="flex-shrink-0 border-b border-[#1F2937]/40">
+          {/* ── Chart toggle (optional, collapsible) ── */}
+          <div className="flex-shrink-0 border-b border-[#1F2937]/30">
             <button
               onClick={() => setChartOpen(!chartOpen)}
-              className="flex items-center gap-1 text-[10px] text-[#6B7280] px-3 py-1.5 active:text-[#9CA3AF] w-full"
+              className="flex items-center gap-1 text-[10px] text-[#6B7280] px-3 py-1 active:text-[#9CA3AF] w-full"
             >
               <span className="font-medium">Chart</span>
               <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", chartOpen && "rotate-180")} />
             </button>
             {chartOpen && (
-              <div className="px-2 pb-2 animate-fade-in">
+              <div className="px-2 pb-2">
                 <TradeCandlestickChart symbol={pair.symbol} quoteCurrency={pair.quoteAsset} />
               </div>
             )}
           </div>
 
-          {/* ── Order Form + Order Book — side by side, fills space ── */}
-          <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
-            {/* Left: Order Form */}
-            <div className="w-[48%] flex-shrink-0 px-2 py-1.5 border-r border-[#1F2937]/30 overflow-y-auto">
-              <OrderFormPro
-                baseCurrency={pair.baseAsset}
-                quoteCurrency={pair.quoteAsset}
-                availableBase={baseBalance.available}
-                availableQuote={quoteBalance.available}
-                lockedBase={baseBalance.locked}
-                lockedQuote={quoteBalance.locked}
-                availableBaseUsd={baseBalance.total * pair.price}
-                availableQuoteUsd={quoteBalance.total}
-                currentPrice={pair.price}
-                onPlaceOrder={handlePlaceOrder}
-                bestBid={bestBidPrice}
-                bestAsk={bestAskPrice}
-                selectedPrice={selectedPrice}
-              />
-            </div>
-            {/* Right: Order Book — must have explicit height chain */}
-            <div className="w-[52%] flex-shrink-0 h-full flex flex-col overflow-hidden">
-              <OrderBookPremium
-                asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
-                  price: typeof a === 'object' ? a.price : a[0], 
-                  quantity: typeof a === 'object' ? a.quantity : a[1] 
-                })) || []}
-                bids={orderBook?.bids?.slice(0, 20).map((b: any) => ({ 
-                  price: typeof b === 'object' ? b.price : b[0], 
-                  quantity: typeof b === 'object' ? b.quantity : b[1] 
-                })) || []}
-                currentPrice={pair.price}
-                priceChange={pair.change24h}
-                quoteCurrency={pair.quoteAsset}
-                baseCurrency={pair.baseAsset}
-                onPriceClick={handlePriceClick}
-                marketPrice={marketPrice}
-                isLoading={!pair}
-                fillContainer
-              />
-            </div>
+          {/* ── SECTION A: Trade Panel (flex-shrink-0, auto height ~35-40%) ── */}
+          <div className="flex-shrink-0 px-3 py-2 border-b border-[#1F2937]/30">
+            <OrderFormPro
+              baseCurrency={pair.baseAsset}
+              quoteCurrency={pair.quoteAsset}
+              availableBase={baseBalance.available}
+              availableQuote={quoteBalance.available}
+              lockedBase={baseBalance.locked}
+              lockedQuote={quoteBalance.locked}
+              availableBaseUsd={baseBalance.total * pair.price}
+              availableQuoteUsd={quoteBalance.total}
+              currentPrice={pair.price}
+              onPlaceOrder={handlePlaceOrder}
+              bestBid={bestBidPrice}
+              bestAsk={bestAskPrice}
+              selectedPrice={selectedPrice}
+            />
+          </div>
+
+          {/* ── SECTION B: Order Book (flex-1, fills remaining space) ── */}
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <OrderBookPremium
+              asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
+                price: typeof a === 'object' ? a.price : a[0], 
+                quantity: typeof a === 'object' ? a.quantity : a[1] 
+              })) || []}
+              bids={orderBook?.bids?.slice(0, 20).map((b: any) => ({ 
+                price: typeof b === 'object' ? b.price : b[0], 
+                quantity: typeof b === 'object' ? b.quantity : b[1] 
+              })) || []}
+              currentPrice={pair.price}
+              priceChange={pair.change24h}
+              quoteCurrency={pair.quoteAsset}
+              baseCurrency={pair.baseAsset}
+              onPriceClick={handlePriceClick}
+              marketPrice={marketPrice}
+              isLoading={!pair}
+              fillContainer
+            />
           </div>
 
           <GhostLockWarning />
 
-          {/* ── History — fixed compact bottom ── */}
-          <div className="flex-shrink-0 border-t border-[#1F2937]/40 overflow-y-auto px-2 pt-1 pb-1" style={{ height: '80px' }}>
+          {/* ── SECTION C: Tabs (flex-shrink-0, fixed 44px) ── */}
+          <div className="flex-shrink-0 h-[44px] border-t border-[#1F2937]/40 overflow-hidden px-2">
             <TradingHistoryTabs 
               symbol={urlSymbol}
               onOrderDetails={setSelectedOrderId}

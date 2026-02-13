@@ -93,7 +93,7 @@ const ExchangeInput: React.FC<{
           </button>
         )}
       </div>
-      <div className="bg-[#0D1421] border border-[#1F2937] rounded h-[36px] flex items-center hover:border-[#374151] focus-within:border-[#4B5563] transition-colors">
+      <div className="bg-[#0D1421] border border-[#1F2937] rounded h-[34px] flex items-center hover:border-[#374151] focus-within:border-[#4B5563] transition-colors">
         <button
           type="button"
           onClick={() => adjust(-1)}
@@ -211,9 +211,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const estFee = total * 0.005;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1">
       {/* ── Buy / Sell toggle ── */}
-      <div className="flex h-[30px] bg-[#111827] rounded p-[2px] gap-[2px]">
+      <div className="flex h-[28px] bg-[#111827] rounded p-[2px] gap-[2px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
@@ -345,9 +345,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Total ── */}
-      <div className="bg-[#0D1421] border border-[#1F2937] rounded h-[32px] flex items-center justify-center">
+      <div className="bg-[#0D1421] border border-[#1F2937] rounded h-[28px] flex items-center justify-center">
         <span className="text-[8px] text-[#4B5563] mr-1.5">Total ({quoteCurrency})</span>
-        <span className="text-[12px] font-mono font-semibold text-[#9CA3AF]">
+        <span className="text-[11px] font-mono font-semibold text-[#9CA3AF]">
           {total > 0 ? total.toFixed(total >= 1 ? 2 : 6) : '--'}
         </span>
       </div>
@@ -395,7 +395,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0}
         className={cn(
-          "w-full h-[34px] rounded text-[12px] font-bold transition-all duration-150 active:scale-[0.98]",
+          "w-full h-[32px] rounded text-[11px] font-bold transition-all duration-150 active:scale-[0.98]",
           "disabled:cursor-not-allowed",
           hasInsufficientBalance
             ? "bg-[#1F2937] text-[#6B7280]"
