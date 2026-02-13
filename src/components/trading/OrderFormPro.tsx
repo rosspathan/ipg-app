@@ -211,9 +211,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const estFee = total * 0.005;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5">
       {/* ── Buy / Sell toggle ── */}
-      <div className="flex h-[32px] bg-[#111827] rounded p-[2px] gap-[2px]">
+      <div className="flex h-[34px] bg-[#111827] rounded p-[2px] gap-[2px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
@@ -239,14 +239,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Order type selector ── */}
-      <div className="flex items-center gap-4 h-[24px] px-1">
+      <div className="flex items-center gap-5 h-[28px] px-1 border-b border-[#1F2937]/40">
         {(['limit', 'market'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setOrderType(t)}
             className={cn(
-              "text-[11px] font-medium capitalize transition-colors pb-0.5",
-              orderType === t ? "text-[#E5E7EB] border-b border-[#E5E7EB]" : "text-[#4B5563]"
+              "text-[11px] font-medium capitalize transition-colors pb-1.5",
+              orderType === t ? "text-[#E5E7EB] border-b-2 border-[#E5E7EB] -mb-[1px]" : "text-[#4B5563]"
             )}
           >
             {t}
