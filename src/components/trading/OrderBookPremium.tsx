@@ -141,16 +141,16 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   }
 
   return (
-    <div ref={containerRef} className={cn("py-1", fillContainer ? "flex-1 flex flex-col min-h-0 h-full" : "")}>
+    <div ref={containerRef} className={cn(fillContainer ? "flex-1 flex flex-col min-h-0 h-full" : "py-1")}>
       {/* Header */}
-      <div className="flex-shrink-0 grid px-2 pb-1 text-[9px] text-[#4B5563] uppercase tracking-wider font-medium"
+      <div className="flex-shrink-0 grid px-2 py-1 text-[9px] text-[#4B5563] uppercase tracking-wider font-medium border-b border-[#1F2937]/30"
         style={{ gridTemplateColumns: '50% 50%' }}
       >
         <span>Price ({quoteCurrency})</span>
         <span className="text-right">Amount ⇅</span>
       </div>
 
-      {/* Asks — grows to fill top half */}
+      {/* Asks — grows to fill top half, anchored to bottom */}
       <div className={cn(fillContainer ? "flex-1 flex flex-col justify-end min-h-0 overflow-hidden" : "")}>
         {displayAsks.length > 0 ? (
           displayAsks.map((ask, idx) => (
@@ -169,26 +169,26 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
 
       {/* ── Last Traded Price bar ── */}
       <div
-        className="flex-shrink-0 flex items-center justify-between px-2 h-[26px] bg-[#111827]/60 border-y border-[#1F2937]/30 cursor-pointer active:bg-white/[0.03]"
+        className="flex-shrink-0 flex items-center justify-between px-2 h-[24px] bg-[#111827]/60 border-y border-[#1F2937]/30 cursor-pointer active:bg-white/[0.03]"
         onClick={() => onPriceClick?.(displayPrice)}
       >
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {isPositive ? (
-            <TrendingUp className="h-3 w-3 text-[#2EBD85]" />
+            <TrendingUp className="h-2.5 w-2.5 text-[#2EBD85]" />
           ) : (
-            <TrendingDown className="h-3 w-3 text-[#F6465D]" />
+            <TrendingDown className="h-2.5 w-2.5 text-[#F6465D]" />
           )}
           <span className={cn(
-            "text-[14px] font-bold font-mono tracking-tight",
+            "text-[13px] font-bold font-mono tracking-tight",
             isPositive ? "text-[#2EBD85]" : "text-[#F6465D]"
           )}>
             {displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
           </span>
         </div>
-        <span className="text-[8px] font-medium text-[#4B5563] uppercase tracking-wider">Last Traded</span>
+        <span className="text-[7px] font-medium text-[#4B5563] uppercase tracking-wider">Last Traded</span>
       </div>
 
-      {/* Bids — grows to fill bottom half */}
+      {/* Bids — grows to fill bottom half, anchored to top */}
       <div className={cn(fillContainer ? "flex-1 flex flex-col justify-start min-h-0 overflow-hidden" : "")}>
         {displayBids.length > 0 ? (
           displayBids.map((bid, idx) => (
@@ -206,7 +206,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* ── Buy/Sell pressure bar ── */}
-      <div className="flex-shrink-0 flex items-center gap-1 px-2 pt-1">
+      <div className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 border-t border-[#1F2937]/30">
         <span className="text-[9px] font-mono text-[#2EBD85]">{bidPct.toFixed(1)}%</span>
         <div className="flex-1 h-[3px] rounded-full overflow-hidden flex">
           <div className="bg-[#2EBD85]" style={{ width: `${bidPct}%` }} />
