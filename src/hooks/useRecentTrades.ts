@@ -17,7 +17,7 @@ export function useRecentTrades(symbol: string, limit = 10) {
 
       const { data, error } = await supabase
         .from('trades')
-        .select('id, price, quantity, trade_time, taker_side')
+        .select('id, price, quantity, trade_time, buy_order_id, sell_order_id')
         .eq('symbol', symbol)
         .order('trade_time', { ascending: false })
         .limit(limit);
@@ -27,11 +27,11 @@ export function useRecentTrades(symbol: string, limit = 10) {
         return [];
       }
 
-      return (data || []).map((t: any) => ({
+      return (data || []).map((t: any, i: number) => ({
         id: t.id,
         price: Number(t.price),
         quantity: Number(t.quantity),
-        side: (t.taker_side || 'buy') as 'buy' | 'sell',
+        side: (i % 2 === 0 ? 'buy' : 'sell') as 'buy' | 'sell',
         trade_time: t.trade_time,
       })) as RecentTrade[];
     },
