@@ -425,8 +425,9 @@ function TradingPairPageContent() {
             )}
           </div>
 
-          {/* ── Order Form + Order Book — fills available space ── */}
-          <div className="flex-1 flex min-h-0">
+          {/* ── Order Form + Order Book — side by side, fills space ── */}
+          <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
+            {/* Left: Order Form */}
             <div className="w-[48%] flex-shrink-0 px-2 py-1.5 border-r border-[#1F2937]/30 overflow-y-auto">
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
@@ -444,7 +445,8 @@ function TradingPairPageContent() {
                 selectedPrice={selectedPrice}
               />
             </div>
-            <div className="flex-1 min-w-0 flex flex-col min-h-0">
+            {/* Right: Order Book — must have explicit height chain */}
+            <div className="w-[52%] flex-shrink-0 h-full flex flex-col overflow-hidden">
               <OrderBookPremium
                 asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
                   price: typeof a === 'object' ? a.price : a[0], 
@@ -468,7 +470,7 @@ function TradingPairPageContent() {
 
           <GhostLockWarning />
 
-          {/* ── History — fixed bottom ── */}
+          {/* ── History — fixed compact bottom ── */}
           <div className="flex-shrink-0 border-t border-[#1F2937]/40 overflow-y-auto px-2 pt-1 pb-1" style={{ height: '80px' }}>
             <TradingHistoryTabs 
               symbol={urlSymbol}
