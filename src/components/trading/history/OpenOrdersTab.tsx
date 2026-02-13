@@ -32,16 +32,13 @@
      }
    };
  
-   if (orders.length === 0) {
-     return (
-       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-         <div className="text-sm">No open orders</div>
-         <div className="text-xs mt-1">
-           {currentSymbol ? `No pending orders for ${currentSymbol}` : 'Place an order to see it here'}
-         </div>
-       </div>
-     );
-   }
+  if (orders.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[32px] text-[11px] text-[#6B7280]">
+        No open orders{currentSymbol ? ` for ${currentSymbol}` : ''}
+      </div>
+    );
+  }
  
    return (
      <div className="space-y-2">

@@ -45,20 +45,16 @@ import BigNumber from 'bignumber.js';
      return <ArrowUpRight className="h-4 w-4 text-rose-400" />;
    };
  
-   if (movements.length === 0) {
+  if (movements.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          <div className="text-sm">No fund movements</div>
-          <div className="text-xs mt-1">Trading activity will appear here</div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-4"
+        <div className="flex items-center justify-center h-[32px] gap-2 text-[11px] text-[#6B7280]">
+          <span>No fund movements</span>
+          <button
             onClick={() => navigate('/app/wallet/transfer')}
+            className="text-[#F0B90B] font-medium hover:underline"
           >
-            <ArrowLeftRight className="h-4 w-4 mr-1.5" />
-            Deposit Funds
-          </Button>
+            Deposit
+          </button>
         </div>
       );
    }
