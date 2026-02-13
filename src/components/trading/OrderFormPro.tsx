@@ -370,28 +370,35 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Info rows: Avbl / Max / Fee ── */}
-      <div className="flex flex-col gap-0 text-[9px]">
-        <div className="flex items-center justify-between h-[16px]">
-          <span className="text-[#4B5563]">Avbl</span>
-          <div className="flex items-center gap-0.5">
-            <span className={cn("font-mono", hasInsufficientBalance ? "text-[#F6465D]" : "text-[#9CA3AF]")}>
-              {availableBalance.toFixed(4)} {balanceCurrency}
+      <div className="flex flex-col gap-0.5 text-[10px] mt-1">
+        <div className="flex items-center justify-between h-[18px]">
+          <span className="text-[#6B7280]">Available</span>
+          <div className="flex items-center gap-1.5">
+            <span className={cn("font-mono tabular-nums", hasInsufficientBalance ? "text-[#F6465D]" : "text-[#E5E7EB]")}>
+              {availableBalance.toFixed(4)}
             </span>
+            <span className="text-[#6B7280]">{balanceCurrency}</span>
             <button
               onClick={() => navigate(`/app/wallet/transfer?asset=${balanceCurrency}&direction=to_trading`)}
-              className="text-[#2EBD85] font-bold text-[10px] w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#2EBD85]/10"
+              className="text-[#F0B90B] text-[9px] font-medium px-1.5 py-0.5 rounded bg-[#F0B90B]/10 hover:bg-[#F0B90B]/20 transition-colors"
             >
-              +
+              Deposit
             </button>
           </div>
         </div>
-        <div className="flex items-center justify-between h-[16px]">
-          <span className="text-[#4B5563]">Max {isBuy ? 'Buy' : 'Sell'}</span>
-          <span className="font-mono text-[#9CA3AF]">{maxBuyAmount.toFixed(4)} {baseCurrency}</span>
+        <div className="flex items-center justify-between h-[18px]">
+          <span className="text-[#6B7280]">Max {isBuy ? 'Buy' : 'Sell'}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono tabular-nums text-[#E5E7EB]">{maxBuyAmount.toFixed(4)}</span>
+            <span className="text-[#6B7280]">{baseCurrency}</span>
+          </div>
         </div>
-        <div className="flex items-center justify-between h-[16px]">
-          <span className="text-[#4B5563]">Est. Fee</span>
-          <span className="font-mono text-[#9CA3AF]">{total > 0 ? `~${estFee.toFixed(4)}` : '--'} {quoteCurrency}</span>
+        <div className="flex items-center justify-between h-[18px]">
+          <span className="text-[#6B7280]">Est. Fee</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono tabular-nums text-[#E5E7EB]">{total > 0 ? `~${estFee.toFixed(4)}` : '—'}</span>
+            <span className="text-[#6B7280]">{quoteCurrency}</span>
+          </div>
         </div>
       </div>
 
