@@ -51,13 +51,13 @@ const Row = memo(({
   return (
     <div
       onClick={() => onPriceClick?.(entry.price)}
-      className="relative grid items-center px-2.5 h-[18px] cursor-pointer active:bg-white/[0.03]"
+      className="relative grid items-center px-2.5 h-[18px] cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors duration-75"
       style={{ gridTemplateColumns: '36% 32% 32%' }}
     >
       <div
         className={cn(
-          "absolute right-0 top-0 bottom-0 pointer-events-none",
-          isAsk ? "bg-[#EA3943]/[0.06]" : "bg-[#16C784]/[0.06]"
+          "absolute right-0 top-0 bottom-0 pointer-events-none transition-[width] duration-200",
+          isAsk ? "bg-[#EA3943]/[0.10]" : "bg-[#16C784]/[0.10]"
         )}
         style={{ width: `${Math.min(depthPercent, 100)}%` }}
       />
@@ -88,8 +88,8 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   isLoading = false,
   marketPrice,
 }) => {
-  const displayAsks = useMemo(() => asks.slice(0, 12).reverse(), [asks]);
-  const displayBids = useMemo(() => bids.slice(0, 12), [bids]);
+  const displayAsks = useMemo(() => asks.slice(0, 14).reverse(), [asks]);
+  const displayBids = useMemo(() => bids.slice(0, 14), [bids]);
 
   const askCumTotals = useMemo(() => {
     const totals: number[] = [];
@@ -143,31 +143,40 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       {/* Asks */}
       <div>
         {displayAsks.length > 0 ? (
-          displayAsks.map((ask, idx) => (
-            <Row
-              key={`a-${ask.price}-${idx}`}
-              entry={ask}
-              side="ask"
-              maxTotal={maxCum}
-              onPriceClick={onPriceClick}
-              cumTotal={askCumTotals[idx]}
-            />
-          ))
+          displayAsks.map((ask, idx) => {
+            const isLast = idx === displayAsks.length - 1;
+            return (
+              <Row
+                key={`a-${ask.price}-${idx}`}
+                entry={ask}
+                side="ask"
+                maxTotal={maxCum}
+                onPriceClick={onPriceClick}
+                cumTotal={askCumTotals[idx]}
+              />
+            );
+          })
         ) : (
           <div className="flex items-center justify-center h-[40px] text-[9px] text-[#4B5563]">No asks</div>
+        )}
+        {/* Best Ask badge */}
+        {displayAsks.length > 0 && (
+          <div className="px-2.5 h-[12px] flex justify-end">
+            <span className="text-[7px] font-semibold text-[#EA3943]/60 uppercase tracking-wider">Best Ask ↑</span>
+          </div>
         )}
       </div>
 
       {/* ── Mid price ── */}
-      <div className="flex items-center justify-between px-2.5 h-[24px] border-y border-[#1F2937]/40">
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between px-2.5 h-[28px] border-y border-[#1F2937]/60 bg-[#0D1526]">
+        <div className="flex items-center gap-1.5">
           {isPositive ? (
-            <TrendingUp className="h-2.5 w-2.5 text-[#16C784]" />
+            <TrendingUp className="h-3 w-3 text-[#16C784]" />
           ) : (
-            <TrendingDown className="h-2.5 w-2.5 text-[#EA3943]" />
+            <TrendingDown className="h-3 w-3 text-[#EA3943]" />
           )}
           <span className={cn(
-            "text-[12px] font-bold font-mono",
+            "text-[14px] font-bold font-mono tracking-tight",
             isPositive ? "text-[#16C784]" : "text-[#EA3943]"
           )}>
             {displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
@@ -182,6 +191,11 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
 
       {/* Bids */}
       <div>
+        {displayBids.length > 0 && (
+          <div className="px-2.5 h-[12px] flex justify-start">
+            <span className="text-[7px] font-semibold text-[#16C784]/60 uppercase tracking-wider">↓ Best Bid</span>
+          </div>
+        )}
         {displayBids.length > 0 ? (
           displayBids.map((bid, idx) => (
             <Row

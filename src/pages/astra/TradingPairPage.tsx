@@ -442,7 +442,7 @@ function TradingPairPageContent() {
           </div>
 
           {/* ── Order Book ── */}
-          <div className="mt-1 border-t border-[#1F2937]/40">
+          <div className="mt-0.5 border-t border-[#1F2937]/60 bg-[#0B1220]">
             <OrderBookPremium
               asks={orderBook?.asks?.slice(0, 12).map((a: any) => ({ 
                 price: typeof a === 'object' ? a.price : a[0], 
@@ -463,10 +463,10 @@ function TradingPairPageContent() {
           </div>
 
           {/* ── Position (collapsible) ── */}
-          <div className="border-t border-[#1F2937]/40">
+          <div className="border-t border-[#1F2937]/60">
             <button
               onClick={() => setPositionOpen(!positionOpen)}
-              className="flex items-center justify-between w-full text-[10px] text-[#4B5563] px-2 py-1.5 active:bg-white/5"
+              className="flex items-center justify-between w-full text-[10px] text-[#4B5563] px-2 py-1 active:bg-white/5"
             >
               <span>Position</span>
               <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", positionOpen && "rotate-180")} />
@@ -491,7 +491,7 @@ function TradingPairPageContent() {
           <GhostLockWarning />
           
           {/* ── Trading History ── */}
-          <div className="border-t border-[#1F2937]/40 px-2 pt-1 pb-6">
+          <div className="border-t border-[#1F2937]/60 px-2 pt-0.5 pb-6">
             <TradingHistoryTabs 
               symbol={urlSymbol}
               onOrderDetails={setSelectedOrderId}
