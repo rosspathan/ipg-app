@@ -422,48 +422,51 @@ function TradingPairPageContent() {
             )}
           </div>
 
-          {/* ── Order Form ── */}
-          <div className="px-2 pt-1">
-            <OrderFormPro
-              baseCurrency={pair.baseAsset}
-              quoteCurrency={pair.quoteAsset}
-              availableBase={baseBalance.available}
-              availableQuote={quoteBalance.available}
-              lockedBase={baseBalance.locked}
-              lockedQuote={quoteBalance.locked}
-              availableBaseUsd={baseBalance.total * pair.price}
-              availableQuoteUsd={quoteBalance.total}
-              currentPrice={pair.price}
-              onPlaceOrder={handlePlaceOrder}
-              bestBid={bestBidPrice}
-              bestAsk={bestAskPrice}
-              selectedPrice={selectedPrice}
-            />
-          </div>
+          {/* ── TWO-COLUMN: Order Form + Order Book ── */}
+          <div className="flex border-b border-[#1F2937]/40">
+            {/* LEFT: Order Form */}
+            <div className="flex-1 min-w-0 px-2 py-1.5 border-r border-[#1F2937]/40">
+              <OrderFormPro
+                baseCurrency={pair.baseAsset}
+                quoteCurrency={pair.quoteAsset}
+                availableBase={baseBalance.available}
+                availableQuote={quoteBalance.available}
+                lockedBase={baseBalance.locked}
+                lockedQuote={quoteBalance.locked}
+                availableBaseUsd={baseBalance.total * pair.price}
+                availableQuoteUsd={quoteBalance.total}
+                currentPrice={pair.price}
+                onPlaceOrder={handlePlaceOrder}
+                bestBid={bestBidPrice}
+                bestAsk={bestAskPrice}
+                selectedPrice={selectedPrice}
+              />
+            </div>
 
-          {/* ── Order Book ── */}
-          <div className="mt-0.5 border-t border-[#1F2937]/60 bg-[#0B1220]">
-            <OrderBookPremium
-              asks={orderBook?.asks?.slice(0, 12).map((a: any) => ({ 
-                price: typeof a === 'object' ? a.price : a[0], 
-                quantity: typeof a === 'object' ? a.quantity : a[1] 
-              })) || []}
-              bids={orderBook?.bids?.slice(0, 12).map((b: any) => ({ 
-                price: typeof b === 'object' ? b.price : b[0], 
-                quantity: typeof b === 'object' ? b.quantity : b[1] 
-              })) || []}
-              currentPrice={pair.price}
-              priceChange={pair.change24h}
-              quoteCurrency={pair.quoteAsset}
-              baseCurrency={pair.baseAsset}
-              onPriceClick={handlePriceClick}
-              marketPrice={marketPrice}
-              isLoading={!pair}
-            />
+            {/* RIGHT: Order Book */}
+            <div className="w-[48%] flex-shrink-0">
+              <OrderBookPremium
+                asks={orderBook?.asks?.slice(0, 12).map((a: any) => ({ 
+                  price: typeof a === 'object' ? a.price : a[0], 
+                  quantity: typeof a === 'object' ? a.quantity : a[1] 
+                })) || []}
+                bids={orderBook?.bids?.slice(0, 12).map((b: any) => ({ 
+                  price: typeof b === 'object' ? b.price : b[0], 
+                  quantity: typeof b === 'object' ? b.quantity : b[1] 
+                })) || []}
+                currentPrice={pair.price}
+                priceChange={pair.change24h}
+                quoteCurrency={pair.quoteAsset}
+                baseCurrency={pair.baseAsset}
+                onPriceClick={handlePriceClick}
+                marketPrice={marketPrice}
+                isLoading={!pair}
+              />
+            </div>
           </div>
 
           {/* ── Position (collapsible) ── */}
-          <div className="border-t border-[#1F2937]/60">
+          <div className="border-b border-[#1F2937]/40">
             <button
               onClick={() => setPositionOpen(!positionOpen)}
               className="flex items-center justify-between w-full text-[10px] text-[#4B5563] px-2 py-1 active:bg-white/5"
@@ -491,7 +494,7 @@ function TradingPairPageContent() {
           <GhostLockWarning />
           
           {/* ── Trading History ── */}
-          <div className="border-t border-[#1F2937]/60 px-2 pt-0.5 pb-6">
+          <div className="px-2 pt-0.5 pb-6">
             <TradingHistoryTabs 
               symbol={urlSymbol}
               onOrderDetails={setSelectedOrderId}
