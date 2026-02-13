@@ -75,23 +75,26 @@ const ExchangeInput: React.FC<{
   };
 
   return (
-    <div className="bg-[#111827]/80 rounded-md h-[38px] flex items-center px-1 gap-0">
+    <div className="relative bg-[#0D1421] border border-[#1F2937] rounded-lg h-[44px] flex items-center px-0.5 gap-0 hover:border-[#374151] focus-within:border-[#4B5563] transition-colors">
+      {/* Label — top-left floating */}
+      <span className="absolute -top-2 left-2.5 text-[9px] font-medium text-[#6B7280] bg-[#0D1421] px-1 leading-none select-none">
+        {label}
+      </span>
       <button
         type="button"
         onClick={() => adjust(-1)}
         disabled={numVal <= min}
-        className="w-7 h-7 flex items-center justify-center text-[#6B7280] text-[16px] font-light active:text-[#E5E7EB] disabled:opacity-25 select-none flex-shrink-0"
+        className="w-8 h-8 flex items-center justify-center text-[#6B7280] text-[15px] font-medium rounded-md active:bg-[#1F2937] active:text-[#E5E7EB] disabled:opacity-20 select-none flex-shrink-0 transition-colors"
       >
         −
       </button>
-      <div className="flex-1 min-w-0 flex flex-col items-center justify-center">
-        <span className="text-[8px] text-[#4B5563] leading-none">{label}</span>
+      <div className="flex-1 min-w-0 flex items-center justify-center">
         <input
           type="text"
           inputMode="decimal"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="bg-transparent text-center text-[13px] font-mono text-[#E5E7EB] outline-none w-full leading-tight"
+          className="bg-transparent text-center text-[14px] font-mono font-semibold text-[#E5E7EB] outline-none w-full leading-tight tracking-tight"
         />
       </div>
       {tag && tag.value > 0 && (
@@ -99,10 +102,10 @@ const ExchangeInput: React.FC<{
           type="button"
           onClick={() => onChange(formatNum(tag.value))}
           className={cn(
-            "text-[8px] font-bold px-1 py-0.5 rounded flex-shrink-0",
+            "text-[9px] font-bold px-1.5 py-[3px] rounded mr-0.5 flex-shrink-0 border transition-colors",
             tag.color === 'red'
-              ? "text-[#EA3943] bg-[#EA3943]/10 active:bg-[#EA3943]/20"
-              : "text-[#16C784] bg-[#16C784]/10 active:bg-[#16C784]/20"
+              ? "text-[#EA3943] bg-[#EA3943]/8 border-[#EA3943]/20 active:bg-[#EA3943]/20"
+              : "text-[#16C784] bg-[#16C784]/8 border-[#16C784]/20 active:bg-[#16C784]/20"
           )}
         >
           {tag.label}
@@ -112,7 +115,7 @@ const ExchangeInput: React.FC<{
         type="button"
         onClick={() => adjust(1)}
         disabled={max !== undefined && numVal >= max}
-        className="w-7 h-7 flex items-center justify-center text-[#6B7280] text-[16px] font-light active:text-[#E5E7EB] disabled:opacity-25 select-none flex-shrink-0"
+        className="w-8 h-8 flex items-center justify-center text-[#6B7280] text-[15px] font-medium rounded-md active:bg-[#1F2937] active:text-[#E5E7EB] disabled:opacity-20 select-none flex-shrink-0 transition-colors"
       >
         +
       </button>
@@ -362,9 +365,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Total ── */}
-      <div className="bg-[#111827]/80 rounded-md h-[34px] flex items-center justify-center">
-        <span className="text-[9px] text-[#4B5563] mr-1">Total</span>
-        <span className="text-[12px] font-mono text-[#9CA3AF]">
+      <div className="bg-[#0D1421] border border-[#1F2937] rounded-lg h-[38px] flex items-center justify-center relative">
+        <span className="absolute -top-2 left-2.5 text-[9px] font-medium text-[#6B7280] bg-[#0D1421] px-1 leading-none select-none">Total</span>
+        <span className="text-[13px] font-mono font-semibold text-[#9CA3AF]">
           {total > 0 ? `${total.toFixed(total >= 1 ? 2 : 6)} ${quoteCurrency}` : `-- ${quoteCurrency}`}
         </span>
       </div>
