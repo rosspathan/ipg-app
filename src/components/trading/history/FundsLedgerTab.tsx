@@ -1,8 +1,10 @@
- import React, { useState } from 'react';
- import { format } from 'date-fns';
- import { ArrowUpRight, ArrowDownRight, Filter } from 'lucide-react';
- import { cn } from '@/lib/utils';
- import BigNumber from 'bignumber.js';
+import React, { useState } from 'react';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import { ArrowUpRight, ArrowDownRight, Filter, ArrowLeftRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import BigNumber from 'bignumber.js';
  import {
    Select,
    SelectContent,
@@ -17,7 +19,8 @@
  }
  
  export function FundsLedgerTab({ movements }: FundsLedgerTabProps) {
-   const [filterType, setFilterType] = useState<string>('all');
+  const navigate = useNavigate();
+  const [filterType, setFilterType] = useState<string>('all');
    const [filterAsset, setFilterAsset] = useState<string>('all');
  
    const uniqueTypes = [...new Set(movements.map(m => m.entry_type))];
@@ -43,12 +46,21 @@
    };
  
    if (movements.length === 0) {
-     return (
-       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-         <div className="text-sm">No fund movements</div>
-         <div className="text-xs mt-1">Trading activity will appear here</div>
-       </div>
-     );
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <div className="text-sm">No fund movements</div>
+          <div className="text-xs mt-1">Trading activity will appear here</div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            onClick={() => navigate('/app/wallet/transfer')}
+          >
+            <ArrowLeftRight className="h-4 w-4 mr-1.5" />
+            Deposit Funds
+          </Button>
+        </div>
+      );
    }
  
    return (
