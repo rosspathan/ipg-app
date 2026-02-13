@@ -1,12 +1,10 @@
 import React, { memo, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { OrderBookSkeleton } from './OrderBookSkeleton';
 
 interface OrderBookEntry {
   price: number;
   quantity: number;
-  total?: number;
 }
 
 interface OrderBookPremiumProps {
@@ -31,11 +29,10 @@ const formatQty = (qty: number) => {
   if (qty >= 10_000_000) return `${(qty / 1_000_000).toFixed(1)}M`;
   if (qty >= 10_000) return `${(qty / 1_000).toFixed(1)}K`;
   if (qty >= 100) return qty.toFixed(2);
-  if (qty >= 1) return qty.toFixed(4);
   return qty.toFixed(4);
 };
 
-const PremiumRow = memo(({
+const Row = memo(({
   entry,
   side,
   maxTotal,
@@ -54,42 +51,37 @@ const PremiumRow = memo(({
   return (
     <div
       onClick={() => onPriceClick?.(entry.price)}
-      className={cn(
-        "relative grid grid-cols-3 items-center px-1.5 sm:px-3 py-[3px] sm:py-[4px] cursor-pointer",
-        "hover:bg-white/[0.04]"
-      )}
+      className="relative grid grid-cols-3 items-center px-2.5 h-[22px] cursor-pointer active:bg-white/[0.06]"
+      style={{ gridTemplateColumns: '38% 32% 30%' }}
     >
       {/* Depth bar */}
       <div
         className={cn(
           "absolute right-0 top-0 bottom-0 pointer-events-none",
-          isAsk ? "bg-[#EA3943]/[0.06]" : "bg-[#16C784]/[0.06]"
+          isAsk ? "bg-[#EA3943]/[0.07]" : "bg-[#16C784]/[0.07]"
         )}
         style={{ width: `${Math.min(depthPercent, 100)}%` }}
       />
 
-      {/* Price */}
       <span className={cn(
-        "relative z-10 text-[10px] sm:text-[12px] font-mono font-medium tabular-nums text-left leading-tight",
+        "relative z-10 text-[12px] font-mono tabular-nums text-left",
         isAsk ? "text-[#EA3943]" : "text-[#16C784]"
       )}>
         {formatPrice(entry.price)}
       </span>
 
-      {/* Quantity */}
-      <span className="relative z-10 text-[10px] sm:text-[12px] font-mono text-[#E5E7EB] text-right tabular-nums leading-tight">
+      <span className="relative z-10 text-[12px] font-mono text-[#E5E7EB] text-right tabular-nums">
         {formatQty(entry.quantity)}
       </span>
 
-      {/* Cumulative Total */}
-      <span className="relative z-10 text-[10px] sm:text-[12px] font-mono text-[#9CA3AF] text-right tabular-nums leading-tight">
+      <span className="relative z-10 text-[12px] font-mono text-[#6B7280] text-right tabular-nums">
         {formatQty(cumTotal)}
       </span>
     </div>
   );
 });
 
-PremiumRow.displayName = 'PremiumRow';
+Row.displayName = 'Row';
 
 export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   asks,
@@ -102,8 +94,8 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   isLoading = false,
   marketPrice,
 }) => {
-  const displayAsks = useMemo(() => asks.slice(0, 10).reverse(), [asks]);
-  const displayBids = useMemo(() => bids.slice(0, 10), [bids]);
+  const displayAsks = useMemo(() => asks.slice(0, 8).reverse(), [asks]);
+  const displayBids = useMemo(() => bids.slice(0, 8), [bids]);
 
   const askCumTotals = useMemo(() => {
     const totals: number[] = [];
@@ -140,97 +132,78 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden h-full flex flex-col">
-        <div className="grid grid-cols-3 text-[10px] px-3 py-2 border-b border-[#1F2937]/60">
-          <span className="text-[#9CA3AF]">Price</span>
-          <span className="text-[#9CA3AF] text-right">Amount</span>
-          <span className="text-[#9CA3AF] text-right">Total</span>
-        </div>
-        <div className="flex-1 py-1"><OrderBookSkeleton rows={8} /></div>
-        <div className="px-3 py-2 border-y border-[#1F2937]/60"><div className="h-5 w-20 bg-[#1F2937] rounded" /></div>
-        <div className="flex-1 py-1"><OrderBookSkeleton rows={8} /></div>
+      <div className="bg-[#111827] border border-[#1F2937] rounded-lg overflow-hidden">
+        <div className="flex items-center justify-center h-40 text-[11px] text-[#6B7280]">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden h-full flex flex-col">
+    <div className="bg-[#111827] border border-[#1F2937] rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-1.5 sm:px-3 py-1.5 sm:py-2 border-b border-[#1F2937]/60">
-        <span className="text-[9px] sm:text-[11px] font-medium text-[#9CA3AF]">Order Book</span>
-        <div className="grid grid-cols-3 flex-1 ml-2 sm:ml-4">
-          <span className="text-[8px] sm:text-[10px] text-[#9CA3AF]">Price</span>
-          <span className="text-[8px] sm:text-[10px] text-[#9CA3AF] text-right">Amt</span>
-          <span className="text-[8px] sm:text-[10px] text-[#9CA3AF] text-right">Total</span>
-        </div>
+      <div className="grid grid-cols-3 px-2.5 py-1.5 border-b border-[#1F2937]/60 text-[10px] text-[#6B7280] font-medium"
+        style={{ gridTemplateColumns: '38% 32% 30%' }}
+      >
+        <span>Price</span>
+        <span className="text-right">Amount</span>
+        <span className="text-right">Total</span>
       </div>
 
       {/* Asks */}
-      <div className="flex-1 overflow-hidden flex flex-col justify-end min-h-[80px]">
+      <div className="py-0.5">
         {displayAsks.length > 0 ? (
-          <div>
-            {displayAsks.map((ask, idx) => (
-              <PremiumRow
-                key={`ask-${ask.price}-${idx}`}
-                entry={ask}
-                side="ask"
-                maxTotal={maxCum}
-                onPriceClick={onPriceClick}
-                cumTotal={askCumTotals[idx]}
-              />
-            ))}
-          </div>
+          displayAsks.map((ask, idx) => (
+            <Row
+              key={`ask-${ask.price}-${idx}`}
+              entry={ask}
+              side="ask"
+              maxTotal={maxCum}
+              onPriceClick={onPriceClick}
+              cumTotal={askCumTotals[idx]}
+            />
+          ))
         ) : (
-          <div className="flex items-end justify-center pb-2 h-full">
-            <span className="text-[10px] text-[#9CA3AF]">No sell orders</span>
-          </div>
+          <div className="flex items-center justify-center h-[88px] text-[10px] text-[#6B7280]">No sell orders</div>
         )}
       </div>
 
-      {/* ── Spread & Current Price ── */}
-      <div className="px-1.5 sm:px-3 py-1.5 sm:py-2 border-y border-[#1F2937]/60 bg-[#0B1220]/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            {isPositive ? (
-              <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-[#16C784]" />
-            ) : (
-              <TrendingDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-[#EA3943]" />
-            )}
-            <span className={cn(
-              "text-xs sm:text-sm font-bold font-mono tracking-tight",
-              isPositive ? "text-[#16C784]" : "text-[#EA3943]"
-            )}>
-              {displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
-            </span>
-          </div>
-
-          {spreadPercent !== null && spread !== null && (
-            <span className="text-[7px] sm:text-[9px] font-mono text-[#9CA3AF]">
-              {spreadPercent.toFixed(2)}%
-            </span>
+      {/* ── Spread & Price ── */}
+      <div className="flex items-center justify-between px-2.5 py-1.5 border-y border-[#1F2937]/60">
+        <div className="flex items-center gap-1">
+          {isPositive ? (
+            <TrendingUp className="h-3 w-3 text-[#16C784]" />
+          ) : (
+            <TrendingDown className="h-3 w-3 text-[#EA3943]" />
           )}
+          <span className={cn(
+            "text-[13px] font-bold font-mono",
+            isPositive ? "text-[#16C784]" : "text-[#EA3943]"
+          )}>
+            {displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
+          </span>
         </div>
+        {spreadPercent !== null && (
+          <span className="text-[9px] font-mono text-[#6B7280]">
+            Spread {spreadPercent.toFixed(2)}%
+          </span>
+        )}
       </div>
 
       {/* Bids */}
-      <div className="flex-1 overflow-hidden min-h-[80px]">
+      <div className="py-0.5">
         {displayBids.length > 0 ? (
-          <div>
-            {displayBids.map((bid, idx) => (
-              <PremiumRow
-                key={`bid-${bid.price}-${idx}`}
-                entry={bid}
-                side="bid"
-                maxTotal={maxCum}
-                onPriceClick={onPriceClick}
-                cumTotal={bidCumTotals[idx]}
-              />
-            ))}
-          </div>
+          displayBids.map((bid, idx) => (
+            <Row
+              key={`bid-${bid.price}-${idx}`}
+              entry={bid}
+              side="bid"
+              maxTotal={maxCum}
+              onPriceClick={onPriceClick}
+              cumTotal={bidCumTotals[idx]}
+            />
+          ))
         ) : (
-          <div className="flex items-start justify-center pt-2 h-full">
-            <span className="text-[10px] text-[#9CA3AF]">No buy orders</span>
-          </div>
+          <div className="flex items-center justify-center h-[88px] text-[10px] text-[#6B7280]">No buy orders</div>
         )}
       </div>
     </div>
