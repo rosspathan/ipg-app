@@ -283,22 +283,22 @@ function TradingPairPageContent() {
       requireRiskDisclosure
     >
       <div className="flex flex-col h-screen bg-[#0B1220] overflow-hidden">
-        {/* ── 1. Compact Pair Bar (sticky) ── */}
-        <div className="flex-shrink-0 bg-[#0B1220] border-b border-[#1F2937]/50">
-          <div className="flex items-center justify-between px-3 h-[48px]">
-            <div className="flex items-center gap-1.5">
+        {/* ── Compact Pair Bar ── */}
+        <div className="flex-shrink-0 bg-[#0B1220]">
+          <div className="flex items-center justify-between px-2.5 h-[44px]">
+            <div className="flex items-center gap-1">
               <button 
                 onClick={() => navigate("/app/trade")} 
-                className="p-1 rounded-md active:bg-white/10"
+                className="p-1 active:bg-white/10 rounded"
               >
                 <ArrowLeft className="h-4 w-4 text-[#9CA3AF]" />
               </button>
               
               <DropdownMenu open={pairPickerOpen} onOpenChange={setPairPickerOpen}>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1 px-1.5 py-1 rounded-md active:bg-white/5">
-                    <span className="text-[#E5E7EB] font-semibold text-[13px] tracking-tight">{pair.symbol}</span>
-                    <ChevronDown className={cn("h-3 w-3 text-[#9CA3AF]", pairPickerOpen && "rotate-180")} />
+                  <button className="flex items-center gap-0.5 px-1 py-0.5 active:bg-white/5 rounded">
+                    <span className="text-[#E5E7EB] font-bold text-sm tracking-tight">{pair.symbol}</span>
+                    <ChevronDown className={cn("h-3 w-3 text-[#6B7280]", pairPickerOpen && "rotate-180")} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-72 bg-[#111827] border-[#1F2937] p-2 shadow-2xl rounded-xl">
@@ -348,24 +348,24 @@ function TradingPairPageContent() {
               )}
             </div>
 
-            {/* Price + Change */}
+            {/* Price + Change inline */}
             <div className="flex items-center gap-1.5">
               <span className={cn(
-                "text-[13px] font-semibold font-mono",
+                "text-sm font-bold font-mono",
                 isPositive ? "text-[#16C784]" : "text-[#EA3943]"
               )}>
                 {formatPrice(pair.price)}
               </span>
               <span className={cn(
-                "text-[10px] font-medium px-1 py-0.5 rounded",
-                isPositive ? "text-[#16C784] bg-[#16C784]/8" : "text-[#EA3943] bg-[#EA3943]/8"
+                "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                isPositive ? "text-[#16C784] bg-[#16C784]/10" : "text-[#EA3943] bg-[#EA3943]/10"
               )}>
                 {isPositive ? "+" : ""}{pair.change24h.toFixed(2)}%
               </span>
             </div>
 
             {/* Right icons */}
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center">
               <button
                 onClick={() => {
                   const favs = JSON.parse(localStorage.getItem('favorite-pairs') || '[]');
@@ -373,22 +373,22 @@ function TradingPairPageContent() {
                   localStorage.setItem('favorite-pairs', JSON.stringify(newFavs));
                   setIsFavorite(!isFavorite);
                 }}
-                className="p-1.5 rounded-md active:bg-white/10"
+                className="p-1.5 active:bg-white/10 rounded"
               >
-                <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-yellow-500 text-yellow-500" : "text-[#9CA3AF]")} />
+                <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-yellow-500 text-yellow-500" : "text-[#6B7280]")} />
               </button>
               <button
                 onClick={() => toast({ title: "Price Alerts", description: "Coming soon!" })}
-                className="p-1.5 rounded-md active:bg-white/10"
+                className="p-1.5 active:bg-white/10 rounded"
               >
-                <Bell className="h-3.5 w-3.5 text-[#9CA3AF]" />
+                <Bell className="h-3.5 w-3.5 text-[#6B7280]" />
               </button>
               <AdminMarketMakerControls isAdmin={isAdmin} />
             </div>
           </div>
 
-          {/* Mini stats */}
-          <div className="flex items-center justify-between px-3 pb-1 text-[10px]">
+          {/* Mini stats row — thin separator */}
+          <div className="flex items-center gap-4 px-2.5 pb-1.5 text-[10px] border-b border-[#1F2937]/60">
             <div className="flex items-center gap-1">
               <span className="text-[#6B7280]">H</span>
               <span className="font-mono text-[#16C784]">{formatPrice(pair.high24h || 0)}</span>
@@ -407,23 +407,23 @@ function TradingPairPageContent() {
         {/* ── SINGLE SCROLL CONTAINER ── */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {/* Chart Toggle */}
-          <div className="px-3 pt-2">
+          <div className="px-2.5 pt-1.5">
             <button
               onClick={() => setChartOpen(!chartOpen)}
-              className="flex items-center gap-1 text-[11px] text-[#9CA3AF] active:text-[#E5E7EB] px-2 py-1 rounded-md active:bg-white/5"
+              className="flex items-center gap-1 text-[10px] text-[#6B7280] active:text-[#9CA3AF] px-1 py-1"
             >
               <span className="font-medium">Chart</span>
-              <ChevronDown className={cn("h-3 w-3", chartOpen && "rotate-180")} />
+              <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", chartOpen && "rotate-180")} />
             </button>
             {chartOpen && (
-              <div className="mt-1">
+              <div className="mt-0.5 animate-fade-in">
                 <TradeCandlestickChart symbol={pair.symbol} quoteCurrency={pair.quoteAsset} />
               </div>
             )}
           </div>
 
           {/* ── Order Form ── */}
-          <div className="px-3 pt-2">
+          <div className="px-2.5 pt-1.5">
             <OrderFormPro
               baseCurrency={pair.baseAsset}
               quoteCurrency={pair.quoteAsset}
@@ -441,14 +441,14 @@ function TradingPairPageContent() {
             />
           </div>
 
-          {/* ── Order Book ── */}
-          <div className="px-3 pt-3">
+          {/* ── Order Book — full width, no card ── */}
+          <div className="mt-2 border-t border-[#1F2937]/60">
             <OrderBookPremium
-              asks={orderBook?.asks?.slice(0, 8).map((a: any) => ({ 
+              asks={orderBook?.asks?.slice(0, 10).map((a: any) => ({ 
                 price: typeof a === 'object' ? a.price : a[0], 
                 quantity: typeof a === 'object' ? a.quantity : a[1] 
               })) || []}
-              bids={orderBook?.bids?.slice(0, 8).map((b: any) => ({ 
+              bids={orderBook?.bids?.slice(0, 10).map((b: any) => ({ 
                 price: typeof b === 'object' ? b.price : b[0], 
                 quantity: typeof b === 'object' ? b.quantity : b[1] 
               })) || []}
@@ -463,16 +463,16 @@ function TradingPairPageContent() {
           </div>
 
           {/* ── Position (collapsible) ── */}
-          <div className="px-3 pt-3">
+          <div className="border-t border-[#1F2937]/60">
             <button
               onClick={() => setPositionOpen(!positionOpen)}
-              className="flex items-center justify-between w-full text-[11px] text-[#9CA3AF] px-2 py-1.5 rounded-md active:bg-white/5"
+              className="flex items-center justify-between w-full text-[11px] text-[#6B7280] px-2.5 py-2 active:bg-white/5"
             >
               <span className="font-medium">Position</span>
-              <ChevronDown className={cn("h-3 w-3", positionOpen && "rotate-180")} />
+              <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", positionOpen && "rotate-180")} />
             </button>
             {positionOpen && (
-              <div className="mt-1">
+              <div className="px-2.5 pb-2 animate-fade-in">
                 <PositionSummary
                   baseCurrency={pair.baseAsset}
                   quoteCurrency={pair.quoteAsset}
@@ -491,7 +491,7 @@ function TradingPairPageContent() {
           <GhostLockWarning />
           
           {/* ── Trading History ── */}
-          <div className="px-3 pt-3 pb-6">
+          <div className="border-t border-[#1F2937]/60 px-2.5 pt-1.5 pb-6">
             <TradingHistoryTabs 
               symbol={urlSymbol}
               onOrderDetails={setSelectedOrderId}

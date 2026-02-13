@@ -38,7 +38,6 @@ interface OrderFormProProps {
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'limit' | 'market';
 
-
 const QUICK_PERCENTAGES = [25, 50, 75, 100];
 
 export const OrderFormPro: React.FC<OrderFormProProps> = ({
@@ -63,9 +62,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const [price, setPrice] = useState(currentPrice.toFixed(2));
   const [amount, setAmount] = useState('');
   const [activePercent, setActivePercent] = useState<number | null>(null);
-  
 
-  // Sync selected price from order book click
   useEffect(() => {
     if (selectedPrice != null && selectedPrice > 0) {
       setPrice(selectedPrice >= 1 ? selectedPrice.toFixed(2) : selectedPrice.toFixed(6));
@@ -125,15 +122,15 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   };
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
       {/* ── Buy/Sell Segmented Control ── */}
-      <div className="flex h-[38px] bg-[#0F172A] rounded-[10px] p-[3px]">
+      <div className="flex h-[40px] bg-[#0F172A] rounded-lg p-[2px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 rounded-[8px] font-semibold text-xs transition-all duration-200",
+            "flex-1 rounded-[6px] font-semibold text-xs transition-all duration-200",
             isBuy
-              ? "bg-gradient-to-r from-[#16C784] to-[#0ea36b] text-white shadow-sm"
+              ? "bg-gradient-to-r from-[#16C784] to-[#0ea36b] text-white"
               : "text-[#6B7280] active:text-[#9CA3AF]"
           )}
         >
@@ -142,9 +139,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 rounded-[8px] font-semibold text-xs transition-all duration-200",
+            "flex-1 rounded-[6px] font-semibold text-xs transition-all duration-200",
             !isBuy
-              ? "bg-gradient-to-r from-[#EA3943] to-[#c9222c] text-white shadow-sm"
+              ? "bg-gradient-to-r from-[#EA3943] to-[#c9222c] text-white"
               : "text-[#6B7280] active:text-[#9CA3AF]"
           )}
         >
@@ -152,8 +149,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </button>
       </div>
 
-      {/* ── Available Balance (inline text) ── */}
-      <div className="flex items-center justify-between px-0.5">
+      {/* ── Available Balance ── */}
+      <div className="flex items-center justify-between">
         <span className="text-[10px] text-[#6B7280]">Available</span>
         <div className="flex items-center gap-1.5">
           <span className={cn(
@@ -174,7 +171,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* ── Order Type pill ── */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-1 h-[34px] px-3 bg-[#111827] border border-[#1F2937] rounded-lg text-[11px] text-[#E5E7EB] font-medium active:bg-[#1F2937] w-fit">
+          <button className="flex items-center gap-1 h-[30px] px-2.5 bg-[#111827] border border-[#1F2937]/80 rounded-md text-[11px] text-[#E5E7EB] font-medium active:bg-[#1F2937] w-fit">
             <span className="capitalize">{orderType}</span>
             <ChevronDown className="h-3 w-3 text-[#6B7280]" />
           </button>
@@ -210,15 +207,15 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         max={!isBuy ? availableBase : undefined}
       />
 
-      {/* ── Segmented % Bar ── */}
-      <div className="flex h-[32px] bg-[#111827] border border-[#1F2937] rounded-lg overflow-hidden">
+      {/* ── Segmented % Bar — flat, edge-to-edge ── */}
+      <div className="flex h-[32px] border border-[#1F2937]/80 rounded-md overflow-hidden">
         {QUICK_PERCENTAGES.map((pct, idx) => (
           <button
             key={pct}
             onClick={() => handleQuickPercent(pct)}
             className={cn(
               "flex-1 text-[11px] font-medium transition-colors duration-150",
-              idx < QUICK_PERCENTAGES.length - 1 && "border-r border-[#1F2937]",
+              idx < QUICK_PERCENTAGES.length - 1 && "border-r border-[#1F2937]/80",
               activePercent === pct
                 ? isBuy
                   ? "bg-[#16C784]/15 text-[#16C784]"
@@ -232,7 +229,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Total ── */}
-      <div className="flex items-center justify-between px-0.5">
+      <div className="flex items-center justify-between">
         <span className="text-[10px] text-[#6B7280]">Total</span>
         <span className="text-[11px] font-mono text-[#E5E7EB]">
           {total.toFixed(total >= 1 ? 2 : 6)} {quoteCurrency}
@@ -241,7 +238,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* ── Insufficient balance ── */}
       {hasInsufficientBalance && !hasZeroBalance && (
-        <div className="flex items-center gap-1.5 text-[10px] text-[#EA3943] bg-[#EA3943]/8 border border-[#EA3943]/15 rounded-lg px-2.5 py-1.5">
+        <div className="flex items-center gap-1.5 text-[10px] text-[#EA3943] bg-[#EA3943]/8 border border-[#EA3943]/15 rounded-md px-2 py-1.5">
           <AlertCircle className="h-3 w-3 flex-shrink-0" />
           <span>Insufficient {balanceCurrency}</span>
         </div>
@@ -252,7 +249,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0 || hasInsufficientBalance}
         className={cn(
-          "w-full h-[42px] rounded-[10px] text-[13px] font-semibold transition-all duration-200 active:scale-[0.98]",
+          "w-full h-[40px] rounded-lg text-[13px] font-semibold transition-all duration-200 active:scale-[0.98]",
           "disabled:opacity-40 disabled:cursor-not-allowed",
           hasInsufficientBalance
             ? "bg-[#1F2937] text-[#6B7280]"

@@ -22,7 +22,6 @@ interface PriceStepperInputProps {
   quickAction?: QuickAction;
 }
 
-// Smart step calculation based on value magnitude (like Binance/KuCoin)
 const getSmartStep = (value: number): number => {
   if (value >= 10000) return 10;
   if (value >= 1000) return 1;
@@ -33,10 +32,8 @@ const getSmartStep = (value: number): number => {
   return 0.00001;
 };
 
-// Clean number formatting - remove trailing zeros
 const formatNumber = (num: number, maxDecimals: number = 8): string => {
   const fixed = num.toFixed(maxDecimals);
-  // Remove trailing zeros but keep at least one decimal place for prices
   return fixed.replace(/\.?0+$/, '') || '0';
 };
 
@@ -57,7 +54,6 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Use provided step or calculate smart step
   const effectiveStep = step ?? getSmartStep(numValue);
 
   const handleDecrement = useCallback(() => {
@@ -70,12 +66,11 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
     onChange(formatNumber(newValue, decimals));
   }, [numValue, effectiveStep, max, onChange, decimals]);
 
-  // Long-press support for continuous increment/decrement
   const startLongPress = useCallback((action: () => void) => {
-    action(); // Immediate first action
+    action();
     timeoutRef.current = setTimeout(() => {
-      intervalRef.current = setInterval(action, 75); // Fast repeat after delay
-    }, 400); // Initial delay before repeat
+      intervalRef.current = setInterval(action, 75);
+    }, 400);
   }, []);
 
   const stopLongPress = useCallback(() => {
@@ -89,14 +84,12 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
     }
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopLongPress();
     };
   }, [stopLongPress]);
 
-  // Keyboard support
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowUp') {
       e.preventDefault();
@@ -109,18 +102,18 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
 
   return (
     <div className={cn("relative", className)}>
-      <div className="bg-card border border-border rounded-lg px-3 py-2 relative z-0">
+      <div className="bg-[#111827] border border-[#1F2937]/80 rounded-md px-2.5 py-1.5">
         <div className="flex items-center justify-between mb-0.5">
-          <label className="block text-xs text-muted-foreground">{label}</label>
+          <label className="text-[10px] text-[#6B7280]">{label}</label>
           {quickAction && quickAction.value > 0 && (
             <button
               type="button"
               onClick={() => onChange(formatNumber(quickAction.value, decimals))}
               className={cn(
-                "text-[9px] font-semibold px-1.5 py-0.5 rounded-full transition-colors",
+                "text-[9px] font-semibold px-1.5 py-0.5 rounded transition-colors",
                 quickAction.color === 'red'
-                  ? "bg-[#EA3943]/15 text-[#EA3943] hover:bg-[#EA3943]/25"
-                  : "bg-[#16C784]/15 text-[#16C784] hover:bg-[#16C784]/25"
+                  ? "bg-[#EA3943]/10 text-[#EA3943] active:bg-[#EA3943]/20"
+                  : "bg-[#16C784]/10 text-[#16C784] active:bg-[#16C784]/20"
               )}
             >
               {quickAction.label}
@@ -134,9 +127,9 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={disabled}
-            className="flex-1 bg-transparent text-foreground font-mono text-sm py-0.5 outline-none min-w-0"
+            className="flex-1 bg-transparent text-[#E5E7EB] font-mono text-sm py-0.5 outline-none min-w-0"
           />
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
               type="button"
               onMouseDown={() => startLongPress(handleDecrement)}
@@ -145,9 +138,9 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
               onTouchStart={() => startLongPress(handleDecrement)}
               onTouchEnd={stopLongPress}
               disabled={disabled || numValue <= min}
-              className="w-7 h-7 min-h-0 min-w-0 flex items-center justify-center border border-border rounded-full text-muted-foreground hover:text-foreground hover:border-muted-foreground active:scale-95 disabled:opacity-50 select-none touch-manipulation"
+              className="w-6 h-6 flex items-center justify-center border border-[#1F2937] rounded text-[#6B7280] active:text-[#E5E7EB] active:border-[#9CA3AF] disabled:opacity-30 select-none touch-manipulation"
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="h-3 w-3" />
             </button>
             <button
               type="button"
@@ -157,9 +150,9 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
               onTouchStart={() => startLongPress(handleIncrement)}
               onTouchEnd={stopLongPress}
               disabled={disabled || (max !== undefined && numValue >= max)}
-              className="w-7 h-7 min-h-0 min-w-0 flex items-center justify-center border border-border rounded-full text-muted-foreground hover:text-foreground hover:border-muted-foreground active:scale-95 disabled:opacity-50 select-none touch-manipulation"
+              className="w-6 h-6 flex items-center justify-center border border-[#1F2937] rounded text-[#6B7280] active:text-[#E5E7EB] active:border-[#9CA3AF] disabled:opacity-30 select-none touch-manipulation"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3 w-3" />
             </button>
           </div>
         </div>
