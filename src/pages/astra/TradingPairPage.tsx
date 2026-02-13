@@ -287,89 +287,88 @@ function TradingPairPageContent() {
       requireRiskDisclosure
     >
       <div className="flex flex-col h-screen bg-[#0B1220] overflow-hidden">
-        {/* ── Compact Pair Bar ── */}
-        <div className="flex-shrink-0 bg-[#0B1220]">
-          <div className="flex items-center justify-between px-2 h-[38px]">
-            <div className="flex items-center gap-0.5">
-              <button 
-                onClick={() => navigate("/app/trade")} 
-                className="p-1 active:bg-white/10 rounded"
-              >
-                <ArrowLeft className="h-3.5 w-3.5 text-[#6B7280]" />
-              </button>
-              
-              <DropdownMenu open={pairPickerOpen} onOpenChange={setPairPickerOpen}>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-0.5 px-1 py-0.5 active:bg-white/5 rounded">
-                    <span className="text-[#E5E7EB] font-bold text-sm tracking-tight">{pair.symbol}</span>
-                    <ChevronDown className={cn("h-3 w-3 text-[#6B7280]", pairPickerOpen && "rotate-180")} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-72 bg-[#111827] border-[#1F2937] p-2 shadow-2xl rounded-xl">
-                  <div className="relative mb-2">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#9CA3AF]" />
-                    <Input
-                      placeholder="Search pairs..."
-                      value={pairSearch}
-                      onChange={(e) => setPairSearch(e.target.value)}
-                      className="pl-9 h-8 bg-[#0B1220] border-[#1F2937] text-[#E5E7EB] rounded-lg text-xs"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="max-h-64 overflow-y-auto space-y-0.5">
-                    {sortedPairs.map((p) => (
-                      <DropdownMenuItem
-                        key={p.symbol}
-                        onClick={() => handlePairSelect(p.symbol)}
-                        className={cn(
-                          "flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer text-xs",
-                          p.symbol === pair.symbol && "bg-white/5"
-                        )}
-                      >
-                        <span className="font-semibold text-[#E5E7EB]">{p.symbol}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#9CA3AF] font-mono text-[11px]">
-                            {p.price >= 1 ? p.price.toFixed(2) : p.price.toFixed(6)}
-                          </span>
-                          <span className={cn(
-                            "font-medium text-[10px] px-1 py-0.5 rounded",
-                            p.change24h >= 0 ? "text-[#16C784] bg-[#16C784]/10" : "text-[#EA3943] bg-[#EA3943]/10"
-                          )}>
-                            {p.change24h >= 0 ? "+" : ""}{p.change24h.toFixed(2)}%
-                          </span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                    {sortedPairs.length === 0 && (
-                      <div className="text-center py-4 text-[#9CA3AF] text-xs">No pairs found</div>
-                    )}
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+        {/* ── Top Bar ── */}
+        <div className="flex-shrink-0 bg-[#0B1220] border-b border-[#1F2937]/50">
+          {/* Row 1: Back + Pair + Price + % + Icons */}
+          <div className="flex items-center h-[40px] px-3">
+            {/* Left: Back + Pair picker */}
+            <button 
+              onClick={() => navigate("/app/trade")} 
+              className="p-1 -ml-1 mr-1 active:bg-white/10 rounded"
+            >
+              <ArrowLeft className="h-4 w-4 text-[#9CA3AF]" />
+            </button>
+            
+            <DropdownMenu open={pairPickerOpen} onOpenChange={setPairPickerOpen}>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-0.5 mr-3 active:bg-white/5 rounded px-1 py-0.5">
+                  <span className="text-[#F0F1F3] font-bold text-[14px] tracking-tight">{pair.symbol}</span>
+                  <ChevronDown className={cn("h-3 w-3 text-[#6B7280] ml-0.5", pairPickerOpen && "rotate-180")} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-72 bg-[#111827] border-[#1F2937] p-2 shadow-2xl rounded-xl">
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#9CA3AF]" />
+                  <Input
+                    placeholder="Search pairs..."
+                    value={pairSearch}
+                    onChange={(e) => setPairSearch(e.target.value)}
+                    className="pl-9 h-8 bg-[#0B1220] border-[#1F2937] text-[#E5E7EB] rounded-lg text-xs"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-64 overflow-y-auto space-y-0.5">
+                  {sortedPairs.map((p) => (
+                    <DropdownMenuItem
+                      key={p.symbol}
+                      onClick={() => handlePairSelect(p.symbol)}
+                      className={cn(
+                        "flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer text-xs",
+                        p.symbol === pair.symbol && "bg-white/5"
+                      )}
+                    >
+                      <span className="font-semibold text-[#E5E7EB]">{p.symbol}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#9CA3AF] font-mono text-[11px]">
+                          {p.price >= 1 ? p.price.toFixed(2) : p.price.toFixed(6)}
+                        </span>
+                        <span className={cn(
+                          "font-medium text-[10px] px-1 py-0.5 rounded",
+                          p.change24h >= 0 ? "text-[#16C784] bg-[#16C784]/10" : "text-[#EA3943] bg-[#EA3943]/10"
+                        )}>
+                          {p.change24h >= 0 ? "+" : ""}{p.change24h.toFixed(2)}%
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                  {sortedPairs.length === 0 && (
+                    <div className="text-center py-4 text-[#9CA3AF] text-xs">No pairs found</div>
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-              {wsConnected && (
-                <div className="h-1.5 w-1.5 rounded-full bg-[#16C784]" />
-              )}
-            </div>
-
-            {/* Price + Change inline */}
-            <div className="flex items-center gap-1.5">
+            {/* Center: Price (dominant) + Change */}
+            <div className="flex items-baseline gap-1.5 flex-1 min-w-0">
               <span className={cn(
-                "text-sm font-bold font-mono",
-                isPositive ? "text-[#16C784]" : "text-[#EA3943]"
+                "text-[16px] font-bold font-mono tabular-nums tracking-tight",
+                isPositive ? "text-[#2EBD85]" : "text-[#F6465D]"
               )}>
                 {formatPrice(pair.price)}
               </span>
               <span className={cn(
-                "text-[10px] font-semibold px-1.5 py-0.5 rounded",
-                isPositive ? "text-[#16C784] bg-[#16C784]/10" : "text-[#EA3943] bg-[#EA3943]/10"
+                "text-[10px] font-semibold px-1.5 py-[1px] rounded-sm",
+                isPositive ? "text-[#2EBD85] bg-[#2EBD85]/10" : "text-[#F6465D] bg-[#F6465D]/10"
               )}>
                 {isPositive ? "+" : ""}{pair.change24h.toFixed(2)}%
               </span>
+              {wsConnected && (
+                <div className="h-1.5 w-1.5 rounded-full bg-[#2EBD85] flex-shrink-0" />
+              )}
             </div>
 
-            {/* Right icons */}
-            <div className="flex items-center">
+            {/* Right: Icons tight */}
+            <div className="flex items-center gap-0 ml-1">
               <button
                 onClick={() => {
                   const favs = JSON.parse(localStorage.getItem('favorite-pairs') || '[]');
@@ -379,31 +378,31 @@ function TradingPairPageContent() {
                 }}
                 className="p-1.5 active:bg-white/10 rounded"
               >
-                <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-yellow-500 text-yellow-500" : "text-[#6B7280]")} />
+                <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-[#F0B90B] text-[#F0B90B]" : "text-[#4B5563]")} />
               </button>
               <button
                 onClick={() => toast({ title: "Price Alerts", description: "Coming soon!" })}
                 className="p-1.5 active:bg-white/10 rounded"
               >
-                <Bell className="h-3.5 w-3.5 text-[#6B7280]" />
+                <Bell className="h-3.5 w-3.5 text-[#4B5563]" />
               </button>
               <AdminMarketMakerControls isAdmin={isAdmin} />
             </div>
           </div>
 
-          {/* Mini stats row */}
-          <div className="flex items-center gap-3 px-2 pb-1 text-[9px] border-b border-[#1F2937]/40">
-            <div className="flex items-center gap-0.5">
-              <span className="text-[#4B5563]">H</span>
-              <span className="font-mono text-[#16C784]">{formatPrice(pair.high24h || 0)}</span>
+          {/* Row 2: H / L / Vol stats */}
+          <div className="flex items-center gap-4 px-3 pb-1.5 text-[10px]">
+            <div className="flex items-center gap-1">
+              <span className="text-[#4B5563] font-medium">H</span>
+              <span className="font-mono tabular-nums text-[#2EBD85]">{formatPrice(pair.high24h || 0)}</span>
             </div>
-            <div className="flex items-center gap-0.5">
-              <span className="text-[#4B5563]">L</span>
-              <span className="font-mono text-[#EA3943]">{formatPrice(pair.low24h || 0)}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[#4B5563] font-medium">L</span>
+              <span className="font-mono tabular-nums text-[#F6465D]">{formatPrice(pair.low24h || 0)}</span>
             </div>
-            <div className="flex items-center gap-0.5">
-              <span className="text-[#4B5563]">Vol</span>
-              <span className="font-mono text-[#9CA3AF]">{formatVolume(pair.volume24h || 0)}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[#4B5563] font-medium">Vol</span>
+              <span className="font-mono tabular-nums text-[#9CA3AF]">{formatVolume(pair.volume24h || 0)}</span>
             </div>
           </div>
         </div>
@@ -469,7 +468,6 @@ function TradingPairPageContent() {
               />
             </div>
           </div>
-
 
           {/* ═══ POSITION (collapsible) ═══ */}
           <div className="border-b border-[#1F2937]/40">
