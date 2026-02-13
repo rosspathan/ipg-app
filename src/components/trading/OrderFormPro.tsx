@@ -202,15 +202,15 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
   return (
     <div>
-      {/* ── Buy / Sell — underline tab style ── */}
-      <div className="flex h-[34px] border-b border-[#1F2937]/60">
+      {/* ── Buy / Sell — segmented control ── */}
+      <div className="flex h-[36px] bg-[#111827] rounded-md p-[2px] gap-[2px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 text-[12px] font-semibold transition-colors duration-150",
+            "flex-1 rounded text-[12px] font-semibold transition-all duration-150",
             isBuy
-              ? "text-[#16C784] border-b-2 border-[#16C784]"
-              : "text-[#6B7280] active:text-[#9CA3AF]"
+              ? "bg-[#16C784]/15 text-[#16C784] shadow-[inset_0_0_0_1px_rgba(22,199,132,0.3)]"
+              : "text-[#6B7280] active:text-[#9CA3AF] active:bg-white/[0.02]"
           )}
         >
           Buy
@@ -218,10 +218,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 text-[12px] font-semibold transition-colors duration-150",
+            "flex-1 rounded text-[12px] font-semibold transition-all duration-150",
             !isBuy
-              ? "text-[#EA3943] border-b-2 border-[#EA3943]"
-              : "text-[#6B7280] active:text-[#9CA3AF]"
+              ? "bg-[#EA3943]/15 text-[#EA3943] shadow-[inset_0_0_0_1px_rgba(234,57,67,0.3)]"
+              : "text-[#6B7280] active:text-[#9CA3AF] active:bg-white/[0.02]"
           )}
         >
           Sell
@@ -285,28 +285,22 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         max={!isBuy ? availableBase : undefined}
       />
 
-      {/* ── % Selector — ultra slim ── */}
-      <div className="flex items-center h-[26px] mt-1">
-        {QUICK_PERCENTAGES.map((pct, idx) => (
+      {/* ── % Selector — segmented slim bar ── */}
+      <div className="flex items-center h-[28px] mt-1 bg-[#111827] rounded p-[2px] gap-[1px]">
+        {QUICK_PERCENTAGES.map((pct) => (
           <button
             key={pct}
             onClick={() => handleQuickPercent(pct)}
             className={cn(
-              "flex-1 text-[10px] font-medium transition-colors duration-100",
+              "flex-1 text-[10px] font-medium transition-all duration-100 rounded-sm h-full",
               activePercent === pct
                 ? isBuy
-                  ? "text-[#16C784]"
-                  : "text-[#EA3943]"
-                : "text-[#4B5563] active:text-[#9CA3AF]"
+                  ? "text-[#16C784] bg-[#16C784]/10 font-semibold"
+                  : "text-[#EA3943] bg-[#EA3943]/10 font-semibold"
+                : "text-[#4B5563] active:text-[#9CA3AF] active:bg-white/[0.03]"
             )}
           >
             {pct}%
-            {activePercent === pct && (
-              <div className={cn(
-                "h-px mt-0.5 mx-auto w-4",
-                isBuy ? "bg-[#16C784]" : "bg-[#EA3943]"
-              )} />
-            )}
           </button>
         ))}
       </div>
@@ -329,15 +323,17 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       {/* ── Submit ── */}
       <button
         onClick={handleSubmit}
-        disabled={isPlacingOrder || numAmount <= 0 || hasInsufficientBalance}
+        disabled={isPlacingOrder || numAmount <= 0}
         className={cn(
-          "w-full h-[34px] rounded text-[12px] font-semibold mt-1.5 transition-all duration-150 active:scale-[0.98]",
-          "disabled:opacity-30 disabled:cursor-not-allowed",
+          "w-full h-[36px] rounded text-[12px] font-bold mt-1.5 transition-all duration-150 active:scale-[0.98] uppercase tracking-wide",
+          "disabled:cursor-not-allowed",
           hasInsufficientBalance
-            ? "bg-[#1F2937] text-[#6B7280]"
-            : isBuy
-              ? "bg-[#16C784] text-white active:bg-[#0ea36b]"
-              : "bg-[#EA3943] text-white active:bg-[#c9222c]"
+            ? "bg-[#1F2937]/80 text-[#6B7280] border border-[#EA3943]/30"
+            : numAmount <= 0
+              ? "bg-[#1F2937]/50 text-[#4B5563]"
+              : isBuy
+                ? "bg-[#16C784] text-white active:bg-[#0ea36b]"
+                : "bg-[#EA3943] text-white active:bg-[#c9222c]"
         )}
       >
         {isPlacingOrder ? (
@@ -346,7 +342,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             Placing...
           </span>
         ) : hasInsufficientBalance ? (
-          'Insufficient Balance'
+          `Deposit ${balanceCurrency} to ${isBuy ? 'Buy' : 'Sell'}`
         ) : (
           `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`
         )}
