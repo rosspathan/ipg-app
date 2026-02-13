@@ -29,49 +29,44 @@ const formatQty = (qty: number) => {
   if (qty >= 10_000_000) return `${(qty / 1_000_000).toFixed(1)}M`;
   if (qty >= 10_000) return `${(qty / 1_000).toFixed(1)}K`;
   if (qty >= 100) return qty.toFixed(2);
-  return qty.toFixed(4);
+  return qty.toFixed(3);
 };
 
 const Row = memo(({
   entry,
   side,
-  maxTotal,
+  maxQty,
   onPriceClick,
-  cumTotal,
 }: {
   entry: OrderBookEntry;
   side: 'ask' | 'bid';
-  maxTotal: number;
+  maxQty: number;
   onPriceClick?: (price: number) => void;
-  cumTotal: number;
 }) => {
   const isAsk = side === 'ask';
-  const depthPercent = maxTotal > 0 ? (cumTotal / maxTotal) * 100 : 0;
+  const depthPercent = maxQty > 0 ? (entry.quantity / maxQty) * 100 : 0;
 
   return (
     <div
       onClick={() => onPriceClick?.(entry.price)}
-      className="relative grid items-center px-2.5 h-[18px] cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors duration-75"
-      style={{ gridTemplateColumns: '36% 32% 32%' }}
+      className="relative grid items-center px-2 h-[17px] cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors duration-75"
+      style={{ gridTemplateColumns: '50% 50%' }}
     >
       <div
         className={cn(
           "absolute right-0 top-0 bottom-0 pointer-events-none transition-[width] duration-200",
-          isAsk ? "bg-[#EA3943]/[0.10]" : "bg-[#16C784]/[0.10]"
+          isAsk ? "bg-[#F6465D]/[0.12]" : "bg-[#2EBD85]/[0.12]"
         )}
         style={{ width: `${Math.min(depthPercent, 100)}%` }}
       />
       <span className={cn(
         "relative z-10 text-[11px] font-mono tabular-nums text-left",
-        isAsk ? "text-[#EA3943]" : "text-[#16C784]"
+        isAsk ? "text-[#F6465D]" : "text-[#2EBD85]"
       )}>
         {formatPrice(entry.price)}
       </span>
-      <span className="relative z-10 text-[11px] font-mono text-[#6B7280] text-right tabular-nums">
+      <span className="relative z-10 text-[11px] font-mono text-[#848E9C] text-right tabular-nums">
         {formatQty(entry.quantity)}
-      </span>
-      <span className="relative z-10 text-[11px] font-mono text-[#4B5563] text-right tabular-nums">
-        {formatQty(cumTotal)}
       </span>
     </div>
   );
@@ -84,44 +79,34 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   bids,
   currentPrice,
   priceChange = 0,
+  quoteCurrency,
+  baseCurrency,
   onPriceClick,
   isLoading = false,
   marketPrice,
 }) => {
-  const displayAsks = useMemo(() => asks.slice(0, 14).reverse(), [asks]);
-  const displayBids = useMemo(() => bids.slice(0, 14), [bids]);
+  const displayAsks = useMemo(() => asks.slice(0, 7).reverse(), [asks]);
+  const displayBids = useMemo(() => bids.slice(0, 7), [bids]);
 
-  const askCumTotals = useMemo(() => {
-    const totals: number[] = [];
-    let cum = 0;
-    for (let i = displayAsks.length - 1; i >= 0; i--) {
-      cum += displayAsks[i].quantity;
-      totals[i] = cum;
-    }
-    return totals;
-  }, [displayAsks]);
-
-  const bidCumTotals = useMemo(() => {
-    const totals: number[] = [];
-    let cum = 0;
-    for (let i = 0; i < displayBids.length; i++) {
-      cum += displayBids[i].quantity;
-      totals[i] = cum;
-    }
-    return totals;
-  }, [displayBids]);
-
-  const maxAskCum = askCumTotals.length > 0 ? Math.max(...askCumTotals) : 1;
-  const maxBidCum = bidCumTotals.length > 0 ? Math.max(...bidCumTotals) : 1;
-  const maxCum = Math.max(maxAskCum, maxBidCum);
+  // Max quantity for depth bar normalization
+  const allQtys = useMemo(() => {
+    const askQtys = displayAsks.map(a => a.quantity);
+    const bidQtys = displayBids.map(b => b.quantity);
+    return Math.max(...askQtys, ...bidQtys, 1);
+  }, [displayAsks, displayBids]);
 
   const bestAsk = displayAsks.length > 0 ? displayAsks[displayAsks.length - 1]?.price : null;
   const bestBid = displayBids.length > 0 ? displayBids[0]?.price : null;
-  const spreadPercent = bestAsk && bestBid ? ((bestAsk - bestBid) / bestBid * 100) : null;
-  const spreadMidpoint = bestAsk && bestBid ? (bestAsk + bestBid) / 2 : null;
 
-  const displayPrice = currentPrice || marketPrice || spreadMidpoint || 0;
+  const displayPrice = currentPrice || marketPrice || 0;
   const isPositive = priceChange >= 0;
+
+  // Buy/sell pressure
+  const totalBidQty = displayBids.reduce((s, b) => s + b.quantity, 0);
+  const totalAskQty = displayAsks.reduce((s, a) => s + a.quantity, 0);
+  const totalQty = totalBidQty + totalAskQty;
+  const bidPct = totalQty > 0 ? (totalBidQty / totalQty * 100) : 50;
+  const askPct = totalQty > 0 ? (totalAskQty / totalQty * 100) : 50;
 
   if (isLoading) {
     return (
@@ -130,86 +115,74 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   }
 
   return (
-    <div>
+    <div className="py-1">
       {/* Header */}
-      <div className="grid px-2.5 py-1 text-[9px] text-[#4B5563] uppercase tracking-wider font-medium"
-        style={{ gridTemplateColumns: '36% 32% 32%' }}
+      <div className="grid px-2 pb-1 text-[9px] text-[#4B5563] uppercase tracking-wider font-medium"
+        style={{ gridTemplateColumns: '50% 50%' }}
       >
-        <span>Price</span>
-        <span className="text-right">Qty</span>
-        <span className="text-right">Total</span>
+        <span>Price ({quoteCurrency})</span>
+        <span className="text-right">Amount ⇅</span>
       </div>
 
       {/* Asks */}
       <div>
         {displayAsks.length > 0 ? (
-          displayAsks.map((ask, idx) => {
-            const isLast = idx === displayAsks.length - 1;
-            return (
-              <Row
-                key={`a-${ask.price}-${idx}`}
-                entry={ask}
-                side="ask"
-                maxTotal={maxCum}
-                onPriceClick={onPriceClick}
-                cumTotal={askCumTotals[idx]}
-              />
-            );
-          })
+          displayAsks.map((ask, idx) => (
+            <Row
+              key={`a-${ask.price}-${idx}`}
+              entry={ask}
+              side="ask"
+              maxQty={allQtys}
+              onPriceClick={onPriceClick}
+            />
+          ))
         ) : (
-          <div className="flex items-center justify-center h-[40px] text-[9px] text-[#4B5563]">No asks</div>
-        )}
-        {/* Best Ask badge */}
-        {displayAsks.length > 0 && (
-          <div className="px-2.5 h-[12px] flex justify-end">
-            <span className="text-[7px] font-semibold text-[#EA3943]/60 uppercase tracking-wider">Best Ask ↑</span>
-          </div>
+          <div className="flex items-center justify-center h-[30px] text-[9px] text-[#4B5563]">No asks</div>
         )}
       </div>
 
       {/* ── Mid price ── */}
-      <div className="flex items-center justify-between px-2.5 h-[28px] border-y border-[#1F2937]/60 bg-[#0D1526]">
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-between px-2 h-[24px]">
+        <div className="flex items-center gap-1">
           {isPositive ? (
-            <TrendingUp className="h-3 w-3 text-[#16C784]" />
+            <TrendingUp className="h-2.5 w-2.5 text-[#2EBD85]" />
           ) : (
-            <TrendingDown className="h-3 w-3 text-[#EA3943]" />
+            <TrendingDown className="h-2.5 w-2.5 text-[#F6465D]" />
           )}
           <span className={cn(
             "text-[14px] font-bold font-mono tracking-tight",
-            isPositive ? "text-[#16C784]" : "text-[#EA3943]"
+            isPositive ? "text-[#2EBD85]" : "text-[#F6465D]"
           )}>
             {displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
           </span>
         </div>
-        {spreadPercent !== null && (
-          <span className="text-[8px] font-mono text-[#4B5563]">
-            Spread {spreadPercent.toFixed(2)}%
-          </span>
-        )}
       </div>
 
       {/* Bids */}
       <div>
-        {displayBids.length > 0 && (
-          <div className="px-2.5 h-[12px] flex justify-start">
-            <span className="text-[7px] font-semibold text-[#16C784]/60 uppercase tracking-wider">↓ Best Bid</span>
-          </div>
-        )}
         {displayBids.length > 0 ? (
           displayBids.map((bid, idx) => (
             <Row
               key={`b-${bid.price}-${idx}`}
               entry={bid}
               side="bid"
-              maxTotal={maxCum}
+              maxQty={allQtys}
               onPriceClick={onPriceClick}
-              cumTotal={bidCumTotals[idx]}
             />
           ))
         ) : (
-          <div className="flex items-center justify-center h-[40px] text-[9px] text-[#4B5563]">No bids</div>
+          <div className="flex items-center justify-center h-[30px] text-[9px] text-[#4B5563]">No bids</div>
         )}
+      </div>
+
+      {/* ── Buy/Sell pressure bar ── */}
+      <div className="flex items-center gap-1 px-2 pt-1">
+        <span className="text-[9px] font-mono text-[#2EBD85]">{bidPct.toFixed(1)}%</span>
+        <div className="flex-1 h-[3px] rounded-full overflow-hidden flex">
+          <div className="bg-[#2EBD85]" style={{ width: `${bidPct}%` }} />
+          <div className="bg-[#F6465D]" style={{ width: `${askPct}%` }} />
+        </div>
+        <span className="text-[9px] font-mono text-[#F6465D]">{askPct.toFixed(1)}%</span>
       </div>
     </div>
   );

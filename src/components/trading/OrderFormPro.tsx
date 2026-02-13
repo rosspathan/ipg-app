@@ -54,8 +54,8 @@ const getSmartStep = (value: number): number => {
   return 0.00001;
 };
 
-/* ── Inline terminal-style input row ── */
-const TerminalInput: React.FC<{
+/* ── Binance-style input: — [value] + ── */
+const ExchangeInput: React.FC<{
   label: string;
   value: string;
   onChange: (v: string) => void;
@@ -75,49 +75,47 @@ const TerminalInput: React.FC<{
   };
 
   return (
-    <div className="flex items-center justify-between h-[32px] border-b border-[#1F2937]/40">
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] text-[#6B7280] w-[52px] flex-shrink-0">{label}</span>
-        {tag && tag.value > 0 && (
-          <button
-            type="button"
-            onClick={() => onChange(formatNum(tag.value))}
-            className={cn(
-              "text-[8px] font-semibold px-1 py-px rounded leading-none",
-              tag.color === 'red'
-                ? "text-[#EA3943] bg-[#EA3943]/10 active:bg-[#EA3943]/20"
-                : "text-[#16C784] bg-[#16C784]/10 active:bg-[#16C784]/20"
-            )}
-          >
-            {tag.label}
-          </button>
-        )}
-      </div>
-      <div className="flex items-center gap-0">
+    <div className="bg-[#111827]/80 rounded-md h-[38px] flex items-center px-1 gap-0">
+      <button
+        type="button"
+        onClick={() => adjust(-1)}
+        disabled={numVal <= min}
+        className="w-7 h-7 flex items-center justify-center text-[#6B7280] text-[16px] font-light active:text-[#E5E7EB] disabled:opacity-25 select-none flex-shrink-0"
+      >
+        −
+      </button>
+      <div className="flex-1 min-w-0 flex flex-col items-center justify-center">
+        <span className="text-[8px] text-[#4B5563] leading-none">{label}</span>
         <input
           type="text"
           inputMode="decimal"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="bg-transparent text-right text-[13px] font-mono text-[#E5E7EB] outline-none w-[120px]"
+          className="bg-transparent text-center text-[13px] font-mono text-[#E5E7EB] outline-none w-full leading-tight"
         />
-        <button
-          type="button"
-          onClick={() => adjust(-1)}
-          disabled={numVal <= min}
-          className="text-[#6B7280] text-[15px] font-light w-6 h-full flex items-center justify-center active:text-[#E5E7EB] disabled:opacity-25 select-none"
-        >
-          −
-        </button>
-        <button
-          type="button"
-          onClick={() => adjust(1)}
-          disabled={max !== undefined && numVal >= max}
-          className="text-[#6B7280] text-[15px] font-light w-6 h-full flex items-center justify-center active:text-[#E5E7EB] disabled:opacity-25 select-none"
-        >
-          +
-        </button>
       </div>
+      {tag && tag.value > 0 && (
+        <button
+          type="button"
+          onClick={() => onChange(formatNum(tag.value))}
+          className={cn(
+            "text-[8px] font-bold px-1 py-0.5 rounded flex-shrink-0",
+            tag.color === 'red'
+              ? "text-[#EA3943] bg-[#EA3943]/10 active:bg-[#EA3943]/20"
+              : "text-[#16C784] bg-[#16C784]/10 active:bg-[#16C784]/20"
+          )}
+        >
+          {tag.label}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => adjust(1)}
+        disabled={max !== undefined && numVal >= max}
+        className="w-7 h-7 flex items-center justify-center text-[#6B7280] text-[16px] font-light active:text-[#E5E7EB] disabled:opacity-25 select-none flex-shrink-0"
+      >
+        +
+      </button>
     </div>
   );
 };
@@ -162,6 +160,12 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
     return numAmount * numPrice;
   }, [numAmount, numPrice, currentPrice, orderType]);
 
+  const maxBuyAmount = useMemo(() => {
+    const effectivePrice = orderType === 'market' ? currentPrice : numPrice;
+    if (isBuy && effectivePrice > 0) return availableQuote / effectivePrice;
+    return availableBase;
+  }, [isBuy, availableQuote, availableBase, numPrice, currentPrice, orderType]);
+
   const requiredAmount = isBuy ? total * 1.005 : numAmount;
   const hasInsufficientBalance = numAmount > 0 && requiredAmount > availableBalance;
 
@@ -169,11 +173,11 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
     setActivePercent(pct);
     const effectivePrice = orderType === 'market' ? currentPrice : numPrice;
     if (isBuy && effectivePrice > 0) {
-      const maxBuyAmount = (availableQuote * (pct / 100)) / effectivePrice;
-      setAmount(maxBuyAmount.toFixed(6));
+      const maxBuy = (availableQuote * (pct / 100)) / effectivePrice;
+      setAmount(maxBuy.toFixed(6));
     } else if (!isBuy) {
-      const maxSellAmount = availableBase * (pct / 100);
-      setAmount(maxSellAmount.toFixed(6));
+      const maxSell = availableBase * (pct / 100);
+      setAmount(maxSell.toFixed(6));
     }
   };
 
@@ -200,17 +204,19 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
     setActivePercent(null);
   };
 
+  const estFee = total * 0.005;
+
   return (
-    <div>
-      {/* ── Buy / Sell — segmented control ── */}
-      <div className="flex h-[36px] bg-[#111827] rounded-md p-[2px] gap-[2px]">
+    <div className="flex flex-col gap-1.5">
+      {/* ── Buy / Sell — Binance pill ── */}
+      <div className="flex h-[34px] bg-[#111827] rounded-lg p-[3px] gap-[3px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 rounded text-[12px] font-semibold transition-all duration-150",
+            "flex-1 rounded-md text-[12px] font-semibold transition-all duration-150",
             isBuy
-              ? "bg-[#16C784]/15 text-[#16C784] shadow-[inset_0_0_0_1px_rgba(22,199,132,0.3)]"
-              : "text-[#6B7280] active:text-[#9CA3AF] active:bg-white/[0.02]"
+              ? "bg-[#2EBD85] text-white"
+              : "text-[#6B7280] active:text-[#9CA3AF]"
           )}
         >
           Buy
@@ -218,42 +224,26 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 rounded text-[12px] font-semibold transition-all duration-150",
+            "flex-1 rounded-md text-[12px] font-semibold transition-all duration-150",
             !isBuy
-              ? "bg-[#EA3943]/15 text-[#EA3943] shadow-[inset_0_0_0_1px_rgba(234,57,67,0.3)]"
-              : "text-[#6B7280] active:text-[#9CA3AF] active:bg-white/[0.02]"
+              ? "bg-[#F6465D] text-white"
+              : "text-[#6B7280] active:text-[#9CA3AF]"
           )}
         >
           Sell
         </button>
       </div>
 
-      {/* ── Available + Order type row ── */}
-      <div className="flex items-center justify-between h-[28px] mt-1">
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] text-[#6B7280]">Avbl</span>
-          <span className={cn(
-            "text-[10px] font-mono",
-            hasInsufficientBalance ? "text-[#EA3943]" : "text-[#9CA3AF]"
-          )}>
-            {availableBalance.toFixed(4)} {balanceCurrency}
-          </span>
-          <button
-            onClick={() => navigate(`/app/wallet/transfer?asset=${balanceCurrency}&direction=to_trading`)}
-            className="text-[9px] text-[#16C784] font-medium active:opacity-70"
-          >
-            +
-          </button>
-        </div>
-
+      {/* ── Order type row ── */}
+      <div className="flex items-center h-[24px]">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-0.5 text-[10px] text-[#9CA3AF] font-medium active:text-[#E5E7EB]">
+            <button className="flex items-center gap-0.5 text-[11px] text-[#E5E7EB] font-medium active:text-white">
               <span className="capitalize">{orderType}</span>
-              <ChevronDown className="h-2.5 w-2.5" />
+              <ChevronDown className="h-2.5 w-2.5 text-[#6B7280]" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-24 bg-[#111827] border-[#1F2937] min-w-0">
+          <DropdownMenuContent align="start" className="w-24 bg-[#111827] border-[#1F2937] min-w-0">
             <DropdownMenuItem onClick={() => setOrderType('limit')} className="text-[11px] py-1.5">Limit</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setOrderType('market')} className="text-[11px] py-1.5">Market</DropdownMenuItem>
           </DropdownMenuContent>
@@ -262,22 +252,22 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* ── Price Input ── */}
       {orderType !== 'market' && (
-        <TerminalInput
-          label={`Price`}
+        <ExchangeInput
+          label={`Price (${quoteCurrency})`}
           value={price}
           onChange={setPrice}
           step={tickSize}
           min={0}
           tag={isBuy
-            ? { label: 'Ask', value: bestAsk, color: 'red' }
-            : { label: 'Bid', value: bestBid, color: 'green' }
+            ? { label: 'BBO', value: bestAsk, color: 'red' }
+            : { label: 'BBO', value: bestBid, color: 'green' }
           }
         />
       )}
 
       {/* ── Amount Input ── */}
-      <TerminalInput
-        label={`Amt (${baseCurrency})`}
+      <ExchangeInput
+        label={`Amount (${baseCurrency})`}
         value={amount}
         onChange={handleAmountChange}
         step={lotSize}
@@ -285,64 +275,103 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         max={!isBuy ? availableBase : undefined}
       />
 
-      {/* ── % Selector — segmented slim bar ── */}
-      <div className="flex items-center h-[28px] mt-1 bg-[#111827] rounded p-[2px] gap-[1px]">
-        {QUICK_PERCENTAGES.map((pct) => (
-          <button
-            key={pct}
-            onClick={() => handleQuickPercent(pct)}
-            className={cn(
-              "flex-1 text-[10px] font-medium transition-all duration-100 rounded-sm h-full",
-              activePercent === pct
-                ? isBuy
-                  ? "text-[#16C784] bg-[#16C784]/10 font-semibold"
-                  : "text-[#EA3943] bg-[#EA3943]/10 font-semibold"
-                : "text-[#4B5563] active:text-[#9CA3AF] active:bg-white/[0.03]"
-            )}
-          >
-            {pct}%
-          </button>
-        ))}
+      {/* ── Slider with dots ── */}
+      <div className="flex items-center gap-0 h-[20px] px-1">
+        <div className="relative flex-1 flex items-center">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] bg-[#1F2937] rounded-full" />
+          {QUICK_PERCENTAGES.map((pct, i) => {
+            const pos = (i / (QUICK_PERCENTAGES.length - 1)) * 100;
+            const isActive = activePercent !== null && activePercent >= pct;
+            return (
+              <button
+                key={pct}
+                onClick={() => handleQuickPercent(pct)}
+                className="absolute -translate-x-1/2 z-10 flex flex-col items-center"
+                style={{ left: `${pos}%` }}
+              >
+                <div className={cn(
+                  "w-2 h-2 rounded-full border-2 transition-colors",
+                  isActive
+                    ? isBuy ? "bg-[#2EBD85] border-[#2EBD85]" : "bg-[#F6465D] border-[#F6465D]"
+                    : "bg-[#0B1220] border-[#374151]"
+                )} />
+              </button>
+            );
+          })}
+          {/* Active track */}
+          {activePercent !== null && (
+            <div
+              className={cn(
+                "absolute top-1/2 -translate-y-1/2 h-[2px] rounded-full left-0",
+                isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
+              )}
+              style={{ width: `${((QUICK_PERCENTAGES.indexOf(activePercent)) / (QUICK_PERCENTAGES.length - 1)) * 100}%` }}
+            />
+          )}
+        </div>
       </div>
 
-      {/* ── Total row ── */}
-      <div className="flex items-center justify-between h-[26px] border-b border-[#1F2937]/40">
-        <span className="text-[10px] text-[#6B7280]">Total</span>
-        <span className="text-[11px] font-mono text-[#9CA3AF]">
-          {total.toFixed(total >= 1 ? 2 : 6)} {quoteCurrency}
+      {/* ── Total ── */}
+      <div className="bg-[#111827]/80 rounded-md h-[34px] flex items-center justify-center">
+        <span className="text-[9px] text-[#4B5563] mr-1">Total</span>
+        <span className="text-[12px] font-mono text-[#9CA3AF]">
+          {total > 0 ? `${total.toFixed(total >= 1 ? 2 : 6)} ${quoteCurrency}` : `-- ${quoteCurrency}`}
         </span>
       </div>
 
-      {/* ── Insufficient balance — inline text ── */}
-      {hasInsufficientBalance && (
-        <div className="flex items-center gap-1 h-[22px] mt-0.5">
-          <span className="text-[10px] text-[#EA3943]">⚠ Insufficient {balanceCurrency}</span>
+      {/* ── Info rows: Avbl / Max / Fee ── */}
+      <div className="flex flex-col gap-0 text-[9px]">
+        <div className="flex items-center justify-between h-[16px]">
+          <span className="text-[#4B5563]">Avbl</span>
+          <div className="flex items-center gap-0.5">
+            <span className={cn("font-mono", hasInsufficientBalance ? "text-[#F6465D]" : "text-[#9CA3AF]")}>
+              {availableBalance.toFixed(4)} {balanceCurrency}
+            </span>
+            <button
+              onClick={() => navigate(`/app/wallet/transfer?asset=${balanceCurrency}&direction=to_trading`)}
+              className="text-[#2EBD85] font-bold text-[10px] w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#2EBD85]/10"
+            >
+              +
+            </button>
+          </div>
         </div>
+        <div className="flex items-center justify-between h-[16px]">
+          <span className="text-[#4B5563]">Max {isBuy ? 'Buy' : 'Sell'}</span>
+          <span className="font-mono text-[#9CA3AF]">{maxBuyAmount.toFixed(4)} {baseCurrency}</span>
+        </div>
+        <div className="flex items-center justify-between h-[16px]">
+          <span className="text-[#4B5563]">Est. Fee</span>
+          <span className="font-mono text-[#9CA3AF]">{total > 0 ? `~${estFee.toFixed(4)}` : '--'} {quoteCurrency}</span>
+        </div>
+      </div>
+
+      {/* ── Insufficient warning ── */}
+      {hasInsufficientBalance && (
+        <div className="text-[9px] text-[#F6465D] text-center">⚠ Insufficient {balanceCurrency}</div>
       )}
 
-      {/* ── Submit ── */}
+      {/* ── Submit CTA ── */}
       <button
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0}
         className={cn(
-          "w-full h-[36px] rounded text-[12px] font-bold mt-1.5 transition-all duration-150 active:scale-[0.98] uppercase tracking-wide",
+          "w-full h-[36px] rounded-md text-[13px] font-bold transition-all duration-150 active:scale-[0.98]",
           "disabled:cursor-not-allowed",
           hasInsufficientBalance
-            ? "bg-[#1F2937]/80 text-[#6B7280] border border-[#EA3943]/30"
+            ? "bg-[#1F2937] text-[#6B7280]"
             : numAmount <= 0
-              ? "bg-[#1F2937]/50 text-[#4B5563]"
+              ? "bg-[#1F2937] text-[#4B5563]"
               : isBuy
-                ? "bg-[#16C784] text-white active:bg-[#0ea36b]"
-                : "bg-[#EA3943] text-white active:bg-[#c9222c]"
+                ? "bg-[#2EBD85] text-white active:bg-[#26a374]"
+                : "bg-[#F6465D] text-white active:bg-[#d63a50]"
         )}
       >
         {isPlacingOrder ? (
           <span className="flex items-center justify-center gap-1.5">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Placing...
           </span>
         ) : hasInsufficientBalance ? (
-          `Deposit ${balanceCurrency} to ${isBuy ? 'Buy' : 'Sell'}`
+          `Deposit ${balanceCurrency}`
         ) : (
           `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`
         )}
