@@ -104,8 +104,8 @@ const ExchangeInput: React.FC<{
           className={cn(
             "text-[9px] font-bold px-1.5 py-[3px] rounded mr-0.5 flex-shrink-0 border transition-colors",
             tag.color === 'red'
-              ? "text-[#EA3943] bg-[#EA3943]/8 border-[#EA3943]/20 active:bg-[#EA3943]/20"
-              : "text-[#16C784] bg-[#16C784]/8 border-[#16C784]/20 active:bg-[#16C784]/20"
+              ? "text-[#EA3943] bg-[#EA3943]/[0.08] border-[#EA3943]/20 active:bg-[#EA3943]/20"
+              : "text-[#16C784] bg-[#16C784]/[0.08] border-[#16C784]/20 active:bg-[#16C784]/20"
           )}
         >
           {tag.label}
