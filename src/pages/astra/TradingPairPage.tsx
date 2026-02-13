@@ -425,9 +425,9 @@ function TradingPairPageContent() {
             )}
           </div>
 
-          {/* ── Order Form + Order Book — flex-1, fills available space ── */}
-          <div className="flex-1 flex min-h-0">
-            <div className="w-[52%] flex-shrink-0 px-2.5 py-1.5 border-r border-[#1F2937]/30 overflow-y-auto">
+          {/* ── Order Form + Order Book — auto height based on content ── */}
+          <div className="flex-shrink-0 flex border-b border-[#1F2937]/40">
+            <div className="w-[50%] flex-shrink-0 px-2 py-1.5 border-r border-[#1F2937]/30">
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
                 quoteCurrency={pair.quoteAsset}
@@ -444,7 +444,7 @@ function TradingPairPageContent() {
                 selectedPrice={selectedPrice}
               />
             </div>
-            <div className="flex-1 min-w-0 flex flex-col min-h-0">
+            <div className="w-[50%] flex-shrink-0">
               <OrderBookPremium
                 asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
                   price: typeof a === 'object' ? a.price : a[0], 
@@ -461,15 +461,15 @@ function TradingPairPageContent() {
                 onPriceClick={handlePriceClick}
                 marketPrice={marketPrice}
                 isLoading={!pair}
-                fillContainer
+                maxRows={8}
               />
             </div>
           </div>
 
           <GhostLockWarning />
 
-          {/* ── History Footer — compact ── */}
-          <div className="flex-shrink-0 border-t border-[#1F2937]/40 overflow-y-auto px-2 pt-1 pb-1" style={{ maxHeight: '120px' }}>
+          {/* ── History — fills remaining space ── */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-2 pt-1 pb-2 border-t border-[#1F2937]/40">
             <TradingHistoryTabs 
               symbol={urlSymbol}
               onOrderDetails={setSelectedOrderId}
