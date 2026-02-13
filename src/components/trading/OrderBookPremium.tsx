@@ -17,6 +17,7 @@ interface OrderBookPremiumProps {
   onPriceClick?: (price: number) => void;
   isLoading?: boolean;
   marketPrice?: number;
+  maxRows?: number;
 }
 
 const formatPrice = (price: number) => {
@@ -84,9 +85,10 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   onPriceClick,
   isLoading = false,
   marketPrice,
+  maxRows = 7,
 }) => {
-  const displayAsks = useMemo(() => asks.slice(0, 7).reverse(), [asks]);
-  const displayBids = useMemo(() => bids.slice(0, 7), [bids]);
+  const displayAsks = useMemo(() => asks.slice(0, maxRows).reverse(), [asks, maxRows]);
+  const displayBids = useMemo(() => bids.slice(0, maxRows), [bids, maxRows]);
 
   // Max quantity for depth bar normalization
   const allQtys = useMemo(() => {

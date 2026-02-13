@@ -100,6 +100,7 @@ function TradingPairPageContent() {
 
   const [chartOpen, setChartOpen] = useState(false);
   const [positionOpen, setPositionOpen] = useState(false);
+  const [mobileMode, setMobileMode] = useState<'trade' | 'book' | 'orders'>('trade');
 
   useEffect(() => {
     if (symbol && wsConnected) {
@@ -407,28 +408,46 @@ function TradingPairPageContent() {
           </div>
         </div>
 
-        {/* ── SINGLE SCROLL CONTAINER ── */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
-          {/* Chart Toggle */}
-          <div className="px-2 pt-1 border-b border-[#1F2937]/40">
+        {/* ── Mobile Mode Switcher ── */}
+        <div className="flex-shrink-0 flex border-b border-[#1F2937]/60 bg-[#0B1220]">
+          {(['trade', 'book', 'orders'] as const).map((mode) => (
             <button
-              onClick={() => setChartOpen(!chartOpen)}
-              className="flex items-center gap-0.5 text-[9px] text-[#4B5563] active:text-[#9CA3AF] py-1"
+              key={mode}
+              onClick={() => setMobileMode(mode)}
+              className={cn(
+                "flex-1 py-2 text-[11px] font-semibold tracking-wide uppercase transition-colors duration-150",
+                mobileMode === mode
+                  ? "text-[#E5E7EB] border-b-2 border-[#F0B90B]"
+                  : "text-[#4B5563] border-b-2 border-transparent"
+              )}
             >
-              <span>Chart</span>
-              <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", chartOpen && "rotate-180")} />
+              {mode === 'trade' ? 'Trade' : mode === 'book' ? 'Order Book' : 'Orders'}
             </button>
-            {chartOpen && (
-              <div className="pb-1 animate-fade-in">
-                <TradeCandlestickChart symbol={pair.symbol} quoteCurrency={pair.quoteAsset} />
-              </div>
-            )}
-          </div>
+          ))}
+        </div>
 
-          {/* ── TWO-COLUMN: Order Form + Order Book ── */}
-          <div className="flex border-b border-[#1F2937]/40">
-            {/* LEFT: Order Form */}
-            <div className="flex-1 min-w-0 px-2 py-1.5 border-r border-[#1F2937]/40">
+        {/* ── Mode Content ── */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+
+          {/* ══ MODE: TRADE ══ */}
+          {mobileMode === 'trade' && (
+            <div className="px-3 py-2">
+              {/* Chart Toggle */}
+              <div className="mb-2">
+                <button
+                  onClick={() => setChartOpen(!chartOpen)}
+                  className="flex items-center gap-0.5 text-[10px] text-[#4B5563] active:text-[#9CA3AF] py-1"
+                >
+                  <span>Chart</span>
+                  <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", chartOpen && "rotate-180")} />
+                </button>
+                {chartOpen && (
+                  <div className="pb-2 animate-fade-in">
+                    <TradeCandlestickChart symbol={pair.symbol} quoteCurrency={pair.quoteAsset} />
+                  </div>
+                )}
+              </div>
+
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
                 quoteCurrency={pair.quoteAsset}
@@ -445,15 +464,17 @@ function TradingPairPageContent() {
                 selectedPrice={selectedPrice}
               />
             </div>
+          )}
 
-            {/* RIGHT: Order Book */}
-            <div className="w-[48%] flex-shrink-0">
+          {/* ══ MODE: ORDER BOOK ══ */}
+          {mobileMode === 'book' && (
+            <div>
               <OrderBookPremium
-                asks={orderBook?.asks?.slice(0, 12).map((a: any) => ({ 
+                asks={orderBook?.asks?.slice(0, 16).map((a: any) => ({ 
                   price: typeof a === 'object' ? a.price : a[0], 
                   quantity: typeof a === 'object' ? a.quantity : a[1] 
                 })) || []}
-                bids={orderBook?.bids?.slice(0, 12).map((b: any) => ({ 
+                bids={orderBook?.bids?.slice(0, 16).map((b: any) => ({ 
                   price: typeof b === 'object' ? b.price : b[0], 
                   quantity: typeof b === 'object' ? b.quantity : b[1] 
                 })) || []}
@@ -461,33 +482,29 @@ function TradingPairPageContent() {
                 priceChange={pair.change24h}
                 quoteCurrency={pair.quoteAsset}
                 baseCurrency={pair.baseAsset}
-                onPriceClick={handlePriceClick}
+                onPriceClick={(price) => { handlePriceClick(price); setMobileMode('trade'); }}
                 marketPrice={marketPrice}
+                maxRows={14}
                 isLoading={!pair}
               />
-            </div>
-          </div>
 
-          {/* ── Recent Trades (Last 10) ── */}
-          <div className="border-b border-[#1F2937]/40">
-            <RecentTradesTicker
-              trades={recentTrades}
-              quoteCurrency={pair.quoteAsset}
-              onPriceClick={handlePriceClick}
-              isLoading={recentTradesLoading}
-            />
-          </div>
-          {/* ── Position (collapsible) ── */}
-          <div className="border-b border-[#1F2937]/40">
-            <button
-              onClick={() => setPositionOpen(!positionOpen)}
-              className="flex items-center justify-between w-full text-[10px] text-[#4B5563] px-2 py-1 active:bg-white/5"
-            >
-              <span>Position</span>
-              <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", positionOpen && "rotate-180")} />
-            </button>
-            {positionOpen && (
-              <div className="px-2 pb-1.5 animate-fade-in">
+              {/* Recent Trades below order book */}
+              <div className="border-t border-[#1F2937]/40">
+                <RecentTradesTicker
+                  trades={recentTrades}
+                  quoteCurrency={pair.quoteAsset}
+                  onPriceClick={(price) => { handlePriceClick(price); setMobileMode('trade'); }}
+                  isLoading={recentTradesLoading}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ══ MODE: ORDERS / POSITIONS ══ */}
+          {mobileMode === 'orders' && (
+            <div>
+              {/* Position summary */}
+              <div className="px-3 py-2 border-b border-[#1F2937]/40">
                 <PositionSummary
                   baseCurrency={pair.baseAsset}
                   quoteCurrency={pair.quoteAsset}
@@ -500,19 +517,18 @@ function TradingPairPageContent() {
                   currentPrice={pair.price}
                 />
               </div>
-            )}
-          </div>
 
-          <GhostLockWarning />
-          
-          {/* ── Trading History ── */}
-          <div className="px-2 pt-0.5 pb-6">
-            <TradingHistoryTabs 
-              symbol={urlSymbol}
-              onOrderDetails={setSelectedOrderId}
-              onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
-            />
-          </div>
+              <GhostLockWarning />
+
+              <div className="px-2 pt-1 pb-6">
+                <TradingHistoryTabs 
+                  symbol={urlSymbol}
+                  onOrderDetails={setSelectedOrderId}
+                  onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
        
