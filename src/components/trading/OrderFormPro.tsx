@@ -37,7 +37,7 @@ interface OrderFormProProps {
 
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'limit' | 'market';
-type TimeInForce = 'GTC' | 'IOC' | 'FOK';
+
 
 const QUICK_PERCENTAGES = [25, 50, 75, 100];
 
@@ -63,7 +63,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const [price, setPrice] = useState(currentPrice.toFixed(2));
   const [amount, setAmount] = useState('');
   const [activePercent, setActivePercent] = useState<number | null>(null);
-  const [timeInForce, setTimeInForce] = useState<TimeInForce>('GTC');
+  
 
   // Sync selected price from order book click
   useEffect(() => {
@@ -171,41 +171,19 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </div>
       </div>
 
-      {/* ── Order Type + TIF pills ── */}
-      <div className="flex gap-1.5">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1 h-[34px] px-3 bg-[#111827] border border-[#1F2937] rounded-lg text-[11px] text-[#E5E7EB] font-medium active:bg-[#1F2937]">
-              <span className="capitalize">{orderType}</span>
-              <ChevronDown className="h-3 w-3 text-[#6B7280]" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-28 bg-[#111827] border-[#1F2937]">
-            <DropdownMenuItem onClick={() => setOrderType('limit')} className="text-xs py-2">Limit</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setOrderType('market')} className="text-xs py-2">Market</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1 h-[34px] px-3 bg-[#111827] border border-[#1F2937] rounded-lg text-[11px] text-[#E5E7EB] font-medium active:bg-[#1F2937]">
-              <span>{timeInForce}</span>
-              <ChevronDown className="h-3 w-3 text-[#6B7280]" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-36 bg-[#111827] border-[#1F2937]">
-            <DropdownMenuItem onClick={() => setTimeInForce('GTC')} className="text-xs py-2">
-              <div><div className="font-medium">GTC</div><div className="text-[10px] text-[#6B7280]">Good Till Cancel</div></div>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTimeInForce('IOC')} className="text-xs py-2">
-              <div><div className="font-medium">IOC</div><div className="text-[10px] text-[#6B7280]">Immediate or Cancel</div></div>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTimeInForce('FOK')} className="text-xs py-2">
-              <div><div className="font-medium">FOK</div><div className="text-[10px] text-[#6B7280]">Fill or Kill</div></div>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {/* ── Order Type pill ── */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center gap-1 h-[34px] px-3 bg-[#111827] border border-[#1F2937] rounded-lg text-[11px] text-[#E5E7EB] font-medium active:bg-[#1F2937] w-fit">
+            <span className="capitalize">{orderType}</span>
+            <ChevronDown className="h-3 w-3 text-[#6B7280]" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-28 bg-[#111827] border-[#1F2937]">
+          <DropdownMenuItem onClick={() => setOrderType('limit')} className="text-xs py-2">Limit</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOrderType('market')} className="text-xs py-2">Market</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* ── Price Input ── */}
       {orderType !== 'market' && (
