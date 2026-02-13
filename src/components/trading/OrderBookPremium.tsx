@@ -141,13 +141,16 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
         )}
       </div>
 
-      {/* ── Mid price ── */}
-      <div className="flex items-center justify-between px-2 h-[24px]">
-        <div className="flex items-center gap-1">
+      {/* ── Last Traded Price bar ── */}
+      <div
+        className="flex items-center justify-between px-2 h-[26px] bg-[#111827]/60 border-y border-[#1F2937]/30 cursor-pointer active:bg-white/[0.03]"
+        onClick={() => onPriceClick?.(displayPrice)}
+      >
+        <div className="flex items-center gap-1.5">
           {isPositive ? (
-            <TrendingUp className="h-2.5 w-2.5 text-[#2EBD85]" />
+            <TrendingUp className="h-3 w-3 text-[#2EBD85]" />
           ) : (
-            <TrendingDown className="h-2.5 w-2.5 text-[#F6465D]" />
+            <TrendingDown className="h-3 w-3 text-[#F6465D]" />
           )}
           <span className={cn(
             "text-[14px] font-bold font-mono tracking-tight",
@@ -156,6 +159,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
             {displayPrice >= 1 ? displayPrice.toFixed(2) : displayPrice.toFixed(6)}
           </span>
         </div>
+        <span className="text-[8px] font-medium text-[#4B5563] uppercase tracking-wider">Last Traded</span>
       </div>
 
       {/* Bids */}

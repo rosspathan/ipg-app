@@ -6,6 +6,8 @@ import { OrderBookPremium } from "@/components/trading/OrderBookPremium";
 import { TradeCandlestickChart } from "@/components/trading/TradeCandlestickChart";
 import { PositionSummary } from "@/components/trading/PositionSummary";
 import { TradingHistoryTabs } from "@/components/trading/TradingHistoryTabs";
+import { RecentTradesTicker } from "@/components/trading/RecentTradesTicker";
+import { useRecentTrades } from "@/hooks/useRecentTrades";
 import { OrderDetailsDrawer } from "@/components/trading/OrderDetailsDrawer";
 import { AdminMarketMakerControls } from "@/components/trading/AdminMarketMakerControls";
 import { useTradingPairs } from "@/hooks/useTradingPairs";
@@ -79,6 +81,7 @@ function TradingPairPageContent() {
   const { orders: allOpenOrders, cancelOrder: cancelAnyOrder, isLoading: allOrdersLoading } = useAllOpenOrders();
   const { data: internalOrderBookData, refetch: refetchOrderBook } = useRealtimeOrderBook(symbol);
   useRealtimeTradingBalances();
+  const { data: recentTrades = [], isLoading: recentTradesLoading } = useRecentTrades(symbol, 10);
 
   const { 
     orderBook: wsOrderBook, 
@@ -465,6 +468,15 @@ function TradingPairPageContent() {
             </div>
           </div>
 
+          {/* ── Recent Trades (Last 10) ── */}
+          <div className="border-b border-[#1F2937]/40">
+            <RecentTradesTicker
+              trades={recentTrades}
+              quoteCurrency={pair.quoteAsset}
+              onPriceClick={handlePriceClick}
+              isLoading={recentTradesLoading}
+            />
+          </div>
           {/* ── Position (collapsible) ── */}
           <div className="border-b border-[#1F2937]/40">
             <button
