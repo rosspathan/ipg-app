@@ -51,30 +51,30 @@ const Row = memo(({
   return (
     <div
       onClick={() => onPriceClick?.(entry.price)}
-      className="relative grid grid-cols-3 items-center px-2.5 h-[22px] cursor-pointer active:bg-white/[0.06]"
-      style={{ gridTemplateColumns: '38% 32% 30%' }}
+      className="relative grid items-center px-2.5 h-[20px] cursor-pointer active:bg-white/[0.04]"
+      style={{ gridTemplateColumns: '36% 32% 32%' }}
     >
       {/* Depth bar */}
       <div
         className={cn(
           "absolute right-0 top-0 bottom-0 pointer-events-none",
-          isAsk ? "bg-[#EA3943]/[0.07]" : "bg-[#16C784]/[0.07]"
+          isAsk ? "bg-[#EA3943]/[0.08]" : "bg-[#16C784]/[0.08]"
         )}
         style={{ width: `${Math.min(depthPercent, 100)}%` }}
       />
 
       <span className={cn(
-        "relative z-10 text-[12px] font-mono tabular-nums text-left",
+        "relative z-10 text-[11px] font-mono tabular-nums text-left font-medium",
         isAsk ? "text-[#EA3943]" : "text-[#16C784]"
       )}>
         {formatPrice(entry.price)}
       </span>
 
-      <span className="relative z-10 text-[12px] font-mono text-[#E5E7EB] text-right tabular-nums">
+      <span className="relative z-10 text-[11px] font-mono text-[#9CA3AF] text-right tabular-nums">
         {formatQty(entry.quantity)}
       </span>
 
-      <span className="relative z-10 text-[12px] font-mono text-[#6B7280] text-right tabular-nums">
+      <span className="relative z-10 text-[11px] font-mono text-[#6B7280] text-right tabular-nums">
         {formatQty(cumTotal)}
       </span>
     </div>
@@ -94,8 +94,8 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   isLoading = false,
   marketPrice,
 }) => {
-  const displayAsks = useMemo(() => asks.slice(0, 8).reverse(), [asks]);
-  const displayBids = useMemo(() => bids.slice(0, 8), [bids]);
+  const displayAsks = useMemo(() => asks.slice(0, 10).reverse(), [asks]);
+  const displayBids = useMemo(() => bids.slice(0, 10), [bids]);
 
   const askCumTotals = useMemo(() => {
     const totals: number[] = [];
@@ -123,7 +123,6 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
 
   const bestAsk = displayAsks.length > 0 ? displayAsks[displayAsks.length - 1]?.price : null;
   const bestBid = displayBids.length > 0 ? displayBids[0]?.price : null;
-  const spread = bestAsk && bestBid ? bestAsk - bestBid : null;
   const spreadPercent = bestAsk && bestBid ? ((bestAsk - bestBid) / bestBid * 100) : null;
   const spreadMidpoint = bestAsk && bestBid ? (bestAsk + bestBid) / 2 : null;
 
@@ -132,25 +131,23 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-[#111827] border border-[#1F2937] rounded-lg overflow-hidden">
-        <div className="flex items-center justify-center h-40 text-[11px] text-[#6B7280]">Loading...</div>
-      </div>
+      <div className="flex items-center justify-center h-40 text-[11px] text-[#6B7280]">Loading...</div>
     );
   }
 
   return (
-    <div className="bg-[#111827] border border-[#1F2937] rounded-lg overflow-hidden">
+    <div>
       {/* Header */}
-      <div className="grid grid-cols-3 px-2.5 py-1.5 border-b border-[#1F2937]/60 text-[10px] text-[#6B7280] font-medium"
-        style={{ gridTemplateColumns: '38% 32% 30%' }}
+      <div className="grid px-2.5 py-1.5 text-[10px] text-[#6B7280] font-medium"
+        style={{ gridTemplateColumns: '36% 32% 32%' }}
       >
         <span>Price</span>
-        <span className="text-right">Amount</span>
+        <span className="text-right">Qty</span>
         <span className="text-right">Total</span>
       </div>
 
       {/* Asks */}
-      <div className="py-0.5">
+      <div>
         {displayAsks.length > 0 ? (
           displayAsks.map((ask, idx) => (
             <Row
@@ -163,12 +160,12 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
             />
           ))
         ) : (
-          <div className="flex items-center justify-center h-[88px] text-[10px] text-[#6B7280]">No sell orders</div>
+          <div className="flex items-center justify-center h-[60px] text-[10px] text-[#6B7280]">No sell orders</div>
         )}
       </div>
 
       {/* ── Spread & Price ── */}
-      <div className="flex items-center justify-between px-2.5 py-1.5 border-y border-[#1F2937]/60">
+      <div className="flex items-center justify-between px-2.5 py-1 border-y border-[#1F2937]/50">
         <div className="flex items-center gap-1">
           {isPositive ? (
             <TrendingUp className="h-3 w-3 text-[#16C784]" />
@@ -190,7 +187,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* Bids */}
-      <div className="py-0.5">
+      <div>
         {displayBids.length > 0 ? (
           displayBids.map((bid, idx) => (
             <Row
@@ -203,7 +200,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
             />
           ))
         ) : (
-          <div className="flex items-center justify-center h-[88px] text-[10px] text-[#6B7280]">No buy orders</div>
+          <div className="flex items-center justify-center h-[60px] text-[10px] text-[#6B7280]">No buy orders</div>
         )}
       </div>
     </div>
