@@ -207,47 +207,47 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const estFee = total * 0.005;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      {/* ── Buy / Sell — Binance pill ── */}
-      <div className="flex h-[34px] bg-[#111827] rounded-lg p-[3px] gap-[3px]">
+    <div className="flex flex-col gap-2">
+      {/* ── Buy / Sell toggle ── */}
+      <div className="flex h-[36px] bg-[#111827] rounded-md p-[2px] gap-[2px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 rounded-md text-[12px] font-semibold transition-all duration-150",
+            "flex-1 rounded-[4px] text-[12px] font-bold tracking-wide transition-all duration-150",
             isBuy
-              ? "bg-[#2EBD85] text-white"
-              : "text-[#6B7280] active:text-[#9CA3AF]"
+              ? "bg-[#2EBD85] text-white shadow-sm"
+              : "text-[#6B7280] hover:text-[#9CA3AF] active:text-[#9CA3AF]"
           )}
         >
-          Buy
+          BUY
         </button>
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 rounded-md text-[12px] font-semibold transition-all duration-150",
+            "flex-1 rounded-[4px] text-[12px] font-bold tracking-wide transition-all duration-150",
             !isBuy
-              ? "bg-[#F6465D] text-white"
-              : "text-[#6B7280] active:text-[#9CA3AF]"
+              ? "bg-[#F6465D] text-white shadow-sm"
+              : "text-[#6B7280] hover:text-[#9CA3AF] active:text-[#9CA3AF]"
           )}
         >
-          Sell
+          SELL
         </button>
       </div>
 
-      {/* ── Order type row ── */}
-      <div className="flex items-center h-[24px]">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-0.5 text-[11px] text-[#E5E7EB] font-medium active:text-white">
-              <span className="capitalize">{orderType}</span>
-              <ChevronDown className="h-2.5 w-2.5 text-[#6B7280]" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-24 bg-[#111827] border-[#1F2937] min-w-0">
-            <DropdownMenuItem onClick={() => setOrderType('limit')} className="text-[11px] py-1.5">Limit</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setOrderType('market')} className="text-[11px] py-1.5">Market</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* ── Order type selector ── */}
+      <div className="flex items-center gap-3 h-[22px]">
+        {(['limit', 'market'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setOrderType(t)}
+            className={cn(
+              "text-[11px] font-medium capitalize transition-colors",
+              orderType === t ? "text-[#E5E7EB]" : "text-[#4B5563] hover:text-[#6B7280]"
+            )}
+          >
+            {t}
+          </button>
+        ))}
       </div>
 
       {/* ── Price Input ── */}
