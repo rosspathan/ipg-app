@@ -444,7 +444,7 @@ function TradingPairPageContent() {
                 selectedPrice={selectedPrice}
               />
             </div>
-            <div className="w-[46%] flex-shrink-0 flex flex-col min-h-0">
+            <div className="w-[46%] flex-shrink-0 flex flex-col min-h-0 overflow-hidden">
               <OrderBookPremium
                 asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
                   price: typeof a === 'object' ? a.price : a[0], 
