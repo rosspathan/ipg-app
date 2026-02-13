@@ -470,15 +470,6 @@ function TradingPairPageContent() {
             </div>
           </div>
 
-          {/* ═══ RECENT TRADES ═══ */}
-          <div className="border-b border-[#1F2937]/40">
-            <RecentTradesTicker
-              trades={recentTrades}
-              quoteCurrency={pair.quoteAsset}
-              onPriceClick={handlePriceClick}
-              isLoading={recentTradesLoading}
-            />
-          </div>
 
           {/* ═══ POSITION (collapsible) ═══ */}
           <div className="border-b border-[#1F2937]/40">
