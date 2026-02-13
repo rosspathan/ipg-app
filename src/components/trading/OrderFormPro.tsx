@@ -75,26 +75,23 @@ const ExchangeInput: React.FC<{
   };
 
   return (
-    <div className="relative bg-[#0D1421] border border-[#1F2937] rounded-lg h-[44px] flex items-center px-0.5 gap-0 hover:border-[#374151] focus-within:border-[#4B5563] transition-colors">
-      {/* Label — top-left floating */}
-      <span className="absolute -top-2 left-2.5 text-[9px] font-medium text-[#6B7280] bg-[#0D1421] px-1 leading-none select-none">
-        {label}
-      </span>
+    <div className="relative bg-[#0D1421] border border-[#1F2937] rounded h-[36px] flex items-center px-0.5 gap-0 hover:border-[#374151] focus-within:border-[#4B5563] transition-colors">
       <button
         type="button"
         onClick={() => adjust(-1)}
         disabled={numVal <= min}
-        className="w-8 h-8 flex items-center justify-center text-[#6B7280] text-[15px] font-medium rounded-md active:bg-[#1F2937] active:text-[#E5E7EB] disabled:opacity-20 select-none flex-shrink-0 transition-colors"
+        className="w-7 h-7 flex items-center justify-center text-[#6B7280] text-[14px] font-medium active:bg-[#1F2937] active:text-[#E5E7EB] disabled:opacity-20 select-none flex-shrink-0 transition-colors"
       >
         −
       </button>
-      <div className="flex-1 min-w-0 flex items-center justify-center">
+      <div className="flex-1 min-w-0 flex flex-col items-center justify-center">
+        <span className="text-[8px] text-[#4B5563] leading-none select-none">{label}</span>
         <input
           type="text"
           inputMode="decimal"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="bg-transparent text-center text-[14px] font-mono font-semibold text-[#E5E7EB] outline-none w-full leading-tight tracking-tight"
+          className="bg-transparent text-center text-[13px] font-mono font-semibold text-[#E5E7EB] outline-none w-full leading-none tracking-tight"
         />
       </div>
       {tag && tag.value > 0 && (
@@ -102,7 +99,7 @@ const ExchangeInput: React.FC<{
           type="button"
           onClick={() => onChange(formatNum(tag.value))}
           className={cn(
-            "text-[9px] font-bold px-1.5 py-[3px] rounded mr-0.5 flex-shrink-0 border transition-colors",
+            "text-[8px] font-bold px-1 py-[2px] rounded mr-0.5 flex-shrink-0 border transition-colors",
             tag.color === 'red'
               ? "text-[#EA3943] bg-[#EA3943]/[0.08] border-[#EA3943]/20 active:bg-[#EA3943]/20"
               : "text-[#16C784] bg-[#16C784]/[0.08] border-[#16C784]/20 active:bg-[#16C784]/20"
@@ -115,7 +112,7 @@ const ExchangeInput: React.FC<{
         type="button"
         onClick={() => adjust(1)}
         disabled={max !== undefined && numVal >= max}
-        className="w-8 h-8 flex items-center justify-center text-[#6B7280] text-[15px] font-medium rounded-md active:bg-[#1F2937] active:text-[#E5E7EB] disabled:opacity-20 select-none flex-shrink-0 transition-colors"
+        className="w-7 h-7 flex items-center justify-center text-[#6B7280] text-[14px] font-medium active:bg-[#1F2937] active:text-[#E5E7EB] disabled:opacity-20 select-none flex-shrink-0 transition-colors"
       >
         +
       </button>
@@ -210,42 +207,42 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const estFee = total * 0.005;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       {/* ── Buy / Sell toggle ── */}
-      <div className="flex h-[36px] bg-[#111827] rounded-md p-[2px] gap-[2px]">
+      <div className="flex h-[30px] bg-[#111827] rounded p-[2px] gap-[2px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 rounded-[4px] text-[12px] font-bold tracking-wide transition-all duration-150",
+            "flex-1 rounded-[3px] text-[11px] font-bold tracking-wide transition-all duration-150",
             isBuy
               ? "bg-[#2EBD85] text-white shadow-sm"
-              : "text-[#6B7280] hover:text-[#9CA3AF] active:text-[#9CA3AF]"
+              : "text-[#6B7280] active:text-[#9CA3AF]"
           )}
         >
-          BUY
+          Buy
         </button>
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 rounded-[4px] text-[12px] font-bold tracking-wide transition-all duration-150",
+            "flex-1 rounded-[3px] text-[11px] font-bold tracking-wide transition-all duration-150",
             !isBuy
               ? "bg-[#F6465D] text-white shadow-sm"
-              : "text-[#6B7280] hover:text-[#9CA3AF] active:text-[#9CA3AF]"
+              : "text-[#6B7280] active:text-[#9CA3AF]"
           )}
         >
-          SELL
+          Sell
         </button>
       </div>
 
       {/* ── Order type selector ── */}
-      <div className="flex items-center gap-3 h-[22px]">
+      <div className="flex items-center gap-3 h-[18px]">
         {(['limit', 'market'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setOrderType(t)}
             className={cn(
-              "text-[11px] font-medium capitalize transition-colors",
-              orderType === t ? "text-[#E5E7EB]" : "text-[#4B5563] hover:text-[#6B7280]"
+              "text-[10px] font-medium capitalize transition-colors",
+              orderType === t ? "text-[#E5E7EB]" : "text-[#4B5563]"
             )}
           >
             {t}
@@ -278,10 +275,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         max={!isBuy ? availableBase : undefined}
       />
 
-      {/* ── % Slider — Draggable with diamond markers ── */}
-      <div className="px-1 py-1">
+      {/* ── % Slider — compact ── */}
+      <div className="px-0.5">
         <div
-          className="relative h-[24px] flex items-center cursor-pointer touch-none"
+          className="relative h-[20px] flex items-center cursor-pointer touch-none"
           onPointerDown={(e) => {
             const track = e.currentTarget;
             const rect = track.getBoundingClientRect();
@@ -304,9 +301,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             document.addEventListener('pointerup', onUp);
           }}
         >
-          {/* Base track */}
           <div className="absolute left-[2%] right-[2%] top-1/2 -translate-y-1/2 h-[2px] bg-[#1F2937] rounded-full" />
-          {/* Active track */}
           <div
             className={cn(
               "absolute left-[2%] top-1/2 -translate-y-1/2 h-[2px] rounded-full transition-[width] duration-75",
@@ -314,17 +309,16 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             )}
             style={{ width: `${((activePercent ?? 0) / 100) * 96}%` }}
           />
-          {/* Diamond markers */}
           {[0, 25, 50, 75, 100].map((pct) => {
             const isActive = activePercent !== null && activePercent >= pct;
             return (
               <div
                 key={pct}
-                className="absolute -translate-x-1/2 z-10 w-5 h-5 flex items-center justify-center pointer-events-none"
+                className="absolute -translate-x-1/2 z-10 w-4 h-4 flex items-center justify-center pointer-events-none"
                 style={{ left: `${2 + (pct / 100) * 96}%` }}
               >
                 <span className={cn(
-                  "w-[7px] h-[7px] rotate-45 transition-all duration-100",
+                  "w-[6px] h-[6px] rotate-45 transition-all duration-100",
                   isActive
                     ? isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
                     : "bg-[#0B1220] border border-[#374151]"
@@ -332,82 +326,64 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
               </div>
             );
           })}
-          {/* Draggable thumb */}
           {activePercent !== null && activePercent > 0 && (
             <div
               className="absolute -translate-x-1/2 z-20 pointer-events-none"
               style={{ left: `${2 + (activePercent / 100) * 96}%` }}
             >
               <div className={cn(
-                "w-[12px] h-[12px] rounded-full border-2",
+                "w-[10px] h-[10px] rounded-full border-2",
                 isBuy ? "border-[#2EBD85] bg-[#0B1220]" : "border-[#F6465D] bg-[#0B1220]"
               )} />
             </div>
           )}
         </div>
-        {/* Labels */}
-        <div className="relative h-[14px]">
-          {[0, 25, 50, 75, 100].map((pct) => (
-            <span
-              key={pct}
-              className={cn(
-                "absolute -translate-x-1/2 text-[9px] font-mono transition-colors",
-                activePercent !== null && activePercent >= pct - 2 && activePercent <= pct + 2
-                  ? (isBuy ? "text-[#2EBD85]" : "text-[#F6465D]")
-                  : "text-[#4B5563]"
-              )}
-              style={{ left: `${2 + (pct / 100) * 96}%` }}
-            >
-              {pct}%
-            </span>
-          ))}
-        </div>
       </div>
 
       {/* ── Total ── */}
-      <div className="bg-[#0D1421] border border-[#1F2937] rounded-lg h-[38px] flex items-center justify-center relative">
-        <span className="absolute -top-2 left-2.5 text-[9px] font-medium text-[#6B7280] bg-[#0D1421] px-1 leading-none select-none">Total</span>
-        <span className="text-[13px] font-mono font-semibold text-[#9CA3AF]">
-          {total > 0 ? `${total.toFixed(total >= 1 ? 2 : 6)} ${quoteCurrency}` : `-- ${quoteCurrency}`}
+      <div className="bg-[#0D1421] border border-[#1F2937] rounded h-[32px] flex items-center justify-center">
+        <span className="text-[8px] text-[#4B5563] mr-1.5">Total ({quoteCurrency})</span>
+        <span className="text-[12px] font-mono font-semibold text-[#9CA3AF]">
+          {total > 0 ? total.toFixed(total >= 1 ? 2 : 6) : '--'}
         </span>
       </div>
 
-      {/* ── Info rows: Avbl / Max / Fee ── */}
-      <div className="flex flex-col gap-0.5 text-[10px] mt-1">
-        <div className="flex items-center justify-between h-[18px]">
-          <span className="text-[#6B7280]">Available</span>
-          <div className="flex items-center gap-1.5">
+      {/* ── Info rows: Avbl / Max / Fee — ultra compact ── */}
+      <div className="flex flex-col gap-0 text-[9px]">
+        <div className="flex items-center justify-between h-[16px]">
+          <span className="text-[#6B7280]">Avbl</span>
+          <div className="flex items-center gap-1">
             <span className={cn("font-mono tabular-nums", hasInsufficientBalance ? "text-[#F6465D]" : "text-[#E5E7EB]")}>
               {availableBalance.toFixed(4)}
             </span>
-            <span className="text-[#6B7280]">{balanceCurrency}</span>
+            <span className="text-[#4B5563]">{balanceCurrency}</span>
             <button
               onClick={() => navigate(`/app/wallet/transfer?asset=${balanceCurrency}&direction=to_trading`)}
-              className="text-[#F0B90B] text-[9px] font-medium px-1.5 py-0.5 rounded bg-[#F0B90B]/10 hover:bg-[#F0B90B]/20 transition-colors"
+              className="text-[#F0B90B] text-[8px] font-bold ml-0.5"
             >
-              Deposit
+              ⊕
             </button>
           </div>
         </div>
-        <div className="flex items-center justify-between h-[18px]">
+        <div className="flex items-center justify-between h-[16px]">
           <span className="text-[#6B7280]">Max {isBuy ? 'Buy' : 'Sell'}</span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <span className="font-mono tabular-nums text-[#E5E7EB]">{maxBuyAmount.toFixed(4)}</span>
-            <span className="text-[#6B7280]">{baseCurrency}</span>
+            <span className="text-[#4B5563]">{baseCurrency}</span>
           </div>
         </div>
-        <div className="flex items-center justify-between h-[18px]">
+        <div className="flex items-center justify-between h-[16px]">
           <span className="text-[#6B7280]">Est. Fee</span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <span className="font-mono tabular-nums text-[#E5E7EB]">{total > 0 ? `~${estFee.toFixed(4)}` : '—'}</span>
-            <span className="text-[#6B7280]">{quoteCurrency}</span>
+            <span className="text-[#4B5563]">{quoteCurrency}</span>
           </div>
         </div>
       </div>
 
       {/* ── Insufficient warning ── */}
       {hasInsufficientBalance && (
-        <div className="text-[9px] text-[#F6465D] text-center">⚠ Insufficient {balanceCurrency}</div>
+        <div className="text-[8px] text-[#F6465D] text-center">⚠ Insufficient {balanceCurrency}</div>
       )}
 
       {/* ── Submit CTA ── */}
@@ -415,7 +391,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0}
         className={cn(
-          "w-full h-[36px] rounded-md text-[13px] font-bold transition-all duration-150 active:scale-[0.98]",
+          "w-full h-[34px] rounded text-[12px] font-bold transition-all duration-150 active:scale-[0.98]",
           "disabled:cursor-not-allowed",
           hasInsufficientBalance
             ? "bg-[#1F2937] text-[#6B7280]"
@@ -427,9 +403,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         )}
       >
         {isPlacingOrder ? (
-          <span className="flex items-center justify-center gap-1.5">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          </span>
+          <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" />
         ) : hasInsufficientBalance ? (
           `Deposit ${balanceCurrency}`
         ) : (
