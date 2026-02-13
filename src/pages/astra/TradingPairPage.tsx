@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-dom";
-import { ArrowLeft, ChevronDown, Search, Loader2, Star, Bell } from "lucide-react";
+import { ArrowLeft, ChevronDown, Search, Loader2, Star, Bell, X } from "lucide-react";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookPremium } from "@/components/trading/OrderBookPremium";
 import { TradeCandlestickChart } from "@/components/trading/TradeCandlestickChart";
@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
 export function TradingPairPage() {
   const { session, loading: authLoading, user } = useAuthUser();
@@ -100,6 +101,7 @@ function TradingPairPageContent() {
 
   const [chartOpen, setChartOpen] = useState(false);
   const [mobileMode, setMobileMode] = useState<'trade' | 'book' | 'orders'>('trade');
+  const [ordersDrawerOpen, setOrdersDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (symbol && wsConnected) {
@@ -463,15 +465,38 @@ function TradingPairPageContent() {
 
           <GhostLockWarning />
 
-          {/* ── SECTION C: Tabs (flex-shrink-0, fixed 44px) ── */}
-          <div className="flex-shrink-0 h-[44px] border-t border-[#1F2937]/40 overflow-hidden px-2">
-            <TradingHistoryTabs 
-              symbol={urlSymbol}
-              onOrderDetails={setSelectedOrderId}
-              onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
-            />
-          </div>
+          {/* ── SECTION C: Orders Drawer Trigger (44px fixed tab bar) ── */}
+          <button
+            onClick={() => setOrdersDrawerOpen(true)}
+            className="flex-shrink-0 h-[44px] border-t border-[#1F2937]/40 flex items-center justify-between px-4 active:bg-white/[0.03] transition-colors"
+          >
+            <div className="flex items-center gap-4">
+              {['Open', 'Orders', 'Trades', 'Funds'].map((tab) => (
+                <span key={tab} className="text-[11px] font-medium text-[#6B7280]">{tab}</span>
+              ))}
+            </div>
+            <ChevronDown className="h-3 w-3 text-[#4B5563] rotate-180" />
+          </button>
         </div>
+
+        {/* ── Orders Bottom Drawer (slides up 60% screen) ── */}
+        <Drawer open={ordersDrawerOpen} onOpenChange={setOrdersDrawerOpen}>
+          <DrawerContent className="bg-[#0B1220] border-[#1F2937] max-h-[65vh]">
+            <DrawerHeader className="flex items-center justify-between px-4 py-2 border-b border-[#1F2937]/40">
+              <DrawerTitle className="text-[13px] font-semibold text-[#E5E7EB]">Orders & History</DrawerTitle>
+              <button onClick={() => setOrdersDrawerOpen(false)} className="p-1 active:bg-white/10 rounded">
+                <X className="h-4 w-4 text-[#6B7280]" />
+              </button>
+            </DrawerHeader>
+            <div className="flex-1 overflow-y-auto px-2 pb-4">
+              <TradingHistoryTabs 
+                symbol={urlSymbol}
+                onOrderDetails={setSelectedOrderId}
+                onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
+              />
+            </div>
+          </DrawerContent>
+        </Drawer>
       </div>
        
       <OrderDetailsDrawer 
