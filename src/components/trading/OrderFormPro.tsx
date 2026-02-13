@@ -275,39 +275,55 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         max={!isBuy ? availableBase : undefined}
       />
 
-      {/* ── Slider with dots ── */}
-      <div className="flex items-center gap-0 h-[20px] px-1">
-        <div className="relative flex-1 flex items-center">
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] bg-[#1F2937] rounded-full" />
-          {QUICK_PERCENTAGES.map((pct, i) => {
-            const pos = (i / (QUICK_PERCENTAGES.length - 1)) * 100;
-            const isActive = activePercent !== null && activePercent >= pct;
-            return (
-              <button
-                key={pct}
-                onClick={() => handleQuickPercent(pct)}
-                className="absolute -translate-x-1/2 z-10 flex flex-col items-center"
-                style={{ left: `${pos}%` }}
-              >
-                <div className={cn(
-                  "w-2 h-2 rounded-full border-2 transition-colors",
-                  isActive
-                    ? isBuy ? "bg-[#2EBD85] border-[#2EBD85]" : "bg-[#F6465D] border-[#F6465D]"
-                    : "bg-[#0B1220] border-[#374151]"
-                )} />
-              </button>
-            );
-          })}
+      {/* ── % Selector — Binance diamond style ── */}
+      <div className="px-1 py-1">
+        <div className="relative h-[10px] flex items-center">
+          {/* Base track */}
+          <div className="absolute left-[2%] right-[2%] top-1/2 -translate-y-1/2 h-[2px] bg-[#1F2937]" />
           {/* Active track */}
           {activePercent !== null && (
             <div
               className={cn(
-                "absolute top-1/2 -translate-y-1/2 h-[2px] rounded-full left-0",
+                "absolute left-[2%] top-1/2 -translate-y-1/2 h-[2px] transition-all duration-150",
                 isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
               )}
-              style={{ width: `${((QUICK_PERCENTAGES.indexOf(activePercent)) / (QUICK_PERCENTAGES.length - 1)) * 100}%` }}
+              style={{ width: `${(activePercent / 100) * 96}%` }}
             />
           )}
+          {/* Diamond markers */}
+          {[0, 25, 50, 75, 100].map((pct) => {
+            const isActive = activePercent !== null && activePercent >= pct;
+            return (
+              <button
+                key={pct}
+                onClick={() => pct === 0 ? (setActivePercent(null), setAmount('')) : handleQuickPercent(pct)}
+                className="absolute -translate-x-1/2 z-10 w-5 h-5 flex items-center justify-center"
+                style={{ left: `${2 + (pct / 100) * 96}%` }}
+              >
+                <span className={cn(
+                  "w-[7px] h-[7px] rotate-45 transition-all duration-150",
+                  isActive
+                    ? isBuy ? "bg-[#2EBD85] scale-110" : "bg-[#F6465D] scale-110"
+                    : "bg-[#0B1220] border border-[#374151]"
+                )} />
+              </button>
+            );
+          })}
+        </div>
+        {/* Labels */}
+        <div className="relative h-[14px] mt-0.5">
+          {[0, 25, 50, 75, 100].map((pct) => (
+            <span
+              key={pct}
+              className={cn(
+                "absolute -translate-x-1/2 text-[9px] font-mono transition-colors",
+                activePercent === pct ? (isBuy ? "text-[#2EBD85]" : "text-[#F6465D]") : "text-[#4B5563]"
+              )}
+              style={{ left: `${2 + (pct / 100) * 96}%` }}
+            >
+              {pct}%
+            </span>
+          ))}
         </div>
       </div>
 
