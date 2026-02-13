@@ -407,103 +407,106 @@ function TradingPairPageContent() {
           </div>
         </div>
 
-        {/* ── SINGLE SCROLL — All sections visible ── */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* ── MAIN CONTENT — flex column fills remaining space ── */}
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
 
-          {/* ═══ CHART (collapsible) ═══ */}
-          <div className="border-b border-[#1F2937]/40">
-            <button
-              onClick={() => setChartOpen(!chartOpen)}
-              className="flex items-center gap-1 text-[10px] text-[#6B7280] px-3 py-1.5 active:text-[#9CA3AF] w-full"
-            >
-              <span className="font-medium">Chart</span>
-              <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", chartOpen && "rotate-180")} />
-            </button>
-            {chartOpen && (
-              <div className="px-2 pb-2 animate-fade-in">
-                <TradeCandlestickChart symbol={pair.symbol} quoteCurrency={pair.quoteAsset} />
-              </div>
-            )}
-          </div>
-
-          {/* ═══ ORDER FORM + ORDER BOOK — Side by side ═══ */}
-          <div className="flex border-b border-[#1F2937]/40">
-            {/* LEFT: Order Form */}
-            <div className="flex-1 min-w-0 px-2.5 py-2 border-r border-[#1F2937]/30">
-              <OrderFormPro
-                baseCurrency={pair.baseAsset}
-                quoteCurrency={pair.quoteAsset}
-                availableBase={baseBalance.available}
-                availableQuote={quoteBalance.available}
-                lockedBase={baseBalance.locked}
-                lockedQuote={quoteBalance.locked}
-                availableBaseUsd={baseBalance.total * pair.price}
-                availableQuoteUsd={quoteBalance.total}
-                currentPrice={pair.price}
-                onPlaceOrder={handlePlaceOrder}
-                bestBid={bestBidPrice}
-                bestAsk={bestAskPrice}
-                selectedPrice={selectedPrice}
-              />
+          {/* ── TOP HALF: scrollable trade + order book ── */}
+          <div className="flex-shrink-0 overflow-y-auto overflow-x-hidden" style={{ maxHeight: '60vh' }}>
+            {/* Chart Toggle */}
+            <div className="border-b border-[#1F2937]/40">
+              <button
+                onClick={() => setChartOpen(!chartOpen)}
+                className="flex items-center gap-1 text-[10px] text-[#6B7280] px-3 py-1.5 active:text-[#9CA3AF] w-full"
+              >
+                <span className="font-medium">Chart</span>
+                <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", chartOpen && "rotate-180")} />
+              </button>
+              {chartOpen && (
+                <div className="px-2 pb-2 animate-fade-in">
+                  <TradeCandlestickChart symbol={pair.symbol} quoteCurrency={pair.quoteAsset} />
+                </div>
+              )}
             </div>
 
-            {/* RIGHT: Order Book */}
-            <div className="w-[46%] flex-shrink-0">
-              <OrderBookPremium
-                asks={orderBook?.asks?.slice(0, 12).map((a: any) => ({ 
-                  price: typeof a === 'object' ? a.price : a[0], 
-                  quantity: typeof a === 'object' ? a.quantity : a[1] 
-                })) || []}
-                bids={orderBook?.bids?.slice(0, 12).map((b: any) => ({ 
-                  price: typeof b === 'object' ? b.price : b[0], 
-                  quantity: typeof b === 'object' ? b.quantity : b[1] 
-                })) || []}
-                currentPrice={pair.price}
-                priceChange={pair.change24h}
-                quoteCurrency={pair.quoteAsset}
-                baseCurrency={pair.baseAsset}
-                onPriceClick={handlePriceClick}
-                marketPrice={marketPrice}
-                isLoading={!pair}
-              />
-            </div>
-          </div>
-
-          {/* ═══ POSITION (collapsible) ═══ */}
-          <div className="border-b border-[#1F2937]/40">
-            <button
-              onClick={() => setPositionOpen(!positionOpen)}
-              className="flex items-center justify-between w-full text-[10px] text-[#6B7280] px-3 py-1.5 active:bg-white/[0.03]"
-            >
-              <span className="font-medium">Position</span>
-              <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", positionOpen && "rotate-180")} />
-            </button>
-            {positionOpen && (
-              <div className="px-3 pb-2 animate-fade-in">
-                <PositionSummary
+            {/* Order Form + Order Book side by side */}
+            <div className="flex border-b border-[#1F2937]/40">
+              <div className="flex-1 min-w-0 px-2.5 py-2 border-r border-[#1F2937]/30">
+                <OrderFormPro
                   baseCurrency={pair.baseAsset}
                   quoteCurrency={pair.quoteAsset}
-                  baseAvailable={baseBalance.available}
-                  baseTotal={baseBalance.total}
-                  baseLocked={baseBalance.locked}
-                  quoteAvailable={quoteBalance.available}
-                  quoteTotal={quoteBalance.total}
-                  quoteLocked={quoteBalance.locked}
+                  availableBase={baseBalance.available}
+                  availableQuote={quoteBalance.available}
+                  lockedBase={baseBalance.locked}
+                  lockedQuote={quoteBalance.locked}
+                  availableBaseUsd={baseBalance.total * pair.price}
+                  availableQuoteUsd={quoteBalance.total}
                   currentPrice={pair.price}
+                  onPlaceOrder={handlePlaceOrder}
+                  bestBid={bestBidPrice}
+                  bestAsk={bestAskPrice}
+                  selectedPrice={selectedPrice}
                 />
               </div>
-            )}
+              <div className="w-[46%] flex-shrink-0">
+                <OrderBookPremium
+                  asks={orderBook?.asks?.slice(0, 12).map((a: any) => ({ 
+                    price: typeof a === 'object' ? a.price : a[0], 
+                    quantity: typeof a === 'object' ? a.quantity : a[1] 
+                  })) || []}
+                  bids={orderBook?.bids?.slice(0, 12).map((b: any) => ({ 
+                    price: typeof b === 'object' ? b.price : b[0], 
+                    quantity: typeof b === 'object' ? b.quantity : b[1] 
+                  })) || []}
+                  currentPrice={pair.price}
+                  priceChange={pair.change24h}
+                  quoteCurrency={pair.quoteAsset}
+                  baseCurrency={pair.baseAsset}
+                  onPriceClick={handlePriceClick}
+                  marketPrice={marketPrice}
+                  isLoading={!pair}
+                />
+              </div>
+            </div>
           </div>
 
-          <GhostLockWarning />
+          {/* ── BOTTOM HALF: fills remaining space ── */}
+          <div className="flex-1 flex flex-col min-h-0 border-t border-[#1F2937]/50">
+            {/* Position (collapsible) */}
+            <div className="flex-shrink-0 border-b border-[#1F2937]/40">
+              <button
+                onClick={() => setPositionOpen(!positionOpen)}
+                className="flex items-center justify-between w-full text-[10px] text-[#6B7280] px-3 py-1.5 active:bg-white/[0.03]"
+              >
+                <span className="font-medium">Position</span>
+                <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", positionOpen && "rotate-180")} />
+              </button>
+              {positionOpen && (
+                <div className="px-3 pb-2 animate-fade-in">
+                  <PositionSummary
+                    baseCurrency={pair.baseAsset}
+                    quoteCurrency={pair.quoteAsset}
+                    baseAvailable={baseBalance.available}
+                    baseTotal={baseBalance.total}
+                    baseLocked={baseBalance.locked}
+                    quoteAvailable={quoteBalance.available}
+                    quoteTotal={quoteBalance.total}
+                    quoteLocked={quoteBalance.locked}
+                    currentPrice={pair.price}
+                  />
+                </div>
+              )}
+            </div>
 
-          {/* ═══ ORDERS / TRADES / FUNDS ═══ */}
-          <div className="px-2 pt-1 pb-8">
-            <TradingHistoryTabs 
-              symbol={urlSymbol}
-              onOrderDetails={setSelectedOrderId}
-              onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
-            />
+            <GhostLockWarning />
+
+            {/* Orders/Trades/Funds — grows to fill remaining space */}
+            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto px-2 pt-1 pb-2">
+              <TradingHistoryTabs 
+                symbol={urlSymbol}
+                onOrderDetails={setSelectedOrderId}
+                onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
+              />
+            </div>
           </div>
         </div>
       </div>
