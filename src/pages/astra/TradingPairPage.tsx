@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams, Navigate } from "react-router-dom";
-import { ArrowLeft, ChevronDown, Search, Loader2, WifiOff, Star, Bell } from "lucide-react";
+import { ArrowLeft, ChevronDown, Search, Loader2, Star, Bell } from "lucide-react";
 import { OrderFormPro } from "@/components/trading/OrderFormPro";
 import { OrderBookPremium } from "@/components/trading/OrderBookPremium";
 import { TradeCandlestickChart } from "@/components/trading/TradeCandlestickChart";
@@ -37,8 +37,8 @@ export function TradingPairPage() {
   
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0B0F1C]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center h-screen bg-[#0B1220]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#9CA3AF]" />
       </div>
     );
   }
@@ -94,6 +94,9 @@ function TradingPairPageContent() {
   const marketPrice = useMarketStore((state) => state.tickers[symbol]?.lastPrice);
 
   const orderBook = internalOrderBookData || wsOrderBook[symbol];
+
+  const [chartOpen, setChartOpen] = useState(false);
+  const [positionOpen, setPositionOpen] = useState(false);
 
   useEffect(() => {
     if (symbol && wsConnected) {
@@ -152,12 +155,10 @@ function TradingPairPageContent() {
     setPairSearch("");
   };
 
-  const [chartOpen, setChartOpen] = useState(false);
-
   if (!pair) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0B0F1C]">
-        <div className="text-muted-foreground">Loading...</div>
+      <div className="flex items-center justify-center h-screen bg-[#0B1220]">
+        <div className="text-[#9CA3AF]">Loading...</div>
       </div>
     );
   }
@@ -257,8 +258,6 @@ function TradingPairPageContent() {
     }
   };
 
-  const openOrders = allOpenOrders || [];
-
   const formatPrice = (p: number) => p >= 1 ? p.toFixed(2) : p.toFixed(6);
   const formatVolume = (vol: number) => {
     if (vol >= 1_000_000) return `${(vol / 1_000_000).toFixed(2)}M`;
@@ -268,7 +267,14 @@ function TradingPairPageContent() {
 
   const isPositive = pair.change24h >= 0;
 
-  
+  const bestBidEntry = orderBook?.bids?.[0];
+  const bestAskEntry = orderBook?.asks?.[0];
+  const bestBidPrice = bestBidEntry 
+    ? (typeof bestBidEntry === 'object' && 'price' in bestBidEntry ? bestBidEntry.price : Array.isArray(bestBidEntry) ? bestBidEntry[0] : 0)
+    : 0;
+  const bestAskPrice = bestAskEntry 
+    ? (typeof bestAskEntry === 'object' && 'price' in bestAskEntry ? bestAskEntry.price : Array.isArray(bestAskEntry) ? bestAskEntry[0] : 0)
+    : 0;
 
   return (
     <ComplianceGate
@@ -276,34 +282,33 @@ function TradingPairPageContent() {
       requireTermsAcceptance
       requireRiskDisclosure
     >
-      <div className="flex flex-col min-h-screen bg-[#0B1220]">
-        {/* ── 1. Compact Pair Bar ── */}
-        <div className="sticky top-0 z-20 bg-[#0B1220]/95 backdrop-blur-md border-b border-[#1F2937]/40">
-          <div className="flex items-center justify-between px-3 h-[52px]">
-            {/* Left: Back + Pair */}
-            <div className="flex items-center gap-2">
+      <div className="flex flex-col h-screen bg-[#0B1220] overflow-hidden">
+        {/* ── 1. Compact Pair Bar (sticky) ── */}
+        <div className="flex-shrink-0 bg-[#0B1220] border-b border-[#1F2937]/50">
+          <div className="flex items-center justify-between px-3 h-[48px]">
+            <div className="flex items-center gap-1.5">
               <button 
                 onClick={() => navigate("/app/trade")} 
-                className="p-1 rounded-md hover:bg-white/5"
+                className="p-1 rounded-md active:bg-white/10"
               >
                 <ArrowLeft className="h-4 w-4 text-[#9CA3AF]" />
               </button>
               
               <DropdownMenu open={pairPickerOpen} onOpenChange={setPairPickerOpen}>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1.5 hover:bg-white/5 rounded-md px-2 py-1">
-                    <span className="text-[#E5E7EB] font-semibold text-sm tracking-tight">{pair.symbol}</span>
-                    <ChevronDown className={cn("h-3 w-3 text-[#9CA3AF] transition-transform", pairPickerOpen && "rotate-180")} />
+                  <button className="flex items-center gap-1 px-1.5 py-1 rounded-md active:bg-white/5">
+                    <span className="text-[#E5E7EB] font-semibold text-[13px] tracking-tight">{pair.symbol}</span>
+                    <ChevronDown className={cn("h-3 w-3 text-[#9CA3AF]", pairPickerOpen && "rotate-180")} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-72 bg-[#111827]/95 backdrop-blur-xl border-[#1F2937] p-2 shadow-2xl rounded-xl">
+                <DropdownMenuContent align="start" className="w-72 bg-[#111827] border-[#1F2937] p-2 shadow-2xl rounded-xl">
                   <div className="relative mb-2">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#9CA3AF]" />
                     <Input
                       placeholder="Search pairs..."
                       value={pairSearch}
                       onChange={(e) => setPairSearch(e.target.value)}
-                      className="pl-9 h-9 bg-[#0B1220]/60 border-[#1F2937] text-[#E5E7EB] rounded-lg text-xs"
+                      className="pl-9 h-8 bg-[#0B1220] border-[#1F2937] text-[#E5E7EB] rounded-lg text-xs"
                       autoFocus
                     />
                   </div>
@@ -313,17 +318,17 @@ function TradingPairPageContent() {
                         key={p.symbol}
                         onClick={() => handlePairSelect(p.symbol)}
                         className={cn(
-                          "flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer text-xs",
-                          p.symbol === pair.symbol && "bg-white/5 border border-[#1F2937]"
+                          "flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer text-xs",
+                          p.symbol === pair.symbol && "bg-white/5"
                         )}
                       >
                         <span className="font-semibold text-[#E5E7EB]">{p.symbol}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-[#9CA3AF] font-mono text-[11px]">
-                            ${p.price >= 1 ? p.price.toFixed(2) : p.price.toFixed(6)}
+                            {p.price >= 1 ? p.price.toFixed(2) : p.price.toFixed(6)}
                           </span>
                           <span className={cn(
-                            "font-medium text-[10px] px-1.5 py-0.5 rounded",
+                            "font-medium text-[10px] px-1 py-0.5 rounded",
                             p.change24h >= 0 ? "text-[#16C784] bg-[#16C784]/10" : "text-[#EA3943] bg-[#EA3943]/10"
                           )}>
                             {p.change24h >= 0 ? "+" : ""}{p.change24h.toFixed(2)}%
@@ -339,28 +344,28 @@ function TradingPairPageContent() {
               </DropdownMenu>
 
               {wsConnected && (
-                <div className="h-1.5 w-1.5 rounded-full bg-[#16C784] shadow-[0_0_4px_rgba(22,199,132,0.6)]" />
+                <div className="h-1.5 w-1.5 rounded-full bg-[#16C784]" />
               )}
             </div>
 
-            {/* Center: Price + Change */}
-            <div className="flex items-center gap-2">
+            {/* Price + Change */}
+            <div className="flex items-center gap-1.5">
               <span className={cn(
-                "text-sm font-semibold font-mono",
+                "text-[13px] font-semibold font-mono",
                 isPositive ? "text-[#16C784]" : "text-[#EA3943]"
               )}>
                 {formatPrice(pair.price)}
               </span>
               <span className={cn(
-                "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
-                isPositive ? "text-[#16C784] bg-[#16C784]/10" : "text-[#EA3943] bg-[#EA3943]/10"
+                "text-[10px] font-medium px-1 py-0.5 rounded",
+                isPositive ? "text-[#16C784] bg-[#16C784]/8" : "text-[#EA3943] bg-[#EA3943]/8"
               )}>
                 {isPositive ? "+" : ""}{pair.change24h.toFixed(2)}%
               </span>
             </div>
 
-            {/* Right: Fav + Alert + Admin */}
-            <div className="flex items-center gap-1">
+            {/* Right icons */}
+            <div className="flex items-center gap-0.5">
               <button
                 onClick={() => {
                   const favs = JSON.parse(localStorage.getItem('favorite-pairs') || '[]');
@@ -368,13 +373,13 @@ function TradingPairPageContent() {
                   localStorage.setItem('favorite-pairs', JSON.stringify(newFavs));
                   setIsFavorite(!isFavorite);
                 }}
-                className="p-1.5 rounded-md hover:bg-white/5"
+                className="p-1.5 rounded-md active:bg-white/10"
               >
-                <Star className={cn("h-3.5 w-3.5 transition-all", isFavorite ? "fill-yellow-500 text-yellow-500" : "text-[#9CA3AF]")} />
+                <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-yellow-500 text-yellow-500" : "text-[#9CA3AF]")} />
               </button>
               <button
                 onClick={() => toast({ title: "Price Alerts", description: "Coming soon!" })}
-                className="p-1.5 rounded-md hover:bg-white/5"
+                className="p-1.5 rounded-md active:bg-white/10"
               >
                 <Bell className="h-3.5 w-3.5 text-[#9CA3AF]" />
               </button>
@@ -382,117 +387,117 @@ function TradingPairPageContent() {
             </div>
           </div>
 
-          {/* Mini stats row */}
-          <div className="flex items-center justify-between px-3 pb-1.5 text-[10px]">
+          {/* Mini stats */}
+          <div className="flex items-center justify-between px-3 pb-1 text-[10px]">
             <div className="flex items-center gap-1">
-              <span className="text-[#9CA3AF]">H</span>
+              <span className="text-[#6B7280]">H</span>
               <span className="font-mono text-[#16C784]">{formatPrice(pair.high24h || 0)}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[#9CA3AF]">L</span>
+              <span className="text-[#6B7280]">L</span>
               <span className="font-mono text-[#EA3943]">{formatPrice(pair.low24h || 0)}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[#9CA3AF]">Vol</span>
+              <span className="text-[#6B7280]">Vol</span>
               <span className="font-mono text-[#E5E7EB]">{formatVolume(pair.volume24h || 0)}</span>
             </div>
           </div>
         </div>
 
-        {/* ── 2. Chart Toggle ── */}
-        <div className="px-3 pt-2">
-          <button
-            onClick={() => setChartOpen(!chartOpen)}
-            className="flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors px-2 py-1.5 rounded-lg hover:bg-white/5"
-          >
-            <span className="font-medium">Chart</span>
-            <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", chartOpen && "rotate-180")} />
-          </button>
-          <div className={cn(
-            "overflow-hidden transition-all duration-200 ease-in-out",
-            chartOpen ? "max-h-[280px] opacity-100 mt-1.5" : "max-h-0 opacity-0"
-          )}>
-            <TradeCandlestickChart symbol={pair.symbol} quoteCurrency={pair.quoteAsset} />
-          </div>
-        </div>
-
-        {/* ── 3. Two-Column: Order Book (left) + Order Form (right) ── */}
-        <div className="flex-1 overflow-y-auto px-2 sm:px-3 py-2 space-y-3">
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            {/* Order Book - Left */}
-            <div className="h-[350px] sm:h-[450px] md:h-[500px]">
-              <OrderBookPremium
-                asks={orderBook?.asks?.slice(0, 10).map((a: any) => ({ 
-                  price: typeof a === 'object' ? a.price : a[0], 
-                  quantity: typeof a === 'object' ? a.quantity : a[1] 
-                })) || []}
-                bids={orderBook?.bids?.slice(0, 10).map((b: any) => ({ 
-                  price: typeof b === 'object' ? b.price : b[0], 
-                  quantity: typeof b === 'object' ? b.quantity : b[1] 
-                })) || []}
-                currentPrice={pair.price}
-                priceChange={pair.change24h}
-                quoteCurrency={pair.quoteAsset}
-                baseCurrency={pair.baseAsset}
-                onPriceClick={handlePriceClick}
-                marketPrice={marketPrice}
-                isLoading={!pair}
-              />
-            </div>
-
-            {/* Order Form - Right */}
-            <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-2 sm:p-3 overflow-y-auto max-h-[350px] sm:max-h-[450px] md:max-h-[500px]">
-              {(() => {
-                const bestBidEntry = orderBook?.bids?.[0];
-                const bestAskEntry = orderBook?.asks?.[0];
-                const bestBidPrice = bestBidEntry 
-                  ? (typeof bestBidEntry === 'object' && 'price' in bestBidEntry ? bestBidEntry.price : Array.isArray(bestBidEntry) ? bestBidEntry[0] : 0)
-                  : 0;
-                const bestAskPrice = bestAskEntry 
-                  ? (typeof bestAskEntry === 'object' && 'price' in bestAskEntry ? bestAskEntry.price : Array.isArray(bestAskEntry) ? bestAskEntry[0] : 0)
-                  : 0;
-                
-                return (
-                  <OrderFormPro
-                    baseCurrency={pair.baseAsset}
-                    quoteCurrency={pair.quoteAsset}
-                    availableBase={baseBalance.available}
-                    availableQuote={quoteBalance.available}
-                    lockedBase={baseBalance.locked}
-                    lockedQuote={quoteBalance.locked}
-                    availableBaseUsd={baseBalance.total * pair.price}
-                    availableQuoteUsd={quoteBalance.total}
-                    currentPrice={pair.price}
-                    onPlaceOrder={handlePlaceOrder}
-                    bestBid={bestBidPrice}
-                    bestAsk={bestAskPrice}
-                  />
-                );
-              })()}
-            </div>
+        {/* ── SINGLE SCROLL CONTAINER ── */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          {/* Chart Toggle */}
+          <div className="px-3 pt-2">
+            <button
+              onClick={() => setChartOpen(!chartOpen)}
+              className="flex items-center gap-1 text-[11px] text-[#9CA3AF] active:text-[#E5E7EB] px-2 py-1 rounded-md active:bg-white/5"
+            >
+              <span className="font-medium">Chart</span>
+              <ChevronDown className={cn("h-3 w-3", chartOpen && "rotate-180")} />
+            </button>
+            {chartOpen && (
+              <div className="mt-1">
+                <TradeCandlestickChart symbol={pair.symbol} quoteCurrency={pair.quoteAsset} />
+              </div>
+            )}
           </div>
 
-          {/* Position Summary - collapsed by default handled inside component */}
-          <PositionSummary
-            baseCurrency={pair.baseAsset}
-            quoteCurrency={pair.quoteAsset}
-            baseAvailable={baseBalance.available}
-            baseTotal={baseBalance.total}
-            baseLocked={baseBalance.locked}
-            quoteAvailable={quoteBalance.available}
-            quoteTotal={quoteBalance.total}
-            quoteLocked={quoteBalance.locked}
-            currentPrice={pair.price}
-          />
+          {/* ── Order Form ── */}
+          <div className="px-3 pt-2">
+            <OrderFormPro
+              baseCurrency={pair.baseAsset}
+              quoteCurrency={pair.quoteAsset}
+              availableBase={baseBalance.available}
+              availableQuote={quoteBalance.available}
+              lockedBase={baseBalance.locked}
+              lockedQuote={quoteBalance.locked}
+              availableBaseUsd={baseBalance.total * pair.price}
+              availableQuoteUsd={quoteBalance.total}
+              currentPrice={pair.price}
+              onPlaceOrder={handlePlaceOrder}
+              bestBid={bestBidPrice}
+              bestAsk={bestAskPrice}
+              selectedPrice={selectedPrice}
+            />
+          </div>
+
+          {/* ── Order Book ── */}
+          <div className="px-3 pt-3">
+            <OrderBookPremium
+              asks={orderBook?.asks?.slice(0, 8).map((a: any) => ({ 
+                price: typeof a === 'object' ? a.price : a[0], 
+                quantity: typeof a === 'object' ? a.quantity : a[1] 
+              })) || []}
+              bids={orderBook?.bids?.slice(0, 8).map((b: any) => ({ 
+                price: typeof b === 'object' ? b.price : b[0], 
+                quantity: typeof b === 'object' ? b.quantity : b[1] 
+              })) || []}
+              currentPrice={pair.price}
+              priceChange={pair.change24h}
+              quoteCurrency={pair.quoteAsset}
+              baseCurrency={pair.baseAsset}
+              onPriceClick={handlePriceClick}
+              marketPrice={marketPrice}
+              isLoading={!pair}
+            />
+          </div>
+
+          {/* ── Position (collapsible) ── */}
+          <div className="px-3 pt-3">
+            <button
+              onClick={() => setPositionOpen(!positionOpen)}
+              className="flex items-center justify-between w-full text-[11px] text-[#9CA3AF] px-2 py-1.5 rounded-md active:bg-white/5"
+            >
+              <span className="font-medium">Position</span>
+              <ChevronDown className={cn("h-3 w-3", positionOpen && "rotate-180")} />
+            </button>
+            {positionOpen && (
+              <div className="mt-1">
+                <PositionSummary
+                  baseCurrency={pair.baseAsset}
+                  quoteCurrency={pair.quoteAsset}
+                  baseAvailable={baseBalance.available}
+                  baseTotal={baseBalance.total}
+                  baseLocked={baseBalance.locked}
+                  quoteAvailable={quoteBalance.available}
+                  quoteTotal={quoteBalance.total}
+                  quoteLocked={quoteBalance.locked}
+                  currentPrice={pair.price}
+                />
+              </div>
+            )}
+          </div>
 
           <GhostLockWarning />
           
-          {/* Trading History */}
-          <TradingHistoryTabs 
-            symbol={urlSymbol}
-            onOrderDetails={setSelectedOrderId}
-            onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
-          />
+          {/* ── Trading History ── */}
+          <div className="px-3 pt-3 pb-6">
+            <TradingHistoryTabs 
+              symbol={urlSymbol}
+              onOrderDetails={setSelectedOrderId}
+              onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
+            />
+          </div>
         </div>
       </div>
        
