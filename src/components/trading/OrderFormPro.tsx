@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Loader2, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -275,49 +275,83 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         max={!isBuy ? availableBase : undefined}
       />
 
-      {/* ── % Selector — Binance diamond style ── */}
+      {/* ── % Slider — Draggable with diamond markers ── */}
       <div className="px-1 py-1">
-        <div className="relative h-[10px] flex items-center">
+        <div
+          className="relative h-[24px] flex items-center cursor-pointer touch-none"
+          onPointerDown={(e) => {
+            const track = e.currentTarget;
+            const rect = track.getBoundingClientRect();
+            const pad = rect.width * 0.02;
+            const trackW = rect.width - pad * 2;
+            const calcPct = (clientX: number) => Math.round(Math.max(0, Math.min(100, ((clientX - rect.left - pad) / trackW) * 100)));
+
+            const pct = calcPct(e.clientX);
+            if (pct === 0) { setActivePercent(null); setAmount(''); } else { handleQuickPercent(pct); }
+
+            const onMove = (ev: PointerEvent) => {
+              const p = calcPct(ev.clientX);
+              if (p === 0) { setActivePercent(null); setAmount(''); } else { handleQuickPercent(p); }
+            };
+            const onUp = () => {
+              document.removeEventListener('pointermove', onMove);
+              document.removeEventListener('pointerup', onUp);
+            };
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+          }}
+        >
           {/* Base track */}
-          <div className="absolute left-[2%] right-[2%] top-1/2 -translate-y-1/2 h-[2px] bg-[#1F2937]" />
+          <div className="absolute left-[2%] right-[2%] top-1/2 -translate-y-1/2 h-[2px] bg-[#1F2937] rounded-full" />
           {/* Active track */}
-          {activePercent !== null && (
-            <div
-              className={cn(
-                "absolute left-[2%] top-1/2 -translate-y-1/2 h-[2px] transition-all duration-150",
-                isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
-              )}
-              style={{ width: `${(activePercent / 100) * 96}%` }}
-            />
-          )}
+          <div
+            className={cn(
+              "absolute left-[2%] top-1/2 -translate-y-1/2 h-[2px] rounded-full transition-[width] duration-75",
+              isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
+            )}
+            style={{ width: `${((activePercent ?? 0) / 100) * 96}%` }}
+          />
           {/* Diamond markers */}
           {[0, 25, 50, 75, 100].map((pct) => {
             const isActive = activePercent !== null && activePercent >= pct;
             return (
-              <button
+              <div
                 key={pct}
-                onClick={() => pct === 0 ? (setActivePercent(null), setAmount('')) : handleQuickPercent(pct)}
-                className="absolute -translate-x-1/2 z-10 w-5 h-5 flex items-center justify-center"
+                className="absolute -translate-x-1/2 z-10 w-5 h-5 flex items-center justify-center pointer-events-none"
                 style={{ left: `${2 + (pct / 100) * 96}%` }}
               >
                 <span className={cn(
-                  "w-[7px] h-[7px] rotate-45 transition-all duration-150",
+                  "w-[7px] h-[7px] rotate-45 transition-all duration-100",
                   isActive
-                    ? isBuy ? "bg-[#2EBD85] scale-110" : "bg-[#F6465D] scale-110"
+                    ? isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
                     : "bg-[#0B1220] border border-[#374151]"
                 )} />
-              </button>
+              </div>
             );
           })}
+          {/* Draggable thumb */}
+          {activePercent !== null && activePercent > 0 && (
+            <div
+              className="absolute -translate-x-1/2 z-20 pointer-events-none"
+              style={{ left: `${2 + (activePercent / 100) * 96}%` }}
+            >
+              <div className={cn(
+                "w-[12px] h-[12px] rounded-full border-2",
+                isBuy ? "border-[#2EBD85] bg-[#0B1220]" : "border-[#F6465D] bg-[#0B1220]"
+              )} />
+            </div>
+          )}
         </div>
         {/* Labels */}
-        <div className="relative h-[14px] mt-0.5">
+        <div className="relative h-[14px]">
           {[0, 25, 50, 75, 100].map((pct) => (
             <span
               key={pct}
               className={cn(
                 "absolute -translate-x-1/2 text-[9px] font-mono transition-colors",
-                activePercent === pct ? (isBuy ? "text-[#2EBD85]" : "text-[#F6465D]") : "text-[#4B5563]"
+                activePercent !== null && activePercent >= pct - 2 && activePercent <= pct + 2
+                  ? (isBuy ? "text-[#2EBD85]" : "text-[#F6465D]")
+                  : "text-[#4B5563]"
               )}
               style={{ left: `${2 + (pct / 100) * 96}%` }}
             >
