@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -18,6 +18,7 @@ interface OrderBookPremiumProps {
   isLoading?: boolean;
   marketPrice?: number;
   maxRows?: number;
+  fillContainer?: boolean;
 }
 
 const formatPrice = (price: number) => {
@@ -86,9 +87,32 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   isLoading = false,
   marketPrice,
   maxRows = 7,
+  fillContainer = false,
 }) => {
-  const displayAsks = useMemo(() => asks.slice(0, maxRows).reverse(), [asks, maxRows]);
-  const displayBids = useMemo(() => bids.slice(0, maxRows), [bids, maxRows]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dynamicRows, setDynamicRows] = useState(maxRows);
+
+  // Dynamic row calculation based on container height
+  useEffect(() => {
+    if (!fillContainer || !containerRef.current) return;
+    const el = containerRef.current;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = entry.contentRect.height;
+        // Reserve: header(20) + mid-price(26) + pressure(24) + padding(8) = ~78px
+        const available = h - 78;
+        const rowsPerSide = Math.max(3, Math.floor(available / 2 / 17));
+        setDynamicRows(rowsPerSide);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fillContainer]);
+
+  const effectiveRows = fillContainer ? dynamicRows : maxRows;
+
+  const displayAsks = useMemo(() => asks.slice(0, effectiveRows).reverse(), [asks, effectiveRows]);
+  const displayBids = useMemo(() => bids.slice(0, effectiveRows), [bids, effectiveRows]);
 
   // Max quantity for depth bar normalization
   const allQtys = useMemo(() => {
@@ -117,7 +141,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   }
 
   return (
-    <div className="py-1">
+    <div ref={containerRef} className={cn("py-1", fillContainer && "flex-1 flex flex-col min-h-0")}>
       {/* Header */}
       <div className="grid px-2 pb-1 text-[9px] text-[#4B5563] uppercase tracking-wider font-medium"
         style={{ gridTemplateColumns: '50% 50%' }}

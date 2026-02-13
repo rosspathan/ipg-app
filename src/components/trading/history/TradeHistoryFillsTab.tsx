@@ -41,16 +41,13 @@
      new BigNumber(sum).plus(f.fee).toNumber(), 0
    );
  
-   if (fills.length === 0) {
-     return (
-       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-         <div className="text-sm">No trade history</div>
-         <div className="text-xs mt-1">
-           {currentSymbol ? `No fills for ${currentSymbol}` : 'Your executed trades will appear here'}
-         </div>
-       </div>
-     );
-   }
+  if (fills.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[32px] text-[11px] text-[#6B7280]">
+        No trade history{currentSymbol ? ` for ${currentSymbol}` : ''}
+      </div>
+    );
+  }
  
    return (
      <div className="space-y-2">
