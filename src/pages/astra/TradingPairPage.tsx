@@ -106,7 +106,7 @@ function TradingPairPageContent() {
   const [ordersDrawerOpen, setOrdersDrawerOpen] = useState(false);
   const isLandscape = useOrientation();
   const { width: windowWidth } = useWindowSize();
-  const isSideBySide = windowWidth >= 768 || (isLandscape && windowWidth >= 568);
+  const isSideBySide = windowWidth >= 420 || (isLandscape && windowWidth >= 420);
 
   useEffect(() => {
     if (symbol && wsConnected) {
@@ -429,9 +429,9 @@ function TradingPairPageContent() {
 
           {/* ── SECTION A+B: Trade Panel + Order Book (adaptive layout) ── */}
           {isSideBySide ? (
-            /* ── Side-by-side: Trade 40% | gap 12px | Order Book 60% ── */
-            <div className="flex-1 flex flex-row min-h-0 overflow-hidden gap-3 px-3 py-2">
-              <div className="w-[40%] flex-shrink-0 overflow-y-auto scrollbar-thin">
+            /* ── Side-by-side: Trade 42% | gap 12px | Order Book 58% ── */
+            <div className="flex-1 flex flex-row min-h-0 overflow-hidden px-3 py-1" style={{ gap: '12px' }}>
+              <div className="flex-shrink-0 overflow-y-auto scrollbar-thin" style={{ width: '42%' }}>
                 <OrderFormPro
                   baseCurrency={pair.baseAsset}
                   quoteCurrency={pair.quoteAsset}
