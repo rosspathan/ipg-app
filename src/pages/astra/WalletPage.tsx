@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useState, useEffect, useMemo } from "react"
-import { Copy, ExternalLink, QrCode, Eye, EyeOff, Wallet, ArrowLeftRight, Lock, Search, RefreshCw, ArrowRight, ChevronDown, ChevronUp } from "lucide-react"
+import { Copy, ExternalLink, QrCode, Eye, EyeOff, Wallet, ArrowLeftRight, Lock, Search, RefreshCw, ArrowRight, ChevronDown, ChevronUp, ChevronRight, TrendingUp, TrendingDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client"
 import AssetLogo from "@/components/AssetLogo"
 import { formatCurrency } from "@/utils/formatters"
 import { cn } from "@/lib/utils"
+import { useTradingPairs } from "@/hooks/useTradingPairs"
 
 // Shared inline style constants
 const surface = 'hsla(220, 25%, 11%, 0.8)'
@@ -35,6 +36,64 @@ const teal = '#16F2C6'
 const textPrimary = 'hsl(0, 0%, 92%)'
 const textSecondary = 'hsl(0, 0%, 50%)'
 const textTertiary = 'hsl(0, 0%, 40%)'
+
+// Compact Markets Preview for Wallet page
+function MarketsPreview({ navigate }: { navigate: (path: string) => void }) {
+  const { data: tradingPairs } = useTradingPairs()
+  return (
+    <div className="px-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>Markets</h2>
+        <button onClick={() => navigate("/app/trade")} className="text-[12px] font-medium flex items-center gap-1" style={{ color: teal }}>
+          View All <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="rounded-xl overflow-hidden" style={{ background: surface, border: borderSubtle }}>
+        {(tradingPairs || []).slice(0, 5).map((pair, i) => {
+          const isUp = pair.change24h >= 0
+          return (
+            <div key={pair.id}>
+              <button
+                onClick={() => navigate(`/app/trade/${pair.symbol.replace('/', '_')}`)}
+                className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.02]"
+              >
+                <div className="text-left">
+                  <p className="text-[13px] font-semibold" style={{ color: textPrimary }}>
+                    {pair.baseAsset}<span style={{ color: textTertiary }}>/{pair.quoteAsset}</span>
+                  </p>
+                  <p className="text-[10px] font-mono" style={{ color: textTertiary }}>
+                    Vol ${pair.volume24h >= 1000 ? `${(pair.volume24h / 1000).toFixed(1)}K` : pair.volume24h.toFixed(2)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <p className="text-[13px] font-mono font-semibold tabular-nums" style={{ color: textPrimary }}>
+                    ${pair.price >= 1 ? pair.price.toFixed(2) : pair.price.toFixed(4)}
+                  </p>
+                  <div
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold min-w-[72px] justify-center"
+                    style={{
+                      background: isUp ? 'hsla(154, 67%, 52%, 0.1)' : 'hsla(0, 70%, 68%, 0.1)',
+                      color: isUp ? 'hsl(154, 67%, 52%)' : 'hsl(0, 70%, 68%)',
+                    }}
+                  >
+                    {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    {isUp ? '+' : ''}{pair.change24h.toFixed(2)}%
+                  </div>
+                </div>
+              </button>
+              {i < Math.min((tradingPairs || []).length, 5) - 1 && (
+                <div className="mx-4 h-px" style={{ background: 'hsla(0, 0%, 100%, 0.04)' }} />
+              )}
+            </div>
+          )
+        })}
+        {(!tradingPairs || tradingPairs.length === 0) && (
+          <div className="text-center py-8 text-[12px]" style={{ color: textTertiary }}>Loading markets...</div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export function WalletPage() {
   const { navigate } = useNavigation()
@@ -426,6 +485,9 @@ export function WalletPage() {
           </div>
         </button>
       </div>
+
+      {/* ── MARKETS PREVIEW ── */}
+      <MarketsPreview navigate={navigate} />
 
       {/* ── 7. PENDING DEPOSITS ── */}
       <PendingDepositsCard />
