@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { isInternalPair } from '@/hooks/useInternalMarketPrice';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -14,6 +15,8 @@ import {
   Line,
 } from 'recharts';
 import { BarChart3, Loader2, Clock } from 'lucide-react';
+
+const TradingViewWidget = lazy(() => import('@/components/TradingViewWidget'));
 
 interface CandleData {
   time: string;
@@ -50,6 +53,7 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
   quoteCurrency = 'USDT',
 }) => {
   const [interval, setInterval] = useState<Interval>('1h');
+  const isBinancePair = !isInternalPair(symbol);
 
   const { data: candles, isLoading } = useQuery({
     queryKey: ['trade-candles', symbol, interval],
@@ -103,6 +107,7 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
           };
         });
     },
+    enabled: !isBinancePair,
     refetchInterval: 30000,
     staleTime: 15000,
   });
@@ -116,6 +121,29 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
     const padding = (allHigh - allLow) * 0.1 || allHigh * 0.05;
     return [allLow - padding, allHigh + padding];
   }, [candles]);
+
+  // For Binance-listed pairs, show TradingView widget
+  if (isBinancePair) {
+    const tvSymbol = `BINANCE:${symbol.replace('/', '')}`;
+    return (
+      <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden">
+        <Suspense fallback={
+          <div className="h-[200px] flex items-center justify-center">
+            <Loader2 className="h-4 w-4 animate-spin text-[#9CA3AF]" />
+          </div>
+        }>
+          <TradingViewWidget
+            symbol={tvSymbol}
+            height={240}
+            width="100%"
+            colorTheme="dark"
+            widgetType="advanced-chart"
+            showControls={false}
+          />
+        </Suspense>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
