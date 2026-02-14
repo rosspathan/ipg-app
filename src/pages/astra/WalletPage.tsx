@@ -1,32 +1,40 @@
 import * as React from "react"
 import { useState, useEffect, useMemo } from "react"
-import { Copy, ExternalLink, QrCode, Eye, EyeOff, Wallet } from "lucide-react"
+import { Copy, ExternalLink, QrCode, Eye, EyeOff, Wallet, ArrowLeftRight, Lock, Search, RefreshCw, ArrowRight, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { QRCodeSVG } from "qrcode.react"
 import { copyToClipboard } from "@/utils/clipboard"
-import { AppShellGlass } from "@/components/astra/AppShellGlass"
-import { BalanceCluster } from "@/components/astra/grid/BalanceCluster"
 import { useWalletBalances } from "@/hooks/useWalletBalances"
 import { useBep20Balances } from "@/hooks/useBep20Balances"
 import { useTradingBalances } from "@/hooks/useTradingBalances"
-import { QuickActionsRibbon } from "@/components/astra/grid/QuickActionsRibbon"
 import { useNavigation } from "@/hooks/useNavigation"
-import BrandHeaderLogo from "@/components/brand/BrandHeaderLogo"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { useWeb3 } from "@/contexts/Web3Context"
-import { getStoredEvmAddress, ensureWalletAddressOnboarded, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress"
+import { getStoredEvmAddress, getExplorerUrl, formatAddress } from "@/lib/wallet/evmAddress"
 import { useUsernameBackfill } from "@/hooks/useUsernameBackfill"
 import { useDisplayName } from "@/hooks/useDisplayName"
 import { PendingDepositsCard } from "@/components/astra/PendingDepositsCard"
-import { NetworkBadge } from "@/components/wallet/NetworkBadge"
-import { PortfolioSummaryCard } from "@/components/wallet/PortfolioSummaryCard"
-import { TradingBalancesCard } from "@/components/wallet/TradingBalancesCard"
 import { getStoredWallet } from "@/utils/walletStorage"
 import { useWalletIntegrity } from "@/lib/wallet/useWalletIntegrity"
 import { WalletIntegrityBanner } from "@/components/wallet/WalletIntegrityBanner"
-import { USDILoanCard } from "@/components/wallet/USDILoanCard"
+import { useOnchainBalances } from "@/hooks/useOnchainBalances"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
+import AssetLogo from "@/components/AssetLogo"
+import { formatCurrency } from "@/utils/formatters"
+import { cn } from "@/lib/utils"
+
+// Shared inline style constants
+const surface = 'hsla(220, 25%, 11%, 0.8)'
+const surfaceLight = 'hsla(220, 25%, 14%, 0.6)'
+const borderSubtle = '1px solid hsla(0, 0%, 100%, 0.05)'
+const borderTeal = '1px solid hsla(160, 50%, 50%, 0.12)'
+const teal = '#16F2C6'
+const textPrimary = 'hsl(0, 0%, 92%)'
+const textSecondary = 'hsl(0, 0%, 50%)'
+const textTertiary = 'hsl(0, 0%, 40%)'
 
 export function WalletPage() {
   const { navigate } = useNavigation()
@@ -37,102 +45,66 @@ export function WalletPage() {
   const [showAddress, setShowAddress] = useState(true)
   const [showQrDialog, setShowQrDialog] = useState(false)
   const [integrityDismissed, setIntegrityDismissed] = useState(false)
-  
-  // Check wallet integrity
+  const [searchTerm, setSearchTerm] = useState("")
+  const [assetsExpanded, setAssetsExpanded] = useState(true)
+
   const walletIntegrity = useWalletIntegrity(user?.id || null)
-  
-  // Fetch real portfolio data (in-app balances)
   const { portfolio, loading: portfolioLoading } = useWalletBalances()
-  
-  // Fetch on-chain balances
-  const { balances: onchainBalances, isLoading: onchainLoading } = useBep20Balances()
-  
-  // Fetch trading balances (trading_balances table)
+  const { balances: onchainBalances, isLoading: onchainLoading, refetch: refetchOnchain } = useOnchainBalances()
   const { data: tradingBalances, isLoading: tradingLoading } = useTradingBalances()
-  
-  // Calculate total on-chain USD value
+
+  const { balances: bep20Balances } = useBep20Balances()
   const onchainUsd = useMemo(() => {
-    if (!onchainBalances || onchainBalances.length === 0) return 0
-    return onchainBalances.reduce((total, bal) => total + (bal.onchainUsdValue || 0), 0)
-  }, [onchainBalances])
+    if (!bep20Balances || bep20Balances.length === 0) return 0
+    return bep20Balances.reduce((total, bal) => total + (bal.onchainUsdValue || 0), 0)
+  }, [bep20Balances])
+  const activeTradingBalances = useMemo(() => 
+    (tradingBalances || []).filter(b => b.balance > 0.000001), [tradingBalances])
+  const tradingTotalUsd = useMemo(() => 
+    activeTradingBalances.reduce((sum, b) => sum + (b.usd_value || 0), 0), [activeTradingBalances])
 
-  useUsernameBackfill(); // Backfill username if missing
+  const filteredAssets = useMemo(() => 
+    onchainBalances
+      .filter(a => a.symbol !== 'INR' && a.balance > 0)
+      .filter(a => !searchTerm || a.name.toLowerCase().includes(searchTerm.toLowerCase()) || a.symbol.toLowerCase().includes(searchTerm.toLowerCase())),
+    [onchainBalances, searchTerm])
 
-  React.useEffect(() => {
-    console.info('CLEAN_SLATE_APPLIED');
-  }, []);
+  useUsernameBackfill()
 
-  // Fetch wallet address from profiles table
   useEffect(() => {
     const fetchWalletAddress = async () => {
       try {
-        // If authenticated, prefer stored profile address
         if (user?.id) {
-          let addr = await getStoredEvmAddress(user.id);
-          
-          // If no wallet found, user needs to complete onboarding
-          if (!addr) {
-            console.warn('[WALLET_PAGE] No wallet found for user');
-          }
-          
-          if (addr) {
-            setWalletAddress(addr);
-            console.info('USR_WALLET_LINK_V3', { user: user.id, address: addr.slice(0, 8) + '...' });
-            return;
-          }
+          const addr = await getStoredEvmAddress(user.id)
+          if (addr) { setWalletAddress(addr); return }
         }
-        // Fallbacks for pre-auth/onboarding
-        if (wallet?.address) {
-          setWalletAddress(wallet.address);
-          return;
-        }
-        
-        // Try user-scoped local storage
-        const userId = user?.id || null;
-        const localWallet = getStoredWallet(userId);
-        if (localWallet?.address) {
-          setWalletAddress(localWallet.address);
-          return;
-        }
-        
-        // Legacy fallback for onboarding state
+        if (wallet?.address) { setWalletAddress(wallet.address); return }
+        const userId = user?.id || null
+        const localWallet = getStoredWallet(userId)
+        if (localWallet?.address) { setWalletAddress(localWallet.address); return }
         try {
-          const onboard = localStorage.getItem('ipg_onboarding_state');
+          const onboard = localStorage.getItem('ipg_onboarding_state')
           if (onboard) {
-            const parsed = JSON.parse(onboard);
-            const addr = parsed?.walletInfo?.address;
-            if (addr) setWalletAddress(addr);
+            const parsed = JSON.parse(onboard)
+            if (parsed?.walletInfo?.address) setWalletAddress(parsed.walletInfo.address)
           }
         } catch {}
       } catch (error) {
-        console.error('Error fetching wallet address:', error);
-        if (wallet?.address) setWalletAddress(wallet.address);
+        console.error('Error fetching wallet address:', error)
+        if (wallet?.address) setWalletAddress(wallet.address)
       }
-    };
-
-    fetchWalletAddress();
-
-    // Listen for EVM address updates
-    const handleAddressUpdate = () => {
-      fetchWalletAddress();
-    };
-    window.addEventListener('evm:address:updated', handleAddressUpdate);
-    
-    return () => {
-      window.removeEventListener('evm:address:updated', handleAddressUpdate);
-    };
-  }, [user?.id, wallet?.address]);
+    }
+    fetchWalletAddress()
+    const handleAddressUpdate = () => fetchWalletAddress()
+    window.addEventListener('evm:address:updated', handleAddressUpdate)
+    return () => window.removeEventListener('evm:address:updated', handleAddressUpdate)
+  }, [user?.id, wallet?.address])
 
   const handleCopyAddress = async () => {
     if (!walletAddress) {
-      toast({
-        title: "No Wallet",
-        description: "No wallet address found",
-        variant: "destructive",
-      })
-      return;
+      toast({ title: "No Wallet", description: "No wallet address found", variant: "destructive" })
+      return
     }
-    
     const success = await copyToClipboard(walletAddress)
     toast({
       title: success ? "Address Copied" : "Error",
@@ -141,265 +113,342 @@ export function WalletPage() {
     })
   }
 
-  // Debug: wallet page context
-  React.useEffect(() => {
-    console.info('[WALLET_PAGE_RENDER]', {
-      displayName,
-      walletAddress: walletAddress ? walletAddress.slice(0, 6) + '...' : null,
-      route: '/app/wallet',
-    });
-  }, [displayName, walletAddress]);
-
-  const quickActions = [
-    { 
-      id: "deposit", 
-      label: "Deposit", 
-      icon: React.createElement('span', { className: "text-lg" }, "↓"),
-      variant: "primary" as const,
-      onPress: () => navigate("/app/wallet/deposit")
-    },
-    { 
-      id: "withdraw", 
-      label: "Withdraw", 
-      icon: React.createElement('span', { className: "text-lg" }, "↑"),
-      variant: "default" as const,
-      onPress: () => navigate("/app/wallet/withdraw")
-    },
-    { 
-      id: "swap", 
-      label: "Swap", 
-      icon: React.createElement('span', { className: "text-lg" }, "⇄"),
-      variant: "default" as const,
-      onPress: () => navigate("/app/swap")
-    },
-    { 
-      id: "history", 
-      label: "History", 
-      icon: React.createElement('span', { className: "text-lg" }, "📋"),
-      variant: "default" as const,
-      onPress: () => navigate("/app/wallet/history")
-    }
-  ]
-
-  const topBar = (
-    <div className="flex items-center justify-between p-4">
-      <BrandHeaderLogo size="medium" />
-      <div className="text-center flex-1">
-        <h1 className="font-bold text-lg text-foreground font-heading">{displayName}'s Wallet</h1>
-        <p className="text-xs text-muted-foreground">Manage assets securely</p>
-      </div>
-      <div className="w-8" />
-    </div>
-  )
+  const totalUsd = (portfolio?.total_usd || 0) + onchainUsd
 
   return (
-    <div className="space-y-4 pb-32" data-testid="page-wallet" data-version="usr-wallet-link-v3">
-        {/* Wallet Integrity Warning Banner */}
-        {walletIntegrity.hasMismatch && !integrityDismissed && walletIntegrity.mismatchType && (
-          <WalletIntegrityBanner
-            mismatchType={walletIntegrity.mismatchType}
-            profileWallet={walletIntegrity.profileWallet}
-            backupWallet={walletIntegrity.backupWallet}
-            bscWallet={walletIntegrity.bscWallet}
-            onDismiss={walletIntegrity.mismatchType === 'profile_vs_bsc' ? () => setIntegrityDismissed(true) : undefined}
-            onFixed={() => walletIntegrity.refetch()}
-          />
+    <div className="space-y-6 pb-32" data-testid="page-wallet" style={{ background: '#0B1020', minHeight: '100vh' }}>
+
+      {/* Integrity Banner */}
+      {walletIntegrity.hasMismatch && !integrityDismissed && walletIntegrity.mismatchType && (
+        <WalletIntegrityBanner
+          mismatchType={walletIntegrity.mismatchType}
+          profileWallet={walletIntegrity.profileWallet}
+          backupWallet={walletIntegrity.backupWallet}
+          bscWallet={walletIntegrity.bscWallet}
+          onDismiss={walletIntegrity.mismatchType === 'profile_vs_bsc' ? () => setIntegrityDismissed(true) : undefined}
+          onFixed={() => walletIntegrity.refetch()}
+        />
+      )}
+
+      {/* ── 1. HEADER / ADDRESS ── */}
+      <div className="px-4 pt-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#F7A53B' }} />
+          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#F7A53B' }}>
+            Binance Smart Chain
+          </span>
+        </div>
+        <p className="text-[11px] font-medium" style={{ color: textSecondary }}>
+          EVM Address (BEP20/ERC20)
+        </p>
+
+        <div className="flex items-center gap-2">
+          <div
+            className="flex-1 overflow-x-auto scrollbar-hide rounded-lg px-3 py-2.5"
+            style={{ background: surfaceLight, border: borderSubtle }}
+          >
+            <p className="font-mono text-[12px] whitespace-nowrap tabular-nums" style={{ color: textPrimary }} data-testid="wallet-evm-address">
+              {showAddress ? (walletAddress || 'No wallet connected') : '••••••••••••••••••••••••••••••••••••••••'}
+            </p>
+          </div>
+
+          <button onClick={handleCopyAddress} className="p-2 rounded-lg" style={{ background: surfaceLight, border: borderSubtle }}>
+            <Copy className="h-4 w-4" style={{ color: textSecondary }} />
+          </button>
+          <button onClick={() => setShowQrDialog(true)} disabled={!walletAddress} className="p-2 rounded-lg" style={{ background: surfaceLight, border: borderSubtle }}>
+            <QrCode className="h-4 w-4" style={{ color: textSecondary }} />
+          </button>
+          <button onClick={() => setShowAddress(!showAddress)} className="p-2 rounded-lg" style={{ background: surfaceLight, border: borderSubtle }}>
+            {showAddress ? <EyeOff className="h-4 w-4" style={{ color: textSecondary }} /> : <Eye className="h-4 w-4" style={{ color: textSecondary }} />}
+          </button>
+        </div>
+
+        {/* Explorer + On-chain links */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => window.open(getExplorerUrl(walletAddress, 'bsc'), '_blank')}
+            disabled={!walletAddress}
+            className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg"
+            style={{ background: surfaceLight, border: borderSubtle, color: teal }}
+          >
+            <ExternalLink className="h-3 w-3" /> BSCScan
+          </button>
+          <button
+            onClick={() => navigate('/app/wallet/onchain')}
+            className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg"
+            style={{ background: surfaceLight, border: borderSubtle, color: textSecondary }}
+          >
+            <Wallet className="h-3 w-3" /> On-chain View
+          </button>
+        </div>
+
+        {!walletAddress && (
+          <div className="p-4 rounded-xl space-y-3" style={{ background: 'hsla(35, 80%, 50%, 0.08)', border: '1px solid hsla(35, 80%, 50%, 0.2)' }}>
+            <p className="text-[13px] font-semibold" style={{ color: '#F7A53B' }}>Wallet Setup Required</p>
+            <p className="text-[11px]" style={{ color: 'hsl(0, 0%, 60%)' }}>Create or import a wallet to use this feature.</p>
+            <button
+              onClick={() => { localStorage.setItem('ipg_return_path', '/app/wallet'); navigate('/onboarding/wallet') }}
+              className="w-full h-10 rounded-xl text-[13px] font-semibold" style={{ background: teal, color: '#0B1020' }}
+            >
+              Set Up Wallet Now
+            </button>
+          </div>
         )}
+      </div>
 
-        {/* Address Panel with Network Badge */}
-        <div 
-          className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 via-card/80 to-card/60 backdrop-blur-xl p-5 transition-all duration-300"
-          data-testid="address-panel"
-        >
-          {/* Network Badge */}
-          <NetworkBadge network="BINANCE SMART CHAIN" className="mb-4" />
+      {/* ── 2. ACTION GRID ── */}
+      <div className="px-4 grid grid-cols-4 gap-2">
+        {[
+          { label: "Deposit", icon: "↓", route: "/app/wallet/deposit" },
+          { label: "Withdraw", icon: "↑", route: "/app/wallet/withdraw" },
+          { label: "Swap", icon: "⇄", route: "/app/swap" },
+          { label: "History", icon: "📋", route: "/app/wallet/history" },
+        ].map((a) => (
+          <button
+            key={a.label}
+            onClick={() => navigate(a.route)}
+            className="flex flex-col items-center gap-2 py-4 rounded-xl transition-colors"
+            style={{ background: surface, border: borderSubtle }}
+          >
+            <span className="text-lg">{a.icon}</span>
+            <span className="text-[11px] font-semibold" style={{ color: textPrimary }}>{a.label}</span>
+          </button>
+        ))}
+      </div>
 
-          {/* Address Display */}
-          <div className="space-y-4">
+      {/* ── 3. PORTFOLIO SUMMARY ── */}
+      <div className="px-4">
+        <div className="p-5 rounded-xl space-y-4" style={{ background: surface, border: borderTeal }}>
+          <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: textSecondary }}>On-Chain Balance</p>
+          
+          <div className="relative">
+            <p className="text-[28px] font-bold tabular-nums" style={{ color: textPrimary, fontFamily: "'Space Grotesk', sans-serif" }}>
+              {portfolioLoading || onchainLoading ? '...' : formatCurrency(portfolio?.total_usd || 0)}
+            </p>
+            {/* Subtle glow */}
+            <div className="absolute -inset-6 rounded-full opacity-[0.06] pointer-events-none" style={{ background: `radial-gradient(circle, ${teal} 0%, transparent 70%)` }} />
+          </div>
+
+          <div className="h-px" style={{ background: 'hsla(0, 0%, 100%, 0.06)' }} />
+
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-muted-foreground">Your EVM Address<br/><span className="text-xs">(BEP20/ERC20)</span></p>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate('/app/wallet/onchain')}
-                  className="h-8 px-3 text-xs bg-muted/40 hover:bg-muted/60 rounded-lg"
-                >
-                  <Wallet className="h-3.5 w-3.5 mr-1.5" />
-                  On-chain
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAddress(!showAddress)}
-                  className="h-8 w-8 p-0 bg-muted/40 hover:bg-muted/60 rounded-lg"
-                >
-                  {showAddress ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
+                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: 'hsla(160, 60%, 50%, 0.12)' }}>
+                  <Wallet className="h-3 w-3" style={{ color: teal }} />
+                </div>
+                <span className="text-[12px] font-medium" style={{ color: textSecondary }}>Available</span>
+              </div>
+              <span className="text-[14px] font-bold tabular-nums" style={{ color: teal }}>
+                {formatCurrency(portfolio?.available_usd || 0)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: 'hsla(35, 80%, 50%, 0.12)' }}>
+                  <Lock className="h-3 w-3" style={{ color: '#F7A53B' }} />
+                </div>
+                <span className="text-[12px] font-medium" style={{ color: textSecondary }}>In Orders</span>
+              </div>
+              <span className="text-[14px] font-bold tabular-nums" style={{ color: '#F7A53B' }}>
+                {formatCurrency(portfolio?.locked_usd || 0)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 4. ASSET LIST ── */}
+      <div className="px-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>On-Chain Assets</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={() => refetchOnchain()} className="p-1.5 rounded-lg" style={{ background: surfaceLight }}>
+              <RefreshCw className="h-3 w-3" style={{ color: textSecondary }} />
+            </button>
+            <button onClick={() => setAssetsExpanded(!assetsExpanded)} className="p-1.5 rounded-lg" style={{ background: surfaceLight }}>
+              {assetsExpanded ? <ChevronUp className="h-3 w-3" style={{ color: textSecondary }} /> : <ChevronDown className="h-3 w-3" style={{ color: textSecondary }} />}
+            </button>
+          </div>
+        </div>
+
+        {assetsExpanded && (
+          <>
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: textTertiary }} />
+              <input
+                type="text"
+                placeholder="Search assets..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-[38px] pl-9 pr-3 rounded-lg text-[12px] outline-none"
+                style={{ background: surfaceLight, border: borderSubtle, color: textPrimary }}
+              />
+            </div>
+
+            {onchainLoading ? (
+              <div className="text-center py-8 text-[12px]" style={{ color: textTertiary }}>Loading...</div>
+            ) : filteredAssets.length === 0 ? (
+              <div className="text-center py-8 text-[12px]" style={{ color: textTertiary }}>
+                {searchTerm ? "No assets found" : "No on-chain balances"}
+              </div>
+            ) : (
+              <div className="rounded-xl overflow-hidden" style={{ background: surface, border: borderSubtle }}>
+                {filteredAssets.map((asset, i) => (
+                  <div key={asset.symbol}>
+                    <div className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.02]" style={{ height: '64px' }}>
+                      <div className="flex items-center gap-3">
+                        <AssetLogo symbol={asset.symbol} logoUrl={asset.logoUrl} size="sm" />
+                        <div>
+                          <p className="text-[13px] font-semibold" style={{ color: textPrimary }}>{asset.name}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'hsla(160, 50%, 50%, 0.08)', color: teal, border: '1px solid hsla(160, 50%, 50%, 0.15)' }}>
+                              {asset.network || 'BSC'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[13px] font-mono font-semibold tabular-nums" style={{ color: textPrimary }}>
+                          {asset.balance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                        </p>
+                        <p className="text-[10px] font-mono tabular-nums" style={{ color: textTertiary }}>
+                          {asset.symbol}
+                        </p>
+                      </div>
+                    </div>
+                    {i < filteredAssets.length - 1 && (
+                      <div className="mx-4 h-px" style={{ background: 'hsla(0, 0%, 100%, 0.04)' }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ── 5. TRADING BALANCES ── */}
+      <div className="px-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>Trading Balances</h2>
+            {tradingTotalUsd > 0 && (
+              <p className="text-[11px] mt-0.5" style={{ color: textSecondary }}>
+                Total: <span className="font-semibold" style={{ color: textPrimary }}>${tradingTotalUsd.toFixed(2)}</span>
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => navigate('/app/wallet/transfer')}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-semibold"
+            style={{ background: 'hsla(160, 50%, 50%, 0.08)', border: '1px solid hsla(160, 50%, 50%, 0.15)', color: teal }}
+          >
+            <ArrowLeftRight className="h-3 w-3" /> Transfer
+          </button>
+        </div>
+
+        {tradingLoading ? (
+          <div className="text-center py-6 text-[12px]" style={{ color: textTertiary }}>Loading...</div>
+        ) : activeTradingBalances.length === 0 ? (
+          <div className="text-center py-8 text-[12px]" style={{ color: textTertiary }}>
+            No trading balances
+          </div>
+        ) : (
+          <div className="rounded-xl overflow-hidden" style={{ background: surface, border: borderSubtle }}>
+            {activeTradingBalances.map((asset, i) => (
+              <div key={asset.symbol}>
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} size="sm" />
+                    <span className="text-[13px] font-semibold" style={{ color: textPrimary }}>{asset.symbol}</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[13px] font-mono font-semibold tabular-nums" style={{ color: textPrimary }}>
+                      {asset.available.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                    </p>
+                    {asset.locked > 0.000001 && (
+                      <p className="text-[10px] font-mono tabular-nums" style={{ color: '#F7A53B' }}>
+                        +{asset.locked.toFixed(4)} locked
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {i < activeTradingBalances.length - 1 && (
+                  <div className="mx-4 h-px" style={{ background: 'hsla(0, 0%, 100%, 0.04)' }} />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── 6. USDI LOAN ── */}
+      <div className="px-4">
+        <button
+          onClick={() => navigate("/app/wallet/loan")}
+          className="w-full p-4 rounded-xl text-left space-y-3 group"
+          style={{
+            background: 'hsla(220, 25%, 11%, 0.8)',
+            border: '1px solid hsla(160, 50%, 50%, 0.1)',
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: 'hsla(160, 50%, 50%, 0.1)' }}>
+                <Lock className="h-4 w-4" style={{ color: teal }} />
+              </div>
+              <div>
+                <p className="text-[13px] font-semibold" style={{ color: textPrimary }}>USDI Loan</p>
+                <p className="text-[10px]" style={{ color: textTertiary }}>Collateral-backed</p>
               </div>
             </div>
-
-            <div className="bg-muted/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-              <p className="font-mono text-sm break-all text-foreground leading-relaxed" data-testid="wallet-evm-address">
-                {showAddress ? (walletAddress || 'No wallet connected') : '••••••••••••••••••••••••••••••••••••••••'}
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-3 gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyAddress}
-                className="flex flex-col items-center gap-1.5 h-auto py-3 bg-card/80 hover:bg-primary/10 hover:border-primary/50 border-border/50 rounded-xl transition-all duration-200"
-                data-testid="wallet-copy"
-              >
-                <Copy className="h-4 w-4" />
-                <span className="text-xs font-medium">Copy</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowQrDialog(true)}
-                className="flex flex-col items-center gap-1.5 h-auto py-3 bg-card/80 hover:bg-primary/10 hover:border-primary/50 border-border/50 rounded-xl transition-all duration-200"
-                disabled={!walletAddress}
-                data-testid="wallet-qr"
-              >
-                <QrCode className="h-4 w-4" />
-                <span className="text-xs font-medium">QR</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(getExplorerUrl(walletAddress, 'bsc'), '_blank')}
-                className="flex flex-col items-center gap-1.5 h-auto py-3 bg-card/80 hover:bg-primary/10 hover:border-primary/50 border-border/50 rounded-xl transition-all duration-200"
-                disabled={!walletAddress}
-                data-testid="wallet-explorer"
-              >
-                <ExternalLink className="h-4 w-4" />
-                <span className="text-xs font-medium">BSC</span>
-              </Button>
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: teal }} />
+              <span className="text-[10px] font-semibold" style={{ color: teal }}>Active</span>
             </div>
           </div>
 
-          {!walletAddress && (
-            <div className="mt-4 space-y-3">
-              <div className="p-4 bg-warning/10 border border-warning/20 rounded-xl">
-                <p className="text-sm text-warning-foreground font-medium mb-2">
-                  Wallet Setup Required
-                </p>
-                <p className="text-xs text-warning-foreground/80">
-                  You need to create or import a wallet to use this feature.
-                </p>
-              </div>
-              <Button
-                onClick={() => {
-                  localStorage.setItem('ipg_return_path', '/app/wallet');
-                  navigate('/onboarding/wallet');
-                }}
-                className="w-full"
-                size="lg"
-              >
-                Set Up Wallet Now
-              </Button>
-            </div>
-          )}
-        </div>
+          <div className="flex gap-2">
+            {["200% Collateral", "2% Fee", "Unlock Anytime"].map((tag) => (
+              <span key={tag} className="text-[10px] font-medium px-2 py-1 rounded-full" style={{ background: 'hsla(0, 0%, 100%, 0.04)', border: borderSubtle, color: textSecondary }}>
+                {tag}
+              </span>
+            ))}
+          </div>
 
-        {/* Quick Actions - 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            onClick={() => navigate("/app/wallet/deposit")}
-            className="flex flex-col items-center gap-2 h-auto py-5 bg-primary/15 hover:bg-primary/25 border border-primary/40 hover:border-primary/60 text-primary rounded-xl transition-all duration-200"
-            variant="ghost"
-          >
-            <span className="text-xl">↓</span>
-            <span className="text-sm font-semibold">Deposit</span>
-          </Button>
-          <Button
-            onClick={() => navigate("/app/wallet/withdraw")}
-            className="flex flex-col items-center gap-2 h-auto py-5 bg-card/80 hover:bg-muted/60 border border-border/50 hover:border-border rounded-xl transition-all duration-200"
-            variant="ghost"
-          >
-            <span className="text-xl">↑</span>
-            <span className="text-sm font-semibold">Withdraw</span>
-          </Button>
-          <Button
-            onClick={() => navigate("/app/swap")}
-            className="flex flex-col items-center gap-2 h-auto py-5 bg-card/80 hover:bg-muted/60 border border-border/50 hover:border-border rounded-xl transition-all duration-200"
-            variant="ghost"
-          >
-            <span className="text-xl">⇄</span>
-            <span className="text-sm font-semibold">Swap</span>
-          </Button>
-          <Button
-            onClick={() => navigate("/app/wallet/history")}
-            className="flex flex-col items-center gap-2 h-auto py-5 bg-card/80 hover:bg-muted/60 border border-border/50 hover:border-border rounded-xl transition-all duration-200"
-            variant="ghost"
-          >
-            <span className="text-xl">📋</span>
-            <span className="text-sm font-semibold">History</span>
-          </Button>
-        </div>
+          <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid hsla(0, 0%, 100%, 0.04)' }}>
+            <span className="text-[11px]" style={{ color: textTertiary }}>Lock BSK → Get USDI</span>
+            <span className="text-[12px] font-semibold flex items-center gap-1" style={{ color: teal }}>
+              Apply Now <ArrowRight className="h-3 w-3" />
+            </span>
+          </div>
+        </button>
+      </div>
 
-        {/* Portfolio Summary - Enhanced */}
-        <PortfolioSummaryCard
-          totalUsd={portfolio?.total_usd || 0}
-          availableUsd={portfolio?.available_usd || 0}
-          lockedUsd={portfolio?.locked_usd || 0}
-          onchainUsd={onchainUsd}
-          change24h={portfolio?.change_24h_percent || 0}
-          loading={portfolioLoading || onchainLoading}
-        />
+      {/* ── 7. PENDING DEPOSITS ── */}
+      <PendingDepositsCard />
 
-        {/* A) On-Chain Balances - Full token list */}
-        <BalanceCluster />
-
-        {/* B) Trading Balances Section with integrated Transfer */}
-        <TradingBalancesCard 
-          balances={tradingBalances || []} 
-          loading={tradingLoading}
-          onTransfer={() => navigate('/app/wallet/transfer')}
-        />
-
-        {/* C) USDI Collateral Loan Card */}
-        <USDILoanCard />
-
-        {/* D) Pending Deposits and other modules */}
-        <PendingDepositsCard />
-
-      {/* QR Code Dialog */}
+      {/* QR Dialog */}
       <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
-        <DialogContent className="sm:max-w-md bg-card/95 backdrop-blur-xl border-border/50">
+        <DialogContent className="sm:max-w-md" style={{ background: '#121826', border: borderSubtle }}>
           <DialogHeader>
-            <DialogTitle className="text-center">Wallet QR Code</DialogTitle>
+            <DialogTitle className="text-center" style={{ color: textPrimary }}>Wallet QR Code</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-6">
             {walletAddress && (
-              <div className="bg-white p-5 rounded-2xl shadow-lg">
-                <QRCodeSVG
-                  value={walletAddress}
-                  size={220}
-                  level="H"
-                  includeMargin={true}
-                />
+              <div className="bg-white p-5 rounded-2xl">
+                <QRCodeSVG value={walletAddress} size={220} level="H" includeMargin />
               </div>
             )}
-            <p className="text-xs text-muted-foreground text-center font-mono break-all px-6">
+            <p className="text-[11px] text-center font-mono break-all px-6" style={{ color: textSecondary }}>
               {walletAddress}
             </p>
-            <Button
-              onClick={handleCopyAddress}
-              className="w-full max-w-xs"
-              variant="outline"
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              Copy Address
-            </Button>
+            <button onClick={handleCopyAddress} className="h-10 px-6 rounded-xl text-[12px] font-semibold" style={{ background: surfaceLight, border: borderSubtle, color: textPrimary }}>
+              <Copy className="inline h-3.5 w-3.5 mr-2" /> Copy Address
+            </button>
           </div>
         </DialogContent>
       </Dialog>
