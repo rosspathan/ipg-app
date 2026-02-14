@@ -49,7 +49,7 @@ function MarketsPreview({ navigate }: { navigate: (path: string) => void }) {
         </button>
       </div>
       <div className="rounded-xl overflow-hidden" style={{ background: surface, border: borderSubtle }}>
-        {(tradingPairs || []).slice(0, 5).map((pair, i) => {
+        {(tradingPairs || []).map((pair, i) => {
           const isUp = pair.change24h >= 0
           return (
             <div key={pair.id}>
@@ -81,7 +81,7 @@ function MarketsPreview({ navigate }: { navigate: (path: string) => void }) {
                   </div>
                 </div>
               </button>
-              {i < Math.min((tradingPairs || []).length, 5) - 1 && (
+              {i < (tradingPairs || []).length - 1 && (
                 <div className="mx-4 h-px" style={{ background: 'hsla(0, 0%, 100%, 0.04)' }} />
               )}
             </div>
