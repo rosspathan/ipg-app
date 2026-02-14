@@ -32,6 +32,7 @@ interface OrderFormProProps {
   bestBid?: number;
   bestAsk?: number;
   selectedPrice?: number | null;
+  compact?: boolean;
 }
 
 type OrderSide = 'buy' | 'sell';
