@@ -130,8 +130,70 @@ export function WalletPage() {
         />
       )}
 
-      {/* ── 1. HEADER / ADDRESS ── */}
-      <div className="px-4 pt-4 space-y-3">
+      {/* ── 1. PORTFOLIO SUMMARY (On-Chain Balance) ── */}
+      <div className="px-4 pt-4">
+        <div className="p-5 rounded-xl space-y-4" style={{ background: surface, border: borderTeal }}>
+          <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: textSecondary }}>On-Chain Balance</p>
+          
+          <div className="relative">
+            <p className="text-[28px] font-bold tabular-nums" style={{ color: textPrimary, fontFamily: "'Space Grotesk', sans-serif" }}>
+              {portfolioLoading || onchainLoading ? '...' : formatCurrency(portfolio?.total_usd || 0)}
+            </p>
+            <div className="absolute -inset-6 rounded-full opacity-[0.06] pointer-events-none" style={{ background: `radial-gradient(circle, ${teal} 0%, transparent 70%)` }} />
+          </div>
+
+          <div className="h-px" style={{ background: 'hsla(0, 0%, 100%, 0.06)' }} />
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: 'hsla(160, 60%, 50%, 0.12)' }}>
+                  <Wallet className="h-3 w-3" style={{ color: teal }} />
+                </div>
+                <span className="text-[12px] font-medium" style={{ color: textSecondary }}>Available</span>
+              </div>
+              <span className="text-[14px] font-bold tabular-nums" style={{ color: teal }}>
+                {formatCurrency(portfolio?.available_usd || 0)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: 'hsla(35, 80%, 50%, 0.12)' }}>
+                  <Lock className="h-3 w-3" style={{ color: '#F7A53B' }} />
+                </div>
+                <span className="text-[12px] font-medium" style={{ color: textSecondary }}>In Orders</span>
+              </div>
+              <span className="text-[14px] font-bold tabular-nums" style={{ color: '#F7A53B' }}>
+                {formatCurrency(portfolio?.locked_usd || 0)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2. ACTION GRID ── */}
+      <div className="px-4 grid grid-cols-4 gap-2">
+        {[
+          { label: "Deposit", icon: "↓", route: "/app/wallet/deposit" },
+          { label: "Withdraw", icon: "↑", route: "/app/wallet/withdraw" },
+          { label: "Swap", icon: "⇄", route: "/app/swap" },
+          { label: "History", icon: "📋", route: "/app/wallet/history" },
+        ].map((a) => (
+          <button
+            key={a.label}
+            onClick={() => navigate(a.route)}
+            className="flex flex-col items-center gap-2 py-4 rounded-xl transition-colors"
+            style={{ background: surface, border: borderSubtle }}
+          >
+            <span className="text-lg">{a.icon}</span>
+            <span className="text-[11px] font-semibold" style={{ color: textPrimary }}>{a.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── 3. HEADER / ADDRESS (Binance Smart Chain) ── */}
+      <div className="px-4 space-y-3">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#F7A53B' }} />
           <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#F7A53B' }}>
@@ -194,69 +256,6 @@ export function WalletPage() {
             </button>
           </div>
         )}
-      </div>
-
-      {/* ── 2. ACTION GRID ── */}
-      <div className="px-4 grid grid-cols-4 gap-2">
-        {[
-          { label: "Deposit", icon: "↓", route: "/app/wallet/deposit" },
-          { label: "Withdraw", icon: "↑", route: "/app/wallet/withdraw" },
-          { label: "Swap", icon: "⇄", route: "/app/swap" },
-          { label: "History", icon: "📋", route: "/app/wallet/history" },
-        ].map((a) => (
-          <button
-            key={a.label}
-            onClick={() => navigate(a.route)}
-            className="flex flex-col items-center gap-2 py-4 rounded-xl transition-colors"
-            style={{ background: surface, border: borderSubtle }}
-          >
-            <span className="text-lg">{a.icon}</span>
-            <span className="text-[11px] font-semibold" style={{ color: textPrimary }}>{a.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* ── 3. PORTFOLIO SUMMARY ── */}
-      <div className="px-4">
-        <div className="p-5 rounded-xl space-y-4" style={{ background: surface, border: borderTeal }}>
-          <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: textSecondary }}>On-Chain Balance</p>
-          
-          <div className="relative">
-            <p className="text-[28px] font-bold tabular-nums" style={{ color: textPrimary, fontFamily: "'Space Grotesk', sans-serif" }}>
-              {portfolioLoading || onchainLoading ? '...' : formatCurrency(portfolio?.total_usd || 0)}
-            </p>
-            {/* Subtle glow */}
-            <div className="absolute -inset-6 rounded-full opacity-[0.06] pointer-events-none" style={{ background: `radial-gradient(circle, ${teal} 0%, transparent 70%)` }} />
-          </div>
-
-          <div className="h-px" style={{ background: 'hsla(0, 0%, 100%, 0.06)' }} />
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: 'hsla(160, 60%, 50%, 0.12)' }}>
-                  <Wallet className="h-3 w-3" style={{ color: teal }} />
-                </div>
-                <span className="text-[12px] font-medium" style={{ color: textSecondary }}>Available</span>
-              </div>
-              <span className="text-[14px] font-bold tabular-nums" style={{ color: teal }}>
-                {formatCurrency(portfolio?.available_usd || 0)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: 'hsla(35, 80%, 50%, 0.12)' }}>
-                  <Lock className="h-3 w-3" style={{ color: '#F7A53B' }} />
-                </div>
-                <span className="text-[12px] font-medium" style={{ color: textSecondary }}>In Orders</span>
-              </div>
-              <span className="text-[14px] font-bold tabular-nums" style={{ color: '#F7A53B' }}>
-                {formatCurrency(portfolio?.locked_usd || 0)}
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ── 4. ASSET LIST ── */}
