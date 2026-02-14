@@ -204,16 +204,16 @@ export function WalletPage() {
           EVM Address (BEP20/ERC20)
         </p>
 
-        <div className="flex items-center gap-2">
-          <div
-            className="flex-1 overflow-x-auto scrollbar-hide rounded-lg px-3 py-2.5"
-            style={{ background: surfaceLight, border: borderSubtle }}
-          >
-            <p className="font-mono text-[12px] whitespace-nowrap tabular-nums" style={{ color: textPrimary }} data-testid="wallet-evm-address">
-              {showAddress ? (walletAddress || 'No wallet connected') : '••••••••••••••••••••••••••••••••••••••••'}
-            </p>
-          </div>
+        <div
+          className="w-full overflow-x-auto scrollbar-hide rounded-lg px-3 py-2.5"
+          style={{ background: surfaceLight, border: borderSubtle }}
+        >
+          <p className="font-mono text-[12px] whitespace-nowrap tabular-nums" style={{ color: textPrimary }} data-testid="wallet-evm-address">
+            {showAddress ? (walletAddress || 'No wallet connected') : '••••••••••••••••••••••••••••••••••••••••'}
+          </p>
+        </div>
 
+        <div className="flex items-center gap-2">
           <button onClick={handleCopyAddress} className="p-2 rounded-lg" style={{ background: surfaceLight, border: borderSubtle }}>
             <Copy className="h-4 w-4" style={{ color: textSecondary }} />
           </button>
