@@ -492,8 +492,8 @@ function AppContent() {
                 </AuthProviderUser>
               }>
               <Route index element={<Navigate to="/app/home" replace />} />
-              <Route path="home" element={<HomePageRebuilt />} />
-              <Route path="wallet" element={<WalletPage />} />
+              <Route path="home" element={<WalletPage />} />
+              <Route path="wallet" element={<HomePageRebuilt />} />
               <Route path="wallet/crypto" element={<CryptoWalletPage />} />
               <Route path="wallet/onchain" element={<OnchainWalletPage />} />
               <Route path="wallet/deposit" element={<DepositScreen />} />
@@ -530,7 +530,7 @@ function AppContent() {
               <Route path="profile/referrals" element={<React.Suspense fallback={<LoadingFallback />}><ReferralsPageAstra /></React.Suspense>} />
               <Route path="profile/claim-referral" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/ClaimReferralCodePage')))}</React.Suspense>} />
               <Route path="support" element={<SupportPage />} />
-              <Route path="wallet" element={<WalletPage />} />
+              <Route path="wallet" element={<HomePageRebuilt />} />
                 
                 {/* Programs - All with BSK Balance Checks */}
                 <Route path="programs/ad-mining" element={<React.Suspense fallback={<LoadingFallback />}><AdMiningPageNew /></React.Suspense>} />
