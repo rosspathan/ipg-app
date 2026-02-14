@@ -112,7 +112,7 @@ export function AstraLayout() {
       </main>
 
       {/* WhatsApp Support - hidden on trading pages */}
-      {!isTradingPage && <SupportLinkWhatsApp variant="fab" />}
+      {location.pathname.startsWith('/app/profile') && <SupportLinkWhatsApp variant="fab" />}
 
       {/* Sticky Footer Navigation - hidden on trading pages */}
       {!isTradingPage && <BottomNavBar />}
