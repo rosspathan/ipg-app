@@ -222,10 +222,8 @@ export function HomePageRebuilt() {
             </button>
           </div>
 
-          {/* ── SCROLLING ANNOUNCEMENT ── */}
-          <div className="px-4">
-            <ScrollingAnnouncement />
-          </div>
+
+
 
           {/* ── IMAGE CAROUSEL ── */}
           <ImageCarousel />
