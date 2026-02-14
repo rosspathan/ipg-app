@@ -2,7 +2,7 @@ import * as React from "react"
 import { useState } from "react"
 import { 
   Gift, Zap, Star, ChevronRight, ArrowUpRight, Send, ArrowRightLeft,
-  Pickaxe, Users, Dices, RotateCw, Landmark, TrendingUp, Eye, EyeOff,
+  Pickaxe, Users, Dices, RotateCw, Landmark, TrendingUp, TrendingDown, Eye, EyeOff,
   Lock, History, Calendar
 } from "lucide-react"
 import { useNavigation } from "@/hooks/useNavigation"
@@ -16,6 +16,8 @@ import { useActivePrograms, getLucideIcon } from "@/hooks/useActivePrograms"
 import { useHomePageData } from "@/hooks/useHomePageData"
 import { HomePageSkeleton } from "@/components/home/HomePageSkeleton"
 import { ActivityTimeline } from "@/components/home/ActivityTimeline"
+import { USDILoanCard } from "@/components/wallet/USDILoanCard"
+import { useTradingPairs } from "@/hooks/useTradingPairs"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 
@@ -29,6 +31,7 @@ export function HomePageRebuilt() {
   const [showQuickSwitch, setShowQuickSwitch] = useState(false)
   const [balanceHidden, setBalanceHidden] = useState(false)
   const { programs: allPrograms } = useActivePrograms()
+  const { data: tradingPairs } = useTradingPairs()
   
   const { data, isLoading, refetch } = useHomePageData()
 
@@ -227,6 +230,74 @@ export function HomePageRebuilt() {
 
           {/* ── IMAGE CAROUSEL ── */}
           <ImageCarousel />
+
+          {/* ── USDI LOAN CARD ── */}
+          <div className="px-4">
+            <USDILoanCard />
+          </div>
+
+          {/* ── MARKETS PREVIEW ── */}
+          <div className="px-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>Markets</h2>
+              <button
+                onClick={() => navigate("/app/trade")}
+                className="text-[12px] font-medium flex items-center gap-1"
+                style={{ color: '#16F2C6' }}
+              >
+                View All <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{
+                background: 'hsla(220, 25%, 11%, 0.8)',
+                border: '1px solid hsla(0, 0%, 100%, 0.05)',
+              }}
+            >
+              {(tradingPairs || []).slice(0, 5).map((pair, i) => {
+                const isPositive = pair.change24h >= 0
+                return (
+                  <div key={pair.id}>
+                    <button
+                      onClick={() => navigate(`/app/trade/${pair.symbol.replace('/', '_')}`)}
+                      className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.02]"
+                    >
+                      <div className="text-left">
+                        <p className="text-[13px] font-semibold" style={{ color: 'hsl(0, 0%, 92%)' }}>
+                          {pair.baseAsset}<span style={{ color: 'hsl(0, 0%, 45%)' }}>/{pair.quoteAsset}</span>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <p className="text-[13px] font-mono font-semibold tabular-nums" style={{ color: 'hsl(0, 0%, 92%)' }}>
+                          {pair.price >= 1 ? pair.price.toFixed(2) : pair.price.toFixed(6)}
+                        </p>
+                        <div
+                          className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold min-w-[72px] justify-center"
+                          style={{
+                            background: isPositive ? 'hsla(154, 67%, 52%, 0.1)' : 'hsla(0, 70%, 68%, 0.1)',
+                            color: isPositive ? 'hsl(154, 67%, 52%)' : 'hsl(0, 70%, 68%)',
+                          }}
+                        >
+                          {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                          {isPositive ? '+' : ''}{pair.change24h.toFixed(2)}%
+                        </div>
+                      </div>
+                    </button>
+                    {i < Math.min((tradingPairs || []).length, 5) - 1 && (
+                      <div className="mx-4 h-px" style={{ background: 'hsla(0, 0%, 100%, 0.04)' }} />
+                    )}
+                  </div>
+                )
+              })}
+              {(!tradingPairs || tradingPairs.length === 0) && (
+                <div className="text-center py-8 text-[12px]" style={{ color: 'hsl(0, 0%, 40%)' }}>
+                  Loading markets...
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* ── SMART ACTION STRIP ── */}
           <div className="px-4 space-y-3">
