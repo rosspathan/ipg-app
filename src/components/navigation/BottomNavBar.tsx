@@ -92,8 +92,8 @@ export function BottomNavBar() {
                 active ? "text-accent" : "text-muted-foreground"
               )}
             >
-              <Icon className="h-4 w-4" />
-              <span className="text-[9px] font-medium mt-0.5">
+              <Icon className="h-6 w-6" />
+              <span className="text-[11px] font-medium mt-0.5">
                 {item.label}
               </span>
             </button>
