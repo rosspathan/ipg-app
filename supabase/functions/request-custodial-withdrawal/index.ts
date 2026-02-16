@@ -2,11 +2,8 @@
  * Request Custodial Withdrawal Edge Function
  * 
  * Called by users to request a withdrawal from their trading balance.
- * This function:
- * 1. Validates the user has sufficient trading balance in wallet_balances
- * 2. Deducts from wallet_balances (available and total)
- * 3. Creates a custodial_withdrawals record (pending)
- * 4. The actual on-chain transfer is handled by process-custodial-withdrawal
+ * Uses atomic RPC with FOR UPDATE row locking to prevent race conditions.
+ * The actual on-chain transfer is handled by process-custodial-withdrawal.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -19,7 +16,7 @@ const corsHeaders = {
 interface WithdrawalRequest {
   asset_symbol: string;
   amount: number;
-  to_address?: string;  // Optional - defaults to user's registered wallet
+  to_address?: string;
 }
 
 Deno.serve(async (req) => {
@@ -28,7 +25,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get auth header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -41,7 +37,6 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    // User client for auth
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
@@ -54,7 +49,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Service client for DB operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const body: WithdrawalRequest = await req.json();
@@ -92,7 +86,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check min/max
     if (asset.min_withdraw_amount && amount < asset.min_withdraw_amount) {
       return new Response(
         JSON.stringify({ success: false, error: `Minimum withdrawal is ${asset.min_withdraw_amount} ${asset_symbol}` }),
@@ -107,40 +100,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get user's trading balance from wallet_balances (the correct table)
-    const { data: balance, error: balanceError } = await adminClient
-      .from('wallet_balances')
-      .select('available, locked, total')
-      .eq('user_id', user.id)
-      .eq('asset_id', asset.id)
-      .single();
-
-    if (balanceError || !balance) {
-      return new Response(
-        JSON.stringify({ success: false, error: `No ${asset_symbol} trading balance found` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const available = balance.available || 0;
-    const fee = asset.withdraw_fee || 0;
-    const totalRequired = amount + fee;
-
-    if (available < totalRequired) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Insufficient balance. Available: ${available}, Required: ${totalRequired} (includes ${fee} fee)` 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Get destination address
     let destinationAddress = to_address;
 
     if (!destinationAddress) {
-      // Get from user's profile
       const { data: profile } = await adminClient
         .from('profiles')
         .select('bsc_wallet_address, wallet_address')
@@ -150,7 +113,6 @@ Deno.serve(async (req) => {
       destinationAddress = profile?.bsc_wallet_address || profile?.wallet_address;
 
       if (!destinationAddress) {
-        // Try wallets_user table
         const { data: userWallet } = await adminClient
           .from('wallets_user')
           .select('address')
@@ -169,7 +131,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate address format
     if (!destinationAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid withdrawal address format' }),
@@ -179,68 +140,44 @@ Deno.serve(async (req) => {
 
     console.log(`[request-custodial-withdrawal] Destination: ${destinationAddress}`);
 
-    // Calculate new balance
-    const newAvailable = available - totalRequired;
+    const fee = asset.withdraw_fee || 0;
 
-    // Deduct from wallet_balances (total is auto-calculated from available + locked)
-    const { error: deductError } = await adminClient
-      .from('wallet_balances')
-      .update({
-        available: newAvailable,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id)
-      .eq('asset_id', asset.id);
+    // Execute atomic withdrawal with FOR UPDATE row locking
+    const { data: result, error: rpcError } = await adminClient.rpc(
+      'execute_withdrawal_request',
+      {
+        p_user_id: user.id,
+        p_asset_id: asset.id,
+        p_amount: amount,
+        p_fee: fee,
+        p_to_address: destinationAddress,
+      }
+    );
 
-    if (deductError) {
-      console.error('[request-custodial-withdrawal] Deduct error:', deductError);
+    if (rpcError) {
+      console.error('[request-custodial-withdrawal] RPC error:', rpcError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to deduct balance' }),
+        JSON.stringify({ success: false, error: rpcError.message || 'Withdrawal failed' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create withdrawal record
-    const { data: withdrawal, error: withdrawalError } = await adminClient
-      .from('custodial_withdrawals')
-      .insert({
-        user_id: user.id,
-        asset_id: asset.id,
-        amount,
-        to_address: destinationAddress,
-        fee_amount: fee,
-        status: 'pending'
-      })
-      .select('id')
-      .single();
-
-    if (withdrawalError) {
-      console.error('[request-custodial-withdrawal] Create error:', withdrawalError);
-      
-      // Refund to wallet_balances (total is auto-calculated)
-      await adminClient
-        .from('wallet_balances')
-        .update({
-          available: available,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-        .eq('asset_id', asset.id);
-
+    if (!result?.success) {
+      console.error('[request-custodial-withdrawal] Rejected:', result?.error);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to create withdrawal request' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: result?.error || 'Withdrawal failed' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`[request-custodial-withdrawal] ✓ Created withdrawal ${withdrawal.id}`);
+    console.log(`[request-custodial-withdrawal] ✓ Created withdrawal ${result.withdrawal_id}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        withdrawal_id: withdrawal.id,
-        amount,
-        fee,
+        withdrawal_id: result.withdrawal_id,
+        amount: result.amount,
+        fee: result.fee,
         to_address: destinationAddress,
         status: 'pending',
         message: 'Withdrawal request submitted. It will be processed shortly.'

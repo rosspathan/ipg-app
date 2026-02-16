@@ -2,8 +2,7 @@
  * Release Trading Balance Edge Function
  * 
  * Releases funds from the trading balance back to the user's on-chain control.
- * This is a ledger-only operation - the tokens are already in the user's wallet,
- * we just reduce the internal "available for trading" balance.
+ * Uses the atomic execute_internal_balance_transfer RPC with FOR UPDATE locking.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
@@ -29,7 +28,6 @@ Deno.serve(async (req) => {
   );
 
   try {
-    // Get user from auth header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -75,51 +73,29 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get user's current balance
-    const { data: balance, error: balanceError } = await supabase
-      .from('wallet_balances')
-      .select('available, locked, total')
-      .eq('user_id', user.id)
-      .eq('asset_id', asset.id)
-      .single();
+    // Use atomic RPC with FOR UPDATE locking
+    const { data: result, error: rpcError } = await supabase.rpc(
+      'execute_internal_balance_transfer',
+      {
+        p_user_id: user.id,
+        p_asset_id: asset.id,
+        p_amount: amount,
+        p_direction: 'from_trading',
+      }
+    );
 
-    if (balanceError || !balance) {
+    if (rpcError) {
+      console.error('[release-trading-balance] RPC error:', rpcError);
       return new Response(
-        JSON.stringify({ success: false, error: 'No trading balance found for this asset' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const available = balance.available || 0;
-
-    if (amount > available) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Insufficient available balance. Available: ${available}, Requested: ${amount}` 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Reduce the trading balance (release back to on-chain control)
-    const newAvailable = available - amount;
-
-    // Update balance (total is auto-calculated from available + locked)
-    const { error: updateError } = await supabase
-      .from('wallet_balances')
-      .update({
-        available: newAvailable,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id)
-      .eq('asset_id', asset.id);
-
-    if (updateError) {
-      console.error('[release-trading-balance] Update failed:', updateError);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Failed to update balance' }),
+        JSON.stringify({ success: false, error: rpcError.message || 'Failed to release balance' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!result?.success) {
+      return new Response(
+        JSON.stringify({ success: false, error: result?.error || 'Failed to release balance' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -130,7 +106,6 @@ Deno.serve(async (req) => {
         success: true,
         released: amount,
         symbol: asset_symbol,
-        new_available: newAvailable
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
