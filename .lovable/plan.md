@@ -1,41 +1,51 @@
 
 
-## Fix Order Book: Remove Scrollbars and Fill All Available Space
+## Enhance Order Book: Eliminate Dead Space and Add Professional Polish
 
 ### Problem
-The order book currently has two issues visible in the screenshot:
-1. **Unwanted scrollbars** appear on the asks and bids sections (from the previous change adding `overflow-y-auto`)
-2. **Large empty gaps** remain above the asks and below the bids -- the dynamic row count is still too conservative
+The order book has only a few orders (4 asks, 2 bids) but sits in a tall flex container. The current spacer approach (fixed 13px empty divs) does not fill the actual flex-1 container height, leaving large dark voids above asks and below bids. This looks empty and unprofessional.
 
-### Root Cause
-- The `overflow-y-auto` added in the last edit creates visible scrollbars even when content doesn't overflow
-- The overhead constant (52px) is still too generous, and with only a few orders available, the flex containers show empty space instead of stretching the rows to fill
-
-### Solution (single file change)
+### Solution: Three-Part Enhancement
 
 **File: `src/components/trading/OrderBookPremium.tsx`**
 
-1. **Remove `overflow-y-auto` from both asks and bids containers** -- revert to `overflow-hidden`. The dynamic row calculation already limits rows to fit, so scrolling is unnecessary and the scrollbar wastes space.
+#### 1. Remove Spacer Rows -- Let Flex Layout Handle Alignment Naturally
 
-2. **Reduce reserved overhead from 52px to 44px** -- the actual measured heights are: header ~14px, mid-price bar 20px, pressure bar 12px = 46px. Using 44px squeezes out 1 more row per side.
+Delete the spacer div logic entirely (lines 155-159 and 211-215). The flex containers with `justify-end` (asks) and `justify-start` (bids) already anchor rows correctly toward the mid-price bar. Empty space above asks and below bids is simply dark background, which is the correct professional look (same as Binance/Bybit with sparse data).
 
-3. **Reduce row height from 14px to 13px** -- this gains another 1-2 rows per side at the current container height while keeping 11px text readable.
+#### 2. Add Subtle Horizontal Grid Lines in Empty Zones
 
-4. **When fewer data rows exist than space allows, pad with empty placeholder rows** so the asks section pushes down to the mid-price bar and the bids section extends to the pressure bar, eliminating all visible gaps.
+Instead of dead black space, render faint dashed grid lines (using a CSS repeating background pattern) on the asks and bids containers. This gives the empty areas a "ready for data" look -- like an empty spreadsheet grid -- making the order book feel structured even with sparse data.
+
+- Pattern: `repeating-linear-gradient` producing a 1px line of `#1F2937` opacity 20% every 13px
+- This creates faint horizontal rules that align with where rows would appear
+- Zero DOM overhead (pure CSS)
+
+#### 3. Add "Waiting for Orders" Micro-Hint When Data Is Very Sparse
+
+When fewer than 3 rows exist on either side, show a small ghost text like "-- --" placeholder rows (common on professional exchanges) to indicate depth levels are available but empty. These render at 50% opacity in the grid line slots nearest the mid-price bar.
 
 ### Technical Details
 
 Changes in `OrderBookPremium.tsx`:
 
-- Line 54: Change `h-[14px]` to `h-[13px]` on the Row component
-- Line 103: Change overhead from `52` to `44`, divisor from `14` to `13`
-- Line 154: Change `overflow-y-auto` back to `overflow-hidden` on asks container
-- Line 192: Change `overflow-y-auto` back to `overflow-hidden` on bids container
-- Add empty spacer rows (transparent, non-interactive) when `displayAsks.length < effectiveRows` or `displayBids.length < effectiveRows` to fill remaining space, ensuring no visible gaps
+**Remove spacer divs (lines 155-159, 211-215)**
+- Delete both `Array.from({ length: effectiveRows - displayX.length })` blocks
 
-### What stays unchanged
+**Add repeating grid background to flex containers (lines 154, 197)**
+- On the asks container div, add an inline style:
+  `backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 12px, rgba(31,41,55,0.15) 12px, rgba(31,41,55,0.15) 13px)'`
+- Same on the bids container div
+
+**Add placeholder "--" rows when data count less than 3**
+- After asks data rows, if `displayAsks.length < 3`, render `(3 - displayAsks.length)` ghost rows with `opacity-30` showing "-- --" in price/amount columns
+- Before bids data rows, same logic for bids
+- These ghost rows use the same 13px height and grid layout as real rows
+
+### What Stays Unchanged
 - TradingPairPage layout (65%/35% split, flex stretch)
 - Trade form -- no changes
-- Order book data logic, aggregation, real-time hooks
-- All margins and padding on the page
+- Order book data fetching, aggregation, real-time hooks
+- Row component internals, depth bars, mid-price bar, pressure bar
+- All existing interactive behavior (price click, hover)
 
