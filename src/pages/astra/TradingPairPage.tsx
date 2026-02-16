@@ -427,91 +427,52 @@ function TradingPairPageContent() {
             )}
           </div>
 
-          {/* ── SECTION A+B: Trade Panel + Order Book (adaptive layout) ── */}
-          {isSideBySide ? (
-            /* ── Side-by-side: Trade 42% | gap 12px | Order Book 58% ── */
-            <div className="flex-1 flex flex-row min-h-0 overflow-hidden px-3 py-1" style={{ gap: '12px' }}>
-              <div className="flex-shrink-0 overflow-y-auto scrollbar-thin" style={{ width: '42%' }}>
-                <OrderFormPro
-                  baseCurrency={pair.baseAsset}
-                  quoteCurrency={pair.quoteAsset}
-                  availableBase={baseBalance.available}
-                  availableQuote={quoteBalance.available}
-                  lockedBase={baseBalance.locked}
-                  lockedQuote={quoteBalance.locked}
-                  availableBaseUsd={baseBalance.total * pair.price}
-                  availableQuoteUsd={quoteBalance.total}
-                  currentPrice={pair.price}
-                  onPlaceOrder={handlePlaceOrder}
-                  bestBid={bestBidPrice}
-                  bestAsk={bestAskPrice}
-                  selectedPrice={selectedPrice}
-                  compact
-                />
-              </div>
-              <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-                <OrderBookPremium
-                  asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
-                    price: typeof a === 'object' ? a.price : a[0], 
-                    quantity: typeof a === 'object' ? a.quantity : a[1] 
-                  })) || []}
-                  bids={orderBook?.bids?.slice(0, 20).map((b: any) => ({ 
-                    price: typeof b === 'object' ? b.price : b[0], 
-                    quantity: typeof b === 'object' ? b.quantity : b[1] 
-                  })) || []}
-                  currentPrice={pair.price}
-                  priceChange={pair.change24h}
-                  quoteCurrency={pair.quoteAsset}
-                  baseCurrency={pair.baseAsset}
-                  onPriceClick={handlePriceClick}
-                  marketPrice={marketPrice}
-                  isLoading={!pair}
-                  fillContainer
-                />
-              </div>
+          {/* ── SECTION A+B: Trade Panel + Order Book — always side-by-side ── */}
+          <div className="flex-1 flex flex-row min-h-0 overflow-hidden px-2 py-1.5 gap-2">
+            {/* Trade Panel — 63% on mobile, 42% on wider screens */}
+            <div
+              className="flex-shrink-0 overflow-y-auto scrollbar-thin"
+              style={{ width: isSideBySide ? '42%' : '63%' }}
+            >
+              <OrderFormPro
+                baseCurrency={pair.baseAsset}
+                quoteCurrency={pair.quoteAsset}
+                availableBase={baseBalance.available}
+                availableQuote={quoteBalance.available}
+                lockedBase={baseBalance.locked}
+                lockedQuote={quoteBalance.locked}
+                availableBaseUsd={baseBalance.total * pair.price}
+                availableQuoteUsd={quoteBalance.total}
+                currentPrice={pair.price}
+                onPlaceOrder={handlePlaceOrder}
+                bestBid={bestBidPrice}
+                bestAsk={bestAskPrice}
+                selectedPrice={selectedPrice}
+                compact={!isSideBySide}
+              />
             </div>
-          ) : (
-            /* ── Stacked: Trade above Order Book (mobile portrait) ── */
-            <>
-              <div className="flex-shrink-0 px-3 py-2 border-b border-[#1F2937]/30">
-                <OrderFormPro
-                  baseCurrency={pair.baseAsset}
-                  quoteCurrency={pair.quoteAsset}
-                  availableBase={baseBalance.available}
-                  availableQuote={quoteBalance.available}
-                  lockedBase={baseBalance.locked}
-                  lockedQuote={quoteBalance.locked}
-                  availableBaseUsd={baseBalance.total * pair.price}
-                  availableQuoteUsd={quoteBalance.total}
-                  currentPrice={pair.price}
-                  onPlaceOrder={handlePlaceOrder}
-                  bestBid={bestBidPrice}
-                  bestAsk={bestAskPrice}
-                  selectedPrice={selectedPrice}
-                />
-              </div>
-              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <OrderBookPremium
-                  asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
-                    price: typeof a === 'object' ? a.price : a[0], 
-                    quantity: typeof a === 'object' ? a.quantity : a[1] 
-                  })) || []}
-                  bids={orderBook?.bids?.slice(0, 20).map((b: any) => ({ 
-                    price: typeof b === 'object' ? b.price : b[0], 
-                    quantity: typeof b === 'object' ? b.quantity : b[1] 
-                  })) || []}
-                  currentPrice={pair.price}
-                  priceChange={pair.change24h}
-                  quoteCurrency={pair.quoteAsset}
-                  baseCurrency={pair.baseAsset}
-                  onPriceClick={handlePriceClick}
-                  marketPrice={marketPrice}
-                  isLoading={!pair}
-                  fillContainer
-                />
-              </div>
-            </>
-          )}
+            {/* Order Book — fills remaining space */}
+            <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
+              <OrderBookPremium
+                asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
+                  price: typeof a === 'object' ? a.price : a[0], 
+                  quantity: typeof a === 'object' ? a.quantity : a[1] 
+                })) || []}
+                bids={orderBook?.bids?.slice(0, 20).map((b: any) => ({ 
+                  price: typeof b === 'object' ? b.price : b[0], 
+                  quantity: typeof b === 'object' ? b.quantity : b[1] 
+                })) || []}
+                currentPrice={pair.price}
+                priceChange={pair.change24h}
+                quoteCurrency={pair.quoteAsset}
+                baseCurrency={pair.baseAsset}
+                onPriceClick={handlePriceClick}
+                marketPrice={marketPrice}
+                isLoading={!pair}
+                fillContainer
+              />
+            </div>
+          </div>
 
           <GhostLockWarning />
 
