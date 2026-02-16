@@ -103,7 +103,7 @@ function TradingPairPageContent() {
 
   const [chartOpen, setChartOpen] = useState(false);
   const [mobileMode, setMobileMode] = useState<'trade' | 'book' | 'orders'>('trade');
-  const [ordersDrawerOpen, setOrdersDrawerOpen] = useState(false);
+  const [ordersDrawerOpen] = useState(false); // kept for type safety
   const isLandscape = useOrientation();
   const { width: windowWidth } = useWindowSize();
   const isSideBySide = windowWidth >= 420 || (isLandscape && windowWidth >= 420);
@@ -292,9 +292,9 @@ function TradingPairPageContent() {
       requireTermsAcceptance
       requireRiskDisclosure
     >
-      <div className="flex flex-col h-screen bg-[#0B1220] overflow-hidden">
-        {/* ═══ ZONE 1: Fixed Header (flex-shrink-0) ═══ */}
-        <div className="flex-shrink-0 bg-[#0B1220] border-b border-[#1F2937]/50">
+      <div className="flex flex-col bg-[#0B1220] min-h-0">
+        {/* ═══ ZONE 1: Header ═══ */}
+        <div className="bg-[#0B1220] border-b border-[#1F2937]/50">
           <div className="flex items-center h-[40px] px-3">
             <button 
               onClick={() => navigate("/app/trade")} 
@@ -409,10 +409,10 @@ function TradingPairPageContent() {
         </div>
 
         {/* ═══ ZONE 2: Trading Container (flex-1, vertical stack) ═══ */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex flex-col">
 
-          {/* ── Chart toggle (optional, collapsible) ── */}
-          <div className="flex-shrink-0 border-b border-[#1F2937]/30">
+          {/* ── Chart toggle ── */}
+          <div className="border-b border-[#1F2937]/30">
             <button
               onClick={() => setChartOpen(!chartOpen)}
               className="flex items-center gap-1 text-[10px] text-[#6B7280] px-3 py-1 active:text-[#9CA3AF] w-full"
@@ -427,14 +427,11 @@ function TradingPairPageContent() {
             )}
           </div>
 
-          {/* ── SECTION A+B: Trade Panel + Order Book — side-by-side, tops aligned ── */}
-          <div
-            className="flex flex-row min-h-0 overflow-hidden gap-0 px-0"
-            style={{ flex: '1 1 0%', alignItems: 'stretch' }}
-          >
+          {/* ── Trade Panel + Order Book side-by-side ── */}
+          <div className="flex flex-row gap-0 px-0">
             {/* Trade Panel */}
             <div
-              className="flex flex-col overflow-hidden px-1"
+              className="flex flex-col px-1"
               style={{ flex: isSideBySide ? '0 0 46%' : '0 0 65%' }}
             >
               <OrderFormPro
@@ -454,10 +451,10 @@ function TradingPairPageContent() {
                 compact={!isSideBySide}
               />
             </div>
-            {/* Order Book — fills remaining width, stretches full height */}
+            {/* Order Book */}
             <div
-              className="flex flex-col overflow-hidden pl-1.5"
-              style={{ flex: '1 1 0%', padding: 0, margin: 0, paddingLeft: 6 }}
+              className="flex flex-col pl-1.5"
+              style={{ flex: '1 1 0%' }}
             >
               <OrderBookPremium
                 asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
@@ -482,51 +479,17 @@ function TradingPairPageContent() {
 
           <GhostLockWarning />
 
-          {/* ── SECTION C: Bottom Trading Tabs — safe area aware ── */}
-          <div
-            className="flex-shrink-0 border-t border-[#1F2937]/60 bg-[#090E1A]"
-            style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
-          >
-            <button
-              onClick={() => setOrdersDrawerOpen(true)}
-              className="w-full h-[48px] flex items-center justify-between px-4 active:bg-white/[0.03] transition-colors"
-            >
-              <div className="flex-1 flex items-center justify-around">
-                {['Open', 'Orders', 'Trades', 'Funds'].map((tab, i) => (
-                  <span
-                    key={tab}
-                    className={cn(
-                      "text-[12px] font-medium py-1 px-2 min-w-[48px] text-center",
-                      i === 0 ? "text-[#E5E7EB]" : "text-[#6B7280]"
-                    )}
-                  >
-                    {tab}
-                  </span>
-                ))}
-              </div>
-              <ChevronDown className="h-3.5 w-3.5 text-[#4B5563] rotate-180 flex-shrink-0 ml-2" />
-            </button>
+          {/* ── Trading History Tabs — inline below trade form ── */}
+          <div className="mt-4 px-2 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
+            <TradingHistoryTabs 
+              symbol={urlSymbol}
+              onOrderDetails={setSelectedOrderId}
+              onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
+            />
           </div>
         </div>
 
-        {/* ── Orders Bottom Drawer (slides up 60% screen) ── */}
-        <Drawer open={ordersDrawerOpen} onOpenChange={setOrdersDrawerOpen}>
-          <DrawerContent className="bg-[#0B1220] border-[#1F2937] max-h-[65vh]">
-            <DrawerHeader className="flex items-center justify-between px-4 py-2 border-b border-[#1F2937]/40">
-              <DrawerTitle className="text-[13px] font-semibold text-[#E5E7EB]">Orders & History</DrawerTitle>
-              <button onClick={() => setOrdersDrawerOpen(false)} className="p-1 active:bg-white/10 rounded">
-                <X className="h-4 w-4 text-[#6B7280]" />
-              </button>
-            </DrawerHeader>
-            <div className="flex-1 overflow-y-auto px-2 pb-4">
-              <TradingHistoryTabs 
-                symbol={urlSymbol}
-                onOrderDetails={setSelectedOrderId}
-                onTradeDetails={(tradeId) => console.log('Trade details:', tradeId)}
-              />
-            </div>
-          </DrawerContent>
-        </Drawer>
+        {/* Drawer removed — tabs are inline */}
       </div>
        
       <OrderDetailsDrawer 
