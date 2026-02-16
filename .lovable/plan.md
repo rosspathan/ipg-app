@@ -1,39 +1,41 @@
 
 
-## Enhance Order Book to Fill All Available Space
+## Fix Order Book: Remove Scrollbars and Fill All Available Space
 
 ### Problem
-The order book has visible empty space because the dynamic row calculation reserves too much overhead and doesn't fully utilize the available height. The asks and bids sections don't stretch to fill the entire panel.
+The order book currently has two issues visible in the screenshot:
+1. **Unwanted scrollbars** appear on the asks and bids sections (from the previous change adding `overflow-y-auto`)
+2. **Large empty gaps** remain above the asks and below the bids -- the dynamic row count is still too conservative
 
-### Solution
-Two targeted changes to `OrderBookPremium.tsx` to eliminate empty space:
+### Root Cause
+- The `overflow-y-auto` added in the last edit creates visible scrollbars even when content doesn't overflow
+- The overhead constant (52px) is still too generous, and with only a few orders available, the flex containers show empty space instead of stretching the rows to fill
+
+### Solution (single file change)
+
+**File: `src/components/trading/OrderBookPremium.tsx`**
+
+1. **Remove `overflow-y-auto` from both asks and bids containers** -- revert to `overflow-hidden`. The dynamic row calculation already limits rows to fit, so scrolling is unnecessary and the scrollbar wastes space.
+
+2. **Reduce reserved overhead from 52px to 44px** -- the actual measured heights are: header ~14px, mid-price bar 20px, pressure bar 12px = 46px. Using 44px squeezes out 1 more row per side.
+
+3. **Reduce row height from 14px to 13px** -- this gains another 1-2 rows per side at the current container height while keeping 11px text readable.
+
+4. **When fewer data rows exist than space allows, pad with empty placeholder rows** so the asks section pushes down to the mid-price bar and the bids section extends to the pressure bar, eliminating all visible gaps.
 
 ### Technical Details
 
-**1. Reduce reserved overhead in dynamic calculation (line 103)**
-- Current: reserves `62px` for header + mid-price + pressure bar + padding
-- Actual measured: header ~16px + mid-price ~20px + pressure ~16px = ~52px
-- Change to `52px` to reclaim ~10px (roughly 1 extra row per side)
+Changes in `OrderBookPremium.tsx`:
 
-**2. Make asks section use all remaining top space**
-- The asks section already uses `flex-1` + `justify-end` which is correct
-- The bids section also uses `flex-1` + `justify-start` which is correct
-- But if there are fewer rows than space allows, the flex containers still leave gaps
-- Add `overflow-y: auto` to both sections so they can scroll if data exceeds space, and ensure the flex container truly fills
-
-**3. Reduce row height from 15px to 14px for denser display**
-- This gains roughly 1-2 more visible rows per side
-- Keeps text at 11px which remains readable
-
-**4. Shrink pressure bar padding**
-- Remove vertical padding from the pressure bar section (line 209)
-- Make it more compact: reduce to a simple 12px-high bar
-
-### Files to modify
-- `src/components/trading/OrderBookPremium.tsx` — adjust overhead constant, row height, and pressure bar compactness
+- Line 54: Change `h-[14px]` to `h-[13px]` on the Row component
+- Line 103: Change overhead from `52` to `44`, divisor from `14` to `13`
+- Line 154: Change `overflow-y-auto` back to `overflow-hidden` on asks container
+- Line 192: Change `overflow-y-auto` back to `overflow-hidden` on bids container
+- Add empty spacer rows (transparent, non-interactive) when `displayAsks.length < effectiveRows` or `displayBids.length < effectiveRows` to fill remaining space, ensuring no visible gaps
 
 ### What stays unchanged
-- No changes to `TradingPairPage.tsx` layout
-- No changes to the trade form
-- The flex stretch architecture remains intact
+- TradingPairPage layout (65%/35% split, flex stretch)
+- Trade form -- no changes
+- Order book data logic, aggregation, real-time hooks
+- All margins and padding on the page
 
