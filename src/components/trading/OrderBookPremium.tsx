@@ -51,7 +51,7 @@ const Row = memo(({
   return (
     <div
       onClick={() => onPriceClick?.(entry.price)}
-      className="relative grid items-center px-2 h-[15px] cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors duration-75"
+      className="relative grid items-center px-2 h-[14px] cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors duration-75"
       style={{ gridTemplateColumns: '50% 50%' }}
     >
       <div
@@ -100,8 +100,8 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       for (const entry of entries) {
         const h = entry.contentRect.height;
         // Reserve: header(16) + mid-price(22) + pressure(20) + padding(4) = ~62px
-        const available = h - 62;
-        const rowsPerSide = Math.max(3, Math.floor(available / 2 / 15));
+        const available = h - 52;
+        const rowsPerSide = Math.max(3, Math.floor(available / 2 / 14));
         setDynamicRows(rowsPerSide);
       }
     });
@@ -151,7 +151,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* Asks — grows to fill top half, anchored to bottom */}
-      <div className={cn(fillContainer ? "flex-1 flex flex-col justify-end min-h-0 overflow-hidden" : "")}>
+      <div className={cn(fillContainer ? "flex-1 flex flex-col justify-end min-h-0 overflow-y-auto" : "")}>
         {displayAsks.length > 0 ? (
           displayAsks.map((ask, idx) => (
             <Row
@@ -189,7 +189,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* Bids — grows to fill bottom half, anchored to top */}
-      <div className={cn(fillContainer ? "flex-1 flex flex-col justify-start min-h-0 overflow-hidden" : "")}>
+      <div className={cn(fillContainer ? "flex-1 flex flex-col justify-start min-h-0 overflow-y-auto" : "")}>
         {displayBids.length > 0 ? (
           displayBids.map((bid, idx) => (
             <Row
@@ -206,9 +206,9 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* ── Buy/Sell pressure bar ── */}
-      <div className="flex-shrink-0 flex items-center gap-1 px-2 py-0 border-t border-[#1F2937]/30">
+      <div className="flex-shrink-0 flex items-center gap-1 px-2 h-[12px] border-t border-[#1F2937]/30">
         <span className="text-[9px] font-mono text-[#2EBD85]">{bidPct.toFixed(1)}%</span>
-        <div className="flex-1 h-[3px] rounded-full overflow-hidden flex">
+        <div className="flex-1 h-[2px] rounded-full overflow-hidden flex">
           <div className="bg-[#2EBD85]" style={{ width: `${bidPct}%` }} />
           <div className="bg-[#F6465D]" style={{ width: `${askPct}%` }} />
         </div>
