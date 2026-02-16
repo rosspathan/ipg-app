@@ -365,9 +365,6 @@ function TradingPairPageContent() {
               )}>
                 {isPositive ? "+" : ""}{pair.change24h.toFixed(2)}%
               </span>
-              {wsConnected && (
-                <div className="h-1.5 w-1.5 rounded-full bg-[#2EBD85] flex-shrink-0" />
-              )}
             </div>
 
             <div className="flex items-center gap-0 ml-1">
