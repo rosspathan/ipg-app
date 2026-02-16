@@ -488,6 +488,22 @@ Deno.serve(async (req) => {
               }
             } catch (error) {
               console.error('[Matching Engine] Error executing trade:', error);
+
+              // #10: Record failed match for retry
+              try {
+                await supabase.from('failed_match_attempts').insert({
+                  buy_order_id: buyOrder.id,
+                  sell_order_id: sellOrder.id,
+                  symbol,
+                  error_message: error?.message || String(error),
+                  retry_count: 0,
+                  max_retries: 3,
+                  next_retry_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+                });
+                console.log('[Matching Engine] Recorded failed match for retry');
+              } catch (recordErr) {
+                console.warn('[Matching Engine] Failed to record match attempt:', recordErr);
+              }
             }
           }
         }
@@ -496,11 +512,55 @@ Deno.serve(async (req) => {
 
     console.log(`[Matching Engine] Completed: ${totalMatches} matches`);
 
+    // #10: Retry failed matches
+    let retriedCount = 0;
+    const { data: failedMatches } = await supabase
+      .from('failed_match_attempts')
+      .select('*')
+      .eq('resolved', false)
+      .lt('next_retry_at', new Date().toISOString())
+      .lt('retry_count', 3)
+      .limit(10);
+
+    if (failedMatches && failedMatches.length > 0) {
+      console.log(`[Matching Engine] Retrying ${failedMatches.length} failed matches`);
+
+      for (const fm of failedMatches) {
+        // Check if both orders are still matchable
+        const { data: orders } = await supabase
+          .from('orders')
+          .select('id, status, remaining_amount')
+          .in('id', [fm.buy_order_id, fm.sell_order_id])
+          .in('status', ['pending', 'partially_filled']);
+
+        if (!orders || orders.length < 2) {
+          // One or both orders are no longer active — resolve
+          await supabase.from('failed_match_attempts')
+            .update({ resolved: true, updated_at: new Date().toISOString() })
+            .eq('id', fm.id);
+          continue;
+        }
+
+        // Increment retry count and push next_retry_at
+        await supabase.from('failed_match_attempts')
+          .update({
+            retry_count: fm.retry_count + 1,
+            next_retry_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', fm.id);
+
+        retriedCount++;
+        // The orders will be picked up in the next normal matching cycle
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Matched ${totalMatches} orders`,
-        matched: totalMatches
+        message: `Matched ${totalMatches} orders, ${retriedCount} retries queued`,
+        matched: totalMatches,
+        retried: retriedCount
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Settings, Percent, Wallet, TrendingUp } from "lucide-react";
+import { DollarSign, Settings, Percent, Wallet, TrendingUp, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 interface FeeSettings {
   maker_fee_percent: number;
@@ -39,28 +40,52 @@ export const AdminTradingFeesSimple = () => {
     }
   });
 
-  // Fetch fee statistics
+  // Fetch fee statistics with per-pair and daily breakdown
   const { data: feeStats } = useQuery({
     queryKey: ['trading-fee-stats'],
     queryFn: async () => {
-      // Total collected
-      const { data: totalData } = await supabase
+      const { data: allFees } = await supabase
         .from('trading_fees_collected')
-        .select('fee_amount');
-      
-      const total_collected = totalData?.reduce((sum, row) => sum + Number(row.fee_amount), 0) || 0;
-      const total_trades = totalData?.length || 0;
+        .select('fee_amount, symbol, created_at, side');
 
-      // Today's collected
+      if (!allFees) return { total_collected: 0, total_trades: 0, today_collected: 0, byPair: [], dailyTrend: [] };
+
+      const total_collected = allFees.reduce((sum, row) => sum + Number(row.fee_amount), 0);
+      const total_trades = allFees.length;
+
       const today = new Date().toISOString().split('T')[0];
-      const { data: todayData } = await supabase
-        .from('trading_fees_collected')
-        .select('fee_amount')
-        .gte('created_at', today);
-      
-      const today_collected = todayData?.reduce((sum, row) => sum + Number(row.fee_amount), 0) || 0;
+      const today_collected = allFees
+        .filter(r => r.created_at >= today)
+        .reduce((sum, row) => sum + Number(row.fee_amount), 0);
 
-      return { total_collected, total_trades, today_collected } as FeeStats;
+      // Per-pair breakdown
+      const pairMap: Record<string, { total: number; count: number }> = {};
+      allFees.forEach(r => {
+        const sym = r.symbol || 'Unknown';
+        if (!pairMap[sym]) pairMap[sym] = { total: 0, count: 0 };
+        pairMap[sym].total += Number(r.fee_amount);
+        pairMap[sym].count += 1;
+      });
+      const byPair = Object.entries(pairMap)
+        .map(([symbol, v]) => ({ symbol, total: v.total, count: v.count }))
+        .sort((a, b) => b.total - a.total);
+
+      // Daily trend (last 14 days)
+      const dailyMap: Record<string, number> = {};
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000).toISOString().split('T')[0];
+        dailyMap[d] = 0;
+      }
+      allFees.forEach(r => {
+        const day = r.created_at?.split('T')[0];
+        if (day && dailyMap[day] !== undefined) dailyMap[day] += Number(r.fee_amount);
+      });
+      const dailyTrend = Object.entries(dailyMap).map(([date, amount]) => ({
+        date: date.slice(5), // MM-DD
+        amount: Math.round(amount * 10000) / 10000,
+      }));
+
+      return { total_collected, total_trades, today_collected, byPair, dailyTrend };
     }
   });
 
@@ -266,6 +291,59 @@ export const AdminTradingFeesSimple = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Daily Fee Trend Chart */}
+      {feeStats?.dailyTrend && feeStats.dailyTrend.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Daily Fee Revenue (Last 14 Days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={feeStats.dailyTrend}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="date" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip formatter={(value: number) => [`${value} USDT`, 'Fees']} />
+                  <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Per-Pair Fee Breakdown */}
+      {feeStats?.byPair && feeStats.byPair.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Fee Revenue by Pair
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {feeStats.byPair.map((pair) => (
+                <div key={pair.symbol} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div>
+                    <div className="font-medium">{pair.symbol}</div>
+                    <div className="text-xs text-muted-foreground">{pair.count} fee entries</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-primary">{pair.total.toFixed(4)}</div>
+                    <div className="text-xs text-muted-foreground">USDT</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Market Overrides Preview */}
       <Card>
