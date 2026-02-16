@@ -211,29 +211,55 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ── Buy / Sell Toggle — pill style ── */}
-      <div className="flex h-[38px] bg-[#111827] rounded-xl p-[3px] gap-[3px]">
+      {/* ── Buy / Sell Toggle — arrow-tab style ── */}
+      <div className="flex h-[40px] bg-[#111827] rounded-lg overflow-hidden">
         <button
           onClick={() => setSide('buy')}
-          className={cn(
-            "flex-1 rounded-[10px] text-[12px] font-bold tracking-wider uppercase transition-all duration-200",
-            isBuy
-              ? "bg-[#2EBD85] text-white shadow-[0_2px_8px_rgba(46,189,133,0.25)]"
-              : "text-[#6B7280] active:text-[#9CA3AF]"
-          )}
+          className="flex-1 relative flex items-center justify-center"
         >
-          Buy
+          {/* Background shape */}
+          <div className={cn(
+            "absolute inset-0 transition-all duration-200",
+            isBuy ? "bg-[#2EBD85]" : "bg-transparent"
+          )} />
+          {/* Arrow point */}
+          {isBuy && (
+            <div className="absolute right-0 top-0 h-full w-[14px] translate-x-[7px] z-[1]">
+              <svg viewBox="0 0 14 40" fill="none" className="h-full w-full" preserveAspectRatio="none">
+                <path d="M0 0L14 20L0 40V0Z" fill="#2EBD85" />
+              </svg>
+            </div>
+          )}
+          <span className={cn(
+            "relative z-[2] text-[12px] font-bold tracking-wider uppercase transition-colors duration-200",
+            isBuy ? "text-white" : "text-[#6B7280]"
+          )}>
+            Buy
+          </span>
         </button>
         <button
           onClick={() => setSide('sell')}
-          className={cn(
-            "flex-1 rounded-[10px] text-[12px] font-bold tracking-wider uppercase transition-all duration-200",
-            !isBuy
-              ? "bg-[#F6465D] text-white shadow-[0_2px_8px_rgba(246,70,93,0.25)]"
-              : "text-[#6B7280] active:text-[#9CA3AF]"
-          )}
+          className="flex-1 relative flex items-center justify-center"
         >
-          Sell
+          {/* Background shape */}
+          <div className={cn(
+            "absolute inset-0 transition-all duration-200",
+            !isBuy ? "bg-[#F6465D]" : "bg-transparent"
+          )} />
+          {/* Arrow point for sell (left side) */}
+          {!isBuy && (
+            <div className="absolute left-0 top-0 h-full w-[14px] -translate-x-[7px] z-[1]">
+              <svg viewBox="0 0 14 40" fill="none" className="h-full w-full" preserveAspectRatio="none">
+                <path d="M14 0L0 20L14 40V0Z" fill="#F6465D" />
+              </svg>
+            </div>
+          )}
+          <span className={cn(
+            "relative z-[2] text-[12px] font-bold tracking-wider uppercase transition-colors duration-200",
+            !isBuy ? "text-white" : "text-[#6B7280]"
+          )}>
+            Sell
+          </span>
         </button>
       </div>
 
