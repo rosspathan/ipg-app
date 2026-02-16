@@ -13194,6 +13194,7 @@ export type Database = {
         }
         Returns: Json
       }
+      expire_stale_orders: { Args: { p_ttl_hours?: number }; Returns: number }
       find_users_missing_referral_tree: {
         Args: never
         Returns: {

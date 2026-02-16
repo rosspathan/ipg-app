@@ -388,6 +388,31 @@ Deno.serve(async (req) => {
               ]);
               if (auditLogError) console.warn('Audit log insert failed:', auditLogError);
 
+              // #6: Fill Notifications — notify both buyer and seller
+              if (tradeId) {
+                const fillNotifications = [
+                  {
+                    user_id: buyOrder.user_id,
+                    type: 'trade_fill',
+                    title: `Buy Order Filled`,
+                    body: `Your buy order for ${matchedQuantity.toFixed(8)} ${symbol.split('/')[0]} was filled at ${executionPrice.toFixed(8)} ${symbol.split('/')[1]}`,
+                    meta: { trade_id: tradeId, symbol, side: 'buy', quantity: matchedQuantity.toNumber(), price: executionPrice.toNumber(), fee: buyerFee.toNumber() },
+                    link_url: `/trading/${symbol.replace('/', '-')}`
+                  },
+                  {
+                    user_id: sellOrder.user_id,
+                    type: 'trade_fill',
+                    title: `Sell Order Filled`,
+                    body: `Your sell order for ${matchedQuantity.toFixed(8)} ${symbol.split('/')[0]} was filled at ${executionPrice.toFixed(8)} ${symbol.split('/')[1]}`,
+                    meta: { trade_id: tradeId, symbol, side: 'sell', quantity: matchedQuantity.toNumber(), price: executionPrice.toNumber(), fee: sellerFee.toNumber() },
+                    link_url: `/trading/${symbol.replace('/', '-')}`
+                  }
+                ];
+                const { error: notifError } = await supabase.from('notifications').insert(fillNotifications);
+                if (notifError) console.warn('[Matching Engine] Fill notification insert failed:', notifError);
+                else console.log('[Matching Engine] ✓ Fill notifications sent to both parties');
+              }
+
               // Record fees in trading_fees_collected ledger (status: collected - no on-chain transfer needed)
               if (tradeId) {
                 // Buyer fee record
