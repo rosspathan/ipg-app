@@ -1,51 +1,57 @@
 
 
-## Enhance Order Book: Eliminate Dead Space and Add Professional Polish
+## Fix: Slider Label Alignment (100% Overflow)
 
 ### Problem
-The order book has only a few orders (4 asks, 2 bids) but sits in a tall flex container. The current spacer approach (fixed 13px empty divs) does not fill the actual flex-1 container height, leaving large dark voids above asks and below bids. This looks empty and unprofessional.
+The percentage labels (0%, 25%, 50%, 75%, 100%) use `flex justify-between`, while the diamond markers above them use absolute positioning with `left: X%` and `-translate-x-1/2`. This causes the **100% label to extend past the right edge** of the slider container, misaligning with its diamond.
 
-### Solution: Three-Part Enhancement
-
-**File: `src/components/trading/OrderBookPremium.tsx`**
-
-#### 1. Remove Spacer Rows -- Let Flex Layout Handle Alignment Naturally
-
-Delete the spacer div logic entirely (lines 155-159 and 211-215). The flex containers with `justify-end` (asks) and `justify-start` (bids) already anchor rows correctly toward the mid-price bar. Empty space above asks and below bids is simply dark background, which is the correct professional look (same as Binance/Bybit with sparse data).
-
-#### 2. Add Subtle Horizontal Grid Lines in Empty Zones
-
-Instead of dead black space, render faint dashed grid lines (using a CSS repeating background pattern) on the asks and bids containers. This gives the empty areas a "ready for data" look -- like an empty spreadsheet grid -- making the order book feel structured even with sparse data.
-
-- Pattern: `repeating-linear-gradient` producing a 1px line of `#1F2937` opacity 20% every 13px
-- This creates faint horizontal rules that align with where rows would appear
-- Zero DOM overhead (pure CSS)
-
-#### 3. Add "Waiting for Orders" Micro-Hint When Data Is Very Sparse
-
-When fewer than 3 rows exist on either side, show a small ghost text like "-- --" placeholder rows (common on professional exchanges) to indicate depth levels are available but empty. These render at 50% opacity in the grid line slots nearest the mid-price bar.
+### Solution
+Replace the `flex justify-between` label row with **absolute positioning** matching the diamonds, but with edge clamping for 0% and 100%.
 
 ### Technical Details
 
-Changes in `OrderBookPremium.tsx`:
+**File: `src/components/trading/OrderFormPro.tsx` (lines 353-370)**
 
-**Remove spacer divs (lines 155-159, 211-215)**
-- Delete both `Array.from({ length: effectiveRows - displayX.length })` blocks
+Replace the current label container:
+```tsx
+{/* Current — flex justify-between causes misalignment */}
+<div className="flex justify-between">
+  {[0, 25, 50, 75, 100].map(...)}
+</div>
+```
 
-**Add repeating grid background to flex containers (lines 154, 197)**
-- On the asks container div, add an inline style:
-  `backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 12px, rgba(31,41,55,0.15) 12px, rgba(31,41,55,0.15) 13px)'`
-- Same on the bids container div
+With a relatively-positioned container where each label is absolutely placed to match its diamond:
+```tsx
+<div className="relative h-4">
+  {[0, 25, 50, 75, 100].map((pct, i, arr) => (
+    <button
+      key={pct}
+      onClick={...}
+      className={cn(
+        "absolute text-[10px] font-medium transition-colors",
+        // Edge clamping: first label left-aligned, last right-aligned, rest centered
+        i === 0
+          ? "left-0"
+          : i === arr.length - 1
+            ? "right-0"
+            : "-translate-x-1/2",
+        // Color logic stays the same
+        activePercent !== null && activePercent >= pct
+          ? isBuy ? "text-[#2EBD85]" : "text-[#F6465D]"
+          : "text-[#4B5563]"
+      )}
+      style={i > 0 && i < arr.length - 1 ? { left: `${pct}%` } : undefined}
+    >
+      {pct}%
+    </button>
+  ))}
+</div>
+```
 
-**Add placeholder "--" rows when data count less than 3**
-- After asks data rows, if `displayAsks.length < 3`, render `(3 - displayAsks.length)` ghost rows with `opacity-30` showing "-- --" in price/amount columns
-- Before bids data rows, same logic for bids
-- These ghost rows use the same 13px height and grid layout as real rows
+This ensures:
+- **0%** is flush left (no offset)
+- **25%, 50%, 75%** are centered on their diamonds via `-translate-x-1/2`
+- **100%** is flush right (no overflow)
 
-### What Stays Unchanged
-- TradingPairPage layout (65%/35% split, flex stretch)
-- Trade form -- no changes
-- Order book data fetching, aggregation, real-time hooks
-- Row component internals, depth bars, mid-price bar, pressure bar
-- All existing interactive behavior (price click, hover)
+Single file change, ~18 lines replaced.
 
