@@ -351,18 +351,23 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           )}
         </div>
         {/* Percentage labels — edge-aligned */}
-        <div className="flex justify-between">
-          {[0, 25, 50, 75, 100].map((pct, i) => (
+        <div className="relative h-4">
+          {[0, 25, 50, 75, 100].map((pct, i, arr) => (
             <button
               key={pct}
               onClick={() => { if (pct === 0) { setActivePercent(null); setAmount(''); } else handleQuickPercent(pct); }}
               className={cn(
-                "text-[10px] font-medium transition-colors",
-                i === 0 ? "text-left" : i === 4 ? "text-right" : "text-center",
+                "absolute text-[10px] font-medium transition-colors",
+                i === 0
+                  ? "left-0"
+                  : i === arr.length - 1
+                    ? "right-0"
+                    : "-translate-x-1/2",
                 activePercent !== null && activePercent >= pct
                   ? isBuy ? "text-[#2EBD85]" : "text-[#F6465D]"
                   : "text-[#4B5563]"
               )}
+              style={i > 0 && i < arr.length - 1 ? { left: `${pct}%` } : undefined}
             >
               {pct}%
             </button>
