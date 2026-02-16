@@ -556,6 +556,8 @@ export type Database = {
       }
       allowlist_addresses: {
         Row: {
+          activated_at: string | null
+          activation_delay_hours: number | null
           address: string
           chain: string
           created_at: string | null
@@ -565,6 +567,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          activated_at?: string | null
+          activation_delay_hours?: number | null
           address: string
           chain: string
           created_at?: string | null
@@ -574,6 +578,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          activated_at?: string | null
+          activation_delay_hours?: number | null
           address?: string
           chain?: string
           created_at?: string | null
@@ -5103,6 +5109,48 @@ export type Database = {
           to_address?: string
           tx_hash?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      failed_match_attempts: {
+        Row: {
+          buy_order_id: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          max_retries: number | null
+          next_retry_at: string | null
+          resolved: boolean | null
+          retry_count: number | null
+          sell_order_id: string
+          symbol: string
+          updated_at: string | null
+        }
+        Insert: {
+          buy_order_id: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          max_retries?: number | null
+          next_retry_at?: string | null
+          resolved?: boolean | null
+          retry_count?: number | null
+          sell_order_id: string
+          symbol: string
+          updated_at?: string | null
+        }
+        Update: {
+          buy_order_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          max_retries?: number | null
+          next_retry_at?: string | null
+          resolved?: boolean | null
+          retry_count?: number | null
+          sell_order_id?: string
+          symbol?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

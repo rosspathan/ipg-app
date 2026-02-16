@@ -140,6 +140,61 @@ Deno.serve(async (req) => {
 
     console.log(`[request-custodial-withdrawal] Destination: ${destinationAddress}`);
 
+    // #8: Withdrawal Address Whitelist — check if address is allowlisted and activated
+    const { data: allowlistEntries, error: allowlistError } = await adminClient
+      .from('allowlist_addresses')
+      .select('id, address, enabled, activated_at, activation_delay_hours, created_at')
+      .eq('user_id', user.id)
+      .eq('chain', 'BSC')
+      .eq('enabled', true);
+
+    if (allowlistError) {
+      console.error('[request-custodial-withdrawal] Allowlist check error:', allowlistError);
+    }
+
+    // If user has ANY allowlisted addresses, the withdrawal MUST go to one of them
+    if (allowlistEntries && allowlistEntries.length > 0) {
+      const matchedEntry = allowlistEntries.find(
+        (e) => e.address.toLowerCase() === destinationAddress!.toLowerCase()
+      );
+
+      if (!matchedEntry) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Withdrawal address is not in your allowlist. Add it first and wait for activation.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check 24-hour activation delay
+      const activatedAt = matchedEntry.activated_at ? new Date(matchedEntry.activated_at) : null;
+      const delayHours = matchedEntry.activation_delay_hours ?? 24;
+
+      if (!activatedAt) {
+        // Address was added but not yet activated — set activated_at now and enforce delay
+        await adminClient
+          .from('allowlist_addresses')
+          .update({ activated_at: new Date().toISOString() })
+          .eq('id', matchedEntry.id);
+
+        return new Response(
+          JSON.stringify({ success: false, error: `New address requires a ${delayHours}-hour cooling-off period before withdrawals. Please try again later.` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const activationThreshold = new Date(activatedAt.getTime() + delayHours * 60 * 60 * 1000);
+      if (new Date() < activationThreshold) {
+        const remainingMs = activationThreshold.getTime() - Date.now();
+        const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+        return new Response(
+          JSON.stringify({ success: false, error: `Address is still in cooling-off period. ${remainingHours}h remaining before withdrawals are allowed.` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`[request-custodial-withdrawal] ✓ Address passed allowlist + activation check`);
+    }
+
     const fee = asset.withdraw_fee || 0;
 
     // Execute atomic withdrawal with FOR UPDATE row locking
