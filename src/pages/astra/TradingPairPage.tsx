@@ -434,7 +434,7 @@ function TradingPairPageContent() {
           >
             {/* Trade Panel */}
             <div
-              className="flex flex-col overflow-hidden border-r border-[#1F2937]/30 px-1"
+              className="flex flex-col overflow-hidden px-1"
               style={{ flex: isSideBySide ? '0 0 46%' : '0 0 65%' }}
             >
               <OrderFormPro
@@ -456,8 +456,8 @@ function TradingPairPageContent() {
             </div>
             {/* Order Book — fills remaining width, stretches full height */}
             <div
-              className="flex flex-col overflow-hidden"
-              style={{ flex: '1 1 0%', padding: 0, margin: 0 }}
+              className="flex flex-col overflow-hidden pl-1.5"
+              style={{ flex: '1 1 0%', padding: 0, margin: 0, paddingLeft: 6 }}
             >
               <OrderBookPremium
                 asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
