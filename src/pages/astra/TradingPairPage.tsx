@@ -427,15 +427,15 @@ function TradingPairPageContent() {
             )}
           </div>
 
-          {/* ── SECTION A+B: Trade Panel + Order Book — fixed height flex stretch ── */}
+          {/* ── SECTION A+B: Trade Panel + Order Book — side-by-side, tops aligned ── */}
           <div
-            className="flex flex-row min-h-0 overflow-hidden gap-1 px-1"
+            className="flex flex-row min-h-0 overflow-hidden gap-0 px-0"
             style={{ flex: '1 1 0%', alignItems: 'stretch' }}
           >
-            {/* Trade Panel — 65% mobile / 42% desktop */}
+            {/* Trade Panel */}
             <div
-              className="flex flex-col overflow-y-auto scrollbar-thin"
-              style={{ flex: isSideBySide ? '0 0 42%' : '0 0 65%' }}
+              className="flex flex-col overflow-y-auto scrollbar-thin border-r border-[#1F2937]/30 px-1"
+              style={{ flex: isSideBySide ? '0 0 46%' : '0 0 52%' }}
             >
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
@@ -454,10 +454,10 @@ function TradingPairPageContent() {
                 compact={!isSideBySide}
               />
             </div>
-            {/* Order Book — 35% mobile / 58% desktop, stretches to full parent height */}
+            {/* Order Book — fills remaining width, stretches full height */}
             <div
               className="flex flex-col overflow-hidden"
-              style={{ flex: isSideBySide ? '0 0 58%' : '1 1 0%', padding: 0, margin: 0 }}
+              style={{ flex: '1 1 0%', padding: 0, margin: 0 }}
             >
               <OrderBookPremium
                 asks={orderBook?.asks?.slice(0, 20).map((a: any) => ({ 
