@@ -43,7 +43,18 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('[Matching Engine] Starting order matching process');
+    // Parse optional symbol filter for pair-scoped matching
+    let targetSymbol: string | null = null;
+    try {
+      const body = await req.json();
+      if (body?.symbol) {
+        targetSymbol = body.symbol;
+      }
+    } catch {
+      // No body or invalid JSON — run global matching
+    }
+
+    console.log(`[Matching Engine] Starting order matching${targetSymbol ? ` for ${targetSymbol}` : ' (global)'}`);
 
     // Get engine settings
     const { data: settings, error: settingsError } = await supabase
@@ -78,12 +89,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get all pending and partially_filled orders
-    const { data: pendingOrders, error: ordersError } = await supabase
+    // Get pending and partially_filled orders — optionally scoped to a single symbol
+    let ordersQuery = supabase
       .from('orders')
       .select('*')
       .in('status', ['pending', 'partially_filled'])
       .order('created_at', { ascending: true });
+
+    if (targetSymbol) {
+      ordersQuery = ordersQuery.eq('symbol', targetSymbol);
+    }
+
+    const { data: pendingOrders, error: ordersError } = await ordersQuery;
 
     if (ordersError) {
       console.error('[Matching Engine] Error fetching orders:', ordersError);

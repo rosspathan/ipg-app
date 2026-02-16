@@ -170,10 +170,10 @@ serve(async (req) => {
       }
       
       if (settings?.auto_matching_enabled) {
-        console.log('[place-order] Triggering matching engine...');
+        console.log(`[place-order] Triggering matching engine for ${symbol}...`);
         
         const { data: mResult, error: matchError } = await matchingAdminClient.functions.invoke('match-orders', {
-          body: {}
+          body: { symbol }
         });
         
         if (matchError) {
