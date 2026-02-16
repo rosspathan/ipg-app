@@ -51,7 +51,7 @@ const Row = memo(({
   return (
     <div
       onClick={() => onPriceClick?.(entry.price)}
-      className="relative grid items-center px-2 h-[17px] cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors duration-75"
+      className="relative grid items-center px-2 h-[15px] cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors duration-75"
       style={{ gridTemplateColumns: '50% 50%' }}
     >
       <div
@@ -99,9 +99,9 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const h = entry.contentRect.height;
-        // Reserve: header(20) + mid-price(26) + pressure(24) + padding(8) = ~78px
-        const available = h - 78;
-        const rowsPerSide = Math.max(3, Math.floor(available / 2 / 17));
+        // Reserve: header(16) + mid-price(22) + pressure(20) + padding(4) = ~62px
+        const available = h - 62;
+        const rowsPerSide = Math.max(3, Math.floor(available / 2 / 15));
         setDynamicRows(rowsPerSide);
       }
     });
@@ -141,9 +141,9 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   }
 
   return (
-    <div ref={containerRef} className={cn(fillContainer ? "flex-1 flex flex-col min-h-0 h-full" : "py-1")}>
+    <div ref={containerRef} className={cn(fillContainer ? "flex-1 flex flex-col min-h-0 h-full" : "py-1")} style={{ marginTop: 0, paddingTop: 0 }}>
       {/* Header */}
-      <div className="flex-shrink-0 grid px-2 py-1 text-[9px] text-[#4B5563] uppercase tracking-wider font-medium border-b border-[#1F2937]/30"
+      <div className="flex-shrink-0 grid px-2 py-0.5 text-[9px] text-[#4B5563] uppercase tracking-wider font-medium border-b border-[#1F2937]/30"
         style={{ gridTemplateColumns: '50% 50%' }}
       >
         <span>Price ({quoteCurrency})</span>
@@ -169,7 +169,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
 
       {/* ── Last Traded Price bar ── */}
       <div
-        className="flex-shrink-0 flex items-center justify-between px-2 h-[24px] bg-[#111827]/60 border-y border-[#1F2937]/30 cursor-pointer active:bg-white/[0.03]"
+        className="flex-shrink-0 flex items-center justify-between px-2 h-[20px] bg-[#111827]/60 border-y border-[#1F2937]/30 cursor-pointer active:bg-white/[0.03]"
         onClick={() => onPriceClick?.(displayPrice)}
       >
         <div className="flex items-center gap-1">
@@ -206,7 +206,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* ── Buy/Sell pressure bar ── */}
-      <div className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 border-t border-[#1F2937]/30">
+      <div className="flex-shrink-0 flex items-center gap-1 px-2 py-0 border-t border-[#1F2937]/30">
         <span className="text-[9px] font-mono text-[#2EBD85]">{bidPct.toFixed(1)}%</span>
         <div className="flex-1 h-[3px] rounded-full overflow-hidden flex">
           <div className="bg-[#2EBD85]" style={{ width: `${bidPct}%` }} />
