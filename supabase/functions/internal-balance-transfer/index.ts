@@ -9,7 +9,7 @@ const corsHeaders = {
  * Internal Balance Transfer Edge Function
  * 
  * Handles Wallet ↔ Trading balance movements as pure database operations.
- * No on-chain transactions — instant, gas-free, and error-free.
+ * Uses atomic RPC with FOR UPDATE row locking to prevent race conditions.
  * 
  * Directions:
  *   to_trading  → credits wallet_balances (available)
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Round to 8 decimal places to prevent floating-point drift
+    // Round to 8 decimal places
     const safeAmount = Math.round(numAmount * 1e8) / 1e8;
 
     const admin = createClient(supabaseUrl, serviceKey);
@@ -93,145 +93,49 @@ Deno.serve(async (req) => {
 
     console.log(`[internal-balance-transfer] ${direction} ${safeAmount} ${asset.symbol} for user ${user.id}`);
 
-    if (direction === "to_trading") {
-      // ===== WALLET → TRADING =====
-      // Credit the user's wallet_balances (trading balance)
-      // Upsert: create row if it doesn't exist, otherwise increment available
+    // Map direction for the RPC
+    const rpcDirection = direction === "to_trading" ? "to_trading" : "from_trading";
 
-      const { data: existing } = await admin
-        .from("wallet_balances")
-        .select("id, available, locked")
-        .eq("user_id", user.id)
-        .eq("asset_id", asset_id)
-        .maybeSingle();
-
-      if (existing) {
-        const newAvailable = Math.round((Number(existing.available) + safeAmount) * 1e8) / 1e8;
-
-        const { error: updateError } = await admin
-          .from("wallet_balances")
-          .update({
-            available: newAvailable,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id);
-
-        if (updateError) {
-          console.error("[internal-balance-transfer] Update error:", updateError);
-          return new Response(
-            JSON.stringify({ error: "Failed to credit trading balance" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-      } else {
-        const { error: insertError } = await admin
-          .from("wallet_balances")
-          .insert({
-            user_id: user.id,
-            asset_id: asset_id,
-            available: safeAmount,
-            locked: 0,
-          });
-
-        if (insertError) {
-          console.error("[internal-balance-transfer] Insert error:", insertError);
-          return new Response(
-            JSON.stringify({ error: "Failed to create trading balance" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+    // Execute atomic transfer with FOR UPDATE row locking
+    const { data: result, error: rpcError } = await admin.rpc(
+      "execute_internal_balance_transfer",
+      {
+        p_user_id: user.id,
+        p_asset_id: asset_id,
+        p_amount: safeAmount,
+        p_direction: rpcDirection,
       }
+    );
 
-      // Record the transfer
-      await admin.from("trading_balance_transfers").insert({
-        user_id: user.id,
-        asset_id: asset_id,
-        direction: "to_trading",
-        amount: safeAmount,
-        status: "completed",
-        completed_at: new Date().toISOString(),
-      });
-
-      console.log(`[internal-balance-transfer] Credited ${safeAmount} ${asset.symbol} to trading for user ${user.id}`);
-
+    if (rpcError) {
+      console.error("[internal-balance-transfer] RPC error:", rpcError);
       return new Response(
-        JSON.stringify({
-          success: true,
-          message: `${safeAmount} ${asset.symbol} transferred to trading balance`,
-          amount: safeAmount,
-          symbol: asset.symbol,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-
-    } else {
-      // ===== TRADING → WALLET =====
-      // Debit from wallet_balances (trading balance)
-
-      const { data: balance, error: balError } = await admin
-        .from("wallet_balances")
-        .select("id, available, locked")
-        .eq("user_id", user.id)
-        .eq("asset_id", asset_id)
-        .maybeSingle();
-
-      if (balError || !balance) {
-        return new Response(
-          JSON.stringify({ error: "No trading balance found for this asset" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const currentAvailable = Number(balance.available);
-      if (currentAvailable < safeAmount) {
-        return new Response(
-          JSON.stringify({
-            error: `Insufficient trading balance. Available: ${currentAvailable.toFixed(8)} ${asset.symbol}`,
-          }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const newAvailable = Math.round((currentAvailable - safeAmount) * 1e8) / 1e8;
-
-      const { error: updateError } = await admin
-        .from("wallet_balances")
-        .update({
-          available: newAvailable,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", balance.id);
-
-      if (updateError) {
-        console.error("[internal-balance-transfer] Debit error:", updateError);
-        return new Response(
-          JSON.stringify({ error: "Failed to debit trading balance" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Record the transfer
-      await admin.from("trading_balance_transfers").insert({
-        user_id: user.id,
-        asset_id: asset_id,
-        direction: "from_trading",
-        amount: safeAmount,
-        status: "completed",
-        completed_at: new Date().toISOString(),
-      });
-
-      console.log(`[internal-balance-transfer] Debited ${safeAmount} ${asset.symbol} from trading for user ${user.id}`);
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: `${safeAmount} ${asset.symbol} transferred to wallet`,
-          amount: safeAmount,
-          symbol: asset.symbol,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: rpcError.message || "Transfer failed" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    if (!result?.success) {
+      console.error("[internal-balance-transfer] Transfer rejected:", result?.error);
+      return new Response(
+        JSON.stringify({ error: result?.error || "Transfer failed" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`[internal-balance-transfer] ✓ ${direction} ${safeAmount} ${asset.symbol} for user ${user.id}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `${safeAmount} ${asset.symbol} transferred ${direction === "to_trading" ? "to trading balance" : "to wallet"}`,
+        amount: safeAmount,
+        symbol: asset.symbol,
+        transfer_id: result.transfer_id,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+
   } catch (error) {
     console.error("[internal-balance-transfer] Error:", error);
     return new Response(

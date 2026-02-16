@@ -13144,6 +13144,15 @@ export type Database = {
         Args: { p_amount: number; p_recipient_id: string; p_sender_id: string }
         Returns: Json
       }
+      execute_internal_balance_transfer: {
+        Args: {
+          p_amount: number
+          p_asset_id: string
+          p_direction: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       execute_internal_crypto_transfer: {
         Args: {
           p_amount: number
@@ -13174,6 +13183,16 @@ export type Database = {
           p_trading_type?: string
         }
         Returns: string
+      }
+      execute_withdrawal_request: {
+        Args: {
+          p_amount: number
+          p_asset_id: string
+          p_fee: number
+          p_to_address: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       find_users_missing_referral_tree: {
         Args: never

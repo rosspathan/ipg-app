@@ -12,15 +12,15 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+
+    const supabaseClient = createClient(supabaseUrl, anonKey, {
+      global: {
+        headers: { Authorization: req.headers.get('Authorization')! },
+      },
+    });
 
     const { asset_symbol, recipient_identifier, amount } = await req.json();
 
@@ -32,8 +32,10 @@ serve(async (req) => {
 
     console.log(`Transfer request: ${user.id} -> ${recipient_identifier}, ${amount} ${asset_symbol}`);
 
+    const admin = createClient(supabaseUrl, serviceKey);
+
     // Find recipient by username, email, phone, or referral code
-    const { data: recipientProfile, error: recipientError } = await supabaseClient
+    const { data: recipientProfile, error: recipientError } = await admin
       .from('profiles')
       .select('user_id, username, email')
       .or(`username.eq.${recipient_identifier},email.eq.${recipient_identifier},phone.eq.${recipient_identifier},referral_code.eq.${recipient_identifier}`)
@@ -54,7 +56,7 @@ serve(async (req) => {
     }
 
     // Get asset details
-    const { data: asset, error: assetError } = await supabaseClient
+    const { data: asset, error: assetError } = await admin
       .from('assets')
       .select('id, symbol, decimals')
       .eq('symbol', asset_symbol)
@@ -76,23 +78,8 @@ serve(async (req) => {
       );
     }
 
-    // Check sender balance
-    const { data: senderBalance, error: balanceError } = await supabaseClient
-      .from('wallet_balances')
-      .select('available, locked')
-      .eq('user_id', user.id)
-      .eq('asset_id', asset.id)
-      .single();
-
-    if (balanceError || !senderBalance || senderBalance.available < transferAmount) {
-      return new Response(
-        JSON.stringify({ error: 'Insufficient balance' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Calculate fee (0.1% or minimum 0.0001 in asset)
-    const feePercent = 0.001; // 0.1%
+    const feePercent = 0.001;
     const minFee = 0.0001;
     const fee = Math.max(transferAmount * feePercent, minFee);
     const netAmount = transferAmount - fee;
@@ -104,8 +91,8 @@ serve(async (req) => {
       );
     }
 
-    // Execute atomic transfer (sender deduction + recipient credit in single transaction)
-    const { data: transferResult, error: transferError } = await supabaseClient.rpc(
+    // Execute atomic transfer with FOR UPDATE row locking
+    const { data: transferResult, error: transferError } = await admin.rpc(
       'execute_internal_crypto_transfer',
       {
         p_sender_id: user.id,
@@ -124,7 +111,6 @@ serve(async (req) => {
       );
     }
 
-    // Create transaction record (if you have a transactions table)
     const transactionId = `TXN${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
     
     console.log(`Transfer completed: ${transactionId}, ${amount} ${asset_symbol} from ${user.id} to ${recipientProfile.user_id}`);
