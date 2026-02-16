@@ -1,14 +1,8 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Loader2, ChevronDown } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 interface OrderFormProProps {
   baseCurrency: string;
@@ -38,8 +32,6 @@ interface OrderFormProProps {
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'limit' | 'market';
 
-const QUICK_PERCENTAGES = [25, 50, 75, 100];
-
 const formatNum = (num: number, maxDec = 8): string => {
   const fixed = num.toFixed(maxDec);
   return fixed.replace(/\.?0+$/, '') || '0';
@@ -55,16 +47,17 @@ const getSmartStep = (value: number): number => {
   return 0.00001;
 };
 
-/* ── Binance-style input: — [value] + ── */
-const ExchangeInput: React.FC<{
+/* ── Premium Exchange Input with glow effect ── */
+const PremiumInput: React.FC<{
   label: string;
   value: string;
   onChange: (v: string) => void;
   step?: number;
   min?: number;
   max?: number;
+  placeholder?: string;
   tag?: { label: string; value: number; color: 'green' | 'red' };
-}> = ({ label, value, onChange, step, min = 0, max, tag }) => {
+}> = ({ label, value, onChange, step, min = 0, max, placeholder = '0.00', tag }) => {
   const numVal = parseFloat(value) || 0;
   const effectiveStep = step ?? getSmartStep(numVal);
 
@@ -76,50 +69,59 @@ const ExchangeInput: React.FC<{
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between px-1 mb-0.5">
-        <span className="text-[9px] text-[#6B7280] select-none">{label}</span>
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between px-0.5">
+        <span className="text-[10px] font-medium text-[#9CA3AF] select-none">{label}</span>
         {tag && tag.value > 0 && (
           <button
             type="button"
             onClick={() => onChange(formatNum(tag.value))}
             className={cn(
-              "text-[8px] font-bold px-1.5 py-[1px] rounded border transition-colors",
+              "text-[9px] font-bold px-2 py-[2px] rounded-md transition-all duration-150",
               tag.color === 'red'
-                ? "text-[#EA3943] bg-[#EA3943]/[0.08] border-[#EA3943]/20 active:bg-[#EA3943]/20"
-                : "text-[#16C784] bg-[#16C784]/[0.08] border-[#16C784]/20 active:bg-[#16C784]/20"
+                ? "text-[#EA3943] bg-[#EA3943]/10 active:bg-[#EA3943]/20"
+                : "text-[#16C784] bg-[#16C784]/10 active:bg-[#16C784]/20"
             )}
           >
             {tag.label}
           </button>
         )}
       </div>
-      <div className="bg-[#0D1421] border border-[#1F2937] rounded h-[34px] flex items-center hover:border-[#374151] focus-within:border-[#4B5563] transition-colors">
-        <button
-          type="button"
-          onClick={() => adjust(-1)}
-          disabled={numVal <= min}
-          className="w-8 h-full flex items-center justify-center text-[#6B7280] text-[15px] font-medium active:bg-[#1F2937] active:text-[#E5E7EB] disabled:opacity-20 select-none flex-shrink-0 transition-colors"
-        >
-          −
-        </button>
-        <div className="h-[18px] w-px bg-[#1F2937] flex-shrink-0" />
-        <input
-          type="text"
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1 min-w-0 bg-transparent text-center text-[14px] font-mono font-bold text-[#E5E7EB] outline-none leading-none tracking-tight"
-        />
-        <div className="h-[18px] w-px bg-[#1F2937] flex-shrink-0" />
-        <button
-          type="button"
-          onClick={() => adjust(1)}
-          disabled={max !== undefined && numVal >= max}
-          className="w-8 h-full flex items-center justify-center text-[#6B7280] text-[15px] font-medium active:bg-[#1F2937] active:text-[#E5E7EB] disabled:opacity-20 select-none flex-shrink-0 transition-colors"
-        >
-          +
-        </button>
+      <div className="relative group">
+        <div className={cn(
+          "bg-[#0D1421] border border-[#1F2937]/80 rounded-xl h-[44px] flex items-center",
+          "transition-all duration-200",
+          "focus-within:border-[#16F2C6]/40 focus-within:shadow-[0_0_12px_rgba(22,242,198,0.08)]",
+          "hover:border-[#374151]"
+        )}>
+          <button
+            type="button"
+            onClick={() => adjust(-1)}
+            disabled={numVal <= min}
+            className="w-10 h-full flex items-center justify-center text-[#6B7280] text-[16px] font-medium active:bg-[#1F2937] active:text-white disabled:opacity-20 select-none flex-shrink-0 rounded-l-xl transition-colors"
+          >
+            −
+          </button>
+          <div className="h-[20px] w-px bg-[#1F2937]/60 flex-shrink-0" />
+          <input
+            type="text"
+            inputMode="decimal"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="flex-1 min-w-0 bg-transparent text-left px-4 text-[15px] font-mono font-bold text-[#E5E7EB] outline-none leading-none tracking-tight placeholder:text-[#374151] overflow-x-auto"
+            style={{ textOverflow: 'clip' }}
+          />
+          <div className="h-[20px] w-px bg-[#1F2937]/60 flex-shrink-0" />
+          <button
+            type="button"
+            onClick={() => adjust(1)}
+            disabled={max !== undefined && numVal >= max}
+            className="w-10 h-full flex items-center justify-center text-[#6B7280] text-[16px] font-medium active:bg-[#1F2937] active:text-white disabled:opacity-20 select-none flex-shrink-0 rounded-r-xl transition-colors"
+          >
+            +
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -212,15 +214,15 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
   const estFee = total * 0.005;
 
   return (
-    <div className="flex flex-col gap-2.5">
-      {/* ── Buy / Sell toggle ── */}
-      <div className="flex h-[34px] bg-[#111827] rounded p-[2px] gap-[2px]">
+    <div className="flex flex-col gap-4">
+      {/* ── Buy / Sell Toggle — pill style ── */}
+      <div className="flex h-[38px] bg-[#111827] rounded-xl p-[3px] gap-[3px]">
         <button
           onClick={() => setSide('buy')}
           className={cn(
-            "flex-1 rounded-[3px] text-[11px] font-bold tracking-wide transition-all duration-150",
+            "flex-1 rounded-[10px] text-[12px] font-bold tracking-wider uppercase transition-all duration-200",
             isBuy
-              ? "bg-[#2EBD85] text-white shadow-sm"
+              ? "bg-[#2EBD85] text-white shadow-[0_2px_8px_rgba(46,189,133,0.25)]"
               : "text-[#6B7280] active:text-[#9CA3AF]"
           )}
         >
@@ -229,9 +231,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         <button
           onClick={() => setSide('sell')}
           className={cn(
-            "flex-1 rounded-[3px] text-[11px] font-bold tracking-wide transition-all duration-150",
+            "flex-1 rounded-[10px] text-[12px] font-bold tracking-wider uppercase transition-all duration-200",
             !isBuy
-              ? "bg-[#F6465D] text-white shadow-sm"
+              ? "bg-[#F6465D] text-white shadow-[0_2px_8px_rgba(246,70,93,0.25)]"
               : "text-[#6B7280] active:text-[#9CA3AF]"
           )}
         >
@@ -239,15 +241,17 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         </button>
       </div>
 
-      {/* ── Order type selector ── */}
-      <div className="flex items-center gap-5 h-[28px] px-1 border-b border-[#1F2937]/40">
+      {/* ── Order Type — secondary tabs ── */}
+      <div className="flex items-center gap-6 h-[30px] px-1 border-b border-[#1F2937]/60">
         {(['limit', 'market'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setOrderType(t)}
             className={cn(
-              "text-[11px] font-medium capitalize transition-colors pb-1.5",
-              orderType === t ? "text-[#E5E7EB] border-b-2 border-[#E5E7EB] -mb-[1px]" : "text-[#4B5563]"
+              "text-[12px] font-semibold capitalize transition-all duration-200 pb-2",
+              orderType === t
+                ? "text-[#E5E7EB] border-b-2 border-[#16F2C6] -mb-[1px]"
+                : "text-[#4B5563] hover:text-[#6B7280]"
             )}
           >
             {t}
@@ -257,12 +261,13 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* ── Price Input ── */}
       {orderType !== 'market' && (
-        <ExchangeInput
+        <PremiumInput
           label={`Price (${quoteCurrency})`}
           value={price}
           onChange={setPrice}
           step={tickSize}
           min={0}
+          placeholder="0.00"
           tag={isBuy
             ? { label: 'BBO', value: bestAsk, color: 'red' }
             : { label: 'BBO', value: bestBid, color: 'green' }
@@ -271,19 +276,20 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       )}
 
       {/* ── Amount Input ── */}
-      <ExchangeInput
+      <PremiumInput
         label={`Amount (${baseCurrency})`}
         value={amount}
         onChange={handleAmountChange}
         step={lotSize}
         min={0}
         max={!isBuy ? availableBase : undefined}
+        placeholder="0.00000000"
       />
 
-      {/* ── % Slider — compact ── */}
-      <div className="px-0.5">
+      {/* ── Percentage Slider with labels ── */}
+      <div className="px-0.5 space-y-1">
         <div
-          className="relative h-[20px] flex items-center cursor-pointer touch-none"
+          className="relative h-[24px] flex items-center cursor-pointer touch-none"
           onPointerDown={(e) => {
             const track = e.currentTarget;
             const rect = track.getBoundingClientRect();
@@ -306,10 +312,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             document.addEventListener('pointerup', onUp);
           }}
         >
-          <div className="absolute left-[2%] right-[2%] top-1/2 -translate-y-1/2 h-[2px] bg-[#1F2937] rounded-full" />
+          <div className="absolute left-[2%] right-[2%] top-1/2 -translate-y-1/2 h-[3px] bg-[#1F2937] rounded-full" />
           <div
             className={cn(
-              "absolute left-[2%] top-1/2 -translate-y-1/2 h-[2px] rounded-full transition-[width] duration-75",
+              "absolute left-[2%] top-1/2 -translate-y-1/2 h-[3px] rounded-full transition-[width] duration-75",
               isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
             )}
             style={{ width: `${((activePercent ?? 0) / 100) * 96}%` }}
@@ -323,7 +329,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
                 style={{ left: `${2 + (pct / 100) * 96}%` }}
               >
                 <span className={cn(
-                  "w-[6px] h-[6px] rotate-45 transition-all duration-100",
+                  "w-[7px] h-[7px] rotate-45 transition-all duration-100 rounded-[1px]",
                   isActive
                     ? isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
                     : "bg-[#0B1220] border border-[#374151]"
@@ -337,49 +343,66 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
               style={{ left: `${2 + (activePercent / 100) * 96}%` }}
             >
               <div className={cn(
-                "w-[10px] h-[10px] rounded-full border-2",
-                isBuy ? "border-[#2EBD85] bg-[#0B1220]" : "border-[#F6465D] bg-[#0B1220]"
+                "w-[12px] h-[12px] rounded-full border-2",
+                isBuy ? "border-[#2EBD85] bg-[#0B1220] shadow-[0_0_6px_rgba(46,189,133,0.3)]" : "border-[#F6465D] bg-[#0B1220] shadow-[0_0_6px_rgba(246,70,93,0.3)]"
               )} />
             </div>
           )}
         </div>
+        {/* Percentage labels */}
+        <div className="flex justify-between px-[2%]">
+          {[0, 25, 50, 75, 100].map((pct) => (
+            <button
+              key={pct}
+              onClick={() => { if (pct === 0) { setActivePercent(null); setAmount(''); } else handleQuickPercent(pct); }}
+              className={cn(
+                "text-[9px] font-medium w-7 text-center transition-colors",
+                activePercent !== null && activePercent >= pct
+                  ? isBuy ? "text-[#2EBD85]" : "text-[#F6465D]"
+                  : "text-[#4B5563]"
+              )}
+            >
+              {pct}%
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* ── Total ── */}
-      <div className="bg-[#0D1421] border border-[#1F2937] rounded h-[28px] flex items-center justify-center">
-        <span className="text-[8px] text-[#4B5563] mr-1.5">Total ({quoteCurrency})</span>
-        <span className="text-[11px] font-mono font-semibold text-[#9CA3AF]">
+      {/* ── Total display ── */}
+      <div className="bg-[#0D1421] border border-[#1F2937]/60 rounded-xl h-[36px] flex items-center justify-between px-4">
+        <span className="text-[10px] text-[#6B7280] font-medium">Total ({quoteCurrency})</span>
+        <span className="text-[13px] font-mono font-bold text-[#E5E7EB]">
           {total > 0 ? total.toFixed(total >= 1 ? 2 : 6) : '--'}
         </span>
       </div>
 
-      {/* ── Info rows: Avbl / Max / Fee — ultra compact ── */}
-      <div className="flex flex-col gap-0 text-[9px]">
-        <div className="flex items-center justify-between h-[16px]">
-          <span className="text-[#6B7280]">Avbl</span>
-          <div className="flex items-center gap-1">
+      {/* ── Info rows: Avbl / Max / Fee ── */}
+      <div className="flex flex-col gap-1 text-[10px] px-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[#6B7280]">Available</span>
+          <div className="flex items-center gap-1.5">
             <span className={cn("font-mono tabular-nums", hasInsufficientBalance ? "text-[#F6465D]" : "text-[#E5E7EB]")}>
               {availableBalance.toFixed(4)}
             </span>
             <span className="text-[#4B5563]">{balanceCurrency}</span>
             <button
               onClick={() => navigate(`/app/wallet/transfer?asset=${balanceCurrency}&direction=to_trading`)}
-              className="text-[#F0B90B] text-[8px] font-bold ml-0.5"
+              className="text-[#16F2C6] text-[9px] font-bold ml-0.5 active:opacity-70"
             >
               ⊕
             </button>
           </div>
         </div>
-        <div className="flex items-center justify-between h-[16px]">
+        <div className="flex items-center justify-between">
           <span className="text-[#6B7280]">Max {isBuy ? 'Buy' : 'Sell'}</span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <span className="font-mono tabular-nums text-[#E5E7EB]">{maxBuyAmount.toFixed(4)}</span>
             <span className="text-[#4B5563]">{baseCurrency}</span>
           </div>
         </div>
-        <div className="flex items-center justify-between h-[16px]">
+        <div className="flex items-center justify-between">
           <span className="text-[#6B7280]">Est. Fee</span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <span className="font-mono tabular-nums text-[#E5E7EB]">{total > 0 ? `~${estFee.toFixed(4)}` : '—'}</span>
             <span className="text-[#4B5563]">{quoteCurrency}</span>
           </div>
@@ -388,7 +411,9 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
       {/* ── Insufficient warning ── */}
       {hasInsufficientBalance && (
-        <div className="text-[8px] text-[#F6465D] text-center">⚠ Insufficient {balanceCurrency}</div>
+        <div className="text-[10px] text-[#F6465D] text-center bg-[#F6465D]/5 rounded-lg py-1.5">
+          ⚠ Insufficient {balanceCurrency}
+        </div>
       )}
 
       {/* ── Submit CTA ── */}
@@ -396,19 +421,19 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         onClick={handleSubmit}
         disabled={isPlacingOrder || numAmount <= 0}
         className={cn(
-          "w-full h-[32px] rounded text-[11px] font-bold transition-all duration-150 active:scale-[0.98]",
+          "w-full h-[40px] rounded-xl text-[13px] font-bold tracking-wide transition-all duration-200 active:scale-[0.98]",
           "disabled:cursor-not-allowed",
           hasInsufficientBalance
             ? "bg-[#1F2937] text-[#6B7280]"
             : numAmount <= 0
               ? "bg-[#1F2937] text-[#4B5563]"
               : isBuy
-                ? "bg-[#2EBD85] text-white active:bg-[#26a374]"
-                : "bg-[#F6465D] text-white active:bg-[#d63a50]"
+                ? "bg-[#2EBD85] text-white shadow-[0_4px_16px_rgba(46,189,133,0.2)] active:bg-[#26a374]"
+                : "bg-[#F6465D] text-white shadow-[0_4px_16px_rgba(246,70,93,0.2)] active:bg-[#d63a50]"
         )}
       >
         {isPlacingOrder ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto" />
+          <Loader2 className="h-4 w-4 animate-spin mx-auto" />
         ) : hasInsufficientBalance ? (
           `Deposit ${balanceCurrency}`
         ) : (
