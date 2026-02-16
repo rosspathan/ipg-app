@@ -434,7 +434,7 @@ function TradingPairPageContent() {
           >
             {/* Trade Panel */}
             <div
-              className="flex flex-col overflow-y-auto scrollbar-thin border-r border-[#1F2937]/30 px-1"
+              className="flex flex-col overflow-hidden border-r border-[#1F2937]/30 px-1"
               style={{ flex: isSideBySide ? '0 0 46%' : '0 0 65%' }}
             >
               <OrderFormPro
