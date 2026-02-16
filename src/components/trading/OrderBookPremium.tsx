@@ -141,8 +141,8 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   }
 
   return (
-    <div ref={containerRef} className={cn(fillContainer ? "flex-1 flex flex-col min-h-0 h-full" : "py-1")} style={{ marginTop: 0, paddingTop: 0 }}>
-      {/* Header */}
+    <div ref={containerRef} className={cn(fillContainer ? "flex-1 flex flex-col min-h-0 h-full justify-center" : "py-1")} style={{ marginTop: 0, paddingTop: 0 }}>
+      {/* Header — pinned to top */}
       <div className="flex-shrink-0 grid px-2 py-0.5 text-[9px] text-[#4B5563] uppercase tracking-wider font-medium border-b border-[#1F2937]/30"
         style={{ gridTemplateColumns: '50% 50%' }}
       >
@@ -150,33 +150,20 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
         <span className="text-right">Amount ⇅</span>
       </div>
 
-      {/* Asks — grows to fill top half, anchored to bottom */}
-      <div
-        className={cn(fillContainer ? "flex-1 flex flex-col justify-end min-h-0 overflow-hidden" : "")}
-        style={fillContainer ? { backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 12px, rgba(31,41,55,0.15) 12px, rgba(31,41,55,0.15) 13px)' } : undefined}
-      >
+      {/* Asks — only take the height they need, no flex-1 */}
+      <div className="flex-shrink-0">
         {displayAsks.length > 0 ? (
-          <>
-            {displayAsks.length < 3 && fillContainer && (
-              Array.from({ length: 3 - displayAsks.length }).map((_, i) => (
-                <div key={`ghost-a-${i}`} className="grid items-center px-2 h-[13px] opacity-30" style={{ gridTemplateColumns: '50% 50%' }}>
-                  <span className="text-[11px] font-mono text-[#F6465D]">--</span>
-                  <span className="text-[11px] font-mono text-[#848E9C] text-right">--</span>
-                </div>
-              ))
-            )}
-            {displayAsks.map((ask, idx) => (
-              <Row
-                key={`a-${ask.price}-${idx}`}
-                entry={ask}
-                side="ask"
-                maxQty={allQtys}
-                onPriceClick={onPriceClick}
-              />
-            ))}
-          </>
+          displayAsks.map((ask, idx) => (
+            <Row
+              key={`a-${ask.price}-${idx}`}
+              entry={ask}
+              side="ask"
+              maxQty={allQtys}
+              onPriceClick={onPriceClick}
+            />
+          ))
         ) : (
-          <div className="flex items-center justify-center h-[30px] text-[9px] text-[#4B5563]">No asks</div>
+          <div className="flex items-center justify-center h-[20px] text-[9px] text-[#4B5563]">No asks</div>
         )}
       </div>
 
@@ -201,33 +188,20 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
         <span className="text-[7px] font-medium text-[#4B5563] uppercase tracking-wider">Last Traded</span>
       </div>
 
-      {/* Bids — grows to fill bottom half, anchored to top */}
-      <div
-        className={cn(fillContainer ? "flex-1 flex flex-col justify-start min-h-0 overflow-hidden" : "")}
-        style={fillContainer ? { backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 12px, rgba(31,41,55,0.15) 12px, rgba(31,41,55,0.15) 13px)' } : undefined}
-      >
+      {/* Bids — only take the height they need, no flex-1 */}
+      <div className="flex-shrink-0">
         {displayBids.length > 0 ? (
-          <>
-            {displayBids.map((bid, idx) => (
-              <Row
-                key={`b-${bid.price}-${idx}`}
-                entry={bid}
-                side="bid"
-                maxQty={allQtys}
-                onPriceClick={onPriceClick}
-              />
-            ))}
-            {displayBids.length < 3 && fillContainer && (
-              Array.from({ length: 3 - displayBids.length }).map((_, i) => (
-                <div key={`ghost-b-${i}`} className="grid items-center px-2 h-[13px] opacity-30" style={{ gridTemplateColumns: '50% 50%' }}>
-                  <span className="text-[11px] font-mono text-[#2EBD85]">--</span>
-                  <span className="text-[11px] font-mono text-[#848E9C] text-right">--</span>
-                </div>
-              ))
-            )}
-          </>
+          displayBids.map((bid, idx) => (
+            <Row
+              key={`b-${bid.price}-${idx}`}
+              entry={bid}
+              side="bid"
+              maxQty={allQtys}
+              onPriceClick={onPriceClick}
+            />
+          ))
         ) : (
-          <div className="flex items-center justify-center h-[30px] text-[9px] text-[#4B5563]">No bids</div>
+          <div className="flex items-center justify-center h-[20px] text-[9px] text-[#4B5563]">No bids</div>
         )}
       </div>
 
