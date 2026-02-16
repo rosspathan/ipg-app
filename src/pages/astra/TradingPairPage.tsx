@@ -428,11 +428,11 @@ function TradingPairPageContent() {
           </div>
 
           {/* ── Trade Panel + Order Book side-by-side ── */}
-          <div className="flex flex-row gap-0 px-0">
+          <div className="flex flex-row gap-0 px-0 overflow-visible">
             {/* Trade Panel */}
             <div
-              className="flex flex-col px-1"
-              style={{ flex: isSideBySide ? '0 0 46%' : '0 0 65%' }}
+              className="flex flex-col px-1 min-w-0"
+              style={{ flex: '0 0 62%' }}
             >
               <OrderFormPro
                 baseCurrency={pair.baseAsset}
@@ -453,7 +453,7 @@ function TradingPairPageContent() {
             </div>
             {/* Order Book */}
             <div
-              className="flex flex-col pl-1.5"
+              className="flex flex-col min-w-0"
               style={{ flex: '1 1 0%' }}
             >
               <OrderBookPremium
