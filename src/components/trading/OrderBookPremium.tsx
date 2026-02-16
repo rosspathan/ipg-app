@@ -151,22 +151,30 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* Asks — grows to fill top half, anchored to bottom */}
-      <div className={cn(fillContainer ? "flex-1 flex flex-col justify-end min-h-0 overflow-hidden" : "")}>
-        {fillContainer && displayAsks.length < effectiveRows && displayAsks.length > 0 && (
-          Array.from({ length: effectiveRows - displayAsks.length }).map((_, i) => (
-            <div key={`spacer-a-${i}`} className="h-[13px]" />
-          ))
-        )}
+      <div
+        className={cn(fillContainer ? "flex-1 flex flex-col justify-end min-h-0 overflow-hidden" : "")}
+        style={fillContainer ? { backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 12px, rgba(31,41,55,0.15) 12px, rgba(31,41,55,0.15) 13px)' } : undefined}
+      >
         {displayAsks.length > 0 ? (
-          displayAsks.map((ask, idx) => (
-            <Row
-              key={`a-${ask.price}-${idx}`}
-              entry={ask}
-              side="ask"
-              maxQty={allQtys}
-              onPriceClick={onPriceClick}
-            />
-          ))
+          <>
+            {displayAsks.length < 3 && fillContainer && (
+              Array.from({ length: 3 - displayAsks.length }).map((_, i) => (
+                <div key={`ghost-a-${i}`} className="grid items-center px-2 h-[13px] opacity-30" style={{ gridTemplateColumns: '50% 50%' }}>
+                  <span className="text-[11px] font-mono text-[#F6465D]">--</span>
+                  <span className="text-[11px] font-mono text-[#848E9C] text-right">--</span>
+                </div>
+              ))
+            )}
+            {displayAsks.map((ask, idx) => (
+              <Row
+                key={`a-${ask.price}-${idx}`}
+                entry={ask}
+                side="ask"
+                maxQty={allQtys}
+                onPriceClick={onPriceClick}
+              />
+            ))}
+          </>
         ) : (
           <div className="flex items-center justify-center h-[30px] text-[9px] text-[#4B5563]">No asks</div>
         )}
@@ -194,24 +202,32 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* Bids — grows to fill bottom half, anchored to top */}
-      <div className={cn(fillContainer ? "flex-1 flex flex-col justify-start min-h-0 overflow-hidden" : "")}>
+      <div
+        className={cn(fillContainer ? "flex-1 flex flex-col justify-start min-h-0 overflow-hidden" : "")}
+        style={fillContainer ? { backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0px, transparent 12px, rgba(31,41,55,0.15) 12px, rgba(31,41,55,0.15) 13px)' } : undefined}
+      >
         {displayBids.length > 0 ? (
-          displayBids.map((bid, idx) => (
-            <Row
-              key={`b-${bid.price}-${idx}`}
-              entry={bid}
-              side="bid"
-              maxQty={allQtys}
-              onPriceClick={onPriceClick}
-            />
-          ))
+          <>
+            {displayBids.map((bid, idx) => (
+              <Row
+                key={`b-${bid.price}-${idx}`}
+                entry={bid}
+                side="bid"
+                maxQty={allQtys}
+                onPriceClick={onPriceClick}
+              />
+            ))}
+            {displayBids.length < 3 && fillContainer && (
+              Array.from({ length: 3 - displayBids.length }).map((_, i) => (
+                <div key={`ghost-b-${i}`} className="grid items-center px-2 h-[13px] opacity-30" style={{ gridTemplateColumns: '50% 50%' }}>
+                  <span className="text-[11px] font-mono text-[#2EBD85]">--</span>
+                  <span className="text-[11px] font-mono text-[#848E9C] text-right">--</span>
+                </div>
+              ))
+            )}
+          </>
         ) : (
           <div className="flex items-center justify-center h-[30px] text-[9px] text-[#4B5563]">No bids</div>
-        )}
-        {fillContainer && displayBids.length < effectiveRows && displayBids.length > 0 && (
-          Array.from({ length: effectiveRows - displayBids.length }).map((_, i) => (
-            <div key={`spacer-b-${i}`} className="h-[13px]" />
-          ))
         )}
       </div>
 
