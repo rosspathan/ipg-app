@@ -86,7 +86,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   onPriceClick,
   isLoading = false,
   marketPrice,
-  maxRows = 7,
+  maxRows = 10,
   fillContainer = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
