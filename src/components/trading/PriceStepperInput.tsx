@@ -127,7 +127,7 @@ export const PriceStepperInput: React.FC<PriceStepperInputProps> = ({
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={disabled}
-            className="flex-1 bg-transparent text-[#E5E7EB] font-mono text-sm py-0.5 outline-none min-w-0"
+            className="flex-1 bg-transparent text-[#E5E7EB] font-mono text-sm py-0.5 outline-none min-w-0 overflow-x-auto text-ellipsis"
           />
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button
