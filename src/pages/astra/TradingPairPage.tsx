@@ -428,7 +428,7 @@ function TradingPairPageContent() {
           </div>
 
           {/* ── SECTION A+B: Trade Panel + Order Book — always side-by-side ── */}
-          <div className="flex-1 flex flex-row min-h-0 overflow-hidden px-2 py-1.5 gap-2">
+          <div className="flex-1 flex flex-row min-h-0 overflow-hidden px-2 pt-1 pb-0 gap-2">
             {/* Trade Panel — 63% on mobile, 42% on wider screens */}
             <div
               className="flex-shrink-0 overflow-y-auto scrollbar-thin"
@@ -476,18 +476,31 @@ function TradingPairPageContent() {
 
           <GhostLockWarning />
 
-          {/* ── SECTION C: Orders Drawer Trigger (44px fixed tab bar) ── */}
-          <button
-            onClick={() => setOrdersDrawerOpen(true)}
-            className="flex-shrink-0 h-[44px] border-t border-[#1F2937]/40 flex items-center justify-between px-4 active:bg-white/[0.03] transition-colors"
+          {/* ── SECTION C: Bottom Trading Tabs — safe area aware ── */}
+          <div
+            className="flex-shrink-0 border-t border-[#1F2937]/60 bg-[#090E1A]"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
           >
-            <div className="flex items-center gap-4">
-              {['Open', 'Orders', 'Trades', 'Funds'].map((tab) => (
-                <span key={tab} className="text-[11px] font-medium text-[#6B7280]">{tab}</span>
-              ))}
-            </div>
-            <ChevronDown className="h-3 w-3 text-[#4B5563] rotate-180" />
-          </button>
+            <button
+              onClick={() => setOrdersDrawerOpen(true)}
+              className="w-full h-[48px] flex items-center justify-between px-4 active:bg-white/[0.03] transition-colors"
+            >
+              <div className="flex-1 flex items-center justify-around">
+                {['Open', 'Orders', 'Trades', 'Funds'].map((tab, i) => (
+                  <span
+                    key={tab}
+                    className={cn(
+                      "text-[12px] font-medium py-1 px-2 min-w-[48px] text-center",
+                      i === 0 ? "text-[#E5E7EB]" : "text-[#6B7280]"
+                    )}
+                  >
+                    {tab}
+                  </span>
+                ))}
+              </div>
+              <ChevronDown className="h-3.5 w-3.5 text-[#4B5563] rotate-180 flex-shrink-0 ml-2" />
+            </button>
+          </div>
         </div>
 
         {/* ── Orders Bottom Drawer (slides up 60% screen) ── */}
