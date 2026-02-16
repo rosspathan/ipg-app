@@ -141,7 +141,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
   }
 
   return (
-    <div ref={containerRef} className={cn(fillContainer ? "flex-1 flex flex-col min-h-0 h-full justify-center" : "py-1")} style={{ marginTop: 0, paddingTop: 0 }}>
+    <div ref={containerRef} className={cn(fillContainer ? "flex-1 flex flex-col min-h-0 h-full justify-start" : "py-1")} style={{ marginTop: 0, paddingTop: 0 }}>
       {/* Header — pinned to top */}
       <div className="flex-shrink-0 grid px-2 py-0.5 text-[9px] text-[#4B5563] uppercase tracking-wider font-medium border-b border-[#1F2937]/30"
         style={{ gridTemplateColumns: '50% 50%' }}
