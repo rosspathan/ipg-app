@@ -47,7 +47,7 @@ const getSmartStep = (value: number): number => {
   return 0.00001;
 };
 
-/* ── Premium Exchange Input with glow effect ── */
+/* ── Premium Exchange Input — 52px, 14px rounded, subtle glow ── */
 const PremiumInput: React.FC<{
   label: string;
   value: string;
@@ -69,7 +69,7 @@ const PremiumInput: React.FC<{
   };
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex items-center justify-between px-0.5">
         <span className="text-[10px] font-medium text-[#9CA3AF] select-none">{label}</span>
         {tag && tag.value > 0 && (
@@ -87,41 +87,37 @@ const PremiumInput: React.FC<{
           </button>
         )}
       </div>
-      <div className="relative group">
-        <div className={cn(
-          "bg-[#0D1421] border border-[#1F2937]/80 rounded-xl h-[44px] flex items-center",
-          "transition-all duration-200",
-          "focus-within:border-[#16F2C6]/40 focus-within:shadow-[0_0_12px_rgba(22,242,198,0.08)]",
-          "hover:border-[#374151]"
-        )}>
-          <button
-            type="button"
-            onClick={() => adjust(-1)}
-            disabled={numVal <= min}
-            className="w-10 h-full flex items-center justify-center text-[#6B7280] text-[16px] font-medium active:bg-[#1F2937] active:text-white disabled:opacity-20 select-none flex-shrink-0 rounded-l-xl transition-colors"
-          >
-            −
-          </button>
-          <div className="h-[20px] w-px bg-[#1F2937]/60 flex-shrink-0" />
-          <input
-            type="text"
-            inputMode="decimal"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-            className="flex-1 min-w-0 bg-transparent text-left px-4 text-[15px] font-mono font-bold text-[#E5E7EB] outline-none leading-none tracking-tight placeholder:text-[#374151] overflow-x-auto"
-            style={{ textOverflow: 'clip' }}
-          />
-          <div className="h-[20px] w-px bg-[#1F2937]/60 flex-shrink-0" />
-          <button
-            type="button"
-            onClick={() => adjust(1)}
-            disabled={max !== undefined && numVal >= max}
-            className="w-10 h-full flex items-center justify-center text-[#6B7280] text-[16px] font-medium active:bg-[#1F2937] active:text-white disabled:opacity-20 select-none flex-shrink-0 rounded-r-xl transition-colors"
-          >
-            +
-          </button>
-        </div>
+      <div className={cn(
+        "bg-[#080D18] border border-[#1A2235] rounded-[14px] h-[52px] flex items-center",
+        "transition-all duration-200",
+        "focus-within:border-[#16F2C6]/30 focus-within:shadow-[0_0_16px_rgba(22,242,198,0.06)]",
+        "hover:border-[#253045]"
+      )}>
+        <button
+          type="button"
+          onClick={() => adjust(-1)}
+          disabled={numVal <= min}
+          className="w-12 h-full flex items-center justify-center text-[#6B7280] text-[18px] font-light active:bg-[#111827] active:text-white disabled:opacity-20 select-none flex-shrink-0 rounded-l-[14px] transition-colors border-r border-[#1A2235]/60"
+        >
+          −
+        </button>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="flex-1 min-w-0 bg-transparent text-center px-4 text-[16px] font-mono font-semibold text-[#E5E7EB] outline-none leading-none tracking-tight placeholder:text-[#2A3347] overflow-hidden whitespace-nowrap"
+          style={{ textOverflow: 'ellipsis' }}
+        />
+        <button
+          type="button"
+          onClick={() => adjust(1)}
+          disabled={max !== undefined && numVal >= max}
+          className="w-12 h-full flex items-center justify-center text-[#6B7280] text-[18px] font-light active:bg-[#111827] active:text-white disabled:opacity-20 select-none flex-shrink-0 rounded-r-[14px] transition-colors border-l border-[#1A2235]/60"
+        >
+          +
+        </button>
       </div>
     </div>
   );
@@ -287,15 +283,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       />
 
       {/* ── Percentage Slider with labels ── */}
-      <div className="px-0.5 space-y-1">
+      <div className="px-3 space-y-2">
         <div
-          className="relative h-[24px] flex items-center cursor-pointer touch-none"
+          className="relative h-[28px] flex items-center cursor-pointer touch-none"
           onPointerDown={(e) => {
             const track = e.currentTarget;
             const rect = track.getBoundingClientRect();
-            const pad = rect.width * 0.02;
-            const trackW = rect.width - pad * 2;
-            const calcPct = (clientX: number) => Math.round(Math.max(0, Math.min(100, ((clientX - rect.left - pad) / trackW) * 100)));
+            const trackW = rect.width;
+            const calcPct = (clientX: number) => Math.round(Math.max(0, Math.min(100, ((clientX - rect.left) / trackW) * 100)));
 
             const pct = calcPct(e.clientX);
             if (pct === 0) { setActivePercent(null); setAmount(''); } else { handleQuickPercent(pct); }
@@ -312,21 +307,24 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             document.addEventListener('pointerup', onUp);
           }}
         >
-          <div className="absolute left-[2%] right-[2%] top-1/2 -translate-y-1/2 h-[3px] bg-[#1F2937] rounded-full" />
+          {/* Track */}
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[4px] bg-[#1A2235] rounded-full" />
+          {/* Active fill */}
           <div
             className={cn(
-              "absolute left-[2%] top-1/2 -translate-y-1/2 h-[3px] rounded-full transition-[width] duration-75",
+              "absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full transition-[width] duration-75",
               isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
             )}
-            style={{ width: `${((activePercent ?? 0) / 100) * 96}%` }}
+            style={{ width: `${activePercent ?? 0}%` }}
           />
+          {/* Diamond markers */}
           {[0, 25, 50, 75, 100].map((pct) => {
             const isActive = activePercent !== null && activePercent >= pct;
             return (
               <div
                 key={pct}
-                className="absolute -translate-x-1/2 z-10 w-4 h-4 flex items-center justify-center pointer-events-none"
-                style={{ left: `${2 + (pct / 100) * 96}%` }}
+                className="absolute -translate-x-1/2 z-10 w-5 h-5 flex items-center justify-center pointer-events-none"
+                style={{ left: `${pct}%` }}
               >
                 <span className={cn(
                   "w-[7px] h-[7px] rotate-45 transition-all duration-100 rounded-[1px]",
@@ -337,26 +335,30 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
               </div>
             );
           })}
+          {/* Draggable thumb */}
           {activePercent !== null && activePercent > 0 && (
             <div
               className="absolute -translate-x-1/2 z-20 pointer-events-none"
-              style={{ left: `${2 + (activePercent / 100) * 96}%` }}
+              style={{ left: `${activePercent}%` }}
             >
               <div className={cn(
-                "w-[12px] h-[12px] rounded-full border-2",
-                isBuy ? "border-[#2EBD85] bg-[#0B1220] shadow-[0_0_6px_rgba(46,189,133,0.3)]" : "border-[#F6465D] bg-[#0B1220] shadow-[0_0_6px_rgba(246,70,93,0.3)]"
+                "w-[14px] h-[14px] rounded-full border-2 transition-shadow duration-150",
+                isBuy
+                  ? "border-[#2EBD85] bg-[#0B1220] shadow-[0_0_8px_rgba(46,189,133,0.35)]"
+                  : "border-[#F6465D] bg-[#0B1220] shadow-[0_0_8px_rgba(246,70,93,0.35)]"
               )} />
             </div>
           )}
         </div>
-        {/* Percentage labels */}
-        <div className="flex justify-between px-[2%]">
-          {[0, 25, 50, 75, 100].map((pct) => (
+        {/* Percentage labels — edge-aligned */}
+        <div className="flex justify-between">
+          {[0, 25, 50, 75, 100].map((pct, i) => (
             <button
               key={pct}
               onClick={() => { if (pct === 0) { setActivePercent(null); setAmount(''); } else handleQuickPercent(pct); }}
               className={cn(
-                "text-[9px] font-medium w-7 text-center transition-colors",
+                "text-[10px] font-medium transition-colors",
+                i === 0 ? "text-left" : i === 4 ? "text-right" : "text-center",
                 activePercent !== null && activePercent >= pct
                   ? isBuy ? "text-[#2EBD85]" : "text-[#F6465D]"
                   : "text-[#4B5563]"
