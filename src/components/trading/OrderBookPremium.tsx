@@ -51,7 +51,7 @@ const Row = memo(({
   return (
     <div
       onClick={() => onPriceClick?.(entry.price)}
-      className="relative grid items-center px-2 h-[14px] cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors duration-75"
+      className="relative grid items-center px-2 h-[13px] cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors duration-75"
       style={{ gridTemplateColumns: '50% 50%' }}
     >
       <div
@@ -100,8 +100,8 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       for (const entry of entries) {
         const h = entry.contentRect.height;
         // Reserve: header(16) + mid-price(22) + pressure(20) + padding(4) = ~62px
-        const available = h - 52;
-        const rowsPerSide = Math.max(3, Math.floor(available / 2 / 14));
+        const available = h - 44;
+        const rowsPerSide = Math.max(3, Math.floor(available / 2 / 13));
         setDynamicRows(rowsPerSide);
       }
     });
@@ -151,7 +151,12 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* Asks — grows to fill top half, anchored to bottom */}
-      <div className={cn(fillContainer ? "flex-1 flex flex-col justify-end min-h-0 overflow-y-auto" : "")}>
+      <div className={cn(fillContainer ? "flex-1 flex flex-col justify-end min-h-0 overflow-hidden" : "")}>
+        {fillContainer && displayAsks.length < effectiveRows && displayAsks.length > 0 && (
+          Array.from({ length: effectiveRows - displayAsks.length }).map((_, i) => (
+            <div key={`spacer-a-${i}`} className="h-[13px]" />
+          ))
+        )}
         {displayAsks.length > 0 ? (
           displayAsks.map((ask, idx) => (
             <Row
@@ -189,7 +194,7 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* Bids — grows to fill bottom half, anchored to top */}
-      <div className={cn(fillContainer ? "flex-1 flex flex-col justify-start min-h-0 overflow-y-auto" : "")}>
+      <div className={cn(fillContainer ? "flex-1 flex flex-col justify-start min-h-0 overflow-hidden" : "")}>
         {displayBids.length > 0 ? (
           displayBids.map((bid, idx) => (
             <Row
@@ -202,6 +207,11 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
           ))
         ) : (
           <div className="flex items-center justify-center h-[30px] text-[9px] text-[#4B5563]">No bids</div>
+        )}
+        {fillContainer && displayBids.length < effectiveRows && displayBids.length > 0 && (
+          Array.from({ length: effectiveRows - displayBids.length }).map((_, i) => (
+            <div key={`spacer-b-${i}`} className="h-[13px]" />
+          ))
         )}
       </div>
 
