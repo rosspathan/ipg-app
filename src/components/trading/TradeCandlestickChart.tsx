@@ -5,16 +5,13 @@ import { cn } from '@/lib/utils';
 import { isInternalPair } from '@/hooks/useInternalMarketPrice';
 import {
   ResponsiveContainer,
-  ComposedChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  Cell,
-  Line,
 } from 'recharts';
-import { BarChart3, Loader2, Clock } from 'lucide-react';
+import { Loader2, Clock } from 'lucide-react';
 
 const TradingViewWidget = lazy(() => import('@/components/TradingViewWidget'));
 
@@ -118,15 +115,23 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
     if (!candles || candles.length === 0) return [0, 1];
     const allLow = Math.min(...candles.map((c) => c.low));
     const allHigh = Math.max(...candles.map((c) => c.high));
-    const padding = (allHigh - allLow) * 0.1 || allHigh * 0.05;
+    const padding = (allHigh - allLow) * 0.15 || allHigh * 0.05;
     return [allLow - padding, allHigh + padding];
   }, [candles]);
+
+  // Determine trend color
+  const trendUp = useMemo(() => {
+    if (!candles || candles.length < 2) return true;
+    return candles[candles.length - 1].close >= candles[0].close;
+  }, [candles]);
+
+  const accentColor = trendUp ? '#2EBD85' : '#F6465D';
 
   // For Binance-listed pairs, show TradingView widget
   if (isBinancePair) {
     const tvSymbol = `BINANCE:${symbol.replace('/', '')}`;
     return (
-      <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden">
+      <div className="bg-[#0B1020] border border-[#1A2235]/60 rounded-xl overflow-hidden">
         <Suspense fallback={
           <div className="h-[200px] flex items-center justify-center">
             <Loader2 className="h-4 w-4 animate-spin text-[#9CA3AF]" />
@@ -145,114 +150,118 @@ export const TradeCandlestickChart: React.FC<TradeCandlestickChartProps> = ({
     );
   }
 
+  const IntervalBar = () => (
+    <div className="flex items-center justify-between px-3 py-2">
+      <span className="text-[11px] font-medium text-[#6B7280]">Chart</span>
+      <div className="flex gap-0.5">
+        {INTERVALS.map((i) => (
+          <button
+            key={i.value}
+            onClick={() => setInterval(i.value)}
+            className={cn(
+              "px-2 py-1 text-[10px] font-semibold rounded-md transition-colors duration-150",
+              interval === i.value
+                ? "bg-[#1A2235] text-[#E5E7EB]"
+                : "text-[#6B7280] hover:text-[#9CA3AF]"
+            )}
+          >
+            {i.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   if (isLoading) {
     return (
-      <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-4 flex items-center justify-center h-[200px]">
-        <Loader2 className="h-4 w-4 animate-spin text-[#9CA3AF]" />
+      <div className="bg-[#0B1020] border border-[#1A2235]/60 rounded-xl overflow-hidden">
+        <IntervalBar />
+        <div className="h-[180px] flex items-center justify-center">
+          <Loader2 className="h-4 w-4 animate-spin text-[#6B7280]" />
+        </div>
       </div>
     );
   }
 
   if (!candles || candles.length === 0) {
     return (
-      <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1F2937]">
-          <span className="text-[11px] font-medium text-[#9CA3AF]">Chart</span>
-          <div className="flex gap-0.5">
-            {INTERVALS.map((i) => (
-              <button
-                key={i.value}
-                onClick={() => setInterval(i.value)}
-                className={cn(
-                  "px-2 py-1 text-[10px] font-medium rounded-md",
-                  interval === i.value ? "bg-white/10 text-[#E5E7EB]" : "text-[#9CA3AF] hover:text-[#E5E7EB]"
-                )}
-              >
-                {i.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="bg-[#0B1020] border border-[#1A2235]/60 rounded-xl overflow-hidden">
+        <IntervalBar />
         <div className="h-[160px] flex flex-col items-center justify-center gap-1.5">
-          <Clock className="h-4 w-4 text-[#9CA3AF]" />
-          <span className="text-[#9CA3AF] text-[11px]">Waiting for first trade...</span>
+          <Clock className="h-4 w-4 text-[#4B5563]" />
+          <span className="text-[#4B5563] text-[11px]">Waiting for first trade...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[#1F2937]">
-        <span className="text-[11px] font-medium text-[#9CA3AF]">Chart</span>
-        <div className="flex gap-0.5">
-          {INTERVALS.map((i) => (
-            <button
-              key={i.value}
-              onClick={() => setInterval(i.value)}
-              className={cn(
-                "px-2 py-1 text-[10px] font-semibold rounded-md",
-                interval === i.value
-                  ? "bg-white/10 text-[#E5E7EB] border border-[#1F2937]"
-                  : "text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5"
-              )}
-            >
-              {i.label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="bg-[#0B1020] border border-[#1A2235]/60 rounded-xl overflow-hidden">
+      <IntervalBar />
 
-      {/* Chart */}
-      <div className="px-1 py-1.5 h-[200px]">
+      {/* Area Chart */}
+      <div className="px-1 pb-2 h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={candles} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" opacity={0.4} />
+          <AreaChart data={candles} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={accentColor} stopOpacity={0.25} />
+                <stop offset="50%" stopColor={accentColor} stopOpacity={0.08} />
+                <stop offset="100%" stopColor={accentColor} stopOpacity={0} />
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 9, fill: '#64748B' }}
-              axisLine={{ stroke: '#1F2937' }}
+              tick={{ fontSize: 9, fill: '#4B5563' }}
+              axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
               domain={yDomain}
-              tick={{ fontSize: 9, fill: '#64748B' }}
+              tick={{ fontSize: 9, fill: '#4B5563' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={formatPrice}
               width={55}
+              orientation="right"
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#121826',
-                border: '1px solid #1F2937',
+                backgroundColor: '#0D1421',
+                border: '1px solid #1A2235',
                 borderRadius: '10px',
                 fontSize: '11px',
                 color: '#E2E8F0',
+                boxShadow: `0 4px 20px ${accentColor}15`,
               }}
-              labelStyle={{ color: '#94A3B8' }}
-              formatter={(value: number, name: string) => [formatPrice(value), name]}
+              labelStyle={{ color: '#6B7280', fontSize: '10px' }}
+              formatter={(value: number) => [formatPrice(value), 'Price']}
+              cursor={{ stroke: '#1A2235', strokeWidth: 1 }}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="close"
-              stroke="#7C4DFF"
-              strokeWidth={1.5}
+              stroke={accentColor}
+              strokeWidth={2}
+              fill="url(#areaGradient)"
+              filter="url(#glow)"
               dot={false}
-              name="Close"
+              activeDot={{
+                r: 4,
+                fill: accentColor,
+                stroke: '#0B1020',
+                strokeWidth: 2,
+              }}
             />
-            <Bar dataKey="volume" name="Volume" barSize={6} opacity={0.3} yAxisId="volume">
-              {candles.map((c, i) => (
-                <Cell
-                  key={i}
-                  fill={c.bullish ? 'rgb(52, 211, 153)' : 'rgb(248, 113, 113)'}
-                />
-              ))}
-            </Bar>
-            <YAxis yAxisId="volume" orientation="right" hide domain={[0, (d: number) => d * 5]} />
-          </ComposedChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
