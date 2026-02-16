@@ -206,13 +206,15 @@ export const OrderBookPremium: React.FC<OrderBookPremiumProps> = ({
       </div>
 
       {/* ── Buy/Sell pressure bar ── */}
-      <div className="flex-shrink-0 flex items-center gap-1 px-2 h-[12px] border-t border-[#1F2937]/30">
-        <span className="text-[9px] font-mono text-[#2EBD85]">{bidPct.toFixed(1)}%</span>
-        <div className="flex-1 h-[2px] rounded-full overflow-hidden flex">
-          <div className="bg-[#2EBD85]" style={{ width: `${bidPct}%` }} />
-          <div className="bg-[#F6465D]" style={{ width: `${askPct}%` }} />
+      <div className="flex-1 flex flex-col justify-start px-2 pt-1 border-t border-[#1F2937]/30">
+        <div className="flex items-center gap-1 h-[12px]">
+          <span className="text-[9px] font-mono text-[#2EBD85]">{bidPct.toFixed(1)}%</span>
+          <div className="flex-1 h-[2px] rounded-full overflow-hidden flex">
+            <div className="bg-[#2EBD85]" style={{ width: `${bidPct}%` }} />
+            <div className="bg-[#F6465D]" style={{ width: `${askPct}%` }} />
+          </div>
+          <span className="text-[9px] font-mono text-[#F6465D]">{askPct.toFixed(1)}%</span>
         </div>
-        <span className="text-[9px] font-mono text-[#F6465D]">{askPct.toFixed(1)}%</span>
       </div>
     </div>
   );
