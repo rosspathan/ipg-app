@@ -62,7 +62,7 @@ export function useTradingPairs(type?: 'listed' | 'all') {
       });
 
       // Priority pairs to show at the top
-      const priorityPairs = ['BSK/USDT', 'BSK/USDI', 'USDI/USDT', 'BSK/IPG', 'IPG/USDI'];
+      const priorityPairs = ['BSK/USDT', 'USDI/USDT', 'BSK/IPG'];
       
       // Transform to trading pairs with real market data
       // Use ONLY market_prices for consistency across all users
