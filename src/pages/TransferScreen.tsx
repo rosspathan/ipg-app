@@ -246,16 +246,9 @@ const TransferScreen = () => {
     const amountNum = parseFloat(amount);
     if (!currentTradingAsset) return;
 
-    // Get hot wallet address
-    const { data: scanState } = await supabase
-      .from('custodial_deposit_scan_state')
-      .select('hot_wallet_address')
-      .eq('chain', 'BSC')
-      .single();
-
-    if (!scanState?.hot_wallet_address) {
-      throw new Error("Trading hot wallet not configured. Contact support.");
-    }
+    // Hot wallet address for trading deposits
+    const HOT_WALLET_ADDRESS = '0x4a6a2066b6b42fe90128351d67fb5dea40ecacf5';
+    const hotWalletAddress = HOT_WALLET_ADDRESS;
 
     // Get contract address for the asset
     const { data: assetData } = await supabase
@@ -276,7 +269,7 @@ const TransferScreen = () => {
     const result = await transferERC20(
       privateKey,
       assetData.contract_address,
-      scanState.hot_wallet_address,
+      hotWalletAddress,
       amountNum.toString(),
       assetData.decimals || 18
     );
