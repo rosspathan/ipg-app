@@ -39,7 +39,7 @@ const TransferScreen = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { wallet, refreshWallet } = useWeb3();
-  const { retrieveBackup, backupStatus } = useEncryptedWalletBackup();
+  const { retrieveBackup, backupStatus, checkBackupExists } = useEncryptedWalletBackup();
   
   const [selectedAsset, setSelectedAsset] = useState("");
   const [destination, setDestination] = useState<TransferDestination>("trading");
@@ -50,6 +50,11 @@ const TransferScreen = () => {
   const [transferError, setTransferError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
+
+  // Check if encrypted backup exists on mount
+  useEffect(() => {
+    checkBackupExists();
+  }, [checkBackupExists]);
 
   // Auto-sync on-chain balances to DB when user wants to transfer to trading
   useEffect(() => {
