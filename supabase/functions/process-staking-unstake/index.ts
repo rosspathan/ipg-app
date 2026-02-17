@@ -35,7 +35,7 @@ serve(async (req) => {
       );
     }
 
-    const { stake_id } = await req.json();
+    const { stake_id, idempotency_key } = await req.json();
 
     if (!stake_id) {
       return new Response(
@@ -44,13 +44,14 @@ serve(async (req) => {
       );
     }
 
-    console.log('[process-staking-unstake] User:', user.id, 'Stake:', stake_id);
+    const idemKey = idempotency_key || `unstake_${user.id}_${stake_id}_${Date.now()}`;
 
-    // Call atomic RPC — lock check, balance restoration, status update, and ledger
-    // recording all happen in a single ACID transaction with FOR UPDATE row locking
+    console.log('[process-staking-unstake] User:', user.id, 'Stake:', stake_id, 'Idem:', idemKey);
+
     const { data, error } = await supabase.rpc('execute_staking_unstake', {
       p_user_id: user.id,
       p_stake_id: stake_id,
+      p_idempotency_key: idemKey,
     });
 
     if (error) {
