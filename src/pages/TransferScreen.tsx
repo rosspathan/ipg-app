@@ -14,8 +14,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { transferERC20 } from "@/lib/wallet/onchainTransfer";
-import { getStoredWallet } from "@/utils/walletStorage";
+import { getStoredWallet, setWalletStorageUserId, storeWallet } from "@/utils/walletStorage";
 import { ethers } from "ethers";
+import { useWeb3 } from "@/contexts/Web3Context";
+import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
+import PinEntryDialog from "@/components/profile/PinEntryDialog";
 
 type TransferDirection = "to_trading" | "to_wallet";
 type TransferDestination = "trading" | "staking";
@@ -35,6 +38,8 @@ const TransferScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { wallet, refreshWallet } = useWeb3();
+  const { retrieveBackup, backupStatus } = useEncryptedWalletBackup();
   
   const [selectedAsset, setSelectedAsset] = useState("");
   const [destination, setDestination] = useState<TransferDestination>("trading");
@@ -44,6 +49,7 @@ const TransferScreen = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transferError, setTransferError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showPinDialog, setShowPinDialog] = useState(false);
 
   // Auto-sync on-chain balances to DB when user wants to transfer to trading
   useEffect(() => {
@@ -145,17 +151,141 @@ const TransferScreen = () => {
   // Use wallet balance for to_trading, trading balance for to_wallet
   const availableBalance = direction === "to_trading" ? walletBalance : tradingAvailable;
 
-  // Get user's private key for on-chain signing
-  const getUserPrivateKey = (): string | null => {
-    const stored = getStoredWallet();
-    if (stored?.privateKey) return stored.privateKey;
-    if (stored?.seedPhrase) {
+  // Robust private key resolution — mirrors WithdrawScreen logic
+  const resolvePrivateKey = async (): Promise<string | null> => {
+    const deriveFromSeed = (seedPhrase: string): string | null => {
       try {
-        const hdNode = ethers.HDNodeWallet.fromPhrase(stored.seedPhrase);
-        return hdNode.privateKey;
+        return ethers.Wallet.fromPhrase(seedPhrase.trim()).privateKey;
       } catch { return null; }
+    };
+
+    // 1) Web3 context
+    if (wallet?.privateKey && wallet.privateKey.length > 0) return wallet.privateKey;
+    if (wallet?.seedPhrase) {
+      const derived = deriveFromSeed(wallet.seedPhrase);
+      if (derived) return derived;
     }
+
+    // 2) User-scoped storage
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const stored = getStoredWallet(user.id);
+        if (stored?.privateKey) return stored.privateKey;
+        if (stored?.seedPhrase) {
+          const derived = deriveFromSeed(stored.seedPhrase);
+          if (derived) return derived;
+        }
+      }
+    } catch {}
+
+    // 3) Unscoped storage fallback
+    const storedAny = getStoredWallet();
+    if (storedAny?.privateKey) return storedAny.privateKey;
+    if (storedAny?.seedPhrase) {
+      const derived = deriveFromSeed(storedAny.seedPhrase);
+      if (derived) return derived;
+    }
+
+    // 4) Legacy ipg_wallet_data
+    try {
+      const raw = localStorage.getItem("ipg_wallet_data");
+      if (raw) {
+        const parsed = JSON.parse(atob(raw));
+        if (parsed?.privateKey) return parsed.privateKey;
+        const seed = parsed?.seedPhrase || parsed?.mnemonic;
+        if (seed) {
+          const derived = deriveFromSeed(seed);
+          if (derived) return derived;
+        }
+      }
+    } catch {}
+
     return null;
+  };
+
+  // Unlock from encrypted server backup via PIN
+  const unlockFromBackupAndTransfer = async (pin: string): Promise<boolean> => {
+    try {
+      const phrase = await retrieveBackup(pin);
+      if (!phrase) return false;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const normalized = phrase.trim().toLowerCase().replace(/\s+/g, " ");
+      const derivedWallet = ethers.Wallet.fromPhrase(normalized);
+
+      // Persist locally for future use
+      setWalletStorageUserId(user.id);
+      storeWallet({
+        address: derivedWallet.address,
+        seedPhrase: normalized,
+        privateKey: "",
+        network: "mainnet",
+        balance: "0",
+      }, user.id);
+      await refreshWallet();
+
+      // Now retry the transfer with the derived key
+      await executeTransfer(derivedWallet.privateKey);
+      return true;
+    } catch (e: any) {
+      toast({ title: "Unlock Failed", description: e.message || "Invalid PIN", variant: "destructive" });
+      return false;
+    }
+  };
+
+  // Execute on-chain transfer with a given private key
+  const executeTransfer = async (privateKey: string) => {
+    const amountNum = parseFloat(amount);
+    if (!currentTradingAsset) return;
+
+    // Get hot wallet address
+    const { data: scanState } = await supabase
+      .from('custodial_deposit_scan_state')
+      .select('hot_wallet_address')
+      .eq('chain', 'BSC')
+      .single();
+
+    if (!scanState?.hot_wallet_address) {
+      throw new Error("Trading hot wallet not configured. Contact support.");
+    }
+
+    // Get contract address for the asset
+    const { data: assetData } = await supabase
+      .from('assets')
+      .select('contract_address, decimals')
+      .eq('id', currentTradingAsset.assetId)
+      .single();
+
+    if (!assetData?.contract_address) {
+      throw new Error("Contract address not found for this asset.");
+    }
+
+    toast({
+      title: "Sending Transaction",
+      description: `Broadcasting ${amountNum} ${selectedAsset} to trading hot wallet...`,
+    });
+
+    const result = await transferERC20(
+      privateKey,
+      assetData.contract_address,
+      scanState.hot_wallet_address,
+      amountNum.toString(),
+      assetData.decimals || 18
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || "On-chain transfer failed");
+    }
+
+    toast({
+      title: "Transfer Sent!",
+      description: `TX: ${result.txHash?.slice(0, 10)}... — Your trading balance will be credited automatically once confirmed.`,
+    });
+
+    setShowSuccess(true);
   };
 
   // Transfer handler — on-chain for "to_trading", withdrawal request for "to_wallet"
@@ -188,56 +318,18 @@ const TransferScreen = () => {
     try {
       if (direction === "to_trading") {
         // === ON-CHAIN TRANSFER to hot wallet ===
-        const privateKey = getUserPrivateKey();
+        const privateKey = await resolvePrivateKey();
         if (!privateKey) {
+          // If encrypted backup exists, prompt for PIN
+          if (backupStatus.exists) {
+            setShowPinDialog(true);
+            setIsProcessing(false);
+            return;
+          }
           throw new Error("Wallet private key not found. Please re-import your wallet.");
         }
 
-        // Get hot wallet address from custodial_deposit_scan_state
-        const { data: scanState } = await supabase
-          .from('custodial_deposit_scan_state')
-          .select('hot_wallet_address')
-          .eq('chain', 'BSC')
-          .single();
-
-        if (!scanState?.hot_wallet_address) {
-          throw new Error("Trading hot wallet not configured. Contact support.");
-        }
-
-        // Get contract address for the asset
-        const { data: assetData } = await supabase
-          .from('assets')
-          .select('contract_address, decimals')
-          .eq('id', currentTradingAsset.assetId)
-          .single();
-
-        if (!assetData?.contract_address) {
-          throw new Error("Contract address not found for this asset.");
-        }
-
-        toast({
-          title: "Sending Transaction",
-          description: `Broadcasting ${amountNum} ${selectedAsset} to trading hot wallet...`,
-        });
-
-        const result = await transferERC20(
-          privateKey,
-          assetData.contract_address,
-          scanState.hot_wallet_address,
-          amountNum.toString(),
-          assetData.decimals || 18
-        );
-
-        if (!result.success) {
-          throw new Error(result.error || "On-chain transfer failed");
-        }
-
-        toast({
-          title: "Transfer Sent!",
-          description: `TX: ${result.txHash?.slice(0, 10)}... — Your trading balance will be credited automatically once confirmed.`,
-        });
-
-        setShowSuccess(true);
+        await executeTransfer(privateKey);
 
       } else {
         // === WITHDRAWAL REQUEST — hot wallet sends tokens back ===
@@ -730,6 +822,19 @@ const TransferScreen = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* PIN Entry Dialog for encrypted backup unlock */}
+      <PinEntryDialog
+        open={showPinDialog}
+        onOpenChange={setShowPinDialog}
+        onSubmit={async (pin) => {
+          const success = await unlockFromBackupAndTransfer(pin);
+          if (success) setShowPinDialog(false);
+          return success;
+        }}
+        title="Unlock Wallet"
+        description="Enter your PIN to decrypt your wallet and sign the transaction."
+      />
     </div>
   );
 };
