@@ -244,10 +244,17 @@ const TransferScreen = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
 
-        // Get user's wallet address
-        const stored = getStoredWallet();
-        const userAddress = stored?.address;
-        if (!userAddress) throw new Error("No wallet address found");
+        // Get user's wallet address — try local storage first, then DB profile
+        let userAddress = getStoredWallet()?.address;
+        if (!userAddress) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('wallet_address, bsc_wallet_address')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          userAddress = profile?.bsc_wallet_address || profile?.wallet_address || null;
+        }
+        if (!userAddress) throw new Error("No wallet address found. Please re-import your wallet in Settings.");
 
         // Get asset details for withdrawal fee
         const { data: assetData } = await supabase
