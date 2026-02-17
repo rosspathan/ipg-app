@@ -78,6 +78,7 @@ export function useBep20Balances() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [assets, setAssets] = useState<Bep20Asset[]>([])
   const [appBalances, setAppBalances] = useState<Record<string, { available: number; locked: number; total: number }>>({})
+  const [onchainDbRecordExists, setOnchainDbRecordExists] = useState<Set<string>>(new Set())
   const [onchainBalancesFromDb, setOnchainBalancesFromDb] = useState<Record<string, number>>({})
 
   // Fetch wallet address
@@ -136,7 +137,8 @@ export function useBep20Balances() {
     }
   }, [user?.id, assets])
 
-  // Fetch on-chain balances from onchain_balances table (synced by cron, display only)
+  // Fetch on-chain balances from onchain_balances table (synced by cron/transfer RPC)
+  // This is the SOURCE OF TRUTH after transfers debit/credit it
   const fetchOnchainBalancesFromDb = useCallback(async () => {
     if (!user?.id || assets.length === 0) return
     
@@ -149,9 +151,11 @@ export function useBep20Balances() {
     if (data) {
       const balMap: Record<string, number> = {}
       data.forEach(b => {
+        // Store the balance even if 0 - presence means DB has a record
         balMap[b.asset_id] = Number(b.balance) || 0
       })
       setOnchainBalancesFromDb(balMap)
+      setOnchainDbRecordExists(new Set(data.map(b => b.asset_id)))
     }
   }, [user?.id, assets])
 
@@ -212,9 +216,28 @@ export function useBep20Balances() {
       )
       .subscribe()
 
+    // Subscribe to onchain_balances changes (transfer debit/credit)
+    const onchainChannel = supabase
+      .channel(`onchain-balances-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'onchain_balances',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('[useBep20Balances] onchain_balances changed, refetching...')
+          fetchOnchainBalancesFromDb()
+        }
+      )
+      .subscribe()
+
     return () => {
       supabase.removeChannel(balanceChannel)
       supabase.removeChannel(tradesChannel)
+      supabase.removeChannel(onchainChannel)
     }
   }, [user?.id, fetchAppBalances])
 
@@ -286,9 +309,11 @@ export function useBep20Balances() {
     const appBal = appBalances[asset.id] || { available: 0, locked: 0, total: 0 }
     const onchain = onchainData?.[asset.id] || { onchainBalance: 0, priceUsd: 0 }
     
-    // Use DB on-chain balance if available, otherwise fall back to live RPC
+    // If DB has a record for this asset, ALWAYS use DB balance (it reflects transfers)
+    // Only fall back to live RPC if no DB record exists yet
+    const hasDbRecord = onchainDbRecordExists.has(asset.id)
     const dbOnchainBal = onchainBalancesFromDb[asset.id] || 0
-    const finalOnchainBalance = dbOnchainBal > 0 ? dbOnchainBal : onchain.onchainBalance
+    const finalOnchainBalance = hasDbRecord ? dbOnchainBal : onchain.onchainBalance
     
     return {
       assetId: asset.id,
