@@ -24,6 +24,7 @@ interface AssetBalance {
   tradingAvailable: number;
   tradingLocked: number;
   tradingTotal: number;
+  walletBalance: number; // from onchain_balances
   assetId: string;
 }
 
@@ -61,11 +62,19 @@ const TransferScreen = () => {
         .select('asset_id, available, locked, total')
         .eq('user_id', user.id);
 
+      // Also fetch onchain_balances (wallet balance) for to_trading transfers
+      const { data: onchainBalances } = await supabase
+        .from('onchain_balances')
+        .select('asset_id, balance')
+        .eq('user_id', user.id);
+
       const tradingMap = new Map((tradingBalances || []).map(b => [b.asset_id, b]));
+      const onchainMap = new Map((onchainBalances || []).map(b => [b.asset_id, b]));
 
       const results: AssetBalance[] = [];
       for (const asset of dbAssets) {
         const trading = tradingMap.get(asset.id);
+        const onchain = onchainMap.get(asset.id);
         results.push({
           symbol: asset.symbol,
           name: asset.name,
@@ -73,6 +82,7 @@ const TransferScreen = () => {
           tradingAvailable: trading?.available || 0,
           tradingLocked: trading?.locked || 0,
           tradingTotal: trading?.total || 0,
+          walletBalance: onchain?.balance || 0,
           assetId: asset.id,
         });
       }
@@ -101,7 +111,10 @@ const TransferScreen = () => {
   }, [direction]);
 
   const currentTradingAsset = tradingAssets.find(a => a.symbol === selectedAsset);
-  const availableBalance = currentTradingAsset?.tradingAvailable || 0;
+  const tradingAvailable = currentTradingAsset?.tradingAvailable || 0;
+  const walletBalance = currentTradingAsset?.walletBalance || 0;
+  // Use wallet balance for to_trading, trading balance for to_wallet
+  const availableBalance = direction === "to_trading" ? walletBalance : tradingAvailable;
 
   // Internal transfer handler — no on-chain transactions
   const handleTransfer = async () => {
@@ -116,10 +129,21 @@ const TransferScreen = () => {
       return;
     }
 
-    if (direction === "to_wallet" && amountNum > availableBalance) {
+    if (amountNum > availableBalance) {
       toast({
         title: "Insufficient Balance",
-        description: `Available: ${availableBalance.toFixed(6)} ${selectedAsset}`,
+        description: direction === "to_trading"
+          ? `Wallet balance: ${walletBalance.toFixed(6)} ${selectedAsset}. Deposit to the platform hot wallet first.`
+          : `Trading available: ${tradingAvailable.toFixed(6)} ${selectedAsset}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (direction === "to_trading" && walletBalance <= 0) {
+      toast({
+        title: "No Wallet Balance",
+        description: "You need to deposit tokens to the platform hot wallet first to have wallet balance.",
         variant: "destructive"
       });
       return;
@@ -356,7 +380,9 @@ const TransferScreen = () => {
                                 <AssetLogo symbol={asset.symbol} logoUrl={asset.logoUrl} size="sm" />
                                 <span>{asset.symbol}</span>
                                 <span className="text-muted-foreground ml-2">
-                                  ({asset.tradingAvailable.toFixed(4)} available)
+                                  ({direction === "to_trading" 
+                                    ? `${asset.walletBalance.toFixed(4)} in wallet`
+                                    : `${asset.tradingAvailable.toFixed(4)} available`})
                                 </span>
                               </div>
                             </SelectItem>
@@ -382,21 +408,15 @@ const TransferScreen = () => {
                             variant="ghost"
                             size="sm"
                             className="absolute right-2 top-1/2 -translate-y-1/2 h-7 text-xs"
-                            onClick={() => {
-                              if (direction === "to_wallet") {
-                                setAmount(availableBalance.toString());
-                              }
-                            }}
-                            disabled={direction === "to_wallet" && availableBalance <= 0}
+                            onClick={() => setAmount(availableBalance.toString())}
+                            disabled={availableBalance <= 0}
                           >
                             MAX
                           </Button>
                         </div>
-                        {direction === "to_wallet" && (
-                          <p className="text-xs text-muted-foreground">
-                            Available: {availableBalance.toFixed(6)} {selectedAsset}
-                          </p>
-                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {direction === "to_trading" ? "Wallet" : "Trading"} balance: {availableBalance.toFixed(6)} {selectedAsset}
+                        </p>
                       </div>
 
                       {/* Error Display */}
@@ -419,7 +439,7 @@ const TransferScreen = () => {
                       !amount ||
                       parseFloat(amount) <= 0 ||
                       !selectedAsset ||
-                      (direction === "to_wallet" && parseFloat(amount) > availableBalance)
+                      parseFloat(amount) > availableBalance
                     }
                   >
                     {isProcessing ? (
