@@ -123,16 +123,40 @@ Deno.serve(async (req) => {
           const decimals = asset.decimals || 18;
           const balance = Number(ethers.formatUnits(balanceRaw, decimals));
 
-          console.log(`[sync-bep20-balances] ${asset.symbol} balance for ${walletAddress}: ${balance}`);
+          console.log(`[sync-bep20-balances] ${asset.symbol} blockchain balance for ${walletAddress}: ${balance}`);
 
-          // Upsert to onchain_balances table (display only, NOT for trading)
-          // This is separate from wallet_balances which is only for custodial deposits
+          // Calculate net internal transfers (to_trading minus from_trading)
+          // so we don't overwrite the debit made by execute_internal_balance_transfer
+          const { data: transfers } = await supabase
+            .from('trading_balance_transfers')
+            .select('direction, amount')
+            .eq('user_id', userId)
+            .eq('asset_id', asset.id)
+            .eq('status', 'completed');
+
+          let netTransferredToTrading = 0;
+          if (transfers) {
+            for (const t of transfers) {
+              if (t.direction === 'to_trading') {
+                netTransferredToTrading += Number(t.amount);
+              } else if (t.direction === 'from_trading') {
+                netTransferredToTrading -= Number(t.amount);
+              }
+            }
+          }
+
+          // Display balance = blockchain balance - net amount moved to trading
+          const displayBalance = Math.max(0, balance - netTransferredToTrading);
+          console.log(`[sync-bep20-balances] ${asset.symbol} net transferred to trading: ${netTransferredToTrading}, display: ${displayBalance}`);
+
+          // Upsert to onchain_balances table
+          // balance reflects what's actually available (blockchain minus internal transfers)
           const { error: upsertError } = await supabase
             .from('onchain_balances')
             .upsert({
               user_id: userId,
               asset_id: asset.id,
-              balance: balance,
+              balance: displayBalance,
               last_synced_at: new Date().toISOString()
             }, {
               onConflict: 'user_id,asset_id'
