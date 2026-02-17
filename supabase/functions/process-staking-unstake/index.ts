@@ -46,113 +46,29 @@ serve(async (req) => {
 
     console.log('[process-staking-unstake] User:', user.id, 'Stake:', stake_id);
 
-    // Get the stake
-    const { data: stake, error: stakeError } = await supabase
-      .from('user_crypto_stakes')
-      .select('*')
-      .eq('id', stake_id)
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single();
+    // Call atomic RPC — lock check, balance restoration, status update, and ledger
+    // recording all happen in a single ACID transaction with FOR UPDATE row locking
+    const { data, error } = await supabase.rpc('execute_staking_unstake', {
+      p_user_id: user.id,
+      p_stake_id: stake_id,
+    });
 
-    if (stakeError || !stake) {
+    if (error) {
+      console.error('[process-staking-unstake] RPC error:', error);
       return new Response(
-        JSON.stringify({ error: 'Active stake not found' }),
+        JSON.stringify({ error: error.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check lock period
-    const lockUntil = new Date(stake.lock_until);
-    if (lockUntil > new Date()) {
-      return new Response(
-        JSON.stringify({ error: `Stake is locked until ${lockUntil.toISOString()}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get config for unstaking fee
-    const { data: config } = await supabase
-      .from('crypto_staking_config')
-      .select('*')
-      .single();
-
-    const unstakingFee = config?.unstaking_fee_percent || 0.5;
-    const stakeAmount = Number(stake.stake_amount);
-    const totalRewards = Number(stake.total_rewards);
-    const totalAmount = stakeAmount + totalRewards;
-    const feeAmount = totalAmount * (unstakingFee / 100);
-    const netReturn = totalAmount - feeAmount;
-
-    // Get user's staking account
-    const { data: account } = await supabase
-      .from('user_staking_accounts')
-      .select('*')
-      .eq('id', stake.staking_account_id)
-      .single();
-
-    if (!account) {
-      return new Response(
-        JSON.stringify({ error: 'Staking account not found' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const availBefore = Number(account.available_balance);
-    const stakedBefore = Number(account.staked_balance);
-
-    // Update staking account: move from staked to available
-    const { error: updateError } = await supabase
-      .from('user_staking_accounts')
-      .update({
-        available_balance: availBefore + netReturn,
-        staked_balance: Math.max(0, stakedBefore - stakeAmount),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', account.id);
-
-    if (updateError) {
-      console.error('[process-staking-unstake] Balance update error:', updateError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to update balance' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Mark stake as withdrawn
-    await supabase
-      .from('user_crypto_stakes')
-      .update({
-        status: 'withdrawn',
-        withdrawn_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', stake.id);
-
-    // Record in ledger
-    await supabase
-      .from('crypto_staking_ledger')
-      .insert({
-        user_id: user.id,
-        staking_account_id: account.id,
-        stake_id: stake.id,
-        tx_type: 'unstake',
-        amount: netReturn,
-        fee_amount: feeAmount,
-        currency: stake.currency,
-        balance_before: availBefore,
-        balance_after: availBefore + netReturn,
-        notes: `Unstaked ${stakeAmount} + ${totalRewards} rewards (fee: ${feeAmount})`,
-      });
-
-    console.log('[process-staking-unstake] Success! Returned:', netReturn);
+    console.log('[process-staking-unstake] Success:', data);
 
     return new Response(
       JSON.stringify({
         success: true,
-        returned_amount: netReturn,
-        fee: feeAmount,
-        rewards_earned: totalRewards,
+        returned_amount: data.returned_amount,
+        fee: data.fee,
+        rewards_earned: data.rewards_earned,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

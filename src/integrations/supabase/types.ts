@@ -13215,6 +13215,19 @@ export type Database = {
         Args: { p_order_id: string; p_user_id: string }
         Returns: Json
       }
+      execute_staking_stake: {
+        Args: {
+          p_amount: number
+          p_plan_id: string
+          p_staking_fee_percent?: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      execute_staking_unstake: {
+        Args: { p_stake_id: string; p_user_id: string }
+        Returns: Json
+      }
       execute_trade: {
         Args: {
           p_base_amount: number
