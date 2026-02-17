@@ -138,7 +138,8 @@ export function useOnchainBalances(): OnchainBalancesResult {
     fetchAssets()
   }, [])
 
-  // Query on-chain balances for all assets
+  // Query balances: prefer onchain_balances DB table (reflects internal transfers),
+  // fall back to live RPC only for assets without DB records (e.g. BNB native)
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['onchain-balances-all', walletAddress, assets.length],
     queryFn: async (): Promise<OnchainAsset[]> => {
@@ -146,23 +147,58 @@ export function useOnchainBalances(): OnchainBalancesResult {
         return []
       }
 
+      // Step 1: Fetch DB balances (source of truth after internal transfers)
+      const { data: { user } } = await supabase.auth.getUser()
+      let dbBalances: Record<string, number> = {}
+      let dbAssetIds = new Set<string>()
+
+      if (user) {
+        // We need asset IDs - fetch them
+        const { data: dbAssets } = await supabase
+          .from('assets')
+          .select('id, symbol')
+          .eq('is_active', true)
+
+        const symbolToId: Record<string, string> = {}
+        dbAssets?.forEach(a => { symbolToId[a.symbol] = a.id })
+
+        const { data: obData } = await supabase
+          .from('onchain_balances')
+          .select('asset_id, balance')
+          .eq('user_id', user.id)
+
+        if (obData) {
+          const idToSymbol: Record<string, string> = {}
+          dbAssets?.forEach(a => { idToSymbol[a.id] = a.symbol })
+          obData.forEach(b => {
+            const sym = idToSymbol[b.asset_id]
+            if (sym) {
+              dbBalances[sym] = Number(b.balance) || 0
+              dbAssetIds.add(sym)
+            }
+          })
+        }
+      }
+
+      // Step 2: For each asset, use DB if record exists, otherwise live RPC
       const balancePromises = assets.map(async (asset) => {
         let balance = 0
 
-        try {
-          if (asset.symbol === 'BNB') {
-            balance = await getBNBBalance(walletAddress)
-          } else if (asset.contractAddress) {
-            balance = await getERC20Balance(asset.contractAddress, walletAddress, asset.decimals)
+        if (dbAssetIds.has(asset.symbol)) {
+          // DB record exists - use it (reflects internal transfers)
+          balance = dbBalances[asset.symbol] || 0
+        } else {
+          // No DB record - fall back to live RPC (e.g. BNB native)
+          try {
+            if (asset.symbol === 'BNB') {
+              balance = await getBNBBalance(walletAddress)
+            } else if (asset.contractAddress) {
+              balance = await getERC20Balance(asset.contractAddress, walletAddress, asset.decimals)
+            }
+          } catch (err) {
+            console.warn(`[OnchainBalances] Failed to fetch ${asset.symbol}:`, err)
+            balance = 0
           }
-          
-          // Debug: log non-zero balances
-          if (balance > 0.000001) {
-            console.log(`[OnchainBalances] ${asset.symbol}: ${balance}`)
-          }
-        } catch (err) {
-          console.warn(`[OnchainBalances] Failed to fetch ${asset.symbol}:`, err)
-          balance = 0
         }
 
         return {
@@ -181,8 +217,6 @@ export function useOnchainBalances(): OnchainBalancesResult {
       // Filter out dust/near-zero balances (less than 0.000001)
       const filtered = results.filter(r => r.balance >= 0.000001 || r.symbol === 'BNB')
       
-      console.log('[OnchainBalances] Total non-zero assets:', filtered.filter(r => r.balance > 0).length)
-      
       // Sort: non-zero balances first (highest first), then alphabetically
       return filtered.sort((a, b) => {
         if (a.balance > 0 && b.balance <= 0) return -1
@@ -193,7 +227,7 @@ export function useOnchainBalances(): OnchainBalancesResult {
     },
     enabled: !!walletAddress && assets.length > 0,
     refetchInterval: 30000,
-    staleTime: 5000  // Reduced stale time to get fresher data
+    staleTime: 5000
   })
 
   return {
