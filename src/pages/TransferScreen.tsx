@@ -40,6 +40,32 @@ const TransferScreen = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transferError, setTransferError] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Auto-sync on-chain balances to DB when user wants to transfer to trading
+  useEffect(() => {
+    if (direction !== "to_trading") return;
+    
+    const syncOnchainBalances = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      setIsSyncing(true);
+      try {
+        await supabase.functions.invoke('sync-bep20-balances', {
+          body: { userIds: [user.id] }
+        });
+        // Refetch after sync so onchain_balances DB table is fresh
+        refetchTrading();
+      } catch (err) {
+        console.warn('[TransferScreen] sync-bep20-balances failed:', err);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    syncOnchainBalances();
+  }, [direction]);
 
   // Fetch all tradable assets with balances
   const { data: tradingAssets = [], isLoading: tradingLoading, refetch: refetchTrading } = useQuery({
@@ -415,7 +441,7 @@ const TransferScreen = () => {
                           </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {direction === "to_trading" ? "Wallet" : "Trading"} balance: {availableBalance.toFixed(6)} {selectedAsset}
+                          {direction === "to_trading" ? "Wallet" : "Trading"} balance: {isSyncing ? "syncing..." : `${availableBalance.toFixed(6)} ${selectedAsset}`}
                         </p>
                       </div>
 
