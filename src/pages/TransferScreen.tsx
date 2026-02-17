@@ -13,6 +13,9 @@ import AssetLogo from "@/components/AssetLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { transferERC20 } from "@/lib/wallet/onchainTransfer";
+import { getStoredWallet } from "@/utils/walletStorage";
+import { ethers } from "ethers";
 
 type TransferDirection = "to_trading" | "to_wallet";
 type TransferDestination = "trading" | "staking";
@@ -142,7 +145,20 @@ const TransferScreen = () => {
   // Use wallet balance for to_trading, trading balance for to_wallet
   const availableBalance = direction === "to_trading" ? walletBalance : tradingAvailable;
 
-  // Internal transfer handler — no on-chain transactions
+  // Get user's private key for on-chain signing
+  const getUserPrivateKey = (): string | null => {
+    const stored = getStoredWallet();
+    if (stored?.privateKey) return stored.privateKey;
+    if (stored?.seedPhrase) {
+      try {
+        const hdNode = ethers.HDNodeWallet.fromPhrase(stored.seedPhrase);
+        return hdNode.privateKey;
+      } catch { return null; }
+    }
+    return null;
+  };
+
+  // Transfer handler — on-chain for "to_trading", withdrawal request for "to_wallet"
   const handleTransfer = async () => {
     if (!amount || !currentTradingAsset) {
       toast({ title: "Invalid Request", description: "Please enter an amount", variant: "destructive" });
@@ -159,17 +175,8 @@ const TransferScreen = () => {
       toast({
         title: "Insufficient Balance",
         description: direction === "to_trading"
-          ? `Wallet balance: ${walletBalance.toFixed(6)} ${selectedAsset}. Deposit to the platform hot wallet first.`
+          ? `Wallet balance: ${walletBalance.toFixed(6)} ${selectedAsset}`
           : `Trading available: ${tradingAvailable.toFixed(6)} ${selectedAsset}`,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (direction === "to_trading" && walletBalance <= 0) {
-      toast({
-        title: "No Wallet Balance",
-        description: "You need to deposit tokens to the platform hot wallet first to have wallet balance.",
         variant: "destructive"
       });
       return;
@@ -179,29 +186,128 @@ const TransferScreen = () => {
     setTransferError(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('internal-balance-transfer', {
-        body: {
-          asset_id: currentTradingAsset.assetId,
-          amount: amountNum,
-          direction: direction === "to_trading" ? "to_trading" : "to_wallet",
+      if (direction === "to_trading") {
+        // === ON-CHAIN TRANSFER to hot wallet ===
+        const privateKey = getUserPrivateKey();
+        if (!privateKey) {
+          throw new Error("Wallet private key not found. Please re-import your wallet.");
         }
-      });
 
-      if (error) throw error;
-      if (data && !data.success) throw new Error(data.error || 'Transfer failed');
+        // Get hot wallet address from custodial_deposit_scan_state
+        const { data: scanState } = await supabase
+          .from('custodial_deposit_scan_state')
+          .select('hot_wallet_address')
+          .eq('chain', 'BSC')
+          .single();
 
-      toast({
-        title: "Transfer Complete",
-        description: data?.message || `${amountNum} ${selectedAsset} transferred successfully`,
-      });
+        if (!scanState?.hot_wallet_address) {
+          throw new Error("Trading hot wallet not configured. Contact support.");
+        }
 
-      setShowSuccess(true);
+        // Get contract address for the asset
+        const { data: assetData } = await supabase
+          .from('assets')
+          .select('contract_address, decimals')
+          .eq('id', currentTradingAsset.assetId)
+          .single();
+
+        if (!assetData?.contract_address) {
+          throw new Error("Contract address not found for this asset.");
+        }
+
+        toast({
+          title: "Sending Transaction",
+          description: `Broadcasting ${amountNum} ${selectedAsset} to trading hot wallet...`,
+        });
+
+        const result = await transferERC20(
+          privateKey,
+          assetData.contract_address,
+          scanState.hot_wallet_address,
+          amountNum.toString(),
+          assetData.decimals || 18
+        );
+
+        if (!result.success) {
+          throw new Error(result.error || "On-chain transfer failed");
+        }
+
+        toast({
+          title: "Transfer Sent!",
+          description: `TX: ${result.txHash?.slice(0, 10)}... — Your trading balance will be credited automatically once confirmed.`,
+        });
+
+        setShowSuccess(true);
+
+      } else {
+        // === WITHDRAWAL REQUEST — hot wallet sends tokens back ===
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        // Get user's wallet address
+        const stored = getStoredWallet();
+        const userAddress = stored?.address;
+        if (!userAddress) throw new Error("No wallet address found");
+
+        // Get asset details for withdrawal fee
+        const { data: assetData } = await supabase
+          .from('assets')
+          .select('withdraw_fee, network')
+          .eq('id', currentTradingAsset.assetId)
+          .single();
+
+        const fee = assetData?.withdraw_fee || 0;
+        const netAmount = amountNum - fee;
+
+        if (netAmount <= 0) {
+          throw new Error(`Amount too small. Minimum withdrawal must cover ${fee} ${selectedAsset} fee.`);
+        }
+
+        // Debit trading balance first via the existing RPC
+        const { data: debitResult, error: debitError } = await supabase.functions.invoke('internal-balance-transfer', {
+          body: {
+            asset_id: currentTradingAsset.assetId,
+            amount: amountNum,
+            direction: "to_wallet",
+          }
+        });
+
+        if (debitError || !debitResult?.success) {
+          throw new Error(debitResult?.error || debitError?.message || "Failed to debit trading balance");
+        }
+
+        // Create withdrawal request for the hot wallet to process
+        const { error: withdrawalError } = await supabase
+          .from('withdrawals')
+          .insert({
+            user_id: user.id,
+            asset_id: currentTradingAsset.assetId,
+            amount: amountNum,
+            fee: fee,
+            net_amount: netAmount,
+            to_address: userAddress,
+            network: assetData?.network || 'BEP20',
+            status: 'processing',
+          });
+
+        if (withdrawalError) {
+          throw new Error("Failed to create withdrawal request: " + withdrawalError.message);
+        }
+
+        toast({
+          title: "Withdrawal Submitted",
+          description: `${netAmount.toFixed(6)} ${selectedAsset} will be sent to your wallet shortly.`,
+        });
+
+        setShowSuccess(true);
+      }
 
       // Refresh balances
       queryClient.invalidateQueries({ queryKey: ['transfer-assets-custodial'] });
       queryClient.invalidateQueries({ queryKey: ['trading-balances'] });
       queryClient.invalidateQueries({ queryKey: ['wallet-balances'] });
       queryClient.invalidateQueries({ queryKey: ['user-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['onchain-balances-all'] });
     } catch (err: any) {
       const msg = err.message || "Transfer failed";
       setTransferError(msg);
@@ -327,7 +433,11 @@ const TransferScreen = () => {
           <Info className="h-4 w-4 text-primary" />
           <AlertDescription className="text-xs space-y-1">
             {destination === "trading" ? (
-              <p><strong>Instant Transfer</strong>: Move funds between your wallet and trading balance instantly — no gas fees required.</p>
+              direction === "to_trading" ? (
+                <p><strong>On-Chain Transfer</strong>: Tokens are sent from your wallet to the platform hot wallet on BSC. Trading balance is credited once the transaction confirms. Gas fees apply.</p>
+              ) : (
+                <p><strong>Hot Wallet Withdrawal</strong>: Tokens are sent from the platform hot wallet back to your wallet on BSC.</p>
+              )
             ) : (
               <p><strong>Staking Transfer</strong>: Move funds between your wallet and staking account to earn rewards.</p>
             )}
