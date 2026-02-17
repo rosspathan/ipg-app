@@ -516,7 +516,7 @@ function AppContent() {
               
               {/* On-chain Crypto Staking */}
               <Route path="staking" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoStakingScreen')))}</React.Suspense>} />
-              <Route path="staking/:planId" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoStakingScreen')))}</React.Suspense>} />
+              <Route path="staking/:planId" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoStakingPlanDetail')))}</React.Suspense>} />
               <Route path="staking/deposit" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/StakingDepositScreen')))}</React.Suspense>} />
               <Route path="staking/withdraw" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/StakingWithdrawScreen')))}</React.Suspense>} />
               
