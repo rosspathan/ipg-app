@@ -35,7 +35,7 @@ serve(async (req) => {
       );
     }
 
-    const { plan_id, amount } = await req.json();
+    const { plan_id, amount, idempotency_key } = await req.json();
 
     if (!plan_id || !amount || amount <= 0) {
       return new Response(
@@ -44,14 +44,16 @@ serve(async (req) => {
       );
     }
 
-    console.log('[process-staking-stake] User:', user.id, 'Plan:', plan_id, 'Amount:', amount);
+    // Generate idempotency key if not provided
+    const idemKey = idempotency_key || `stake_${user.id}_${plan_id}_${Date.now()}`;
 
-    // Call atomic RPC — all validation, balance checks, deductions, and ledger
-    // recording happen in a single ACID transaction with FOR UPDATE row locking
+    console.log('[process-staking-stake] User:', user.id, 'Plan:', plan_id, 'Amount:', amount, 'Idem:', idemKey);
+
     const { data, error } = await supabase.rpc('execute_staking_stake', {
       p_user_id: user.id,
       p_plan_id: plan_id,
       p_amount: amount,
+      p_idempotency_key: idemKey,
     });
 
     if (error) {

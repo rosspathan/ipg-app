@@ -3968,6 +3968,7 @@ export type Database = {
           currency: string
           fee_amount: number | null
           id: string
+          idempotency_key: string | null
           metadata: Json | null
           notes: string | null
           stake_id: string | null
@@ -3984,6 +3985,7 @@ export type Database = {
           currency?: string
           fee_amount?: number | null
           id?: string
+          idempotency_key?: string | null
           metadata?: Json | null
           notes?: string | null
           stake_id?: string | null
@@ -4000,6 +4002,7 @@ export type Database = {
           currency?: string
           fee_amount?: number | null
           id?: string
+          idempotency_key?: string | null
           metadata?: Json | null
           notes?: string | null
           stake_id?: string | null
@@ -13032,6 +13035,7 @@ export type Database = {
         Returns: Json
       }
       auto_disable_expired_offers: { Args: never; Returns: undefined }
+      auto_unstake_expired: { Args: never; Returns: Json }
       award_bsk_standard: {
         Args: {
           p_amount: number
@@ -13188,6 +13192,7 @@ export type Database = {
         Args: { p_amount: number; p_asset_symbol: string; p_user_id: string }
         Returns: boolean
       }
+      distribute_staking_rewards_batch: { Args: never; Returns: Json }
       execute_bsk_transfer: {
         Args: { p_amount: number; p_recipient_id: string; p_sender_id: string }
         Returns: Json
@@ -13215,19 +13220,36 @@ export type Database = {
         Args: { p_order_id: string; p_user_id: string }
         Returns: Json
       }
-      execute_staking_stake: {
-        Args: {
-          p_amount: number
-          p_plan_id: string
-          p_staking_fee_percent?: number
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      execute_staking_unstake: {
-        Args: { p_stake_id: string; p_user_id: string }
-        Returns: Json
-      }
+      execute_staking_stake:
+        | {
+            Args: {
+              p_amount: number
+              p_idempotency_key?: string
+              p_plan_id: string
+              p_staking_fee_percent?: number
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_plan_id: string
+              p_staking_fee_percent?: number
+              p_user_id: string
+            }
+            Returns: Json
+          }
+      execute_staking_unstake:
+        | { Args: { p_stake_id: string; p_user_id: string }; Returns: Json }
+        | {
+            Args: {
+              p_idempotency_key?: string
+              p_stake_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
       execute_trade: {
         Args: {
           p_base_amount: number
