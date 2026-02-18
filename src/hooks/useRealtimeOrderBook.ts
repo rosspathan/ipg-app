@@ -91,8 +91,8 @@ export function useRealtimeOrderBook(symbol?: string) {
       return { bids, asks };
     },
     enabled: !!symbol,
-    staleTime: 500, // Keep data fresh for 500ms
-    refetchInterval: 5000, // Fallback polling every 5 seconds
+    staleTime: 3000,
+    refetchInterval: 10000, // Fallback polling every 10 seconds
   });
 
   // Real-time subscription for instant updates

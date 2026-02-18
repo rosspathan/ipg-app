@@ -187,6 +187,6 @@ export function useMarketData(pairSymbol: string) {
       return pair;
     },
     enabled: !!pairs && !!pairSymbol,
-    refetchInterval: 5000,
+    refetchInterval: 30000,
   });
 }

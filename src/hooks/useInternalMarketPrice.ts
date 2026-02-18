@@ -53,8 +53,8 @@ export function useInternalMarketPrice(symbol?: string): InternalMarketPrice | n
       };
     },
     enabled: !!symbol && isInternalPair(symbol),
-    staleTime: 5000,
-    refetchInterval: 10000,
+    staleTime: 15000,
+    refetchInterval: 30000,
   });
 
   // Subscribe to real-time updates

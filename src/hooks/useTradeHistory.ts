@@ -148,7 +148,7 @@
        return fills.slice(0, limit);
      },
      enabled: !!userId,
-     refetchInterval: 5000,
+      refetchInterval: 15000,
    });
  
    // Fetch all orders (order history)
@@ -174,7 +174,7 @@
        return (data || []) as Order[];
      },
      enabled: !!userId,
-     refetchInterval: 5000,
+     refetchInterval: 15000,
    });
  
    // Fetch open orders only
@@ -200,7 +200,7 @@
        return (data || []) as Order[];
      },
      enabled: !!userId,
-     refetchInterval: 3000, // More frequent for open orders
+     refetchInterval: 10000, // Refresh open orders every 10 seconds
    });
  
    // Fetch funds movements (trading ledger)

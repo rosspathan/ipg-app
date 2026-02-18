@@ -36,6 +36,6 @@ export function useRecentTrades(symbol: string, limit = 10) {
       })) as RecentTrade[];
     },
     enabled: !!symbol,
-    refetchInterval: 3000,
+    refetchInterval: 10000,
   });
 }
