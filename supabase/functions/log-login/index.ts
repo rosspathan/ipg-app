@@ -28,6 +28,27 @@ serve(async (req) => {
       req.headers.get("x-real-ip") ||
       "unknown";
 
+    // Fetch geolocation from IP
+    let geo: { city?: string; region?: string; country?: string; lat?: number; lon?: number; isp?: string } = {};
+    if (ip_address && ip_address !== "unknown") {
+      try {
+        const geoRes = await fetch(`http://ip-api.com/json/${ip_address}?fields=city,regionName,country,lat,lon,isp`);
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          geo = {
+            city: geoData.city || null,
+            region: geoData.regionName || null,
+            country: geoData.country || null,
+            lat: geoData.lat || null,
+            lon: geoData.lon || null,
+            isp: geoData.isp || null,
+          };
+        }
+      } catch (geoErr) {
+        console.error("Geolocation lookup failed:", geoErr);
+      }
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -39,6 +60,12 @@ serve(async (req) => {
       ip_address,
       user_agent: user_agent || null,
       referer: referer || null,
+      city: geo.city || null,
+      region: geo.region || null,
+      country: geo.country || null,
+      latitude: geo.lat || null,
+      longitude: geo.lon || null,
+      isp: geo.isp || null,
     });
 
     if (error) {
@@ -49,7 +76,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Login logged for ${email || user_id} from IP: ${ip_address}`);
+    console.log(`Login logged for ${email || user_id} from IP: ${ip_address} | ${geo.city}, ${geo.region}, ${geo.country}`);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
