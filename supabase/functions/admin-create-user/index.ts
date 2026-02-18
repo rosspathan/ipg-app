@@ -119,18 +119,9 @@ serve(async (req) => {
       }
     }
 
-    // Assign admin role if specified
+    // Admin role assignment is disabled - only rosspathan@gmail.com is admin
     if (requestData.role === "admin") {
-      const { error: roleAssignError } = await supabaseAdmin
-        .from("user_roles")
-        .insert({
-          user_id: newUser.user.id,
-          role_name: "admin",
-        });
-
-      if (roleAssignError) {
-        console.error("Role assignment error:", roleAssignError);
-      }
+      console.warn("Admin role assignment attempted but is disabled. Only one admin account is allowed.");
     }
 
     // Create audit log
