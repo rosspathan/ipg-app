@@ -237,7 +237,7 @@ export function WalletPage() {
           { label: "Deposit", icon: "↓", route: "/app/wallet/deposit" },
           { label: "Withdraw", icon: "↑", route: "/app/wallet/withdraw" },
           { label: "Swap", icon: "⇄", route: "/app/swap" },
-          { label: "History", icon: "📋", route: "/app/wallet/history" },
+          { label: "History", icon: "📋", route: "/app/home/history" },
         ].map((a) => (
           <button
             key={a.label}
