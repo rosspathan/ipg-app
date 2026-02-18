@@ -501,6 +501,7 @@ function AppContent() {
               <Route path="wallet/withdraw" element={<WithdrawScreen />} />
               <Route path="wallet/send" element={<SendScreen />} />
               <Route path="wallet/transfer" element={<TransferScreen />} />
+              <Route path="wallet/transfer-history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/InternalTransferHistoryPage')))}</React.Suspense>} />
               <Route path="wallet/history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/OnchainHistoryPage')))}</React.Suspense>} />
               <Route path="wallet/history/onchain" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/OnchainHistoryPage')))}</React.Suspense>} />
               <Route path="wallet/history/crypto" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/CryptoHistoryPage')))}</React.Suspense>} />
