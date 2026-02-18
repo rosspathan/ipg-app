@@ -38,25 +38,36 @@ serve(async (req) => {
 
     console.log("Admin password reset request for:", emailLower);
 
-    // Find the user by email
-    const { data: users, error: getUserError } = await supabase.auth.admin.listUsers();
+    // Find the user by email using pagination
+    let targetUser = null;
+    let page = 1;
+    const perPage = 1000;
     
-    if (getUserError) {
-      console.error("Error listing users:", getUserError);
-      return new Response(JSON.stringify({ error: "Failed to find user" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    while (!targetUser) {
+      const { data: users, error: getUserError } = await supabase.auth.admin.listUsers({ page, perPage });
+      
+      if (getUserError) {
+        console.error("Error listing users:", getUserError);
+        return new Response(JSON.stringify({ error: "Failed to find user" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-    const user = users.users.find(u => u.email?.toLowerCase() === emailLower);
+      targetUser = users.users.find(u => u.email?.toLowerCase() === emailLower);
+      
+      if (users.users.length < perPage) break;
+      page++;
+    }
     
-    if (!user) {
+    if (!targetUser) {
       return new Response(JSON.stringify({ error: "User not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    
+    const user = targetUser;
 
     // Update the user's password using admin API
     const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
