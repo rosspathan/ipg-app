@@ -226,8 +226,8 @@ export function useOnchainBalances(): OnchainBalancesResult {
       })
     },
     enabled: !!walletAddress && assets.length > 0,
-    refetchInterval: 30000,
-    staleTime: 5000
+    refetchInterval: 60000,
+    staleTime: 30000
   })
 
   return {

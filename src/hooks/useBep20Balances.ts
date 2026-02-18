@@ -300,8 +300,8 @@ export function useBep20Balances() {
       return results
     },
     enabled: !!walletAddress && assets.length > 0,
-    staleTime: 30000,
-    refetchInterval: 30000
+    staleTime: 60000,
+    refetchInterval: 120000
   })
 
   // Derive balances - CLEAR SEPARATION between on-chain and trading
