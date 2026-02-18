@@ -158,6 +158,15 @@ export function useWalletBalances() {
       const symbols = onchainBalances.map(b => b.symbol);
       const prices = await fetchPrices(symbols);
 
+      // Batch fetch all asset IDs at once instead of N individual queries
+      const { data: allAssets } = await supabase
+        .from('assets')
+        .select('id, symbol')
+        .in('symbol', symbols);
+      
+      const symbolToId: Record<string, string> = {};
+      allAssets?.forEach(a => { symbolToId[a.symbol] = a.id; });
+
       // Map on-chain balances to AssetBalance format
       const enrichedBalances: AssetBalance[] = [];
 
@@ -167,15 +176,8 @@ export function useWalletBalances() {
         const priceUsd = prices[onchain.symbol] || 0;
         const usdValue = onchain.balance * priceUsd;
 
-        // Get asset_id from database
-        const { data: asset } = await supabase
-          .from('assets')
-          .select('id')
-          .eq('symbol', onchain.symbol)
-          .single();
-
         enrichedBalances.push({
-          asset_id: asset?.id || onchain.symbol,
+          asset_id: symbolToId[onchain.symbol] || onchain.symbol,
           symbol: onchain.symbol,
           name: onchain.name,
           balance: onchain.balance,
@@ -196,7 +198,7 @@ export function useWalletBalances() {
         setBalances(enrichedBalances);
         setPortfolio({
           total_usd: totalUsd,
-          change_24h_percent: 0, // Could fetch from price change data
+          change_24h_percent: 0,
           available_usd: availableUsd,
           locked_usd: lockedUsd
         });
@@ -248,10 +250,10 @@ export function useWalletBalances() {
       )
       .subscribe();
 
-    // Poll for price updates every 2 minutes
+    // Poll for price updates every 5 minutes
     const priceInterval = setInterval(() => {
       computeBalances();
-    }, 120000);
+    }, 300000);
 
     return () => {
       isMountedRef.current = false;
