@@ -322,7 +322,7 @@ Deno.serve(async (req: Request) => {
         const rawLogIndex = tx.logIndex ?? tx.transactionIndex;
         const logIndex = Number.isFinite(Number.parseInt(String(rawLogIndex), 10))
           ? Number.parseInt(String(rawLogIndex), 10)
-          : null;
+          : 0;
 
         records.push({
           user_id: userId,
