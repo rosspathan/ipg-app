@@ -30,6 +30,10 @@ const TRANSFER_EVENT_TOPIC =
 
 // Public BSC RPC endpoints (no API key)
 const DEFAULT_BSC_RPC_URLS = [
+  'https://bsc-rpc.publicnode.com',
+  'https://binance.llamarpc.com',
+  'https://bsc.drpc.org',
+  'https://bsc-dataseed.bnbchain.org',
   'https://bsc-dataseed1.binance.org',
   'https://bsc-dataseed2.binance.org',
   'https://bsc-dataseed3.binance.org',
@@ -269,7 +273,8 @@ async function fetchTransferEventsViaBscScanBatch(params: {
   const addr = hotWalletAddress.toLowerCase();
   const contracts = new Set(contractAddresses.map((c) => c.toLowerCase()));
 
-  const url = `https://api.bscscan.com/api?module=account&action=tokentx&address=${addr}&startblock=${fromBlock}&endblock=${toBlock}&sort=asc&apikey=${apiKey}`;
+  // Use BscScan V2 API (V1 is deprecated)
+  const url = `https://api.bscscan.com/v2/api?module=account&action=tokentx&address=${addr}&startblock=${fromBlock}&endblock=${toBlock}&sort=asc&apikey=${apiKey}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`BscScan request failed: ${res.status}`);
   const data = await res.json();

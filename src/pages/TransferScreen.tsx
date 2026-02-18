@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import AssetLogo from "@/components/AssetLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useHotWalletAddress } from "@/hooks/useTradingBalances";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { transferERC20 } from "@/lib/wallet/onchainTransfer";
 import { getStoredWallet, setWalletStorageUserId, storeWallet } from "@/utils/walletStorage";
@@ -40,6 +41,7 @@ const TransferScreen = () => {
   const queryClient = useQueryClient();
   const { wallet, refreshWallet } = useWeb3();
   const { retrieveBackup, backupStatus, checkBackupExists } = useEncryptedWalletBackup();
+  const { data: dynamicHotWalletAddress } = useHotWalletAddress();
   
   const [selectedAsset, setSelectedAsset] = useState("");
   const [destination, setDestination] = useState<TransferDestination>("trading");
@@ -247,8 +249,10 @@ const TransferScreen = () => {
     if (!currentTradingAsset) return;
 
     // Original Trading Hot Wallet address (dedicated for trading deposits only)
-    const HOT_WALLET_ADDRESS = '0x4a6a2066b6b42fe90128351d67fb5dea40ecacf5';
-    const hotWalletAddress = HOT_WALLET_ADDRESS;
+    const hotWalletAddress = dynamicHotWalletAddress;
+    if (!hotWalletAddress) {
+      throw new Error("Platform deposit address not available. Please try again.");
+    }
 
     // Get contract address for the asset
     const { data: assetData } = await supabase
