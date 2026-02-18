@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { getStoredEvmAddress } from '@/lib/wallet/evmAddress'
 
@@ -79,6 +79,7 @@ async function getBNBBalance(walletAddress: string): Promise<number> {
 }
 
 export function useOnchainBalances(): OnchainBalancesResult {
+  const queryClient = useQueryClient()
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [assets, setAssets] = useState<Array<{
     symbol: string
@@ -101,6 +102,22 @@ export function useOnchainBalances(): OnchainBalancesResult {
 
     fetchWalletAddress()
   }, [])
+
+  // Realtime subscription to auto-refresh when onchain_balances change
+  useEffect(() => {
+    const channel = supabase
+      .channel('onchain-balances-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'onchain_balances',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['onchain-balances-all'] })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [queryClient])
 
   // Fetch supported BEP20 assets from database
   useEffect(() => {
