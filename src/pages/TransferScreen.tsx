@@ -246,8 +246,8 @@ const TransferScreen = () => {
     const amountNum = parseFloat(amount);
     if (!currentTradingAsset) return;
 
-    // Hot wallet address for trading deposits (must match platform_hot_wallet table)
-    const HOT_WALLET_ADDRESS = '0x26CdD408D16E3C47F08ee3222f9CA765D5e5aD88';
+    // Original Trading Hot Wallet address (dedicated for trading deposits only)
+    const HOT_WALLET_ADDRESS = '0x4a6a2066b6b42fe90128351d67fb5dea40ecacf5';
     const hotWalletAddress = HOT_WALLET_ADDRESS;
 
     // Get contract address for the asset
