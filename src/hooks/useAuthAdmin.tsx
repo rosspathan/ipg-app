@@ -93,10 +93,15 @@ export function AuthProviderAdmin({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    if (!error && data?.user) {
+      supabase.functions.invoke('log-login', {
+        body: { user_id: data.user.id, email, user_agent: navigator.userAgent, referer: window.location.href }
+      }).catch(() => {});
+    }
     return { error };
   };
 
