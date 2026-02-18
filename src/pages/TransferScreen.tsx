@@ -280,8 +280,49 @@ const TransferScreen = () => {
 
     toast({
       title: "Transfer Sent!",
-      description: `TX: ${result.txHash?.slice(0, 10)}... — Your trading balance will be credited automatically once confirmed.`,
+      description: `TX: ${result.txHash?.slice(0, 10)}... — Crediting your trading balance...`,
     });
+
+    // Immediately credit trading balance via RPC (debit onchain, credit trading)
+    const { data: creditResult, error: creditError } = await supabase.functions.invoke('internal-balance-transfer', {
+      body: {
+        asset_id: currentTradingAsset.assetId,
+        amount: amountNum,
+        direction: "to_trading",
+      }
+    });
+
+    if (creditError || !creditResult?.success) {
+      console.warn('[TransferScreen] RPC credit failed, deposit monitor will handle it:', creditResult?.error || creditError?.message);
+      toast({
+        title: "Balance Update Pending",
+        description: "Your trading balance will be credited automatically once the transaction confirms on-chain.",
+      });
+    } else {
+      toast({
+        title: "Trading Balance Updated",
+        description: `${amountNum} ${selectedAsset} credited to your trading balance.`,
+      });
+    }
+
+    // Sync on-chain balances to reflect the new state
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.functions.invoke('sync-bep20-balances', {
+          body: { userIds: [user.id] }
+        });
+      }
+    } catch (syncErr) {
+      console.warn('[TransferScreen] Post-transfer sync failed:', syncErr);
+    }
+
+    // Invalidate all balance queries immediately
+    queryClient.invalidateQueries({ queryKey: ['transfer-assets-custodial'] });
+    queryClient.invalidateQueries({ queryKey: ['trading-balances'] });
+    queryClient.invalidateQueries({ queryKey: ['wallet-balances'] });
+    queryClient.invalidateQueries({ queryKey: ['user-balance'] });
+    queryClient.invalidateQueries({ queryKey: ['onchain-balances-all'] });
 
     setShowSuccess(true);
   };
