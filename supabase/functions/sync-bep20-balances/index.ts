@@ -125,29 +125,11 @@ Deno.serve(async (req) => {
 
           console.log(`[sync-bep20-balances] ${asset.symbol} blockchain balance for ${walletAddress}: ${balance}`);
 
-          // Calculate net internal transfers (to_trading minus from_trading)
-          // so we don't overwrite the debit made by execute_internal_balance_transfer
-          const { data: transfers } = await supabase
-            .from('trading_balance_transfers')
-            .select('direction, amount')
-            .eq('user_id', userId)
-            .eq('asset_id', asset.id)
-            .eq('status', 'completed');
-
-          let netTransferredToTrading = 0;
-          if (transfers) {
-            for (const t of transfers) {
-              if (t.direction === 'to_trading') {
-                netTransferredToTrading += Number(t.amount);
-              } else if (t.direction === 'from_trading') {
-                netTransferredToTrading -= Number(t.amount);
-              }
-            }
-          }
-
-          // Display balance = blockchain balance - net amount moved to trading
-          const displayBalance = Math.max(0, balance - netTransferredToTrading);
-          console.log(`[sync-bep20-balances] ${asset.symbol} net transferred to trading: ${netTransferredToTrading}, display: ${displayBalance}`);
+          // Use raw blockchain balance directly — balanceOf() already reflects
+          // all on-chain movements (deposits sent to hot wallet, received tokens, etc.)
+          // No transfer record adjustments needed; those caused double-counting.
+          const displayBalance = balance;
+          console.log(`[sync-bep20-balances] ${asset.symbol} display balance: ${displayBalance}`);
 
           // Upsert to onchain_balances table
           // balance reflects what's actually available (blockchain minus internal transfers)
