@@ -79,7 +79,7 @@ export const useInternalOrderBook = (symbol?: string) => {
       return { bids, asks };
     },
     enabled: !!symbol,
-    refetchInterval: 3000, // Refresh every 3 seconds
-    staleTime: 1000,
+    refetchInterval: 10000, // Refresh every 10 seconds (reduced to avoid rate limits)
+    staleTime: 5000,
   });
 };

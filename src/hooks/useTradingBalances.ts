@@ -90,7 +90,8 @@ export function useTradingBalances() {
       }).filter(b => b.balance > 0.000001); // Only show non-zero balances
     },
     enabled: !!user?.id,
-    staleTime: 10000,
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
 }
 

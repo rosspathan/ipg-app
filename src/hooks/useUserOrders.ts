@@ -36,7 +36,7 @@ export const useUserOrders = (symbol?: string) => {
 
       return data;
     },
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 15000, // Refresh every 15 seconds
   });
 
   const placeOrderMutation = useMutation({
