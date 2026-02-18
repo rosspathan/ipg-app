@@ -450,6 +450,20 @@ const TransferScreen = () => {
       queryClient.invalidateQueries({ queryKey: ['wallet-balances'] });
       queryClient.invalidateQueries({ queryKey: ['user-balance'] });
       queryClient.invalidateQueries({ queryKey: ['onchain-balances-all'] });
+
+      // Trigger on-chain balance sync after a short delay to reflect withdrawal
+      if (direction === "to_wallet") {
+        setTimeout(async () => {
+          try {
+            await supabase.functions.invoke('sync-bep20-balances');
+            queryClient.invalidateQueries({ queryKey: ['onchain-balances-all'] });
+            queryClient.invalidateQueries({ queryKey: ['wallet-balances'] });
+            queryClient.invalidateQueries({ queryKey: ['transfer-assets-custodial'] });
+          } catch (e) {
+            console.warn('Post-withdrawal sync failed:', e);
+          }
+        }, 5000);
+      }
     } catch (err: any) {
       const msg = err.message || "Transfer failed";
       setTransferError(msg);
