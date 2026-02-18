@@ -123,6 +123,9 @@ verify_jwt = false
 [functions.complete-password-reset]
 verify_jwt = false
 
+[functions.log-login]
+verify_jwt = false
+
 [functions.admin-password-reset]
 verify_jwt = true
 
