@@ -296,7 +296,29 @@ const TransferScreen = () => {
       }
     });
 
-    if (creditError || !creditResult?.success) {
+    const transferStatus = (creditError || !creditResult?.success) ? 'pending' : 'success';
+
+    // Record in internal_balance_transfers
+    const refId = `IBT-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) {
+      await supabase.from('internal_balance_transfers').insert({
+        user_id: authUser.id,
+        asset_id: currentTradingAsset.assetId,
+        asset_symbol: selectedAsset,
+        direction: 'to_trading',
+        amount: amountNum,
+        fee: 0,
+        net_amount: amountNum,
+        status: transferStatus,
+        tx_hash: result.txHash || null,
+        reference_id: refId,
+        balance_after: creditResult?.new_balance ?? null,
+      });
+    }
+    queryClient.invalidateQueries({ queryKey: ['internal-transfer-history'] });
+
+    if (transferStatus === 'pending') {
       console.warn('[TransferScreen] RPC credit failed, deposit monitor will handle it:', creditResult?.error || creditError?.message);
       toast({
         title: "Balance Update Pending",
@@ -436,6 +458,22 @@ const TransferScreen = () => {
           throw new Error("Failed to create withdrawal request: " + withdrawalError.message);
         }
 
+        // Record in internal_balance_transfers
+        const refId = `IBT-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+        await supabase.from('internal_balance_transfers').insert({
+          user_id: user.id,
+          asset_id: currentTradingAsset.assetId,
+          asset_symbol: selectedAsset,
+          direction: 'to_wallet',
+          amount: amountNum,
+          fee: fee,
+          net_amount: netAmount,
+          status: 'success',
+          reference_id: refId,
+          balance_after: debitResult?.new_balance ?? null,
+        });
+        queryClient.invalidateQueries({ queryKey: ['internal-transfer-history'] });
+
         toast({
           title: "Withdrawal Submitted",
           description: `${netAmount.toFixed(6)} ${selectedAsset} will be sent to your wallet shortly.`,
@@ -519,8 +557,16 @@ const TransferScreen = () => {
             <Button onClick={() => navigate("/app/wallet")} className="w-full" size="lg">
               Back to Wallet
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/app/wallet/transfer-history")}
+              className="w-full"
+              size="lg"
+            >
+              View Transfer History
+            </Button>
             <Button 
-              variant="outline" 
+              variant="ghost" 
               onClick={() => {
                 setShowSuccess(false);
                 setAmount("");

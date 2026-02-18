@@ -6196,6 +6196,68 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_balance_transfers: {
+        Row: {
+          amount: number
+          asset_id: string
+          asset_symbol: string
+          balance_after: number | null
+          created_at: string
+          direction: string
+          fee: number
+          id: string
+          net_amount: number
+          notes: string | null
+          reference_id: string | null
+          status: string
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          asset_symbol: string
+          balance_after?: number | null
+          created_at?: string
+          direction: string
+          fee?: number
+          id?: string
+          net_amount: number
+          notes?: string | null
+          reference_id?: string | null
+          status?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          asset_symbol?: string
+          balance_after?: number | null
+          created_at?: string
+          direction?: string
+          fee?: number
+          id?: string
+          net_amount?: number
+          notes?: string | null
+          reference_id?: string | null
+          status?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_balance_transfers_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ipg_admin_settings: {
         Row: {
           contract_address: string
