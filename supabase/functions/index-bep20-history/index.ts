@@ -236,8 +236,9 @@ Deno.serve(async (req: Request) => {
 
       const lookbackTimestamp = Math.floor(Date.now() / 1000) - lookbackHours * 3600;
 
+      // Etherscan V2 API (replaces deprecated BscScan V1)
       const bscscanUrl =
-        `https://api.bscscan.com/api?module=account&action=tokentx` +
+        `https://api.etherscan.io/v2/api?chainid=56&module=account&action=tokentx` +
         `&address=${wallet}` +
         `&startblock=0&endblock=999999999&page=1&offset=50&sort=desc` +
         `&apikey=${bscscanApiKey}`;
