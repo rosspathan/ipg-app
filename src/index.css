@@ -670,6 +670,12 @@ All colors MUST be HSL.
     50% { transform: scale(1.05); opacity: 0.9; }
   }
 
+  /* Breathing glow for header logo - CSS-only, no React re-renders */
+  @keyframes breathing-glow {
+    0%, 100% { filter: brightness(1.1) drop-shadow(0 0 4px hsl(var(--primary) / 0.02)); }
+    50% { filter: brightness(1.1) drop-shadow(0 0 8px hsl(var(--primary) / 0.04)); }
+  }
+
   /* Rim-light sweep animation for ProgramTile */
   @keyframes rimLight {
     0% { opacity: 0; transform: scale(0.95); }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,6 @@ const BrandHeaderLogo: React.FC<BrandHeaderLogoProps> = ({
   className = ''
 }) => {
   const [showAbout, setShowAbout] = useState(false);
-  const [glowIntensity, setGlowIntensity] = useState(0);
 
   const sizeMap = {
     small: { width: 24, height: 24, strokeWidth: 1 },
@@ -30,21 +29,10 @@ const BrandHeaderLogo: React.FC<BrandHeaderLogoProps> = ({
 
   const currentSize = sizeMap[size];
 
-  // Breathing glow effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setGlowIntensity(prev => (prev + 0.02) % (Math.PI * 2));
-    }, 100);
-    return () => clearInterval(interval);
-  }, []);
-
-  const glowOpacity = 0.04 + Math.sin(glowIntensity) * 0.04;
-
   const logoVariants = {
     idle: { 
       rotate: 0,
       scale: 1,
-      filter: `drop-shadow(0 0 8px hsl(248 67% 64% / ${glowOpacity}))`
     },
     refresh: { 
       rotate: 180,
@@ -108,7 +96,8 @@ const BrandHeaderLogo: React.FC<BrandHeaderLogoProps> = ({
           style={{
             width: currentSize.width,
             height: currentSize.height,
-            filter: `brightness(1.1) drop-shadow(0 0 8px hsl(var(--primary) / ${glowOpacity/2}))`
+            filter: 'brightness(1.1)',
+            animation: 'breathing-glow 6s ease-in-out infinite',
           }}
         />
       </motion.button>
