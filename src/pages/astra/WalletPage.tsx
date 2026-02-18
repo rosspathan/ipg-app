@@ -322,10 +322,10 @@ export function WalletPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>On-Chain Assets</h2>
           <div className="flex items-center gap-2">
-            <button onClick={() => refetchOnchain()} className="p-1.5 rounded-lg" style={{ background: surfaceLight }}>
-              <RefreshCw className="h-3 w-3" style={{ color: textSecondary }} />
+            <button onClick={() => refetchOnchain()} className="p-2 rounded-lg relative z-10" style={{ background: surfaceLight }}>
+              <RefreshCw className="h-4 w-4" style={{ color: textSecondary }} />
             </button>
-            <button onClick={() => setAssetsExpanded(!assetsExpanded)} className="p-1.5 rounded-lg" style={{ background: surfaceLight }}>
+            <button onClick={() => setAssetsExpanded(!assetsExpanded)} className="p-2 rounded-lg relative z-10" style={{ background: surfaceLight }}>
               {assetsExpanded ? <ChevronUp className="h-3 w-3" style={{ color: textSecondary }} /> : <ChevronDown className="h-3 w-3" style={{ color: textSecondary }} />}
             </button>
           </div>
