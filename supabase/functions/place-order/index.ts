@@ -84,6 +84,39 @@ serve(async (req) => {
       throw new Error('Limit orders require a price. Please enter a valid price.');
     }
 
+    // SELF-TRADE PREVENTION: Reject if user has opposing orders at matching prices
+    if (type === 'limit' && price) {
+      const oppositeSide = side === 'buy' ? 'sell' : 'buy';
+      // For a buy order, check if user has sell orders at or below the buy price
+      // For a sell order, check if user has buy orders at or above the sell price
+      const priceOp = side === 'buy' ? 'lte' : 'gte';
+      
+      let conflictQuery = supabaseClient
+        .from('orders')
+        .select('id, price, remaining_amount', { count: 'exact', head: false })
+        .eq('user_id', user.id)
+        .eq('symbol', symbol)
+        .eq('side', oppositeSide)
+        .in('status', ['pending', 'partially_filled'])
+        .eq('order_type', 'limit')
+        .limit(1);
+
+      if (side === 'buy') {
+        conflictQuery = conflictQuery.lte('price', price);
+      } else {
+        conflictQuery = conflictQuery.gte('price', price);
+      }
+
+      const { data: conflicting, error: conflictError } = await conflictQuery;
+
+      if (!conflictError && conflicting && conflicting.length > 0) {
+        const conflictPrice = conflicting[0].price;
+        throw new Error(
+          `Self-trade prevention: You already have a ${oppositeSide} order at ₮${conflictPrice} that would match this ${side} order at ₮${price}. Please cancel your existing ${oppositeSide} order first.`
+        );
+      }
+    }
+
     // Use atomic RPC - single transaction guarantees no orphan locks
     const { data: result, error: rpcError } = await supabaseClient.rpc(
       'place_order_atomic',
