@@ -493,6 +493,7 @@ function AppContent() {
               }>
               <Route index element={<Navigate to="/app/home" replace />} />
               <Route path="home" element={<WalletPage />} />
+              <Route path="home/history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/OnchainHistoryPage')))}</React.Suspense>} />
               <Route path="wallet" element={<HomePageRebuilt />} />
               <Route path="wallet/crypto" element={<CryptoWalletPage />} />
               <Route path="wallet/onchain" element={<OnchainWalletPage />} />
