@@ -603,12 +603,12 @@ const TransferScreen = () => {
           </Button>
           <h1 className="text-2xl font-bold text-foreground flex-1">Transfer Funds</h1>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => navigate("/app/wallet/transfer-history")}
-            className="p-2"
           >
-            <History className="w-5 h-5" />
+            <History className="w-4 h-4" />
+            History
           </Button>
         </motion.div>
 
