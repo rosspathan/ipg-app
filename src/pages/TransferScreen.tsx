@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, Info, AlertTriangle, CheckCircle2, TrendingUp, Coins } from "lucide-react";
+import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, Info, AlertTriangle, CheckCircle2, TrendingUp, Coins, History } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { SuccessAnimation } from "@/components/wallet/SuccessAnimation";
@@ -601,7 +601,15 @@ const TransferScreen = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-foreground">Transfer Funds</h1>
+          <h1 className="text-2xl font-bold text-foreground flex-1">Transfer Funds</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/app/wallet/transfer-history")}
+            className="p-2"
+          >
+            <History className="w-5 h-5" />
+          </Button>
         </motion.div>
 
         {/* Destination Selector */}
