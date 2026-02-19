@@ -5,11 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, TrendingUp, DollarSign, Users } from "lucide-react";
+import { Download, TrendingUp, DollarSign, Users, FileText, Loader2 } from "lucide-react";
 import { format, subDays, startOfMonth } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { generateUserBskReportPDF } from "@/lib/generateUserBskReport";
+import { useToast } from "@/hooks/use-toast";
 
 export default function FinancialReports() {
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const { toast } = useToast();
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>('month');
 
   const { data: financialData, isLoading } = useQuery({
@@ -64,9 +68,24 @@ export default function FinancialReports() {
         totalUsers: totalUsers || 0,
         newUsers: newUsers || 0,
         transactionCount: (inrDeposits?.length || 0) + (inrWithdrawals?.length || 0)
-      };
+    };
     }
   });
+
+  const handleDownloadBskPdf = async () => {
+    setGeneratingPdf(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-user-bsk-report');
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to fetch report data');
+      generateUserBskReportPDF(data.data, data.generated_at);
+      toast({ title: 'Report Generated', description: `PDF with ${data.total_users} users downloaded.` });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Report Failed', description: err.message });
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
 
   const exportCSV = () => {
     const headers = ['Metric', 'Value'];
@@ -94,10 +113,16 @@ export default function FinancialReports() {
           <h1 className="text-2xl md:text-3xl font-bold">Financial Reports</h1>
           <p className="text-muted-foreground mt-1">Comprehensive financial analytics</p>
         </div>
-        <Button onClick={exportCSV} variant="outline" size="sm">
-          <Download className="w-4 h-4 mr-2" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleDownloadBskPdf} disabled={generatingPdf} size="sm">
+            {generatingPdf ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
+            {generatingPdf ? 'Generating...' : 'Download BSK Report PDF'}
+          </Button>
+          <Button onClick={exportCSV} variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-2">
