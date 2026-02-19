@@ -655,6 +655,7 @@ function AppContent() {
                 {/* Gamification & Programs */}
                 <Route path="spin" element={<AdminSpinNova />} />
                 <Route path="staking" element={<AdminStakingNova />} />
+                <Route path="ipg-staking" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminIPGStaking')))}</React.Suspense>} />
                 <Route path="badge-qualification" element={<BadgeQualificationAdmin />} />
                 <Route path="subscriptions" element={<AdminSubscriptionsNova />} />
                 <Route path="insurance" element={<Navigate to="/admin/programs/control" replace />} />

@@ -5,11 +5,12 @@ import { BacklinkBar } from "@/components/programs-pro/BacklinkBar";
 import { 
   Coins, Lock, TrendingUp, ArrowRight, Wallet, History, 
   ChevronDown, AlertCircle, Loader2, ArrowDownToLine, 
-  Zap, Shield, Clock, AlertTriangle, RefreshCw, X
+  Zap, Shield, Clock, AlertTriangle, RefreshCw, X, Bell
 } from "lucide-react";
 import { useNavigation } from "@/hooks/useNavigation";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useCryptoStakingAccount, type UserStake, type StakingLedgerEntry } from "@/hooks/useCryptoStakingAccount";
+import { useStakingNotifications } from "@/hooks/useStakingNotifications";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useOnchainBalances } from "@/hooks/useOnchainBalances";
@@ -23,6 +24,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export default function CryptoStakingScreen() {
   const { navigate } = useNavigation();
@@ -33,6 +41,9 @@ export default function CryptoStakingScreen() {
   const [unstakeDialog, setUnstakeDialog] = useState<{ open: boolean; stake: UserStake | null }>({ open: false, stake: null });
   const [earlyUnstakeDialog, setEarlyUnstakeDialog] = useState<{ open: boolean; stake: UserStake | null }>({ open: false, stake: null });
   const [restakeDialog, setRestakeDialog] = useState<{ open: boolean; stake: UserStake | null }>({ open: false, stake: null });
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const { notifications, unreadCount, markRead, markAllRead } = useStakingNotifications();
 
   const {
     plans,
@@ -110,7 +121,68 @@ export default function CryptoStakingScreen() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="px-4 pt-5 pb-24 space-y-5">
-        <BacklinkBar programName="IPG Staking" parentRoute="/app/home" />
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <BacklinkBar programName="IPG Staking" parentRoute="/app/home" />
+          </div>
+          {/* Notifications Bell */}
+          <Sheet open={notifOpen} onOpenChange={setNotifOpen}>
+            <SheetTrigger asChild>
+              <button className="relative w-9 h-9 rounded-xl flex items-center justify-center bg-card border border-border/40 flex-shrink-0 ml-2">
+                <Bell className="w-4 h-4 text-muted-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[340px] p-0">
+              <SheetHeader className="px-4 py-4 border-b border-border/30 flex flex-row items-center justify-between">
+                <SheetTitle className="text-sm font-semibold">Staking Notifications</SheetTitle>
+                {unreadCount > 0 && (
+                  <button onClick={() => markAllRead()} className="text-[11px] text-accent underline">
+                    Mark all read
+                  </button>
+                )}
+              </SheetHeader>
+              <div className="overflow-y-auto h-full pb-10">
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                    <Bell className="w-8 h-8 text-muted-foreground/40 mb-3" />
+                    <p className="text-sm font-medium text-muted-foreground">No notifications yet</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">Deposits, rewards, and unlocks will appear here</p>
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={() => !n.is_read && markRead(n.id)}
+                      className={cn(
+                        "px-4 py-3.5 border-b border-border/20 cursor-pointer transition-colors",
+                        !n.is_read ? "bg-accent/5" : "hover:bg-muted/30"
+                      )}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-muted/40 flex items-center justify-center text-base flex-shrink-0">
+                          {n.type === 'staking_reward' ? '✨' : n.type === 'staking_deposit' ? '⬇️' : n.type === 'staking_unlocked' ? '🔓' : '🔔'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-semibold text-foreground">{n.title}</p>
+                            {!n.is_read && <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{n.message}</p>
+                          <p className="text-[10px] text-muted-foreground/50 mt-1">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
 
         {/* ─── Hero Banner ─── */}
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border/40">
