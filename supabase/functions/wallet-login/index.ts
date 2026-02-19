@@ -167,15 +167,16 @@ serve(async (req) => {
       }
     }
 
+    // Generic error message to prevent user enumeration
+    const GENERIC_LOGIN_ERROR = "Invalid credentials. Please check your email and recovery phrase and try again.";
+    const GENERIC_LOGIN_CODE = "INVALID_CREDENTIALS";
+
     // Check if we found the email/account at all
     if (!userId) {
       console.log("[wallet-login] No account found for email:", email);
       return new Response(
-        JSON.stringify({ 
-          error: "No account found with this email. Please check your email address or create a new account.", 
-          code: "EMAIL_NOT_FOUND" 
-        }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: GENERIC_LOGIN_ERROR, code: GENERIC_LOGIN_CODE }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -183,11 +184,8 @@ serve(async (req) => {
     if (!storedWalletAddress) {
       console.log("[wallet-login] Account has no wallet linked:", userId);
       return new Response(
-        JSON.stringify({ 
-          error: "No wallet is linked to this account. Please use password login and then import your wallet from Settings.", 
-          code: "NO_WALLET_LINKED" 
-        }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: GENERIC_LOGIN_ERROR, code: GENERIC_LOGIN_CODE }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -195,11 +193,8 @@ serve(async (req) => {
     if (storedWalletAddress.toLowerCase() !== walletAddress.toLowerCase()) {
       console.log("[wallet-login] Wallet mismatch - stored:", storedWalletAddress, "derived:", walletAddress);
       return new Response(
-        JSON.stringify({ 
-          error: "The recovery phrase does not match the wallet linked to this account. Please double-check your words and their order.", 
-          code: "WALLET_MISMATCH" 
-        }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: GENERIC_LOGIN_ERROR, code: GENERIC_LOGIN_CODE }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -218,8 +213,8 @@ serve(async (req) => {
     if (userData.user.email?.toLowerCase() !== email.toLowerCase()) {
       console.log("[wallet-login] Email mismatch with auth user");
       return new Response(
-        JSON.stringify({ error: "Email does not match account records", code: "EMAIL_MISMATCH" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: GENERIC_LOGIN_ERROR, code: GENERIC_LOGIN_CODE }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

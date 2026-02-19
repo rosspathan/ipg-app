@@ -192,12 +192,12 @@ serve(async (req) => {
           .maybeSingle();
 
         if (existingOwner) {
-          console.log('[complete-onboarding] BLOCKED: Wallet already owned by:', existingOwner.user_id);
+          console.log('[complete-onboarding] BLOCKED: Wallet already owned by another user');
           return new Response(
             JSON.stringify({ 
               success: false, 
               reason: "wallet_already_linked",
-              error: "This wallet is already linked to another account. Please use your own unique recovery phrase." 
+              error: "This wallet cannot be used. Please use a different recovery phrase." 
             }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
