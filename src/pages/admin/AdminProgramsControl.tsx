@@ -149,9 +149,6 @@ export default function AdminProgramControl() {
       <div className="mb-6">
         <h2 className="font-bold text-base md:text-lg mb-3">Quick Access</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <Button onClick={() => navigate('/admin/programs/control/ad-mining')} variant="outline" size="sm">
-            Ad Mining
-          </Button>
           <Button onClick={() => navigate('/admin/programs/control/lucky-draw')} variant="outline" size="sm">
             Lucky Draw
           </Button>

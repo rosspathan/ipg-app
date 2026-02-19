@@ -48,12 +48,12 @@ export function BSKWalletPage() {
           <Button
             variant="outline"
             className="h-auto flex-col items-start p-4 gap-2"
-            onClick={() => navigate("/app/programs/ads")}
+            onClick={() => navigate("/app/programs/staking")}
           >
             <Gift className="h-5 w-5 text-primary" />
             <div className="text-left">
               <p className="font-semibold">Earn BSK</p>
-              <p className="text-xs text-muted-foreground">Ad Mining</p>
+              <p className="text-xs text-muted-foreground">Staking</p>
             </div>
           </Button>
 
@@ -109,7 +109,7 @@ export function BSKWalletPage() {
               BSK (Bonos Stellar Krypto) is our platform's reward token used across all programs.
             </p>
             <p>
-              Earn BSK through ad mining, referrals, staking, and other activities. Use it for trading fees, insurance premiums, and more.
+              Earn BSK through referrals, staking, and other activities. Use it for trading fees, insurance premiums, and more.
             </p>
           </CardContent>
         </Card>

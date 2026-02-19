@@ -96,9 +96,9 @@ const screens: ScreenData[] = [
         description: '50-level deep referral system'
       },
       {
-        icon: '📺',
-        title: 'Ad Mining',
-        description: 'Watch ads, earn BSK tokens'
+        icon: '🎰',
+        title: 'Spin & Win',
+        description: 'Play games, earn BSK tokens'
       }
     ]
   },
