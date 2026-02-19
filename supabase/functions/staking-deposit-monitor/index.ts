@@ -7,7 +7,18 @@ const corsHeaders = {
 };
 
 const BSCSCAN_API_KEY = Deno.env.get('BSCSCAN_API_KEY') || '';
+
+// ⛔ IMMUTABLE: Staking is EXCLUSIVELY locked to IPG. Do NOT change this.
+// Changing this would allow non-IPG tokens to be credited to staking accounts.
 const IPG_CONTRACT = '0x05002c24c2A999253f5eEe44A85C2B6BAD7f656E';
+const IPG_SYMBOL = 'IPG';
+
+// Forbidden contracts that must NEVER be credited to staking accounts
+const FORBIDDEN_CONTRACTS = [
+  '0x7437d96d2dca13525b4a6021865d41997dee1f09', // USDI — permanently forbidden
+  '0x742575866c0eb1b6b6350159d536447477085cef', // BSK  — permanently forbidden
+  '0x55d398326f99059ff775485246999027b3197955', // USDT — permanently forbidden
+];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -82,7 +93,22 @@ serve(async (req) => {
     }
 
     // Filter incoming transfers to the hot wallet
-    const incomingTransfers = data.result.filter((tx: any) => 
+    // ⛔ SECURITY: Only process IPG contract transfers. Forbidden contracts are blocked.
+    // Validate that BscScan returned data for the IPG contract ONLY.
+    const filteredByContract = data.result.filter((tx: any) => {
+      const contractAddr = (tx.contractAddress || '').toLowerCase();
+      if (contractAddr !== IPG_CONTRACT.toLowerCase()) {
+        console.warn(`[staking-deposit-monitor] BLOCKED non-IPG contract ${contractAddr} — only ${IPG_CONTRACT} is permitted`);
+        return false;
+      }
+      if (FORBIDDEN_CONTRACTS.includes(contractAddr)) {
+        console.error(`[staking-deposit-monitor] SECURITY: Forbidden contract ${contractAddr} blocked from staking credit`);
+        return false;
+      }
+      return true;
+    });
+
+    const incomingTransfers = filteredByContract.filter((tx: any) => 
       tx.to.toLowerCase() === hotWalletAddress &&
       (!userFilter || tx.from.toLowerCase() === userFilter)
     );
