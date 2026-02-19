@@ -14,18 +14,17 @@ All colors MUST be HSL.
        Reference: src/design-system/nova-admin-tokens.ts
        =============================================== */
     
-    /* PURPLE NOVA DS - Premium Dark UI */
-    /* Core Brand Colors - HSL for precision */
-    --primary: 262 100% 65%; /* #7C4DFF */
-    --primary-foreground: 0 0% 98%;
-    --primary-glow: 262 100% 85%;
+    /* Deep Galaxy DS - Primary = Cyan, Secondary = Indigo */
+    --primary: 186 100% 50%; /* #00E5FF Cyan */
+    --primary-foreground: 230 80% 4%;
+    --primary-glow: 186 100% 72%;
 
-    --secondary: 265 100% 71%; /* #A66CFF */
+    --secondary: 245 80% 68%; /* Indigo */
     --secondary-foreground: 0 0% 98%;
 
-    --accent: 189 100% 50%; /* #00E5FF */
-    --accent-foreground: 0 0% 8%;
-    --accent-glow: 189 100% 80%;
+    --accent: 186 100% 50%; /* Cyan */
+    --accent-foreground: 230 80% 4%;
+    --accent-glow: 186 100% 72%;
 
     /* Status Colors */
     --success: 154 67% 52%; /* #2BD67B */
@@ -41,14 +40,14 @@ All colors MUST be HSL.
     --destructive-foreground: 0 0% 98%;
 
     /* Purple Nova Background System */
-    --background-primary: 240 35% 7%; /* #0B0A12 */
-    --background-secondary: 235 28% 15%; /* #12142A */
-    --background: 240 35% 7%;
+    --background-primary: 230 80% 4%; /* #050816 Deep Galaxy */
+    --background-secondary: 230 50% 8%; /* Deep glass surface */
+    --background: 230 80% 4%;
     --foreground: 0 0% 98%;
 
-    --card: 235 28% 13%; /* #161A2C */
-    --card-secondary: 235 25% 15%; /* #1B2036 */
-    --card-glass: rgba(18, 22, 36, 0.7);
+    --card: 230 50% 8%;
+    --card-secondary: 230 40% 10%;
+    --card-glass: rgba(10, 15, 30, 0.6);
     --card-foreground: 0 0% 98%;
 
     --popover: 223 32% 11%;
@@ -62,27 +61,27 @@ All colors MUST be HSL.
     --input: 217 24% 18%;
     --ring: 248 67% 64%;
 
-    /* Shadows & Effects - Premium Neo-Noir */
-    --shadow-card: 0 8px 32px rgba(136, 83, 255, 0.22);
-    --shadow-elevated: 0 12px 48px rgba(0, 229, 255, 0.18);
-    --shadow-button: 0 4px 16px rgba(136, 83, 255, 0.3);
-    --shadow-neon: 0 0 20px rgba(136, 83, 255, 0.4);
-    --shadow-fab: 0 8px 24px rgba(0, 229, 255, 0.3);
-    --shadow-ambient: 0 8px 32px rgba(136, 83, 255, 0.22);
+    /* Shadows & Effects - Deep Galaxy */
+    --shadow-card: 0 8px 32px rgba(0, 229, 255, 0.08);
+    --shadow-elevated: 0 16px 64px rgba(0, 229, 255, 0.12);
+    --shadow-button: 0 4px 20px rgba(0, 229, 255, 0.3);
+    --shadow-neon: 0 0 24px rgba(0, 229, 255, 0.35);
+    --shadow-fab: 0 8px 32px rgba(0, 229, 255, 0.3);
+    --shadow-ambient: 0 8px 40px rgba(99, 73, 255, 0.12);
 
-    /* Premium Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(248 67% 64%), hsl(248 100% 75%));
-    --gradient-background: linear-gradient(135deg, hsl(222 39% 7%), hsl(225 34% 9%));
-    --gradient-card: linear-gradient(135deg, rgba(18, 22, 36, 0.8), rgba(20, 26, 42, 0.6));
-    --gradient-neon: linear-gradient(90deg, hsl(186 100% 50%), hsl(248 67% 64%));
-    --gradient-glow: radial-gradient(circle at center, rgba(136, 83, 255, 0.2), transparent 70%);
-    --gradient-ring: conic-gradient(from 0deg, hsl(186 100% 50%), hsl(248 67% 64%), hsl(186 100% 50%));
-    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    /* Deep Galaxy Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(186 100% 50%), hsl(245 80% 68%));
+    --gradient-background: linear-gradient(135deg, hsl(230 80% 4%), hsl(230 50% 8%));
+    --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    --gradient-neon: linear-gradient(90deg, hsl(186 100% 50%), hsl(245 80% 68%));
+    --gradient-glow: radial-gradient(circle at center, rgba(0, 229, 255, 0.12), transparent 70%);
+    --gradient-ring: conic-gradient(from 0deg, hsl(186 100% 50%), hsl(245 80% 68%), hsl(186 100% 50%));
+    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
 
-    /* Neo-Noir Specific */
-    --glow-primary: rgba(136, 83, 255, 0.4);
-    --glow-accent: rgba(0, 229, 255, 0.3);
-    --rim-light: rgba(255, 255, 255, 0.1);
+    /* Deep Galaxy Glows */
+    --glow-primary: rgba(0, 229, 255, 0.3);
+    --glow-accent: rgba(99, 73, 255, 0.2);
+    --rim-light: rgba(255, 255, 255, 0.06);
 
     /* Layout & Spacing - 4/8pt system */
     --radius: 16px;
@@ -252,38 +251,38 @@ All colors MUST be HSL.
     --sidebar-ring: 252 85% 60%;
   }
 
-  /* Dark mode - Premium Neo-Noir */
+  /* Dark mode - Deep Galaxy */
   .dark {
-    --background: 232 38% 6%;
+    --background: 230 80% 4%;        /* #050816 deep navy */
     --foreground: 0 0% 98%;
     
-    --card: 230 30% 10%;
+    --card: 230 50% 8%;              /* deep glass surface */
     --card-foreground: 0 0% 98%;
-    --card-glass: 230 30% 10% / 0.7;
+    --card-glass: 230 50% 8% / 0.45;
     
-    --popover: 230 30% 9%;
+    --popover: 230 50% 7%;
     --popover-foreground: 0 0% 98%;
     
-    --primary: 252 85% 63%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 252 100% 80%;
+    --primary: 186 100% 50%;         /* cyan accent */
+    --primary-foreground: 230 80% 4%;
+    --primary-glow: 186 100% 72%;
     
-    --secondary: 265 80% 68%;
+    --secondary: 245 80% 68%;        /* indigo */
     --secondary-foreground: 0 0% 98%;
     
-    --muted: 230 20% 14%;
-    --muted-foreground: 220 10% 62%;
+    --muted: 230 30% 12%;
+    --muted-foreground: 220 15% 58%;
     
-    --accent: 186 100% 50%;
-    --accent-foreground: 0 0% 6%;
-    --accent-glow: 186 100% 78%;
+    --accent: 186 100% 50%;          /* cyan */
+    --accent-foreground: 230 80% 4%;
+    --accent-glow: 186 100% 72%;
     
-    --destructive: 0 72% 62%;
+    --destructive: 0 72% 58%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 230 18% 18%;
-    --input: 230 20% 14%;
-    --ring: 252 85% 63%;
+    --border: 230 30% 16%;
+    --input: 230 30% 12%;
+    --ring: 186 100% 50%;
     
     --success: 154 67% 52%;
     --success-foreground: 0 0% 98%;
@@ -291,28 +290,37 @@ All colors MUST be HSL.
     --warning: 35 85% 60%;
     --warning-foreground: 0 0% 98%;
     
-    --danger: 0 72% 62%;
+    --danger: 0 72% 58%;
     --danger-foreground: 0 0% 98%;
     
-    --shadow-card: 0 8px 32px hsl(252 85% 63% / 0.15);
-    --shadow-elevated: 0 12px 48px hsl(186 100% 50% / 0.12);
-    --shadow-button: 0 4px 16px hsl(252 85% 63% / 0.25);
-    --shadow-neon: 0 0 20px hsl(252 85% 63% / 0.35);
-    --shadow-fab: 0 8px 24px hsl(186 100% 50% / 0.25);
-    --shadow-ambient: 0 8px 32px hsl(252 85% 63% / 0.18);
+    /* Deep Galaxy Shadows & Glows */
+    --shadow-card: 0 8px 32px hsl(186 100% 50% / 0.08), 0 2px 8px hsl(230 80% 4% / 0.5);
+    --shadow-elevated: 0 16px 64px hsl(186 100% 50% / 0.12), 0 4px 16px hsl(245 80% 68% / 0.08);
+    --shadow-button: 0 4px 20px hsl(186 100% 50% / 0.3);
+    --shadow-neon: 0 0 24px hsl(186 100% 50% / 0.35), 0 0 48px hsl(186 100% 50% / 0.15);
+    --shadow-fab: 0 8px 32px hsl(186 100% 50% / 0.3);
+    --shadow-ambient: 0 8px 40px hsl(245 80% 68% / 0.12);
     
-    --glow-primary: hsl(252 85% 63% / 0.35);
-    --glow-accent: hsl(186 100% 50% / 0.25);
-    --rim-light: hsl(0 0% 100% / 0.08);
+    --glow-primary: hsl(186 100% 50% / 0.3);
+    --glow-accent: hsl(245 80% 68% / 0.2);
+    --rim-light: hsl(0 0% 100% / 0.06);
     
-    --sidebar-background: 232 38% 6%;
+    /* Deep Galaxy Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(186 100% 50%), hsl(245 80% 68%));
+    --gradient-card: linear-gradient(135deg, hsl(230 50% 8% / 0.8), hsl(230 40% 12% / 0.4));
+    --gradient-neon: linear-gradient(90deg, hsl(186 100% 50%), hsl(245 80% 68%));
+    --gradient-glow: radial-gradient(circle at center, hsl(186 100% 50% / 0.12), transparent 70%);
+    --gradient-ring: conic-gradient(from 0deg, hsl(186 100% 50%), hsl(245 80% 68%), hsl(186 100% 50%));
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.07), hsl(0 0% 100% / 0.02));
+    
+    --sidebar-background: 230 80% 4%;
     --sidebar-foreground: 220 30% 90%;
-    --sidebar-primary: 252 85% 63%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 25% 16%;
+    --sidebar-primary: 186 100% 50%;
+    --sidebar-primary-foreground: 230 80% 4%;
+    --sidebar-accent: 230 30% 14%;
     --sidebar-accent-foreground: 220 30% 90%;
-    --sidebar-border: 230 20% 20%;
-    --sidebar-ring: 252 85% 63%;
+    --sidebar-border: 230 30% 18%;
+    --sidebar-ring: 186 100% 50%;
   }
 }
 
@@ -339,6 +347,34 @@ All colors MUST be HSL.
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
     overscroll-behavior-y: contain;
+  }
+
+  /* Deep Galaxy animated background - dark mode only */
+  .dark body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: 
+      radial-gradient(ellipse 600px 400px at 20% 20%, hsl(186 100% 50% / 0.06), transparent),
+      radial-gradient(ellipse 500px 500px at 80% 80%, hsl(245 80% 68% / 0.06), transparent),
+      radial-gradient(ellipse 300px 300px at 60% 30%, hsl(186 100% 50% / 0.04), transparent);
+    animation: galaxy-drift 20s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  @keyframes galaxy-drift {
+    0% {
+      background-position: 0% 0%, 100% 100%, 60% 30%;
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      background-position: 10% 10%, 90% 90%, 40% 50%;
+      opacity: 0.8;
+    }
   }
   
   /* Smooth scrolling with momentum */
@@ -431,31 +467,30 @@ All colors MUST be HSL.
     height: 300px;
   }
 
-  /* Enhanced glassmorphism utilities */
+  /* Deep Galaxy glassmorphism */
   .glass-card {
-    background: var(--card-glass);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid hsl(255 255 255 / 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 0 20px rgba(0, 229, 255, 0.03);
     position: relative;
     transform: translateZ(0);
     will-change: transform;
+    transition: all var(--duration-normal) ease-out;
   }
 
-  .glass-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: var(--gradient-ring);
-    opacity: 0;
-    transition: opacity var(--duration-normal);
-    z-index: -1;
-    margin: -1px;
-  }
-
-  .glass-card:hover::before {
-    opacity: 0.15;
+  .glass-card:hover {
+    border-color: rgba(0, 229, 255, 0.15);
+    box-shadow: 
+      0 12px 40px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 0 30px rgba(0, 229, 255, 0.05),
+      0 0 20px rgba(0, 229, 255, 0.08);
   }
 
   .glow-primary {
