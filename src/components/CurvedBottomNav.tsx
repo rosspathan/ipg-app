@@ -61,14 +61,22 @@ return (
       style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
     >
       {/* Glass background with curve */}
-      <div className="relative">
-          {/* Curved background */}
+        <div className="relative">
+          {/* Premium glass nav bar */}
           <div className={cn(
-            "glass-card bg-card-glass border border-border/30",
-            "rounded-2xl shadow-elevated backdrop-blur-xl",
+            "border border-border/30",
+            "rounded-3xl backdrop-blur-2xl",
             "h-20 flex items-center justify-center",
-            "relative overflow-hidden"
-          )}>
+            "relative overflow-hidden",
+            "transition-all duration-200"
+          )}
+          style={{
+            background: 'rgba(255,255,255,0.65)',
+            WebkitBackdropFilter: 'blur(28px)',
+            backdropFilter: 'blur(28px)',
+            boxShadow: '0 -4px 32px rgba(0, 80, 200, 0.06), 0 4px 24px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255,255,255,0.9)',
+          }}
+          >
             {/* Curved notch for FAB */}
             <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-4">
               <div className="w-20 h-8 bg-transparent rounded-b-full border-t-0 border-l border-r border-border/30" />
@@ -91,17 +99,17 @@ return (
                     size="sm"
                     onClick={() => navigate(item.path)}
                     className={cn(
-                      "ripple flex flex-col items-center gap-1 h-16 px-3 rounded-xl",
+                      "ripple flex flex-col items-center gap-1 h-16 px-3 rounded-2xl transition-all duration-200",
                       isBeforeCenter && "mr-8",
                       isAfterCenter && index === 2 && "ml-8",
                       active 
-                        ? "text-primary bg-primary/12 shadow-button" 
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
+                        ? "text-primary bg-primary/10 shadow-[0_0_12px_hsl(var(--primary)/0.2)]" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-primary/[0.04]"
                     )}
                   >
-                    <Icon className="h-5 w-5" />
+                    <Icon className={cn("h-5 w-5", active && "drop-shadow-[0_0_4px_hsl(var(--primary)/0.4)]")} />
                     <span className={cn(
-                      "text-xs font-medium",
+                      "text-xs font-semibold",
                       active ? "text-primary" : "text-muted-foreground"
                     )}>
                       {item.label}
