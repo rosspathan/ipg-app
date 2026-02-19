@@ -402,12 +402,6 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
               {availableBalance.toFixed(4)}
             </span>
             <span className="text-muted-foreground">{balanceCurrency}</span>
-            <button
-              onClick={() => navigate(`/app/wallet/transfer?asset=${balanceCurrency}&direction=to_trading`)}
-              className="text-accent text-[9px] font-bold ml-0.5 active:opacity-70"
-            >
-              ⊕
-            </button>
           </div>
         </div>
         <div className="flex items-center justify-between">
