@@ -43,7 +43,7 @@
  
   if (fills.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[32px] text-[11px] text-[#6B7280]">
+      <div className="flex items-center justify-center h-[32px] text-[11px] text-muted-foreground">
         No trade history{currentSymbol ? ` for ${currentSymbol}` : ''}
       </div>
     );

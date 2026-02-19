@@ -35,7 +35,7 @@ export const RecentTradesTicker: React.FC<RecentTradesTickerProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-20 text-[10px] text-[#4B5563]">
+      <div className="flex items-center justify-center h-20 text-[10px] text-muted-foreground">
         Loading trades...
       </div>
     );
@@ -45,15 +45,15 @@ export const RecentTradesTicker: React.FC<RecentTradesTickerProps> = ({
     <div className="py-1">
       {/* Header */}
       <div className="flex items-center gap-1 px-2 pb-1">
-        <Clock className="h-2.5 w-2.5 text-[#4B5563]" />
-        <span className="text-[9px] text-[#4B5563] uppercase tracking-wider font-medium">
+        <Clock className="h-2.5 w-2.5 text-muted-foreground" />
+        <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">
           Recent Trades
         </span>
       </div>
 
       {/* Column headers */}
       <div
-        className="grid px-2 pb-0.5 text-[9px] text-[#4B5563] uppercase tracking-wider font-medium"
+        className="grid px-2 pb-0.5 text-[9px] text-muted-foreground uppercase tracking-wider font-medium"
         style={{ gridTemplateColumns: '38% 32% 30%' }}
       >
         <span>Price ({quoteCurrency})</span>
@@ -70,28 +70,28 @@ export const RecentTradesTicker: React.FC<RecentTradesTickerProps> = ({
               <div
                 key={trade.id || idx}
                 onClick={() => onPriceClick?.(trade.price)}
-                className="grid items-center px-2 h-[17px] cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors duration-75"
+                className="grid items-center px-2 h-[17px] cursor-pointer hover:bg-muted/30 active:bg-muted/50 transition-colors duration-75"
                 style={{ gridTemplateColumns: '38% 32% 30%' }}
               >
                 <span
                   className={cn(
                     "text-[11px] font-mono tabular-nums",
-                    isBuy ? "text-[#2EBD85]" : "text-[#F6465D]"
+                    isBuy ? "text-success" : "text-danger"
                   )}
                 >
                   {formatPrice(trade.price)}
                 </span>
-                <span className="text-[11px] font-mono text-[#848E9C] text-right tabular-nums">
+                <span className="text-[11px] font-mono text-muted-foreground text-right tabular-nums">
                   {formatQty(trade.quantity)}
                 </span>
-                <span className="text-[10px] font-mono text-[#4B5563] text-right tabular-nums">
+                <span className="text-[10px] font-mono text-muted-foreground text-right tabular-nums">
                   {formatTime(trade.trade_time)}
                 </span>
               </div>
             );
           })
         ) : (
-          <div className="flex items-center justify-center h-[40px] text-[9px] text-[#4B5563]">
+          <div className="flex items-center justify-center h-[40px] text-[9px] text-muted-foreground">
             Waiting for first trade...
           </div>
         )}
