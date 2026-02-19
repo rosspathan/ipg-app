@@ -31,6 +31,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  STAKING_TOKEN_CONTRACT,
+  STAKING_TOKEN_SYMBOL,
+  STAKING_TOKEN_DECIMALS,
+  assertIPGContract,
+} from '@/constants/stakingToken';
 
 const BSC_RPC_URL = 'https://bsc-dataseed1.binance.org/';
 const ERC20_ABI = [
@@ -38,7 +44,11 @@ const ERC20_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
   'function decimals() view returns (uint8)',
 ];
-const IPG_CONTRACT = '0x05002c24c2A999253f5eEe44A85C2B6BAD7f656E';
+
+// ⛔ DO NOT change this. Staking is EXCLUSIVELY locked to IPG.
+// The contract is imported from src/constants/stakingToken.ts which
+// contains a runtime guard (assertIPGContract) to block any non-IPG transfer.
+const IPG_CONTRACT = STAKING_TOKEN_CONTRACT;
 
 type Direction = 'deposit' | 'withdraw';
 
@@ -122,12 +132,18 @@ export default function StakingDepositScreen() {
   };
 
   // ─── Execute on-chain transfer ───
+  // ⛔ SECURITY: Only IPG (STAKING_TOKEN_CONTRACT) is ever transferred here.
+  // assertIPGContract() will throw immediately if the contract deviates from IPG.
   const executeTransfer = async (privateKey: string, amountNum: number) => {
     if (!depositAddress) throw new Error("Deposit address not configured");
+
+    // Runtime guard — blocks any non-IPG contract from being used
+    assertIPGContract(IPG_CONTRACT);
+
     const provider = new ethers.JsonRpcProvider(BSC_RPC_URL);
     const walletInstance = new ethers.Wallet(privateKey, provider);
     const contract = new ethers.Contract(IPG_CONTRACT, ERC20_ABI, walletInstance);
-    const amountInUnits = ethers.parseUnits(amountNum.toString(), 18);
+    const amountInUnits = ethers.parseUnits(amountNum.toString(), STAKING_TOKEN_DECIMALS);
     const tx = await contract.transfer(depositAddress, amountInUnits);
     setTxHash(tx.hash);
     const receipt = await tx.wait();
