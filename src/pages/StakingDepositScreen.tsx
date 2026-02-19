@@ -77,7 +77,7 @@ export default function StakingDepositScreen() {
   // Withdraw validation
   const withdrawFee = numericAmount * ((unstakingFee || 0.5) / 100);
   const withdrawNet = numericAmount - withdrawFee;
-  const isWithdrawValid = numericAmount >= 1 && numericAmount <= availableBalance;
+  const isWithdrawValid = numericAmount >= 0.01 && numericAmount <= 20 && numericAmount <= availableBalance;
 
   useEffect(() => {
     refreshWallet();
@@ -430,7 +430,7 @@ export default function StakingDepositScreen() {
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-foreground/80">Amount</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {direction === 'deposit' ? 'Min 0.01 · Max 20 IPG' : `Min 1 IPG · ${unstakingFee || 0.5}% fee`}
+                {direction === 'deposit' ? 'Min 0.01 · Max 20 IPG' : `Min 0.01 · Max 20 IPG · ${unstakingFee || 0.5}% fee`}
                 </p>
               </div>
               <div className="relative">
@@ -444,8 +444,8 @@ export default function StakingDepositScreen() {
                     (showMinError || showMaxError || showBalError) && "border-destructive/60"
                   )}
                   step={direction === 'deposit' ? '0.01' : '0.0001'}
-                  min={direction === 'deposit' ? 0.01 : 1}
-                  max={direction === 'deposit' ? 20 : availableBalance}
+                  min={0.01}
+                  max={direction === 'deposit' ? 20 : Math.min(20, availableBalance)}
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
                   <span className="text-xs font-medium text-muted-foreground">IPG</span>
@@ -469,7 +469,10 @@ export default function StakingDepositScreen() {
               {showMinError && <p className="text-[11px] text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Minimum transfer is 0.01 IPG</p>}
               {showMaxError && <p className="text-[11px] text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Maximum transfer is 20 IPG per transaction</p>}
               {showBalError && <p className="text-[11px] text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Insufficient on-chain balance</p>}
-              {direction === 'withdraw' && numericAmount > availableBalance && numericAmount > 0 && (
+              {direction === 'withdraw' && numericAmount > 20 && (
+                <p className="text-[11px] text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Maximum withdrawal is 20 IPG per transaction</p>
+              )}
+              {direction === 'withdraw' && numericAmount > 0 && numericAmount <= 20 && numericAmount > availableBalance && (
                 <p className="text-[11px] text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Insufficient staking balance</p>
               )}
             </div>
@@ -556,7 +559,7 @@ export default function StakingDepositScreen() {
               </>
             ) : (
               <>
-                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />Minimum withdrawal is 1 IPG</li>
+                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />Transfer limits: min 0.01 IPG · max 20 IPG per transaction</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />A {unstakingFee || 0.5}% fee is deducted from all withdrawals</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />IPG will be sent to your registered wallet on BSC</li>
                 <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />Withdrawals are processed within a few minutes</li>
