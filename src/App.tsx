@@ -69,7 +69,7 @@ const AdminProgramsNova = React.lazy(() => import("./pages/admin/AdminProgramsNo
 const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgramEditorNova"));
 const AdminProgramEditorClean = React.lazy(() => import("./pages/admin/AdminProgramEditorClean"));
 const AdminProgramsControl = React.lazy(() => import("./pages/admin/AdminProgramsControl"));
-const AdMiningControlPanel = React.lazy(() => import("./pages/admin/program-controls/AdMiningControlPanel"));
+
 const LuckyDrawControlPanel = React.lazy(() => import("./pages/admin/program-controls/LuckyDrawControlPanel"));
 const SpinWheelControlPanel = React.lazy(() => import("./pages/admin/program-controls/SpinWheelControlPanel"));
 const StakingControlPanel = React.lazy(() => import("./pages/admin/program-controls/StakingControlPanel"));
@@ -215,7 +215,7 @@ const PurchaseHistoryPage = React.lazy(() => import("./pages/programs/PurchaseHi
 // History Pages
 const InsuranceHistoryPage = React.lazy(() => import("./pages/programs/InsuranceHistoryPage"));
 const LoansHistoryPage = React.lazy(() => import("./pages/programs/LoansHistoryPage"));
-const AdMiningHistoryPage = React.lazy(() => import("./pages/programs/AdMiningHistoryPage"));
+
 
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -290,7 +290,7 @@ import { SupportPage } from "@/pages/SupportPage";
 
 // Phase 3 & 4 User Programs
 const ReferralsPageAstra = React.lazy(() => import("./pages/astra/ReferralsPage"));
-const AdMiningPageNew = React.lazy(() => import("./pages/programs/AdMiningPageNew"));
+
 const LuckyDrawPageNew = React.lazy(() => import("./pages/programs/LuckyDrawPageNew"));
 const TeamReferralsPageNew = React.lazy(() => import("./pages/programs/TeamReferralsPageNew"));
 const StakingPageNewV2 = React.lazy(() => import("./pages/programs/StakingPageNew"));
@@ -536,8 +536,8 @@ function AppContent() {
               <Route path="wallet" element={<HomePageRebuilt />} />
                 
                 {/* Programs - All with BSK Balance Checks */}
-                <Route path="programs/ad-mining" element={<React.Suspense fallback={<LoadingFallback />}><AdMiningPageNew /></React.Suspense>} />
-                <Route path="programs/advertising" element={<React.Suspense fallback={<LoadingFallback />}><AdMiningPageNew /></React.Suspense>} />
+                <Route path="programs/ad-mining" element={<Navigate to="/app/programs" replace />} />
+                <Route path="programs/advertising" element={<Navigate to="/app/programs" replace />} />
                 <Route path="programs/lucky-draw" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawPage /></React.Suspense>} />
                 <Route path="programs/lucky-draw/tickets" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawTicketsPage /></React.Suspense>} />
                 <Route path="programs/spin" element={<React.Suspense fallback={<LoadingFallback />}><ISmartSpinScreen /></React.Suspense>} />
@@ -553,7 +553,7 @@ function AppContent() {
                 <Route path="programs/bsk-promotions" element={<React.Suspense fallback={<LoadingFallback />}><BSKPromotionsPage /></React.Suspense>} />
                 
                 {/* Legacy program routes */}
-                <Route path="programs/ads" element={<React.Suspense fallback={<LoadingFallback />}><AdvertisingPage /></React.Suspense>} />
+                <Route path="programs/ads" element={<Navigate to="/app/programs" replace />} />
                 <Route path="programs/referrals" element={<Navigate to="/app/programs/team-referrals" replace />} />
                 <Route path="programs/loans" element={<Navigate to="/app/programs" replace />} />
                 
@@ -661,7 +661,7 @@ function AppContent() {
                 <Route path="programs/editor/new" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramEditorClean /></React.Suspense>} />
                 <Route path="programs/editor/:id" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramEditorClean /></React.Suspense>} />
                 <Route path="programs/control" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramsControl /></React.Suspense>} />
-                <Route path="programs/control/ad-mining/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><AdMiningControlPanel /></React.Suspense>} />
+                <Route path="programs/control/ad-mining/:moduleId?" element={<Navigate to="/admin/programs/control" replace />} />
                 <Route path="programs/control/lucky-draw/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawControlPanel /></React.Suspense>} />
                 <Route path="programs/control/spin-wheel/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><SpinWheelControlPanel /></React.Suspense>} />
                 <Route path="programs/control/staking/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><StakingControlPanel /></React.Suspense>} />

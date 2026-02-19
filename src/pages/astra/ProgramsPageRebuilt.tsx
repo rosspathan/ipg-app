@@ -83,14 +83,6 @@ export function ProgramsPageRebuilt() {
           route: "/app/programs/staking",
         },
         {
-          id: "ad-mining",
-          title: "Ad Mining",
-          subtitle: "Watch ads, earn BSK",
-          icon: <Gift className="h-5 w-5 text-accent" />,
-          route: "/app/programs/ads",
-          badge: { text: "DAILY", variant: "accent" },
-        },
-        {
           id: "lucky-draw",
           title: "Lucky Draw",
           subtitle: "Win big prizes",
