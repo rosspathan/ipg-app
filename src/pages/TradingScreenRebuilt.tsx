@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, TrendingUp, Info, Plus, BarChart3, Settings, MoreVertical, BookOpen, X } from "lucide-react";
+import { ChevronDown, TrendingUp, Info, Plus, BarChart3, Settings, MoreVertical, BookOpen, X, ArrowLeftRight } from "lucide-react";
 import { PairSelectorSheet } from "@/components/trading/PairSelectorSheet";
 import { PercentChipsPro } from "@/components/trading/PercentChipsPro";
 import { AmountSliderPro } from "@/components/trading/AmountSliderPro";
@@ -434,15 +434,21 @@ export default function TradingScreenRebuilt() {
             {/* Available Balance */}
             <div className="flex items-center justify-between py-1.5 px-2 bg-muted/10 rounded-lg">
               <span className="text-[10px] text-muted-foreground">Available</span>
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-bold font-mono text-foreground">
-                  {availableBalance.toFixed(2)} {side === "buy" ? quoteSymbol : baseSymbol}
-                </span>
-                <button className="p-0.5 hover:bg-muted/50 rounded transition-colors">
-                  <Plus className="h-3 w-3" />
-                </button>
-              </div>
+              <span className="text-xs font-bold font-mono text-foreground">
+                {availableBalance.toFixed(2)} {side === "buy" ? quoteSymbol : baseSymbol}
+              </span>
             </div>
+
+            {/* Transfer Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full h-9 glass-card border-primary/20 text-primary font-semibold text-xs hover:bg-primary/10 hover:border-primary/40 hover:shadow-[0_0_12px_rgba(0,212,255,0.15)] transition-all duration-300"
+              onClick={() => navigate('/app/wallet/transfer')}
+            >
+              <ArrowLeftRight className="h-3.5 w-3.5 mr-1.5" />
+              Transfer Funds
+            </Button>
 
             {/* Submit Button */}
             <Button
