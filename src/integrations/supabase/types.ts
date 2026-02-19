@@ -437,6 +437,93 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_sensitive_operations: {
+        Row: {
+          admin_user_id: string
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirmed_at: string | null
+          created_at: string
+          delay_hours: number
+          executable_after: string | null
+          executed_at: string | null
+          id: string
+          operation_type: string
+          payload: Json | null
+          requires_delay: boolean
+          status: string
+          target_id: string | null
+          target_table: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          delay_hours?: number
+          executable_after?: string | null
+          executed_at?: string | null
+          id?: string
+          operation_type: string
+          payload?: Json | null
+          requires_delay?: boolean
+          status?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          delay_hours?: number
+          executable_after?: string | null
+          executed_at?: string | null
+          id?: string
+          operation_type?: string
+          payload?: Json | null
+          requires_delay?: boolean
+          status?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Relationships: []
+      }
+      admin_session_validations: {
+        Row: {
+          admin_user_id: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          is_valid: boolean
+          user_agent: string | null
+          validated_at: string
+          validation_method: string
+        }
+        Insert: {
+          admin_user_id: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_valid?: boolean
+          user_agent?: string | null
+          validated_at?: string
+          validation_method?: string
+        }
+        Update: {
+          admin_user_id?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_valid?: boolean
+          user_agent?: string | null
+          validated_at?: string
+          validation_method?: string
+        }
+        Relationships: []
+      }
       ads: {
         Row: {
           content_category: string | null
@@ -12215,6 +12302,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_security_freeze: {
+        Row: {
+          auto_unfreeze_at: string | null
+          frozen_at: string
+          frozen_by: string
+          id: string
+          reason: string
+          unfrozen_at: string | null
+          unfrozen_by: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_unfreeze_at?: string | null
+          frozen_at?: string
+          frozen_by: string
+          id?: string
+          reason: string
+          unfrozen_at?: string | null
+          unfrozen_by?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_unfreeze_at?: string | null
+          frozen_at?: string
+          frozen_by?: string
+          id?: string
+          reason?: string
+          unfrozen_at?: string | null
+          unfrozen_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           created_at: string
@@ -12750,6 +12870,99 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_attempts: {
+        Row: {
+          amount: number
+          anomaly_check_passed: boolean | null
+          asset_symbol: string
+          blocked_reason: string | null
+          chain: string | null
+          cooldown_check_passed: boolean | null
+          created_at: string
+          destination_address: string | null
+          id: string
+          ip_address: string | null
+          rate_check_passed: boolean | null
+          status: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          anomaly_check_passed?: boolean | null
+          asset_symbol: string
+          blocked_reason?: string | null
+          chain?: string | null
+          cooldown_check_passed?: boolean | null
+          created_at?: string
+          destination_address?: string | null
+          id?: string
+          ip_address?: string | null
+          rate_check_passed?: boolean | null
+          status?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          anomaly_check_passed?: boolean | null
+          asset_symbol?: string
+          blocked_reason?: string | null
+          chain?: string | null
+          cooldown_check_passed?: boolean | null
+          created_at?: string
+          destination_address?: string | null
+          id?: string
+          ip_address?: string | null
+          rate_check_passed?: boolean | null
+          status?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawal_security_config: {
+        Row: {
+          anomaly_threshold_multiplier: number
+          auto_freeze_on_anomaly: boolean
+          cooldown_minutes: number
+          created_at: string
+          global_daily_cap_usd: number
+          id: string
+          max_withdrawals_per_day: number
+          max_withdrawals_per_hour: number
+          per_user_daily_cap_usd: number
+          per_user_hourly_cap_usd: number
+          updated_at: string
+        }
+        Insert: {
+          anomaly_threshold_multiplier?: number
+          auto_freeze_on_anomaly?: boolean
+          cooldown_minutes?: number
+          created_at?: string
+          global_daily_cap_usd?: number
+          id?: string
+          max_withdrawals_per_day?: number
+          max_withdrawals_per_hour?: number
+          per_user_daily_cap_usd?: number
+          per_user_hourly_cap_usd?: number
+          updated_at?: string
+        }
+        Update: {
+          anomaly_threshold_multiplier?: number
+          auto_freeze_on_anomaly?: boolean
+          cooldown_minutes?: number
+          created_at?: string
+          global_daily_cap_usd?: number
+          id?: string
+          max_withdrawals_per_day?: number
+          max_withdrawals_per_hour?: number
+          per_user_daily_cap_usd?: number
+          per_user_hourly_cap_usd?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       withdrawals: {
         Row: {
           amount: number
@@ -13095,6 +13308,7 @@ export type Database = {
           wallet_balance: number
         }[]
       }
+      admin_has_valid_session: { Args: { _admin_id: string }; Returns: boolean }
       admin_import_genesis_crypto_balances: { Args: never; Returns: Json }
       admin_mint_bsk: {
         Args: {
@@ -13806,6 +14020,16 @@ export type Database = {
           refund_user_id: string
         }[]
       }
+      request_sensitive_admin_operation: {
+        Args: {
+          _delay_hours?: number
+          _operation_type: string
+          _payload?: Json
+          _target_id?: string
+          _target_table?: string
+        }
+        Returns: Json
+      }
       reset_monthly_claim_counts: { Args: never; Returns: undefined }
       resolve_system_error: {
         Args: { p_error_id: string; p_resolution_notes?: string }
@@ -13896,6 +14120,15 @@ export type Database = {
         Returns: undefined
       }
       validate_referral_code: { Args: { code: string }; Returns: boolean }
+      validate_withdrawal_request: {
+        Args: {
+          _amount: number
+          _asset_symbol: string
+          _destination_address?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       verify_transfer_recipient: { Args: { p_email: string }; Returns: Json }
     }
     Enums: {
