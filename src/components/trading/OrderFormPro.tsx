@@ -47,7 +47,7 @@ const getSmartStep = (value: number): number => {
   return 0.00001;
 };
 
-/* ── Premium Exchange Input — 52px, 14px rounded, subtle glow ── */
+/* ── Premium Exchange Input ── */
 const PremiumInput: React.FC<{
   label: string;
   value: string;
@@ -71,7 +71,7 @@ const PremiumInput: React.FC<{
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between px-0.5">
-        <span className="text-[10px] font-medium text-[#9CA3AF] select-none">{label}</span>
+        <span className="text-[10px] font-medium text-muted-foreground select-none">{label}</span>
         {tag && tag.value > 0 && (
           <button
             type="button"
@@ -79,8 +79,8 @@ const PremiumInput: React.FC<{
             className={cn(
               "text-[9px] font-bold px-2 py-[2px] rounded-md transition-all duration-150",
               tag.color === 'red'
-                ? "text-[#EA3943] bg-[#EA3943]/10 active:bg-[#EA3943]/20"
-                : "text-[#16C784] bg-[#16C784]/10 active:bg-[#16C784]/20"
+                ? "text-danger bg-danger/10 active:bg-danger/20"
+                : "text-success bg-success/10 active:bg-success/20"
             )}
           >
             {tag.label}
@@ -88,16 +88,16 @@ const PremiumInput: React.FC<{
         )}
       </div>
       <div className={cn(
-        "bg-[#080D18] border border-[#1A2235] rounded-[14px] h-[52px] flex items-center",
+        "bg-background border border-border rounded-[14px] h-[52px] flex items-center",
         "transition-all duration-200",
-        "focus-within:border-[#16F2C6]/30 focus-within:shadow-[0_0_16px_rgba(22,242,198,0.06)]",
-        "hover:border-[#253045]"
+        "focus-within:border-accent/30 focus-within:shadow-[0_0_16px_hsl(var(--accent)/0.06)]",
+        "hover:border-border/80"
       )}>
         <button
           type="button"
           onClick={() => adjust(-1)}
           disabled={numVal <= min}
-          className="w-12 h-full flex items-center justify-center text-[#6B7280] text-[18px] font-light active:bg-[#111827] active:text-white disabled:opacity-20 select-none flex-shrink-0 rounded-l-[14px] transition-colors border-r border-[#1A2235]/60"
+          className="w-12 h-full flex items-center justify-center text-muted-foreground text-[18px] font-light active:bg-muted active:text-foreground disabled:opacity-20 select-none flex-shrink-0 rounded-l-[14px] transition-colors border-r border-border/60"
         >
           −
         </button>
@@ -107,14 +107,14 @@ const PremiumInput: React.FC<{
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 min-w-0 bg-transparent text-center px-4 text-[16px] font-mono font-semibold text-[#E5E7EB] outline-none leading-none tracking-tight placeholder:text-[#2A3347] overflow-hidden whitespace-nowrap"
+          className="flex-1 min-w-0 bg-transparent text-center px-4 text-[16px] font-mono font-semibold text-foreground outline-none leading-none tracking-tight placeholder:text-muted-foreground/30 overflow-hidden whitespace-nowrap"
           style={{ textOverflow: 'ellipsis' }}
         />
         <button
           type="button"
           onClick={() => adjust(1)}
           disabled={max !== undefined && numVal >= max}
-          className="w-12 h-full flex items-center justify-center text-[#6B7280] text-[18px] font-light active:bg-[#111827] active:text-white disabled:opacity-20 select-none flex-shrink-0 rounded-r-[14px] transition-colors border-l border-[#1A2235]/60"
+          className="w-12 h-full flex items-center justify-center text-muted-foreground text-[18px] font-light active:bg-muted active:text-foreground disabled:opacity-20 select-none flex-shrink-0 rounded-r-[14px] transition-colors border-l border-border/60"
         >
           +
         </button>
@@ -211,28 +211,26 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ── Buy / Sell Toggle — arrow-tab style ── */}
-      <div className="flex h-[40px] bg-[#111827] rounded-lg overflow-hidden">
+      {/* ── Buy / Sell Toggle ── */}
+      <div className="flex h-[40px] bg-muted rounded-lg overflow-hidden">
         <button
           onClick={() => setSide('buy')}
           className="flex-1 relative flex items-center justify-center"
         >
-          {/* Background shape */}
           <div className={cn(
             "absolute inset-0 transition-all duration-200",
-            isBuy ? "bg-[#2EBD85]" : "bg-transparent"
+            isBuy ? "bg-success" : "bg-transparent"
           )} />
-          {/* Arrow point */}
           {isBuy && (
             <div className="absolute right-0 top-0 h-full w-[14px] translate-x-[7px] z-[1]">
               <svg viewBox="0 0 14 40" fill="none" className="h-full w-full" preserveAspectRatio="none">
-                <path d="M0 0L14 20L0 40V0Z" fill="#2EBD85" />
+                <path d="M0 0L14 20L0 40V0Z" className="fill-success" />
               </svg>
             </div>
           )}
           <span className={cn(
             "relative z-[2] text-[12px] font-bold tracking-wider uppercase transition-colors duration-200",
-            isBuy ? "text-white" : "text-[#6B7280]"
+            isBuy ? "text-success-foreground" : "text-muted-foreground"
           )}>
             Buy
           </span>
@@ -241,30 +239,28 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           onClick={() => setSide('sell')}
           className="flex-1 relative flex items-center justify-center"
         >
-          {/* Background shape */}
           <div className={cn(
             "absolute inset-0 transition-all duration-200",
-            !isBuy ? "bg-[#F6465D]" : "bg-transparent"
+            !isBuy ? "bg-danger" : "bg-transparent"
           )} />
-          {/* Arrow point for sell (left side) */}
           {!isBuy && (
             <div className="absolute left-0 top-0 h-full w-[14px] -translate-x-[7px] z-[1]">
               <svg viewBox="0 0 14 40" fill="none" className="h-full w-full" preserveAspectRatio="none">
-                <path d="M14 0L0 20L14 40V0Z" fill="#F6465D" />
+                <path d="M14 0L0 20L14 40V0Z" className="fill-danger" />
               </svg>
             </div>
           )}
           <span className={cn(
             "relative z-[2] text-[12px] font-bold tracking-wider uppercase transition-colors duration-200",
-            !isBuy ? "text-white" : "text-[#6B7280]"
+            !isBuy ? "text-danger-foreground" : "text-muted-foreground"
           )}>
             Sell
           </span>
         </button>
       </div>
 
-      {/* ── Order Type — secondary tabs ── */}
-      <div className="flex items-center gap-6 h-[30px] px-1 border-b border-[#1F2937]/60">
+      {/* ── Order Type tabs ── */}
+      <div className="flex items-center gap-6 h-[30px] px-1 border-b border-border/60">
         {(['limit', 'market'] as const).map((t) => (
           <button
             key={t}
@@ -272,8 +268,8 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             className={cn(
               "text-[12px] font-semibold capitalize transition-all duration-200 pb-2",
               orderType === t
-                ? "text-[#E5E7EB] border-b-2 border-[#16F2C6] -mb-[1px]"
-                : "text-[#4B5563] hover:text-[#6B7280]"
+                ? "text-foreground border-b-2 border-accent -mb-[1px]"
+                : "text-muted-foreground hover:text-foreground/70"
             )}
           >
             {t}
@@ -308,7 +304,7 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
         placeholder="0.00000000"
       />
 
-      {/* ── Percentage Slider with labels ── */}
+      {/* ── Percentage Slider ── */}
       <div className="px-3 space-y-2">
         <div
           className="relative h-[28px] flex items-center cursor-pointer touch-none"
@@ -333,17 +329,14 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
             document.addEventListener('pointerup', onUp);
           }}
         >
-          {/* Track */}
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[4px] bg-[#1A2235] rounded-full" />
-          {/* Active fill */}
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[4px] bg-muted rounded-full" />
           <div
             className={cn(
               "absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full transition-[width] duration-75",
-              isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
+              isBuy ? "bg-success" : "bg-danger"
             )}
             style={{ width: `${activePercent ?? 0}%` }}
           />
-          {/* Diamond markers */}
           {[0, 25, 50, 75, 100].map((pct) => {
             const isActive = activePercent !== null && activePercent >= pct;
             return (
@@ -355,28 +348,23 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
                 <span className={cn(
                   "w-[7px] h-[7px] rotate-45 transition-all duration-100 rounded-[1px]",
                   isActive
-                    ? isBuy ? "bg-[#2EBD85]" : "bg-[#F6465D]"
-                    : "bg-[#0B1220] border border-[#374151]"
+                    ? isBuy ? "bg-success" : "bg-danger"
+                    : "bg-background border border-border"
                 )} />
               </div>
             );
           })}
-          {/* Draggable thumb */}
           {activePercent !== null && activePercent > 0 && (
-            <div
-              className="absolute -translate-x-1/2 z-20 pointer-events-none"
-              style={{ left: `${activePercent}%` }}
-            >
+            <div className="absolute -translate-x-1/2 z-20 pointer-events-none" style={{ left: `${activePercent}%` }}>
               <div className={cn(
                 "w-[14px] h-[14px] rounded-full border-2 transition-shadow duration-150",
                 isBuy
-                  ? "border-[#2EBD85] bg-[#0B1220] shadow-[0_0_8px_rgba(46,189,133,0.35)]"
-                  : "border-[#F6465D] bg-[#0B1220] shadow-[0_0_8px_rgba(246,70,93,0.35)]"
+                  ? "border-success bg-background shadow-[0_0_8px_hsl(var(--success)/0.35)]"
+                  : "border-danger bg-background shadow-[0_0_8px_hsl(var(--danger)/0.35)]"
               )} />
             </div>
           )}
         </div>
-        {/* Percentage labels — edge-aligned */}
         <div className="relative h-4">
           {[0, 25, 50, 75, 100].map((pct, i, arr) => (
             <button
@@ -384,14 +372,10 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
               onClick={() => { if (pct === 0) { setActivePercent(null); setAmount(''); } else handleQuickPercent(pct); }}
               className={cn(
                 "absolute text-[10px] font-medium transition-colors",
-                i === 0
-                  ? "left-0"
-                  : i === arr.length - 1
-                    ? "right-0"
-                    : "-translate-x-1/2",
+                i === 0 ? "left-0" : i === arr.length - 1 ? "right-0" : "-translate-x-1/2",
                 activePercent !== null && activePercent >= pct
-                  ? isBuy ? "text-[#2EBD85]" : "text-[#F6465D]"
-                  : "text-[#4B5563]"
+                  ? isBuy ? "text-success" : "text-danger"
+                  : "text-muted-foreground"
               )}
               style={i > 0 && i < arr.length - 1 ? { left: `${pct}%` } : undefined}
             >
@@ -402,49 +386,49 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
       </div>
 
       {/* ── Total display ── */}
-      <div className="bg-[#0D1421] border border-[#1F2937]/60 rounded-xl h-[36px] flex items-center justify-between px-4">
-        <span className="text-[10px] text-[#6B7280] font-medium">Total ({quoteCurrency})</span>
-        <span className="text-[13px] font-mono font-bold text-[#E5E7EB]">
+      <div className="bg-card border border-border/60 rounded-xl h-[36px] flex items-center justify-between px-4">
+        <span className="text-[10px] text-muted-foreground font-medium">Total ({quoteCurrency})</span>
+        <span className="text-[13px] font-mono font-bold text-foreground">
           {total > 0 ? total.toFixed(total >= 1 ? 2 : 6) : '--'}
         </span>
       </div>
 
-      {/* ── Info rows: Avbl / Max / Fee ── */}
+      {/* ── Info rows ── */}
       <div className="flex flex-col gap-1 text-[10px] px-1">
         <div className="flex items-center justify-between">
-          <span className="text-[#6B7280]">Available</span>
+          <span className="text-muted-foreground">Available</span>
           <div className="flex items-center gap-1.5">
-            <span className={cn("font-mono tabular-nums", hasInsufficientBalance ? "text-[#F6465D]" : "text-[#E5E7EB]")}>
+            <span className={cn("font-mono tabular-nums", hasInsufficientBalance ? "text-danger" : "text-foreground")}>
               {availableBalance.toFixed(4)}
             </span>
-            <span className="text-[#4B5563]">{balanceCurrency}</span>
+            <span className="text-muted-foreground">{balanceCurrency}</span>
             <button
               onClick={() => navigate(`/app/wallet/transfer?asset=${balanceCurrency}&direction=to_trading`)}
-              className="text-[#16F2C6] text-[9px] font-bold ml-0.5 active:opacity-70"
+              className="text-accent text-[9px] font-bold ml-0.5 active:opacity-70"
             >
               ⊕
             </button>
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[#6B7280]">Max {isBuy ? 'Buy' : 'Sell'}</span>
+          <span className="text-muted-foreground">Max {isBuy ? 'Buy' : 'Sell'}</span>
           <div className="flex items-center gap-1.5">
-            <span className="font-mono tabular-nums text-[#E5E7EB]">{maxBuyAmount.toFixed(4)}</span>
-            <span className="text-[#4B5563]">{baseCurrency}</span>
+            <span className="font-mono tabular-nums text-foreground">{maxBuyAmount.toFixed(4)}</span>
+            <span className="text-muted-foreground">{baseCurrency}</span>
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[#6B7280]">Est. Fee</span>
+          <span className="text-muted-foreground">Est. Fee</span>
           <div className="flex items-center gap-1.5">
-            <span className="font-mono tabular-nums text-[#E5E7EB]">{total > 0 ? `~${estFee.toFixed(4)}` : '—'}</span>
-            <span className="text-[#4B5563]">{quoteCurrency}</span>
+            <span className="font-mono tabular-nums text-foreground">{total > 0 ? `~${estFee.toFixed(4)}` : '—'}</span>
+            <span className="text-muted-foreground">{quoteCurrency}</span>
           </div>
         </div>
       </div>
 
       {/* ── Insufficient warning ── */}
       {hasInsufficientBalance && (
-        <div className="text-[10px] text-[#F6465D] text-center bg-[#F6465D]/5 rounded-lg py-1.5">
+        <div className="text-[10px] text-danger text-center bg-danger/5 rounded-lg py-1.5">
           ⚠ Insufficient {balanceCurrency}
         </div>
       )}
@@ -457,18 +441,16 @@ export const OrderFormPro: React.FC<OrderFormProProps> = ({
           "w-full h-[40px] rounded-xl text-[13px] font-bold tracking-wide transition-all duration-200 active:scale-[0.98]",
           "disabled:cursor-not-allowed",
           hasInsufficientBalance
-            ? "bg-[#1F2937] text-[#6B7280]"
+            ? "bg-muted text-muted-foreground"
             : numAmount <= 0
-              ? "bg-[#1F2937] text-[#4B5563]"
+              ? "bg-muted text-muted-foreground/50"
               : isBuy
-                ? "bg-[#2EBD85] text-white shadow-[0_4px_16px_rgba(46,189,133,0.2)] active:bg-[#26a374]"
-                : "bg-[#F6465D] text-white shadow-[0_4px_16px_rgba(246,70,93,0.2)] active:bg-[#d63a50]"
+                ? "bg-success text-success-foreground shadow-[0_4px_16px_hsl(var(--success)/0.2)] active:opacity-90"
+                : "bg-danger text-danger-foreground shadow-[0_4px_16px_hsl(var(--danger)/0.2)] active:opacity-90"
         )}
       >
         {isPlacingOrder ? (
           <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-        ) : hasInsufficientBalance ? (
-          `Deposit ${balanceCurrency}`
         ) : (
           `${isBuy ? 'Buy' : 'Sell'} ${baseCurrency}`
         )}

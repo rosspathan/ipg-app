@@ -47,18 +47,18 @@
  
    return (
      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-[32px] bg-transparent p-0 rounded-none border-b border-[#1F2937]/40">
-          <TabsTrigger value="open" className="text-[11px] font-medium rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#E5E7EB] data-[state=active]:text-[#E5E7EB] text-[#4B5563] relative">
+        <TabsList className="w-full grid grid-cols-4 h-[32px] bg-transparent p-0 rounded-none border-b border-border/40">
+          <TabsTrigger value="open" className="text-[11px] font-medium rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:text-foreground text-muted-foreground relative">
             Open
             {openCount > 0 && (
-              <span className="ml-1 text-[9px] font-bold text-[#EA3943]">
+              <span className="ml-1 text-[9px] font-bold text-danger">
                 {openCount}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="orders" className="text-[11px] font-medium rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#E5E7EB] data-[state=active]:text-[#E5E7EB] text-[#4B5563]">Orders</TabsTrigger>
-          <TabsTrigger value="trades" className="text-[11px] font-medium rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#E5E7EB] data-[state=active]:text-[#E5E7EB] text-[#4B5563]">Trades</TabsTrigger>
-          <TabsTrigger value="funds" className="text-[11px] font-medium rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#E5E7EB] data-[state=active]:text-[#E5E7EB] text-[#4B5563]">Funds</TabsTrigger>
+          <TabsTrigger value="orders" className="text-[11px] font-medium rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:text-foreground text-muted-foreground">Orders</TabsTrigger>
+          <TabsTrigger value="trades" className="text-[11px] font-medium rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:text-foreground text-muted-foreground">Trades</TabsTrigger>
+          <TabsTrigger value="funds" className="text-[11px] font-medium rounded-none h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:text-foreground text-muted-foreground">Funds</TabsTrigger>
         </TabsList>
  
        <TabsContent value="open" className="mt-2">

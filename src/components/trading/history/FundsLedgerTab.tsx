@@ -47,11 +47,11 @@ import BigNumber from 'bignumber.js';
  
   if (movements.length === 0) {
       return (
-        <div className="flex items-center justify-center h-[32px] gap-2 text-[11px] text-[#6B7280]">
+        <div className="flex items-center justify-center h-[32px] gap-2 text-[11px] text-muted-foreground">
           <span>No fund movements</span>
           <button
             onClick={() => navigate('/app/wallet/transfer')}
-            className="text-[#F0B90B] font-medium hover:underline"
+            className="text-warning font-medium hover:underline"
           >
             Deposit
           </button>
