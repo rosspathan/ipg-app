@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, Info, AlertTriangle, CheckCircle2, TrendingUp, Coins, History } from "lucide-react";
+import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Loader2, Info, AlertTriangle, CheckCircle2, History } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { SuccessAnimation } from "@/components/wallet/SuccessAnimation";
@@ -22,7 +22,6 @@ import { useEncryptedWalletBackup } from "@/hooks/useEncryptedWalletBackup";
 import PinEntryDialog from "@/components/profile/PinEntryDialog";
 
 type TransferDirection = "to_trading" | "to_wallet";
-type TransferDestination = "trading" | "staking";
 
 interface AssetBalance {
   symbol: string;
@@ -44,7 +43,6 @@ const TransferScreen = () => {
   const { data: dynamicHotWalletAddress } = useHotWalletAddress();
   
   const [selectedAsset, setSelectedAsset] = useState("");
-  const [destination, setDestination] = useState<TransferDestination>("trading");
   const [direction, setDirection] = useState<TransferDirection>("to_trading");
   const [amount, setAmount] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -635,44 +633,14 @@ const TransferScreen = () => {
           </Button>
         </motion.div>
 
-        {/* Destination Selector */}
-        <div className="flex bg-muted rounded-lg p-1">
-          <button
-            onClick={() => setDestination("trading")}
-            className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-              destination === "trading"
-                ? "bg-background shadow text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            Trading
-          </button>
-          <button
-            onClick={() => setDestination("staking")}
-            className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-              destination === "staking"
-                ? "bg-background shadow text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Coins className="w-4 h-4" />
-            Staking
-          </button>
-        </div>
-
         {/* Info */}
         <Alert className="bg-primary/10 border-primary/20">
           <Info className="h-4 w-4 text-primary" />
-          <AlertDescription className="text-xs space-y-1">
-            {destination === "trading" ? (
-              direction === "to_trading" ? (
-                <p><strong>On-Chain Transfer</strong>: Tokens are sent from your wallet to the platform hot wallet on BSC. Trading balance is credited once the transaction confirms. Gas fees apply.</p>
-              ) : (
-                <p><strong>Hot Wallet Withdrawal</strong>: Tokens are sent from the platform hot wallet back to your wallet on BSC.</p>
-              )
+          <AlertDescription className="text-xs">
+            {direction === "to_trading" ? (
+              <p><strong>On-Chain Transfer</strong>: Tokens are sent from your wallet to the platform hot wallet on BSC. Trading balance is credited once the transaction confirms. Gas fees apply.</p>
             ) : (
-              <p><strong>Staking Transfer</strong>: Move funds between your wallet and staking account to earn rewards.</p>
+              <p><strong>Hot Wallet Withdrawal</strong>: Tokens are sent from the platform hot wallet back to your wallet on BSC.</p>
             )}
           </AlertDescription>
         </Alert>
@@ -696,8 +664,7 @@ const TransferScreen = () => {
               animate={{ opacity: 1 }}
               className="space-y-4"
             >
-              {destination === "trading" ? (
-                <>
+              <>
                   {/* Direction Tabs */}
                   <div className="flex bg-muted rounded-lg p-1">
                     <button
@@ -866,92 +833,6 @@ const TransferScreen = () => {
                     </CardContent>
                   </Card>
                 </>
-              ) : (
-                /* STAKING DESTINATION */
-                <>
-                  <div className="flex bg-muted rounded-lg p-1">
-                    <button
-                      onClick={() => setDirection("to_trading")}
-                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                        direction === "to_trading"
-                          ? "bg-background shadow text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <ArrowDownToLine className="w-4 h-4 inline mr-2" />
-                      Fund
-                    </button>
-                    <button
-                      onClick={() => setDirection("to_wallet")}
-                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                        direction === "to_wallet"
-                          ? "bg-background shadow text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <ArrowUpFromLine className="w-4 h-4 inline mr-2" />
-                      Withdraw
-                    </button>
-                  </div>
-
-                  <Card className="bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base text-foreground flex items-center gap-2">
-                        <Coins className="w-4 h-4 text-primary" />
-                        {direction === "to_trading" ? "Fund Staking Account" : "Withdraw from Staking"}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        {direction === "to_trading" 
-                          ? "Transfer IPG tokens from your wallet to your staking account to start earning rewards."
-                          : "Withdraw your available balance from staking back to your wallet. 0.5% fee applies."}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="text-center p-3 bg-muted/50 rounded-lg flex-1">
-                          <p className="text-xl font-bold text-primary">4-10%</p>
-                          <p className="text-xs text-muted-foreground">Monthly</p>
-                        </div>
-                        <div className="text-center p-3 bg-muted/50 rounded-lg flex-1">
-                          <p className="text-xl font-bold text-foreground">30</p>
-                          <p className="text-xs text-muted-foreground">Days Lock</p>
-                        </div>
-                        <div className="text-center p-3 bg-muted/50 rounded-lg flex-1">
-                          <p className="text-xl font-bold text-foreground">0.5%</p>
-                          <p className="text-xs text-muted-foreground">Fee</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Button
-                    className="w-full"
-                    size="lg"
-                    onClick={() => navigate(direction === "to_trading" ? "/app/staking/deposit" : "/app/staking/withdraw")}
-                  >
-                    {direction === "to_trading" ? (
-                      <>
-                        <ArrowDownToLine className="w-4 h-4 mr-2" />
-                        Go to Staking Deposit
-                      </>
-                    ) : (
-                      <>
-                        <ArrowUpFromLine className="w-4 h-4 mr-2" />
-                        Go to Staking Withdraw
-                      </>
-                    )}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => navigate("/app/staking")}
-                  >
-                    <Coins className="w-4 h-4 mr-2" />
-                    View Staking Plans & Rewards
-                  </Button>
-                </>
-              )}
             </motion.div>
           )}
         </AnimatePresence>
