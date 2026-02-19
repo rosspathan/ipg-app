@@ -27,54 +27,43 @@ import { formatCurrency } from "@/utils/formatters"
 import { cn } from "@/lib/utils"
 import { useTradingPairs } from "@/hooks/useTradingPairs"
 
-// Shared inline style constants
-const surface = 'hsla(220, 25%, 11%, 0.8)'
-const surfaceLight = 'hsla(220, 25%, 14%, 0.6)'
-const borderSubtle = '1px solid hsla(0, 0%, 100%, 0.05)'
-const borderTeal = '1px solid hsla(160, 50%, 50%, 0.12)'
-const teal = '#16F2C6'
-const textPrimary = 'hsl(0, 0%, 92%)'
-const textSecondary = 'hsl(0, 0%, 50%)'
-const textTertiary = 'hsl(0, 0%, 40%)'
-
 // Compact Markets Preview for Wallet page
 function MarketsPreview({ navigate }: { navigate: (path: string) => void }) {
   const { data: tradingPairs } = useTradingPairs()
   return (
     <div className="px-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>Markets</h2>
-        <button onClick={() => navigate("/app/trade")} className="text-[12px] font-medium flex items-center gap-1" style={{ color: teal }}>
+        <h2 className="text-[14px] font-semibold text-foreground/75">Markets</h2>
+        <button onClick={() => navigate("/app/trade")} className="text-[12px] font-medium flex items-center gap-1 text-accent">
           View All <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </div>
-      <div className="rounded-xl overflow-hidden" style={{ background: surface, border: borderSubtle }}>
+      <div className="rounded-xl overflow-hidden bg-card/80 border border-border/50">
         {(tradingPairs || []).map((pair, i) => {
           const isUp = pair.change24h >= 0
           return (
             <div key={pair.id}>
               <button
                 onClick={() => navigate(`/app/trade/${pair.symbol.replace('/', '_')}`)}
-                className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.02]"
+                className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-muted/30"
               >
                 <div className="text-left">
-                  <p className="text-[13px] font-semibold" style={{ color: textPrimary }}>
-                    {pair.baseAsset}<span style={{ color: textTertiary }}>/{pair.quoteAsset}</span>
+                  <p className="text-[13px] font-semibold text-foreground">
+                    {pair.baseAsset}<span className="text-muted-foreground">/{pair.quoteAsset}</span>
                   </p>
-                  <p className="text-[10px] font-mono" style={{ color: textTertiary }}>
+                  <p className="text-[10px] font-mono text-muted-foreground">
                     Vol ${pair.volume24h >= 1000 ? `${(pair.volume24h / 1000).toFixed(1)}K` : pair.volume24h.toFixed(2)}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-[13px] font-mono font-semibold tabular-nums" style={{ color: textPrimary }}>
+                  <p className="text-[13px] font-mono font-semibold tabular-nums text-foreground">
                     ${pair.price >= 1 ? pair.price.toFixed(2) : pair.price.toFixed(4)}
                   </p>
                   <div
-                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold min-w-[72px] justify-center"
-                    style={{
-                      background: isUp ? 'hsla(154, 67%, 52%, 0.1)' : 'hsla(0, 70%, 68%, 0.1)',
-                      color: isUp ? 'hsl(154, 67%, 52%)' : 'hsl(0, 70%, 68%)',
-                    }}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold min-w-[72px] justify-center",
+                      isUp ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                    )}
                   >
                     {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                     {isUp ? '+' : ''}{pair.change24h.toFixed(2)}%
@@ -82,13 +71,13 @@ function MarketsPreview({ navigate }: { navigate: (path: string) => void }) {
                 </div>
               </button>
               {i < (tradingPairs || []).length - 1 && (
-                <div className="mx-4 h-px" style={{ background: 'hsla(0, 0%, 100%, 0.04)' }} />
+                <div className="mx-4 h-px bg-border/30" />
               )}
             </div>
           )
         })}
         {(!tradingPairs || tradingPairs.length === 0) && (
-          <div className="text-center py-8 text-[12px]" style={{ color: textTertiary }}>Loading markets...</div>
+          <div className="text-center py-8 text-[12px] text-muted-foreground">Loading markets...</div>
         )}
       </div>
     </div>
@@ -175,7 +164,7 @@ export function WalletPage() {
   const totalUsd = (portfolio?.total_usd || 0) + onchainUsd
 
   return (
-    <div className="space-y-6 pb-32" data-testid="page-wallet" style={{ background: '#0B1020', minHeight: '100vh' }}>
+    <div className="space-y-6 pb-32 bg-background min-h-screen" data-testid="page-wallet">
 
       {/* Integrity Banner */}
       {walletIntegrity.hasMismatch && !integrityDismissed && walletIntegrity.mismatchType && (
@@ -191,39 +180,39 @@ export function WalletPage() {
 
       {/* ── 1. PORTFOLIO SUMMARY (On-Chain Balance) ── */}
       <div className="px-4 pt-4">
-        <div className="p-5 rounded-xl space-y-4" style={{ background: surface, border: borderTeal }}>
-          <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: textSecondary }}>On-Chain Balance</p>
+        <div className="p-5 rounded-xl space-y-4 bg-card/80 border border-accent/12 backdrop-blur-xl">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">On-Chain Balance</p>
           
           <div className="relative">
-            <p className="text-[28px] font-bold tabular-nums" style={{ color: textPrimary, fontFamily: "'Space Grotesk', sans-serif" }}>
+            <p className="text-[28px] font-bold tabular-nums text-foreground font-heading">
               {portfolioLoading || onchainLoading ? '...' : formatCurrency(portfolio?.total_usd || 0)}
             </p>
-            <div className="absolute -inset-6 rounded-full opacity-[0.06] pointer-events-none" style={{ background: `radial-gradient(circle, ${teal} 0%, transparent 70%)` }} />
+            <div className="absolute -inset-6 rounded-full opacity-[0.06] pointer-events-none bg-[radial-gradient(circle,hsl(var(--accent))_0%,transparent_70%)]" />
           </div>
 
-          <div className="h-px" style={{ background: 'hsla(0, 0%, 100%, 0.06)' }} />
+          <div className="h-px bg-border/30" />
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: 'hsla(160, 60%, 50%, 0.12)' }}>
-                  <Wallet className="h-3 w-3" style={{ color: teal }} />
+                <div className="h-6 w-6 rounded-md flex items-center justify-center bg-accent/12">
+                  <Wallet className="h-3 w-3 text-accent" />
                 </div>
-                <span className="text-[12px] font-medium" style={{ color: textSecondary }}>Available</span>
+                <span className="text-[12px] font-medium text-muted-foreground">Available</span>
               </div>
-              <span className="text-[14px] font-bold tabular-nums" style={{ color: teal }}>
+              <span className="text-[14px] font-bold tabular-nums text-accent">
                 {formatCurrency(portfolio?.available_usd || 0)}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-md flex items-center justify-center" style={{ background: 'hsla(35, 80%, 50%, 0.12)' }}>
-                  <Lock className="h-3 w-3" style={{ color: '#F7A53B' }} />
+                <div className="h-6 w-6 rounded-md flex items-center justify-center bg-warning/12">
+                  <Lock className="h-3 w-3 text-warning" />
                 </div>
-                <span className="text-[12px] font-medium" style={{ color: textSecondary }}>In Orders</span>
+                <span className="text-[12px] font-medium text-muted-foreground">In Orders</span>
               </div>
-              <span className="text-[14px] font-bold tabular-nums" style={{ color: '#F7A53B' }}>
+              <span className="text-[14px] font-bold tabular-nums text-warning">
                 {formatCurrency(portfolio?.locked_usd || 0)}
               </span>
             </div>
@@ -242,11 +231,10 @@ export function WalletPage() {
           <button
             key={a.label}
             onClick={() => navigate(a.route)}
-            className="flex flex-col items-center gap-2 py-4 rounded-xl transition-colors"
-            style={{ background: surface, border: borderSubtle }}
+            className="flex flex-col items-center gap-2 py-4 rounded-xl transition-colors bg-card/80 border border-border/50"
           >
             <span className="text-lg">{a.icon}</span>
-            <span className="text-[11px] font-semibold" style={{ color: textPrimary }}>{a.label}</span>
+            <span className="text-[11px] font-semibold text-foreground">{a.label}</span>
           </button>
         ))}
       </div>
@@ -254,33 +242,30 @@ export function WalletPage() {
       {/* ── 3. HEADER / ADDRESS (Binance Smart Chain) ── */}
       <div className="px-4 space-y-3">
         <div className="flex items-center gap-2">
-          <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#F7A53B' }} />
-          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#F7A53B' }}>
+          <div className="h-1.5 w-1.5 rounded-full bg-warning" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-warning">
             Binance Smart Chain
           </span>
         </div>
-        <p className="text-[11px] font-medium" style={{ color: textSecondary }}>
+        <p className="text-[11px] font-medium text-muted-foreground">
           EVM Address (BEP20/ERC20)
         </p>
 
-        <div
-          className="w-full overflow-x-auto scrollbar-hide rounded-lg px-3 py-2.5"
-          style={{ background: surfaceLight, border: borderSubtle }}
-        >
-          <p className="font-mono text-[12px] whitespace-nowrap tabular-nums" style={{ color: textPrimary }} data-testid="wallet-evm-address">
+        <div className="w-full overflow-x-auto scrollbar-hide rounded-lg px-3 py-2.5 bg-muted/50 border border-border/50">
+          <p className="font-mono text-[12px] whitespace-nowrap tabular-nums text-foreground" data-testid="wallet-evm-address">
             {showAddress ? (walletAddress || 'No wallet connected') : '••••••••••••••••••••••••••••••••••••••••'}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <button onClick={handleCopyAddress} className="p-2 rounded-lg" style={{ background: surfaceLight, border: borderSubtle }}>
-            <Copy className="h-4 w-4" style={{ color: textSecondary }} />
+          <button onClick={handleCopyAddress} className="p-2 rounded-lg bg-muted/50 border border-border/50">
+            <Copy className="h-4 w-4 text-muted-foreground" />
           </button>
-          <button onClick={() => setShowQrDialog(true)} disabled={!walletAddress} className="p-2 rounded-lg" style={{ background: surfaceLight, border: borderSubtle }}>
-            <QrCode className="h-4 w-4" style={{ color: textSecondary }} />
+          <button onClick={() => setShowQrDialog(true)} disabled={!walletAddress} className="p-2 rounded-lg bg-muted/50 border border-border/50">
+            <QrCode className="h-4 w-4 text-muted-foreground" />
           </button>
-          <button onClick={() => setShowAddress(!showAddress)} className="p-2 rounded-lg" style={{ background: surfaceLight, border: borderSubtle }}>
-            {showAddress ? <EyeOff className="h-4 w-4" style={{ color: textSecondary }} /> : <Eye className="h-4 w-4" style={{ color: textSecondary }} />}
+          <button onClick={() => setShowAddress(!showAddress)} className="p-2 rounded-lg bg-muted/50 border border-border/50">
+            {showAddress ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
           </button>
         </div>
 
@@ -289,27 +274,25 @@ export function WalletPage() {
           <button
             onClick={() => window.open(getExplorerUrl(walletAddress, 'bsc'), '_blank')}
             disabled={!walletAddress}
-            className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg"
-            style={{ background: surfaceLight, border: borderSubtle, color: teal }}
+            className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50 text-accent"
           >
             <ExternalLink className="h-3 w-3" /> BSCScan
           </button>
           <button
             onClick={() => navigate('/app/wallet/onchain')}
-            className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg"
-            style={{ background: surfaceLight, border: borderSubtle, color: textSecondary }}
+            className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50 text-muted-foreground"
           >
             <Wallet className="h-3 w-3" /> On-chain View
           </button>
         </div>
 
         {!walletAddress && (
-          <div className="p-4 rounded-xl space-y-3" style={{ background: 'hsla(35, 80%, 50%, 0.08)', border: '1px solid hsla(35, 80%, 50%, 0.2)' }}>
-            <p className="text-[13px] font-semibold" style={{ color: '#F7A53B' }}>Wallet Setup Required</p>
-            <p className="text-[11px]" style={{ color: 'hsl(0, 0%, 60%)' }}>Create or import a wallet to use this feature.</p>
+          <div className="p-4 rounded-xl space-y-3 bg-warning/8 border border-warning/20">
+            <p className="text-[13px] font-semibold text-warning">Wallet Setup Required</p>
+            <p className="text-[11px] text-muted-foreground">Create or import a wallet to use this feature.</p>
             <button
               onClick={() => { localStorage.setItem('ipg_return_path', '/app/wallet'); navigate('/onboarding/wallet') }}
-              className="w-full h-10 rounded-xl text-[13px] font-semibold" style={{ background: teal, color: '#0B1020' }}
+              className="w-full h-10 rounded-xl text-[13px] font-semibold bg-accent text-accent-foreground"
             >
               Set Up Wallet Now
             </button>
@@ -320,13 +303,13 @@ export function WalletPage() {
       {/* ── 4. ASSET LIST ── */}
       <div className="px-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>On-Chain Assets</h2>
+          <h2 className="text-[14px] font-semibold text-foreground/75">On-Chain Assets</h2>
           <div className="flex items-center gap-2">
-            <button onClick={() => refetchOnchain()} className="p-2 rounded-lg relative z-10" style={{ background: surfaceLight }}>
-              <RefreshCw className="h-4 w-4" style={{ color: textSecondary }} />
+            <button onClick={() => refetchOnchain()} className="p-2 rounded-lg relative z-10 bg-muted/50">
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
             </button>
-            <button onClick={() => setAssetsExpanded(!assetsExpanded)} className="p-2 rounded-lg relative z-10" style={{ background: surfaceLight }}>
-              {assetsExpanded ? <ChevronUp className="h-3 w-3" style={{ color: textSecondary }} /> : <ChevronDown className="h-3 w-3" style={{ color: textSecondary }} />}
+            <button onClick={() => setAssetsExpanded(!assetsExpanded)} className="p-2 rounded-lg relative z-10 bg-muted/50">
+              {assetsExpanded ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
             </button>
           </div>
         </div>
@@ -335,50 +318,49 @@ export function WalletPage() {
           <>
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: textTertiary }} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search assets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-[38px] pl-9 pr-3 rounded-lg text-[12px] outline-none"
-                style={{ background: surfaceLight, border: borderSubtle, color: textPrimary }}
+                className="w-full h-[38px] pl-9 pr-3 rounded-lg text-[12px] outline-none bg-muted/50 border border-border/50 text-foreground"
               />
             </div>
 
             {onchainLoading ? (
-              <div className="text-center py-8 text-[12px]" style={{ color: textTertiary }}>Loading...</div>
+              <div className="text-center py-8 text-[12px] text-muted-foreground">Loading...</div>
             ) : filteredAssets.length === 0 ? (
-              <div className="text-center py-8 text-[12px]" style={{ color: textTertiary }}>
+              <div className="text-center py-8 text-[12px] text-muted-foreground">
                 {searchTerm ? "No assets found" : "No on-chain balances"}
               </div>
             ) : (
-              <div className="rounded-xl overflow-hidden" style={{ background: surface, border: borderSubtle }}>
+              <div className="rounded-xl overflow-hidden bg-card/80 border border-border/50">
                 {filteredAssets.map((asset, i) => (
                   <div key={asset.symbol}>
-                    <div className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.02]" style={{ height: '64px' }}>
+                    <div className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-muted/30" style={{ height: '64px' }}>
                       <div className="flex items-center gap-3">
                         <AssetLogo symbol={asset.symbol} logoUrl={asset.logoUrl} size="sm" />
                         <div>
-                          <p className="text-[13px] font-semibold" style={{ color: textPrimary }}>{asset.name}</p>
+                          <p className="text-[13px] font-semibold text-foreground">{asset.name}</p>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'hsla(160, 50%, 50%, 0.08)', color: teal, border: '1px solid hsla(160, 50%, 50%, 0.15)' }}>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-accent/8 text-accent border border-accent/15">
                               {asset.network || 'BSC'}
                             </span>
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-[13px] font-mono font-semibold tabular-nums" style={{ color: textPrimary }}>
+                        <p className="text-[13px] font-mono font-semibold tabular-nums text-foreground">
                           {asset.balance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
                         </p>
-                        <p className="text-[10px] font-mono tabular-nums" style={{ color: textTertiary }}>
+                        <p className="text-[10px] font-mono tabular-nums text-muted-foreground">
                           {asset.symbol}
                         </p>
                       </div>
                     </div>
                     {i < filteredAssets.length - 1 && (
-                      <div className="mx-4 h-px" style={{ background: 'hsla(0, 0%, 100%, 0.04)' }} />
+                      <div className="mx-4 h-px bg-border/30" />
                     )}
                   </div>
                 ))}
@@ -392,50 +374,49 @@ export function WalletPage() {
       <div className="px-4 space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-[14px] font-semibold" style={{ color: 'hsl(0, 0%, 75%)' }}>Trading Balances</h2>
+            <h2 className="text-[14px] font-semibold text-foreground/75">Trading Balances</h2>
             {tradingTotalUsd > 0 && (
-              <p className="text-[11px] mt-0.5" style={{ color: textSecondary }}>
-                Total: <span className="font-semibold" style={{ color: textPrimary }}>${tradingTotalUsd.toFixed(2)}</span>
+              <p className="text-[11px] mt-0.5 text-muted-foreground">
+                Total: <span className="font-semibold text-foreground">${tradingTotalUsd.toFixed(2)}</span>
               </p>
             )}
           </div>
           <button
             onClick={() => navigate('/app/wallet/transfer')}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-semibold"
-            style={{ background: 'hsla(160, 50%, 50%, 0.08)', border: '1px solid hsla(160, 50%, 50%, 0.15)', color: teal }}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-semibold bg-accent/8 border border-accent/15 text-accent"
           >
             <ArrowLeftRight className="h-3 w-3" /> Transfer
           </button>
         </div>
 
         {tradingLoading ? (
-          <div className="text-center py-6 text-[12px]" style={{ color: textTertiary }}>Loading...</div>
+          <div className="text-center py-6 text-[12px] text-muted-foreground">Loading...</div>
         ) : activeTradingBalances.length === 0 ? (
-          <div className="text-center py-8 text-[12px]" style={{ color: textTertiary }}>
+          <div className="text-center py-8 text-[12px] text-muted-foreground">
             No trading balances
           </div>
         ) : (
-          <div className="rounded-xl overflow-hidden" style={{ background: surface, border: borderSubtle }}>
+          <div className="rounded-xl overflow-hidden bg-card/80 border border-border/50">
             {activeTradingBalances.map((asset, i) => (
               <div key={asset.symbol}>
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-3">
                     <AssetLogo symbol={asset.symbol} logoUrl={asset.logo_url} size="sm" />
-                    <span className="text-[13px] font-semibold" style={{ color: textPrimary }}>{asset.symbol}</span>
+                    <span className="text-[13px] font-semibold text-foreground">{asset.symbol}</span>
                   </div>
                   <div className="text-right">
-                    <p className="text-[13px] font-mono font-semibold tabular-nums" style={{ color: textPrimary }}>
+                    <p className="text-[13px] font-mono font-semibold tabular-nums text-foreground">
                       {asset.available.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                     </p>
                     {asset.locked > 0.000001 && (
-                      <p className="text-[10px] font-mono tabular-nums" style={{ color: '#F7A53B' }}>
+                      <p className="text-[10px] font-mono tabular-nums text-warning">
                         +{asset.locked.toFixed(4)} locked
                       </p>
                     )}
                   </div>
                 </div>
                 {i < activeTradingBalances.length - 1 && (
-                  <div className="mx-4 h-px" style={{ background: 'hsla(0, 0%, 100%, 0.04)' }} />
+                  <div className="mx-4 h-px bg-border/30" />
                 )}
               </div>
             ))}
@@ -447,39 +428,35 @@ export function WalletPage() {
       <div className="px-4">
         <button
           onClick={() => navigate("/app/wallet/loan")}
-          className="w-full p-4 rounded-xl text-left space-y-3 group"
-          style={{
-            background: 'hsla(220, 25%, 11%, 0.8)',
-            border: '1px solid hsla(160, 50%, 50%, 0.1)',
-          }}
+          className="w-full p-4 rounded-xl text-left space-y-3 group bg-card/80 border border-accent/12"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: 'hsla(160, 50%, 50%, 0.1)' }}>
-                <Lock className="h-4 w-4" style={{ color: teal }} />
+              <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-accent/10">
+                <Lock className="h-4 w-4 text-accent" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold" style={{ color: textPrimary }}>USDI Loan</p>
-                <p className="text-[10px]" style={{ color: textTertiary }}>Collateral-backed</p>
+                <p className="text-[13px] font-semibold text-foreground">USDI Loan</p>
+                <p className="text-[10px] text-muted-foreground">Collateral-backed</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: teal }} />
-              <span className="text-[10px] font-semibold" style={{ color: teal }}>Active</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              <span className="text-[10px] font-semibold text-accent">Active</span>
             </div>
           </div>
 
           <div className="flex gap-2">
             {["200% Collateral", "2% Fee", "Unlock Anytime"].map((tag) => (
-              <span key={tag} className="text-[10px] font-medium px-2 py-1 rounded-full" style={{ background: 'hsla(0, 0%, 100%, 0.04)', border: borderSubtle, color: textSecondary }}>
+              <span key={tag} className="text-[10px] font-medium px-2 py-1 rounded-full bg-muted/50 border border-border/50 text-muted-foreground">
                 {tag}
               </span>
             ))}
           </div>
 
-          <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid hsla(0, 0%, 100%, 0.04)' }}>
-            <span className="text-[11px]" style={{ color: textTertiary }}>Lock BSK → Get USDI</span>
-            <span className="text-[12px] font-semibold flex items-center gap-1" style={{ color: teal }}>
+          <div className="flex items-center justify-between pt-2 border-t border-border/30">
+            <span className="text-[11px] text-muted-foreground">Lock BSK → Get USDI</span>
+            <span className="text-[12px] font-semibold flex items-center gap-1 text-accent">
               Apply Now <ArrowRight className="h-3 w-3" />
             </span>
           </div>
@@ -494,9 +471,9 @@ export function WalletPage() {
 
       {/* QR Dialog */}
       <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
-        <DialogContent className="sm:max-w-md" style={{ background: '#121826', border: borderSubtle }}>
+        <DialogContent className="sm:max-w-md bg-card border border-border">
           <DialogHeader>
-            <DialogTitle className="text-center" style={{ color: textPrimary }}>Wallet QR Code</DialogTitle>
+            <DialogTitle className="text-center text-foreground">Wallet QR Code</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-6">
             {walletAddress && (
@@ -504,10 +481,10 @@ export function WalletPage() {
                 <QRCodeSVG value={walletAddress} size={220} level="H" includeMargin />
               </div>
             )}
-            <p className="text-[11px] text-center font-mono break-all px-6" style={{ color: textSecondary }}>
+            <p className="text-[11px] text-center font-mono break-all px-6 text-muted-foreground">
               {walletAddress}
             </p>
-            <button onClick={handleCopyAddress} className="h-10 px-6 rounded-xl text-[12px] font-semibold" style={{ background: surfaceLight, border: borderSubtle, color: textPrimary }}>
+            <button onClick={handleCopyAddress} className="h-10 px-6 rounded-xl text-[12px] font-semibold bg-muted/50 border border-border/50 text-foreground">
               <Copy className="inline h-3.5 w-3.5 mr-2" /> Copy Address
             </button>
           </div>

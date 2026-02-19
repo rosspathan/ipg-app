@@ -139,10 +139,10 @@ export function ProgramTileUltra({
           "relative h-full min-h-[180px] p-4 rounded-2xl",
           isDynamic 
             ? "bg-gradient-to-br from-orange-500/20 via-red-500/15 to-pink-500/20"
-            : "bg-gradient-to-br from-[#161A2C] to-[#1B2036]",
+            : "bg-gradient-to-br from-card to-card/80 dark:from-card/90 dark:to-card/60",
           isDynamic 
             ? "border-2 border-orange-500/40"
-            : "border border-[#2A2F42]/30",
+            : "border border-border/40",
           "transition-all duration-[320ms]",
           showGlow && !isPressed && !isDynamic && "shadow-[0_0_24px_rgba(124,77,255,0.08)]",
           isDynamic && "shadow-[0_0_32px_rgba(249,115,22,0.3)]"
