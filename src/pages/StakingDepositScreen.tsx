@@ -505,25 +505,33 @@ export default function StakingDepositScreen() {
               <div className="relative">
                 <Input
                   type="number"
-                  placeholder="0.00"
+                  placeholder="Min 0.01 IPG"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="pr-20 text-lg"
-                  step="any"
+                  step="0.01"
+                  min={0.01}
+                  max={20}
                 />
                 <Button
                   variant="ghost"
                   size="sm"
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-7 text-xs"
-                  onClick={() => setAmount(ipgOnchainBalance.toString())}
+                  onClick={() => setAmount(Math.min(ipgOnchainBalance, 20).toString())}
                   disabled={ipgOnchainBalance <= 0}
                 >
                   MAX
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Wallet Balance: {ipgOnchainBalance.toFixed(6)} IPG
+                Wallet Balance: {ipgOnchainBalance.toFixed(6)} IPG • Min 0.01 IPG • Max 20 IPG
               </p>
+              {amount && parseFloat(amount) > 0 && parseFloat(amount) < 0.01 && (
+                <p className="text-[11px] text-destructive">Minimum transfer is 0.01 IPG</p>
+              )}
+              {amount && parseFloat(amount) > 20 && (
+                <p className="text-[11px] text-destructive">Maximum transfer is 20 IPG per transaction</p>
+              )}
             </div>
 
             {/* Gas Warning */}
@@ -562,7 +570,8 @@ export default function StakingDepositScreen() {
           disabled={
             isTransferring ||
             !amount ||
-            parseFloat(amount) <= 0 ||
+            parseFloat(amount) < 0.01 ||
+            parseFloat(amount) > 20 ||
             parseFloat(amount) > ipgOnchainBalance ||
             !hasEnoughGas ||
             ipgOnchainBalance <= 0

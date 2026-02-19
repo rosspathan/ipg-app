@@ -57,7 +57,9 @@ export default function CryptoStakingPlanDetail() {
   const feeAmount = numericAmount * (stakingFee / 100);
   const netStaked = numericAmount - feeAmount;
   const monthlyReward = netStaked * (rewardPercent / 100);
-  const canStake = numericAmount >= minAmount && numericAmount <= availableBalance && (!maxAmount || numericAmount <= maxAmount);
+  const globalMax = 20;
+  const effectiveMax = maxAmount ? Math.min(maxAmount, globalMax) : globalMax;
+  const canStake = numericAmount >= minAmount && numericAmount <= availableBalance && numericAmount <= effectiveMax && numericAmount >= 0.01;
 
   const handleStake = () => {
     if (!canStake) return;
@@ -72,7 +74,7 @@ export default function CryptoStakingPlanDetail() {
   };
 
   const handleMax = () => {
-    const max = maxAmount ? Math.min(availableBalance, maxAmount) : availableBalance;
+    const max = Math.min(availableBalance, effectiveMax);
     setAmount(max > 0 ? String(Number(max.toFixed(8))) : '');
   };
 
@@ -90,7 +92,7 @@ export default function CryptoStakingPlanDetail() {
             <div>
               <p className="text-lg font-bold text-foreground">{plan.name}</p>
               <p className="text-xs mt-0.5 text-muted-foreground">
-                Min {minAmount} IPG {maxAmount ? `• Max ${maxAmount} IPG` : ''}
+                Min {minAmount < 0.01 ? 0.01 : minAmount} IPG {effectiveMax ? `• Max ${effectiveMax} IPG` : ''}
               </p>
             </div>
             <div className="text-right">
@@ -164,9 +166,9 @@ export default function CryptoStakingPlanDetail() {
               </button>
             </p>
           )}
-          {maxAmount && numericAmount > maxAmount && (
+          {numericAmount > effectiveMax && (
             <p className="text-[11px] text-destructive">
-              Maximum stake for this plan is {maxAmount} IPG
+              Maximum stake is {effectiveMax} IPG
             </p>
           )}
         </div>
