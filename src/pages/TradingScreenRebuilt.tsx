@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, TrendingUp, Info, Plus, BarChart3, Settings, MoreVertical, BookOpen, X, ArrowLeftRight } from "lucide-react";
+import { ChevronDown, TrendingUp, Info, BarChart3, Settings, MoreVertical, BookOpen, X } from "lucide-react";
 import { PairSelectorSheet } from "@/components/trading/PairSelectorSheet";
 import { PercentChipsPro } from "@/components/trading/PercentChipsPro";
 import { AmountSliderPro } from "@/components/trading/AmountSliderPro";
