@@ -1,0 +1,1 @@
+UPDATE program_modules SET route = '/app/staking' WHERE key = 'staking';
