@@ -32,10 +32,8 @@ const quickActions: QuickSwitchMenuItem[] = [
 ]
 
 const programShortcuts: QuickSwitchMenuItem[] = [
-  { id: "insurance", label: "Insurance", icon: Shield, path: "/app/programs/insurance", color: "text-primary" },
-  { id: "spin", label: "Spin Wheel", icon: Sparkles, path: "/app/programs/spin", color: "text-accent" },
   { id: "referrals", label: "Referrals", icon: Users, path: "/app/programs/referrals", color: "text-success" },
-  
+  { id: "staking", label: "Staking", icon: Sparkles, path: "/app/programs/staking", color: "text-accent" },
 ]
 
 interface QuickSwitchMenuProps {

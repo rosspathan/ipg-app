@@ -13,23 +13,6 @@ import { useNavigation } from "@/hooks/useNavigation"
 
 const programs = [
   {
-    id: "spin-wheel",
-    title: "Spin Wheel",
-    description: "5 free spins, win up to 2x",
-    icon: <Zap className="h-6 w-6" />,
-    category: "games" as const,
-    route: "/app/programs/spin",
-    badge: { type: "hot" as const, text: "HOT" }
-  },
-  {
-    id: "lucky-draws",
-    title: "Lucky Draws",
-    description: "Join pools, win big prizes",
-    icon: <Target className="h-6 w-6" />,
-    category: "games" as const,
-    route: "/app-legacy/lucky"
-  },
-  {
     id: "trading",
     title: "Trading",
     description: "Buy & sell crypto assets",
@@ -45,14 +28,6 @@ const programs = [
     icon: <Sparkles className="h-6 w-6" />,
     category: "finance" as const,
     route: "/app/programs/staking"
-  },
-  {
-    id: "insurance",
-    title: "Insurance",
-    description: "Protect your investments",
-    icon: <Shield className="h-6 w-6" />,
-    category: "finance" as const,
-    route: "/app/programs/insurance"
   },
   {
     id: "referrals",

@@ -86,9 +86,9 @@ const screens: ScreenData[] = [
     gradient: 'from-yellow-500 via-orange-500 to-red-600',
     features: [
       {
-        icon: '🎰',
-        title: 'Spin & Win',
-        description: 'Daily spin wheels with BSK prizes'
+        icon: '📈',
+        title: 'Trading',
+        description: 'Buy & sell crypto assets'
       },
       {
         icon: '👥',
@@ -96,9 +96,9 @@ const screens: ScreenData[] = [
         description: '50-level deep referral system'
       },
       {
-        icon: '🎰',
-        title: 'Spin & Win',
-        description: 'Play games, earn BSK tokens'
+        icon: '💰',
+        title: 'Staking',
+        description: 'Earn rewards on your holdings'
       }
     ]
   },

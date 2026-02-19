@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "@/styles/scroll-fix.css";
-import "@/styles/spin-wheel.css";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import React from "react";
@@ -70,10 +70,7 @@ const AdminProgramEditorNova = React.lazy(() => import("./pages/admin/AdminProgr
 const AdminProgramEditorClean = React.lazy(() => import("./pages/admin/AdminProgramEditorClean"));
 const AdminProgramsControl = React.lazy(() => import("./pages/admin/AdminProgramsControl"));
 
-const LuckyDrawControlPanel = React.lazy(() => import("./pages/admin/program-controls/LuckyDrawControlPanel"));
-const SpinWheelControlPanel = React.lazy(() => import("./pages/admin/program-controls/SpinWheelControlPanel"));
 const StakingControlPanel = React.lazy(() => import("./pages/admin/program-controls/StakingControlPanel"));
-const InsuranceControlPanel = React.lazy(() => import("./pages/admin/program-controls/InsuranceControlPanel"));
 const AdminOneTimeOffersPage = React.lazy(() => import("./pages/admin/AdminOneTimeOffersPage"));
 const LoansControlPanel = React.lazy(() => import("./pages/admin/program-controls/LoansControlPanel"));
 const TradingControlPanel = React.lazy(() => import("./pages/admin/program-controls/TradingControlPanel"));
@@ -176,33 +173,24 @@ import BadgeSubscriptionScreen from "./pages/BadgeSubscriptionScreen";
 import StakingScreen from "./pages/StakingScreen";
 import StakingDetailScreen from "./pages/StakingDetailScreen";
 import StakingSubmissionScreen from "./pages/StakingSubmissionScreen";
-import NewLuckyDraw from "./components/NewLuckyDraw";
+
 import BSKWithdrawScreen from "@/pages/BSKWithdrawScreen";
 import AdminBSKWithdrawalsScreen from "@/pages/AdminBSKWithdrawalsScreen";
 import AdminCryptoWithdrawalsScreen from "@/pages/AdminCryptoWithdrawalsScreen";
 import CryptoConversionScreen from "./pages/CryptoConversionScreen";
 
-import SpinHistoryScreen from "./pages/SpinHistoryScreen";
 import AdvertisingMiningScreen from "./pages/AdvertisingMiningScreen";
 import BSKPromotionScreen from "./pages/BSKPromotionScreen";
 import { AdminAdsScreen } from "./pages/AdminAdsScreen";
-import InsuranceScreen from "./components/InsuranceScreen";
-import AccidentInsurancePurchase from './pages/insurance/AccidentInsurancePurchase';
-import TradingInsurancePurchase from './pages/insurance/TradingInsurancePurchase';
-import LifeInsurancePurchase from './pages/insurance/LifeInsurancePurchase';
 import BSKLoansScreen from "./pages/BSKLoansScreen";
-import FileClaimScreen from "./pages/FileClaimScreen";
+
 import HistoryScreen from "./pages/HistoryScreen";
 import GamificationScreen from "./pages/GamificationScreen";
 import ProfileScreen from "./pages/ProfileScreen";
 
 // New Program Pages (All wrapped with ProgramAccessGate)
 const AdvertisingPage = React.lazy(() => import("./pages/programs/AdvertisingPage"));
-const LuckyDrawPage = React.lazy(() => import("./pages/programs/LuckyDrawPage"));
-const LuckyDrawTicketsPage = React.lazy(() => import("./pages/programs/LuckyDrawTicketsPage"));
 const StakingPage = React.lazy(() => import("./pages/programs/StakingPage"));
-
-const InsurancePage = React.lazy(() => import("./pages/programs/InsurancePage"));
 const BSKPromotionsPage = React.lazy(() => import("./pages/programs/BSKPromotionsPage"));
 import TeamReferralsNew from "./pages/programs/TeamReferralsNew";
 import TeamTreeView from "./pages/programs/TeamTreeView";
@@ -213,7 +201,6 @@ const OneTimePurchasePage = React.lazy(() => import("./pages/programs/OneTimePur
 const PurchaseHistoryPage = React.lazy(() => import("./pages/programs/PurchaseHistoryPage"));
 
 // History Pages
-const InsuranceHistoryPage = React.lazy(() => import("./pages/programs/InsuranceHistoryPage"));
 const LoansHistoryPage = React.lazy(() => import("./pages/programs/LoansHistoryPage"));
 
 
@@ -232,8 +219,6 @@ import AdminReferralProgram from "./pages/AdminReferralProgram";
 import AdminTeamReferralsScreen from "./pages/AdminTeamReferralsScreen";
 import Admin50LevelReferrals from "./pages/Admin50LevelReferrals";
 import { AdminStaking } from "./components/AdminStaking";
-import AdminNewLuckyDraw from "./components/AdminNewLuckyDraw";
-import AdminInsurance from "./components/AdminInsurance";
 import { AdminAds } from "./components/AdminAds";
 import { AdminFees } from "./components/AdminFees";
 import { AdminTradingFeesSimple } from "./components/AdminTradingFeesSimple";
@@ -257,7 +242,7 @@ import { AdminNotificationsScreen } from "@/pages/AdminNotificationsScreen";
 import { NotificationsScreen } from "@/pages/NotificationsScreen";
 import NotFound from "@/pages/NotFound";
 import RemovedPage from "@/pages/RemovedPage";
-import SpinVerifyScreen from "@/pages/SpinVerifyScreen";
+
 import BSKVestingScreen from "@/pages/BSKVestingScreen";
 import { BSKWalletPage } from "@/pages/astra/BSKWalletPage";
 import { WalletPage } from "@/pages/astra/WalletPage";
@@ -283,7 +268,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 
 import { DownloadPage } from "@/pages/DownloadPage";
 import { DeepLinkResolver } from "@/pages/DeepLinkResolver";
-import { InsurancePage as InsurancePageAstra } from "@/pages/astra/InsurancePage";
+
 import { AdvertiseMiningPage } from "@/pages/astra/AdvertiseMiningPage";
 import DesignReview from "@/pages/astra/DesignReview";
 import { SupportPage } from "@/pages/SupportPage";
@@ -291,20 +276,18 @@ import { SupportPage } from "@/pages/SupportPage";
 // Phase 3 & 4 User Programs
 const ReferralsPageAstra = React.lazy(() => import("./pages/astra/ReferralsPage"));
 
-const LuckyDrawPageNew = React.lazy(() => import("./pages/programs/LuckyDrawPageNew"));
+
 const TeamReferralsPageNew = React.lazy(() => import("./pages/programs/TeamReferralsPageNew"));
 const StakingPageNewV2 = React.lazy(() => import("./pages/programs/StakingPageNew"));
 const TradingPageNew = React.lazy(() => import("./pages/programs/TradingPageNew"));
 const TradingPro = React.lazy(() => import("./pages/TradingPro"));
-const InsurancePageNewV2 = React.lazy(() => import("./pages/programs/InsurancePageNew"));
+
 const BSKLoansPageNew = React.lazy(() => import("./pages/programs/BSKLoansPageNew"));
 const BSKPromotionsPageNew = React.lazy(() => import("./pages/programs/BSKPromotionsPageNew"));
 const LoansPage = React.lazy(() => import("./pages/astra/LoansPage"));
 const LoansOverviewPage = React.lazy(() => import("./pages/LoansOverviewPage"));
 const LoanDetailsPageUser = React.lazy(() => import("./pages/programs/LoanDetailsPage"));
 
-// ✅ V3 Spin Wheel with SpinWheel3D (4 segments, premium design)
-const ISmartSpinScreen = React.lazy(() => import("@/pages/ISmartSpinScreen"));
 
 const queryClient = new QueryClient();
 
@@ -538,17 +521,17 @@ function AppContent() {
                 {/* Programs - All with BSK Balance Checks */}
                 <Route path="programs/ad-mining" element={<Navigate to="/app/programs" replace />} />
                 <Route path="programs/advertising" element={<Navigate to="/app/programs" replace />} />
-                <Route path="programs/lucky-draw" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawPage /></React.Suspense>} />
-                <Route path="programs/lucky-draw/tickets" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawTicketsPage /></React.Suspense>} />
-                <Route path="programs/spin" element={<React.Suspense fallback={<LoadingFallback />}><ISmartSpinScreen /></React.Suspense>} />
-                <Route path="spin/history" element={<React.Suspense fallback={<LoadingFallback />}><SpinHistoryScreen /></React.Suspense>} />
+                <Route path="programs/lucky-draw" element={<Navigate to="/app/programs" replace />} />
+                <Route path="programs/lucky-draw/tickets" element={<Navigate to="/app/programs" replace />} />
+                <Route path="programs/spin" element={<Navigate to="/app/programs" replace />} />
+                <Route path="spin/history" element={<Navigate to="/app/programs" replace />} />
                 <Route path="programs/team-referrals" element={<React.Suspense fallback={<LoadingFallback />}><TeamReferralsNew /></React.Suspense>} />
                 <Route path="programs/team-referrals/team" element={<React.Suspense fallback={<LoadingFallback />}><TeamTreeView /></React.Suspense>} />
                 <Route path="programs/team-referrals/earnings" element={<React.Suspense fallback={<LoadingFallback />}><CommissionHistory /></React.Suspense>} />
                 <Route path="programs/team-referrals/vip-milestone-history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/programs/VIPMilestoneHistoryPage')))}</React.Suspense>} />
                 <Route path="programs/staking" element={<React.Suspense fallback={<LoadingFallback />}><StakingPage /></React.Suspense>} />
                 <Route path="programs/trading" element={<React.Suspense fallback={<LoadingFallback />}><TradingPageNew /></React.Suspense>} />
-                <Route path="programs/insurance" element={<React.Suspense fallback={<LoadingFallback />}><InsurancePage /></React.Suspense>} />
+                <Route path="programs/insurance" element={<Navigate to="/app/programs" replace />} />
                 <Route path="programs/bsk-loans" element={<Navigate to="/app/programs" replace />} />
                 <Route path="programs/bsk-promotions" element={<React.Suspense fallback={<LoadingFallback />}><BSKPromotionsPage /></React.Suspense>} />
                 
@@ -598,11 +581,9 @@ function AppContent() {
                 <Route path="programs/badge-subscription" element={<BadgeSubscriptionScreen />} />
                 <Route path="badge-subscription" element={<BadgeSubscriptionScreen />} />
                 
-                {/* Insurance Routes - Phase 7 */}
-                <Route path="insurance" element={<InsuranceScreen />} />
-                <Route path="insurance/purchase/accident" element={<AccidentInsurancePurchase />} />
-                <Route path="insurance/purchase/trading" element={<TradingInsurancePurchase />} />
-                <Route path="insurance/purchase/life" element={<LifeInsurancePurchase />} />
+                {/* Insurance Routes removed */}
+                <Route path="insurance" element={<Navigate to="/app/programs" replace />} />
+                <Route path="insurance/*" element={<Navigate to="/app/programs" replace />} />
                 
                 <Route path="design-review" element={<DesignReview />} />
                 {/* Unknown Astra sub-route */}
@@ -662,10 +643,10 @@ function AppContent() {
                 <Route path="programs/editor/:id" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramEditorClean /></React.Suspense>} />
                 <Route path="programs/control" element={<React.Suspense fallback={<LoadingFallback />}><AdminProgramsControl /></React.Suspense>} />
                 <Route path="programs/control/ad-mining/:moduleId?" element={<Navigate to="/admin/programs/control" replace />} />
-                <Route path="programs/control/lucky-draw/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><LuckyDrawControlPanel /></React.Suspense>} />
-                <Route path="programs/control/spin-wheel/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><SpinWheelControlPanel /></React.Suspense>} />
+                <Route path="programs/control/lucky-draw/:moduleId?" element={<Navigate to="/admin/programs/control" replace />} />
+                <Route path="programs/control/spin-wheel/:moduleId?" element={<Navigate to="/admin/programs/control" replace />} />
                 <Route path="programs/control/staking/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><StakingControlPanel /></React.Suspense>} />
-                <Route path="programs/control/insurance/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><InsuranceControlPanel /></React.Suspense>} />
+                <Route path="programs/control/insurance/:moduleId?" element={<Navigate to="/admin/programs/control" replace />} />
                 <Route path="programs/control/loans/:moduleId?" element={<AdminBSKLoansNova />} />
                 <Route path="programs/control/trading/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><TradingControlPanel /></React.Suspense>} />
                 <Route path="programs/control/badges/:moduleId?" element={<React.Suspense fallback={<LoadingFallback />}><BadgesControlPanel /></React.Suspense>} />
@@ -676,8 +657,8 @@ function AppContent() {
                 <Route path="staking" element={<AdminStakingNova />} />
                 <Route path="badge-qualification" element={<BadgeQualificationAdmin />} />
                 <Route path="subscriptions" element={<AdminSubscriptionsNova />} />
-                <Route path="insurance" element={<AdminInsurance />} />
-                <Route path="lucky-draw" element={<AdminNewLuckyDraw />} />
+                <Route path="insurance" element={<Navigate to="/admin/programs/control" replace />} />
+                <Route path="lucky-draw" element={<Navigate to="/admin/programs/control" replace />} />
                 <Route path="purchase-bonus" element={<AdminPurchaseBonusScreen />} />
                 <Route path="one-time-offers" element={<React.Suspense fallback={<LoadingFallback />}><AdminOneTimeOffersPage /></React.Suspense>} />
                 <Route path="offer-purchase-history" element={<React.Suspense fallback={<LoadingFallback />}>{React.createElement(React.lazy(() => import('./pages/admin/AdminOfferPurchaseHistory')))}</React.Suspense>} />
@@ -760,8 +741,8 @@ function AppContent() {
               <Route path="/staking" element={<Navigate to="/app/programs/staking" replace />} />
               <Route path="/referrals" element={<Navigate to="/app/programs/referrals" replace />} />
               <Route path="/subscriptions" element={<Navigate to="/app/programs/subscriptions" replace />} />
-              <Route path="/insurance" element={<Navigate to="/app/programs/insurance" replace />} />
-              <Route path="/lucky-draw" element={<Navigate to="/app/programs/lucky" replace />} />
+              <Route path="/insurance" element={<Navigate to="/app/programs" replace />} />
+              <Route path="/lucky-draw" element={<Navigate to="/app/programs" replace />} />
               
               {/* Public Program Hub Routes */}
               <Route path="/programs-hub" element={<React.Suspense fallback={<LoadingFallback />}><ProgramsHub /></React.Suspense>} />

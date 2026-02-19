@@ -52,8 +52,8 @@ export function HomePageRebuilt() {
 
   const getActivityTitle = (txType: string, txSubtype: string) => {
     if (txSubtype?.includes('ad_mining')) return 'Ad Mining Reward'
-    if (txSubtype?.includes('spin')) return 'Spin Wheel Win'
-    if (txSubtype?.includes('lucky_draw')) return 'Lucky Draw'
+    if (txSubtype?.includes('spin')) return 'Game Reward'
+    if (txSubtype?.includes('lucky_draw')) return 'Draw Prize'
     if (txSubtype?.includes('stake')) return 'Staking Reward'
     if (txSubtype?.includes('referral')) return 'Referral Bonus'
     return txSubtype || 'Transaction'
