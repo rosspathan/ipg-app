@@ -13,15 +13,6 @@ import { useNavigation } from "@/hooks/useNavigation"
 
 const programs = [
   {
-    id: "ad-mining",
-    title: "Ad Mining",
-    description: "Watch ads, earn BSK daily",
-    icon: <Coins className="h-6 w-6" />,
-    category: "earn" as const,
-    route: "/app/programs/advertising",
-    badge: { type: "daily" as const, text: "DAILY" }
-  },
-  {
     id: "spin-wheel",
     title: "Spin Wheel",
     description: "5 free spins, win up to 2x",
