@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
+import { ethers } from 'npm:ethers@6.9.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,14 +24,20 @@ function generateNonce(): string {
   return crypto.randomUUID();
 }
 
-function verifySignature(message: string, signature: string, address: string): boolean {
+/**
+ * Proper ECDSA signature verification using ethers.js
+ * Recovers the signer address from the signature and compares with expected address
+ */
+function verifySignature(message: string, signature: string, expectedAddress: string): boolean {
   try {
-    // This is a simplified verification - in a real implementation,
-    // you'd use a proper crypto library to verify the ECDSA signature
-    // For now, we'll do basic validation
-    return signature.length > 100 && address.startsWith('0x') && address.length === 42;
+    const recoveredAddress = ethers.verifyMessage(message, signature);
+    const isValid = recoveredAddress.toLowerCase() === expectedAddress.toLowerCase();
+    if (!isValid) {
+      console.error(`Signature mismatch: recovered=${recoveredAddress}, expected=${expectedAddress}`);
+    }
+    return isValid;
   } catch (error) {
-    console.error('Signature verification error:', error);
+    console.error('ECDSA signature verification failed:', error);
     return false;
   }
 }
@@ -78,8 +85,7 @@ serve(async (req) => {
         });
       }
 
-      // Attempt to read nonce from in-memory store, but don't hard-fail if missing
-      // Edge functions can cold start across instances, so the in-memory nonce may not exist
+      // Validate nonce
       const nonceData = nonceStore.get(nonce);
       if (!nonceData) {
         console.log(`Nonce not found (likely cold start/stateless) for: ${nonce} — continuing verification`);
@@ -107,7 +113,7 @@ serve(async (req) => {
         });
       }
 
-      // Parse admin wallets robustly (supports: single address, comma/space/newline separated, or JSON array)
+      // Parse admin wallets robustly
       let parsedList: string[] = [];
       try {
         if (adminWalletsRaw.startsWith('[')) {
@@ -115,7 +121,7 @@ serve(async (req) => {
           if (Array.isArray(arr)) parsedList = arr as string[];
         }
       } catch (_) {
-        // ignore JSON parse errors, will fall back to regex split
+        // ignore JSON parse errors, fall back to regex split
       }
       if (parsedList.length === 0) {
         const cleaned = adminWalletsRaw.replace(/[\[\]"']/g, ' ');
@@ -138,13 +144,13 @@ serve(async (req) => {
         });
       }
 
-      // Verify the signature format (simplified check)
+      // Verify the ECDSA signature cryptographically
       const ts = nonceData?.timestamp ?? 'unknown';
       const message = `CryptoFlow Admin Login\nNonce: ${nonce}\nWallet: ${walletAddress}\nTimestamp: ${ts}`;
       const isValidSignature = verifySignature(message, signature, walletAddress);
 
       if (!isValidSignature) {
-        console.log(`Invalid signature for wallet ${walletAddress}`);
+        console.log(`Invalid cryptographic signature for wallet ${walletAddress}`);
         return new Response(JSON.stringify({ error: 'Invalid signature' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
