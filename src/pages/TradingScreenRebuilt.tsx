@@ -439,17 +439,6 @@ export default function TradingScreenRebuilt() {
               </span>
             </div>
 
-            {/* Transfer Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full h-9 glass-card border-primary/20 text-primary font-semibold text-xs hover:bg-primary/10 hover:border-primary/40 hover:shadow-[0_0_12px_rgba(0,212,255,0.15)] transition-all duration-300"
-              onClick={() => navigate('/app/wallet/transfer')}
-            >
-              <ArrowLeftRight className="h-3.5 w-3.5 mr-1.5" />
-              Transfer Funds
-            </Button>
-
             {/* Submit Button */}
             <Button
               onClick={handlePlaceOrder}
