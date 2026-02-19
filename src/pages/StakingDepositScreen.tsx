@@ -99,6 +99,33 @@ export default function StakingDepositScreen() {
     setTxHash(null);
   }, [direction]);
 
+  // ─── Poll staking-deposit-monitor after on-chain transfer ───
+  const pollForDeposit = async (maxAttempts = 8, delayMs = 15000) => {
+    console.log('[StakingDeposit] Starting deposit monitor polling...');
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      console.log(`[StakingDeposit] Poll attempt ${attempt}/${maxAttempts}`);
+      try {
+        const { data, error } = await supabase.functions.invoke('staking-deposit-monitor', {
+          body: { user_id: user?.id }
+        });
+        console.log('[StakingDeposit] Monitor response:', data, error);
+        if (!error && data?.deposited) {
+          console.log('[StakingDeposit] Deposit credited! Amount:', data.amount);
+          refetchAccount();
+          return true;
+        }
+      } catch (e) {
+        console.warn('[StakingDeposit] Poll error:', e);
+      }
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+    // Final refetch regardless
+    refetchAccount();
+    return false;
+  };
+
   // ─── Private key resolution ───
   const resolvePrivateKey = async (): Promise<string | null> => {
     const deriveFromSeed = (seedPhrase: string): string | null => {
@@ -173,7 +200,8 @@ export default function StakingDepositScreen() {
         setSuccessType('deposit');
         setShowSuccess(true);
         refetchOnchain();
-        refetchAccount();
+        // Poll monitor to credit staking balance after on-chain confirmation
+        pollForDeposit();
       } catch (error: any) {
         toast({ title: "Transfer Failed", description: error.message, variant: "destructive" });
       }
@@ -199,7 +227,8 @@ export default function StakingDepositScreen() {
         setSuccessType('deposit');
         setShowSuccess(true);
         refetchOnchain();
-        refetchAccount();
+        // Poll monitor to credit staking balance after on-chain confirmation
+        pollForDeposit();
         return;
       }
       const backupStatus = await checkBackupExists();
